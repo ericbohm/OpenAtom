@@ -1,0 +1,44 @@
+==============================================================================
+
+--------------------------------------
+Version 1.0 
+--------------------------------------
+
+   (I) Find and pass required readonly structs to routines.
+  (II) Remove ALL references to CPcharmParaInfo not dealing
+       with the parallel decomposition.
+  (IV) Implement CG minimization of wavefunction if fake stuff minimizes 
+       in fake PINY
+ (III) Compile, run and Check.
+  (IV) Spawn v.2.0
+
+------------------------------------
+Version 2.0
+------------------------------------
+
+   (I) Use readonly structs to create a real non-local pseudo.
+  (II) Use readonly structs to create a real local pseudo.
+ (III) Use readonly structs to create atom forces.
+  (IV) Implement CG minimization of wavefunction if 1.0 can't minimize
+   (V) Compile run and check (32 waters,64 waters)
+  (VI) Spawn v.3.0
+
+----------------------------------
+Version 3.0  (YAN helps version)
+----------------------------------
+   (I) CP dynamics with SHAKE/RATTLE
+  (II) CP norb ind_state with SHAKE/RATTLE
+ (III) Compile run and check
+           A) Each person does a system and run projections.
+           B) Yan, Sanjay and the boys analyze all the projections.
+           C) Iterate many times until we kicking some ``A''.
+
+----------------------------------
+Version 4.0  Fancy Dan CP methods
+----------------------------------
+
+----------------------------------------
+Version 5.0  Join with LeanMD for QM/MM
+----------------------------------------
+
+=============================================================================

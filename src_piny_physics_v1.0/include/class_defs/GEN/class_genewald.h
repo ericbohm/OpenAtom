@@ -1,0 +1,161 @@
+//==========================================================================
+//                 Indexing info for CP coeffs and Ewald                    
+//             {Variables needed for mem allocation:                        
+//                   nktot_sm,nktot,nktot_res}                              
+//                                                                          
+
+#ifndef _GENEWALD_
+#define _GENEWALD_
+
+class GENEWALD {
+
+ //----------------
+ public:
+  int cp_any_on;              // opt : any cp opt on
+  int ewald_on;               // opt : ewald sum on
+  int int_res_ter;            // opt : intermolecular respa
+  int nsplin_g;               // NUm : spline pts for cp stuff
+  int nktot;                  // Num: # of PW coeff on large sphere
+                              //        cutoff g-space grid =ncoef_l    
+  int nktot1;                 // Num: nktot+1
+  int nktot_res;              // Num: # of PW coeffon RESPA sphere
+                              //       cutoff g-space grid <=ncoef_l    
+  int nktot_res1;             // Num: nktot_res+1
+  int nkc_max;                // Num: Max value of kc, calculated by all 
+  int nkb_max;                // Num: Max value of kb, calculated by all 
+
+  double alp_ewd;             // Num: Convergence param of Ewald sum  
+  double self_erf;            
+  double ecut,ecut_res;
+  double ecut_clus;           // Num: Energy cutoff for cluster BCs  
+  double alp_clus;            // Num: Ewald alpha for cluster BCs 
+  double gs_max;              // Num: Max (gx^2+gy^2)^1/2 calc by all 
+
+  int *kastr,*kbstr,*kcstr;   // Lst: Large spherically cutoff g vecs
+                              //   Lth: nktot                            
+  int *ibrk1,*ibrk2,*ibrk3;   // Lst: Large spherically cutoff 
+                              //         g-space grid break-pts;
+                              //    Lth: nktot                           
+  int *kastr_res,*kbstr_res,*kcstr_res;// Lst: RESPA sphere cutoff 
+                                       //         g-vectors; 
+                                       //    Lth: nktot_res              
+  int *ibrk1_res,*ibrk2_res;  // Lst: RESPA spherically cutoff 
+                              //      g-space grid break-pts;  
+                              //      Lth: nktot_res                      
+  double *clus_corr_r,*dclus_corr_r;
+  double *clus_corr_r_res,*dclus_corr_r_res;
+  double *cvgs_2d0,*cvgs_2d1,*cvgs_2d2,*cvgs_2d3,*vgc_2d;
+  double *vgc_1d_y,*vgc_1d_z;
+
+ //----------------
+ //con-destruct:
+   GENEWALD(){
+    cp_any_on  = 0;
+    ewald_on   = 0;
+    int_res_ter= 0;
+    nsplin_g   = 0;
+    nktot      = 0;       
+    nktot1     = 0;      
+    nktot_res  = 0;   
+    nktot_res1 = 0;  
+    nkc_max    = 0;     
+    nkb_max    = 0;     
+   };
+  ~GENEWALD(){};
+
+#ifdef PUP_ON
+ //----------------
+ //pupping
+  void pup(PUP::er &p){
+    //pupping ints
+        p | cp_any_on;
+        p | ewald_on;
+        p | int_res_ter;
+        p | nsplin_g;
+        p | nktot;
+        p | nktot1;
+        p | nktot_res;
+        p | nktot_res1;
+        p | nkc_max;
+        p | nkb_max;
+    //pupping dbles
+        p | alp_ewd;
+        p | self_erf;
+        p | ecut;
+        p | ecut_res;
+        p | ecut_clus;
+        p | alp_clus;
+        p | gs_max;
+    //pupping int  arrays
+        if(ewald_on==1){
+         pup1d_int(p,&kastr,nktot1);
+         pup1d_int(p,&kbstr,nktot1);
+         pup1d_int(p,&kcstr,nktot1);
+         pup1d_int(p,&ibrk1,nktot1);
+         pup1d_int(p,&ibrk2,nktot1);
+         pup1d_int(p,&ibrk3,nktot1);
+         if(int_res_ter==1){
+          pup1d_int(p,&kastr_res,nktot_res1);
+          pup1d_int(p,&kbstr_res,nktot_res1);
+          pup1d_int(p,&kcstr_res,nktot_res1);
+          pup1d_int(p,&ibrk1_res,nktot_res1);
+          pup1d_int(p,&ibrk2_res,nktot_res1);
+        }//endif
+       }//endif
+    //pupping dbl  arrays
+#ifdef CP_NON3D_BOX_IMPLEMENTED
+        if(cp_any_on==1){
+         pup1d_dbl(p,&clus_corr_r,nktot1);
+         pup1d_dbl(p,&dclus_corr_r,nktot1);
+         pup1d_dbl(p,&clus_corr_r_res,nktot_res1);
+         pup1d_dbl(p,&dclus_corr_r_res,nktot_res1);
+         pup1d_dbl(p,&cvgs_2d0,nsplin_g);
+         pup1d_dbl(p,&cvgs_2d1,nsplin_g);
+         pup1d_dbl(p,&cvgs_2d2,nsplin_g);
+         pup1d_dbl(p,&cvgs_2d3,nsplin_g);
+         pup1d_dbl(p,&vgc_2d,nsplin_g);
+         pup1d_dbl(p,&vgc_1d_y,nsplin_g);
+         pup1d_dbl(p,&vgc_1d_z,nsplin_g);
+        }// endif
+#endif
+#ifdef _PARALLEL_DEBUG_        
+    if (p.isUnpacking())
+     state_class_out ();
+#endif
+  } // end pup
+#endif
+
+  void state_class_out(){
+
+     char fileName [255];
+     sprintf (fileName, "%d_genewald.state", CkMyPe());
+     FILE *fp;  fp = fopen(fileName,"w");
+
+     fprintf(fp,"nsplin_g %d\n",nsplin_g);
+     fprintf(fp,"nktot %d\n",nktot);
+     fprintf(fp,"nktot1 %d\n",nktot1);
+     fprintf(fp,"nktot_res %d\n",nktot_res);
+     fprintf(fp,"nktot_res1 %d\n",nktot_res1);
+     fprintf(fp,"nkc_max %d\n",nkc_max);
+     fprintf(fp,"nkb_max %d\n",nkb_max);
+    //pupping dbles
+     fprintf(fp,"alp_ewd %g\n",alp_ewd);
+     fprintf(fp,"self_erf %g\n",self_erf);
+     fprintf(fp,"ecut %g\n",ecut);
+     fprintf(fp,"ecut_res %g\n",ecut_res);
+     fprintf(fp,"ecut_clus %g\n",ecut_clus);
+     fprintf(fp,"alp_clus %g\n",alp_clus);
+     fprintf(fp,"gs_max %g\n",gs_max);
+   fclose(fp);
+
+  } // end routine
+
+}; // GENEWALD;
+
+#ifdef PUP_ON
+PUPmarshall(GENEWALD);
+#endif
+
+#endif
+
+//==========================================================================

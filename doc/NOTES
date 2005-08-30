@@ -1,0 +1,41 @@
+=============================================================================
+(I) Moved/Sorted Makefile.config to ``compile/'':
+     (A) Makefile.config.gen.tun, Makefile.config.gen
+     (B) Makefile.config.piny
+     (C) Makefile.config.charm
+
+(II) Placed charm++ routines in ``src_charm_driver/'' and
+     created a directory structure:
+     (A) compile                 : Makefile
+     (B) load_balance            : map.C
+     (C) orthog_ctrl             : ortho.C, Scalc.C
+     (D) utility                 : util.C
+     (E) e-density manipulations : cp_density_ctrl
+     (F) e-state manipulations   : cp_state_ctrl
+     (G) main                    : cpaimd.C, groups.C
+     (H) mathlib                 : Blas fortran routines
+     (I) sim_subroutines.C       : needs to be split
+
+(III) PINY : Created  ``src_piny_physics/'' and copied some stuff from leanMD 
+     (A) piny_to_driver : the interface of piny readonlys to charm_driver
+     (B) interface      : routines to fill piny readonlys
+
+(IV) Ab initio Phys : Divided qc_subroutines into PINY calculator classes
+                       stored in ``src_piny_physics_v1.0/abinito_physics''
+     (A) cp_integrate : Numerical integration.
+     (B) cp_nonlocal  : Z-matrix stuff, kinetic energy.
+     (C) cp_local     : Hartree, external. 
+     (D) cp_orthog    : Orthogonalization.
+     (E) cp_xc_fnctl  : Exchange correlation.
+
+(IV) Classical Phys : Copied from LeanMD and created a directory tree
+                      under ``src_piny_physics_v1.0/classical_physics''
+     (A) top           : Physics_force_field.C
+     (B) intra         : Intramolecular potential.
+     (C) intra_con     : Constraint routines.
+     (D) inter_real    : Intermolecular real space potential (Vdw+Coul)
+     (E) inter_recip   : Intermolecular recip space potential (PME/Ewald)
+     (F) vel_smpl_atms : Velocity sampling.
+
+=============================================================================
+

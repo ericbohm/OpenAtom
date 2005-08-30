@@ -1,0 +1,1 @@
+find . -name "*.h" -print |xargs wc -l $1 /dev/null

@@ -1,0 +1,68 @@
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/*                                                                          */
+/*                      class_mdnbr_list.h                                  */
+/*                                                                          */
+/*    Class definition for intermolecular neibhor list methods              */
+/*                                                                          */
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+
+#ifndef _MDNBR_LIST_
+#define _MDNBR_LIST_
+
+#include "class_mdverlist.h"
+#include "class_mdlnklist.h"
+#include "class_mdbrnch_root.h"
+
+class MDNBR_LIST : public MDVERLIST, public MDLNKLIST, public MDBRNCH_ROOT {
+ public:
+  int natm_tot;                /* Num: Number of atoms               */
+  int iver;                    /* Opt: Verlet list option             */ 
+  int ilnk;                    /* Opt: Lnk list option                */
+  int nolst;                   /* Opt: No list option                 */     
+  int brnch_root_list_opt;     /* Num: Option to shave brnch interactions */
+  double *x0,*y0,*z0;          /* Lst: Pos of the atms when the list
+                                       is calculated;        
+                                  Lth: natm_tot                       */
+
+// Default constructor/destructor
+
+   MDNBR_LIST(){
+    natm_tot = 0;               
+    iver     = 0;                   
+    ilnk     = 0;                   
+    nolst    = 0;                  
+    brnch_root_list_opt = 0;    
+   }
+  ~MDNBR_LIST(){}
+
+  void pup(PUP::er &p){
+
+    // PUP ints
+    p | natm_tot;
+    p | iver;
+    p | ilnk;
+    p | nolst;
+    p | brnch_root_list_opt;
+
+    // PUP arrays
+
+    pup1d_dbl(p,&x0,natm_tot);
+    pup1d_dbl(p,&y0,natm_tot);
+    pup1d_dbl(p,&z0,natm_tot);
+
+  } /* end pack unpack */
+ 
+}; /* end class definitions */
+
+PUPmarshall(MDNBR_LIST);
+
+#endif
+
+
+
+
+

@@ -1,0 +1,3 @@
+find . -name "*.*~" -print |xargs /bin/rm 
+
+

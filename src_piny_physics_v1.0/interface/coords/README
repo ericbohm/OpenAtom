@@ -1,0 +1,5 @@
+proto_math.h was imported from old mathlib so that the few functions
+needed there would be recognized.
+
+Note that nkf1, nkf2 and nkf3 will need to be defined for
+QM/MM and are determined by the FFT.

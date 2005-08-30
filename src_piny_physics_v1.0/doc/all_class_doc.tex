@@ -1,0 +1,101 @@
+------------------------------------------------------------------------
+MDATOMS:
+------------------------------------------------------------------------
+ MDCLATOMS_INFO : information about the atoms : charges, masses ...
+ MDATOM_MAPS    : more detailed information about the atoms : 
+                  what molecule is it in, what residue, what is
+                  an atoms type ...
+ MDCLATOMS_TRAN : part of the path integral methodology.
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+MDINTER :
+------------------------------------------------------------------------
+ MDENERGY_CTRL  : control multiple time step integration,
+                   type of ewald summation, ...
+ MDPART_MESH    : 
+ MDINTERACT     : information about the intermolecular potential
+ MDNBR_LIST     : Verlet neighbor list controls
+ MDBRNCH_ROOT :
+ MDLNKLIST    :
+ MDVERLIST    :
+ MDSURFACE      : Surface potentials
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+GEN :
+------------------------------------------------------------------------
+ GENSTATEPOINT  : temperature, pressure, surface tension of system
+ GENCELL        : periodicity, volume of system
+ GENTIMEINFO    : number of time steps, present time step, time step size,
+                   multiple time step integration options.
+ GENBARO        : class for isotropic constant pressure integration
+ GENPAR_RAHMAN  : class for flexible constant pressure integration
+ GENPTENS       : instantaneous pressure of simulation
+ GENSTAT_AVG    : statistical averages accumulated during the run.
+ GENEWALD       : information used to compute the Ewald sums
+ GENSIMOPTS     : type of run : md, minimization, ...
+ GENMINOPTS     : type of minimization : conjugate gradient, diis
+ GENENSOPTS     : type of ensemble, constant volume and energy,
+                   constant volume and temperature, ...
+ GENFILENAMES   : input/output file names
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+MDINTEGRATE :
+------------------------------------------------------------------------
+ MDTHERM_INFO   : information for constant temperature integration.
+ MDVEL_SAMP     : information about velocity refreshing
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+MDINTRA :
+------------------------------------------------------------------------
+ MDBOND           : bonds in simulation
+ MDBEND           : bends in simulation
+ MDBEND_BND       : uri-bradleys in simulation
+ MDTORS           : torsions in simulation
+ MDONFO           : one-four interactions in simulation
+ MDECOR           : corrections to the reciprocal space part of the 
+                    Ewald sum.
+ MDEXCL           : exclusion list.
+ MDGRP_BOND_CON   : rigid groups, lines, triangles ...
+ MDCONSTRNT       : control for the constraints.
+ MDGRP_BOND_WATTS : fancy flexible bonds
+ MDGHOST_ATOMS    : fixed point sources in simulation
+ MDBOND_FREE      : bond free energy profile structure
+ MDBEND_FREE      : bend free energy profile structure
+ MDTORS_FREE      : tors free energy profile structure
+ MDRBAR_SIG_FREE  : mean-std free energy profile structure
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+CP :
+------------------------------------------------------------------------
+ CPOPTS        : Basic options for the method :
+                    exc-type,lda/lsda,orthog-type,binary read/write,
+                    coef temperature, minimization tolerence, hessian on/off,
+                    pressure tensor on/off
+ CPCOEFFS_INFO : Information describing the electronic states :
+                    number of state, number of coefs, plane wave cutoff,
+                    masses, occupation numbers.
+ CPTHERM_INFO  : Thermostatting of e-states for CP dynamics :
+                     number and types of thermstats, thermostat parameters,
+                     map of thermstat to coefs.
+ CPATOM_MAPS   : Description of atoms for CP :
+                     number and identity of ab initio atoms,
+                     number and identity of ab initio atoms with non-local
+                     pseudopotential.
+ CPCONSTRNT    : Constraint tolerence for CP dynamics.
+ CPEWALD       : Allowed g-vectors on the large and small reciprocal space.
+ CPPSEUDO      : Spline lookup of local and non-local pseudopotentials.
+ CPDUAL_PME    : QM/MM : needs to do some PME for e-density.
+ CPATOM_PME    : QM/MM : needs to do some PME for the atoms.
+ CPVEL_SAMP    : Choose new velocities for the plane-wave coefs.
+ CPYLM_CONS    : Constants to help with non-local pseudopotentials.
+------------------------------------------------------------------------

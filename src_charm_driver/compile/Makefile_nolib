@@ -1,0 +1,228 @@
+#=====================================================================
+include ../../compile/Makefile.config.gen
+include ../../compile/Makefile.config.charm
+#=====================================================================
+
+
+#===========================================================================
+RM    = /bin/rm -f
+ECHO  = /bin/echo making
+HEAD  = ..
+MAIN  = ../main
+STATE = ../cp_state_ctrl
+RHO   = ../cp_density_ctrl
+ORTHO = ../orthog_ctrl
+UTIL  = ../utility
+MATH  = ../mathlib
+LOADB = ../load_balance
+#===========================================================================
+
+
+#===========================================================================
+FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
+         -I$(HEAD) -I$(MAIN) -I$(STATE) -I$(RHO) \
+         -I$(ORTHO) -I$(UTIL) -I$(MATH) -I$(LOADB) \
+         -I../../src_piny_physics_v1.0/include/pentium_par #-DGROUP_REDUCTION
+#         -I../../src_piny_physics_v1.0/include/ibm_par #-DGROUP_REDUCTION
+LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
+         -lrfftw -lm -module fftlib                      #-memory paranoid
+#===========================================================================
+
+
+#===========================================================================
+OBJS   = cpaimd.o CP_State_GSpacePlane.o CP_State_ParticlePlane.o \
+         CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o CP_Rho_GSpacePlane.o \
+         util.o qc_subroutines.o ortho.o sim_subroutines.o \
+         groups.o math_rs.o blas_wrappers.o dgemm.o zgemv.o xerbla.o lsame.o \
+         map.o zdotu.o zgemm.o dcopy.o
+SUBOBJS   = CP_State_GSpacePlane.o CP_State_ParticlePlane.o \
+         CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o CP_Rho_GSpacePlane.o \
+         util.o qc_subroutines.o ortho.o sim_subroutines.o \
+         groups.o math_rs.o blas_wrappers.o dgemm.o zgemv.o xerbla.o lsame.o \
+         map.o zdotu.o zgemm.o dcopy.o
+
+
+OBJS_DECL = cpaimd.decl.h
+TARGET_EXE = ../../binary/CharmDriver.x
+TARGET_LIB = ../../binary/libCharmDriver.a
+#===========================================================================
+
+
+#===========================================================================
+summary:$(OBJS)
+	$(CHARMC) -o $(TARGET_EXE).summary $(OBJS) $(LIB) \
+        -language charm++ -module CkMulticast -module CkSparseContiguousReducer \
+        -module ckPairCalculator -tracemode summary $(OPTS) $(FLAGS)
+#===========================================================================
+
+
+#===========================================================================
+proj:	$(OBJS_DECL) $(OBJS)
+	$(CHARMC) -o $(TARGET_EXE).proj $(OBJS) $(LIB) -language charm++ \
+        -module CkMulticast -module CkSparseContiguousReducer \
+        -module DummyLB -module RefineLB -module RefineCommLB \
+        -module ckPairCalculator -tracemode projections $(OPTS) $(FLAGS)
+#===========================================================================
+
+
+#===========================================================================
+exe:	$(OBJS_DECL) $(OBJS)
+	$(CHARMC) -o $(TARGET_EXE) $(OBJS) $(LIB) -language charm++ \
+        -module CkMulticast -module CkSparseContiguousReducer \
+        -module DummyLB -module RefineLB -module RefineCommLB \
+        -module ckPairCalculator $(OPTS) $(FLAGS)
+#===========================================================================
+
+#===========================================================================
+driverlib:	$(OBJS_DECL) $(SUBOBJS) cpaimd.o
+	$(CHARMC) -o $(TARGET_LIB) $(SUBOBJS) $(LIB) -language charm++ \
+        -module CkMulticast -module CkSparseContiguousReducer \
+        -module DummyLB -module RefineLB -module RefineCommLB \
+        -module ckPairCalculator $(OPTS) $(FLAGS)
+#===========================================================================
+
+
+#===========================================================================
+../main/cpaimd.decl.h : $(MAIN)/cpaimd.ci
+	$(ECHO) $@
+	$(CHARMC) $(MAIN)/cpaimd.ci $(OPTS) $(FLAGS)
+	/bin/cp -f cpaimd.decl.h $(MAIN)/cpaimd.decl.h
+	/bin/cp -f cpaimd.def.h $(MAIN)/cpaimd.def.h
+#===========================================================================
+cpaimd.decl.h : $(MAIN)/cpaimd.ci
+	$(ECHO) $@
+	$(CHARMC) $(MAIN)/cpaimd.ci $(OPTS) $(FLAGS)
+	/bin/cp -f cpaimd.decl.h $(MAIN)/cpaimd.decl.h
+	/bin/cp -f cpaimd.def.h $(MAIN)/cpaimd.def.h
+#---------------------------------------------------------------------------
+cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
+          $(ORTHO)/ortho.h $(HEAD)/sim_subroutines.h \
+          $(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
+          $(HEAD)/qc_subroutines.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
+                        $(STATE)/CP_State_Plane.h \
+                        $(MAIN)/cpaimd.decl.h \
+                        $(HEAD)/sim_subroutines.h \
+                        $(MAIN)/groups.h \
+                        $(HEAD)/qc_subroutines.h
+	$(ECHO) $@
+	$(CHARMC) -c $(STATE)/CP_State_GSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_State_ParticlePlane.o: $(STATE)/CP_State_ParticlePlane.C \
+                          $(STATE)/CP_State_Plane.h \
+                          $(MAIN)/cpaimd.decl.h \
+                          $(HEAD)/sim_subroutines.h \
+                          $(MAIN)/groups.h \
+                          $(HEAD)/qc_subroutines.h
+	$(ECHO) $@
+	$(CHARMC) -c $(STATE)/CP_State_ParticlePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_State_RealSpacePlane.o: $(STATE)/CP_State_RealSpacePlane.C \
+                           $(STATE)/CP_State_Plane.h \
+                           $(MAIN)/cpaimd.decl.h \
+                           $(HEAD)/sim_subroutines.h \
+                           $(MAIN)/groups.h \
+                           $(HEAD)/qc_subroutines.h
+	$(ECHO) $@
+	$(CHARMC) -c $(STATE)/CP_State_RealSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_Rho_RealSpacePlane.o: $(RHO)/CP_Rho_RealSpacePlane.C \
+                         $(STATE)/CP_State_Plane.h \
+                         $(MAIN)/cpaimd.decl.h \
+                         $(HEAD)/qc_subroutines.h \
+                         $(HEAD)/sim_subroutines.h \
+                         $(MAIN)/groups.h
+	$(ECHO) $@
+	$(CHARMC) -c $(RHO)/CP_Rho_RealSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
+                      $(STATE)/CP_State_Plane.h \
+                      $(MAIN)/cpaimd.decl.h \
+                      $(HEAD)/qc_subroutines.h \
+                      $(HEAD)/sim_subroutines.h \
+                      $(MAIN)/groups.h \
+                      $(STATE)/CP_State_Plane.h
+	$(ECHO) $@
+	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+util.o: $(UTIL)/util.C $(UTIL)/util.h
+	$(ECHO) $@
+	$(CHARMC) -c $(UTIL)/util.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+map.o: $(LOADB)/map.C
+	$(ECHO) $@
+	$(CHARMC) -c $(LOADB)/map.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+qc_subroutines.o: $(HEAD)/qc_subroutines.h \
+                  $(HEAD)/qc_subroutines.C \
+                  $(MAIN)/groups.h \
+                  $(HEAD)/sim_subroutines.h
+	$(ECHO) $@
+	$(CHARMC) -c $(HEAD)/qc_subroutines.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h
+	$(ECHO) $@
+	$(CHARMC) -c $(ORTHO)/ortho.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+sim_subroutines.o: $(HEAD)/sim_subroutines.h $(HEAD)/sim_subroutines.C
+	$(ECHO) $@
+	$(CHARMC) -c $(HEAD)/sim_subroutines.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+groups.o: $(MAIN)/groups.C $(MAIN)/groups.h
+	$(ECHO) $@
+	$(CHARMC) -c $(MAIN)/groups.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+math_rs.o: $(MATH)/math_rs.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/math_rs.f
+#---------------------------------------------------------------------------
+blas_wrappers.o: $(MATH)/blas_wrappers.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/blas_wrappers.f
+#---------------------------------------------------------------------------
+dgemm.o: $(MATH)/dgemm.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/dgemm.f
+#---------------------------------------------------------------------------
+zgemv.o: $(MATH)/zgemv.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/zgemv.f
+#---------------------------------------------------------------------------
+zdotu.o: $(MATH)/zdotu.f
+	$(ECHO) $@
+	$(F_COMPILER) -c -g $(MATH)/zdotu.f
+#---------------------------------------------------------------------------
+xerbla.o: $(MATH)/xerbla.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/xerbla.f
+#---------------------------------------------------------------------------
+lsame.o: $(MATH)/lsame.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/lsame.f
+#---------------------------------------------------------------------------
+dcopy.o: $(MATH)/dcopy.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/dcopy.f
+#---------------------------------------------------------------------------
+zgemm.o: $(MATH)/zgemm.f
+	$(ECHO) $@
+	$(F_COMPILER) -c $(MATH)/zgemm.f
+#===========================================================================
+
+
+#===========================================================================
+clean:	
+	$(RM)  ../conv-host *.o ../charmrun
+	$(RM) $(HEAD)/*.def.h $(HEAD)/*.decl.h   $(HEAD)/*~
+	$(RM) $(MAIN)/*.def.h $(MAIN)/*.decl.h   $(MAIN)/*~
+	$(RM) $(STATE)/*.def.h $(STATE)/*.decl.h $(STATE)/*~
+	$(RM) $(RHO)/*.def.h $(RHO)/*.decl.h     $(RHO)/*~
+	$(RM) $(ORTHO)/*.def.h $(ORTHO)/*.decl.h $(ORTHO)/*~
+	$(RM) $(UTIL)/*.def.h $(UTIL)/*.decl.h   $(UTIL)/*~
+	$(RM) $(MATH)/*.def.h $(MATH)/*.decl.h   $(MATH)/*~
+	$(RM) $(LOADB)/*.def.h $(LOADB)/*.decl.h $(LOADB)/*~
+	$(RM) $(TARGET_EXE) $(TARGET_LIB) ../core *.def.h *.decl.h
+#===========================================================================

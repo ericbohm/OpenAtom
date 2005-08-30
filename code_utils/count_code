@@ -1,0 +1,8 @@
+find . -name "*.c" -print |xargs wc -l $1 /dev/null
+find . -name "*.C" -print |xargs wc -l $1 /dev/null
+
+
+
+
+
+

@@ -1,0 +1,235 @@
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+//
+//            Processor group class Functions : Atoms and parainfo
+//
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+#include "charm++.h"
+#include "groups.h"
+#include "util.h"
+#include "cpaimd.h"
+#include <math.h>
+
+//----------------------------------------------------------------------------
+
+#include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
+
+//----------------------------------------------------------------------------
+
+extern int atom_integrate_done;
+extern CProxy_EnergyGroup egroupProxy;
+extern Config config;
+extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
+extern CProxy_AtomsGrp atomsGrpProxy;
+void IntegrationComplete(void *, void *);
+
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a) 
+{
+	natm    = n;
+        natm_nl = n_nl;
+	atoms   = new Atom[natm];
+	memcpy(atoms, a, natm * sizeof(Atom));
+        pot_ewd_rs_loc = 0.0;
+        pot_ewd_rs     = 0.0;
+        atom_integrate_done = 1;  //so that code can start working
+
+	zeroforces();
+}
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+AtomsGrp::~AtomsGrp() 
+{
+	delete [] atoms;
+}
+//==============================================================================
+
+
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim) 
+{
+	cpcharmParaInfo = new CPcharmParaInfo(sim);
+}
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+CPcharmParaInfoGrp::~CPcharmParaInfoGrp()
+{
+	delete cpcharmParaInfo;
+}
+//==============================================================================
+
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+
+void AtomsGrp::StartRealspaceForces(){
+
+//==========================================================================
+// Get the real space atom forces
+
+   AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+   Atom *atoms       = ag->atoms;
+   int natm          = ag->natm;
+   int myid          = CkMyPe();
+   double pot_ewd_rs = 0.0;
+
+   atom_integrate_done = 0; // flip the global flag
+   if(myid==0){CPRSPACEION::CP_getionforce(natm,atoms,myid,&pot_ewd_rs);}
+
+#ifdef GJM_DBG_ATMS
+   CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
+#endif
+   atomsGrpProxy[myid].contributeforces(pot_ewd_rs);
+   
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+
+void AtomsGrp::contributeforces(double pot_ewd_rs){
+
+//==========================================================================
+
+  int i,j;
+  AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
+  int myid     = CkMyPe();
+  int natm     = ag->natm;
+  double *ftot = (double *)malloc((3*natm+1)*sizeof(double));
+
+  for(i=0,j=0; i<natm; i++,j+=3){
+    ftot[j]   = ag->atoms[i].fx;
+    ftot[j+1] = ag->atoms[i].fy;
+    ftot[j+2] = ag->atoms[i].fz;
+  }//endfor
+  ftot[3*natm]=pot_ewd_rs;
+#ifdef GJM_DBG_ATMS
+  CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
+#endif
+  CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), atomsGrpProxy);
+  contribute((3*natm+1)*sizeof(double),ftot,CkReduction::sum_double,cb);
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void AtomsGrp::recvContribute(CkReductionMsg *msg) {
+//==========================================================================
+// Local pointers
+
+  int i,j;
+  double *ftot = (double *) msg->getData();
+  AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
+  int myid     = CkMyPe();
+  int natm     = ag->natm;
+  Atom *atoms  = ag->atoms;
+
+//============================================================
+// Copy out the reduction of energy and forces
+
+#ifdef GJM_DBG_ATMS
+  CkPrintf("GJM_DBG: inside recv forces %d : %d\n",myid,natm);
+#endif
+  for(i=0,j=0;i<natm;i++,j+=3){
+    atoms[i].fx = ftot[j];
+    atoms[i].fy = ftot[j+1];
+    atoms[i].fz = ftot[j+2];
+#ifdef GJM_DEBUG_ATMS
+    if(myid==0){
+      CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
+    }//endif
+#endif
+  }//endfor
+  EnergyGroup *eg = egroupProxy.ckLocalBranch();
+  eg->estruct.eewald_real=ftot[3*natm];
+  delete msg;
+
+#ifdef GJM_DEBUG_ATMS_EXIT
+  if(myid==0){CkExit();}
+#endif
+
+//============================================================
+// Integrate the atoms
+
+#ifdef GJM_DBG_ATMS
+  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
+#endif
+  ATOMINTEGRATE::ATOM_integrate(natm,ag->atoms,myid);
+  atom_integrate_done = 1;  // flip the global flag back
+  zeroforces();
+
+//============================================================
+// Initiate another reduction that then sends a broadcast to gspace.
+// That is the possibly slower and correct way of going about this
+// Low priority task to get rid of the atom_integrate_done global variable
+
+//-------------------------------------------------------------------------
+   }//end routine
+//==========================================================================
+
+//===========
+//Energy group that can retrieve the energies from
+
+extern CProxy_EnergyGroup egroupProxy;	
+
+EnergyGroup::EnergyGroup () {
+    //non local
+    estruct.enl = 0;
+
+    //local external energy
+    estruct.eext = 0;
+
+    estruct.eke = 0;
+
+    //hartree energy
+    estruct.ehart = 0;
+    
+    //ion-ion
+    estruct.eewald_recip = 0;
+    estruct.eewald_real = 0;
+    
+    //exchange correlation
+    estruct.egga = 0;
+    estruct.eexc = 0;
+    estruct.fmagPsi = 0;
+    //unused still, NUM_ENERGIES should be increased to 9 later
+    estruct.efict = 0;
+
+    estruct.totalEnergy = 0;
+} 
+
+EnergyStruct GetEnergyStruct() {
+    return egroupProxy.ckLocalBranch()->getEnergyStruct();
+}
+

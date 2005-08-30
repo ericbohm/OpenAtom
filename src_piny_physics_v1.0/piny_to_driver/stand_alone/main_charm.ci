@@ -1,0 +1,38 @@
+//===========================================================================
+// The argument to mainmodule (main_charm) is the name of header file 
+// charm spits for this block of defines: (main_charm.decl.h, main_charm.defs.h)
+//===========================================================================
+
+//===========================================================================
+
+mainmodule main_charm{
+
+//---------------------------------------------------------------------------
+// OATOM_MAINCHARE is the mainchare : charm has its own main function. you no
+//  longer control it. The mainchare constructor is invoked on 1 proc. only!
+  readonly int nElements;
+
+
+  mainchare OATOM_MAINCHARE{   // ``entry'' denotes remotely accessible object
+    entry OATOM_MAINCHARE ( ); // constructor for class main is ``entry''
+  };// end class main
+
+  array [1D] Hello {
+    entry Hello(void);
+    entry void SayHi(int hiNo);
+  };
+
+
+//---------------------------------------------------------------------------
+// invokes the pup routine for each global readonly class automatically
+
+  readonly MDINTEGRATE  readonly_mdintegrate;
+  readonly MDATOMS      readonly_mdatoms;
+  readonly MDINTER      readonly_mdinter;
+  readonly MDINTRA      readonly_mdintra;
+  readonly GENERAL_DATA readonly_general_data;
+  readonly CP           readonly_cp; 
+
+//---------------------------------------------------------------------------
+    };// end mainmodule main_charm
+//===========================================================================

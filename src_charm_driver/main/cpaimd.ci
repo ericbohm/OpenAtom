@@ -1,0 +1,205 @@
+mainmodule cpaimd {	
+
+	readonly int nstates;
+	readonly int sizeX;
+	readonly int Ortho_UE_step2;
+	readonly int Ortho_UE_step3;
+	readonly int Ortho_UE_error;
+	readonly bool Ortho_use_local_cb;
+
+	extern module CkSparseContiguousReducer;
+        extern module ckPairCalculator;
+	extern module matmul; 
+	readonly Config config;
+	readonly PairCalcID pairCalcID1;
+	readonly PairCalcID pairCalcID2;
+
+	readonly CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
+	readonly CProxy_CP_State_ParticlePlane particlePlaneProxy;
+	readonly CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
+	readonly CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
+	readonly CProxy_CP_Rho_GSpacePlane rhoGProxy;
+	readonly CProxy_CP_Rho_GSpacePlaneHelper rhoGHelperProxy;
+	readonly CProxy_Ortho orthoProxy;
+	readonly CProxy_matmul matmulProxy1;
+	readonly CProxy_matmul matmulProxy2;
+	readonly CProxy_matmul matmulProxy3;
+	readonly CProxy_AtomsGrp atomsGrpProxy;
+	readonly CProxy_CPcharmParaInfoGrp scProxy;
+	readonly CProxy_EnergyGroup egroupProxy;
+	readonly CProxy_FFTcache fftCacheProxy;
+	readonly CProxy_StructFactCache sfCacheProxy;
+	readonly CProxy_StructureFactor sfCompProxy;
+	
+	readonly CkGroupID mCastGrpId;
+	readonly ComlibInstanceHandle commInstance;
+	readonly ComlibInstanceHandle commRealInstance;
+	readonly ComlibInstanceHandle mcastInstance;
+	readonly ComlibInstanceHandle ssInstance;
+	readonly ComlibInstanceHandle mssInstance;
+	readonly ComlibInstanceHandle mcastInstancePP;
+
+        readonly MDINTEGRATE  readonly_mdintegrate;
+        readonly MDATOMS      readonly_mdatoms;
+        readonly MDINTER      readonly_mdinter;
+        readonly MDINTRA      readonly_mdintra;
+        readonly GENERAL_DATA readonly_general_data;
+        readonly CP           readonly_cp; 
+
+	message PPDummyMsg;
+	message SFDummyMsg;
+	message RSDummyResume;
+
+	message ProductMsg {double data[];};	
+	
+	message EnlCookieMsg;
+
+	message StructFactorMsg {
+		complex structFactor[];
+		complex structFactor_fx[];
+		complex structFactor_fy[];
+		complex structFactor_fz[];
+	};
+	
+	message TMsg {complex data[];};
+	
+	message GSIFFTMsg {complex data[];};
+
+	message RSFFTMsg {complex data[];};
+
+	mainchare main {
+		entry main();
+	};
+
+	array [2D]  CP_State_GSpacePlane {
+		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
+                        int numG, int numR, int s_grain);
+		entry void initGSpace(int n, RunDescriptor r[n], int m, 
+			complex pts[m],int nx,int ny,int nz);
+		entry void doIFFT(GSIFFTMsg *);
+		entry void doFFT();
+		entry void acceptNewPsi(mySendMsg *msg);
+		entry void acceptNewPsi(partialResultMsg *msg);
+		entry void acceptLambda(mySendMsg *msg);
+		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void isAtSync(int);
+		entry void startNewIter ();
+
+		entry void computeEnergies(int p, double d);
+                entry void run ();
+                entry void resumeThread (PPDummyMsg *dmsg);
+                entry void resumeThreadDisplacing();
+                entry void psiCgOvlap(CkReductionMsg *);
+	};
+	
+	array [2D] CP_State_ParticlePlane {
+		entry CP_State_ParticlePlane(int x, int y, int z, 
+                       int numPlanes,int numSfGrps,int natm_nl,int natm_nl_grp_max);
+		entry void computeZ(PPDummyMsg *dmsg);
+		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],
+			complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
+		entry void sumEnergies(double energy);
+		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
+		entry void setEnlCookie(EnlCookieMsg *m);	
+	};
+
+	array [2D] CP_State_RealSpacePlane {
+		entry CP_State_RealSpacePlane(size2d planeSize, int numG, int numR);
+		entry void doFFT(RSFFTMsg *);
+		entry [nokeep] void doProduct(ProductMsg *m);
+		entry void doProduct(int size, double data[size]);
+		entry void setNumPlanesToExpect(int num);
+		entry void printData();
+		entry void resumeProduct(RSDummyResume *msg);
+		entry void init(ProductMsg *m);
+	};
+
+	array [1D] CP_Rho_RealSpacePlane: NormalSlabArray {	
+		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool, ComlibInstanceHandle);
+		entry void acceptDensity(CkReductionMsg *m);
+		entry void acceptDensity(int size, double arr[size], int y);
+		entry void acceptEnergyForSumming(int n, complex arr[n], int);
+		entry void resumeThread (PPDummyMsg *dmsg);
+		entry void startTranspose();
+	};
+
+
+	array [1D] CP_Rho_GSpacePlane: NormalSlabArray {
+		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool, ComlibInstanceHandle);
+		entry void acceptData(int n, complex arr[n], int, int, int);
+		entry void recvProcessedPart(int n, complex pts[n], int pos);
+	};
+
+	array [2D] CP_Rho_GSpacePlaneHelper {
+		entry CP_Rho_GSpacePlaneHelper(int, size2d, int);
+		entry void recvRhoGPart(int n, complex points[n]);
+	};
+
+        array [3D] StructureFactor {
+	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
+	        entry void acceptDestination(int nsend, int destinations[nsend]);
+         	entry void computeSF(SFDummyMsg *msg);
+		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
+	};
+
+
+	array [2D] Ortho{
+
+		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void acceptSectionLambda(CkReductionMsg *msg);
+		entry void resume();
+		entry void S_to_T(CkReductionMsg *msg); 	
+
+		entry Ortho();
+		entry Ortho(int s_grain, CProxySection_PairCalculator pcProxy, CProxySection_PairCalculator pcLambdaProxy);
+		entry void start_calc(CkReductionMsg *msg);
+		entry void do_iteration();
+		entry void step_2();
+		entry void step_3();
+		entry void error_step();
+		entry void collect_results();
+		entry void print_results();
+  		entry void collect_error(CkReductionMsg *msg);
+		entry void ready();
+      };
+
+	group GSMap : CkArrayMap {
+		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);
+	};
+	
+	group RSMap : CkArrayMap {
+		entry RSMap();
+	};
+	
+	group SCalcMap: CkArrayMap {
+		entry SCalcMap(int, int, int, int, int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);
+	};
+	group FFTcache {
+		entry FFTcache(size2d, int);
+	};
+
+	group StructFactCache {
+		entry void acceptStructFact(StructFactorMsg *msg);
+
+		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max);
+	};
+
+	group AtomsGrp {
+		entry AtomsGrp(int natm, int natm_nl,Atom atoms[natm]);
+		entry void contributeforces(double pot_ewald);
+		entry void zeroforces();
+                entry void StartRealspaceForces();
+                entry void recvContribute(CkReductionMsg *);
+	};
+
+	group CPcharmParaInfoGrp {
+		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
+	};
+
+	group EnergyGroup {
+		entry EnergyGroup();
+		entry void updateEnergies(EnergyStruct es);
+	};
+	
+
+};

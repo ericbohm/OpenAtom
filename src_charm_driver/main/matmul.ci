@@ -1,0 +1,18 @@
+module matmul {
+	message mm_matrix_data{
+		double data[];
+	};
+	array [2D] matmul {
+		entry matmul();
+		/* chare array size is n * n elements,
+		 * Each has a chunk of chunksize * chunksize elements*/
+		entry matmul(int n, int chunksize, CkCallback cb);
+//		entry matmul(int n, int chunksize, CkCallback cb,
+//		   CkGroupID gid);
+//		entry matmul(int n, int chunksize, CkCallback cb,
+//		   CProxySection_matmul row, CProxySection_matmul col);
+		entry void receive_A(mm_matrix_data *msg);
+		entry void receive_B(mm_matrix_data *msg);
+//		entry void abort();
+	};
+}

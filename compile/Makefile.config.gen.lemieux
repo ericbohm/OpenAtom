@@ -1,0 +1,26 @@
+#==================================================================
+# General definitions 
+
+
+OPTS = -O3 
+
+F_COMPILER  = f77 $(OPTS)
+CPAIMD      = ..
+FFT_HOME    = /usr/users/0/martyna/fftw
+MYMATH_HOME = ../src_mathlib
+OPT_FORT    = -DFORTRANUNDERSCORE
+
+# Blas/Lapack/Eispack by fortran
+#BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
+#LAPACK_FORT  = $(MYMATH_HOME)/lapack_routines.h
+EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
+#MATH_LIB     = 
+
+# Blas by vendor library 
+BLAS_FORT   = $(MYMATH_HOME)/no_blas_routines.h
+LAPACK_FORT = $(MYMATH_HOME)/no_lapack_routines.h
+#EISPACK_FORT = $(MYMATH_HOME)/no_eispack_routines.h
+MATH_LIB    = -lfor -lcxml
+#-L/usr/local/packages/ATLAS/lib -lf77blas -llapack -latlas 
+
+#==================================================================

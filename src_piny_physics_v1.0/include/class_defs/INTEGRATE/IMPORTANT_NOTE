@@ -1,0 +1,3 @@
+1) If you make a change to class in directory NAME, you
+   are required to ''touch allclass_name.h'' for the dependencies
+   in the Makefile to function properly.

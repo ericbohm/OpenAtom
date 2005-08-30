@@ -1,0 +1,5 @@
+tar -cvf leanCP.tar doc compile src_charm_driver src_piny_physics_v1.0 \
+                    code_utils CVS include  src_mathlib \
+                    binary/CVS binary/DATABASE binary/Timings \
+                    binary/clean_water binary/water* binary/silicon*
+gzip leanCP.tar
