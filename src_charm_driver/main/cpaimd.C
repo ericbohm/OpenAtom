@@ -266,7 +266,7 @@ main::main(CkArgMsg *m) {
     if(config.gspacesum)
       gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
 
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, 1000000, mCastGrpId, config.gspacesum );
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId, config.gspacesum );
 
     CkArrayIndex2D myindex(0, 0);
 
@@ -275,7 +275,7 @@ main::main(CkArgMsg *m) {
 
     bool asymm_gspacesum=false; // not supported yet
 
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_Ortho::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, 1000000, mCastGrpId, asymm_gspacesum );
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_Ortho::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
     
   //-------------------------------------------------------------
   // Create stuff for ortho which PC invokes?
@@ -602,7 +602,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     if(config.useCommlib) {
         // Set some com strategy of Sameer
         ssInstance = CkGetComlibInstance();
-        StreamingStrategy *strat = new StreamingStrategy(0.2,5);
+        StreamingStrategy *strat = new StreamingStrategy(0.2,10);
         //strat->enableShortArrayMessagePacking();
         ssInstance.setStrategy(strat);
         
