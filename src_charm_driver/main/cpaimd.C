@@ -189,6 +189,7 @@ main::main(CkArgMsg *m) {
      traceRegisterUserEvent("VksofRFFT", VksofRFFT_);
      traceRegisterUserEvent("DoFFTContribute", DoFFTContribute_);
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
+     traceRegisterUserEvent("Scalcmap", Scalcmap_);
      traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
      Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
      Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
@@ -485,7 +486,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
     CkArrayOptions gSpaceOpts;
     gSpaceOpts.setMap(gsMap);
-    //    bool **structgs=create_gspace_struct_table(nstates,sizeX, gsMap.ckGetGroupID());
+
     gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ, gSpacePPC, 
                                                           realSpacePPC, 
                                                           config.sGrainSize, gSpaceOpts);
@@ -536,12 +537,15 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     for(int j=0;j<nplanes;j+=gSpacePPC){   
       listpe[j]= new int[nstates];
       nsend[j]=0;
+//      GSMap gmap(sim->nplane_x, sim->lines_per_plane, sim->pts_per_plane);
       if (j < config.low_x_size || ((j > config.high_x_size) &&(!doublePack))) 
 	{
 	  for(int i=0;i<nstates;i++)    
 	    {
 
 	      listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
+//	      listpe[j][i]=gmap.slowprocNum(0, CkArrayIndex2D(i,j));
+//	      listpe[j][i]=gmap.procNum(0, CkArrayIndex2D(i,j));
 //	      CkPrintf("[%d %d] pe %d\n",j,i,listpe[j][i]);
 	    }
 

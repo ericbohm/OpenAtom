@@ -116,10 +116,46 @@ int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
  * The next two functions are needed to implement a mapping strategy different
  * from the default strategy.
  */
+void GSMap::makemap()
+{
+    int numPlanes=0;
+    if(config.doublePack) 
+	numPlanes = sizeX/4;
+    else
+	numPlanes = sizeX/2;
+
+    for(int state = 0; state < config.nstates; state++){
+      for (int plane = 0; plane < numPlanes; plane++) {
+	    CkArrayIndex2D idx2d(state,plane);
+//	    maptable->put(intdual(state,plane))=slowprocNum(0,idx2d);
+//	    CkPrintf("mapping [%d %d] as to pe %d based on slowprocnums %d\n",state,plane,maptable->get(intdual(state,plane)),slowprocNum(0,idx2d));
+      }
+    }
+}
+
+// this one uses a lookup table built by calling the slow version
+/*
+int GSMap::procNum(int hdl, const CkArrayIndex &idx)
+{
+    CkArrayIndex2D &idx2d = *(CkArrayIndex2D *)&idx;
+    if(maptable==NULL)
+    {
+	int numPlanes=0;
+	if(config.doublePack) 
+	    numPlanes = sizeX/4;
+	else
+	    numPlanes = sizeX/2;
+	maptable= new CkHashtableT<intdual,int> (numPlanes*config.nstates); 
+	makemap();
+    }
+    return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+}
+*/
 
 //FOOBAR : Breaking planes per chare. They never worked anyway and a
 //cleanup was really necessary (-Sameer 04/05)
 
+//int GSMap::slowprocNum(int arrayHdl, const CkArrayIndex2D &idx2d)
 int GSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
 {
   CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
@@ -217,9 +253,61 @@ inline double scalc_load(int x, int numplanes, double *load) {
   return *load;
 } 
 
+
+// this one uses a lookup table built by calling the slow version
 int SCalcMap::procNum(int hdl, const CkArrayIndex &idx)
 {
     CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&idx;
+    int intidx[2];
+    memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+    if(maptable==NULL)
+    {
+	int calcchunks=max_states/gs;
+	maptable= new CkHashtableT<intdual,int> (nplane_x*calcchunks*calcchunks); // times blkSize, but its always 1
+	/* that blkSize comment is there just in case someone does something
+	 * with blksize ever they can find this reference in a search */
+	makemap();
+    }
+    return maptable->get(intdual(intidx[0], intidx[1]));
+}
+
+void SCalcMap::makemap()
+{
+
+  if(symmetric)
+    for(int numX = 0; numX < nplane_x; numX++){
+      for (int s1 = 0; s1 < max_states; s1 += gs) {
+	for (int s2 = s1; s2 < max_states; s2 += gs) {
+	    CkArrayIndex4D idx4d(numX,s1,s2,0);
+	    int intidx[2];
+	    memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+//	    CkPrintf("mapping [%d %d %d %d %d] as [%d %d] to pe %d based on slowprocnums %d\n",numX,s1,s2,0,symmetric,intidx[0],intidx[1],maptable->get(intdual(intidx[0],intidx[1])),slowprocNum(0,idx4d));
+	}
+      }
+    }
+  else
+      for(int numX = 0; numX < nplane_x; numX++){
+	  for (int s1 = 0; s1 < max_states; s1 += gs) {
+	      for (int s2 = 0; s2 < max_states; s2 += gs) {
+		  CkArrayIndex4D idx4d(numX,s1,s2,0);
+		  int intidx[2];
+		  memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+//		  CkPrintf("mapping [%d %d %d %d %d] as [%d %d] to pe %d based on slowprocnums %d\n",numX,s1,s2,0,symmetric,intidx[0],intidx[1],maptable->get(intdual(intidx[0],intidx[1])),slowprocNum(0,idx4d));
+	      }
+	  }
+      }
+}
+
+
+int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
+{
+//    CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&idx;
+//    CkPrintf("scalc map call for [%d %d %d %d] on pe %d\n", idx4d.index[0],idx4d.index[1],idx4d.index[2],idx4d.index[3],CkMyPe());
+#ifndef CMK_OPTIMIZE
+      double StartTime=CmiWallTimer();
+#endif
   
     //Here maxY is the max number of planes;
     int planeid = idx4d.index[0];
@@ -288,14 +376,20 @@ int SCalcMap::procNum(int hdl, const CkArrayIndex &idx)
 
               //if(CkMyPe() == 0)
               //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
-              
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
+#endif
               delete [] load;
 	    return pe;
+
 	  }
         }
       }
     
     delete [] load;
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
+#endif
     return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7+idx4d.index[3])%CkNumPes();    
 
 }

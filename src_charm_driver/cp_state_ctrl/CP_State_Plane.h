@@ -85,9 +85,13 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void doIFFT ();
 	void readFile();
         bool integrateForces ();
+	// for experimental barrier
+	bool allDoneIFFT() {return allgdoneifft;}
+	void gdoneIFFT(CkReductionMsg *msg);
         int first_step;
 
  private:
+	bool allgdoneifft;
 	bool doneDoingIFFT;
 	bool initialized;
 	int iteration;

@@ -17,6 +17,7 @@
 #include "StreamingStrategy.h"
 #include "pairCalculator.h"
 #include "fftlib.h"
+#include "ckhashtable.h"
 
 #define LOAD_BALANCE_STEP 10
 
@@ -39,6 +40,36 @@ class main : public Chare {
 //============================================================================
 
 
+//helper class for map hashtables copied from femrefine.C,  thanks Sayantan
+class intdual{
+ private:
+    int x,y;
+ public:
+    intdual(int _x,int _y){
+	if(_x <= _y){
+	    x = _x; y=_y;
+	}else{
+	    x = _y; y= _x;
+	}
+    }
+    inline int getx(){return x;};
+    inline int gety(){return y;};
+    inline CkHashCode hash() const {
+	return (CkHashCode)(x+y);
+    }
+    static CkHashCode staticHash(const void *k,size_t){
+	return ((intdual *)k)->hash();
+    }
+    inline int compare(intdual &t) const{
+	return (t.getx() == x && t.gety() == y);
+    }
+    static int staticCompare(const void *a,const void *b,size_t){
+	return ((intdual *)a)->compare((*(intdual *)b));
+    }
+};
+
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -49,18 +80,37 @@ class GSMap: public CkArrayMap {
   double *lines_per_plane;
   double *pts_per_plane;
   double state_load;
+  CkHashtableT<intdual, int> *maptable;
  public:
   GSMap() { state_load = 0.0; }
   GSMap(int _nplane_x, double *_lines_per_plane, double *_pts_per_plane): 
         nplane_x(_nplane_x)   
-    { state_load = 0.0; 
-    lines_per_plane= new double[nplane_x];
-    pts_per_plane= new double[nplane_x];
-    memcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
-    memcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
-    }
+      { 
+	  state_load = 0.0; 
+	  lines_per_plane= new double[nplane_x];
+	  pts_per_plane= new double[nplane_x];
+	  memcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
+	  memcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
+	  maptable=NULL;
+      }
   int procNum(int, const CkArrayIndex &);
+//  int slowprocNum(int, const CkArrayIndex2D &);
+  void makemap();
   void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
+    void pup(PUP::er &p)
+	{
+	    CkArrayMap::pup(p);
+	    p|nplane_x;
+	    p|state_load;
+	    maptable=NULL;
+	    if (p.isUnpacking()) {
+		lines_per_plane= new double[nplane_x];
+		pts_per_plane= new double[nplane_x];
+	    }	    
+	    p(lines_per_plane,nplane_x);
+	    p(pts_per_plane,nplane_x);
+	}
+
   ~GSMap(){
     delete [] lines_per_plane;
     delete [] pts_per_plane;
@@ -90,13 +140,14 @@ class SCalcMap : public CkArrayMap {
   int nplane_x;
   double *lines_per_plane;
   double *pts_per_plane;
-    int max_states, max_planes, gs;
-    CmiBool symmetric;
-    double totalload;
+  CkHashtableT<intdual, int> *maptable;
+  int max_states, max_planes, gs;
+  CmiBool symmetric;
+  double totalload;
     
  public:
     
-    SCalcMap(int nstates, int nplanes, int gs, CmiBool flag, int _nplane_x, 
+    SCalcMap(int nstates, int nplanes,  int gs, CmiBool flag, int _nplane_x, 
              double *_lines_per_plane, double *_pts_per_plane) { 
         this->gs = gs;
         max_states = nstates;
@@ -108,13 +159,34 @@ class SCalcMap : public CkArrayMap {
 	pts_per_plane= new double[nplane_x];
 	memcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
 	memcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
+	maptable=NULL;
     }
     void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
     ~SCalcMap(){
       delete [] lines_per_plane;
       delete [] pts_per_plane;
     }
+    void pup(PUP::er &p)
+	{
+	    CkArrayMap::pup(p);
+	    p|nplane_x;
+	    p|max_states;
+	    p|max_planes;
+	    p|gs;
+	    p|symmetric;
+	    p|totalload;
+	    maptable=NULL;
+	    if (p.isUnpacking()) {
+		lines_per_plane= new double[nplane_x];
+		pts_per_plane= new double[nplane_x];
+	    }	    
+	    p(lines_per_plane,nplane_x);
+	    p(pts_per_plane,nplane_x);
+	}
+    void makemap();
     int procNum(int, const CkArrayIndex &);
+//    int slowprocNum(int, const CkArrayIndex &);
+    int slowprocNum(int, const CkArrayIndex4D &);
 };
 //============================================================================
 
@@ -179,6 +251,7 @@ class CPcharmParaInfoGrp: public Group {
 #define AcceptStructFact_  162
 //200-300 reserved for paircalculator
 #define IntegrateModForces_  1000
+#define Scalcmap_            2000
 //============================================================================
 
 

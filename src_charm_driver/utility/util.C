@@ -752,6 +752,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int ibinary_opt = sim->ibinary_opt;
     int sizeY = sim->sizeY;
     int sizeZ = sim->sizeZ;
+    int doublePack = config.doublePack;
 
 //============================================================================
 // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
@@ -808,12 +809,21 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
                       istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
 		      kx_str_lgrp,kx_end_lgrp,ky_str_lgrp,ky_end_lgrp);
 
+   
+
     int nlines_max=0;
     for(int i=0;i<nplane;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
     int **index_tran_upack = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
+   
+    int yspace = sizeX;
+    if(doublePack){yspace=sizeX/2+1;}
     for(int igrp=0;igrp<nplane;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
+#ifdef _NEW_FFT_WAY_
         index_tran_upack[igrp][j] = kx_line[i]*sizeY + ky_line[i];
+#else
+        index_tran_upack[igrp][j] = kx_line[i] + ky_line[i]*yspace;
+#endif
       }//endfor
     }//endfor
 

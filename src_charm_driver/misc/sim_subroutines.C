@@ -473,11 +473,17 @@ FFTcache::FFTcache(size2d planeSIZE, int ArraySize){
 	
 	bwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
                        FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+#ifdef _NEW_FFT_WAY_   
 	fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
                        FFTW_MEASURE | FFTW_OUT_OF_PLACE|FFTW_USE_WISDOM);
-	
         bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
                         FFTW_MEASURE | FFTW_OUT_OF_PLACE|FFTW_USE_WISDOM);
+#else
+	fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
+                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+        bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
+                        FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+#endif	
 
         int sizeZ = planeSize[0];
 	fwdYPlan = fftw_create_plan(sizeZ,FFTW_FORWARD, 
@@ -515,9 +521,10 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 //==============================================================================
 // Case doublePack && config.inPlaceFFT
 // 
-   
+
  if(config.doublePack && config.inPlaceFFT) {
       data = new double[pSize];
+#ifdef _NEW_FFT_WAY_   
       // FFT along Y direction : Y moves with stride 1 through memory
       fftw(fwdZ1DdpPlan,    // y-plan (label lies)
   	   nplane_x,        // how many < sizeX/2 + 1
@@ -539,6 +546,32 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
         realArr[i] = data[i];
         data[i]    = data[i]*data[i];
       }//endfor
+#else
+      int stride = sizeX/2+1;
+      // FFT along Y direction : Y moves with stride sizex/2+1 through memory
+      fftw(fwdZ1DdpPlan,    // y-plan (label lies)
+  	   nplane_x,        // how many < sizeX/2 + 1
+	   (fftw_complex *)(planeArr),//input data
+ 	   stride,          // stride betwen elements (y is inner)
+  	   1,               // array separation (nffty elements)
+	   NULL,0,0);       // output data is input data
+      // fftw only gives you one sign for real to complex : so do it yourself
+      for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
+      rfftwnd_complex_to_real(fwdX1DdpPlan,
+			      planeSize[0],    // how many
+			      (fftw_complex *)planeArr, 
+                              1,               // stride (x is inner)
+                              stride,          // array separation
+    		              NULL,0,0);       // output array is real 
+      // x is now the inner index as fftw has transposed for us
+      double *realArr = reinterpret_cast<double*> (planeArr);
+      for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
+       for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+         data[j] = realArr[(j+i2)];
+         data[j] = data[j]*data[j];
+       }//endfor
+      }//endfor
+#endif
 
     return data;
 
@@ -552,29 +585,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
      CkPrintf("Fix the non-double pack FFT\n");
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
-     //All data from planeArr
-     size2d rplaneSize(planeSize[0], planeSize[1]);
-
-	for (int x = 0; x < planeSize[1]; x++){
-  	  fftw(fwdZ1DPlan,1,(fftw_complex *)(planeArr), 
-               planeSize[1], 1,NULL, 0, 0);
-	}//endfor
-    // now the 1D ffts in the X direction
-	fftw(fwdX1DPlan,planeSize[0],
- 	     (fftw_complex *)planeArr, 1, planeSize[1],
-	      NULL, 0, 0);
-    // calculate the magnitudes here
-       data = new double[planeSize[0] * planeSize[1]];
-       for (int z = 0; z < planeSize[0]; z++){
-	 for (int x = 0; x < planeSize[1]; x++){
-   	   data[z*planeSize[1]+x] = planeArr[z*planeSize[1]+x].getMagSqr();
-	 }//endfor
-       }//endfor
-
-     return data;
-
  }//endif
-
 
  return data;                
 
@@ -633,19 +644,6 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 // Case : doublePack  and inplace 
 
   if(config.doublePack && config.inPlaceFFT){
-
-    //===================================================
-    // do the backward fft in the x direction first
-    // after multiplying by vks. Be careful to store
-    // the plane with a little extra spacing to account
-    // for the fact that fftw stores a 2 more 
-    // doubles then it needs to store so the g=0 and g=N/2
-    // are full complex numbers rather restricted to a real
-    // part.
-    //===================================================
-     double  *tempFFT  = new double[planeSize[0]*(sizeX+2)];
-     complex *comarr   = planeArr;
-     double  *realArr  = reinterpret_cast<double*> (planeArr);
 #ifdef _CP_DEBUG_VKS_RSPACE_
      if(ind_state==0 && ind_plane==0){
         FILE *fp = fopen("vks_state0_plane0_real.out","w");
@@ -654,25 +652,40 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
         }//endfor
      }//endif
 #endif
+
+     double  *realArr  = reinterpret_cast<double*> (planeArr);
+#ifdef _NEW_FFT_WAY_   
+     double  *tempFFT  = new double[planeSize[0]*(sizeX+2)];
      for (int i = 0; i < pSize; i++) {tempFFT[i] = realArr[i]*vks[i];}
      rfftwnd_real_to_complex(bwdX1DdpPlan,
 			planeSize[0],       // these many 1D ffts
 			tempFFT, 1,sizeX,   // x is inner here
 			(fftw_complex *)planeArr,
                          planeSize[0],1);  // y is inner here
-     delete [] tempFFT;
      // fftw has tranposed for us (x is outer, y is inner)
      for (int i=0; i<nplane_x*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-
-     //===================================================
-     // Now do the backward fft in the y direction, 
-     //    but for a restricted set of x
-     //===================================================
      fftw(bwdZ1DdpPlan,
 	     nplane_x, // these many 1D ffts
 	     (fftw_complex *)planeArr, 
   	     1,planeSize[0],NULL,0,0);
-
+     delete [] tempFFT;
+#else
+     int stride = sizeX/2+1;
+     for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
+       for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+         realArr[(j+i2)] = realArr[(j+i2)]*vks[j];
+       }//endfor
+     }//endfor
+     rfftwnd_real_to_complex(bwdX1DdpPlan,
+			planeSize[0],          // these many 1D ffts
+			realArr,1,(sizeX+2),   // x is inner here
+                        NULL,0,0);            
+     for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
+     fftw(bwdZ1DdpPlan,
+	     nplane_x, // these many 1D ffts
+	     (fftw_complex *)planeArr, 
+  	     stride,1,NULL,0,0);
+#endif
   }//endif : double pack and in-place
 
 //==============================================================================
