@@ -19,14 +19,14 @@ LIB      = $(ECODE)/libPinyInterface.a
 #--------------------------
 # compiler
 #--------------------------
-CHARMC   = $(CHARM_HOME)/bin/charmc $(OPTS)
+CHARMC   = $(CHARM_HOME)/bin/charmc 
 
 FC       = $(CHARMC) -f77
 CC       = $(CHARMC) 
 LC       = $(CHARMC)
-OPT      = 
-OPT_CARE = 
-OPT_GRP  = 
+OPT      = $(OPTS)
+OPT_CARE = -O2
+OPT_GRP  = -O2
 #CFLAGS   = -DLINUX -fno-second-underscore 
 #FFLAGS   = -DLINUX -fno-second-underscore 
 CFLAGS   = 

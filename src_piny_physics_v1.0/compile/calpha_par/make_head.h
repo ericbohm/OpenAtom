@@ -24,14 +24,14 @@ LIB      = $(ECODE)/libPinyInterface.a
 #--------------------------
 # compiler
 #--------------------------
-CHARMC   = $(CHARMBASE)/bin/charmc $(OPTS)
+CHARMC   = $(CHARMBASE)/bin/charmc 
 
 FC       = $(CHARMC) -f77
 CC       = $(CHARMC) 
 LC       = $(CHARMC)
-OPT      = 
-OPT_CARE = 
-OPT_GRP  = 
+OPT      = $(OPTS) 
+OPT_CARE = -O2 
+OPT_GRP  = -O2 
 TFLAGS   = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
 #CFLAGS   = -DLINUX -fno-second-underscore 
 #FFLAGS   = -DLINUX -fno-second-underscore 

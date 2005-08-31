@@ -29,12 +29,12 @@ CHARMC   = $(CHARMBASE)/bin/charmc
 FC       = $(CHARMC) -f77
 CC       = $(CHARMC) 
 LC       = $(CHARMC)
-OPT_FULL = $(OPTS)
-OPT_CARE = -O2 $(DBG_FLAG)
-OPT_GRP  = -O2 $(DBG_FLAG)
+OPT_FULL = $(OPTS) 
+OPT_CARE = -O2 
+OPT_GRP  = -O2 
 TFLAGS   = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
-CFLAGS   = 
-FFLAGS   = 
+CFLAGS   = $(DBG_FLAG)
+FFLAGS   = $(DBG_FLAG) 
 LIBS     = -lm 
 
 
