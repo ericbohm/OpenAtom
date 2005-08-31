@@ -33,8 +33,8 @@ OPT_FULL = $(OPTS)
 OPT_CARE = -O2 
 OPT_GRP  = -O2 
 TFLAGS   = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
-CFLAGS   = $(DBG_FLAG)
-FFLAGS   = $(DBG_FLAG) 
+CFLAGS   = 
+FFLAGS   =  
 LIBS     = -lm 
 
 
