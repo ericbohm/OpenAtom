@@ -1,0 +1,33 @@
+HOME		    = /home/y01/bohm
+#===============================================================================
+#CHARMBASE           = $(HOME)/charm
+CHARMBASE           = $(HOME)/charm
+CHARMC              = $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) -DNEW_DECOMP
+CPAIMD_DRV_SRC      = $(CPAIMD)/src_charm_driver
+CPAIMDDP_DRV_SRC    = $(CPAIMD)/srcdp_charm_driver
+MAKE_CPAIMD_DRV_INC = $(CPAIMD)/src_charm_driver/compile
+MAKE_CPAIMDDP_DRV_INC = $(CPAIMD)/srcdp_charm_driver/compile
+CHARMLIB            = -module CkMulticast -module CkSparseContiguousReducer \
+                      -module ckPairCalculator \
+                      -L$(FFT_HOME)/lib -module commlib -lfftw \
+                      -lrfftw -lm -module fftlib
+#                      -module DummyLB -module RefineLB -module TopoLB -module TopoCentLB -module RefineCommLB \
+#		       -module MetisLB \
+
+#===============================================================================
+
+CPAIMD_DRV_OBJS = \
+      $(CPAIMD_DRV_SRC)/compile/cpaimd.o  \
+      $(CPAIMD_DRV_SRC)/compile/groups.o  \
+      $(CPAIMD_DRV_SRC)/compile/CP_State_GSpacePlane.o \
+      $(CPAIMD_DRV_SRC)/compile/CP_State_ParticlePlane.o  \
+      $(CPAIMD_DRV_SRC)/compile/CP_State_RealSpace.o \
+      $(CPAIMD_DRV_SRC)/compile/CP_Rho_RealSpacePlane.o \
+      $(CPAIMD_DRV_SRC)/compile/CP_Rho_GSpacePlane.o  \
+      $(CPAIMD_DRV_SRC)/compile/ortho.o \
+      $(CPAIMD_DRV_SRC)/compile/util.o  \
+      $(CPAIMD_DRV_SRC)/compile/sim_subroutines.o \
+      $(CPAIMD_DRV_SRC)/compile/map.o
+
+#===============================================================================
+
