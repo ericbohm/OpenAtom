@@ -290,7 +290,7 @@ main::main(CkArgMsg *m) {
     matmulProxy1 = CProxy_matmul::ckNew(opts);
     matmulProxy2 = CProxy_matmul::ckNew(opts);
     matmulProxy3 = CProxy_matmul::ckNew(opts);
-    int init_pe = 1;
+    int init_pe = 0;
     CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
     orthoProxy.ckSetReductionClient(orthoReduction);
     
