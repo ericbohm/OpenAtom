@@ -27,6 +27,7 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 
 
+
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -473,18 +474,10 @@ FFTcache::FFTcache(size2d planeSIZE, int ArraySize){
 	
 	bwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
                        FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-#ifdef _NEW_FFT_WAY_   
-	fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-                       FFTW_MEASURE | FFTW_OUT_OF_PLACE|FFTW_USE_WISDOM);
-        bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
-                        FFTW_MEASURE | FFTW_OUT_OF_PLACE|FFTW_USE_WISDOM);
-#else
 	fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
                        FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
         bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
                         FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-#endif	
-
         int sizeZ = planeSize[0];
 	fwdYPlan = fftw_create_plan(sizeZ,FFTW_FORWARD, 
                                  FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
@@ -522,31 +515,8 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 // Case doublePack && config.inPlaceFFT
 // 
 
- if(config.doublePack && config.inPlaceFFT) {
+  if(config.doublePack && config.inPlaceFFT) {
       data = new double[pSize];
-#ifdef _NEW_FFT_WAY_   
-      // FFT along Y direction : Y moves with stride 1 through memory
-      fftw(fwdZ1DdpPlan,    // y-plan (label lies)
-  	   nplane_x,        // how many < sizeX/2 + 1
-	   (fftw_complex *)(planeArr),//input data
- 	   1,               // stride betwen elements (y is inner)
-  	   planeSize[0],    // array separation (nffty elements)
-	   NULL,0,0);       // output data is input data
-      // fftw only gives you one sign for real to complex : so do it yourself
-      for(int i=0;i<nplane_x*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-      rfftwnd_complex_to_real(fwdX1DdpPlan,
-			      planeSize[0],     // how many
-			      (fftw_complex *)planeArr, 
-                              planeSize[0],     // stride (y is inner)
-                              1,                // array separation
-    		              data,1,sizeX); // output array is real with x inner
-      // x is now the inner index as fftw has transposed for us
-      double *realArr = reinterpret_cast<double*> (planeArr);
-      for(int i=0;i<pSize;i++){
-        realArr[i] = data[i];
-        data[i]    = data[i]*data[i];
-      }//endfor
-#else
       int stride = sizeX/2+1;
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
       fftw(fwdZ1DdpPlan,    // y-plan (label lies)
@@ -567,15 +537,12 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       double *realArr = reinterpret_cast<double*> (planeArr);
       for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
        for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-         data[j] = realArr[(j+i2)];
-         data[j] = data[j]*data[j];
+         data[j] = realArr[(j+i2)]*realArr[(j+i2)];
        }//endfor
       }//endfor
-#endif
-
     return data;
 
- }//endif : 
+  }//endif : 
 
 //==============================================================================
 // Case !doublePack && config.inPlaceFFT
@@ -623,9 +590,11 @@ void RealStateSlab::destroy() {
 
 //==============================================================================
 //                             vks : z is chare array index
-//                                     x is inner index 
-//                                     y is outer index
-//                                     chare[z].data[x+y*sizeX]
+//                                   x is inner index 
+//                                   y is outer index
+//                                   chare[z].data[x+y*sizeX]
+//
+//          vks is from a message and should not be modified
 //
 //                           planeArr : chare[z].data[y+x*sizeY]
 //==============================================================================
@@ -639,37 +608,29 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 
    int pSize    = planeSize[0] * sizeX;
    int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+//==============================================================================
+// Output
+
+#ifdef _CP_DEBUG_VKS_RSPACE_
+   if(config.doublePack){
+     if(ind_state==0 && ind_plane==0){
+        double *realArr = reinterpret_cast<double*> (planeArr);
+        FILE *fp = fopen("vks_state0_plane0_real.out","w");
+          for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
+            for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+              fprintf(fp,"%g %g\n",vks[j],realArr[(j+i2)]);
+            }//endfor
+          }//endfor
+        fclose(fp);
+     }//endif
+   }//endif
+#endif
 
 //==============================================================================
 // Case : doublePack  and inplace 
 
   if(config.doublePack && config.inPlaceFFT){
-#ifdef _CP_DEBUG_VKS_RSPACE_
-     if(ind_state==0 && ind_plane==0){
-        FILE *fp = fopen("vks_state0_plane0_real.out","w");
-        for(int i=0;i<pSize;i++){
-          fprintf(fp,"%g %g\n",vks[i],realArr[i]);
-        }//endfor
-     }//endif
-#endif
-
-     double  *realArr  = reinterpret_cast<double*> (planeArr);
-#ifdef _NEW_FFT_WAY_   
-     double  *tempFFT  = new double[planeSize[0]*(sizeX+2)];
-     for (int i = 0; i < pSize; i++) {tempFFT[i] = realArr[i]*vks[i];}
-     rfftwnd_real_to_complex(bwdX1DdpPlan,
-			planeSize[0],       // these many 1D ffts
-			tempFFT, 1,sizeX,   // x is inner here
-			(fftw_complex *)planeArr,
-                         planeSize[0],1);  // y is inner here
-     // fftw has tranposed for us (x is outer, y is inner)
-     for (int i=0; i<nplane_x*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-     fftw(bwdZ1DdpPlan,
-	     nplane_x, // these many 1D ffts
-	     (fftw_complex *)planeArr, 
-  	     1,planeSize[0],NULL,0,0);
-     delete [] tempFFT;
-#else
+     double *realArr = reinterpret_cast<double*> (planeArr);
      int stride = sizeX/2+1;
      for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
        for(int j=i*sizeX;j<(i+1)*sizeX;j++){
@@ -685,7 +646,6 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 	     nplane_x, // these many 1D ffts
 	     (fftw_complex *)planeArr, 
   	     stride,1,NULL,0,0);
-#endif
   }//endif : double pack and in-place
 
 //==============================================================================

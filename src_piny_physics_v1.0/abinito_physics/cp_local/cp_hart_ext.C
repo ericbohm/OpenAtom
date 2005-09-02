@@ -146,6 +146,7 @@ void CPLOCAL::CP_hart_eext_calc(
    }
 #endif
 
+   // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
    for(int iatm = 0; iatm < natm; iatm++){
       double arg_tmp = tpi*(hmati[1]*atoms[iatm].x + hmati[4]*atoms[iatm].y 
                           + hmati[7]*atoms[iatm].z);

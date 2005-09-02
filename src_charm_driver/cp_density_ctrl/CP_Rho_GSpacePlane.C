@@ -426,7 +426,7 @@ CP_Rho_GSpacePlaneHelper::CP_Rho_GSpacePlaneHelper(int sizeX, size2d sizeYZ,
     rho_gs.sizeY = sizeYZ[0];
     rho_gs.sizeZ = sizeYZ[1];
     rho_gs.xdim  = sizeX;
-   
+
     int ksize = rho_gs.xdim;
     int y, x, i = 0;
     for (y = 0; y < helperWidth; y++)

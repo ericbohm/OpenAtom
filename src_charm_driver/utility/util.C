@@ -427,13 +427,13 @@ void Config::print() {
 	          << "parlambda: " << parlambda << endl
 	          << "numSfGrps: " << numSfGrps << endl
 	          << "numSfDups: " << numSfDups << endl
-	      << "sfpriority: " << sfpriority << endl
-	      << "rsfftpriority: " << rsfftpriority << endl
-	      << "gsfftpriority: " << gsfftpriority << endl
-	      << "rsifftpriority: " << rsifftpriority << endl
-	      << "lambdapriority: " << lambdapriority << endl
-	      << "psipriority: " << psipriority << endl
-	      << "rhorpriority: " << rhorpriority << endl
+   	          << "sfpriority: " << sfpriority << endl
+	          << "rsfftpriority: " << rsfftpriority << endl
+	          << "gsfftpriority: " << gsfftpriority << endl
+	          << "rsifftpriority: " << rsifftpriority << endl
+	          << "lambdapriority: " << lambdapriority << endl
+	          << "psipriority: " << psipriority << endl
+	          << "rhorpriority: " << rhorpriority << endl
 		  << "rhogpriority: " << rhogpriority << endl;
 
         CkPrintf("\n");
@@ -482,6 +482,10 @@ void Config::readConfig(const char* fileName, Config &config,
     config.parlambda     = 0;
     config.numSfGrps     = 1;
     config.numSfDups     = 1;
+    config.gSpacePPC     = 1;
+    config.realSpacePPC  = 1;
+    config.rhoGPPC       = 1;
+    config.gSpaceNumChunks = 1;
     config.sfpriority=    10000000;
     config.rsfftpriority= 1000000;
     config.gsfftpriority= 1000000;
@@ -650,19 +654,19 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if (sizex % config.gSpacePPC != 0) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("x dimension should be divisible by gSpacePPC");
+      CkPrintf("x dimension should be divisible by gSpacePPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
     if (sizey % config.realSpacePPC != 0) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("y dimension should be divisible by realSpacePPC");
+      CkPrintf("y dimension should be divisible by realSpacePPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
     if (sizez % config.rhoGPPC != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("z dimension should be divisible by rhoGPPC");
+      CkPrintf("z dimension should be divisible by rhoGPPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
@@ -672,7 +676,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if (nstates_in % config.sGrainSize != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("number of states should be divisible by S matrix grain-size");
+      CkPrintf("number of states should be divisible by S matrix grain-size\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
@@ -693,7 +697,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.inPlaceFFT!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Non-place FFT code not is broken and not useful\n");
+      CkPrintf("Non-place in FFT code is broken and not useful\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -705,9 +709,10 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
-    if(config.gSpacePPC!=1 || config.rhoGPPC!=1 || config.realSpacePPC!=1){
+    if(config.gSpacePPC!=1 || config.rhoGPPC!=1 || config.realSpacePPC!=1 || 
+       config.gSpaceNumChunks!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The PPC have to be unity or the code is horribly\n");
+      CkPrintf("The PPC and NumChunks have to be unity or the code is horribly\n");
       CkPrintf("broken!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
@@ -819,11 +824,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     if(doublePack){yspace=sizeX/2+1;}
     for(int igrp=0;igrp<nplane;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
-#ifdef _NEW_FFT_WAY_
-        index_tran_upack[igrp][j] = kx_line[i]*sizeY + ky_line[i];
-#else
         index_tran_upack[igrp][j] = kx_line[i] + ky_line[i]*yspace;
-#endif
       }//endfor
     }//endfor
 
