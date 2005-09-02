@@ -173,19 +173,21 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     srcDim[1] = rho_rs.sizeX;
     dstDim[0] = rho_rs.sizeZ; // destination is CP_Rho_RealSpacePlane
     dstDim[1] = rho_rs.sizeX;
-    rhoIRX = new complex[rho_rs.size];
+    rhoIRX = (complex *) fftw_malloc(rho_rs.size*sizeof(complex));
     NormalFFTinfo fftinfos0(srcDim, 
                                     dstDim, false, rhoIRX, 
+
+
 				    COMPLEX_TO_COMPLEX, 1, 1);
-    rhoIRY = new complex[rho_rs.size];
+    rhoIRY = (complex *) fftw_malloc(rho_rs.size*sizeof(complex));
     NormalFFTinfo fftinfos1(srcDim, 
                                     dstDim, false, rhoIRY, 
 				    COMPLEX_TO_COMPLEX, 1, 1);
-    rhoIRZ = new complex[rho_rs.size];
+    rhoIRZ = (complex *) fftw_malloc(rho_rs.size*sizeof(complex));
     NormalFFTinfo fftinfos2(srcDim, 
                                     dstDim, false, rhoIRZ, 
 				    COMPLEX_TO_COMPLEX, 1, 1);
-    gradientCorrection = new complex [rho_rs.size];
+    gradientCorrection = (complex *) fftw_malloc(rho_rs.size*sizeof(complex));
     NormalFFTinfo fftinfos3(srcDim, 
 				    dstDim, false, gradientCorrection, 
 				    COMPLEX_TO_COMPLEX, 1, 1);
@@ -220,10 +222,10 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 //============================================================================
 CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane()
 {
-    delete [] rhoIRX;
-    delete [] rhoIRY;
-    delete [] rhoIRZ;
-    delete [] gradientCorrection;
+    fftw_free(rhoIRX);
+    fftw_free(rhoIRY);
+    fftw_free(rhoIRZ);
+    fftw_free(gradientCorrection);
 }
 //============================================================================
 

@@ -84,18 +84,18 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     dstDim[0] = rho_gs.sizeZ; // dst is CP_Rho_RealSpacePlane
     dstDim[1] = rho_gs.sizeX;
 
-    rhoIGX = new complex[rho_gs.size];
+    rhoIGX = (complex *) fftw_malloc(rho_gs.size*sizeof(complex));
     NormalFFTinfo fftinfos0(srcDim, dstDim, 
                                     true, rhoIGX, COMPLEX_TO_COMPLEX, 1, 1);
 
-    rhoIGY = new complex[rho_gs.size];
+    rhoIGY = (complex *) fftw_malloc(rho_gs.size*sizeof(complex));
     NormalFFTinfo fftinfos1(srcDim, dstDim, 
                                     true, rhoIGY, COMPLEX_TO_COMPLEX, 1, 1);
 
-    rhoIGZ = new complex[rho_gs.size];
+    rhoIGZ = (complex *) fftw_malloc(rho_gs.size*sizeof(complex));
     NormalFFTinfo fftinfos2(srcDim, dstDim, 
                                     true, rhoIGZ, COMPLEX_TO_COMPLEX, 1, 1);
-    gradientCorrection = new complex[rho_gs.size];
+    gradientCorrection = (complex *) fftw_malloc(rho_gs.size*sizeof(complex));
     NormalFFTinfo fftinfos3(srcDim, 
                                     dstDim, true, gradientCorrection,
 				    COMPLEX_TO_COMPLEX, 1, 1);
@@ -138,9 +138,9 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
 //============================================================================
 CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane()
 {
-    delete [] rhoIGX;
-    delete [] rhoIGY;
-    delete [] rhoIGZ;
+    fftw_free(rhoIGX);
+    fftw_free(rhoIGY);
+    fftw_free(rhoIGZ);
     delete [] k_x;
     delete [] k_y;
     delete [] k_z;
@@ -234,8 +234,9 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(RhoRtoGyFFT_, StartTime, CmiWallTimer());    
 #endif
-
-
+#ifdef CMK_VERSION_BLUEGENE
+	CmiNetworkProgressAfter(1);
+#endif
         CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
         double volumeFactor = ((double)(sim->vol)) / config.numFFTPoints;
 	for(int i=0; i<rho_gs.size; i++) {
@@ -261,13 +262,14 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif
-
         doFFT(0,0); //rhoIGX
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(RhoDivRhoXFFT_, StartTime, CmiWallTimer());    
 #endif
-
+#ifdef CMK_VERSION_BLUEGENE
+	CmiNetworkProgressAfter(1);
+#endif
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif
@@ -277,7 +279,9 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(RhoDivRhoYFFT_, StartTime, CmiWallTimer());    
 #endif
-
+#ifdef CMK_VERSION_BLUEGENE
+	CmiNetworkProgressAfter(1);
+#endif
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif

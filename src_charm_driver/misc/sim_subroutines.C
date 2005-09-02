@@ -455,7 +455,7 @@ FFTcache::FFTcache(size2d planeSIZE, int ArraySize){
         int nlines_max = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
         int psize      = nlines_max*planeSize[0];
 
-	fftData = new complex[psize]; 
+	fftData = (complex*) fftw_malloc(psize*sizeof(complex)); 
 
 	//Non Double Pack plans : 2 Y planes and 2 X plans.
 	fwdZ1DPlan = fftw_create_plan(planeSize[0], FFTW_FORWARD,  
@@ -574,7 +574,7 @@ void RealStateSlab::zeroOutPlanes() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::allocate() {
-  if(planeArr == NULL) {planeArr = new complex [size];}
+  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
 }
 //==============================================================================
 
@@ -583,7 +583,7 @@ void RealStateSlab::allocate() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::destroy() {
-  if(planeArr != NULL) {delete [] planeArr; planeArr=NULL;}
+  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
 }
 //==============================================================================
 
@@ -715,9 +715,9 @@ RhoRealSlab::~RhoRealSlab()
 {
 	fftwnd_destroy_plan(fft2dFwPlan);
 	fftwnd_destroy_plan(fft2dBwPlan);
-	//delete [] Vks;
-	delete density;
-	delete [] doFFTonThis;
+	//delete [] Vks;  // I wonder why this isn't deleted
+	fftw_free(density);
+	fftw_free(doFFTonThis);
 }
 //==============================================================================
 
@@ -731,7 +731,7 @@ complex *RhoRealSlab::doBwFFT()
         memcpy(density, doFFTonThis,  sizeX * sizeY * sizeof(complex));
      
 	int planeSize       = sizeX * sizeZ;
-        complex *fftResults = new complex[planeSize];
+        complex *fftResults = (complex *) fftw_malloc(planeSize*sizeof(complex));
 
         // do x-y plane fft in-place
         fftwnd_one(fft2dBwPlan, (fftw_complex *)fftResults, NULL);
@@ -783,11 +783,11 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 
 	rho_rs->size = rho_rs->sizeX * rho_rs->sizeZ;
 	rho_rs->xdim = rho_rs->sizeX;
-	rho_rs->Vks     = new complex[rho_rs->size]; 
-	rho_rs->density = new complex[rho_rs->size];
+	rho_rs->Vks     = (complex *) fftw_malloc(rho_rs->size*sizeof(complex)); 
+	rho_rs->density = (complex *) fftw_malloc(rho_rs->size*sizeof(complex));
 
 	//we copy the real densities into the real parts of these and do our stuff.
-	rho_rs->doFFTonThis = new complex[rho_rs->size];
+	rho_rs->doFFTonThis = (complex *) fftw_malloc(rho_rs->size*sizeof(complex));
 	rho_rs->ydim = 1;
 	rho_rs->zdim = rho_rs->sizeZ;
 	rho_rs->startx = 0;
@@ -807,7 +807,7 @@ RhoGSlab::~RhoGSlab()
 {
 	fftw_destroy_plan(fft1dFwPlan);
 	fftw_destroy_plan(fft1dBwPlan);
-	delete [] chunk;
+	fftw_free(chunk);
 }
 //==============================================================================
 
@@ -821,8 +821,8 @@ RhoGSlab::~RhoGSlab()
 void RhoGSlab::doBwFFT(int index){
 
     // do the line inv-fft
-    complex *temp1 = new complex[sizeY];
-    complex *temp2 = new complex[sizeY];
+    complex *temp1 = (complex *) fftw_malloc(sizeY*sizeof(complex));
+    complex *temp2 = (complex *) fftw_malloc(sizeY*sizeof(complex));
 
     int x, y;
     for (x = 0; x < sizeX; x++) {
@@ -833,8 +833,8 @@ void RhoGSlab::doBwFFT(int index){
       for (y = 0; y < sizeY; y++){chunk[y * sizeX + x] = temp1[y];}
     }//endfor
 
-    delete [] temp1;
-    delete [] temp2;
+    fftw_free(temp1);
+    fftw_free(temp2);
 }
 //==============================================================================
 
@@ -844,8 +844,8 @@ void RhoGSlab::doBwFFT(int index){
 //==============================================================================
 void RhoGSlab::doFwFFT() {
 
-    complex *temp1 = new complex[sizeY];
-    complex *temp2 = new complex[sizeY];
+    complex *temp1 = (complex *) fftw_malloc(sizeY*sizeof(complex));
+    complex *temp2 = (complex *) fftw_malloc(sizeY*sizeof(complex));
 
     // do the fwd-fft
     int y, x;
@@ -857,8 +857,8 @@ void RhoGSlab::doFwFFT() {
       for (y = 0; y < sizeY; y++){chunk[y * sizeX + x] = temp1[y];}
     }//endfor x
 
-    delete [] temp1;
-    delete [] temp2;
+    fftw_free(temp1);
+    fftw_free(temp2);
 
 }
 //==============================================================================
@@ -885,7 +885,7 @@ void initRhoGSlab(RhoGSlab *rho_gs, int xdim, int ydim, int zdim, int numRealSpa
 
 	// NOTE on in-memory  handling of the chunk:
 	// The chunk is handled as a series of x-z planes, with pencils in x direction
-	rho_gs->chunk = new complex[rho_gs->sizeY * rho_gs->sizeX];
+	rho_gs->chunk = (complex *) fftw_malloc(rho_gs->sizeY * rho_gs->sizeX*sizeof(complex));
 
 	rho_gs-> size = rho_gs->sizeX * rho_gs->sizeY;
 	/* complex *rho_g = rho_gs.chunk;*/

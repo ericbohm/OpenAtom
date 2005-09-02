@@ -278,7 +278,6 @@ main::main(CkArgMsg *m) {
 
     bool asymm_gspacesum=false; // not supported yet
 
-//    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_Ortho::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
     
   //-------------------------------------------------------------
