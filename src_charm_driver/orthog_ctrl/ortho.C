@@ -423,16 +423,9 @@ Ortho::acceptAllLambda(CkReductionMsg *msg) {
   fclose(fp);
 #endif
 
-  /* This is done before createPaircalc in cpaimd.C now
-    CkArrayIndex2D myindex(thisIndex.x, thisIndex.y);
-  CkCallback cb(CkIndex_CP_State_GSpacePlane::acceptLambda(NULL), 
-		myindex, thisProxy.ckGetArrayID());
-  */
-  // move load balancing and iteration control stuff here
-
-
   if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt)
     {
+	CkAbort("the gamma code is broken\n");
       // transform Tlambda = T*lambda: store in lambda
       double *scr = new double [nstates*nstates];
       memcpy(scr,lambda, nstates*nstates*sizeof(double));

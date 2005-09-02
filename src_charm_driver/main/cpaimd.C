@@ -267,6 +267,8 @@ main::main(CkArgMsg *m) {
     if(config.gspacesum)
       gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
 
+
+
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId, config.gspacesum );
 
     CkArrayIndex2D myindex(0, 0);
@@ -275,19 +277,20 @@ main::main(CkArgMsg *m) {
     int myPack=0;
 
     bool asymm_gspacesum=false; // not supported yet
-    orthoProxy = CProxy_Ortho::ckNew();
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_Ortho::acceptAllLambda(NULL), myindex, orthoProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
+
+//    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_Ortho::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
     
   //-------------------------------------------------------------
-  // Create stuff for ortho which PC invokes?
+  // Create stuff for ortho which PC invokes by section reduction
 
-
+    orthoProxy = CProxy_Ortho::ckNew();
     CkArrayOptions opts(0);
     opts.bindTo(orthoProxy);
     matmulProxy1 = CProxy_matmul::ckNew(opts);
     matmulProxy2 = CProxy_matmul::ckNew(opts);
     matmulProxy3 = CProxy_matmul::ckNew(opts);
-    int init_pe = 0;
+    int init_pe = 1;
     CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
     orthoProxy.ckSetReductionClient(orthoReduction);
     
