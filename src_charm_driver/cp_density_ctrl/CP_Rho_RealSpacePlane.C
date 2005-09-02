@@ -278,8 +278,17 @@ void CP_Rho_RealSpacePlane::doneFFT(){
                 rho_rs.Vks[i].im  = 0.0;
 	    }/*endfor*/
 #endif
+#ifdef CMK_VERSION_BLUEGENE
+     CmiNetworkProgress();
+#endif
             doIFFT(0,0);
+#ifdef CMK_VERSION_BLUEGENE
+     CmiNetworkProgress();
+#endif
             doIFFT(1,1);
+#ifdef CMK_VERSION_BLUEGENE
+     CmiNetworkProgress();
+#endif
             doIFFT(2,2);
         }
     }
