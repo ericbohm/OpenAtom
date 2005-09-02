@@ -179,8 +179,10 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void run();
 	void resumeThread(PPDummyMsg *dmsg);
 	void foo(void);
- private:
+	bool gotAllRhoEnergy;
  	bool doneDoingFFT;
+ private:
+
 	double volumeFactor;        
 	double probScale;             
 	int count, countFFTdata, numMcastSent;

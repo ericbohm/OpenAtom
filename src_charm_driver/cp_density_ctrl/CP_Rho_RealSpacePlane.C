@@ -58,27 +58,30 @@ RTH_Routine_code(CP_Rho_RealSpacePlane,run) {
   
 
     RTH_Suspend(); 
-    //ckout<<"US1 RHO_REAL_SPACE:"<<CkMyPe() << " acceptDensity"<<endl;
+    //ckout<<"US1 RHO_REAL_SPACE:"<<c->thisIndex << " acceptDensity"<<endl;
     c->acceptDensity();
      
     RTH_Suspend(); 
-    //ckout<<"RHO_REAL_SPACE:"<<CkMyPe() << " doneFFT0"<<endl;
+    //ckout<<"RHO_REAL_SPACE:"<<c->thisIndex << " doneFFT0"<<endl;
     c->doneFFT();
 	
     RTH_Suspend(); 
-    //ckout<<"RHO_REAL_SPACE:"<<CkMyPe() << " doneFFT1"<<endl;
+    //ckout<<"RHO_REAL_SPACE:"<<c->thisIndex << " doneFFT1"<<endl;
     c->doneFFT();
 
     RTH_Suspend(); 
-    ////ckout<<"RHO_REAL_SPACE:"<<CkMyPe() << " doneFFT2"<<endl;
+    ////ckout<<"RHO_REAL_SPACE:"<<c->thisIndex << " doneFFT2"<<endl;
     c->doneFFT();
     
     RTH_Suspend(); 
-    //ckout<<"RHO_REAL_SPACE:"<<CkMyPe() << " doneFFT3"<<endl;
+    //ckout<<"RHO_REAL_SPACE: "<<c->thisIndex << " doneFFT3"<<endl;
     c->doneFFT();
-
-    RTH_Suspend(); 
-    //ckout<<"US4 RHO_REAL_SPACE:"<<CkMyPe() << " acceptEnergyForSumming"<<endl;
+    if(!(c->gotAllRhoEnergy&&(c->doneDoingFFT)))// PRE: doneDoingFFT==TRUE
+    {
+      //      ckout<<"RHO_REAL_SPACE: "<<c->thisIndex << " pending rho "<< c->gotAllRhoEnergy << "fft " << c->doneDoingFFT <<endl;
+	RTH_Suspend(); 
+    }
+    //    ckout<<"US4 RHO_REAL_SPACE: "<<c->thisIndex << " acceptEnergyForSumming"<<endl;
     c->acceptEnergyForSumming();
 
   } //end while not done
@@ -208,6 +211,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     bwd2DPlan = fftw2d_create_plan(rho_rs.sizeZ, rho_rs.sizeX, FFTW_BACKWARD, 
                                    FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
     doneDoingFFT=false;
+    gotAllRhoEnergy=false;
     setMigratable(false);
     //ckout<<"starting run"<<endl;
     run();
@@ -233,15 +237,18 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_Rho_RealSpacePlane::doneFFT(int Id){
-	if(Id==3)
-	{
-		//ckout<<"  setting doneDoingFFT"<<endl;
-		doneDoingFFT=true;
-	}
-	id=Id;
-	//doneFFT();
-	RTH_Runtime_resume(run_thread);
+void CP_Rho_RealSpacePlane::doneFFT(int Id)
+{
+  id=Id;
+  if(Id==3)
+    {
+      //ckout<<"  setting doneDoingFFT"<<endl;
+      doneDoingFFT=true;
+      //      CkPrintf("[%d] has completed FFT\n",thisIndex);
+      //doneFFT();
+    }
+  RTH_Runtime_resume(run_thread);
+
 }
 //============================================================================
 
@@ -570,6 +577,8 @@ void CP_Rho_RealSpacePlane::resumeThread(PPDummyMsg *dmsg) {
 
   delete dmsg;
   //ckout<<"-->testing doneDoing "<<doneDoingFFT<<endl;
+  
+  CkAbort("how the hell did we get here?");
   if(doneDoingFFT){
     //ckout<<"-->Resuming Thread1"<<endl;
     RTH_Runtime_resume(run_thread);
@@ -604,15 +613,18 @@ void CP_Rho_RealSpacePlane::acceptEnergyForSumming(int size, complex *densities,
 
     countFFTdata++;
     if (countFFTdata == rho_rs.sizeZ) {
-      if(doneDoingFFT){
-  	RTH_Runtime_resume(run_thread);
-      }else{
-	PPDummyMsg *msg = new(8*sizeof(int)) PPDummyMsg;
-	CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	*(int*)CkPriorityPtr(msg) = config.rhorpriority;
-	rhoRealProxy(thisIndex).resumeThread (msg);
-      }//endif
-   }//endif
+	gotAllRhoEnergy=true;
+	//	CkPrintf("[%d] has all [%d] rho energy inputs\n",thisIndex,countFFTdata);
+	//	  acceptEnergyForSumming();
+	if(doneDoingFFT)
+	  RTH_Runtime_resume(run_thread);
+    }else{// do nothing 
+/*	PPDummyMsg *msg = new(8*sizeof(int)) PPDummyMsg;
+*	CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+*	*(int*)CkPriorityPtr(msg) = config.rhorpriority;
+*	rhoRealProxy(thisIndex).resumeThread (msg);
+*/
+    }//endif
 
 //============================================================================    
    }//end routine
@@ -624,6 +636,7 @@ void CP_Rho_RealSpacePlane::acceptEnergyForSumming(int size, complex *densities,
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptEnergyForSumming() {
 	doneDoingFFT = false;
+	gotAllRhoEnergy=false;
         countFFTdata = 0;
         // do the forward plane ffts here
         rho_rs.doFwFFT();
