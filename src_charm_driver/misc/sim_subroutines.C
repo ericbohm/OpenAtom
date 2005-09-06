@@ -716,7 +716,7 @@ RhoRealSlab::~RhoRealSlab()
 	fftwnd_destroy_plan(fft2dFwPlan);
 	fftwnd_destroy_plan(fft2dBwPlan);
 	//delete [] Vks;  // I wonder why this isn't deleted
-	fftw_free(density);
+	delete [] density;
 	fftw_free(doFFTonThis);
 }
 //==============================================================================
@@ -783,8 +783,8 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 
 	rho_rs->size = rho_rs->sizeX * rho_rs->sizeZ;
 	rho_rs->xdim = rho_rs->sizeX;
-	rho_rs->Vks     = (complex *) fftw_malloc(rho_rs->size*sizeof(complex)); 
-	rho_rs->density = (complex *) fftw_malloc(rho_rs->size*sizeof(complex));
+	rho_rs->Vks     =  new complex[rho_rs->size];
+	rho_rs->density =  new complex[rho_rs->size];
 
 	//we copy the real densities into the real parts of these and do our stuff.
 	rho_rs->doFFTonThis = (complex *) fftw_malloc(rho_rs->size*sizeof(complex));
@@ -821,16 +821,14 @@ RhoGSlab::~RhoGSlab()
 void RhoGSlab::doBwFFT(int index){
 
     // do the line inv-fft
-    complex *temp1 = (complex *) fftw_malloc(sizeY*sizeof(complex));
-    complex *temp2 = (complex *) fftw_malloc(sizeY*sizeof(complex));
+    fftw_complex *temp1 = (fftw_complex *) fftw_malloc(sizeY*sizeof(complex));
+    fftw_complex *temp2 = (fftw_complex *) fftw_malloc(sizeY*sizeof(complex));
 
     int x, y;
     for (x = 0; x < sizeX; x++) {
-      for (y = 0; y < sizeY; y++){temp1[y] = chunk[y * sizeX + x];}
-      fftw_complex *temp_in  = reinterpret_cast<fftw_complex *>(temp1);
-      fftw_complex *temp_out = reinterpret_cast<fftw_complex *>(temp2);
-      fftw_one(fft1dBwPlan,temp_in,temp_out);
-      for (y = 0; y < sizeY; y++){chunk[y * sizeX + x] = temp1[y];}
+      for (y = 0; y < sizeY; y++){temp1[y].re = chunk[y * sizeX + x].re;temp1[y].im = chunk[y * sizeX + x].im;}
+      fftw_one(fft1dBwPlan,temp1,temp2);
+      for (y = 0; y < sizeY; y++){chunk[y * sizeX + x].re = temp1[y].re;chunk[y * sizeX + x].im = temp1[y].im;}
     }//endfor
 
     fftw_free(temp1);
