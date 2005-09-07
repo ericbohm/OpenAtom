@@ -99,6 +99,20 @@ void CP_Rho_RealSpacePlane::run () {
 }
 //============================================================================
 
+//! return tru if input is power of 2
+bool is_pow2(int input)
+{
+    int y=0;
+    for(int x=0;x<32;x++)
+    {
+	y= 1<<x;
+	if(y==input)
+	    return true;
+    }
+    return false;
+}
+
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -136,9 +150,19 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     int j;
     // section i has al the portions with all 
     CkArrayIndex2D idx(0, thisIndex);
-    for (j = 0; j < nstates; j++) {
-        idx.index[0] = j^(thisIndex%nstates);
-        elems[j] = idx;
+    if(is_pow2(nstates))
+    {
+	for (j = 0; j < nstates; j++) {
+	    idx.index[0] = j^(thisIndex%nstates);
+	    elems[j] = idx;
+	}
+    }
+    else
+    {
+	for (j = 0; j < nstates; j++) {
+	    idx.index[0] = (j+thisIndex)%nstates;
+	    elems[j] = idx;
+	}
     }
 
     realSpaceSectionProxy = CProxySection_CP_State_RealSpacePlane::
@@ -219,7 +243,6 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 //============================================================================
    }//end routine
 //============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
