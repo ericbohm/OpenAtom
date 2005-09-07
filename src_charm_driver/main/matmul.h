@@ -2,6 +2,9 @@
 #define _MATMUL_H_
 
 #include "matmul.decl.h"
+#ifndef CmiMemcpy
+#define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
+#endif
 
 class matmul:public CBase_matmul {
 	public:
