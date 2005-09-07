@@ -314,7 +314,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
     int numPlanes = 0;
 
     if(config.doublePack) 
-        numPlanes = max_planes/4;
+        numPlanes = config.low_x_size;
     else
         numPlanes = max_planes/2;
 
@@ -404,7 +404,7 @@ int SCalcMap::procNum(int hdl, const CkArrayIndex &idx)
     int numPlanes = 0;
 
     if(config.doublePack) 
-        numPlanes = max_planes/4;
+        numPlanes = config.low_x_size;
     else
         numPlanes = max_planes/2;
 
