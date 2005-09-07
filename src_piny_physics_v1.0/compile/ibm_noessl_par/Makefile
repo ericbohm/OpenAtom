@@ -35,18 +35,18 @@ include make_head.h
 #==========================
 # Compiler commands
 #==========================
-FOBJ            = $(FC) $(OPT_FULL) $(FFLAGS) -I$(INCLUDES) -c -o $@
-COBJ            = $(CC) $(OPT_FULL) $(CFLAGS) -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_TEST       = $(CC) $(OPT_FULL) $(CFLAGS) $(TFLAGS) -I$(INCLUDES) -c -o $@
-COBJ_DECL       = $(CC) $(CFLAGS) 
-COBJ_FUSS       = $(CC) $(CFLAGS)  -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_FUSS_DECL  = $(CC) $(CFLAGS) 
-COBJ_NOOPT      = $(CC) $(CFLAGS)  -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_NOOPT_DECL = $(CC) $(CFLAGS) 
+FOBJ            = $(FC) $(FFLAGS) $(OPT_FULL) -I$(INCLUDES) -c -o $@
+COBJ            = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_TEST       = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_FUSS       = $(CC) $(CFLAGS) $(DBG_FLAG)  -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_NOOPT      = $(CC) $(CFLAGS) $(DBG_FLAG)  -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_CARE       = $(CC) $(CFLAGS) $(OPT_CARE) -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_GRP        = $(CC) $(CFLAGS) $(OPT_GRP)  -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_DECL       = $(CC) $(CFLAGS) 
+COBJ_FUSS_DECL  = $(CC) $(CFLAGS) 
+COBJ_NOOPT_DECL = $(CC) $(CFLAGS) 
 COBJ_CARE_DECL  = $(CC) $(CFLAGS) 
-COBJ_GRP        = $(CC) $(OPT_GRP) $(CFLAGS) -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_GRP_DECL   = $(CC) $(OPT_GRP) $(CFLAGS) 
+COBJ_GRP_DECL   = $(CC) $(CFLAGS) 
 LD              = $(LC) $(OPT_FULL) $(CFLAGS) 
 
 #==========================
@@ -102,5 +102,11 @@ clean_care  :
 #==========================
 clean_group :
 	/bin/rm -f $(DECLS) $(OBJS_GRP) $(ULIBS) *.o charmrun
+
+#==========================
+#remove group objs and libs
+#==========================
+clean_piny_to_driver :
+	/bin/rm -f $(DECLS) $(LIB_FILES)
 
 #===========================================================================
