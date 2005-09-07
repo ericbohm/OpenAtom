@@ -120,9 +120,9 @@ void GSMap::makemap()
 {
     int numPlanes=0;
     if(config.doublePack) 
-	numPlanes = sizeX/4;
+	numPlanes = nplane_x;
     else
-	numPlanes = sizeX/2;
+	CkAbort("not doublepack broken!");
 
     for(int state = 0; state < config.nstates; state++){
       for (int plane = 0; plane < numPlanes; plane++) {
@@ -140,11 +140,11 @@ int GSMap::procNum(int hdl, const CkArrayIndex &idx)
     CkArrayIndex2D &idx2d = *(CkArrayIndex2D *)&idx;
     if(maptable==NULL)
     {
-	int numPlanes=0;
+    int numPlanes=0;
 	if(config.doublePack) 
-	    numPlanes = sizeX/4;
+	numPlanes = nplane_x;
 	else
-	    numPlanes = sizeX/2;
+	CkAbort("not doublepack broken!");
 	maptable= new CkHashtableT<intdual,int> (numPlanes*config.nstates); 
 	makemap();
     }
@@ -164,9 +164,9 @@ int GSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
   int numPlanes = 0;
   
   if(config.doublePack) 
-      numPlanes = sizeX/4;
+      numPlanes = nplane_x;
   else
-      numPlanes = sizeX/2;
+      CkAbort("not doublepack broken\n");
   
   //pe = basicMap(idx2d, numPlanes);
   //return pe;
@@ -259,7 +259,7 @@ int SCalcMap::procNum(int hdl, const CkArrayIndex &idx)
 {
     CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&idx;
     int intidx[2];
-    memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
     if(maptable==NULL)
     {
 	int calcchunks=max_states/gs;
@@ -280,7 +280,7 @@ void SCalcMap::makemap()
 	for (int s2 = s1; s2 < max_states; s2 += gs) {
 	    CkArrayIndex4D idx4d(numX,s1,s2,0);
 	    int intidx[2];
-	    memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
 //	    CkPrintf("mapping [%d %d %d %d %d] as [%d %d] to pe %d based on slowprocnums %d\n",numX,s1,s2,0,symmetric,intidx[0],intidx[1],maptable->get(intdual(intidx[0],intidx[1])),slowprocNum(0,idx4d));
 	}
@@ -292,7 +292,7 @@ void SCalcMap::makemap()
 	      for (int s2 = 0; s2 < max_states; s2 += gs) {
 		  CkArrayIndex4D idx4d(numX,s1,s2,0);
 		  int intidx[2];
-		  memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
 //		  CkPrintf("mapping [%d %d %d %d %d] as [%d %d] to pe %d based on slowprocnums %d\n",numX,s1,s2,0,symmetric,intidx[0],intidx[1],maptable->get(intdual(intidx[0],intidx[1])),slowprocNum(0,idx4d));
 	      }

@@ -75,6 +75,7 @@ extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_EnergyGroup egroupProxy;
 extern int nstates;
 extern int sizeX;
+extern int nplane_x;
 extern int atom_integrate_done;  // not a readonly global : a group of one element
 extern ComlibInstanceHandle mcastInstancePP;
 extern CProxy_FFTcache fftCacheProxy;
@@ -382,27 +383,28 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   // create structure factor proxy
   if(thisIndex.x==0){
-	// dups must be less than the number of states because thats
-	// the maximum number of time you can duplicate a plane
-	int dups=config.numSfDups;
-	if(config.numSfDups>nstates){dups=nstates;}
-	CkVec <CkArrayIndex3D> sfelems;
-	for(int dup=0;dup<dups; dup++){ //each dup
-	    for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
+      // dups must be less than the number of states because thats
+      // the maximum number of time you can duplicate a plane
+      int dups=config.numSfDups;
+      if(config.numSfDups>nstates){dups=nstates;}
+      CkVec <CkArrayIndex3D> sfelems;
+      for(int dup=0;dup<dups; dup++){ //each dup
+	  for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
 	      sfelems.push_back(CkArrayIndex3D(atm, thisIndex.y,dup));
-	    }//endfor : atm groups
-	}//endfor : dup groups
-	sfCompSectionProxy = 
-              CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
-		    (CkArrayIndexMax *) sfelems.getVec(), sfelems.size());
-   }//endif : state=0 
+	  }//endfor : atm groups
+      }//endfor : dup groups
+      sfCompSectionProxy = 
+	  CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
+					       (CkArrayIndexMax *) sfelems.getVec(), sfelems.size());
+  }//endif : state=0 
 
 //============================================================================
 // head of the planes does the file reading for each state
+// to be triggered by the doneinit reduction at proc0.
 
 //  CkPrintf("G-space constructore completed\n");
 
-  if(thisIndex.y == 0){readFile();}
+//  if(thisIndex.y == 0){readFile();}
 
 //---------------------------------------------------------------------------
     }//end routine
@@ -460,7 +462,8 @@ void CP_State_GSpacePlane::readFile() {
   char fname[1024];
   int ind_state=thisIndex.x;
   sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
-
+//  CkPrintf("[%d %d] reading %s/state%d.out\n",thisIndex.x,thisIndex.y,config.dataPath, ind_state + 1);
+//  CkPrintf(".");
   //------------------------------------------------------------------
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
 
@@ -483,23 +486,21 @@ void CP_State_GSpacePlane::readFile() {
 // Parse the run descriptor into integer vectors for use with decomp function
 
   int ioff = 0;
-  for(int x = 0; x < sizeX; x ++) {
-
-    if (x < config.low_x_size || ((x > config.high_x_size)&&(!config.doublePack)) ){
-
+  for(int x = 0; x < nplane_x; x ++) 
+  {
       int runsToBeSent = sortedRunDescriptors[x].size();
       int numPoints    = 0;
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
-        numPoints += sortedRunDescriptors[x][j].length;
+	  numPoints += sortedRunDescriptors[x][j].length;
       }//endfor
 
       complex *dataToBeSent  = new complex[numPoints];
       RunDescriptor *runDesc = new RunDescriptor[runsToBeSent];
       complex *temp          = complexPoints+ioff;
-      memcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
+      CmiMemcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
 
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++) {
-	runDesc[j] = sortedRunDescriptors[x][j];
+	  runDesc[j] = sortedRunDescriptors[x][j];
       }//endfor
       if(ioff>numData){CkPrintf("Error reading\n");CkExit();}
 
@@ -509,8 +510,6 @@ void CP_State_GSpacePlane::readFile() {
       delete [] runDesc;
 
       ioff += numPoints;
-    }//endif : this plane has data
-
   }//endfor : loop over all possible planes
 
   CkAssert(numData==ioff);
@@ -592,8 +591,8 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   gs.packedForceData     = new complex[gs.numPoints];
   gs.packedPlaneDataTemp = new complex[gs.numPoints];
 
-  memcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
-  memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
+  CmiMemcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
+  CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   memset(gs.packedForceData, 0, sizeof(complex)*gs.numPoints);
   memset(gs.packedPlaneDataCG, 0, sizeof(complex)*gs.numPoints);
 
@@ -646,10 +645,11 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   //  delete [] runs; ???? why not?
 
   int i=1;
+
   contribute(sizeof(int), &i, CkReduction::sum_int);    
 
 //---------------------------------------------------------------------------
-    }// end routine
+   }// end routine
 //============================================================================
 
 
@@ -835,7 +835,7 @@ void CP_State_GSpacePlane::doFFT() {
 #endif
 
 #ifndef _FULL_CPAIMD_
-  memcpy(gs.packedPlaneData, gs.packedPlaneDataTemp, sizeof(complex)*gs.numPoints);
+  CmiMemcpy(gs.packedPlaneData, gs.packedPlaneDataTemp, sizeof(complex)*gs.numPoints);
 #endif      
 
 // Do fft in forward direction, 1-D, in z direction
@@ -1136,7 +1136,8 @@ void CP_State_GSpacePlane::integrateModForce() {
 #ifdef GJM_DBG_ATMS
     CkPrintf("GJM_DBG : istart\n");
 #endif
-    atomsGrpProxy.StartRealspaceForces(); // a message that is
+
+    atomsGrpProxy.StartRealspaceForces(); // a message that is 
                                           // invoked by the scheduler
                                           // when it feels like it
   }//endif
@@ -1319,7 +1320,7 @@ void CP_State_GSpacePlane::acceptNewPsi(mySendMsg *msg) {
   int N         = msg->N;
   complex *data = (complex *)msg->data;
   complex *psi  = gs.packedPlaneData;
-  memcpy(psi,data,N*sizeof(complex));
+  CmiMemcpy(psi,data,N*sizeof(complex));
   delete msg;
 
   if(gs.ihave_kx0==1){

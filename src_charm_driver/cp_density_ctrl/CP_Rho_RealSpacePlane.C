@@ -395,7 +395,7 @@ void CP_Rho_RealSpacePlane::energyComputation()
     {//begin routine 
 //============================================================================
 
-    memcpy(rho_rs.density, rho_rs.doFFTonThis, 
+    CmiMemcpy(rho_rs.density, rho_rs.doFFTonThis, 
            rho_rs.sizeX * rho_rs.sizeZ * sizeof(complex));
     // doing the rho_r subroutine here:
     
@@ -524,7 +524,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
         int s;
         int dataSize = rho_rs.sizeX * rho_rs.sizeZ;
         ProductMsg *msg = new (dataSize, 0) ProductMsg;
-        //memcpy(msg->data, rho_rs.Vks, sizeof(complex) * dataSize);
+        //CmiMemcpy(msg->data, rho_rs.Vks, sizeof(complex) * dataSize);
 
         for(int count = 0; count < dataSize; count ++)
             msg->data[count] =  rho_rs.Vks[count].re;
@@ -608,7 +608,7 @@ void CP_Rho_RealSpacePlane::acceptEnergyForSumming(int size, complex *densities,
 
     int planeSize = rho_rs.sizeX * rho_rs.sizeZ;
 
-    memcpy(rho_rs.doFFTonThis + zindex*rho_rs.sizeX,densities,
+    CmiMemcpy(rho_rs.doFFTonThis + zindex*rho_rs.sizeX,densities,
 		 rho_rs.sizeX * sizeof(complex));
 
     countFFTdata++;

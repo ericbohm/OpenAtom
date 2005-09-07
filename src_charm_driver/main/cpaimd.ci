@@ -2,6 +2,7 @@ mainmodule cpaimd {
 
 	readonly int nstates;
 	readonly int sizeX;
+	readonly int nplane_x;
 	readonly int Ortho_UE_step2;
 	readonly int Ortho_UE_step3;
 	readonly int Ortho_UE_error;
@@ -90,6 +91,7 @@ mainmodule cpaimd {
                 entry void resumeThread (PPDummyMsg *dmsg);
                 entry void resumeThreadDisplacing();
                 entry void psiCgOvlap(CkReductionMsg *);
+		entry void readFile();
 	};
 	
 	array [2D] CP_State_ParticlePlane {

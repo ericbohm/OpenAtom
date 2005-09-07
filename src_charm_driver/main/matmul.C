@@ -1,6 +1,6 @@
 #include "matmul.h"
 //#include "ckmulticast.h"
-
+#include "converse.h"
 
 #ifdef FORTRANUNDERSCORE
 #define DGEMM dgemm_
@@ -127,10 +127,10 @@ void matmul::start_mat_mul(double *A, double *B, double *C, double alpha,
 
 	/* copy my data */
 	for(int i = 0; i < chunksize; i++)
-		memcpy(&row_neighbors[rows * chunksize * i +
+		CmiMemcpy(&row_neighbors[rows * chunksize * i +
 		   chunksize * thisIndex.y], &A[chunksize * i],
 		   chunksize * sizeof(double));
-	memcpy(col_neighbors + chunksqrd * thisIndex.x, B,
+	CmiMemcpy(col_neighbors + chunksqrd * thisIndex.x, B,
 	   sizeof(double) * chunksqrd);
 
 	/* multicast my data */
@@ -172,10 +172,10 @@ void matmul::start_mat_mul(double *A, double *B, double *C, double alpha,
 
 	/* copy my data */
 	for(int i = 0; i < chunksize; i++)
-		memcpy(&row_neighbors[rows * chunksize * i +
+		CmiMemcpy(&row_neighbors[rows * chunksize * i +
 		   chunksize * thisIndex.y], &A[chunksize * i],
 		   chunksize * sizeof(double));
-	memcpy(col_neighbors + chunksqrd * thisIndex.x, B,
+	CmiMemcpy(col_neighbors + chunksqrd * thisIndex.x, B,
 	   sizeof(double) * chunksqrd);
 
 	/* multicast my data */
@@ -201,7 +201,7 @@ void matmul::receive_A(mm_matrix_data *msg){
 	/* receive data */
 	row_count++;
 	for(int i = 0; i < chunksize; i++)
-		memcpy(&row_neighbors[rows * chunksize * i +
+		CmiMemcpy(&row_neighbors[rows * chunksize * i +
 		   chunksize * msg->from], &msg->data[i * chunksize],
 		   chunksize * sizeof(double));
 	delete msg;
@@ -224,7 +224,7 @@ void matmul::receive_B(mm_matrix_data *msg){
 #endif
 	/* receive data */
 	col_count++;
-	memcpy(col_neighbors + msg->from * chunksqrd, msg->data,
+	CmiMemcpy(col_neighbors + msg->from * chunksqrd, msg->data,
 	   sizeof(double) * chunksqrd);
 
 	delete msg;
@@ -353,7 +353,7 @@ mm_matrix_data::mm_matrix_data(){
 mm_matrix_data::mm_matrix_data(double *data, int from, int size){
 	this->from = from;
 	this->size = size;
-	memcpy(this->data, data, size * sizeof(double));
+	CmiMemcpy(this->data, data, size * sizeof(double));
 }
 
 #include "matmul.def.h"

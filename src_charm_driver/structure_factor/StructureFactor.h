@@ -28,7 +28,7 @@ class StructureFactor : public CBase_StructureFactor
       structFactor_fy=NULL;
       structFactor_fz=NULL;
       destinations =new int[numdest];
-      memcpy(destinations,_destinations, numdest *sizeof(int));
+      CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
       
       gsSize=0;
 #ifdef _CP_DEBUG_SF_CALC_
@@ -61,7 +61,7 @@ class StructureFactor : public CBase_StructureFactor
 #endif
       numdest=_numdest;
       destinations =new int[numdest];
-      memcpy(destinations,_destinations, numdest *sizeof(int));
+      CmiMemcpy(destinations,_destinations, numdest *sizeof(int));
     }
   // compute and send
   void computeSF(SFDummyMsg *msg);
@@ -73,9 +73,9 @@ class StructureFactor : public CBase_StructureFactor
       k_x= new int[gsSize];
       k_y= new int[gsSize];
       k_z= new int[gsSize];
-      memcpy(k_x,_k_x,gsSize*sizeof(int));
-      memcpy(k_y,_k_y,gsSize*sizeof(int));
-      memcpy(k_z,_k_z,gsSize*sizeof(int));
+      CmiMemcpy(k_x,_k_x,gsSize*sizeof(int));
+      CmiMemcpy(k_y,_k_y,gsSize*sizeof(int));
+      CmiMemcpy(k_z,_k_z,gsSize*sizeof(int));
     }
   void pup(PUP::er &p)
     {

@@ -113,7 +113,7 @@ void Ortho::step_2(){
 //============================================================================
 void Ortho::step_3(){
     step = 3;
-    memcpy(B, A, sizeof(double) * k2);
+    CmiMemcpy(B, A, sizeof(double) * k2);
     if(Ortho_use_local_cb)
       matmulProxy3(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(C, B, A, 0.5, 0, Ortho::error_cb, (void*) this);
     else
@@ -168,7 +168,7 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 void Ortho::start_calc(CkReductionMsg *msg){
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-	atomsGrpProxy.StartRealspaceForces(); 
+//	atomsGrpProxy.StartRealspaceForces(); 
 	CkPrintf("------------------------------------------------------\n");
 	CkPrintf("Iteration %d done\n", numGlobalIter+1);
 	CkPrintf("======================================================\n\n");
@@ -369,6 +369,7 @@ void Ortho::collect_results(void)
 #ifdef _CP_DEBUG_TMAT_
     print_results();
 #endif
+
   }
 
 
@@ -428,7 +429,7 @@ Ortho::acceptAllLambda(CkReductionMsg *msg) {
 	CkAbort("the gamma code is broken\n");
       // transform Tlambda = T*lambda: store in lambda
       double *scr = new double [nstates*nstates];
-      memcpy(scr,lambda, nstates*nstates*sizeof(double));
+      CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
       multiplyForGamma(orthoT, scr, lambda, nstates);
       delete [] scr;
       finishPairCalc2(&pairCalcID2, nstates*nstates, lambda, orthoT);
@@ -473,7 +474,7 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	CkAbort("the gamma code is broken\n");
       // transform Tlambda = T*lambda: store in lambda
       double *scr = new double [nstates*nstates];
-      memcpy(scr,lambda, nstates*nstates*sizeof(double));
+      CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
       multiplyForGamma(orthoT, scr, lambda, nstates);
       delete [] scr;
       finishPairCalc2(&pairCalcID2, nstates*nstates, lambda, orthoT);

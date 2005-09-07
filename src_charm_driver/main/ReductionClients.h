@@ -18,15 +18,22 @@ void doneCreatingPP(void *param, int dataSize, void *data) {
 //============================================================================
 int done_init = 0;
 void doneInit(void *param, int dataSize, void *data) {
+//    CkPrintf("done init %d\n",done_init);
+    if (done_init == 0) 
+    {
+	// kick off file reading in gspace
+	CkPrintf("Initiating import of states\n");
+	for(int s=0;s<nstates;s++)
+	    gSpacePlaneProxy(s,0).readFile();
+    }
     if (done_init >= 1) {
       if (done_init == 1){ 
  	  CkPrintf("\n======================================================\n");
           ckout << "Starting Iterations : " << endl;
   	  CkPrintf("======================================================\n\n");
   	  CkPrintf("\n======================================================\n");
+	  gSpacePlaneProxy.run();
       }//endif
-        gSpacePlaneProxy.run();
-        //particlePlaneProxy.computeZ();
     }
     done_init++;
 }

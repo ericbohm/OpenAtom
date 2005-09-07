@@ -39,7 +39,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a)
 	natm    = n;
         natm_nl = n_nl;
 	atoms   = new Atom[natm];
-	memcpy(atoms, a, natm * sizeof(Atom));
+	CmiMemcpy(atoms, a, natm * sizeof(Atom));
         pot_ewd_rs_loc = 0.0;
         pot_ewd_rs     = 0.0;
         atom_integrate_done = 1;  //so that code can start working

@@ -1,6 +1,6 @@
 #ifndef __PFFTUTIL_H__
 #define __PFFTUTIL_H__
-
+#include "converse.h"
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================

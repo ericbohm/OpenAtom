@@ -45,6 +45,7 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 extern int nstates;
+extern int nplane_x;
 extern Config config;
 extern CkGroupID mCastGrpId;
 //============================================================================
@@ -355,10 +356,8 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
     // send the reduced zmatrix to the particleplanes of this state
     // that are non-zero and compute the non-local forces
 
-    for (i = 0; i < sizeX; i += gSpacePlanesPerChare){
-      if(i < config.low_x_size || (!config.doublePack && i > config.high_x_size)){
+    for (i = 0; i < nplane_x; i ++){
          thisProxy(thisIndex.x, i).getForces(size,atmIndex, &zmatrixSum[zoffset]);
-      }
     }
 
     // reduce enl over all states

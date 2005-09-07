@@ -825,10 +825,15 @@ void RhoGSlab::doBwFFT(int index){
     fftw_complex *temp2 = (fftw_complex *) fftw_malloc(sizeY*sizeof(complex));
 
     int x, y;
+    double *dtemp1=(double*) temp1;
+    double *dtemp2=(double*) temp2;
+    double *dchunk=(double*) chunk;
     for (x = 0; x < sizeX; x++) {
       for (y = 0; y < sizeY; y++){temp1[y].re = chunk[y * sizeX + x].re;temp1[y].im = chunk[y * sizeX + x].im;}
+//	for (y = 0; y < sizeY*2; y++){dtemp1[y] = dchunk[y * sizeX + x];}
       fftw_one(fft1dBwPlan,temp1,temp2);
       for (y = 0; y < sizeY; y++){chunk[y * sizeX + x].re = temp1[y].re;chunk[y * sizeX + x].im = temp1[y].im;}
+//      for (y = 0; y < sizeY*2; y++){dchunk[y * sizeX + x] = dtemp1[y];}
     }//endfor
 
     fftw_free(temp1);

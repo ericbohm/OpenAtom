@@ -37,7 +37,7 @@ public:
 	int offset;
 	complex *data;
 /*	GSIFFTMsg(int _size, int _offset, complex *_data) : size(_size), offset(_offset) {
-	    memcpy(data, _data, sizeof(complex)*size);
+	    CmiMemcpy(data, _data, sizeof(complex)*size);
 	}
 */
 };

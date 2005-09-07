@@ -80,6 +80,7 @@ int atom_integrate_done;  // not a real global : more like a group of size 1
 
 int nstates;  // readonly globals
 int sizeX;
+int nplane_x;
 int Ortho_UE_step2;
 int Ortho_UE_step3;
 int Ortho_UE_error;
@@ -210,6 +211,8 @@ main::main(CkArgMsg *m) {
     PhysicsParamTransfer::control_new_mapping_function(sim,doublePack);
 
     scProxy = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
+    nplane_x         = sim->nplane_x;
+    CkPrintf("nplane_x %d\n",nplane_x);    
 
 //============================================================================    
 // Create the multicast/reduction manager for array sections
@@ -233,21 +236,13 @@ main::main(CkArgMsg *m) {
 
   //-------------------------------------------------------------
   // Create mapping classes for Paircalcular
-    int indexSize = 0;
-    if(doublePack){
-    	indexSize = config.low_x_size;
-    }else{
-    	indexSize = config.low_x_size + (sizeX-config.high_x_size-1);
-    }
+    int indexSize = nplane_x;
 
     int* indexZ = new int[indexSize];
-    for(int i=0, count=0; i<sizeX; i++){
-        if(i < config.low_x_size || ((i > config.high_x_size)&&(!doublePack))){
+    for(int i=0, count=0; i<nplane_x; i++){
         indexZ[count] = i;
         count++;
-      }
     }
-
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
                    sizeX / gSpacePPC,config.sGrainSize,CmiTrue,sim->nplane_x, 
                    sim->lines_per_plane, sim->pts_per_plane) ;
@@ -497,7 +492,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkArrayOptions particleOpts;
     particleOpts.setMap(gsMap); // the maps for both the arrays are the same
     particleOpts.bindTo(gSpacePlaneProxy);
-    particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(sizeX, sizeYZ[0], sizeYZ[1],   
+    particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nplane_x, sizeYZ[0], sizeYZ[1],   
 		      gSpacePPC,numSfGrps,natm_nl,natm_nl_grp_max,particleOpts);
 
     /*
@@ -506,14 +501,13 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     gSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
     realSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
     int s,x;
+//    CkPrintf("making nstates %d nplane_x %d gspace objects\n",nstates,nplane_x);
     for (s = 0; s < nstates; s++){
-      for (x = 0; x < sizeX; x += gSpacePPC){
-        if (x < config.low_x_size || ((x > config.high_x_size) &&(!doublePack) ) ) {
+      for (x = 0; x <nplane_x; x++){
              gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, gSpacePPC, 
                                     realSpacePPC,config.sGrainSize);
              particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
 				      gSpacePPC,numSfGrps,natm_nl,natm_nl_grp_max);
-	}
       }
     }
 
@@ -532,27 +526,22 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
                                              realSpacePPC);
     realSpacePlaneProxy.doneInserting();
     // 
-    int nplanes=sizeX;
-    int *nsend= new int[nplanes];
-    int **listpe = new int * [nplanes];
 
-    for(int j=0;j<nplanes;j+=gSpacePPC){   
+    int *nsend= new int[nplane_x];
+    int **listpe = new int * [nplane_x];
+
+    for(int j=0;j<nplane_x;j++){   
       listpe[j]= new int[nstates];
       nsend[j]=0;
-//      GSMap gmap(sim->nplane_x, sim->lines_per_plane, sim->pts_per_plane);
-      if (j < config.low_x_size || ((j > config.high_x_size) &&(!doublePack))) 
-	{
-	  for(int i=0;i<nstates;i++)    
-	    {
-
-	      listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
+      for(int i=0;i<nstates;i++)    
+      {
+	  
+	  listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
 //	      listpe[j][i]=gmap.slowprocNum(0, CkArrayIndex2D(i,j));
 //	      listpe[j][i]=gmap.procNum(0, CkArrayIndex2D(i,j));
 //	      CkPrintf("[%d %d] pe %d\n",j,i,listpe[j][i]);
-	    }
-
-	  lst_sort_clean(nstates, &nsend[j], listpe[j]);
-	}
+      }
+      lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }
     int minsend=nstates;
     int maxsend=0;
@@ -561,8 +550,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkPrintf("============================\n");
     CkPrintf("Structure factor plane dests\n");
     CkPrintf("---------------------------\n");
-    for(int lsi=0;lsi<nplanes;lsi++){
-      if (lsi < config.low_x_size || ((lsi > config.high_x_size) &&(!doublePack) ) ) {
+    for(int lsi=0;lsi<nplane_x;lsi++){
         nplane_use++;
 	CkPrintf("plane [%d] nsend %d\n",lsi,nsend[lsi]);
 	if(nsend[lsi]>maxsend)
@@ -575,34 +563,35 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
 	  CkPrintf("[%d %d] pe %d\n",lsi,lsj,listpe[lsi][lsj]);
 	}//endfor
 #endif
-      }//endif
     }//endfor
     CkPrintf("---------------------------\n");
     CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)nplane_use);
     CkPrintf("============================\n");
     // Insert the objects into the StructureFactor array
-    for (int dup=0; dup<config.numSfDups; dup++)
-      for (x = 0; x < sizeX; x += gSpacePPC){
-	if (x < config.low_x_size || ((x > config.high_x_size) &&(!doublePack) ) ) 
-	  {
-	    int num_dup, istart, iend;
-	    get_grp_params( nsend[x],  config.numSfDups,  dup, x ,&num_dup,  &istart, &iend);
-	    int pe_ind=istart;
-	    if(x%2==0)
+    int dupmax=config.nstates;
+    if (config.numSfDups<dupmax)
+	dupmax=config.numSfDups;
+    config.numSfDups=dupmax;
+    for (int dup=0; dup<dupmax; dup++)
+      for (x = 0; x < nplane_x; x += gSpacePPC)
+      {
+	  int num_dup, istart, iend;
+	  get_grp_params( nsend[x],  config.numSfDups,  dup, x ,&num_dup,  &istart, &iend);
+	  int pe_ind=istart;
+	  if(x%2==0)
 	      pe_ind=iend;
-	    for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++)
-	      {
+	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++)
+	  {
 //		CkPrintf("inserting SF[%d %d %d] to pe %d\n",AtmGrp,x,dup,listpe[x][pe_ind]);
-		sfCompProxy(AtmGrp, x, dup).insert(numSfGrps, config.numSfDups, natm_nl_grp_max,  num_dup, &(listpe[x][istart]),atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
-		pe_ind++;
-		if(pe_ind>nsend[x])
+	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps, config.numSfDups, natm_nl_grp_max,  num_dup, &(listpe[x][istart]),atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
+	      pe_ind++;
+	      if(pe_ind>nsend[x])
 		  pe_ind=0;
-	      }
 	  }
       }
     sfCompProxy.doneInserting();
 
-    for(int j=0;j<nplanes;j++)
+    for(int j=0;j<nplane_x;j++)
       delete [] listpe[j];
     delete [] listpe;
     if(config.useCommlib) {
@@ -850,9 +839,9 @@ int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
   int numPlanes = 0;
   
   if(config.doublePack) 
-      numPlanes = sizeX/4;
+      numPlanes = nplane_x;
   else
-      numPlanes = sizeX/2;
+      CkAbort("not doublepack is broken\n");
   
   //pe = basicMap(idx2d, numPlanes);
   //return pe;

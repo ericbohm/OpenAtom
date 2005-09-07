@@ -207,7 +207,7 @@ void CP_Rho_GSpacePlane::acceptData(int size, complex *densities, int yindex,
 	//cout<<"-->accepting data"<<endl;
 	// copy the data at the right place
     int yoffset = yindex + planeNum;
-    memcpy(rho_gs.chunk + yoffset * size, densities, size * sizeof(complex));  //<-
+    CmiMemcpy(rho_gs.chunk + yoffset * size, densities, size * sizeof(complex));  //<-
 
     count++;
     acceptData();
@@ -255,7 +255,7 @@ void CP_Rho_GSpacePlane::acceptData() {
 	}//endif
 #endif
         // Make a copy for gradient correction
-        memcpy(gradientCorrection, rho_gs.chunk, rho_gs.size * sizeof(complex));
+        CmiMemcpy(gradientCorrection, rho_gs.chunk, rho_gs.size * sizeof(complex));
 
         CPXCFNCTS::CP_div_rho_gspace_calc(gradientCorrection,k_x, k_y, k_z, 
                                           rho_gs.size,rhoIGX,rhoIGY,rhoIGZ);
@@ -351,7 +351,7 @@ void CP_Rho_GSpacePlane::doneIFFT()
 //============================================================================
 void CP_Rho_GSpacePlane::recvProcessedPart(int size, complex *points, int pos)
 {
-    memcpy(rho_gs.chunk + pos*rho_gs.sizeX, points, size*sizeof(complex)); 
+    CmiMemcpy(rho_gs.chunk + pos*rho_gs.sizeX, points, size*sizeof(complex)); 
     helperCount++;
     recvProcessedPart();
 }
@@ -486,7 +486,7 @@ void CP_Rho_GSpacePlaneHelper::recvRhoGPart(int size, complex *points)
 
    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
 
-   memcpy(rho_gs.chunk, points, size * sizeof(complex));
+   CmiMemcpy(rho_gs.chunk, points, size * sizeof(complex));
    complex *chunk    = rho_gs.chunk;
    int nsize         = (int) (rho_gs.size);
    int natm          = ag->natm;

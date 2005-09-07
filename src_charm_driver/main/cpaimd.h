@@ -27,7 +27,9 @@
 
 #define TRACE_ON_STEP 4
 #define TRACE_OFF_STEP 7
-
+#ifndef CmiMemcpy
+#define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
+#endif
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -89,8 +91,8 @@ class GSMap: public CkArrayMap {
 	  state_load = 0.0; 
 	  lines_per_plane= new double[nplane_x];
 	  pts_per_plane= new double[nplane_x];
-	  memcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
-	  memcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
+	  CmiMemcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
+	  CmiMemcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
 	  maptable=NULL;
       }
   int procNum(int, const CkArrayIndex &);
@@ -157,8 +159,8 @@ class SCalcMap : public CkArrayMap {
 	nplane_x=_nplane_x;
 	lines_per_plane= new double[nplane_x];
 	pts_per_plane= new double[nplane_x];
-	memcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
-	memcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
+	CmiMemcpy(lines_per_plane,_lines_per_plane,nplane_x*sizeof(double));
+	CmiMemcpy(pts_per_plane,_pts_per_plane,nplane_x*sizeof(double));
 	maptable=NULL;
     }
     void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
