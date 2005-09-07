@@ -500,6 +500,7 @@ void Config::readConfig(const char* fileName, Config &config,
 //===================================================================================
 // Read parameters
 
+    CkPrintf("   Opening cpaimd config file : %s\n",fileName);
     ifstream configFile(fileName, ios::in);
     if (configFile.fail()) {
       CkAbort("Bad config file, trouble opening\n");
@@ -620,6 +621,7 @@ void Config::readConfig(const char* fileName, Config &config,
         }
     }
     configFile.close();
+    CkPrintf("   Closing cpaimd config file : %s\n",fileName);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
       config.RpesPerState=config.pesPerState;
@@ -640,7 +642,9 @@ void Config::readConfig(const char* fileName, Config &config,
     char fname[1024];
     int sizex,sizey,sizez,nPacked,minx,maxx;
     sprintf (fname, "%s/state1.out", config.dataPath);
+    CkPrintf("   Opening state file : %s\n",fname);
     readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
+    CkPrintf("   Closing state file : %s\n",fname);
     config.low_x_size  = minx+1;
     config.high_x_size = maxx-1;
     config.numData     = nPacked;
@@ -648,6 +652,13 @@ void Config::readConfig(const char* fileName, Config &config,
     if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Incorrect FFT size in state files.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+    if(nkf1!=nkf2 || nkf1!=nkf3){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Only Cubic boxes for now\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -667,6 +678,13 @@ void Config::readConfig(const char* fileName, Config &config,
     if (sizez % config.rhoGPPC != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("z dimension should be divisible by rhoGPPC\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }
+
+    if (sizey % config.rhoGHelpers != 0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("y dimension should be divisible by rhoGHelpers\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
