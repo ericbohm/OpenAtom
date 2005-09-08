@@ -168,7 +168,7 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 void Ortho::start_calc(CkReductionMsg *msg){
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-//	atomsGrpProxy.StartRealspaceForces(); 
+	atomsGrpProxy.StartRealspaceForces(); 
 	CkPrintf("------------------------------------------------------\n");
 	CkPrintf("Iteration %d done\n", numGlobalIter+1);
 	CkPrintf("======================================================\n\n");

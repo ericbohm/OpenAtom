@@ -1141,7 +1141,7 @@ void CP_State_GSpacePlane::integrateModForce() {
     CkPrintf("GJM_DBG : istart\n");
 #endif
 
-    atomsGrpProxy.StartRealspaceForces(); // a message that is 
+//    atomsGrpProxy.StartRealspaceForces(); // a message that is 
                                           // invoked by the scheduler
                                           // when it feels like it
   }//endif
@@ -1271,7 +1271,11 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg) {
 
   partialCount++;
   delete msg;
-
+/*  CP_State_ParticlePlane *pp = 
+    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  pp->doneGettingForces=false;
+  pp->doneForces=0;
+*/
   CkAssert(partialCount<=AllExpected);
 
 //==============================================================================
@@ -1292,13 +1296,13 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg) {
        for(int i = 0; i < gs.numPoints; i++){
          if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
            CkPrintf("------------------------------------------------------\n");
-           CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %g %g\n",
+           CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
            CkPrintf("------------------------------------------------------\n");
          }//endif
          if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
            CkPrintf("------------------------------------------------------\n");
-           CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %g %g\n",
+           CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
   		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
            CkPrintf("------------------------------------------------------\n");
          }//endif
@@ -1326,7 +1330,12 @@ void CP_State_GSpacePlane::acceptNewPsi(mySendMsg *msg) {
   complex *psi  = gs.packedPlaneData;
   CmiMemcpy(psi,data,N*sizeof(complex));
   delete msg;
-
+/*
+  CP_State_ParticlePlane *pp = 
+    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  pp->doneGettingForces=false;
+  pp->doneForces=0;
+*/
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
@@ -1342,13 +1351,13 @@ void CP_State_GSpacePlane::acceptNewPsi(mySendMsg *msg) {
     for(int i = 0; i < gs.numPoints; i++){
       if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
         CkPrintf("------------------------------------------------------\n");
-        CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %g %g\n",
+        CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
         CkPrintf("------------------------------------------------------\n");
       }//endif
       if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
         CkPrintf("------------------------------------------------------\n");
-        CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %g %g\n",
+        CkPrintf("Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
         CkPrintf("------------------------------------------------------\n");
       }//endif
@@ -1408,6 +1417,55 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 
   //----------------------------------------------------------------------------
 }// end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) 
+{
+
+    complex *data = (complex *)msg->result;
+    complex *force = gs.packedForceData;
+    int N = msg->N;
+    partialCount++;
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1  )
+    {
+	if(config.doublePack==1){
+	    for(int i=0; i<N; i++){
+		double wght  = (k_x[i]==0 ? 0.5 : 1);
+		force[i].re -= wght*data[i].re;
+		force[i].im -= wght*data[i].im;
+	    }//endfor
+	}else{
+	    for(int i=0; i<N; i++){
+		force[i].re -= 0.5*data[i].re;
+		force[i].im -= 0.5*data[i].im;
+	    }//endfor
+	}//endif
+    }
+    else
+    { // Glenn will add some factors here
+	for(int i=0; i<N; i++){
+	    force[i].re += data[i].re;
+	    force[i].im += data[i].im;
+	}//endfor
+    }
+    delete msg;  
+    // all done sum and clean up
+    if(partialCount==AllExpected)
+    {
+	double force_sq_sum=0.0;
+	for(int i=0; i<gs.numPoints; i++){
+	    force_sq_sum+= force[i].getMagSqr();
+	}//endfor
+	contribute(sizeof(double), &force_sq_sum, CkReduction::sum_double, 
+		   CkCallback(printMagForcePsi, NULL));
+  
+	RTH_Runtime_resume(run_thread);
+	partialCount=0;
+    }
+}
 //==============================================================================
 
 

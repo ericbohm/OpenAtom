@@ -82,6 +82,7 @@ mainmodule cpaimd {
 		entry void acceptNewPsi(mySendMsg *msg);
 		entry void acceptNewPsi(partialResultMsg *msg);
 		entry void acceptLambda(mySendMsg *msg);
+		entry void acceptLambda(partialResultMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void isAtSync(int);
 		entry void startNewIter ();

@@ -66,6 +66,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(mySendMsg *msg);
+	void acceptLambda(partialResultMsg *msg);
 	void getForcesAndIntegrate();
 	void integrateModForce();
 	void pup(PUP::er &);

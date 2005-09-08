@@ -583,10 +583,8 @@ void CP_Rho_RealSpacePlane::doMulticast(){
       fclose(fp);
     }
 #endif
-    for (int i = 0; i < rho_rs.size; i++){
-        rho_rs.doFFTonThis[i] = complex(0,0);
-        rho_rs.Vks[i] = complex(0,0);
-    }
+    bzero(rho_rs.doFFTonThis,sizeof(complex)*rho_rs.size);
+    bzero(rho_rs.Vks,sizeof(complex)*rho_rs.size);
 //============================================================================
    }//end routine
 //============================================================================

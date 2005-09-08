@@ -240,7 +240,8 @@ extern void CmiReference(void *blk);
 void
 CP_State_ParticlePlane::computeZ(PPDummyMsg *m)
 {
-    
+    doneGettingForces = false;    
+//    doneForces=0;
     CP_State_GSpacePlane *gsp = 
 	gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
     GStateSlab *gss = &(gsp->gs);
