@@ -787,7 +787,8 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 	rho_rs->density =  new complex[rho_rs->size];
 
 	//we copy the real densities into the real parts of these and do our stuff.
-	rho_rs->doFFTonThis = (complex *) fftw_malloc(rho_rs->size*sizeof(complex));
+        int sizenow = rho_rs->size;
+	rho_rs->doFFTonThis = (complex *) fftw_malloc(sizenow*sizeof(complex));
 	rho_rs->ydim = 1;
 	rho_rs->zdim = rho_rs->sizeZ;
 	rho_rs->startx = 0;
@@ -888,7 +889,8 @@ void initRhoGSlab(RhoGSlab *rho_gs, int xdim, int ydim, int zdim, int numRealSpa
 
 	// NOTE on in-memory  handling of the chunk:
 	// The chunk is handled as a series of x-z planes, with pencils in x direction
-	rho_gs->chunk = (complex *) fftw_malloc(rho_gs->sizeY * rho_gs->sizeX*sizeof(complex));
+        int sizenow = rho_gs->sizeY * rho_gs->sizeX;
+	rho_gs->chunk = (complex *) fftw_malloc(sizenow*sizeof(complex));
 
 	rho_gs-> size = rho_gs->sizeX * rho_gs->sizeY;
 	/* complex *rho_g = rho_gs.chunk;*/
