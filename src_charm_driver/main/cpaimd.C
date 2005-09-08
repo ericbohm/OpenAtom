@@ -212,7 +212,7 @@ main::main(CkArgMsg *m) {
 
     scProxy = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
     nplane_x         = sim->nplane_x;
-    CkPrintf("nplane_x %d\n",nplane_x);    
+    CkPrintf("    Number of non-zero planes : %d\n",nplane_x);    
 
 //============================================================================    
 // Create the multicast/reduction manager for array sections
@@ -458,7 +458,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
      */
 
   PRINT_LINE_STAR;
-  PRINTF("Building G-space Chares\n");
+  PRINTF("Building G-space and R-space Chares\n");
   PRINT_LINE_DASH;printf("\n");
 
     CProxy_GSMap gsMap;
@@ -529,7 +529,10 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
     int *nsend= new int[nplane_x];
     int **listpe = new int * [nplane_x];
+    int numproc = CkNumPes();
+    int *gspace_proc = new int [numproc];
 
+    for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
     for(int j=0;j<nplane_x;j++){   
       listpe[j]= new int[nstates];
       nsend[j]=0;
@@ -537,12 +540,21 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
       {
 	  
 	  listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
+          gspace_proc[listpe[j][i]]+=1;
 //	      listpe[j][i]=gmap.slowprocNum(0, CkArrayIndex2D(i,j));
 //	      listpe[j][i]=gmap.procNum(0, CkArrayIndex2D(i,j));
 //	      CkPrintf("[%d %d] pe %d\n",j,i,listpe[j][i]);
       }
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }
+    FILE *fp = fopen("gspplane_proc_distrib.out","w");
+    for(int i=0;i<numproc;i++){
+	fprintf(fp,"%d %d\n",i,gspace_proc[i]);
+    }//endfor
+    fclose(fp);
+    delete [] gspace_proc;
+
+
     int minsend=nstates;
     int maxsend=0;
     double avgsend=0.0;
@@ -636,7 +648,7 @@ void init_rho(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC)
  */    
 //============================================================================
     
-        int pe = 0;
+
         CkAssert(config.rhoGPPC == 1);
         rhoGHelperProxy = CProxy_CP_Rho_GSpacePlaneHelper::ckNew();
 	rhoGHelperProxy.setReductionClient(printEnergyHart, NULL);
@@ -652,6 +664,7 @@ void init_rho(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC)
          CkExit();
 	}//endif
 
+        int pe = 0;
         for (z = 0; z < sizeYZ[1]; z++){
             for (y = 0; y < sizeYZ[0]; y += helperSize) {
                 rhoGHelperProxy(z,y).insert(sizeX, sizeYZ, y, pe, 0);
@@ -682,19 +695,18 @@ void init_rho(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC)
 	  fftcommInstance.setStrategy(strat);
       }
      for (i = 0; i < sizeYZ[1]/rhoGPPC; i++) {
+
+	if (peg >= CkNumPes())peg = 0;
+	if (per >= CkNumPes())per = pestride/2;
+
 	rhoGProxy[i].insert(sizeX, sizeYZ, realSpacePPC, rhoGPPC, fftuseCommlib, 
                             fftcommInstance, peg);
 	rhoRealProxy[i].insert(sizeX, sizeYZ, realSpacePPC,
-			       rhoGPPC, fftuseCommlib, fftcommInstance, per);
+			       rhoGPPC, fftuseCommlib, fftcommInstance,per);
 	
 	peg += pestride;
 	per += pestride;
                                                                                    
-	if (peg >= CkNumPes())
-	  peg = 0;
-                                                                                   
-	if (per >= CkNumPes())
-	  per = pestride/2;
       }
                                                                                    
       rhoGProxy.doneInserting();
@@ -927,6 +939,22 @@ void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int idx, double *line_load,
 
   line_load[0] = lines_per_plane[idx];
   pt_load[0]   =   pts_per_plane[idx];
+
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void mapOutput()
+//============================================================================
+    {//begin routine
+//============================================================================
+
+	int i;
+        i = 1;
 
 //============================================================================
   }//end routine
