@@ -207,6 +207,7 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
   CkReductionMsg *m=(CkReductionMsg *)msg;
   double d = ((double *)m->getData())[0];
   CkPrintf("MagForPsi   =  %5.8lf\n", d);
+  CkPrintf("Memory      =  %d\n",CmiMemoryUsage());
   delete m;
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FMAG, d);  
 
@@ -552,9 +553,9 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
    { //begin routine
 //============================================================================
 
-#ifdef _CP_GS_VERBOSE_
-  ckout << "G Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
-#endif
+//#ifdef _CP_GS_VERBOSE_
+//  CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
+//#endif
 
   if (true == initialized) {
     ckerr << "Attempt to initialize a plane twice" << endl;
@@ -644,6 +645,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   //  delete [] points; ???? why not?
   //  delete [] runs; ???? why not?
 
+//  CkPrintf("initGSpace end : %d.%d %d\n",thisIndex.x,thisIndex.y,size);
   int i=1;
 
   contribute(sizeof(int), &i, CkReduction::sum_int);    
@@ -864,6 +866,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 // Do a Comlib Dance
 
+
   if (config.useCommlib){mssInstance.beginIteration();}
   CProxy_CP_State_RealSpacePlane real_proxy = realSpacePlaneProxy;
   if (config.useCommlib){ComlibDelegateProxy(&real_proxy);}
@@ -874,6 +877,7 @@ void CP_State_GSpacePlane::sendFFTData () {
   int numLines = gs.numLines; // same amount of data to each realspace chare puppy
   int sizeZ    = gs.planeSize[1];
 
+//  CkPrintf("sendFFTdata : %d.%d %d\n",thisIndex.x,thisIndex.y,sizeZ);
   for(int z=0; z < sizeZ; z++) {
 
     RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;
