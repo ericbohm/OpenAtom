@@ -1,0 +1,46 @@
+#==================================================================
+# General definitions 
+
+
+#-----------------------------------------------------------------
+# Compile options : Fortran underscore convention
+DBG_OPT          = -O
+OPTS             = $(DBG_OPT)
+F_COMPILER       = ifc $(OPTS) 
+F_COMPILER_NOPT  = ifc $(DBG_OPT)
+OPT_FORT         = -DFORTRANUNDERSCORE
+RUNCOMMAND       = ../cpaimd.x	
+#-----------------------------------------------------------------
+
+#-----------------------------------------------------------------
+# Directories : 
+CPAIMD      = ../
+FFT_HOME    = /expand8/home/glenn/fftw
+
+MYMATH_HOME = ../src_mathlib
+
+VALID_DIR   = ../binary/water_32M_10Ry
+VALID_EXEC  = ../autotest
+AUTOTEST    = ../$(VALID_EXEC)
+#-----------------------------------------------------------------
+#==================================================================
+
+# Blas/Lapack/Eispack by fortran
+
+BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
+LAPACK_FORT  = $(MYMATH_HOME)/lapack_routines.h
+EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
+#MATH_LIB     = 
+MATH_LIB     = 
+#-----------------------------------------------------------------
+
+#-----------------------------------------------------------------
+#EISPACK_FORT = $(MYMATH_HOME)/no_eispack_routines.h
+
+#MATH_LIB    = -L${MKL_HOME}/lib/32 -lmkl_ia32 -lguide -lpthread
+
+#BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h
+MATH_LIB    = -lgoto  $(MYMATH_HOME)/xerbla.o
+#MATH_LIB     = -lgoto  $(MYMATH_HOME)/xerbla.o -llapack
+#-----------------------------------------------------------------
+#==================================================================
