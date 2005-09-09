@@ -132,7 +132,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 
 
 //============================================================================
-// this function is called from CP_State_GSpacePlane::initGSpace()
+/// this function is called from CP_State_GSpacePlane::initGSpace()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -229,11 +229,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p)
 }
 //============================================================================
 
-
-extern void CmiReference(void *blk);
-
-
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -289,7 +284,7 @@ CP_State_ParticlePlane::computeZ(PPDummyMsg *m)
 
 
 //============================================================================
-// this function achieves the reduction over gspace for a particular state
+/// this function achieves the reduction over gspace for a particular state
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -343,7 +338,7 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
     AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
     Atom *atoms  = ag->atoms;
     int mydoublePack = config.doublePack;
-    double myenl;
+    double myenl=0.0;
     CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,atoms,&zmatrixSum[zoffset],
 	     &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],&myenl,mydoublePack);
     enl+=myenl;
@@ -363,20 +358,6 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
     // reduce enl over all states
     //    CkPrintf(" PP [%d %d] doneEnl %d\n",thisIndex.x, thisIndex.y,doneEnl);
-    if(doneEnl==numSfGrps)
-      {
-	CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-	CkCallback cb=CkCallback(printEnl, NULL);
-	mcastGrp->contribute(sizeof(double),(void*) &enl, 
-		   CkReduction::sum_double, enlCookie, cb);
-	doneEnl=0;
-	enl=0.0;
-	memset(zmatrixSum, 0, zsize * sizeof(complex));
-	memset(zmatrixSum_fx, 0, zsize * sizeof(complex));
-	memset(zmatrixSum_fy, 0, zsize * sizeof(complex));
-	memset(zmatrixSum_fz, 0, zsize * sizeof(complex));
-      }
-
 
   }/*endif*/
 
@@ -438,7 +419,23 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex, complex *zmat
 	gsp->getForcesAndIntegrate();
       }
       doneForces=0;
+      // done with Z stuff send out our ENL
+      if(thisIndex.y==0 && doneEnl==numSfGrps)
+	{
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+	  CkCallback cb=CkCallback(printEnl, NULL);
+	  mcastGrp->contribute(sizeof(double),(void*) &enl, 
+			       CkReduction::sum_double, enlCookie, cb);
+	  //  CkPrintf("PP [%d %d] contributed ENL %g\n",thisIndex.x, thisIndex.y,enl);
+	  doneEnl=0;
+	  enl=0.0;
+	  bzero(zmatrixSum, zsize * sizeof(complex));
+	  bzero(zmatrixSum_fx, zsize * sizeof(complex));
+	  bzero(zmatrixSum_fy, zsize * sizeof(complex));
+	  bzero(zmatrixSum_fz, zsize * sizeof(complex));
+	}
     }
+
   //----------------------------------------------------------------------------
 }
 //============================================================================
