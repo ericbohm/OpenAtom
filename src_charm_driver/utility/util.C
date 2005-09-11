@@ -22,7 +22,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 #endif
     if(ibinary_opt < 0 || ibinary_opt > 1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Bad binary option : %d\n",ibinary_opt);
+      CkPrintf("Bad binary option : %d %s\n",ibinary_opt,fromFile);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -47,7 +47,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
       CkPrintf("It is not consistent with new FFT logic due to input data order\n");
-      CkPrintf("If the data is just reordered all should be well\n");
+      CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -62,6 +62,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     if(curr_y<0){curr_y+=ny;}
     if(curr_z<0){curr_z+=nz;}
     int tmpz           = curr_z;
+    int nline_tot_now  = 1;
 
     for(int pNo=1;pNo<nPacked;pNo++) {
       int x = kx[pNo];
@@ -80,6 +81,12 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         // Each line of z, constant x,y is stored in 2 run descriptors 
         // Example : -3 -2 -1 is a separate ``run of z''
         //            0 1 2 3 is a separte  ``run of z''
+        //            for a line with only a 0 add a zero length descriptor
+        //            to represent the missing negative part of the line.
+        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
+          nrun_tot      +=1;
+	}//endif
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
         nrun_tot      +=1;
         run_length_sum += run_length;
@@ -89,6 +96,17 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         tmpz            = z;
         run_length      = 1;
       }//endif
+      if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
+        nline_tot_now++;
+        if( (nrun_tot-1)/2 != nline_tot_now-1){
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Broken Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
+		   kx[pNo],ky[pNo],kz[pNo],kx[(pNo-1)],ky[(pNo-1)],kz[(pNo-1)],
+                   nrun_tot-1,nline_tot_now-1);
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkExit();
+        }//endif
+      }//endif
     }//endfor
     // Record the last run of z.
     runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
@@ -96,7 +114,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 
     if(run_length_sum!=nPacked){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("The rundescriptor didn't assign all pts to runs\n"); 
+       CkPrintf("The rundescriptor didn't assign all pts to runs %s\n",fromFile); 
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
@@ -104,7 +122,9 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     if((nrun_tot %2)!=0 || nrun_tot != 2*nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor MUST find an even number of half-lines\n");
-      CkPrintf("%d %d\n",nrun_tot,nline_tot);
+      CkPrintf("The rundescriptor MUST find the correct number of lines\n");
+      CkPrintf("%d %d %d %d %s\n",nrun_tot,nrun_tot/2,nline_tot,
+                                  nline_tot_now,fromFile);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -115,7 +135,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
       if( (Desi->x != Desi1->x) || (Desi->y != Desi1->y) ){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("The rundescriptor MUST pair up the half-lines\n");
-        CkPrintf("or you will not be a happy camper\n");
+        CkPrintf("or you will not be a happy camper : %s\n",fromFile);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endfor
@@ -167,14 +187,14 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        FILE *fp=fopen(fromFile,"r");
          if (fp==NULL){
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't open state file");
+            CkPrintf("Can't open state file %s\n",fromFile);
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
             CkExit();
          }//endif
          int nPackedLoc;
          if(4!=fscanf(fp,"%d%d%d%d",&nPackedLoc,&nx,&ny,&nz)){
              CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-             CkPrintf("Can't parse size line of file");
+             CkPrintf("Can't parse size line of file %s\n",fromFile);
              CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
              CkExit();
          }//endif
@@ -183,7 +203,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
            double re,im;
   	   if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
               CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-              CkPrintf("Can't parse packed state location");
+              CkPrintf("Can't parse packed state location %s\n",fromFile);
               CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
               CkExit();
            }//endif
@@ -199,7 +219,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        FILE *fp=fopen(fromFile,"rb");
          if (fp==NULL){
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't open state file");
+            CkPrintf("Can't open state file %s\n",fromFile);
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
             CkExit();
          }
@@ -236,7 +256,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        ParaGrpParse::flip_data_set(nktot,&n_ret,kx,ky,kz,arrCP);
        if(n_ret!=nPacked){
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-          CkPrintf("Bad num pts in readState() : %d %d \n",nktot,n_ret); 
+          CkPrintf("Bad num pts in readState() %s: %d %d \n",nktot,n_ret,fromFile); 
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           CkExit();
        }//endif
@@ -247,6 +267,30 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     for(int i = 1;i<nPacked;i++){
       if(kx[i]!=kx[(i-1)]){nplane++;}
       if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){nline_tot++;}
+      if(kx[i]<kx[(i-1)]){
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkPrintf("Bad x-flip in readState() %s\n",fromFile); 
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkExit();
+      }
+      if(kx[i]==kx[(i-1)]){
+       if(ky[i]<ky[(i-1)]){
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkPrintf("Bad y-flip in readState() %s\n",fromFile); 
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkExit();
+       }
+      }
+      if(kx[i]==kx[(i-1)] && ky[i]==ky[(i-1)]){
+        if(kz[i]!=(kz[(i-1)]+1)){
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkPrintf("Bad y-flip in readState() %s\n",fromFile); 
+         CkPrintf("  %d %d %d\n",kx[i],ky[i],kz[i]);
+         CkPrintf("  %d %d %d\n",kx[(i-1)],ky[(i-1)],kz[(i-1)]);
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkExit();
+	}
+      }
     }//endif
 
 //===================================================================================
@@ -256,7 +300,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
        CkPrintf("It is not consistent with new FFT logic due to input data order\n");
-       CkPrintf("If the data is just reordered all should be well\n");
+       CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
