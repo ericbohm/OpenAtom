@@ -846,7 +846,8 @@ void radixme(int *kmax1, int *kmax2, int *kmax3)
 
 /* radix condition IBM_ESSL (2^h)(3^i)(5^j)(7^k)(11^m)                */
 /* radix condition HP_VECLIB SGI_COMPLIB   (2^h)(3^i)(5^j)             */
-#ifdef IBM_ESSL
+#define IBM_ESSL_RAD
+#ifdef IBM_ESSL_RAD
   krad[0] = 4;
   krad[1] = 8;
   krad[2] = 12;
@@ -862,7 +863,7 @@ void radixme(int *kmax1, int *kmax2, int *kmax3)
   krad[12] = 72;
   krad[13] = 80;
   krad[14] = 96;
-  krad[15] = 112;
+  krad[15] = 100;
   krad[16] = 112;
   krad[17] = 120;
   krad[18] = 128;
