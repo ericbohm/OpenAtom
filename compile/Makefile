@@ -51,26 +51,11 @@ full_code: physics cpaimd_driver mymathlib
 #                 -memory paranoid
 
 #======================================================================
-fulldp_code: physics cpaimddp_driver mymathlib
-	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o ../binary/cpaimd_dp.x \
-                  -language charm++ $(CHARMLIB) \
-                  -L../binary -lCharmDPDriver -lPinyInterface -lMyMathLib\
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB)
-#                 -memory paranoid
-
-#======================================================================
 clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
-	/bin/rm -rf ../binary/cpaimd.x
-
-cleandp: clean_cpaimddp_driver clean_physics clean_mymathlib
 	/bin/rm -rf ../binary/cpaimd.x
 
 clean_cpaimd_driver:
 	cd $(MAKE_CPAIMD_DRV_INC); make clean; 
-
-clean_cpaimddp_driver:
-	cd $(MAKE_CPAIMDDP_DRV_INC); make clean; 
 
 clean_physics:
 	cd $(MAKE_PHYS_INC); make clean; 
