@@ -212,7 +212,6 @@ main::main(CkArgMsg *m) {
 
     scProxy = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
     nplane_x         = sim->nplane_x;
-    CkPrintf("    Number of non-zero planes : %d\n",nplane_x);    
 
 //============================================================================    
 // Create the multicast/reduction manager for array sections
@@ -561,6 +560,7 @@ void init_planes(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
     int nplane_use=0;
     CkPrintf("============================\n");
     CkPrintf("Structure factor plane dests\n");
+    CkPrintf("Non-zero planes : %d\n",nplane_x);    
     CkPrintf("---------------------------\n");
     for(int lsi=0;lsi<nplane_x;lsi++){
         nplane_use++;
