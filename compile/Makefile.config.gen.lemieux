@@ -5,8 +5,9 @@
 OPTS = -O3 
 
 F_COMPILER  = f77 $(OPTS)
+F_COMPILER_NOPT  = f77
 CPAIMD      = ..
-FFT_HOME    = /usr/users/0/martyna/fftw
+FFT_HOME    = /usr/users/3/skumar3/fftw
 MYMATH_HOME = ../src_mathlib
 OPT_FORT    = -DFORTRANUNDERSCORE
 
