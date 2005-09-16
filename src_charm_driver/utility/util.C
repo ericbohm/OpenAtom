@@ -667,7 +667,7 @@ void Config::readConfig(const char* fileName, Config &config,
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact"))
-            config.gExpandFact = atol(parameterValue);
+               sscanf(parameterValue,"%lg",&(config.gExpandFact));
         else {
             config.numSet --;
             ckout << "Unknown parameter: " << parameterName << endl;
@@ -723,7 +723,8 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.pesPerState>config.nchareG){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Too many pesPerState : must be < %d\n",config.nchareG);
+      CkPrintf("Too many pesPerState : must be < %d %g %d\n",config.nchareG,
+                 config.gExpandFact,sizex);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
