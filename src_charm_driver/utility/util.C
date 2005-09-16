@@ -667,7 +667,7 @@ void Config::readConfig(const char* fileName, Config &config,
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact"))
-            config.gExpandFact = atoi(parameterValue);
+            config.gExpandFact = atol(parameterValue);
         else {
             config.numSet --;
             ckout << "Unknown parameter: " << parameterName << endl;
