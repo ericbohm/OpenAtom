@@ -27,12 +27,10 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 
 
-
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-GStateSlab::~GStateSlab() 
-{
+GStateSlab::~GStateSlab() {
 
     if(packedPlaneData    !=NULL) delete [] packedPlaneData;
     if(packedPlaneDataTemp!=NULL) delete [] packedPlaneDataTemp;
@@ -608,6 +606,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 
    int pSize    = planeSize[0] * sizeX;
    int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+
 //==============================================================================
 // Output
 
@@ -690,7 +689,7 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
    rs->thisState  = stateIndex;        // my state (I)
    rs->thisPlane  = planeIndex;        // my plane (z)
    rs->nsize      = planeSize[0]*sizeX; // when fft is completed
-   rs->numPlanesToExpect = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+   rs->numPlanesToExpect = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
    int rsize_a    = planeSize[0]*(planeSize[1]/2+1);
    int rsize_b    = planeSize[1]*(planeSize[0]/2+1);
    rs->rsize      = (rsize_a > rsize_b ? rsize_a : rsize_b);
@@ -745,8 +744,7 @@ return doFFTonThis;
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RhoRealSlab::doFwFFT()
-{
+void RhoRealSlab::doFwFFT(){
 	int j, planeSize = sizeX * sizeZ;
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();

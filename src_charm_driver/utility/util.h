@@ -1,6 +1,12 @@
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
 #ifndef __PFFTUTIL_H__
 #define __PFFTUTIL_H__
+//===================================================================================
+
 #include "converse.h"
+
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -128,7 +134,6 @@ public:
 };
 //===================================================================================
 
-
 #include "../../include/RunDescriptor.h"
 
 using namespace std;
@@ -179,7 +184,9 @@ class Config {
 	//
 	int low_x_size;
 	int high_x_size;
+        int nchareG;
 	int inPlaceFFT;
+        double gExpandFact;
 	void print();
 
 	int conserveMemory;

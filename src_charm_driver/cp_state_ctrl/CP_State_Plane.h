@@ -1,36 +1,63 @@
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 #ifndef _PLANE_H_
 #define _PLANE_H_
 
+//============================================================================
 #include "charm++.h"
 #include "ckmulticast.h"
 #include "fftlib.h"
 #include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
  public:
 	int datalen, hops;
 	double *data;
 	int idx;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class EnlCookieMsg : public CkMcastBaseMsg, public CMessage_EnlCookieMsg {
  public:
   int foo;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class RSDummyResume: public CMessage_RSDummyResume {
 };
+//============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class TMsg: public CMessage_TMsg {
 public:
 	int datalen;
 	complex *data;
 };
+//============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class GSIFFTMsg: public CMessage_GSIFFTMsg {
 public:
 	int size;
@@ -41,7 +68,12 @@ public:
 	}
 */
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class RSFFTMsg: public CMessage_RSFFTMsg {
 public:
     int size; 
@@ -49,7 +81,12 @@ public:
     int numPlanes;
     complex *data;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
 	CP_State_GSpacePlane(int, size2d, int, int, int);
@@ -128,7 +165,12 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	PairCalcID gpairCalcID1;
 	PairCalcID gpairCalcID2;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
 	CP_State_RealSpacePlane(size2d, int, int);
@@ -160,7 +202,12 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	RTH_Runtime* run_thread;
 	int sendFFTDataSize;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
  public:	
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
@@ -203,7 +250,12 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int id;
 	RTH_Runtime* run_thread;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_Rho_GSpacePlane: public NormalSlabArray {
  public:
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
@@ -228,7 +280,12 @@ class CP_Rho_GSpacePlane: public NormalSlabArray {
 		      const int xdim, const int ydim, const int zdim);
 	RTH_Runtime* run_thread;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_Rho_GSpacePlaneHelper: public CBase_CP_Rho_GSpacePlaneHelper {
 public:
 	CP_Rho_GSpacePlaneHelper(CkMigrateMessage *m) {}
@@ -241,8 +298,12 @@ private:
 	int helperWidth, helperPos;
 	complex *temp;
 };
-	
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
  public:
 	CP_State_ParticlePlane(CkMigrateMessage *m) {}
@@ -283,6 +344,10 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 	CProxySection_CP_State_ParticlePlane particlePlaneENLProxy;
  public: 
 };
+//============================================================================
 
-
+//============================================================================
 #endif // #ifndef _PLANE_H_
+//============================================================================
+
+

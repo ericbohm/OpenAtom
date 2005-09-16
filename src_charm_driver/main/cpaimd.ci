@@ -2,7 +2,7 @@ mainmodule cpaimd {
 
 	readonly int nstates;
 	readonly int sizeX;
-	readonly int nplane_x;
+	readonly int nchareG;
 	readonly int Ortho_UE_step2;
 	readonly int Ortho_UE_step3;
 	readonly int Ortho_UE_error;

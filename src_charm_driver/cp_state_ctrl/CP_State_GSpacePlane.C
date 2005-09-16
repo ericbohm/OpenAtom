@@ -75,7 +75,7 @@ extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_EnergyGroup egroupProxy;
 extern int nstates;
 extern int sizeX;
-extern int nplane_x;
+extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
 extern int atom_integrate_done;  // not a readonly global : a group of one element
 extern ComlibInstanceHandle mcastInstancePP;
 extern CProxy_FFTcache fftCacheProxy;
@@ -476,7 +476,7 @@ void CP_State_GSpacePlane::readFile() {
   readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
             kx, ky, kz, &nx, &ny,&nz);
   if(config.low_x_size != nplane && config.doublePack){
-    CkPrintf("Mismatch in allowed gspace chare arrays\n");
+    CkPrintf("Mismatch in planesize\n");
     CkExit();
   }//endif
 
@@ -487,8 +487,8 @@ void CP_State_GSpacePlane::readFile() {
 // Parse the run descriptor into integer vectors for use with decomp function
 
   int ioff = 0;
-  for(int x = 0; x < nplane_x; x ++) 
-  {
+  for(int x = 0; x < nchareG; x ++){
+
       int runsToBeSent = sortedRunDescriptors[x].size();
       int numPoints    = 0;
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
@@ -511,7 +511,7 @@ void CP_State_GSpacePlane::readFile() {
       delete [] runDesc;
 
       ioff += numPoints;
-  }//endfor : loop over all possible planes
+  }//endfor : loop over all possible chares in g-space (pencils)
 
   CkAssert(numData==ioff);
 
@@ -856,7 +856,7 @@ void CP_State_GSpacePlane::doFFT() {
 
 
 //============================================================================
-// Send result to realSpacePlane
+// Send result to realSpacePlane : perform the transpose
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -1131,21 +1131,6 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   double gamma_conj_grad = 0.0;
 
-//=========================================================================
-// Spawn the real space atom force and PE calculation.
-// Each processor should call this function once!
-
-  if(thisIndex.x == 0 && thisIndex.y == 0){
-
-#ifdef GJM_DBG_ATMS
-    CkPrintf("GJM_DBG : istart\n");
-#endif
-
-//    atomsGrpProxy.StartRealspaceForces(); // a message that is 
-                                          // invoked by the scheduler
-                                          // when it feels like it
-  }//endif
-
 //==========================================================================
 // Evolve the states using the forces/conjugate direction
   
@@ -1271,11 +1256,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg) {
 
   partialCount++;
   delete msg;
-/*  CP_State_ParticlePlane *pp = 
-    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  pp->doneGettingForces=false;
-  pp->doneForces=0;
-*/
+
   CkAssert(partialCount<=AllExpected);
 
 //==============================================================================
@@ -1330,12 +1311,7 @@ void CP_State_GSpacePlane::acceptNewPsi(mySendMsg *msg) {
   complex *psi  = gs.packedPlaneData;
   CmiMemcpy(psi,data,N*sizeof(complex));
   delete msg;
-/*
-  CP_State_ParticlePlane *pp = 
-    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  pp->doneGettingForces=false;
-  pp->doneForces=0;
-*/
+
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}

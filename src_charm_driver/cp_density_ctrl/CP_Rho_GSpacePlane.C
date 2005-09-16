@@ -223,7 +223,7 @@ void CP_Rho_GSpacePlane::acceptData() {
 
     if (count == rho_gs.sizeY) {
         count = 0;
-
+//        CkPrintf("In RhoGSpacePlane[%d] Accept : calling helper %d\n",thisIndex,helperWidth);
         // do the line inv-fft, in y-D, in-place on rho_rs.chunk 
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();
@@ -298,6 +298,7 @@ void CP_Rho_GSpacePlane::acceptData() {
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
           CkExit();
         }//endif
+
 
         int y;
         for (y = 0; y < rho_gs.sizeY; y += helperWidth){
@@ -484,6 +485,7 @@ void CP_Rho_GSpacePlaneHelper::recvRhoGPart(int size, complex *points)
 //============================================================================
    CkAssert(size == rho_gs.size);
 
+//   CkPrintf("In RhoGSpacePlaneHelper[%d %d] Recv\n",thisIndex.x,thisIndex.y);
    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
 
    CmiMemcpy(rho_gs.chunk, points, size * sizeof(complex));

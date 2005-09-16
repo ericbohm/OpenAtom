@@ -130,16 +130,16 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
     int size               = msg->size; 
     int Index              = msg->senderIndex;
     complex *partiallyFFTd = msg->data;
-    int nplane_x           = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+    int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
     int sizeY              = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY;
     int sizeZ              = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ;
     int **tranUnpack       = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-    int *nline_per_plane   = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_plane;
+    int *nline_per_chareG  = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 
     int planeSize          = rs.size;
 
     count++;
-    if (count > nplane_x) {
+    if (count > nchareG) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Mismatch in allowed gspace chare arrays\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -162,9 +162,9 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 // Pictorially a half cylinder is sent which is unpacked into
 // a half cube for easy FFTing. Y is the inner index.
 
-    if(size!=nline_per_plane[Index]){
+    if(size!=nline_per_chareG[Index]){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, %d != %d for chare %d %d\n",size,nline_per_plane[Index],
+      CkPrintf("Dude, %d != %d for chare %d %d\n",size,nline_per_chareG[Index],
                    thisIndex.y,Index);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
@@ -174,7 +174,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
     delete msg;
 
-    if (count == nplane_x) {count=0;RTH_Runtime_resume(run_thread);}
+    if (count == nchareG) {count=0;RTH_Runtime_resume(run_thread);}
 
 //============================================================================
    }//end routine
@@ -219,6 +219,8 @@ void CP_State_RealSpacePlane::doReduction(){
 
 //============================================================================
 // Perform the Reduction to get the density
+
+//    CkPrintf("In RealSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,CmiMemoryUsage());
 
     if (config.useGReduction) {
 
@@ -307,9 +309,9 @@ void CP_State_RealSpacePlane::doProduct() {
 //============================================================================
 // check size
 
-#ifdef _CP_RS_VERBOSE_
-    CkPrintf("In RealSpacePlane[%d %d] doProduct\n", thisIndex.x, thisIndex.y);
-#endif
+//#ifdef _CP_RS_VERBOSE_
+//    CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n", thisIndex.x, thisIndex.y,CmiMemoryUsage());
+//#endif
 
 //===================================================================
 // debugging
@@ -342,12 +344,12 @@ void CP_State_RealSpacePlane::doProduct() {
 //===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
 
-    int nplane_x     = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
-    int sizeY        = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY;
-    int sizeZ        = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ;
-    int planeSize    = sizeY*sizeX;
-    int **tranpack   = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-    int *nlines_per_plane = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_plane;
+    int nchareG    = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
+    int sizeY      = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY;
+    int sizeZ      = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ;
+    int planeSize  = sizeY*sizeX;
+    int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
+    int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 
     CProxy_CP_State_GSpacePlane gproxy = gSpacePlaneProxy;
 
@@ -356,8 +358,8 @@ void CP_State_RealSpacePlane::doProduct() {
       mssInstance.beginIteration();
     }//endif
 
-    for (int ic = 0; ic < nplane_x; ic ++) { // chare arrays to which we will send
-      int sendFFTDataSize = nlines_per_plane[ic];
+    for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
+      int sendFFTDataSize = nlines_per_chareG[ic];
       GSIFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
       msg->size      = sendFFTDataSize;
       msg->offset    = thisIndex.y;    // z-index
@@ -401,8 +403,7 @@ CP_State_RealSpacePlane::init(ProductMsg *msg)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void
-CP_State_RealSpacePlane::printData() {
+void CP_State_RealSpacePlane::printData() {
     char str[20];
     sprintf(str, "RSP%dx%d.out", thisIndex.x, thisIndex.y);
     FILE *outfile = fopen(str, "w");

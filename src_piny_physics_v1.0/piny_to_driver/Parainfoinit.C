@@ -146,8 +146,8 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   }//endif
 
   sim->nplane_x        = nkf1;
-  sim->lines_per_plane = lines_per_plane;
-  sim->pts_per_plane   = pts_per_plane;
+  sim->lines_per_chareG = lines_per_plane;
+  sim->pts_per_chareG   = pts_per_plane;
 
 //========================================================================
 
@@ -420,42 +420,42 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
 //========================================================================
 // Local variables 
 
-   int *nlines_per_plane = sim->nlines_per_plane;
-   int *npts_per_plane   = sim->npts_per_plane;
-   int nplane_x          = sim->nplane_x;
+   int *nlines_per_chareG = sim->nlines_per_chareG;
+   int *npts_per_chareG   = sim->npts_per_chareG;
+   int nchareG          = sim->nchareG;
    int sizeX             = sim->sizeX;
    int nlines_tot        = sim->nlines_tot;
    int npts_tot          = sim->npts_tot;
 
-   int nsize = MAX(sizeX,nplane_x);
-   double *pts_per_plane   = new double [nsize];
-   double *lines_per_plane = new double [nsize];
+   int nsize = MAX(sizeX,nchareG);
+   double *pts_per_chareG   = new double [nsize];
+   double *lines_per_chareG = new double [nsize];
 
    int npts   = 0;
    int nlines = 0;
-   for(int i=0;i<nplane_x;i++){
-     pts_per_plane[i]= ((double)npts_per_plane[i])/((double)npts_tot);
-     npts += npts_per_plane[i];
-     lines_per_plane[i]= ((double)nlines_per_plane[i])/((double)nlines_tot);
-     nlines += nlines_per_plane[i];
+   for(int i=0;i<nchareG;i++){
+     pts_per_chareG[i]= ((double)npts_per_chareG[i])/((double)npts_tot);
+     npts += npts_per_chareG[i];
+     lines_per_chareG[i]= ((double)nlines_per_chareG[i])/((double)nlines_tot);
+     nlines += nlines_per_chareG[i];
    }//endfor
 
-   for(int i=nplane_x;i<sizeX;i++){
-     pts_per_plane[i]    = 0.0;
-     lines_per_plane[i]  = 0.0;
+   for(int i=nchareG;i<sizeX;i++){
+     pts_per_chareG[i]    = 0.0;
+     lines_per_chareG[i]  = 0.0;
    }//endfor
 
-   if(npts!=npts_tot || nlines != nlines_tot || nplane_x > sizeX){
+   if(npts!=npts_tot || nlines != nlines_tot || nchareG > sizeX){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      PRINTF("Inconsistency between nlines and pts per plane and totals\n");
      PRINTF("%d %d : %d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot,
-                                       nplane_x,sizeX);
+                                       nchareG,sizeX);
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
    }//endif
 
-   sim->pts_per_plane   = pts_per_plane;
-   sim->lines_per_plane = lines_per_plane;
+   sim->pts_per_chareG   = pts_per_chareG;
+   sim->lines_per_chareG = lines_per_chareG;
 
 //========================================================================
   }

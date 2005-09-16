@@ -14,7 +14,7 @@
 // Decompose the lines
 //==========================================================================
 
-void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts,
+void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *npts,
                 int *kx_line, int *ky_line,
 		int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,
  	        int *nline_lgrp,
@@ -28,15 +28,25 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
 
 
   PRINT_LINE_STAR;
-  PRINTF("Statically load balancing points and lines in state G-space\n");
+  PRINTF("Statically load balancing pts and lines in state G-space : \n");
+  PRINTF("  There are %d pts %d lines and %d chunks\n",nktot,nline,nchareG);
   PRINT_LINE_DASH;printf("\n");
+
+  if(nchareG>nline){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Dude, too much juice on the chunks. Chill on gExpandFact\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
 
   double dev_min  = 0.0;
   int nbal_min    = 0;
   int ibal_min    = 0;
-  for(int ibal=1;ibal<=32;ibal++){
-    int nbal  = ((ibal*nplane)/32);
-    int ntarg = (nktot/nplane);
+  int ifirst      = 0;
+  for(int ibal=0;ibal<=64;ibal++){
+    int nbal  = ((ibal*nchareG)/32);
+    int ntarg = (nktot/nchareG);
     if(ntarg > nbal){ntarg -= nbal;}
     int nmax  = 0;
     int nmin  = nktot;
@@ -44,7 +54,7 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     int ic    = 0;
     for(int i=0;i<nline;i++){
       nnow += npts[i];
-      if( (nnow>=ntarg) && (ic<(nplane-1)) ){
+      if( (nnow>=ntarg) && (ic<(nchareG-1)) ){
         ic+=1;
         nmin = MIN(nmin,nnow);
         nmax = MAX(nmax,nnow);
@@ -54,8 +64,9 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     nmin = MIN(nmin,nnow);
     nmax = MAX(nmax,nnow);
     double dev = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
-    if(ic==nplane-1){
-     if(dev<dev_min || ibal==1){
+    if(ic==nchareG-1){
+     if(dev<dev_min || ifirst==0){
+       ifirst   = 1;
        dev_min  = dev;
        nbal_min = nbal;
        ibal_min = ibal;
@@ -63,10 +74,17 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
     }//endif
   }//endfor
 
+  if(ifirst==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Dude, too much juice on the chunks. Chill on gExpandFact\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
 //==========================================================================
 // Store the good decomposition
 
-  int ntarg = (nktot/nplane);
+  int ntarg = (nktot/nchareG);
   if(ntarg > nbal_min){ntarg = ntarg-nbal_min;}
 
   int ic        = 0;
@@ -76,7 +94,7 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
   for(int i=0;i<nline;i++){
     npts_lgrp[ic] += npts[i];
     nline_lgrp[ic]+= 1;
-    if( (npts_lgrp[ic]>=ntarg) && (ic<(nplane-1)) ){
+    if( (npts_lgrp[ic]>=ntarg) && (ic<(nchareG-1)) ){
        iend_lgrp[ic]  = i+1;
        ic+=1;
        npts_lgrp[ic]  = 0;
@@ -84,9 +102,9 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
        istrt_lgrp[ic] = i+1;
     }//endif
   }//endfor
-  iend_lgrp[(nplane-1)]  = nline;
+  iend_lgrp[(nchareG-1)]  = nline;
 
-  for(int i=0;i<nplane;i++){
+  for(int i=0;i<nchareG;i++){
     kx_str_lgrp[i] = kx_line[istrt_lgrp[i]];
     kx_end_lgrp[i] = kx_line[(iend_lgrp[i]-1)];
     ky_str_lgrp[i] = ky_line[istrt_lgrp[i]];
@@ -99,15 +117,27 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
   int nmax      = 0;
   int nmin      = npts_lgrp[0];
   int nline_max = 0;
-  for(int i=0;i<nplane;i++){
+  int nline_min = nline_lgrp[0];
+  for(int i=0;i<nchareG;i++){
     nmax = MAX(nmax,npts_lgrp[i]);
     nmin = MIN(nmin,npts_lgrp[i]);
     nline_max = MAX(nline_lgrp[i],nline_max);
+    nline_min = MIN(nline_lgrp[i],nline_min);
   }//endfor
-  double dev = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
+  double dev   = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
+  double dev_l = 100.0*((double)(nline_max-nline_min))/((double)MAX(nline_min,1));
+
+  if(nline_min==0 || nmin==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Dude, too much juice on the chunks. Chill on gExpandFact\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
   
-  PRINTF("Load balance statistics\n");
-  PRINTF("max=%d : min=%d : dev=%g : %d %d\n",nmax,nmin,dev,nbal_min,ibal_min);
+  PRINTF("   Load balance statistics (%d %d)\n",ibal_min,nbal_min);
+  PRINTF("     pt_max=%d : pt_min=%d : dev=%g\n",nmax,nmin,dev);
+  PRINTF("     li_max=%d : li_min=%d : dev=%g\n",nline_max,nline_min,dev_l);
 
 //==========================================================================
 // Error check
@@ -117,18 +147,18 @@ void ParaGrpParse::get_plane_line_prms(int nktot, int nplane,int nline,int *npts
   int nnn = npts_lgrp[0];
   int nc = nline_lgrp[0];
   if(istrt_lgrp[0]!=0) {ierr++;}
-  for(int i=1;i<nplane;i++){
+  for(int i=1;i<nchareG;i++){
     if(iend_lgrp[(i-1)]!=istrt_lgrp[i]){ierr++;}
     nc += nline_lgrp[i];
     nnn += npts_lgrp[i];
   }//endfor
-  if(iend_lgrp[(nplane-1)]!=nline){ierr++;}
+  if(iend_lgrp[(nchareG-1)]!=nline){ierr++;}
   if(nc!=nline){ierr++;}
   if(nnn!=nktot){ierr++;}
 
   if(ierr!=0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("Error in get_plane_line_params\n");
+    PRINTF("Error in get_chareG_line_params\n");
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif

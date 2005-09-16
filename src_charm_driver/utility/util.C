@@ -37,8 +37,9 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     int nktot = 0;
     readState(nPacked, arrCP, fromFile, ibinary_opt, nline_tot_ret, 
               nplane_ret, kx, ky, kz, &nx, &ny, &nz);
-    int nplane=*nplane_ret;
-    int nline_tot=*nline_tot_ret;
+    int nplane    = (*nplane_ret);
+    int nline_tot = (*nline_tot_ret);
+    int nchareG   = config.nchareG;
 
 //===================================================================================
 // Read the state into the rundescriptor puppy dog
@@ -435,7 +436,8 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
 //===================================================================================
 void Config::print() {
 //===================================================================================
-        CkPrintf("\n");
+
+   CkPrintf("\n");
         ckout     << "gSpacePPC: " << gSpacePPC << endl
                   << "realSpacePPC: " << realSpacePPC << endl
                   << "rhoGPPC: " << rhoGPPC << endl
@@ -477,10 +479,9 @@ void Config::print() {
 	          << "rsifftpriority: " << rsifftpriority << endl
 	          << "lambdapriority: " << lambdapriority << endl
 	          << "psipriority: " << psipriority << endl
-	          << "rhorpriority: " << rhorpriority << endl
+                  << "gExpandFact: " << gExpandFact << endl
 		  << "rhogpriority: " << rhogpriority << endl;
-
-        CkPrintf("\n");
+   CkPrintf("\n");
 
 //----------------------------------------------------------------------------------
    }//end routine
@@ -500,58 +501,64 @@ void Config::readConfig(const char* fileName, Config &config,
 //===================================================================================
 // Initialize parameters
 
-    config.nstates       = nstates_in;
-    config.maxIter       = maxIter_in;
-    config.checkForces   = 0;
-    config.atomIndex     = 0;
-    config.stateIndex    = 0;
-    config.planeIndex    = 0;
-    config.xIndex        = 0;
-    config.yIndex        = 0;
-    config.displacement  = 1e-6;
-    config.delayComputeZ = 0;
-    config.pesPerState   = 1; //Partition the states according to the planes
-    config.RpesPerState  = 0; 
-    config.GpesPerState  = 0; 
-    config.doublePack    = 1;
-    config.inPlaceFFT	 = 1;
-    config.conserveMemory= 0;
-    config.prioFFTMsg    = 0; 
-    config.localSF       = 0;
-    config.delayCompStruct=0;
-    config.lbpaircalc    = 0;
-    config.lbgspace      = 0;
-    config.fftuseCommlib = 0;
-    config.gspacesum     = 0;
-    config.parlambda     = 0;
-    config.numSfGrps     = 1;
-    config.numSfDups     = 1;
-    config.gSpacePPC     = 1;
-    config.realSpacePPC  = 1;
-    config.rhoGPPC       = 1;
+    config.nstates         = nstates_in;
+    config.maxIter         = maxIter_in;
+    config.checkForces     = 0;
+    config.atomIndex       = 0;
+    config.stateIndex      = 0;
+    config.planeIndex      = 0;
+    config.xIndex          = 0;
+    config.yIndex          = 0;
+    config.displacement    = 1e-6;
+    config.delayComputeZ   = 0;
+    config.pesPerState     = 1;    //Partition the states g-chares amongst the procs
+    config.RpesPerState    = 0; 
+    config.GpesPerState    = 0; 
+    config.doublePack      = 1;
+    config.inPlaceFFT	   = 1;
+    config.conserveMemory  = 0;
+    config.prioFFTMsg      = 0; 
+    config.localSF         = 0;
+    config.delayCompStruct  =0;
+    config.lbpaircalc      = 0;
+    config.lbgspace        = 0;
+    config.fftuseCommlib   = 0;
+    config.gspacesum       = 0;
+    config.parlambda       = 0;
+    config.numSfGrps       = 1;
+    config.numSfDups       = 1;
+    config.gSpacePPC       = 1;
+    config.realSpacePPC    = 1;
+    config.rhoGPPC         = 1;
     config.gSpaceNumChunks = 1;
-    config.sfpriority=    10000000;
-    config.rsfftpriority= 1000000;
-    config.gsfftpriority= 1000000;
-    config.rsifftpriority=100000000;
-    config.gsifftpriority=200000000;
-    config.lambdapriority=300000000;
-    config.psipriority=   400000000;
-    config.rhorpriority=  2000000;
-    config.rhogpriority=  2000000;// unused
-    config.priority=10; //unused?
+    config.sfpriority      = 10000000;
+    config.rsfftpriority   = 1000000;
+    config.gsfftpriority   = 1000000;
+    config.rsifftpriority  = 100000000;
+    config.gsifftpriority  = 200000000;
+    config.lambdapriority  = 300000000;
+    config.psipriority     = 400000000;
+    config.rhorpriority    = 2000000;
+    config.rhogpriority    = 2000000;   // unused?
+    config.priority        = 10;        // unused?
+    config.gExpandFact     = 1.0;
 
 //===================================================================================
 // Read parameters
 
     CkPrintf("   Opening cpaimd config file : %s\n",fileName);
     ifstream configFile(fileName, ios::in);
+
     if (configFile.fail()) {
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkAbort("Bad config file, trouble opening\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
+
     char parameterName[MAX_CHAR_ARRAY_LENGTH];
     char parameterValue[MAX_CHAR_ARRAY_LENGTH];
+
     while (true) {
 	configFile >> parameterName >> parameterValue;
 	if (configFile.eof())
@@ -659,29 +666,26 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhorpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gExpandFact"))
+            config.gExpandFact = atoi(parameterValue);
         else {
             config.numSet --;
             ckout << "Unknown parameter: " << parameterName << endl;
         }
-    }
+    }//end while reading
     configFile.close();
     CkPrintf("   Closing cpaimd config file : %s\n",fileName);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
       config.RpesPerState=config.pesPerState;
     }//endif
+
     if(config.pesPerState>0 && config.GpesPerState <1){
       config.GpesPerState=config.pesPerState;
     }//endif
 
 //===================================================================================
-// Consistency Checks on the input
-
-//-----------------------------------------------------------------------------------
 // Set FFT and g-space size
-
-
-    config.numFFTPoints = nkf1 * nkf2 * nkf3;
 
     char fname[1024];
     int sizex,sizey,sizez,nPacked,minx,maxx;
@@ -689,9 +693,40 @@ void Config::readConfig(const char* fileName, Config &config,
     CkPrintf("   Opening state file : %s\n",fname);
     readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
     CkPrintf("   Closing state file : %s\n",fname);
-    config.low_x_size  = minx+1;
-    config.high_x_size = maxx-1;
-    config.numData     = nPacked;
+
+    config.numFFTPoints = nkf1 * nkf2 * nkf3;
+    config.low_x_size   = minx+1;
+    config.high_x_size  = maxx-1;
+    config.numData      = nPacked;
+    int nplane_x        = minx+1;
+    double temp         = (config.gExpandFact)*((double)nplane_x);
+    int nchareG         = ((int)temp);
+    nchareG             = MIN(nchareG,sizex);
+    config.nchareG      = nchareG;
+
+//===================================================================================
+// Consistency Checks on the input
+
+    if(config.gExpandFact<1.0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Chare array expansion factor out of range\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+    if(nchareG<nplane_x){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Too few g-space chares %d %d\n",nplane_x,nchareG);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+    if(config.pesPerState>config.nchareG){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Too many pesPerState : must be < %d\n",config.nchareG);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
     if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -712,26 +747,28 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("x dimension should be divisible by gSpacePPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
+
     if (sizey % config.realSpacePPC != 0) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("y dimension should be divisible by realSpacePPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
+
     if (sizez % config.rhoGPPC != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("z dimension should be divisible by rhoGPPC\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
 
     if (sizey % config.rhoGHelpers != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("y dimension should be divisible by rhoGHelpers\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
 
 //-----------------------------------------------------------------------------------
 // Parameter values that are broken or must be within a certain range
@@ -741,14 +778,14 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("number of states should be divisible by S matrix grain-size\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
 
     if (nstates_in / config.numMulticastMsgs <= 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Problem in the configuration of number of mcast msgs");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
-    }
+    }//endif
 
     if(config.doublePack!= 1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -820,6 +857,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int sizeY = sim->sizeY;
     int sizeZ = sim->sizeZ;
     int doublePack = config.doublePack;
+    double gExpandFact = config.gExpandFact;
 
 //============================================================================
 // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
@@ -829,10 +867,24 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int nline_tot;
     readStateIntoRuns(numData,complexPoints,runDescriptorVec,fname,ibinary_opt,
                       &nline_tot,&(sim->nplane_x));
-    int nplane=sim->nplane_x;
+    int nplane  = sim->nplane_x;
+    int nchareG = sim->nchareG;
 
     if(config.low_x_size != nplane && config.doublePack){
-       CkPrintf("Mismatch in allowed gspace chare arrays\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Mismatch in allowed gspace planes %d %d\n",config.low_x_size,nplane);
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
+
+    double temp  = ((double)nplane)*gExpandFact;
+    int mychareG = (int)temp;
+    mychareG     = MIN(mychareG,sizeX);
+    if(mychareG!=nchareG || mychareG!=config.nchareG){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Mismatch in allowed gspace chare arrays %d %d %d\n",
+             mychareG,nchareG,config.nchareG);
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
 
@@ -872,19 +924,17 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int *ky_end_lgrp  = new int [sizeX];
     int nktot         = numData;
 
-    ParaGrpParse::get_plane_line_prms(nktot,nplane,nline_tot,npts_line,kx_line,ky_line,
+    ParaGrpParse::get_chareG_line_prms(nktot,nchareG,nline_tot,npts_line,kx_line,ky_line,
                       istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
 		      kx_str_lgrp,kx_end_lgrp,ky_str_lgrp,ky_end_lgrp);
 
-   
-
     int nlines_max=0;
-    for(int i=0;i<nplane;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
+    for(int i=0;i<nchareG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
     int **index_tran_upack = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
    
     int yspace = sizeX;
     if(doublePack){yspace=sizeX/2+1;}
-    for(int igrp=0;igrp<nplane;igrp++){
+    for(int igrp=0;igrp<nchareG;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
         index_tran_upack[igrp][j] = kx_line[i] + ky_line[i]*yspace;
       }//endfor
@@ -892,7 +942,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
     CkVec<RunDescriptor> *sortedRunDescriptors;
     sortedRunDescriptors = new CkVec<RunDescriptor> [sizeX];
-    for(int igrp = 0; igrp < nplane; igrp++){
+    for(int igrp = 0; igrp < nchareG; igrp++){
       for(int i=istrt_lgrp[igrp];i<iend_lgrp[igrp];i++){
  	 int j  = 2*i;
  	 int j1 = 2*i+1;
@@ -901,11 +951,11 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
       }//endfor
     }//endfor
 
-    for(int igrp = nplane; igrp < sizeX; igrp++){
+    for(int igrp = nchareG; igrp < sizeX; igrp++){
       sortedRunDescriptors[igrp].length() = 0;
     }//endfor
 
-  for(int x = 0; x < nplane; x ++) {
+  for(int x = 0; x < nchareG; x ++) {
       int runsToBeSent = sortedRunDescriptors[x].size();
       int numPoints    = 0;
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
@@ -916,10 +966,10 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
 // Pack up the stuff, clean up the memory and exit
 
-    sim->npts_per_plane       = npts_lgrp;
+    sim->npts_per_chareG      = npts_lgrp;
     sim->index_tran_upack     = index_tran_upack;
     sim->nlines_max           = nlines_max;
-    sim->nlines_per_plane     = nline_lgrp;
+    sim->nlines_per_chareG    = nline_lgrp;
     sim->sortedRunDescriptors = sortedRunDescriptors;
     sim->npts_tot             = numData;
     sim->nlines_tot           = nline_tot;

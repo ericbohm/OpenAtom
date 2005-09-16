@@ -387,6 +387,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
     }//endfor
     delete msg;
 
+//    CkPrintf("In RhoRealSpacePlane[%d] accept density %d %d\n",thisIndex, CkMyPe(),CmiMemoryUsage());
     //energyComputation();
     //acceptDensity();
     RTH_Runtime_resume(run_thread);
@@ -417,6 +418,8 @@ void CP_Rho_RealSpacePlane::energyComputation()
 //============================================================================
     {//begin routine 
 //============================================================================
+
+// CkPrintf("In RhoRealSpacePlane[%d] energyComp %d %d\n",thisIndex, CkMyPe(),CmiMemoryUsage());
 
     CmiMemcpy(rho_rs.density, rho_rs.doFFTonThis, 
            rho_rs.sizeX * rho_rs.sizeZ * sizeof(complex));
@@ -463,7 +466,7 @@ void CP_Rho_RealSpacePlane::startTranspose()
 //============================================================================
    {//begin routine
 //============================================================================
-
+// CkPrintf("In RhoRealSpacePlane[%d] startTranspose %d %d\n",thisIndex, CkMyPe(),CmiMemoryUsage());
     int planeSize = rho_rs.sizeX * rho_rs.sizeZ;
     int dataSize = rho_rs.sizeX;
     int maxk = rho_rs.sizeZ;
@@ -493,6 +496,8 @@ void CP_Rho_RealSpacePlane::startTranspose()
          ComlibDelegateProxy(&rhoGProxy_com);          
     }//endif
 
+//    CkPrintf("In RhoRealSpacePlane[%d] startTranspose %d %d %d\n",thisIndex,
+//                   rho_rs.sizeZ,rho_rs.sizeX,CmiMemoryUsage());
     for (l = 0; l < rho_rs.sizeZ; l++){
       complex *dataPtr = planePtr + l * rho_rs.sizeX;
       rhoGProxy_com[l].acceptData(dataSize, dataPtr, thisIndex, l, 0);
