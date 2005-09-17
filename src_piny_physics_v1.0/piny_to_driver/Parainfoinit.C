@@ -401,7 +401,7 @@ void PhysicsParamTransfer::get_Sfgrp_max(int natm_nl, int numSfGrps,
 {
      int n = (natm_nl / numSfGrps);
      int m = (natm_nl % numSfGrps);
-     if(m==0){n++;}
+     if(m!=0){n++;}
 
      (*natm_nl_grp_max) = n;
 }
