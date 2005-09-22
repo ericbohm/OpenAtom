@@ -1,0 +1,47 @@
+#==============================================================================================================
+echo "Diffing directory : cp_density_ctrl"
+diff ./cp_density_ctrl/CP_Rho_GSpacePlane.C ../../$1/src_charm_driver/cp_density_ctrl/CP_Rho_GSpacePlane.C
+diff ./cp_density_ctrl/CP_Rho_RealSpacePlane.C ../../$1/src_charm_driver/cp_density_ctrl/CP_Rho_RealSpacePlane.C
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : cp_state_ctrl"
+diff ./cp_state_ctrl/CP_State_GSpacePlane.C ../../$1/src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C
+diff ./cp_state_ctrl/CP_State_ParticlePlane.C ../../$1/src_charm_driver/cp_state_ctrl/CP_State_ParticlePlane.C
+diff ./cp_state_ctrl/CP_State_RealSpacePlane.C ../../$1/src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C
+diff ./cp_state_ctrl/para_grp_parse.C ../../$1/src_charm_driver/cp_state_ctrl/para_grp_parse.C
+diff ./cp_state_ctrl/CP_State_Plane.h ../../$1/src_charm_driver/cp_state_ctrl/CP_State_Plane.h
+diff ./cp_state_ctrl/para_grp_parse.h ../../$1/src_charm_driver/cp_state_ctrl/para_grp_parse.h
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : load_balance"
+diff ./load_balance/map.C ../../$1/src_charm_driver/load_balance/map.C
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : main"
+diff ./main/cpaimd.C ../../$1/src_charm_driver/main/cpaimd.C
+diff ./main/groups.C ../../$1/src_charm_driver/main/groups.C
+diff ./main/matmul.C ../../$1/src_charm_driver/main/matmul.C
+diff ./main/ReductionClients.h ../../$1/src_charm_driver/main/ReductionClients.h
+diff ./main/cpaimd.h ../../$1/src_charm_driver/main/cpaimd.h
+diff ./main/groups.h ../../$1/src_charm_driver/main/groups.h
+diff ./main/matmul.h ../../$1/src_charm_driver/main/matmul.h
+diff ./main/cpaimd.ci ../../$1/src_charm_driver/main/cpaimd.ci
+diff ./main/matmul.ci ../../$1/src_charm_driver/main/matmul.ci
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : misc"
+diff ./misc/sim_subroutines.C ../../$1/src_charm_driver/misc/sim_subroutines.C
+diff ./misc/sim_subroutines.h ../../$1/src_charm_driver/misc/sim_subroutines.h
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : orthog_ctrl"
+diff ./orthog_ctrl/ortho.C ../../$1/src_charm_driver/orthog_ctrl/ortho.C
+diff ./orthog_ctrl/ortho.h ../../$1/src_charm_driver/orthog_ctrl/ortho.h
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : structure_factor"
+diff ./structure_factor/StructFactorCache.C ../../$1/src_charm_driver/structure_factor/StructFactorCache.C
+diff ./structure_factor/StructureFactor.C ../../$1/src_charm_driver/structure_factor/StructureFactor.C
+diff ./structure_factor/StructFactorCache.h ../../$1/src_charm_driver/structure_factor/StructFactorCache.h
+diff ./structure_factor/StructureFactor.h ../../$1/src_charm_driver/structure_factor/StructureFactor.h
+#-------------------------------------------------------------------------------------------------------------
+echo "Diffing directory : utility"
+diff ./utility/para_grp_parse.C ../../$1/src_charm_driver/utility/para_grp_parse.C
+diff ./utility/util.C ../../$1/src_charm_driver/utility/util.C
+diff ./utility/para_grp_parse.h ../../$1/src_charm_driver/utility/para_grp_parse.h
+diff ./utility/util.h ../../$1/src_charm_driver/utility/util.h
+#==============================================================================================================
