@@ -2,7 +2,7 @@
 # General definitions 
 
 DBG_FLAG   = 
-OPTS_ONLY  = -O3 
+OPTS_ONLY  = -O3
 OPTS       = $(OPTS_ONLY) $(DBG_FLAG)
 OPT_FORT   = -DFORTRANUNDERSCORE
 #==================================================================

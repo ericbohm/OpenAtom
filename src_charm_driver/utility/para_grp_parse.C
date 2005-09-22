@@ -14,18 +14,13 @@
 // Decompose the lines
 //==========================================================================
 
-void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *npts,
-                int *kx_line, int *ky_line,
-		int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,
- 	        int *nline_lgrp,
-                int *kx_str_lgrp,int *kx_end_lgrp,
-                int *ky_str_lgrp,int *ky_end_lgrp)
+void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,
+     int *npts,int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp)
 
 //==========================================================================
-   {
+   {//begin routine
 //==========================================================================
 // Find the best load balancing factor
-
 
   PRINT_LINE_STAR;
   PRINTF("Statically load balancing pts and lines in state G-space : \n");
@@ -44,7 +39,7 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *np
   int nbal_min    = 0;
   int ibal_min    = 0;
   int ifirst      = 0;
-  for(int ibal=0;ibal<=64;ibal++){
+  for(int ibal=0;ibal<=128;ibal++){
     int nbal  = ((ibal*nchareG)/32);
     int ntarg = (nktot/nchareG);
     if(ntarg > nbal){ntarg -= nbal;}
@@ -104,13 +99,6 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *np
   }//endfor
   iend_lgrp[(nchareG-1)]  = nline;
 
-  for(int i=0;i<nchareG;i++){
-    kx_str_lgrp[i] = kx_line[istrt_lgrp[i]];
-    kx_end_lgrp[i] = kx_line[(iend_lgrp[i]-1)];
-    ky_str_lgrp[i] = ky_line[istrt_lgrp[i]];
-    ky_end_lgrp[i] = ky_line[(iend_lgrp[i]-1)];
-  }//endfor
-
 //==========================================================================
 // Output some statistics 
 
@@ -133,7 +121,6 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *np
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
-
   
   PRINTF("   Load balance statistics (%d %d)\n",ibal_min,nbal_min);
   PRINTF("     pt_max=%d : pt_min=%d : dev=%g\n",nmax,nmin,dev);
@@ -148,13 +135,13 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,int *np
   int nc = nline_lgrp[0];
   if(istrt_lgrp[0]!=0) {ierr++;}
   for(int i=1;i<nchareG;i++){
-    if(iend_lgrp[(i-1)]!=istrt_lgrp[i]){ierr++;}
+    if(iend_lgrp[(i-1)]!=istrt_lgrp[i]){ierr++;CkPrintf("err.1\n");}
     nc += nline_lgrp[i];
     nnn += npts_lgrp[i];
   }//endfor
-  if(iend_lgrp[(nchareG-1)]!=nline){ierr++;}
-  if(nc!=nline){ierr++;}
-  if(nnn!=nktot){ierr++;}
+  if(iend_lgrp[(nchareG-1)]!=nline){ierr++;CkPrintf("err.2\n");}
+  if(nc!=nline){ierr++;CkPrintf("err.3\n");}
+  if(nnn!=nktot){ierr++;CkPrintf("err.4\n");}
 
   if(ierr!=0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -279,4 +266,9 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
 
 //==========================================================================
    }//end routine
+//==========================================================================
+
+
+//==========================================================================
+// Reorder for better line decomposition
 //==========================================================================

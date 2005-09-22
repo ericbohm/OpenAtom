@@ -1,6 +1,7 @@
 #=====================================================================
 include ../../compile/Makefile.config.gen
 include ../../compile/Makefile.config.charm
+include ../../compile/Makefile.config.piny
 #=====================================================================
 
 
@@ -26,8 +27,7 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
          -I$(HEAD) -I$(MAIN) -I$(STATE) -I$(RHO) \
          -I$(ORTHO) -I$(UTIL) -I$(MATH) -I$(LOADB) \
 	 -I../misc -I$(STRUCTFACT) -I$(TOPINC) \
-         -I../../src_piny_physics_v1.0/include/pentium_par #-DGROUP_REDUCTION
-#         -I../../src_piny_physics_v1.0/include/ibm_par #-DGROUP_REDUCTION
+         -I../$(STANDARD_INC) #-DGROUP_REDUCTION
 LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
          -lrfftw -lm -module fftlib                      #-memory paranoid
 #===========================================================================

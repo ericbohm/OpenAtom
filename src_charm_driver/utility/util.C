@@ -2,6 +2,7 @@
 #include "para_grp_parse.h"
 #include "CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
+#include "../../src_mathlib/mathlib.h"
 extern Config config;
 extern int sizeX;
 
@@ -12,8 +13,13 @@ extern int sizeX;
 
 void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs, 
                        const char *fromFile,int ibinary_opt,
-                       int *nline_tot_ret,int *nplane_ret) {
+                       int *nline_tot_ret,int *nplane_ret,
+                       int *istrt_lgrp,int *iend_lgrp,
+                       int *npts_lgrp,int *nline_lgrp,
+                       int **kx_line_ret, int **ky_line_ret,int iget_decomp)
 
+//===================================================================================
+    {//begin routine
 //===================================================================================
 // A little screen output for the fans
 
@@ -36,7 +42,8 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     int *kz= new int [nPacked];
     int nktot = 0;
     readState(nPacked, arrCP, fromFile, ibinary_opt, nline_tot_ret, 
-              nplane_ret, kx, ky, kz, &nx, &ny, &nz);
+              nplane_ret, kx, ky, kz, &nx, &ny, &nz,
+              istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp);
     int nplane    = (*nplane_ret);
     int nline_tot = (*nline_tot_ret);
     int nchareG   = config.nchareG;
@@ -142,6 +149,39 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
       }//endfor
     }//endfor
 
+//===================================================================================
+
+    int *kx_line  = new int [nline_tot];
+    int *ky_line  = new int [nline_tot];
+    int ic        = 0;
+    kx_line[0]    = kx[0];
+    ky_line[0]    = ky[0];
+    if(kx_line[0]<0){kx_line[0]+=nx;}
+    if(ky_line[0]<0){ky_line[0]+=ny;}
+
+    for(int i = 1;i<nPacked;i++){
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        ic++;
+        kx_line[ic] = kx[i];
+        ky_line[ic] = ky[i];
+        if(ky_line[ic]<0){ky_line[ic]+=ny;}
+        if(kx_line[ic]<0){kx_line[ic]+=nx;}
+      }//endfor
+    }//endfor
+    ic++;
+
+    if(ic!=nline_tot){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Incorrect number of lines : %s\n",fromFile);
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
+
+    *kx_line_ret  = kx_line;
+    *ky_line_ret  = ky_line;
+
+//===================================================================================
+
     delete[] kx;
     delete[] ky;
     delete[] kz;
@@ -164,11 +204,16 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt,
 	       int *nline_tot_ret,int *nplane_ret, int *kx, int *ky, int *kz, 
-               int *nx_ret, int *ny_ret, int *nz_ret) {
+               int *nx_ret, int *ny_ret, int *nz_ret,
+               int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
+               int iget_decomp) 
 
+//===================================================================================
+   {//begin routine
 //===================================================================================
 // A little screen output for the fans
 
+    int nchareG = config.nchareG;
 #ifdef _CP_UTIL_VERBOSE_
     CkPrintf("Reading state from file: %s\n",fromFile);
 #endif
@@ -273,15 +318,15 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
          CkPrintf("Bad x-flip in readState() %s\n",fromFile); 
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
          CkExit();
-      }
+      }//endif
       if(kx[i]==kx[(i-1)]){
        if(ky[i]<ky[(i-1)]){
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
          CkPrintf("Bad y-flip in readState() %s\n",fromFile); 
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
          CkExit();
-       }
-      }
+       }//endif
+      }//endif
       if(kx[i]==kx[(i-1)] && ky[i]==ky[(i-1)]){
         if(kz[i]!=(kz[(i-1)]+1)){
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -290,20 +335,161 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
          CkPrintf("  %d %d %d\n",kx[(i-1)],ky[(i-1)],kz[(i-1)]);
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
          CkExit();
-	}
-      }
+	}//endif
+      }//endif
+    }//endfor : pts in g-space
+
+    if(config.nchareG>nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, too much juice on the chunks. Chill on gExpandFact\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    
+//===================================================================================
+// Reorder the data to produce better balance for the lines : 
+
+    int *kx_ind     = new int[nline_tot];
+    int *kx_line    = new int[nline_tot];
+    int *istrt_line = new int [nline_tot];
+    int *iend_line  = new int [nline_tot];
+    int *npts_line  = new int [nline_tot];
+    int ic = 0;
+    istrt_line[0] = 0;
+    for(int i = 1;i<nPacked;i++){
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        iend_line[ic] = i;
+        npts_line[ic] = iend_line[ic]-istrt_line[ic];
+        ic++;
+        istrt_line[ic] = i;
+      }//endfor
+    }//endfor
+    iend_line[ic] = nPacked;
+    npts_line[ic] = iend_line[ic]-istrt_line[ic];
+    ic++;
+    if(ic!=nline_tot){CkPrintf("Toasty Line Flip-lines!\n");CkExit();}
+
+    complex *arrCPt = new complex[nPacked];
+    int *kxt        = new int[nPacked];
+    int *kyt        = new int[nPacked];
+    int *kzt        = new int[nPacked];
+    memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    memcpy(kxt,kx,(nPacked*sizeof(int)));
+    memcpy(kyt,ky,(nPacked*sizeof(int)));
+    memcpy(kzt,kz,(nPacked*sizeof(int)));
+
+    int jc      = 0;
+    int lc      = 0;
+    for(int i=0;i<nchareG; i++){
+      for(int j=i;j<nline_tot;j+=nchareG){
+        for(int lt=istrt_line[j],l=jc;lt<iend_line[j];lt++,l++){
+          kx[l]    = kxt[lt];
+          ky[l]    = kyt[lt];
+          kz[l]    = kzt[lt];
+          arrCP[l] = arrCPt[lt];
+	}//endfor
+        jc+=npts_line[j];
+        lc++;
+      }//endfor
+    }//endfor
+    if(jc!=nPacked)  {CkPrintf("Toasty Line Flip-pts!\n");  CkExit();}
+    if(lc!=nline_tot){CkPrintf("Toasty Line Flip-lines!\n");CkExit();}
+
+    ic            = 0;
+    istrt_line[0] = 0;
+    kx_line[0]    = kx[0];
+    for(int i = 1;i<nPacked;i++){
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        iend_line[ic] = i;
+        npts_line[ic] = iend_line[ic]-istrt_line[ic];
+        ic++;
+        istrt_line[ic] = i;
+        kx_line[ic] = kx[i];
+      }//endfor
+    }//endfor
+    iend_line[ic] = nPacked;
+    npts_line[ic] = iend_line[ic]-istrt_line[ic];
+    ic++;
+    if(ic!=nline_tot){CkPrintf("Toasty Line Flip-lines.b!\n");CkExit();}
+
+//===================================================================================
+// Decompose if necessary : note istrt_lgrp, iend_lgrp only define when iget_decomp==1
+
+    if(iget_decomp==1){
+      if(istrt_lgrp==NULL || iend_lgrp == NULL){
+        CkPrintf("Toasty Line Flip memory!\n");CkExit();
+      }//endif
+      ParaGrpParse::get_chareG_line_prms(nPacked,nchareG,nline_tot,npts_line,
+                               istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp);
     }//endif
 
 //===================================================================================
-// Read the state into the rundescriptor puppy dog
-	
+// For each decomposd chunk : sort on kx
+//      note istrt_lgrp, iend_lgrp only define when iget_decomp==1
+
+    int *kx_tmp = new int[nline_tot];
+    memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    memcpy(kxt,kx,(nPacked*sizeof(int)));
+    memcpy(kyt,ky,(nPacked*sizeof(int)));
+    memcpy(kzt,kz,(nPacked*sizeof(int)));
+
+    int loff = 0;
+    int joff = 0;
+    for(int i=0;i<nchareG;i++){
+      for(int l=0;l<nline_lgrp[i];l++){
+        kx_tmp[l] = kx_line[(l+loff)];
+        kx_ind[l] = l;
+      }//endfor
+      if(nline_lgrp[i]>1){sort_commence(nline_lgrp[i],kx_tmp,kx_ind);}
+      for(int l=0;l<nline_lgrp[i];l++){
+        int istrt = istrt_line[(kx_ind[l]+loff)];
+        int iend  = iend_line[(kx_ind[l]+loff)];
+        for(int j=istrt,jk=joff;j<iend;j++,jk++){
+          arrCP[jk] = arrCPt[j];
+          kx[jk]    = kxt[j];
+          ky[jk]    = kyt[j];
+          kz[jk]    = kzt[j];
+	}//endfor
+        joff += npts_line[(kx_ind[l]+loff)];
+      }//endfor
+      loff += nline_lgrp[i];
+    }//endfor
+    if(joff!=nPacked)  {CkPrintf("Toasty Line Flip-pts.2!\n");  CkExit();}
+    if(loff!=nline_tot){CkPrintf("Toasty Line Flip-lines.2!\n");CkExit();}
+
+//===================================================================================
+// 
+
+#ifdef _CP_DEBUG_LINE_
+    double norm = 0;
+    for(int i=1;i<nPacked;i++){
+       double wght_now = 2.0;
+       if(kx[i]==0 && ky[i]<0){wght_now=0.0;}
+       if(kx[i]==0 && ky[i]==0 && kz[i]<0){wght_now=0.0;}
+       if(kx[i]==0 && ky[i]==0 && kz[i]==0){wght_now=1.0;}
+       norm += (wght_now)*arrCP[i].getMagSqr();
+    }//endif
+    double normt = 0;
+    for(int i=1;i<nPacked;i++){
+       double wght_now = 2.0;
+       if(kxt[i]==0 && kyt[i]<0){wght_now=0.0;}
+       if(kxt[i]==0 && kyt[i]==0 && kzt[i]<0){wght_now=0.0;}
+       if(kxt[i]==0 && kyt[i]==0 && kzt[i]==0){wght_now=1.0;}
+       normt += (wght_now)*arrCPt[i].getMagSqr();
+    }//endif
+    CkPrintf("state : %g %g\n",norm,normt);
+#endif
+
+//===================================================================================
+// Fix !double pack
+
     if(!config.doublePack){
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
-       CkPrintf("It is not consistent with new FFT logic due to input data order\n");
-       CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkExit();
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
+      CkPrintf("It is not consistent with new FFT logic due to input data order\n");
+      CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
     }//endif
 
 //===================================================================================
@@ -314,6 +500,17 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     *nx_ret        = nx;
     *ny_ret        = ny;
     *nz_ret        = nz;
+
+    delete [] arrCPt;
+    delete [] kxt;
+    delete [] kyt;
+    delete [] kzt;
+    delete [] istrt_line;
+    delete [] iend_line;
+    delete [] npts_line;
+    delete [] kx_line;
+    delete [] kx_tmp;
+    delete [] kx_ind;
 
 #ifdef _CP_UTIL_VERBOSE_
      CkPrintf("Done reading state from file: %s\n",fromFile);
@@ -666,11 +863,15 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhorpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
-        else if (!strcmp(parameterName, "gExpandFact"))
+        else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
+               }
         else {
             config.numSet --;
+            CkPrintf("@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@\n");
             ckout << "Unknown parameter: " << parameterName << endl;
+            CkPrintf("@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@\n");
+            CkExit();
         }
     }//end while reading
     configFile.close();
@@ -701,7 +902,7 @@ void Config::readConfig(const char* fileName, Config &config,
     int nplane_x        = minx+1;
     double temp         = (config.gExpandFact)*((double)nplane_x);
     int nchareG         = ((int)temp);
-    nchareG             = MIN(nchareG,sizex);
+//    nchareG             = MIN(nchareG,sizex);
     config.nchareG      = nchareG;
 
 //===================================================================================
@@ -722,9 +923,14 @@ void Config::readConfig(const char* fileName, Config &config,
     }//endif
 
     if(config.pesPerState>config.nchareG){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Too many pesPerState : must be < %d %g %d\n",config.nchareG,
+      CkPrintf("Warning : pesPerState > %d %g %d\n",config.nchareG,
                  config.gExpandFact,sizex);
+    }//endif
+
+    if(config.nchareG>sizex){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Error: nchareG> sizex : reduce gExpandFact\n");
+      CkPrintf("Memory allocations needs love in pups and elsewhere!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -851,13 +1057,12 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
 // Set the file name and data points
 
-    char fname[1000];
-    sprintf(fname, "%s/state%d.out", config.dataPath,1);
-    int numData     = config.numData;
-    int ibinary_opt = sim->ibinary_opt;
-    int sizeY = sim->sizeY;
-    int sizeZ = sim->sizeZ;
-    int doublePack = config.doublePack;
+    char fname[1000]; sprintf(fname, "%s/state%d.out", config.dataPath,1);
+    int numData        = config.numData;
+    int ibinary_opt    = sim->ibinary_opt;
+    int sizeY          = sim->sizeY;
+    int sizeZ          = sim->sizeZ;
+    int doublePack     = config.doublePack;
     double gExpandFact = config.gExpandFact;
 
 //============================================================================
@@ -866,8 +1071,15 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     complex *complexPoints = new complex[numData];
     CkVec<RunDescriptor> runDescriptorVec;
     int nline_tot;
+    int *istrt_lgrp   = new int [sizeX];
+    int *iend_lgrp    = new int [sizeX];
+    int *npts_lgrp    = new int [sizeX];
+    int *nline_lgrp   = new int [sizeX];
+    int *kx_line      = NULL;
+    int *ky_line      = NULL;
     readStateIntoRuns(numData,complexPoints,runDescriptorVec,fname,ibinary_opt,
-                      &nline_tot,&(sim->nplane_x));
+                      &nline_tot,&(sim->nplane_x),istrt_lgrp,iend_lgrp,
+                      npts_lgrp,nline_lgrp,&kx_line,&ky_line,1);
     int nplane  = sim->nplane_x;
     int nchareG = sim->nchareG;
 
@@ -880,7 +1092,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
     double temp  = ((double)nplane)*gExpandFact;
     int mychareG = (int)temp;
-    mychareG     = MIN(mychareG,sizeX);
     if(mychareG!=nchareG || mychareG!=config.nchareG){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Mismatch in allowed gspace chare arrays %d %d %d\n",
@@ -890,44 +1101,8 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     }//endif
 
 //============================================================================
-// Parse the run descriptor into integer vectors for use with decomp function
-// There are two rundescriptors per line
-
-    int *istrt_line   = new int [nline_tot];
-    int *iend_line    = new int [nline_tot];
-    int *npts_line    = new int [nline_tot];
-    int *kx_line      = new int [nline_tot];
-    int *ky_line      = new int [nline_tot];
-
-    int nnn=0;
-    for(int i=0,j=0;i<nline_tot;i++,j+=2){
-      RunDescriptor *Desi  = &runDescriptorVec[j];
-      RunDescriptor *Desi1 = &runDescriptorVec[(j+1)];
-      kx_line[i]   = Desi->x;
-      ky_line[i]   = Desi->y;
-      npts_line[i] = Desi->length + Desi1->length;
-      istrt_line[i]= nnn;
-      nnn         += npts_line[i];
-      iend_line[i] = nnn;
-    }//endfor
-
-//============================================================================
 // Create the line decomposition and a sorted run descriptor
 // There are two rundescriptors per line : Noah's arc sort
-
-    int *istrt_lgrp   = new int [sizeX];
-    int *iend_lgrp    = new int [sizeX];
-    int *npts_lgrp    = new int [sizeX];
-    int *nline_lgrp   = new int [sizeX];
-    int *kx_str_lgrp  = new int [sizeX];
-    int *kx_end_lgrp  = new int [sizeX];
-    int *ky_str_lgrp  = new int [sizeX];
-    int *ky_end_lgrp  = new int [sizeX];
-    int nktot         = numData;
-
-    ParaGrpParse::get_chareG_line_prms(nktot,nchareG,nline_tot,npts_line,kx_line,ky_line,
-                      istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
-		      kx_str_lgrp,kx_end_lgrp,ky_str_lgrp,ky_end_lgrp);
 
     int nlines_max=0;
     for(int i=0;i<nchareG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
@@ -962,7 +1137,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
         numPoints += sortedRunDescriptors[x][j].length;
       }//endfor
-  }
+  }//endfor
 
 //============================================================================
 // Pack up the stuff, clean up the memory and exit
@@ -975,20 +1150,11 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     sim->npts_tot             = numData;
     sim->nlines_tot           = nline_tot;
 
-    delete [] complexPoints;
-
-    delete [] istrt_line;
-    delete [] iend_line;
-    delete [] npts_line;
-    delete [] kx_line;
-    delete [] ky_line;
-
     delete [] istrt_lgrp;
     delete [] iend_lgrp;
-    delete [] kx_str_lgrp;
-    delete [] kx_end_lgrp;
-    delete [] ky_str_lgrp;
-    delete [] ky_end_lgrp;
+    delete [] complexPoints;
+    delete [] kx_line;
+    delete [] ky_line;
 
 //============================================================================
   }//end routine

@@ -222,17 +222,19 @@ PUPbytes(Config);
 //===================================================================================
 //   Ramkumar's state input/output routines
 //===================================================================================
+
 void   readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
+
 void   readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
-                         const char *,int ,int *,int *);
+                         const char *,int ,int *,int *,int *,int *,int *,int *,
+                         int **, int **, int);
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,
 	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
-	       int *ky, int *kz, int *nx_ret, int *ny_ret, int *nz_ret);
+	       int *ky, int *kz, int *nx_ret, int *ny_ret, int *nz_ret,
+               int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
+               int iget_decomp);
 
-
-void  readStateInfoFull(int &,int &, int &, int &,
-                        const char *,int );
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 
 //===================================================================================

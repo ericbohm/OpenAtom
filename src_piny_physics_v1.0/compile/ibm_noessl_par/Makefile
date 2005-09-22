@@ -38,8 +38,8 @@ include make_head.h
 FOBJ            = $(FC) $(FFLAGS) $(OPT_FULL) -I$(INCLUDES) -c -o $@
 COBJ            = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_TEST       = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_FUSS       = $(CC) $(CFLAGS) $(DBG_FLAG)  -I$(INCLUDES) $(TFLAGS) -c -o $@
-COBJ_NOOPT      = $(CC) $(CFLAGS) $(DBG_FLAG)  -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_FUSS       = $(CC) $(CFLAGS) $(DBG_FLAG) -I$(INCLUDES) $(TFLAGS) -c -o $@
+COBJ_NOOPT      = $(CC) $(CFLAGS) $(DBG_FLAG) -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_CARE       = $(CC) $(CFLAGS) $(OPT_CARE) -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_GRP        = $(CC) $(CFLAGS) $(OPT_GRP)  -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_DECL       = $(CC) $(CFLAGS) 

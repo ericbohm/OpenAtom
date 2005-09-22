@@ -456,6 +456,10 @@ void CP_State_GSpacePlane::readFile() {
   int ibinary_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->ibinary_opt;
   CkVec <RunDescriptor> *sortedRunDescriptors=
                 scProxy.ckLocalBranch()->cpcharmParaInfo->sortedRunDescriptors;
+  int *npts_lgrp  = scProxy.ckLocalBranch()->cpcharmParaInfo->npts_per_chareG;
+  int *nline_lgrp = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+  int *istrt_lgrp = NULL;
+  int *iend_lgrp  = NULL;
 
 //============================================================================
 // Set the file name using the config path and state number
@@ -463,7 +467,8 @@ void CP_State_GSpacePlane::readFile() {
   char fname[1024];
   int ind_state=thisIndex.x;
   sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
-//  CkPrintf("[%d %d] reading %s/state%d.out\n",thisIndex.x,thisIndex.y,config.dataPath, ind_state + 1);
+//  CkPrintf("[%d %d] reading %s/state%d.out\n",thisIndex.x,thisIndex.y,
+//                                         config.dataPath, ind_state + 1);
 //  CkPrintf(".");
   //------------------------------------------------------------------
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
@@ -473,15 +478,17 @@ void CP_State_GSpacePlane::readFile() {
   int *ky=  new int[numData];
   int *kz=  new int[numData];
   int nlines_tot,nplane,nx,ny,nz;
+
   readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
-            kx, ky, kz, &nx, &ny,&nz);
+            kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0);
+
   if(config.low_x_size != nplane && config.doublePack){
     CkPrintf("Mismatch in planesize\n");
     CkExit();
   }//endif
 
 // Test the input g-vectors and psi(g) using kinetic energy
-// testeke(numData,complexPoints,kx,ky,kz,1,ind_state);
+//  testeke(numData,complexPoints,kx,ky,kz,1,ind_state);
 
 //============================================================================
 // Parse the run descriptor into integer vectors for use with decomp function
@@ -878,6 +885,7 @@ void CP_State_GSpacePlane::sendFFTData () {
   int sizeZ    = gs.planeSize[1];
 
 //  CkPrintf("sendFFTdata : %d.%d %d\n",thisIndex.x,thisIndex.y,sizeZ);
+
   for(int z=0; z < sizeZ; z++) {
 
     RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;

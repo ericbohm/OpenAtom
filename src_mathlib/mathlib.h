@@ -68,6 +68,7 @@
 #include "ckcomplex.h"
 
 void lst_sort_clean(int , int *, int *);
+void sort_commence(int , int *,int *);
 
 extern "C" {void DURAND(double *,int *, double *,int *);}
 

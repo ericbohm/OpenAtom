@@ -141,7 +141,8 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
     count++;
     if (count > nchareG) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mismatch in allowed gspace chare arrays\n");
+      CkPrintf("Mismatch in allowed gspace chare arrays : %d %d %d %d\n",
+                count,nchareG,thisIndex.x,thisIndex.y);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
