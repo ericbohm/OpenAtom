@@ -911,6 +911,7 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.gExpandFact<1.0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Chare array expansion factor out of range\n");
+      CkPrintf("This probably could work but I'd check first.\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -918,6 +919,7 @@ void Config::readConfig(const char* fileName, Config &config,
     if(nchareG<nplane_x){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Too few g-space chares %d %d\n",nplane_x,nchareG);
+      CkPrintf("This probably could work but I'd check first.\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
