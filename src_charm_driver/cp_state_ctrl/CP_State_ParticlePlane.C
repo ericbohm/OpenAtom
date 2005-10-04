@@ -12,7 +12,8 @@
  * The life-cycle of this object involves computation of a portion of
  * the Z-matrix, reduction of the Z matrix over g-space and computing
  * forces using the particle data.  ComputeZ is triggered by the
- * arrival of the structure factor at the local sfcache.
+ * arrival of the structure factor for each atom group at the local
+ * sfcache.
  *
  * The computation of the Z-matrix is done in the method computeZ().
  * Immediately after this, the matrix is reduced using the reduceZ() method.
@@ -91,6 +92,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   natm_nl_grp_max      = natm_nl_grp_max_in;
   count                = new int[numSfGrps];
   bzero(count,numSfGrps*sizeof(int));
+  haveSFAtmGrp         = new int[numSfGrps];
+  memset(haveSFAtmGrp,-1,numSfGrps*sizeof(int));
   doneEnl              = 0;
   doneForces           = 0;
   enl                  = 0.0;
@@ -155,7 +158,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
     gss->setKVectors(&gSpaceNumPoints, &k_x, &k_y, &k_z);
     myForces = new complex[gSpaceNumPoints]; // forces on coefs
-    //memset(myForces, 0, gSpaceNumPoints * sizeof(complex));
+    memset(myForces, 0, gSpaceNumPoints * sizeof(complex));
 }
 //============================================================================
 
@@ -175,6 +178,8 @@ CP_State_ParticlePlane::~CP_State_ParticlePlane(){
         delete [] zmatrix_fx; 
         delete [] zmatrix_fy; 
         delete [] zmatrix_fz; 
+	delete [] count;
+	delete [] haveSFAtmGrp;
 }
 //============================================================================
 
@@ -206,11 +211,13 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
                 zmatrix_fy = new complex[zsize];
                 zmatrix_fz = new complex[zsize];
 		count= new int[numSfGrps];
+		haveSFAtmGrp= new int[numSfGrps];
 	}//endif
 	p(k_x, gSpaceNumPoints);
 	p(k_y, gSpaceNumPoints);
 	p(k_z, gSpaceNumPoints);
 	p(count,numSfGrps);
+	p(haveSFAtmGrp,numSfGrps);
 	p(zmatrixSum,zsize);
 	p(zmatrixSum_fx,zsize);
 	p(zmatrixSum_fy,zsize);
@@ -239,12 +246,15 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 }
 //============================================================================
 
+/* computeZ is triggered by the arrival of the structure factor for
+   each atom group in the local sfcache. */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 //============================================================================    
 
+  
     doneGettingForces = false;    
     CP_State_GSpacePlane *gsp = 
         	        gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
@@ -252,20 +262,20 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
     int atmIndex=m->atmGrp;
     int sfindex=m->sfindex;
     delete m;
-  
-    StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+    if(gsp->acceptedPsi){ //need Psi
+      StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
 
-    complex *structureFactor;
-    complex *structureFactor_fx;
-    complex *structureFactor_fy;
-    complex *structureFactor_fz;
-    sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, 
-              &structureFactor_fx, &structureFactor_fy, &structureFactor_fz);
-    zsize = 0;
-    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-    zsize = natm_nl_grp_max*numSfGrps;
+      complex *structureFactor;
+      complex *structureFactor_fx;
+      complex *structureFactor_fy;
+      complex *structureFactor_fz;
+      sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, 
+			     &structureFactor_fx, &structureFactor_fy, &structureFactor_fz);
+      zsize = 0;
+      AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+      zsize = natm_nl_grp_max*numSfGrps;
 
-    if(!zmatrix){
+      if(zmatrix==NULL){
 	zmatrix    = new complex[zsize];
 	zmatrix_fx = new complex[zsize];
 	zmatrix_fy = new complex[zsize];
@@ -274,21 +284,34 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 	memset(zmatrix_fx, 0, sizeof(complex)*zsize);
 	memset(zmatrix_fy, 0, sizeof(complex)*zsize);
 	memset(zmatrix_fz, 0, sizeof(complex)*zsize);
-    }//endif
+      }//endif
 
-    int mydoublePack = config.doublePack;
-    int zoffset=natm_nl_grp_max * atmIndex;
-    CPNONLOCAL::CP_enl_matrix_calc(gSpaceNumPoints,gss->packedPlaneData, k_x,k_y,k_z, 
-	   structureFactor,structureFactor_fx,structureFactor_fy,
-	   structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
-	   &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
+      int mydoublePack = config.doublePack;
+      int zoffset=natm_nl_grp_max * atmIndex;
+      CPNONLOCAL::CP_enl_matrix_calc(gSpaceNumPoints,gss->packedPlaneData, k_x,k_y,k_z, 
+				     structureFactor,structureFactor_fx,structureFactor_fy,
+				     structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
+				     &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
 
-    // reduce zmatrices over the planes of each state
-    thisProxy(thisIndex.x, reductionPlaneNum).reduceZ(natm_nl_grp_max, atmIndex, 
-       &zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],&zmatrix_fz[zoffset]);
+      // reduce zmatrices over the planes of each state
+      thisProxy(thisIndex.x, reductionPlaneNum).reduceZ(natm_nl_grp_max, atmIndex, 
+							&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],&zmatrix_fz[zoffset]);
 
+      /*  overwritten each time so redundant
+	  bzero(&zmatrix[zoffset], natm_nl_grp_max * sizeof(complex));
+	  bzero(&zmatrix_fx[zoffset], natm_nl_grp_max * sizeof(complex));
+	  bzero(&zmatrix_fy[zoffset], natm_nl_grp_max * sizeof(complex));
+	  bzero(&zmatrix_fz[zoffset], natm_nl_grp_max * sizeof(complex));
+      */
+
+      haveSFAtmGrp[atmIndex]=-1; //this one is done
+    } // if gsp->acceptedPsi
+    else
+      { // we beat Psi here.  Set flag so Psi can kick this off
+	haveSFAtmGrp[atmIndex]=sfindex;
+      }
 //----------------------------------------------------------------------------
-   }//end routine
+}//end routine
 //============================================================================
 
 
@@ -306,22 +329,22 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
   int i,j;
   int zsize = natm_nl_grp_max * numSfGrps;
   int zoffset= natm_nl_grp_max * atmIndex;
-  if (!zmatrixSum) {
+  if (zmatrixSum==NULL) {
       zmatrixSum = new complex[zsize];
       memset(zmatrixSum, 0, zsize * sizeof(complex));
   }//endif
 
-  if (!zmatrixSum_fx) {
+  if (zmatrixSum_fx==NULL) {
       zmatrixSum_fx = new complex[zsize];
       memset(zmatrixSum_fx, 0, zsize * sizeof(complex));
   }//endif
 
-  if (!zmatrixSum_fy) {
+  if (zmatrixSum_fy==NULL) {
       zmatrixSum_fy = new complex[zsize];
       memset(zmatrixSum_fy, 0, zsize * sizeof(complex));
   }//endif
 
-  if (!zmatrixSum_fz) {
+  if (zmatrixSum_fz==NULL) {
       zmatrixSum_fz = new complex[zsize];
       memset(zmatrixSum_fz, 0, zsize * sizeof(complex));
   }//endif
@@ -335,7 +358,6 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
   if ( ((count[atmIndex] == (sizeX/gSpacePlanesPerChare)/2 - 1)&&(!config.doublePack)) || 
        ((count[atmIndex] == nchareG)&&(config.doublePack)) ) { 
-
     count[atmIndex] = 0;
     if(doneEnl==0){enl=0.0;}
     doneEnl++;
@@ -365,11 +387,25 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
       thisProxy(thisIndex.x, i).getForces(size,atmIndex, &zmatrixSum[zoffset]);
     }//endfor
 
+    // done with Z stuff send out our ENL
+    if(thisIndex.y==0 && doneEnl==numSfGrps){
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+      CkCallback cb=CkCallback(printEnl, NULL);
+      mcastGrp->contribute(sizeof(double),(void*) &enl, 
+			   CkReduction::sum_double, enlCookie, cb);
+      //  CkPrintf("PP [%d %d] contributed ENL %g\n",thisIndex.x, thisIndex.y,enl);
+      doneEnl=0;
+      enl=0.0;
+      bzero(zmatrixSum, zsize * sizeof(complex));
+      bzero(zmatrixSum_fx, zsize * sizeof(complex));
+      bzero(zmatrixSum_fy, zsize * sizeof(complex));
+      bzero(zmatrixSum_fz, zsize * sizeof(complex));
+    }//endif
 
   }/*endif*/
 
 //---------------------------------------------------------------------------
-  }//end routine
+}//end routine
 //============================================================================
 
 
@@ -397,7 +433,7 @@ void CP_State_ParticlePlane::sumEnergies(double energy_) {
 void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex, 
                                        complex *zmatrixSum_loc)
 //============================================================================
-   {//begin routine
+{//begin routine
 //============================================================================
 
   doneForces++;
@@ -424,28 +460,19 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
   // g-space plane
   if(doneForces==numSfGrps){
       doneGettingForces = true;
-      if (gsp->doneDoingIFFT) {
-	gsp->getForcesAndIntegrate();
-      }//endif
       doneForces=0;
-      // done with Z stuff send out our ENL
-      if(thisIndex.y==0 && doneEnl==numSfGrps){
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-	  CkCallback cb=CkCallback(printEnl, NULL);
-	  mcastGrp->contribute(sizeof(double),(void*) &enl, 
-			       CkReduction::sum_double, enlCookie, cb);
-	  //  CkPrintf("PP [%d %d] contributed ENL %g\n",thisIndex.x, thisIndex.y,enl);
-	  doneEnl=0;
-	  enl=0.0;
-	  bzero(zmatrixSum, zsize * sizeof(complex));
-	  bzero(zmatrixSum_fx, zsize * sizeof(complex));
-	  bzero(zmatrixSum_fy, zsize * sizeof(complex));
-	  bzero(zmatrixSum_fz, zsize * sizeof(complex));
+      if (gsp->doneDoingIFFT) {
+	gsp->getForcesAndIntegrate(); //calls resume in G very yucky
       }//endif
+      else      // and what of the else case?
+	{
+	  //	  CkPrintf("PP [%d %d] not finding doneDoingIFFT doing nothing\n",thisIndex.x, thisIndex.y);
+	}
+
   }//endif : doneforces
 
 //----------------------------------------------------------------------------
-   }//end routine
+}//end routine
 //============================================================================
 
 

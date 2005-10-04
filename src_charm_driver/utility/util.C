@@ -635,7 +635,7 @@ void Config::print() {
 //===================================================================================
 
    CkPrintf("\n");
-        ckout     << "gSpacePPC: " << gSpacePPC << endl
+   ckout     << "gSpacePPC: " << gSpacePPC << endl
                   << "realSpacePPC: " << realSpacePPC << endl
                   << "rhoGPPC: " << rhoGPPC << endl
                   << "dataPath: " << dataPath << endl

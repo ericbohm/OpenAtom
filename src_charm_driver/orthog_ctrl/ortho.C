@@ -48,15 +48,13 @@ extern CProxy_AtomsGrp atomsGrpProxy;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-Ortho::Ortho(int s_grain, CProxySection_PairCalculator pcProxy, CProxySection_PairCalculator pcLambdaProxy){
+Ortho::Ortho(int s_grain){
     this->n = nstates;
     this->k = s_grain;
     this->k2 = k * k;
     this->A = new double[k2];
     this->B = new double[k2];
     this->C = new double[k2];
-    this->pcProxy = pcProxy;
-    this->pcLambdaProxy = pcLambdaProxy;
     this->tmp_arr = new double[k2];
     num_ready = 0;
     got_start = false;
@@ -73,8 +71,27 @@ Ortho::Ortho(int s_grain, CProxySection_PairCalculator pcProxy, CProxySection_Pa
 	wallTimeArr=NULL;
       }
     numGlobalIter = 0;
+    
   }
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::makeSections(int indexSize, int *indexZ){
+    int s1=thisIndex.x*k;
+    int s2=thisIndex.y*k;
+    if(thisIndex.x <= thisIndex.y) //we get the reduction
+    {
+
+	pcProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, 0);
+	if(thisIndex.x!=thisIndex.y)
+	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
+    }
+    if(config.parlambda)
+	pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
+
+}
 
 //============================================================================
 
@@ -200,16 +217,17 @@ void Ortho::start_calc(CkReductionMsg *msg){
       { //we are a spare 
 	//	CkPrintf("[%d,%d] has its copy\n",thisIndex.x, thisIndex.y);
       }
+
 #ifdef _CP_DEBUG_SMAT_
-      if(thisIndex.x==0 && thisIndex.y==0){
-	FILE *outfile = fopen("smatrix.out_ortho_0_0", "w");
-	for(int i=0; i<chunksize; i++){
-	  for(int j=0; j<chunksize; j++){
-	    fprintf(outfile, "[%d %d] %10.9f \n", i, j, S[i*chunksize+j]);
-	  }
-	}
-	fclose(outfile);
+    char fname[80];
+    snprintf(fname,80,"smatrix.out_ortho_%d_%d",thisIndex.x,thisIndex.y);
+    FILE *outfile = fopen(fname, "w");
+    for(int i=0; i<chunksize; i++){
+      for(int j=0; j<chunksize; j++){
+	fprintf(outfile, "[%d %d] %10.9f \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
       }
+    }
+    fclose(outfile);
 #endif
     for(int i = 0; i < k2; i++)
       B[i] = S[i] / 2;
@@ -327,6 +345,9 @@ void Ortho::S_to_T(CkReductionMsg *msg)
 //============================================================================
 void Ortho::collect_results(void)
   {
+#ifdef _CP_DEBUG_TMAT_
+    print_results();
+#endif
     if(thisIndex.x==0 && thisIndex.y==0)
       {
 	wallTimeArr[numGlobalIter] = CkWallTimer();
@@ -366,9 +387,6 @@ void Ortho::collect_results(void)
 	  resume();
       }
 
-#ifdef _CP_DEBUG_TMAT_
-    print_results();
-#endif
 
   }
 

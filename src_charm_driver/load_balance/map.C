@@ -40,6 +40,9 @@
 extern int sizeX;
 extern Config config;
 extern CProxy_CPcharmParaInfoGrp scProxy;
+
+//void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int idx, double *line_load, 
+//                         double *pt_load);
 void GSpacePlaneLoad(int , double *, double *);
 
 //============================================================================
@@ -310,6 +313,10 @@ void SCalcMap::makemap(){
    }//end routine
 //============================================================================
 
+int SCalcMap::slowprocNum2(int hdl, const CkArrayIndex4D &idx4d){
+  // Just use gspace as our guide for (w,x,y,z) use gsp(y+x/grainsize,w);
+  return cheesyhackgsprocNum(scProxy.ckLocalBranch()->cpcharmParaInfo, idx4d.index[2]+idx4d.index[3]/gs,idx4d.index[0]);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

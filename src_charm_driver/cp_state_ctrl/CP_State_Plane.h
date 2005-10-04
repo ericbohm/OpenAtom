@@ -98,12 +98,11 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void startNewIter ();
 	void sendPsi();
 	void sendLambda();
-	void acceptNewPsi(mySendMsg *msg);
-	void acceptNewPsi(partialResultMsg *msg);
+	void makePCproxies();
+	void acceptNewPsi(CkReductionMsg *msg);
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
-	void acceptLambda(mySendMsg *msg);
-	void acceptLambda(partialResultMsg *msg);
+	void acceptLambda(CkReductionMsg *msg);
 	void getForcesAndIntegrate();
 	void integrateModForce();
 	void pup(PUP::er &);
@@ -117,7 +116,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 
         void run ();
         void resumeThread (PPDummyMsg *dmsg);
-        void resumeThreadDisplacing();
         void sendFFTData ();
         void resetIterState ();
         void doIFFT ();
@@ -126,6 +124,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	// for experimental barrier
 	bool allDoneIFFT() {return allgdoneifft;}
 	void gdoneIFFT(CkReductionMsg *msg);
+	void releaseComputeZ();
         int first_step;
 
  private:
@@ -156,11 +155,15 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int allEnergiesReceived;	
 	int localState;
 	int AllExpected;
+	bool acceptedPsi;
 
 	complex *ffttempdata; 
 	int ireset;
 	CProxySection_CP_State_ParticlePlane particlePlaneSectionProxy;
 	CProxySection_StructureFactor sfCompSectionProxy;
+	CProxySection_PairCalculator lambdaproxy;
+	CProxySection_PairCalculator psiproxy;
+	CProxySection_PairCalculator psiproxyother;
 	RTH_Runtime* run_thread;
 	PairCalcID gpairCalcID1;
 	PairCalcID gpairCalcID2;
@@ -330,6 +333,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         double enl;
         double enl_total;
 	double totalEnergy;
+	int *haveSFAtmGrp;
 	int *count;
 	int doneEnl;
 	int doneForces;

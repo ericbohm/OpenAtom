@@ -79,20 +79,19 @@ mainmodule cpaimd {
 			complex pts[m],int nx,int ny,int nz);
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
-		entry void acceptNewPsi(mySendMsg *msg);
-		entry void acceptNewPsi(partialResultMsg *msg);
-		entry void acceptLambda(mySendMsg *msg);
-		entry void acceptLambda(partialResultMsg *msg);
+		entry void acceptNewPsi(CkReductionMsg *msg);
+		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void makePCproxies();
 		entry void isAtSync(int);
 		entry void startNewIter ();
 		entry void gdoneIFFT(CkReductionMsg *msg);
 		entry void computeEnergies(int p, double d);
                 entry void run ();
                 entry void resumeThread (PPDummyMsg *dmsg);
-                entry void resumeThreadDisplacing();
                 entry void psiCgOvlap(CkReductionMsg *);
 		entry void readFile();
+		entry void getForcesAndIntegrate();	
 	};
 	
 	array [2D] CP_State_ParticlePlane {
@@ -154,7 +153,9 @@ mainmodule cpaimd {
 		entry void S_to_T(CkReductionMsg *msg); 	
 
 		entry Ortho();
-		entry Ortho(int s_grain, CProxySection_PairCalculator pcProxy, CProxySection_PairCalculator pcLambdaProxy);
+		entry Ortho(int s_grain);
+		entry void makeSections(int indexSize, int indexZ[indexSize]);
+		entry void setPCproxy(CProxySection_PairCalculator inproxy);
 		entry void start_calc(CkReductionMsg *msg);
 		entry void do_iteration();
 		entry void step_2();

@@ -206,16 +206,24 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
 	CkArrayIndex2D idx2d;
 	for(int i=0;i<regPPs.particles.length();i++)
 	{
-	    // we could set up a section multicast for this, but they're all processor local
-	    // so it would only save us some copies of a tiny message.  precious little savings
+
+	  // we could set up a section multicast for this, but they're
+	  // all processor local so it would only save us some copies
+	  // of a tiny message.  precious little savings
+	  
+	  // these are of course not made as cklocal branch calls
+	  // because we want to lower the priority of this work so it
+	  // happens when the system is otherwise idle
+
 	    idx2d=regPPs.particles[i];
 	    // call up computeZ
 	    PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
 	    pmsg->atmGrp=atmIndex;
 	    pmsg->sfindex=sfindex;
 	    CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
-	    *(int*)CkPriorityPtr(pmsg) = config.sfpriority+atmIndex+config.numSfGrps; //lower than sf and sfcache
+	    *(int*)CkPriorityPtr(pmsg) = config.sfpriority+atmIndex+numSfGrps; //lower than sf and sfcache
 	    particlePlaneProxy(idx2d.index[0], idx2d.index[1]).computeZ(pmsg);
+	    //	    CkPrintf("triggering computeZ for %d on %d %d\n", pmsg->atmGrp, idx2d.index[0], idx2d.index[1]);
 	}
     }
     else

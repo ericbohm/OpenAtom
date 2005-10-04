@@ -18,14 +18,15 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
 
   if(numdest)
     { //we have work to do
+      CkAssert(gsSize>0);
 #ifdef _CP_DEBUG_SF_CALC_
       CkPrintf("[%d %d %d] compute\n",thisIndex.x,thisIndex.y,thisIndex.z);
 #endif
       // allow for clean slate 
-      if(!structFactor) {
+      if(structFactor==NULL) {
 	structFactor    = new complex[natm_nl_grp_max*gsSize];
       }
-      if(!structFactor_fx) {
+      if(structFactor_fx==NULL) {
 	structFactor_fx    = new complex[natm_nl_grp_max*gsSize];
 	structFactor_fy    = new complex[natm_nl_grp_max*gsSize];
 	structFactor_fz    = new complex[natm_nl_grp_max*gsSize];

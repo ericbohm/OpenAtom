@@ -18,7 +18,7 @@ class Ortho : public CBase_Ortho{
  public:
   Ortho(){}
   Ortho(CkMigrateMessage *m){}
-  Ortho(int s_grain, CProxySection_PairCalculator pcProxy, CProxySection_PairCalculator pcLambdaProxy);
+  Ortho(int s_grain);
   ~Ortho(){
     delete [] A;
     delete [] B;
@@ -33,6 +33,9 @@ class Ortho : public CBase_Ortho{
   }
   // catch lambda for later non_minimization use
   void acceptAllLambda(CkReductionMsg *msg); 
+
+  // get our copy of the pcproxy
+  void setPCproxy(CProxySection_PairCalculator inproxy){pcProxy=inproxy;}
 
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
@@ -53,7 +56,7 @@ class Ortho : public CBase_Ortho{
   /* S1 = 0.5 * S2 * S3 (on proxy 2)
    * currently A has T, B has S1, C has S2
    */
-
+  void makeSections(int indexSize, int *indexZ);
   void step_2();
   void step_2_go(); //for local callback
   /* T = 0.5 * S2 * S3 (S3 = T before) (on proxy 3)

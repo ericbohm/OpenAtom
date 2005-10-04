@@ -188,6 +188,7 @@ class SCalcMap : public CkArrayMap {
     int procNum(int, const CkArrayIndex &);
 //    int slowprocNum(int, const CkArrayIndex &);
     int slowprocNum(int, const CkArrayIndex4D &);
+    int slowprocNum2(int, const CkArrayIndex4D &);
 };
 //============================================================================
 

@@ -259,22 +259,17 @@ main::main(CkArgMsg *m) {
   //-------------------------------------------------------------
   // Register the PCs
 
-    int gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_mySendMsg;
-    if(config.gspacesum)
-      gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
+    int gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
 
 
-
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId, config.gspacesum );
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId );
 
     CkArrayIndex2D myindex(0, 0);
 
-    gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_mySendMsg;
+    gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
     int myPack=0;
 
-    bool asymm_gspacesum=false; // not supported yet
-
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, asymm_gspacesum );
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
     
   //-------------------------------------------------------------
   // Create stuff for ortho which PC invokes by section reduction
@@ -299,19 +294,12 @@ main::main(CkArgMsg *m) {
     // Because their redundant data has nowhere to go.
 
     // punch in an actual map for this, 3d cube for BG/L  spread them out to maximize bi-section band
-    CProxySection_PairCalculator lambdaSectProxy;
+
     for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize) {
       for (int s2 = s1; s2 < nstates; s2 += config.sGrainSize) {
-
 	int indX = s1 / config.sGrainSize;
 	int indY = s2 / config.sGrainSize;
-	CkCallback cb = CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy(indX, indY));
-	CkCallback cbl = CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), orthoProxy(indX, indY));
-	if(config.parlambda)
-	  lambdaSectProxy=initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, cbl, s1, s2, 0);	    
-	CProxySection_PairCalculator sectProxy=initOneRedSect(indexSize, indexZ, 1, &pairCalcID1, cb, s1, s2, 0);	    
-
-	orthoProxy(indX, indY).insert(config.sGrainSize, sectProxy, lambdaSectProxy, init_pe);
+	orthoProxy(indX, indY).insert(config.sGrainSize, init_pe);
 	int chunks = nstates / config.sGrainSize;
 	matmulProxy1(indX, indY).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indX, indY)), init_pe);
 	matmulProxy2(indX, indY).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indX, indY)), init_pe);
@@ -319,10 +307,7 @@ main::main(CkArgMsg *m) {
 	if(s2>s1) // non diagonal 
 	  { 
 	    init_pe = (init_pe + 1) % CkNumPes();
-	    CkCallback cbl = CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), orthoProxy(indY, indX));
-	    if(config.parlambda)
-	      lambdaSectProxy=initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, cbl, s2, s1, 0);	    
-	    orthoProxy(indY, indX).insert(config.sGrainSize, sectProxy, lambdaSectProxy, init_pe);
+	    orthoProxy(indY, indX).insert(config.sGrainSize, init_pe);
 	    int chunks = nstates / config.sGrainSize;
 	    matmulProxy1(indY, indX).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indY, indX)), init_pe);
 	    matmulProxy2(indY, indX).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indY, indX)), init_pe);
@@ -337,7 +322,6 @@ main::main(CkArgMsg *m) {
     matmulProxy2.doneInserting();
     matmulProxy3.doneInserting();
 
-    delete [] indexZ;
 
 //============================================================================ 
 // Initialize the density chare arrays
@@ -429,12 +413,13 @@ main::main(CkArgMsg *m) {
     delete sim;
 
 //============================================================================
+    orthoProxy.makeSections(indexSize, indexZ);
 
+    delete [] indexZ;
 
     CkPrintf("\n------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
     CkPrintf("================================================\n\n");
-
 //--------------------------------------------------------------------------
    }// end Main
 //============================================================================

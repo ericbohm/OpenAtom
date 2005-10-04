@@ -16,6 +16,7 @@ RHO   = ../cp_density_ctrl
 STRUCTFACT   = ../structure_factor
 ORTHO = ../orthog_ctrl
 UTIL  = ../utility
+PAIRCALC  = ../paircalc
 MATH  = ../mathlib
 PHYSICS = ../../src_piny_physics_v1.0/
 LOADB = ../load_balance
@@ -31,12 +32,16 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
 LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
          -lrfftw -lm -module fftlib                      #-memory paranoid
 #===========================================================================
-
+PCHEADERS= $(PAIRCALC)/pairCalculator.h\
+	$(PAIRCALC)/pairutil.h \
+	$(PAIRCALC)/ckPairCalculator.h\
+	$(MAIN)/ckPairCalculator.decl.h\
+	$(MAIN)/ckPairCalculator.def.h
 
 #===========================================================================
 
 
-OBJS   = matmul.o cpaimd.o StructFactorCache.o StructureFactor.o \
+OBJS   = ckPairCalculator.o pairCalculator.o matmul.o cpaimd.o StructFactorCache.o StructureFactor.o \
 	 CP_State_GSpacePlane.o CP_State_ParticlePlane.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o \
@@ -53,8 +58,8 @@ TARGET_LIB = ../../binary/libCharmDriver.a
 CHARMLIBS:
 	(cd $(CHARMBASE)/tmp/libs/ck-libs/sparseContiguousReducer;\
 	make OPTS="$(OPTS)";)
-	(cd $(CHARMBASE)/tmp/libs/ck-libs/paircalc;\
-	make OPTS="$(OPTS) $(OPT_FORT)" FFTW_HOME="$(FFT_HOME)";)
+#	(cd $(CHARMBASE)/tmp/libs/ck-libs/paircalc;\
+#	make OPTS="$(OPTS) $(OPT_FORT)" FFTW_HOME="$(FFT_HOME)";)
 	(cd $(CHARMBASE)/tmp/libs/ck-libs/fftlib;\
 	make OPTS="$(OPTS)" FFTW_HOME="$(FFT_HOME)";)
 #===========================================================================
@@ -64,7 +69,7 @@ CHARMLIBS:
 summary:$(OBJS)
 	$(CHARMC) -o $(TARGET_EXE).summary $(OBJS) $(LIB) \
         -language charm++ -module CkMulticast -module CkSparseContiguousReducer \
-        -module ckPairCalculator -tracemode summary $(OPTS) $(FLAGS) $(OPT_FORT)
+        -tracemode summary $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
 
@@ -72,8 +77,7 @@ summary:$(OBJS)
 proj:	$(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o $(TARGET_EXE).proj $(OBJS) $(LIB) -language charm++ \
         -module CkMulticast -module CkSparseContiguousReducer \
-        -module DummyLB -module RefineLB -module RefineCommLB \
-        -module ckPairCalculator -tracemode projections $(OPTS) $(FLAGS) $(OPT_FORT)
+        -tracemode projections $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
 
@@ -81,8 +85,7 @@ proj:	$(OBJS_DECL) $(OBJS)
 exe:	$(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o $(TARGET_EXE) $(OBJS) $(LIB) -language charm++ \
         -module CkMulticast -module CkSparseContiguousReducer \
-        -module DummyLB -module RefineLB -module RefineCommLB \
-        -module ckPairCalculator $(OPTS) $(FLAGS) $(OPT_FORT)
+        $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
 #===========================================================================
@@ -97,18 +100,27 @@ matmul.o : $(MAIN)/matmul.decl.h $(MAIN)/matmul.C $(MAIN)/matmul.h \
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/matmul.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
+	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
+
+ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
+	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS)
+
+pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h
+	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS)
+
+#---------------------------------------------------------------------------
 #===========================================================================
 driverlib:	CHARMLIBS $(OBJS_DECL) $(OBJS) 
 	$(CHARMC) -o $(TARGET_LIB) $(OBJS) $(LIB) -language charm++ \
         -module CkMulticast -module CkSparseContiguousReducer \
-        -module DummyLB -module RefineLB -module RefineCommLB \
-        -module ckPairCalculator $(OPTS) $(FLAGS) $(OPT_FORT)
+        $(OPTS) $(FLAGS) $(OPT_FORT)
 
 cpaimd:    $(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o cpaimd $(OBJS) $(LIB) -language charm++ \
 	 -module CkMulticast -module CkSparseContiguousReducer \
-	 -module DummyLB -module RefineLB -module RefineCommLB \
-	 -module ckPairCalculator $(OPTS) $(FLAGS) $(OPT_FORT)
+	 $(OPTS) $(FLAGS) $(OPT_FORT)
 
 #===========================================================================
 
@@ -135,13 +147,13 @@ CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
                         $(MAIN)/cpaimd.decl.h \
                         $(MAIN)/cpaimd.def.h \
 			$(TOPINC)/debug_flags.h \
-    	                $(TOPINC)/RunDescriptor.h \
-                        $(HEAD)/misc/sim_subroutines.h \
-                        $(STRUCTFACT)/StructureFactor.h \
-                        $(STRUCTFACT)/StructFactorCache.h \
-                        $(MAIN)/groups.h \
+			$(TOPINC)/RunDescriptor.h \
+			$(HEAD)/misc/sim_subroutines.h \
+			$(STRUCTFACT)/StructureFactor.h \
+			$(STRUCTFACT)/StructFactorCache.h \
+			$(MAIN)/groups.h \
                         $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h  \
-                        $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpintegrate.h 
+			$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpintegrate.h 
 
 	$(ECHO) $@
 	$(CHARMC) -c $(STATE)/CP_State_GSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -152,11 +164,11 @@ CP_State_ParticlePlane.o: $(STATE)/CP_State_ParticlePlane.C \
                           $(STRUCTFACT)/StructFactorCache.h \
                           $(MAIN)/cpaimd.decl.h \
                           $(MAIN)/cpaimd.def.h \
- 			  $(TOPINC)/debug_flags.h \
-    	                  $(TOPINC)/RunDescriptor.h \
-                          $(HEAD)/misc/sim_subroutines.h \
-                          $(MAIN)/groups.h \
-                          $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+				$(TOPINC)/debug_flags.h \
+				$(TOPINC)/RunDescriptor.h \
+				$(HEAD)/misc/sim_subroutines.h \
+				$(MAIN)/groups.h \
+				$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
          $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cplocal.h
 	$(ECHO) $@
 	$(CHARMC) -c $(STATE)/CP_State_ParticlePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -164,11 +176,11 @@ CP_State_ParticlePlane.o: $(STATE)/CP_State_ParticlePlane.C \
 CP_State_RealSpacePlane.o: $(STATE)/CP_State_RealSpacePlane.C \
                            $(STATE)/CP_State_Plane.h \
                            $(MAIN)/cpaimd.decl.h \
- 			   $(TOPINC)/debug_flags.h \
-    	                   $(TOPINC)/RunDescriptor.h \
-                           $(MAIN)/cpaimd.def.h \
-                           $(HEAD)/misc/sim_subroutines.h \
-                           $(MAIN)/groups.h 
+			   $(TOPINC)/debug_flags.h \
+			   $(TOPINC)/RunDescriptor.h \
+			   $(MAIN)/cpaimd.def.h \
+			   $(HEAD)/misc/sim_subroutines.h \
+			   $(MAIN)/groups.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(STATE)/CP_State_RealSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
@@ -189,12 +201,12 @@ CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
                       $(MAIN)/cpaimd.decl.h \
                       $(MAIN)/cpaimd.def.h \
 		      $(TOPINC)/debug_flags.h \
- 		      $(TOPINC)/RunDescriptor.h \
-                      $(HEAD)/misc/sim_subroutines.h \
-                      $(MAIN)/groups.h \
-                      $(STATE)/CP_State_Plane.h \
+		      $(TOPINC)/RunDescriptor.h \
+		      $(HEAD)/misc/sim_subroutines.h \
+		      $(MAIN)/groups.h \
+		      $(STATE)/CP_State_Plane.h \
 		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-                      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
+		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 
 	$(ECHO) $@
 	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
