@@ -1,0 +1,67 @@
+module ckPairCalculator {
+	readonly ComlibInstanceHandle mcastInstanceCP;
+
+	initcall registersumMatrixDouble(void);	
+
+	message initResultMsg;
+
+	message initGRedMsg;
+
+	message sendBWsignalMsg;
+
+	message partialResultMsg  {
+	  complex result[];
+	};
+
+	message priorSumMsg  {
+	  complex result[];
+	};
+
+	message mySendMsg  {
+	  complex data[];
+	};
+
+	message calculatePairsMsg  {
+	  complex points[];
+	};
+
+	message multiplyResultMsg  {
+	  double matrix1[];
+	  double matrix2[];
+	};
+
+	message entireResultMsg  {
+	  double matrix[];
+	};
+
+	message entireResultMsg2  {
+	  double matrix1[];
+	  double matrix2[];
+	};
+
+
+	array [4D] PairCalculator {
+ 		entry PairCalculator(bool, int, int, int, int op1, FuncType fn1, int op2, FuncType fn2, CkCallback cb, CkGroupID gid, CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce );
+   		entry void lbsync();
+		entry void sendBWResult(sendBWsignalMsg *msg);
+		entry [nokeep] void initGRed(initGRedMsg *msg);
+		entry [nokeep] void initResultSection(initResultMsg *msg);
+   		entry void calculatePairs(int size, complex points[size], int, bool, bool);
+   		entry [nokeep] void calculatePairs_gemm(calculatePairsMsg *msg);
+		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
+		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
+
+	};
+
+	group PairCalcReducer {
+		entry PairCalcReducer();
+		entry void clearRegister();
+		entry void broadcastEntireResult(entireResultMsg *msg);
+		entry void broadcastEntireResult(entireResultMsg2 *msg);
+		entry void broadcastEntireResult(int size, double matrix[size], bool symmtype);	
+		entry void broadcastEntireResult(int size, double matrix1[size], double matrix2[size], bool symmtype);			
+		entry void startMachineReduction(void);
+	};
+
+
+}
