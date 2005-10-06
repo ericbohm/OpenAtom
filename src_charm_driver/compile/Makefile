@@ -28,7 +28,9 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
          -I$(HEAD) -I$(MAIN) -I$(STATE) -I$(RHO) \
          -I$(ORTHO) -I$(UTIL) -I$(MATH) -I$(LOADB) \
 	 -I../misc -I$(STRUCTFACT) -I$(TOPINC) \
-         -I../$(STANDARD_INC) #-DGROUP_REDUCTION
+	 -I../paircalc  \
+         -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
+	
 LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
          -lrfftw -lm -module fftlib                      #-memory paranoid
 #===========================================================================
@@ -61,7 +63,7 @@ CHARMLIBS:
 #	(cd $(CHARMBASE)/tmp/libs/ck-libs/paircalc;\
 #	make OPTS="$(OPTS) $(OPT_FORT)" FFTW_HOME="$(FFT_HOME)";)
 	(cd $(CHARMBASE)/tmp/libs/ck-libs/fftlib;\
-	make OPTS="$(OPTS)" FFTW_HOME="$(FFT_HOME)";)
+	make OPTS="$(OPTS) -nobs " FFTW_HOME="$(FFT_HOME)";)
 #===========================================================================
 
 
@@ -103,6 +105,7 @@ matmul.o : $(MAIN)/matmul.decl.h $(MAIN)/matmul.C $(MAIN)/matmul.h \
 #---------------------------------------------------------------------------
 ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
 	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
+	cp ckPairCalculator.decl.h ckPairCalculator.def.h ../main
 
 ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
 	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS)

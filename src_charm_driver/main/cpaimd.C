@@ -33,9 +33,6 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
 
-#ifdef MACOSX_BLAS
-#include   <Accelerate/Accelerate.h>
-#endif
 
 //============================================================================
 // Defining all Charm++ readonly variables for PINY physics 
