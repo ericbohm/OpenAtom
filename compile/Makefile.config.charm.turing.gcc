@@ -7,17 +7,16 @@ OPTS = -O3 -funroll-all-loops -fsched-interblock \
          -mdynamic-no-pic -mpowerpc-gpopt -force_cpusubtype_ALL  \
          -mtune=G5 -mcpu=G5 -mpowerpc64 -ffast-math
 
-CHARMBASE           = $(HOME)/charm
-CHARMC              = $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) 
+CHARMBASE           = $(HOME)/work/charm
+CHARMC              = $(CHARMBASE)/bin/charmc -nobs $(OPTS) $(FLAGS) -DFORTRANUNDERSCORE
 CPAIMD_DRV_SRC      = $(CPAIMD)/src_charm_driver
 CPAIMDDP_DRV_SRC    = $(CPAIMD)/srcdp_charm_driver
 MAKE_CPAIMD_DRV_INC = $(CPAIMD)/src_charm_driver/compile
 MAKE_CPAIMDDP_DRV_INC = $(CPAIMD)/srcdp_charm_driver/compile
 CHARMLIB            = -module CkMulticast -module CkSparseContiguousReducer \
                       -module DummyLB -module RefineLB -module RefineCommLB \
-                      -module ckPairCalculator \
                       -L$(FFT_HOME)/lib -module commlib -lfftw \
-                      -lrfftw -lm -module fftlib -faltivec -framework Accelerate
+                      -lrfftw -lm -module fftlib 
 
 
 #===============================================================================
