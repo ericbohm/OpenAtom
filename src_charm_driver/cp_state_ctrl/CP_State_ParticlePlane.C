@@ -100,7 +100,10 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   energy_count         = 0;
   totalEnergy          = 0.0;
   reductionPlaneNum    = 0;
-  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
+//  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
+  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
+  // now expand that to spread these guys around
+  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
   contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;

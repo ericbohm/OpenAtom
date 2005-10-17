@@ -353,12 +353,10 @@ void CP_State_RealSpacePlane::doProduct() {
     int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 
     CProxy_CP_State_GSpacePlane gproxy = gSpacePlaneProxy;
-
     if (config.useCommlib){
       ComlibDelegateProxy(&gproxy);
       mssInstance.beginIteration();
     }//endif
-
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
       GSIFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
@@ -372,9 +370,7 @@ void CP_State_RealSpacePlane::doProduct() {
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
       gproxy(thisIndex.x, ic).doIFFT(msg); // send the message
     }//end for : chare sending
-    
     if (config.useCommlib){mssInstance.endIteration();}
-    
     if(config.conserveMemory){
       rs.destroy();
     }else{

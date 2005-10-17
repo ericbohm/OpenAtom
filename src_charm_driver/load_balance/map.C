@@ -318,6 +318,7 @@ int SCalcMap::slowprocNum2(int hdl, const CkArrayIndex4D &idx4d){
   return cheesyhackgsprocNum(scProxy.ckLocalBranch()->cpcharmParaInfo, idx4d.index[2]+idx4d.index[3]/gs,idx4d.index[0]);
 }
 
+/*
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -333,7 +334,6 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
     //Here maxY is the max number of planes;
     int planeid = idx4d.index[0];
     int numChareG = 0;
-
 
     if(config.doublePack){
         numChareG = config.nchareG;
@@ -417,3 +417,89 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 //============================================================================
    }//end routine
 //============================================================================
+*/
+
+
+int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
+{
+  
+    //Here maxY is the max number of planes;
+    int planeid = idx4d.index[0];
+    int numChareG = 0;
+
+
+    if(config.doublePack){
+        numChareG = config.nchareG;
+    }else{
+        numChareG = max_planes/2;
+    }//endif
+
+    //for asymetric
+    double *load = new double[CkNumPes()];
+    memset(load, 0, CkNumPes() * sizeof(double));
+
+    int w=0, x=0, y = 0; 
+
+    if(totalload <= 0.0) { 
+      for(w = 0; w < numChareG; w ++) 
+	for(x = 0; x < max_states; x += gs) {
+	  if (symmetric)
+	    y = x;
+	  else
+	    y = 0;
+	  
+	  for(; y < max_states; y += gs) {
+	    
+	    double curload = 0.0;
+	    double gload = 0.0;
+	    
+	    //scalc_load(w, numChareG, &curload);
+	    GSpacePlaneLoad(w, &gload, &curload);
+	    
+	    totalload += curload;
+	  }
+	}
+    }
+    
+    int pe = 0;
+    
+    for(w = 0; w < numChareG; w ++)  
+      for(x = 0; x < max_states; x += gs) {
+	if (symmetric)
+	  y = x;
+	else
+	  y = 0;
+	
+	for(; y < max_states; y += gs) {
+	  double curload = 0.0;
+	  double gload = 0.0;
+	  
+	  //scalc_load(w, numChareG, &curload);
+	  GSpacePlaneLoad(w, &gload, &curload);
+	  
+	  curload /=  totalload;
+          
+          if(load[pe] + curload > 0.3/CkNumPes()) 
+              pe ++;
+	  
+	  if(pe >= CkNumPes())
+              pe = 0;
+          
+	  load[pe] += curload;
+	  
+	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
+	     (y == idx4d.index[2])) {
+
+              //if(CkMyPe() == 0)
+              //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
+              
+              delete [] load;
+	    return pe;
+	  }
+        }
+      }
+    
+    delete [] load;
+    return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7+idx4d.index[3])%CkNumPes();    
+
+}
