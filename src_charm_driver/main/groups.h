@@ -1,7 +1,26 @@
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** \file groups.h
+ *
+ *
+ */
+//============================================================================
+
 #ifndef _groups_h_
 #define _groups_h_
 
 #include "../../include/Atoms.h"
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** \brief AtomsGrp class.
+ *
+ *
+ *
+ */
+//============================================================================
 
 class AtomsGrp: public Group {
  public:
@@ -60,6 +79,15 @@ struct EnergyStruct {
 
 PUPbytes(EnergyStruct);
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** \brief EnergyGroup class.
+ *
+ *
+ *
+ */
+//============================================================================
 
 class EnergyGroup : public Group {
 

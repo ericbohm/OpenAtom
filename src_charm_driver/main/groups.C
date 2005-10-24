@@ -1,9 +1,11 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-//
-//            Processor group class Functions : Atoms and parainfo
-//
+/** \file groups.C
+ * 
+ *           Processor group class Functions : Atoms and parainfo
+ *
+ */
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -34,6 +36,11 @@ void IntegrationComplete(void *, void *);
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+/** Constructor
+ *
+ *
+ */
+
 AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a) 
 {
 	natm    = n;
@@ -52,6 +59,11 @@ AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a)
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+/* Destructor
+ *
+ *
+ */
+
 AtomsGrp::~AtomsGrp() 
 {
 	delete [] atoms;
@@ -64,6 +76,11 @@ AtomsGrp::~AtomsGrp()
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+/** Constructor
+ *
+ *
+ */
+
 CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim) 
 {
 	cpcharmParaInfo = new CPcharmParaInfo(sim);
@@ -74,6 +91,11 @@ CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim)
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+/* Destructor
+ *
+ *
+ */
+
 CPcharmParaInfoGrp::~CPcharmParaInfoGrp()
 {
 	delete cpcharmParaInfo;

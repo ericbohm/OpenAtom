@@ -1,10 +1,10 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/*
+/** \file cpaimd.h 
  * Some basic data structures and the array map classes are defined
  * here. These maps are used to map the array elements to the correct
- * processors.  Please read ../doc/documentation.ps for a detailed
+ * processors.  Please read ../doc/README for a detailed
  * documentation on the structure of the program.
  */
 //============================================================================
@@ -30,22 +30,37 @@
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/** \brief The class which creates the main chare. 
+ * 
+ *
+ *
+ */
+//============================================================================
+ 
 class main : public Chare {
  public:
-    main(CkMigrateMessage *m) {}
+    main(CkMigrateMessage *m) { }
     main(CkArgMsg *);
 
 };
 //============================================================================
 
 
-//helper class for map hashtables copied from femrefine.C,  thanks Sayantan
-class intdual{
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** \brief Helper class for map hashtables copied from femrefine.C.
+ *
+ */
+//============================================================================
+ 
+class intdual {
  private:
-    int x,y;
+    int x, y;
  public:
     intdual(int _x,int _y){
 	if(_x <= _y){
@@ -69,12 +84,18 @@ class intdual{
 	return ((intdual *)a)->compare((*(intdual *)b));
     }
 };
-
+//============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/** \brief Class used for instantiation of G-space group objects.
+ *
+ *
+ */
+//============================================================================
+ 
 class GSMap: public CkArrayMap {
   
   int nchareG;
@@ -95,7 +116,7 @@ class GSMap: public CkArrayMap {
 	  maptable=NULL;
       }
   int procNum(int, const CkArrayIndex &);
-//  int slowprocNum(int, const CkArrayIndex2D &);
+// int slowprocNum(int, const CkArrayIndex2D &);
   void makemap();
   void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
     void pup(PUP::er &p)
@@ -123,6 +144,11 @@ class GSMap: public CkArrayMap {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/** \brief Class used for instantiation of real-space group objects.
+ *
+ *
+ */
+//============================================================================
 
 class RSMap: public CkArrayMap {
 
@@ -137,6 +163,13 @@ class RSMap: public CkArrayMap {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+//============================================================================
+/** \brief Class used for instantiation of pair-calculator group objects.
+ *
+ *
+ */
+//============================================================================
+
 class SCalcMap : public CkArrayMap {
   int nchareG;
   double *lines_per_chareG;
@@ -148,6 +181,7 @@ class SCalcMap : public CkArrayMap {
     
  public:
     
+
     SCalcMap(int _nstates, int _nchareG,  int gs, CmiBool _flag, int _nplanes, 
              double *_lines_per_chareG, double *_pts_per_chareG) { 
         this->gs   = gs;
@@ -196,6 +230,14 @@ class SCalcMap : public CkArrayMap {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+//============================================================================
+/**
+ * \brief class CPcharmParaInfoGrp.
+ *
+ *
+ */
+//============================================================================
+
 #include "../../include/CPcharmParaInfo.h"
 class CPcharmParaInfoGrp: public Group {
  public:
