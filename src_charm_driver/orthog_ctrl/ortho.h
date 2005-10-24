@@ -10,6 +10,8 @@ extern CProxy_matmul matmulProxy3;
 extern int Ortho_UE_step2;
 extern int Ortho_UE_step3;
 extern int Ortho_UE_error;
+extern  PairCalcID pairCalcID1;
+extern  PairCalcID pairCalcID2;
 extern bool Ortho_use_local_cb;
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
@@ -40,9 +42,6 @@ class Ortho : public CBase_Ortho{
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
 
-  // redundant
-  void S_to_T(CkReductionMsg *msg); 
-
   /* start step 1 on proxy 1, the callback will be for step 2
    * S2 = 3 * I - T * S1
    * currently A has T, B has S1, need to construct 3*I in C
@@ -56,6 +55,12 @@ class Ortho : public CBase_Ortho{
   /* S1 = 0.5 * S2 * S3 (on proxy 2)
    * currently A has T, B has S1, C has S2
    */
+  void ResumeFromSync() {
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
+      mcastGrp->resetSection(pcProxy);
+      mcastGrp->resetSection(pcLambdaProxy);
+      resume();
+  }
   void makeSections(int indexSize, int *indexZ);
   void step_2();
   void step_2_go(); //for local callback
@@ -85,7 +90,8 @@ class Ortho : public CBase_Ortho{
   void collect_results(void);
 
   virtual void pup(PUP::er &p){
-    CBase_Ortho::pup(p);
+//    CBase_Ortho::pup(p);
+      ArrayElement2D::pup(p);
     p | n;
     p | k;
     p | k2;

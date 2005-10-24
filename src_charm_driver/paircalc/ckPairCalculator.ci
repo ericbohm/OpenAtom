@@ -41,12 +41,11 @@ module ckPairCalculator {
 
 
 	array [4D] PairCalculator {
- 		entry PairCalculator(bool, int, int, int, int op1, FuncType fn1, int op2, FuncType fn2, CkCallback cb, CkGroupID gid, CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce );
+ 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce );
    		entry void lbsync();
 		entry void sendBWResult(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
-   		entry void calculatePairs(int size, complex points[size], int, bool, bool);
    		entry [nokeep] void calculatePairs_gemm(calculatePairsMsg *msg);
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
 		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);

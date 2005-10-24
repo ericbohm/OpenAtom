@@ -150,8 +150,6 @@ mainmodule cpaimd {
 		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void acceptSectionLambda(CkReductionMsg *msg);
 		entry void resume();
-		entry void S_to_T(CkReductionMsg *msg); 	
-
 		entry Ortho();
 		entry Ortho(int s_grain);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);

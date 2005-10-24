@@ -103,14 +103,6 @@ CkReduction::reducerType complexVectorAdderType;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/* dummy function for using the PairCalculator library*/
-void myFunc(complex a, complex b) {}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 /*
  * The Main of CPAIMD. It calls all the init functions
  */
@@ -259,14 +251,14 @@ main::main(CkArgMsg *m) {
     int gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
 
 
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc, CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId );
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId );
 
     CkArrayIndex2D myindex(0, 0);
 
     gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
     int myPack=0;
 
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ, 0, myFunc, 0, myFunc,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
     
   //-------------------------------------------------------------
   // Create stuff for ortho which PC invokes by section reduction
@@ -362,15 +354,11 @@ main::main(CkArgMsg *m) {
             (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              ndestelements, destelements, nsrcelements, srcelements);
         
-        commInstance = CkGetComlibInstance();
-        commRealInstance = CkGetComlibInstance();
-        commInstance.setStrategy(strat);
-        commRealInstance.setStrategy(real_strat);
+        commInstance = ComlibRegister(strat);
+        commRealInstance= ComlibRegister(real_strat);
     }
 
     if (config.useCommlibMulticast) {
-        mcastInstance = CkGetComlibInstance();         
-        mcastInstancePP = CkGetComlibInstance();         
         DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
 	    (realSpacePlaneProxy.ckGetArrayID(), 1);
         
@@ -391,15 +379,15 @@ main::main(CkArgMsg *m) {
 
 	if(CkNumNodes()>64) //multiring should be good on large runs, but not on BG/L
 	  {
-	      mcastInstance.setStrategy(dstrat);
-//	      mcastInstancePP.setStrategy(d1strat);
-	      mcastInstancePP.setStrategy(mr1strat);
+	      mcastInstance=ComlibRegister(dstrat);
+	      mcastInstancePP=ComlibRegister(mr1strat);
 	    }
 	else
 	  {
-	      mcastInstance.setStrategy(rstrat);
-	      mcastInstancePP.setStrategy(r1strat);
+	      mcastInstance=ComlibRegister(rstrat);
+	      mcastInstancePP=ComlibRegister(r1strat);
 	  }
+	
     }        
     // end Sameer's new communication strategies 
 
@@ -593,10 +581,9 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
         ssInstance.setStrategy(strat);
         
         // Set some com strategy of Sameer
-        mssInstance = CkGetComlibInstance();
         StreamingStrategy *mstrat = new StreamingStrategy(0.2,5);
         //mstrat->enableShortArrayMessagePacking();
-        mssInstance.setStrategy(mstrat);    
+        mssInstance= ComlibRegister(mstrat);    
     }
 
   printf("\n");

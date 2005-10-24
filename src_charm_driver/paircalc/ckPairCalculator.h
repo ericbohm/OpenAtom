@@ -297,7 +297,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool, int, int, int, int op1, FuncType fn1, int op2, FuncType fn2, CkCallback cb, CkGroupID gid, CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc, redtypes reduce);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc, redtypes reduce);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -305,22 +305,18 @@ class PairCalculator: public CBase_PairCalculator {
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
-#ifndef _PAIRCALC_SLOW_FAT_SIMPLE_CAST_
-    CProxy_PairCalcReducer pairCalcReducerProxy(reducer_id);
-    pairCalcReducerProxy.ckLocalBranch()->clearRegister();
-#endif
     resumed=false;
     AtSync();
   };
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
-  void calculatePairs(int, complex *, int, bool, bool); 
   void calculatePairs_gemm(calculatePairsMsg *msg);
   void sendBWResult(sendBWsignalMsg *msg);
   void multiplyResult(multiplyResultMsg *msg);
   void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
+  // this is never called we leave it here as an historical artifact
   inline double compute_entry(int n, complex *psi1, complex *psi2, int op) 
     {
 
@@ -335,10 +331,6 @@ class PairCalculator: public CBase_PairCalculator {
 
  private:
   int numRecd, numExpected, grainSize, S, blkSize, N;
-  int kUnits;
-  int op1, op2;
-  FuncType fn1, fn2;
-  int sumPartialCount;
   bool symmetric;
   bool conserveMemory;
   bool lbpaircalc;
@@ -346,25 +338,22 @@ class PairCalculator: public CBase_PairCalculator {
   CkCallback cb;
   CkArrayID cb_aid;
   int cb_ep;
-  CkGroupID reducer_id;
-  CkSparseContiguousReducer<double> sparseRed;
   bool existsLeft;
   bool existsRight;
   bool existsOut;
   bool existsNew;
+  bool resumed;
+  CkSectionInfo cookie; 
+
   complex *mynewData, *othernewData;
   double *inDataLeft, *inDataRight;
   double *outData;
-  complex *newData;
-  bool resumed;
+
   /* to support the simpler section reduction*/
   CkGroupID mCastGrpId;
-  CkSectionInfo cookie; 
+
   CkSectionInfo *resultCookies;
   CkSectionInfo *otherResultCookies;
-  int newelems;
-  int orck;
-  int rck;
 };
 
 //forward declaration

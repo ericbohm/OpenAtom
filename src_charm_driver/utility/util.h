@@ -196,7 +196,6 @@ class Config {
 	int lbgspace;
 	int lbpaircalc;
 	int gspacesum;
-	int parlambda;
         int numSfGrps;
         int numSfDups;
 	int sfpriority;

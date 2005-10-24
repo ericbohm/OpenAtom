@@ -20,6 +20,7 @@ PAIRCALC  = ../paircalc
 MATH  = ../mathlib
 PHYSICS = ../../src_piny_physics_v1.0/
 LOADB = ../load_balance
+SRC_COMPILE = ../compile
 #===========================================================================
 
 
@@ -28,7 +29,7 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
          -I$(HEAD) -I$(MAIN) -I$(STATE) -I$(RHO) \
          -I$(ORTHO) -I$(UTIL) -I$(MATH) -I$(LOADB) \
 	 -I../misc -I$(STRUCTFACT) -I$(TOPINC) \
-	 -I../paircalc  \
+	 -I../paircalc  -I$(SRC_COMPILE)\
          -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
 	
 LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \

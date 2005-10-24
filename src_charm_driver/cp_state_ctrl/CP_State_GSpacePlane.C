@@ -358,29 +358,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     setMigratable(false);
   }//endif
 
-  // Create section proxy for ParticlePlane (any state#, some plane#)
-  CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
-  CkArrayIndex2D idx(0, thisIndex.y);  // plane# = this plane#
-  for (int j = 0; j < nstates; j++) {
-    idx.index[0] = j;
-    elems[j] = idx;
-  }
-  particlePlaneSectionProxy = 
-    CProxySection_CP_State_ParticlePlane::ckNew(particlePlaneProxy.ckGetArrayID(),
-                                                elems, nstates);
-  delete [] elems;
-    
-  if(config.useGMulticast){
-    CkGroupID mCastGrpId = CProxy_CkMulticastMgr::ckNew();
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-    particlePlaneSectionProxy.ckDelegate(mcastGrp);  
-    mcastGrp->setSection(particlePlaneSectionProxy);
-  }else{
-    if(config.useCommlibMulticast) {
-      ComlibDelegateProxy(&particlePlaneSectionProxy);	
-      ComlibInitSectionID(particlePlaneSectionProxy.ckGetSectionID());
-    }//endif
-  }//endif
+  real_proxy = realSpacePlaneProxy;
+  if (config.useCommlib)
+      ComlibAssociateProxy(&mssInstance,real_proxy);
 
   // create structure factor proxy
   if(thisIndex.x==0){
@@ -682,6 +662,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|flagsSent;
   p|partialCount;
   p|gSpaceNumPoints;
+  p|real_proxy;
   // k_x, k_y, k_z need to be puped
   if (p.isUnpacking()) {
     k_x       = new int[gSpaceNumPoints];
@@ -712,7 +693,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|localState;
   p|acceptedPsi;
   p | AllExpected;
-  p | particlePlaneSectionProxy; 
   p | sfCompSectionProxy;
   p | gpairCalcID1;
   p | gpairCalcID2;
@@ -751,8 +731,11 @@ void CP_State_GSpacePlane::startNewIter ()  {
 // Check Load Balancing, Increment counter, set done flags equal to false.
 
     if(iteration==TRACE_ON_STEP ){traceBegin();}
-    if(iteration==TRACE_OFF_STEP){traceEnd();}
-       
+  if(iteration==TRACE_OFF_STEP){traceEnd();}
+
+/*    if(iteration % (LOAD_BALANCE_STEP -2)==0){traceBegin();}
+    if(iteration % (LOAD_BALANCE_STEP +3)==0){traceEnd();LBTurnInstrumentOff();}
+*/
     iteration++;
 
     if(config.lbgspace || config.lbpaircalc){
@@ -762,9 +745,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
 	}//endif
     }//endif
 
-    //    CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
 
-    //    pp->doneGettingForces = false;
     doneDoingIFFT         = false;
     allgdoneifft          = false;
 
@@ -886,8 +867,6 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 
   if (config.useCommlib){mssInstance.beginIteration();}
-  CProxy_CP_State_RealSpacePlane real_proxy = realSpacePlaneProxy;
-  if (config.useCommlib){ComlibDelegateProxy(&real_proxy);}
 
 //============================================================================
 // Send your (x,y,z) to processors z.
@@ -1342,34 +1321,8 @@ void CP_State_GSpacePlane::releaseComputeZ() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
-    
-  CkDataSegHeader r;
-  double zero=0;
-#ifdef CONVERSE_VERSION_ELAN
-  double *data = (double *)msg->getData();
-#else
-  double *data = (double *)decompressMsg(msg, r, zero);
-#endif
-
-
-#ifdef _CP_DEBUG_LMAT_
-  FILE *fp = fopen("lmatrix.out","w");
-  for(int i=0; i<nstates; i++) {
-    for(int j=0; j<nstates; j++) {
-      fprintf(fp,"[%d %d] %.12g\n",i+1, j+1, data[i*nstates+j]);
-    }
-  }
-  fclose(fp);
-#endif
-
-  finishPairCalc(&pairCalcID2, nstates*nstates, data);
-    
-  delete msg;
-
-#ifndef CONVERSE_VERSION_ELAN
-  delete [] data;
-#endif
-
+    delete msg;
+    CkAbort("GSP do not call acceptAllLambda\n");
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
@@ -1426,13 +1379,19 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
       traceBegin();
     if(numIter == 3 * LOAD_BALANCE_STEP)
       traceEnd();
+    /* needs to be rewritten
     if(config.lbgspace)
       {
+
 	StructFactCache *sfCache = sfCacheProxy.ckLocalBranch();
 	CkAssert(sfCache != NULL);
 	sfCache->removeAll();
+
       }
+    */
     CkPrintf("G %d %d atsync\n",thisIndex.x, thisIndex.y);
+//    isAtSyncPairCalc(&gpairCalcID1);
+//    isAtSyncPairCalc(&gpairCalcID2);
     AtSync();
 }
 //==============================================================================
@@ -1444,29 +1403,26 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
 void CP_State_GSpacePlane::ResumeFromSync() {
 //    CmiPrintf("ResumeFromSync calls resume\n");
   //takes care of the paircalc proxies
+
+
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
+  mcastGrp->resetSection(lambdaproxy);
+  mcastGrp = CProxy_CkMulticastMgr(gpairCalcID1.mCastGrpId).ckLocalBranch();
+  mcastGrp->resetSection(psiproxy);
+  if(AllExpected>1)
+      mcastGrp->resetSection(psiproxyother);
   gpairCalcID1.resetProxy();
   gpairCalcID2.resetProxy();
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
-  //takes care of the paircalc result proxies
-  mcastGrp->resetSection(lambdaproxy);
-  mcastGrp = CProxy_CkMulticastMgr(gpairCalcID1.mCastGrpId).ckLocalBranch();         
-  mcastGrp->resetSection(psiproxy);
-  mcastGrp->resetSection(psiproxyother);
-  if(config.lbgspace){
 
-#ifdef _PC_COMMLIB_MULTI_
-      ComlibResetSectionProxy(&particlePlaneSectionProxy);
-#endif
-      //we need to recompute StructureFactor's send
-  }//endif load balancing
+  //takes care of the paircalc result proxies which we own
+  if(config.useCommlib)
+      ComlibResetProxy(&real_proxy);
+
+
+
 
   LBTurnInstrumentOff();
-  CmiPrintf("G ResumeFromSync %d %d!\n",thisIndex.x, thisIndex.y);
-
-  if (thisIndex.x == 0 && thisIndex.y == 0) {
-    CmiPrintf("ResumeFromSync calls resume\n");
-    orthoProxy.resume();
-  }//endif
+//  CmiPrintf("G ResumeFromSync %d %d!\n",thisIndex.x, thisIndex.y);
 
 //==============================================================================
   }//end routine

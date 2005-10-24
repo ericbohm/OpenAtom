@@ -92,6 +92,11 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     flagsRecd = false;
     sendFFTDataSize = 0;
     setMigratable(false);
+    gproxy = gSpacePlaneProxy;
+    if (config.useCommlib){
+      ComlibAssociateProxy(&mssInstance,gproxy);
+    }//endif
+
     run();
 }
 //============================================================================
@@ -281,6 +286,10 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 }
 //============================================================================
 
+void CP_State_RealSpacePlane::ResumeFromSync(){
+    if(config.useCommlib)
+	ComlibResetProxy(&gproxy);
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -351,12 +360,7 @@ void CP_State_RealSpacePlane::doProduct() {
     int planeSize  = sizeY*sizeX;
     int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
     int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
-
-    CProxy_CP_State_GSpacePlane gproxy = gSpacePlaneProxy;
-    if (config.useCommlib){
-      ComlibDelegateProxy(&gproxy);
-      mssInstance.beginIteration();
-    }//endif
+    if (config.useCommlib){mssInstance.beginIteration();}
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
       GSIFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 

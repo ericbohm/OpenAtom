@@ -124,6 +124,10 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
              rho_gs.xdim, rho_gs.ydim, rho_gs.zdim);
     
     setMigratable(false);
+    rhoRealProxy_com = rhoRealProxy;
+    if (config.useCommlib) {
+	ComlibAssociateProxy(&commInstance,rhoRealProxy_com);
+    }
 
     //    fftuseCommlib = _useCommlib;
     //    fftcommInstance = _fftcommInstance;
@@ -382,12 +386,9 @@ void CP_Rho_GSpacePlane::recvProcessedPart(){
         int maxk = rho_gs.sizeY;
         int offset = thisIndex % maxk;
 
-        CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com = rhoRealProxy;;
         if (config.useCommlib) {
             commInstance.beginIteration();
-            ComlibDelegateProxy(&rhoRealProxy_com);
         }
-        
         for (int y = 0; y < rho_gs.sizeY; y ++){
             rhoRealProxy_com[y].acceptEnergyForSumming
                 (dataSize, rho_gs.chunk + y*rho_gs.sizeX, thisIndex);
@@ -400,7 +401,13 @@ void CP_Rho_GSpacePlane::recvProcessedPart(){
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
+void CP_Rho_GSpacePlane::ResumeFromSync()
+{
+    if (config.useCommlib) {
+	ComlibResetProxy(&rhoRealProxy_com);
+    }
 
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -667,7 +667,6 @@ void Config::print() {
 	          << "localSF: " << localSF << endl
 	          << "delayCompStruct: " << delayCompStruct << endl
 	          << "gspacesum: " << gspacesum << endl
-	          << "parlambda: " << parlambda << endl
 	          << "numSfGrps: " << numSfGrps << endl
 	          << "numSfDups: " << numSfDups << endl
    	          << "sfpriority: " << sfpriority << endl
@@ -721,7 +720,6 @@ void Config::readConfig(const char* fileName, Config &config,
     config.lbgspace        = 0;
     config.fftuseCommlib   = 0;
     config.gspacesum       = 0;
-    config.parlambda       = 0;
     config.numSfGrps       = 1;
     config.numSfDups       = 1;
     config.gSpacePPC       = 1;
@@ -839,8 +837,6 @@ void Config::readConfig(const char* fileName, Config &config,
             config.fftuseCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "gspacesum"))
             config.gspacesum = atoi(parameterValue);
-        else if (!strcmp(parameterName, "parlambda"))
-            config.parlambda = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfGrps"))
             config.numSfGrps = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfDups"))
@@ -863,6 +859,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhorpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "parlambda"))
+            CkPrintf("@_parlambda is now compulsory_@\n");
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }

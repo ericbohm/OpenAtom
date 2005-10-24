@@ -1,5 +1,4 @@
 #include "ckPairCalculator.h"
-#define _SECTION_RESULT_
 
 #define PARTITION_SIZE 500
 /***************************************************************************
@@ -78,7 +77,6 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   double *inmatrix;
   for(int i=1; i<nMsg;i++)
     {
-      CkAssert(msgs[i]->getSize()==size0); // paranoia
       inmatrix=(double *) msgs[i]->getData();
       for(int d=0;d<size;d++)
 	ret[d]+=inmatrix[d];
@@ -89,7 +87,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize,  int op1,  FuncType fn1, int op2,  FuncType fn2, CkCallback cb, CkGroupID gid, CkArrayID cb_aid, int cb_ep, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb, CkArrayID cb_aid, int cb_ep, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -99,27 +97,18 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize,  int
   this->grainSize = grainSize;
   this->S = s;
   this->blkSize = blkSize;
-  this->op1 = op1;
-  this->fn1 = fn1;
-  this->op2 = op2;
-  this->fn2 = fn2;
   this->cb = cb;
   this->N = -1;
   this->cb_aid = cb_aid;
   this->cb_ep = cb_ep;
-  reducer_id = gid;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
   existsNew=false;
   numRecd = 0;
-  newelems=0;
-  rck=0;
-  orck=0;
   numExpected = grainSize;
   cpreduce=_cpreduce;
   resumed=true;
-  kUnits=grainSize;  //streaming unit only really used in NOGEMM, but could be used under other conditions
 
   inDataLeft = NULL;
   inDataRight = NULL;
@@ -127,80 +116,51 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize,  int
   outData = NULL;
   mynewData= NULL;
   othernewData= NULL;
-  newData = NULL;
-  sumPartialCount = 0;
-  usesAtSync=true;
+//  usesAtSync=true;
   if(lbpaircalc)
-    setMigratable(true);
+      setMigratable(true);
   else
-    setMigratable(false);
+      setMigratable(false);
+  if(symmetric)
+      setMigratable(false);
   resultCookies=NULL;
   otherResultCookies=NULL;
-#ifdef _SECTION_RESULT_
-  resultCookies=new CkSectionInfo[grainSize*S/grainSize];
+  resultCookies=new CkSectionInfo[grainSize];
   if(symmetric && (thisIndex.x != thisIndex.y))
-    otherResultCookies=new CkSectionInfo[grainSize*S/grainSize];
-#endif  
+    otherResultCookies=new CkSectionInfo[grainSize];
 
-  CProxy_PairCalcReducer pairCalcReducerProxy(reducer_id);
-  CkArrayIndex4D indx4(thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z);
-  CkArrayID myaid=thisProxy.ckGetArrayID();
-  IndexAndID iandid(indx4,myaid);
-  pairCalcReducerProxy.ckLocalBranch()->doRegister(iandid, symmetric);
 }
 
 void
 PairCalculator::pup(PUP::er &p)
 {
   ArrayElement4D::pup(p);
-  p|symmetric;
-  p|resumed;
   p|numRecd;
-  p|grainSize;
   p|numExpected;
+  p|grainSize;
   p|S;
   p|blkSize;
   p|N;
-  p|kUnits;
-  p|op1;
-  p|op2;
-  p|fn1;
-  p|fn2;
-  p|sumPartialCount;
+  p|symmetric;
   p|conserveMemory;
   p|lbpaircalc;
   p|cb;
   p|cpreduce;
   p|cb_aid;
   p|cb_ep;
-  p|reducer_id;
   p|existsLeft;
   p|existsRight;
   p|existsOut;
-  p|existsNew;
-  p|newelems;
   p|mCastGrpId;
   p|cookie;
+  p|resumed;
   if (p.isUnpacking()) {
-#ifdef _SECTION_RESULT_
     resultCookies=new CkSectionInfo[grainSize];
     if(symmetric && (thisIndex.x != thisIndex.y))
       otherResultCookies= new CkSectionInfo[grainSize];
-#endif
-    if(existsNew)
-      newData= new complex[newelems];
-    else
-      newData=NULL;
     if(existsOut)
       {
 	outData= new double[grainSize*grainSize];
-	// just in case we migrated with a reduction in progress
-	// this is the only way to restore the sparseContiguous reducer state
-	// if we didn't, no harm done.
-	if(cpreduce==sparsecontiguous)
-	  {
-	    sparseRed.add((int)thisIndex.y, (int)thisIndex.x, (int)(thisIndex.y+grainSize-1), (int)(thisIndex.x+grainSize-1), outData);
-	  }
       }
     else
       outData=NULL;
@@ -214,25 +174,21 @@ PairCalculator::pup(PUP::er &p)
       inDataRight=NULL;
 
   }
-  if(existsLeft)
-    p((void*) inDataLeft, numExpected * N * 2* sizeof(double));
-  if(existsRight)
-    p((void*) inDataRight, numExpected* N * 2* sizeof(double));
-  if(existsNew)
-    p((void*) newData, newelems* sizeof(complex));
-  if(existsOut)
-    p((void*) outData, grainSize*grainSize* sizeof(double));
-#ifdef _SECTION_RESULT_
   p(resultCookies, grainSize);
   if(symmetric && (thisIndex.x != thisIndex.y))
     p(otherResultCookies, grainSize);
-#endif
+  if(existsOut)
+    p(outData, grainSize*grainSize);
+  if(existsLeft)
+    p(inDataLeft, numExpected * N * 2);
+  if(existsRight)
+    p(inDataRight, numExpected* N * 2);
 
 #ifdef _PAIRCALC_DEBUG_
   if (p.isUnpacking())
     {
       CkPrintf("[%d,%d,%d,%d,%d] pup unpacking on %d resumed=%d memory %d\n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,symmetric,CkMyPe(),resumed, CmiMemoryUsage());
-      CkPrintf("[%d,%d,%d,%d,%d] pupped : %d %d %d %d %d %d %d %d %d fn1 fn2 %d %d %d %d %d cb cb_aid %d reducer_id sparsRed %d %d cb_lb inDataLeft inDataRight outData newData %d \n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,symmetric, numRecd, numExpected, grainSize, S, blkSize, N, kUnits, op1, op2, sumPartialCount,symmetric, conserveMemory, lbpaircalc, cpreduce, cb_ep, existsLeft, existsRight,  resumed);
+      CkPrintf("[%d,%d,%d,%d,%d] pupped : %d %d %d %d %d %d %d %d %d  %d %d cb cb_aid %d %d %d cb_lb inDataLeft inDataRight outData  %d \n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected, grainSize, S, blkSize, N, symmetric, conserveMemory, lbpaircalc, cpreduce, cb_ep, existsLeft, existsRight,  resumed);
 
     }
   else
@@ -256,24 +212,18 @@ PairCalculator::~PairCalculator()
 
   if(inDataRight!=NULL)
     delete [] inDataRight;
-
-  if(newData!=NULL)
-    delete [] newData;
   // redundant paranoia
   outData=NULL;
   inDataRight=NULL;
   inDataLeft=NULL;
-  newData=NULL;
   existsLeft=false;
   existsRight=false;
   existsNew=false;
   existsOut=false;
-#ifdef _SECTION_RESULT_
   if(resultCookies)
     delete [] resultCookies;
   if(symmetric && (thisIndex.x != thisIndex.y) && otherResultCookies)
     delete [] otherResultCookies;
-#endif
 }
 
 
@@ -304,17 +254,15 @@ void PairCalculator::initResultSection(initResultMsg *msg)
   if(symmetric && msg->dest == thisIndex.x && thisIndex.x != thisIndex.y)
   {
       otherResultCookies[msg->offset]=localcookie;
-      orck++;
 #ifdef _PAIRCALC_DEBUG_SPROXY_
-      CkPrintf("[%d,%d,%d,%d,%d] other initResultSection for dest %d offset %d orck %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset, orck);
+      CkPrintf("[%d,%d,%d,%d,%d] other initResultSection for dest %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset);
 #endif
   }
   else
   {
       resultCookies[msg->offset]=localcookie;
-      rck++;
 #ifdef _PAIRCALC_DEBUG_SPROXY_
-      CkPrintf("[%d,%d,%d,%d,%d] initResultSection for dest %d offset %d rck %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset,rck);
+      CkPrintf("[%d,%d,%d,%d,%d] initResultSection for dest %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset);
 #endif
   }
   mCastGrpId=msg->mCastGrpId;  //redundant
@@ -326,13 +274,6 @@ void PairCalculator::ResumeFromSync() {
   resumed=true;
 #ifdef _PAIRCALC_DEBUG_
       CkPrintf("[%d,%d,%d,%d,%d] resumes from sync\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric);
-#endif
-#ifndef _PAIRCALC_SLOW_FAT_SIMPLE_CAST_
-      CProxy_PairCalcReducer pairCalcReducerProxy(reducer_id);
-      CkArrayIndex4D indx4(thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z);
-      CkArrayID myaid=thisProxy.ckGetArrayID();
-      IndexAndID iandid(indx4,myaid);
-      pairCalcReducerProxy.ckLocalBranch()->doRegister(iandid, symmetric);
 #endif
   }
 }
@@ -361,7 +302,7 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
 	existsLeft=true;
 	N = msg->size; // N is init here with the size of the data chunk.
 	inDataLeft = new double[numExpected*N*2];
-	memset(inDataLeft,0,numExpected*N*2*sizeof(double));
+	bzero(inDataLeft,numExpected*N*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpected,N);
 
@@ -397,7 +338,7 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
 	existsRight=true;
 	N = msg->size; // N is init here with the size of the data chunk.
 	inDataRight = new double[numExpected*N*2];
-	memset(inDataRight,0,numExpected*N*2*sizeof(double));
+	bzero(inDataRight,numExpected*N*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpected,N);
 #endif
@@ -457,7 +398,7 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
       CkAssert(outData==NULL);
       existsOut=true;
       outData = new double[grainSize * grainSize];
-      memset(outData, 0 , sizeof(double)* grainSize * grainSize);
+      bzero(outData, sizeof(double)* grainSize * grainSize);
 #ifdef _PAIRCALC_DEBUG_
        CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,grainSize, grainSize);
 #endif
@@ -524,18 +465,10 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-
     numRecd = 0; 
-#define NEW_DECOMP	
     if (msg->flag_dp) {
-#ifndef NEW_DECOMP	
-      if(thisIndex.w != 0) {   // Adjusting for double packing of incoming data
-#endif
 	for (int i = 0; i < grainSize*grainSize; i++)
 	  outData[i] *= 2.0;
-#ifndef NEW_DECOMP	
-      }
-#endif
     }
 #ifdef _PAIRCALC_DEBUG_PARANOID_
     char filename[80];
@@ -560,27 +493,9 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
     StartTime=CmiWallTimer();
 #endif
 
+    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+    mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
 
-    if(cpreduce==machine){
-	//CkPrintf("[%d] ELAN VERSION %d\n", CkMyPe(), symmetric);
-	CProxy_PairCalcReducer pairCalcReducerProxy(reducer_id);
-	pairCalcReducerProxy.ckLocalBranch()->acceptContribute(S * S, outData,
-							       cb, !symmetric, symmetric, thisIndex.x, thisIndex.y, grainSize);
-#ifdef _ELAN_PAIRCALC_DEBUG_
-	CkPrintf("[PAIRCALC] [%d %d %d %d %d] called acceptContribute \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric);
-#endif
-
-    }
-    else if(cpreduce==sparsecontiguous)
-      {
-	sparseRed.add((int)thisIndex.y, (int)thisIndex.x, (int)(thisIndex.y+grainSize-1), (int)(thisIndex.x+grainSize-1), outData);
-	sparseRed.contribute(this, sparse_sum_double);
-      }
-    else //section reduction
-      {
-	CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-	mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
-      }
 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -616,9 +531,6 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	if (thisIndex.y != thisIndex.x) 
 
 	{ //othernewdata exists for we are symmetric and not on the diagonal
-#ifdef _PAIRCALC_DEBUG_SPROXY_
-	    CkPrintf("[%d %d %d %d %d]: other received cookie count %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, orck);
-#endif
 	    for(int j=0;j<grainSize;j++)
 	    {
 
@@ -632,9 +544,6 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	    }
 	}
     }
-#ifdef _PAIRCALC_DEBUG_SPROXY_
-    CkPrintf("[%d %d %d %d %d]: received cookie count %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, rck);
-#endif
     for(int j=0;j<grainSize;j++) //mynewdata
     {
 	CkCallback mycb(cb_ep, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
@@ -671,11 +580,9 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
   mynewData = new complex[N*grainSize];
   
-  othernewData;
-
   if(symmetric && (thisIndex.x != thisIndex.y)){
     othernewData = new complex[N*grainSize];
-    memset(othernewData,0,N*grainSize* sizeof(complex));
+    bzero(othernewData,N*grainSize* sizeof(complex));
   }
 
   int offset = 0, index = thisIndex.y*S + thisIndex.x;
@@ -720,7 +627,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
       // copy grainSize chunks at S offsets
       amatrix=new double[matrixSize];
-      memset(amatrix,0,matrixSize *sizeof(double));
+      bzero(amatrix,matrixSize *sizeof(double));
       CkAssert(size>=matrixSize);
       for(int i=0;i<grainSize;i++){
 	localMatrix = (matrix1+index+i*S);
@@ -889,7 +796,7 @@ void PairCalcReducer::acceptContribute(int size, double* matrix, CkCallback cb,
     int red_size = size *sizeof(double);
     if(tmp_matrix == NULL) {
         tmp_matrix = new double[size];
-	memset(tmp_matrix,0,red_size);
+	bzero(tmp_matrix,red_size);
     }
     int off=offx*grainSize+offy;
     for(int i = 0; i < grainSize*grainSize ; i ++){
@@ -920,7 +827,7 @@ void PairCalcReducer::startMachineReduction() {
 #endif
     if(isAllReduce) {
         dst_matrix = new double[size];
-        memset(dst_matrix, 0, size * sizeof(double));
+        bzero(dst_matrix, size * sizeof(double));
         elan_machine_allreduce(size, sizeof(double), tmp_matrix, dst_matrix, add_double);
     }
     else {
@@ -928,7 +835,7 @@ void PairCalcReducer::startMachineReduction() {
 
         if(pe == CkMyPe()) {
             dst_matrix = new double[size];
-            memset(dst_matrix, 0, size * sizeof(double));
+            bzero(dst_matrix, size * sizeof(double));
         }
 
         elan_machine_reduce(size, sizeof(double), tmp_matrix, dst_matrix, add_double, pe);
@@ -1029,231 +936,6 @@ PairCalcReducer::broadcastEntireResult(entireResultMsg2 *imsg)
     delete imsg;
 
 }
-
-
-
-
-/* note this is probably broken now, offset calculations need to be rejiggered to work with the one dimensional allocation scheme*/
-void
-PairCalculator::calculatePairs(int size, complex *points, int sender, bool fromRow, bool flag_dp)
-{
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, symm=%d, from=%d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, sender, size, symmetric, fromRow);
-#endif
-
-#ifdef NOGEMM
-  numRecd++;   // increment the number of received counts
-
-  int offset = -1;
-  complex **inData;
-  if (fromRow) {   // This could be the symmetric diagnoal case
-    offset = sender - thisIndex.x;
-    inData = inDataLeft;
-#ifdef _PAIRCALC_FIRSTPHASE_STREAM_
-    kLeftOffset[kLeftDoneCount + kLeftCount]=offset;
-    kLeftCount++;
-#endif
-  }
-  else {
-    offset = sender - thisIndex.y;
-    inData = inDataRight;
-#ifdef _PAIRCALC_FIRSTPHASE_STREAM_
-    kRightOffset[kRightDoneCount + kRightCount]=offset;
-    kRightCount++;
-#endif
-  }
-
-  N = size; // N is init here with the size of the data chunk.
-            // Assuming that data chunk of the same plane across all states are of the same size
-
-  if (inData==NULL)
-  { // now that we know N we can allocate contiguous space
-    inData = new complex[numExpected*N];
-  }
-  memcpy(inData[offset*N], points, size * sizeof(complex));
-
-
-  // once have K left and K right (or just K left if we're diagonal
-  // and symmetric) compute ZDOT for the inputs.
-
-  // Because the vectors are not guaranteed contiguous, record each
-  // offset so we can iterate through them
-
-
-#ifdef _PAIRCALC_FIRSTPHASE_STREAM_
-
-  if((kLeftCount >= kUnits
-      && ((kRightCount >= kUnits) || (symmetric && thisIndex.x == thisIndex.y) ))
-     || (numRecd == numExpected * 2)
-     || ((symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)))
-      // if enough submatrix has arrived from both left and right matrixes;
-      // or if enough submatrix has arrived from left and this is diagonal one;
-      // or if all submatrix has arrived
-    {
-      // count down kUnits from leftCount starting at kUnit'th element
-      //int i, j, idxOffset;
-      int leftoffset, rightoffset;
-
-      // Ready to do  kLeftReady in left matrix, and kRightReady in right matrix.
-      // Both in multiples of kUnits
-      int kLeftReady = kLeftCount - kLeftCount % kUnits;
-      int kRightReady;
-      if(! (symmetric && thisIndex.x == thisIndex.y))
-	  kRightReady = kRightCount - kRightCount % kUnits;
-
-      if (numRecd == numExpected * 2
-	  || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))
-	{ // if all has arrived, then finish whatever is remained
-	  kLeftReady = kLeftCount;
-	  if(! (symmetric && thisIndex.x == thisIndex.y))
-	      kRightReady = kRightCount;
-	}
-
-      if(symmetric && thisIndex.x == thisIndex.y) {
-	  // if the symmetric but diagonal case
-
-          // NEW left compute with every entry in left (old+new)
-  	  int leftoffset1=0, leftoffset2=0;
-	  for(int kLeft1=kLeftDoneCount; kLeft1<kLeftDoneCount + kLeftReady; kLeft1++)
-	  {
-	    leftoffset1=kLeftOffset[kLeft1];
-	    for(int kLeft2=0; kLeft2<kLeftDoneCount + kLeftReady; kLeft2++)
-	      {
-		  leftoffset2 = kLeftOffset[kLeft2];
-		  // if(leftoffset1 <= leftoffset2) {
-		  outData[leftoffset1 * grainSize + leftoffset2] =
-		    compute_entry(size, &(inDataLeft[leftoffset1*N]), &(inDataLeft[leftoffset2*N]),op1);
-		  //}
-	      }
-	  }
-      }
-      else {
-	// compute a square region of the matrix. The correct part of the
-	// region will be used by the reduction.
-
-        // NEW left compute with every entry in right
-	for(int kLeft=kLeftDoneCount; kLeft<kLeftDoneCount + kLeftReady; kLeft++)
-	  {
-	    leftoffset = kLeftOffset[kLeft];
-	    for(int kRight=0; kRight<kRightDoneCount + kRightReady; kRight++)
-	      {
-	       rightoffset = kRightOffset[kRight];
-		outData[leftoffset * grainSize + rightoffset] =
-		    compute_entry(size, &(inDataLeft[leftoffset*N]), &(inDataRight[rightoffset*N]),op1);
-	      }
-	  }
-
-        // OLD left compute with every NEW entry in right
-	for(int kLeft=0; kLeft<kLeftDoneCount; kLeft++)
-	  {
-	    leftoffset = kLeftOffset[kLeft];
-	    for(int kRight=kRightDoneCount; kRight<kRightDoneCount + kRightReady; kRight++)
-	      {
-	       rightoffset = kRightOffset[kRight];
-		outData[leftoffset * grainSize + rightoffset] =
-		    compute_entry(size, &(inDataLeft[leftoffset*N]), &(inDataRight[rightoffset*N]),op1);
-	      }
-	  }
-
-      }
-      // Decrement the undone session count
-      kLeftCount -= kLeftReady;
-      if(! (symmetric && thisIndex.x == thisIndex.y))
-	  kRightCount -= kRightReady;
-
-      // Increment the done session count
-      kLeftDoneCount +=kLeftReady;
-      if(! (symmetric && thisIndex.x == thisIndex.y))
-	  kRightDoneCount += kRightReady;
-    }
-
-  if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) {
-      numRecd = 0;
-      kLeftCount=0;
-      kRightCount=0;
-      kLeftDoneCount = 0;
-      kRightDoneCount = 0;
-
-      if (flag_dp) {
-	  if(thisIndex.w != 0) {   // Adjusting for double packing of incoming data
-
-	      for (int i = 0; i < grainSize*grainSize; i++)
-		  outData[i] *= 2.0;
-	  }
-      }
-      sparseRed.add((int)thisIndex.y, (int)thisIndex.x, (int)(thisIndex.y+grainSize-1), (int)(thisIndex.x+grainSize-1), outData);
-      sparseRed.contribute(this, sparse_sum_double);
-
-#if CONVERSE_VERSION_ELAN
-      //CkPrintf("[%d] ELAN VERSION %d\n", CkMyPe(), symmetric);
-      CProxy_PairCalcReducer pairCalcReducerProxy(reducer_id);
-      pairCalcReducerProxy.ckLocalBranch()->acceptContribute(S * S, outData,
-                                                             cb, !symmetric, symmetric);
-#endif
-
-  }
-
-#else
-
-// Below is the old version, very dusty
-  if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) {
-    //    kLeftCount=kRightCount=0;
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("     pairCalc[%d %d %d %d] got expected %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  numExpected);
-#endif
-    numRecd = 0;   // Reset the received count to zero for next iteration
-
-    int i, j, idxOffset;
-    if(symmetric && thisIndex.x == thisIndex.y) {
-        int size1 = size%PARTITION_SIZE;
-        if(size1 > 0) {
-	    int start_offset = size-size1;
-            for (i = 0; i < grainSize; i++)
-                for (j = 0; j < grainSize; j++)
-                    outData[i * grainSize + j] = compute_entry(size1, &(inDataLeft[i*N])+start_offset,
-                                                               &(inDataLeft[j*N])+start_offset, op1);
-        }
-        for(size1 = 0; size1 + PARTITION_SIZE < size; size1 += PARTITION_SIZE) {
-            for (i = 0; i < grainSize; i++)
-                for (j = 0; j < grainSize; j++)
-                    outData[i * grainSize + j] += compute_entry(PARTITION_SIZE, &(inDataLeft[i*N])+size1,
-                                                                &(inDataLeft[j*N])+size1, op1);
-        }
-    }
-    else {
-      // compute a square region of the matrix. The correct part of the
-      // region will be used by the reduction.
-        int size1 = size%PARTITION_SIZE;
-        if(size1 > 0) {
-	    int start_offset = size-size1;
-            for (i = 0; i < grainSize; i++)
-                for (j = 0; j < grainSize; j++)
-                    outData[i * grainSize + j] = compute_entry(size1, &(inDataLeft[i*N])+start_offset,
-                                                               &(inDataRight[j*N])+start_offset, op1);
-        }
-        for(size1 = 0; size1 + PARTITION_SIZE < size; size1 += PARTITION_SIZE) {
-            for (i = 0; i < grainSize; i++)
-                for (j = 0; j < grainSize; j++)
-                    outData[i * grainSize + j] += compute_entry(PARTITION_SIZE, &(inDataLeft[i*N])+size1,
-                                                               &(inDataRight[j*N])+size1, op1);
-        }
-    }
-    if (flag_dp) {
-	if(thisIndex.w != 0) {   // Adjusting for double packing of incoming data
-	    for (i = 0; i < grainSize*grainSize; i++)
-		outData[i] *= 2.0;
-	}
-    }
-    // FIXME: should do 'op2' here!!!
-
-    sparseRed.add((int)thisIndex.y, (int)thisIndex.x, (int)(thisIndex.y+grainSize-1), (int)(thisIndex.x+grainSize-1), outData);
-    sparseRed.contribute(this, sparse_sum_double);
-  }
-#endif
-
-#endif //NOGEMM
-}
-
 
 
 #include "ckPairCalculator.def.h"

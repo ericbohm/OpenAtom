@@ -159,7 +159,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 
 	complex *ffttempdata; 
 	int ireset;
-	CProxySection_CP_State_ParticlePlane particlePlaneSectionProxy;
+	CProxy_CP_State_RealSpacePlane real_proxy;
 	CProxySection_StructureFactor sfCompSectionProxy;
 	CProxySection_PairCalculator lambdaproxy;
 	CProxySection_PairCalculator psiproxy;
@@ -179,7 +179,6 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	CP_State_RealSpacePlane(size2d, int, int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { };
-//	void doFFT(int, complex *, int, bool*, int, int);
 	void doFFT(RSFFTMsg *);
 	void doFFT();
 	void doProduct(ProductMsg *);
@@ -187,13 +186,11 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void doProduct();
 	void resumeProduct(RSDummyResume *msg);
 	void run();
-	//void doProduct(int, complex *, int);
-	//void doMulticast(int, complex *, int);
 	void setNumPlanesToExpect(int num);
 	void printData();
 	void init(ProductMsg *);
 	void doReduction();
-	
+	void ResumeFromSync();	
  private:
 	int numPlanes;
 	int count;
@@ -202,6 +199,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	bool initialized, flagsRecd;
 	RealStateSlab rs;
 	CkSectionInfo cookie;
+	CProxy_CP_State_GSpacePlane gproxy;
 	RTH_Runtime* run_thread;
 	int sendFFTDataSize;
 };
@@ -221,13 +219,12 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void acceptDensity(int, double *, int);
 	void acceptEnergyForSumming(int, complex *, int);
 	void acceptEnergyForSumming();
-	//void doPartialMulticast();
 	void doRingMulticast();
-	//void setCMID(int);
 	void energyComputation();
 	void startTranspose();
 	void doneFFT();
 	void run();
+	void ResumeFromSync();
 	void resumeThread(PPDummyMsg *dmsg);
 	void foo(void);
 	bool gotAllRhoEnergy;
@@ -240,7 +237,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
         //Comlib multicast proxy
         CProxySection_CP_State_RealSpacePlane realSpaceSectionCProxy;
-
+	CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
 	RhoRealSlab rho_rs; 
 	int cmid;
 	int *pes;
@@ -269,8 +266,10 @@ class CP_Rho_GSpacePlane: public NormalSlabArray {
 	void recvProcessedPart(int, complex *, int);
 	void recvProcessedPart();
 	void run();
+	void ResumeFromSync();
  private:
 	int count, helperCount, helperWidth;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
 	RhoGSlab rho_gs;
 	AtomsGrp *atom;
 	complex *rhoIGX, *rhoIGY, *rhoIGZ, *gradientCorrection;

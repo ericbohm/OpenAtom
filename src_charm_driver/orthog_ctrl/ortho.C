@@ -57,6 +57,8 @@ Ortho::Ortho(int s_grain){
     this->C = new double[k2];
     this->tmp_arr = new double[k2];
     num_ready = 0;
+    usesAtSync=CmiTrue;
+    setMigratable(false);
     got_start = false;
     if(thisIndex.x==0 && thisIndex.y==0)
       {
@@ -88,8 +90,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 	if(thisIndex.x!=thisIndex.y)
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
     }
-    if(config.parlambda)
-	pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
+    pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
 
 }
 
@@ -244,100 +245,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
   }
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-// this won't ever be called now
-void Ortho::S_to_T(CkReductionMsg *msg) 
-
-//============================================================================
-    { //begin routine 
-//============================================================================
-    CkDataSegHeader r;
-    double zero=0;
-
-#ifdef CONVERSE_VERSION_ELAN
-    double *data = (double *)msg->getData();
-#else
-    double *data = (double *)decompressMsg(msg, r, zero);
-#endif
-    int i,j;
-    for (i = 0; i < nstates; i++)
-        for (j = 0; j < nstates; j++)
-	  if (j >= i){
-	    ortho[i * nstates + j] = data[(i*nstates+j)];
-	  }
-	  else {
-	    ortho[i * nstates + j] = data[(j*nstates+i)];
-	  }
-
-#ifdef _CP_DEBUG_SMAT_
-	FILE *outfile = fopen("smatrix.out_ortho", "w");
-	for(int i=0; i<nstates; i++){
-	  for(int j=0; j<nstates; j++){
-	    fprintf(outfile, "[%d %d] %10.9f \n", i, j, ortho[i*nstates+j]);
-	  }
-	}
-	fclose(outfile);
-#endif
-	CkPrintf("------------------------------------------------------\n");
-	CkPrintf("Iteration %d done\n", numGlobalIter+1);
-	CkPrintf("======================================================\n\n");
-	CkPrintf("======================================================\n");
-
-    
-/*
-#if CONVERSE_VERSION_ELAN && ! CMK_BLUEGENE_CHARM
-	sReducerProxy[0].prepareBroadcast();
-#endif
-*/
-	
-	// convert the "S" matrix to "T"  
-   CPORTHOG::CP_orthoTransform(orthoT, ortho , nstates);
-   //   CP_orthoTransform(scProxy.ckLocalBranch()->cpcharmParaInfo, orthoT, ortho , nstates * nstates);
-	// S and T matrix are symmetric and real
-#ifdef _CP_DEBUG_TMAT_
-	FILE *outfile2 = fopen("tmatrix.out", "w");
-	for(int i=0; i<nstates; i++){
-	  for(int j=0; j<nstates; j++){
-           fprintf(outfile2, "[%d %d] %10.9f \n",i+1,j+1, orthoT[i*nstates+j]);
-	  }
-	}
-	fclose(outfile2);
-#endif
-    wallTimeArr[numGlobalIter] = CkWallTimer();
-    numGlobalIter++;
-    if (numGlobalIter == config.maxIter) {
-		ckout << "wall times from within ortho" << endl;
-		int t;
-		for (t = 1; t < config.maxIter; t++)
-			ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
-		ckout << CkWallTimer() - wallTimeArr[t-1] << endl;
-  	        CkPrintf("======================================================\n");
-		CkExit();
-    }
-
-    
-    if ((config.lbgspace || config.lbpaircalc) &&(numGlobalIter== FIRST_BALANCE_STEP || numGlobalIter % LOAD_BALANCE_STEP == 0)) {
-      CkPrintf("ortho calling atsync with paircalc %d gspace %d\n",config.lbpaircalc, config.lbgspace);
-      //      if(config.lbpaircalc)
-      //	{
-	  isAtSyncPairCalc(&pairCalcID1);
-	  isAtSyncPairCalc(&pairCalcID2);
-	  //	}
-	  //      if(config.lbgspace)
-        gSpacePlaneProxy.isAtSync(numGlobalIter);
-    }
-    else
-        resume();
-    
-    delete msg;
-#ifndef CONVERSE_VERSION_ELAN
-    delete [] data;
-#endif
-//----------------------------------------------------------------------------
-    }//end routine
-//============================================================================
 
 
 //============================================================================
@@ -370,24 +277,16 @@ void Ortho::collect_results(void)
     if (numGlobalIter < config.maxIter) 
       {
 	if ((config.lbgspace || config.lbpaircalc) &&(numGlobalIter== FIRST_BALANCE_STEP || numGlobalIter % LOAD_BALANCE_STEP == 0)) {
-	  CkPrintf("ortho calling atsync with paircalc %d gspace %d\n",config.lbpaircalc, config.lbgspace);
-	  //      if(config.lbpaircalc)
-	  //	{
+	  CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
 	  if(thisIndex.x==0 && thisIndex.y==0)
 	    {
-	      isAtSyncPairCalc(&pairCalcID1);
-	      isAtSyncPairCalc(&pairCalcID2);
 	      gSpacePlaneProxy.isAtSync(numGlobalIter);
 	    }
 	  AtSync();
-	  //	}
-	  //      if(config.lbgspace)
 	}
 	else
 	  resume();
       }
-
-
   }
 
 
@@ -418,59 +317,14 @@ void Ortho::resume()
 //============================================================================
 
 
-
 void 
 Ortho::acceptAllLambda(CkReductionMsg *msg) {
-    
-  CkDataSegHeader r;
-  double zero=0;
-#ifdef CONVERSE_VERSION_ELAN
-  double *lambda = (double *)msg->getData();
-#else
-  double *lambda = (double *)decompressMsg(msg, r, zero);
-#endif
+    delete msg;
+    CkAbort("do not call acceptAllLambda");
+
+}
 
 
-
-#ifdef _CP_DEBUG_LMAT_
-  FILE *fp = fopen("lmatrix.out","w");
-  for(int i=0; i<nstates; i++) {
-    for(int j=0; j<nstates; j++) {
-      fprintf(fp,"[%d %d] %.12g\n",i+1, j+1, lambda[i*nstates+j]);
-    }
-  }
-  fclose(fp);
-#endif
-
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt)
-    {
-	CkAbort("the gamma code is broken\n");
-      // transform Tlambda = T*lambda: store in lambda
-      double *scr = new double [nstates*nstates];
-      CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
-      multiplyForGamma(orthoT, scr, lambda, nstates);
-      delete [] scr;
-      finishPairCalc2(&pairCalcID2, nstates*nstates, lambda, orthoT);
-      // finish pair calc
-      CkPrintf("[%d,%d] finishing\n",thisIndex.x, thisIndex.y);
-     
-    }
-  else
-    {
-     // finish pair calc
-      finishPairCalc(&pairCalcID2, nstates*nstates, lambda);
-      CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
-    }
-    
-  delete msg;
-
-#ifndef CONVERSE_VERSION_ELAN
-  delete [] lambda;
-#endif
-
-  //----------------------------------------------------------------------------
-}// end routine
-//==============================================================================
 
 void 
 Ortho::acceptSectionLambda(CkReductionMsg *msg) {
@@ -495,7 +349,7 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
       multiplyForGamma(orthoT, scr, lambda, nstates);
       delete [] scr;
-      finishPairCalc2(&pairCalcID2, nstates*nstates, lambda, orthoT);
+      finishPairCalcSection2(lambdaCount, lambda, orthoT, pcLambdaProxy);
       // finish pair calc
       CkPrintf("[%d,%d] finishing\n",thisIndex.x, thisIndex.y);
     }

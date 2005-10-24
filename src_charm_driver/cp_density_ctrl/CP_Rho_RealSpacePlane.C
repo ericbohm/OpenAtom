@@ -182,9 +182,13 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     realSpaceSectionProxy.init(dummyProductMessage);
 
     //if (config.useCommlibMulticast) {
-    ComlibDelegateProxy(&realSpaceSectionCProxy);
-    ComlibInitSectionID(realSpaceSectionCProxy.ckGetSectionID());
+    ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxy);
+//    ComlibInitSectionID(realSpaceSectionCProxy.ckGetSectionID());
     //} 
+    rhoGProxy_com = rhoGProxy;
+    if (config.useCommlib) {
+	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+    }//endif
 
     delete [] elems;
         
@@ -396,7 +400,17 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   }//end routine
 //============================================================================
 
+void CP_Rho_RealSpacePlane::ResumeFromSync()
+{
 
+    if(config.useCommlib)
+    {
+	ComlibResetSectionProxy(&realSpaceSectionCProxy);
+	ComlibResetProxy(&rhoGProxy_com);
+    }//endif
+
+
+}
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -490,10 +504,8 @@ void CP_Rho_RealSpacePlane::startTranspose()
         
     // send chunk to RhoGDensity
     int l, k;
-    CProxy_CP_Rho_GSpacePlane rhoGProxy_com = rhoGProxy;
     if (config.useCommlib) {
         commRealInstance.beginIteration();
-         ComlibDelegateProxy(&rhoGProxy_com);          
     }//endif
 
 //    CkPrintf("In RhoRealSpacePlane[%d] startTranspose %d %d %d\n",thisIndex,
