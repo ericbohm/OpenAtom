@@ -1,8 +1,5 @@
-
-#include "ckPairCalculator.h"
-#include "pairCalculator.h"
-extern ComlibInstanceHandle mcastInstanceCP;
-/***************************************************************************
+//**************************************************************************
+ /** \file pairCalculator.C						   *
  * This is a matrix multiply library with extra frills to communicate the  *
  * results back to gspace or the calling ortho char as directed by the     *
  * callback.                                                               *
@@ -32,8 +29,13 @@ extern ComlibInstanceHandle mcastInstanceCP;
  * section of the paircalculator to the scatter client.  The scatter       *
  * client then sends slices of the result to the appropriate chares in     *
  * gspace.                                                                 *
- *                                                                         *
- ***************************************************************************/
+ *                                                                         */
+//**************************************************************************
+ 
+#include "ckPairCalculator.h"
+#include "pairCalculator.h"
+extern ComlibInstanceHandle mcastInstanceCP;
+
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z, 
 			  CkCallback cb,  PairCalcID* pcid, int cb_ep, 

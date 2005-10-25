@@ -1,3 +1,11 @@
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+/** \file util.C
+ *
+ */
+//===================================================================================
+
 #include "util.h"
 #include "para_grp_parse.h"
 #include "CPcharmParaInfo.h"

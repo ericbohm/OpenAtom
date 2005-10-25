@@ -1,3 +1,7 @@
+/** \file StructFactorCache.h
+ *
+ */
+ 
 #ifndef _StructFactorCache_h_
 #define _StructFactorCache_h_
 

@@ -1,3 +1,7 @@
+/** \file pairutil.h
+ *
+ */
+ 
 #ifndef __PAIRUTIL_H__
 #define __PAIRUTIL_H__
 

@@ -1,3 +1,7 @@
+/** \file ckPairCalculator.h
+ *
+ */
+
 #ifndef _ckPairCalculator_h_
 #define _ckPairCalculator_h_
 #define _PC_COMMLIB_MULTI_ 0

@@ -1,7 +1,5 @@
-#include "ckPairCalculator.h"
-
-#define PARTITION_SIZE 500
-/***************************************************************************
+//**************************************************************************
+ /** \file ckPairCalculator.C						   *
  * This is a matrix multiply library with extra frills to communicate the  *
  * results back to gspace or the calling ortho char as directed by the     *
  * callback.                                                               *
@@ -52,8 +50,14 @@
  * cross-section of a sphere.  So the actual data is sparse and is         *
  * represented by a contiguous set of the nonzero elements.  This is       * 
  * commonly referred to as N or size within the calculator.                *
- *                                                                         *
- ***************************************************************************/
+ *                                                                         */
+//**************************************************************************
+
+
+#include "ckPairCalculator.h"
+
+#define PARTITION_SIZE 500
+
 
 ComlibInstanceHandle mcastInstanceCP;
 

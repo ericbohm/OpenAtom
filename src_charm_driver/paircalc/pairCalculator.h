@@ -1,4 +1,7 @@
-
+/** \file pairCalculator.h
+ *
+ */
+ 
 #ifndef _pairCalculator_h
 #define _pairCalculator_h
 #include "ckPairCalculator.h"

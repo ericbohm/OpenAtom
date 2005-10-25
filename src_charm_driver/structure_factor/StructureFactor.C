@@ -1,3 +1,7 @@
+/** \file StructureFactor.C
+ *
+ */
+ 
 #include "util.h"
 #include "groups.h"
 #include "cpaimd.h"

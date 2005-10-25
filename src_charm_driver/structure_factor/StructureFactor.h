@@ -1,3 +1,7 @@
+/** \file StructureFactor.h
+ *
+ */
+
 #ifndef _StructureFactor_h_
 #define _StructureFactor_h_
 /******************************************************************************
