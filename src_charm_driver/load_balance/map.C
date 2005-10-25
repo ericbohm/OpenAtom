@@ -1,7 +1,8 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/*
+/** \file map.C
+ *
  * The maps are intended to spread load around evenly and keep plane
  * and state objects which communicate across phases close together.
 
@@ -20,8 +21,8 @@
  * plane the map will use a certain  traversal through object space
  * for state map it will traverse all  objects state by state hence
  * cumload = load_sum { s1 * numplanesperstate + p1} for gspace it
- * will be a loop as each plane * has a different load
-*/
+ * will be a loop as each plane has a different load.
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -94,8 +95,10 @@ void SCalcMap::GSpacePlaneLoad(int idx, double *line_load, double *pt_load){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//Void allocate each state to more than one processor. Hybrid between 
-//state allocation and plane allocation
+/** 
+ * Void allocate each state to more than one processor. Hybrid between 
+ * state allocation and plane allocation
+ */
 //============================================================================
 int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
 //============================================================================
@@ -132,8 +135,7 @@ int basicMap(CkArrayIndex2D &idx2d, int numPlanes) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/*
- * map definitions
+/**
  * The next two functions are needed to implement a mapping strategy different
  * from the default strategy.
  */
@@ -258,7 +260,9 @@ inline double scalc_load(int x, int numplanes, double *load) {
 
 
 //============================================================================
-// this one uses a lookup table built by calling the slow version
+/**
+ * this one uses a lookup table built by calling the slow version
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
