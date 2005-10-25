@@ -184,7 +184,6 @@ CkReduction::reducerType complexVectorAdderType;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-<<<<<<< cpaimd.C
 /** dummy function for using the PairCalculator library
  *
  */
