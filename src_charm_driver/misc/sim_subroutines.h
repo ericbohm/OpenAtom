@@ -1,9 +1,11 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/* Add type declarations for simulationConstants class (readonly vars) */
-/* and once class for each type of object we currently have */
-/*(GStateXYslab, RealStateXZslab, RealRhoSlab, GRhoSlab, etc.) */
+/** \file sim_subroutines.C
+ * Add type declarations for simulationConstants class (readonly vars) 
+ * and once class for each type of object we currently have
+ *(GStateXYslab, RealStateXZslab, RealRhoSlab, GRhoSlab, etc.) 
+ */
 //==============================================================================
 
 #ifndef _initsim_h_

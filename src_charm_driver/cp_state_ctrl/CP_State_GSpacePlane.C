@@ -1,32 +1,34 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// This is a description of the 'life' of a CP_State_GSpacePlane object.
-//
-//  At the beginning of the program, the constructor CP_State_GSpacePlane() is 
-//  called, to initialize the CP_State_GSpacePlane array. The GSpaceSlab within 
-//  the CP_State_GSpacePlane is initialized using the initGSpace(...) method.
-//
-//  To start off an iteration of program execution, the method doFFT() is 
-//  called. As part of this method, the CP_State_GSpacePlane object does a 
-//  forward 1-D fft on its slab of data, and sends off this data to the next
-//  stage in the computational loop. After this, the CP_State_GSpacePlane is 
-//  idle, waiting for a message to trigger some computation/communication.
-//
-//  The idle period of the CP_State_GSpacePlane is terminated by a called to 
-//  the method doIFFT(). In this method, the CP_State_GSpacePlane receives the 
-//  partially processed data from the CP_State_RealSpacePlanes and performs 
-//  1-D inverse FFT on its slab of data. Then the calculation of the "S" 
-//  matrix is started by  calling the sendPsi() method
-//
-//  After the forces are calculated using the inverse FFT, a check is done 
-//  to see if the forces from the particle calculations are ready. If so, the 
-//  forces are added up. The sendPsi() method is not called until the forces
-//  from the particle calculations and the forces from the quantum computation
-//  are ready.
-//
-//  The object is idle until the corrected g-space data from orthonormalization
-//  is received through the acceptNewPsi() method.
+/** \file CP_State_GSpacePlane.C
+ * This is a description of the 'life' of a CP_State_GSpacePlane object.
+ *
+ *  At the beginning of the program, the constructor CP_State_GSpacePlane() is 
+ *  called, to initialize the CP_State_GSpacePlane array. The GSpaceSlab within 
+ *  the CP_State_GSpacePlane is initialized using the initGSpace(...) method.
+ *
+ *  To start off an iteration of program execution, the method doFFT() is 
+ *  called. As part of this method, the CP_State_GSpacePlane object does a 
+ *  forward 1-D fft on its slab of data, and sends off this data to the next
+ *  stage in the computational loop. After this, the CP_State_GSpacePlane is 
+ *  idle, waiting for a message to trigger some computation/communication.
+ *
+ *  The idle period of the CP_State_GSpacePlane is terminated by a called to 
+ *  the method doIFFT(). In this method, the CP_State_GSpacePlane receives the 
+ *  partially processed data from the CP_State_RealSpacePlanes and performs 
+ *  1-D inverse FFT on its slab of data. Then the calculation of the "S" 
+ *  matrix is started by  calling the sendPsi() method
+ *
+ *  After the forces are calculated using the inverse FFT, a check is done 
+ *  to see if the forces from the particle calculations are ready. If so, the 
+ *  forces are added up. The sendPsi() method is not called until the forces
+ *  from the particle calculations and the forces from the quantum computation
+ *  are ready.
+ *
+ *  The object is idle until the corrected g-space data from orthonormalization
+ *  is received through the acceptNewPsi() method.
+ */
 //============================================================================
 
 

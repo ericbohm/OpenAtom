@@ -1,9 +1,11 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/* Add functions to allow application programmers to initialize these and */
-/* the corresponding functions in Charm++ to call these functions with */
-/* appropriate parameters */
+/** \file sim_subroutines.C
+ * Add functions to allow application programmers to initialize these and
+ * the corresponding functions in Charm++ to call these functions with
+ * appropriate parameters 
+ */
 //==============================================================================
 
 #include "util.h"

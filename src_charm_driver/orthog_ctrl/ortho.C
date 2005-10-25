@@ -1,25 +1,26 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//   The Ortho object is basically used to accept the rows of the "S" matrix,
-//   use the orthoTransform subroutine to obtain the "T" matrix, and send the
-//   rows of the "T" matrix back to all the GSpace states.
-// 
-//   The S_to_T(...) method is invoked when the S-Calculators send their 
-//   contributions either through the S_Reducer group or otherwise.
-//   Once the conversion from S to T is done, the preparation for the 
-//   broadcast back to the S-Calculators is done.
-// 
-//   This method also takes of performing the load-balancing step.
-// 
-// 2D version of ortho is permit better parallelization of the diagonal
-// and to facilitate pair calculator communication.
-//
-// Each pair calculator will perform its multiply and reduce the
-// result within its "column" AKA quadrant via the Ortho array.
-// Resulting in sub matrices on Ortho which could be pasted together
-// on ortho[0,0] for the complete matrix.
+/** \file ortho.C
+ * The Ortho object is basically used to accept the rows of the "S" matrix,
+ * use the orthoTransform subroutine to obtain the "T" matrix, and send the
+ * rows of the "T" matrix back to all the GSpace states.
+ * 
+ * The S_to_T(...) method is invoked when the S-Calculators send their 
+ * contributions either through the S_Reducer group or otherwise.
+ * Once the conversion from S to T is done, the preparation for the 
+ * broadcast back to the S-Calculators is done.
+ * 
+ * This method also takes of performing the load-balancing step.
+ * 
+ * 2D version of ortho is permit better parallelization of the diagonal
+ * and to facilitate pair calculator communication.
+ *
+ * Each pair calculator will perform its multiply and reduce the
+ * result within its "column" AKA quadrant via the Ortho array.
+ * Resulting in sub matrices on Ortho which could be pasted together
+ * on ortho[0,0] for the complete matrix.
+ */
 //============================================================================
 
 #include "charm++.h"
