@@ -1,3 +1,7 @@
+/** \file ckPairCalculator.ci
+ *
+ */
+
 module ckPairCalculator {
 	readonly ComlibInstanceHandle mcastInstanceCP;
 

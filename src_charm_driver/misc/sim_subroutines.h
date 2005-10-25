@@ -1,7 +1,7 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \file sim_subroutines.C
+/** \file sim_subroutines.h
  * Add type declarations for simulationConstants class (readonly vars) 
  * and once class for each type of object we currently have
  *(GStateXYslab, RealStateXZslab, RealRhoSlab, GRhoSlab, etc.) 
