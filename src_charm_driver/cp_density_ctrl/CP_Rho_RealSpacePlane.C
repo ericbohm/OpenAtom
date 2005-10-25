@@ -1,23 +1,24 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//  This is the description of the "life" of a CP_Rho_RealSpacePlane object.
-// 
-//  At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.
-// 
-//  The CP_State_RealSpacePlanes send the squared magnitudes of the psi_r values 
-//  using the acceptData() method. The squared magnitudes are summed across states.
-// A copy of this data is made, inverse fft is done in the z and x directions 
-// and sent to rhoGDensity. The other copy is processed using CP_exc_calc. 
-// Then the CP_Rho_RealSpacePlane object waits for a reply from the RhoGDensity 
-// object.
-//
-// The reply from RhoGDensity comes in the form of the method 
-// acceptDensityForSumming(). The data obtained from this reply is taken and
-// forward fft in z and x directions is performed. The resulting data is 
-// summed with the result of CP_exc_calc. The sum is sent to the 
-// CP_State_RealSpacePlane objects.
-//
+/** \file CP_Rho_RealSpacePlane
+ * This is the description of the "life" of a CP_Rho_RealSpacePlane object.
+ *
+ * At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.
+ * 
+ * The CP_State_RealSpacePlanes send the squared magnitudes of the psi_r values 
+ * using the acceptData() method. The squared magnitudes are summed across states.
+ * A copy of this data is made, inverse fft is done in the z and x directions 
+ * and sent to rhoGDensity. The other copy is processed using CP_exc_calc. 
+ * Then the CP_Rho_RealSpacePlane object waits for a reply from the RhoGDensity 
+ * object.
+ *
+ * The reply from RhoGDensity comes in the form of the method 
+ * acceptDensityForSumming(). The data obtained from this reply is taken and
+ * forward fft in z and x directions is performed. The resulting data is 
+ * summed with the result of CP_exc_calc. The sum is sent to the 
+ * CP_State_RealSpacePlane objects.
+ */
 //============================================================================
 
 #include "charm++.h"
@@ -127,7 +128,6 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 				     ComlibInstanceHandle _fftcommInstance) 
 //============================================================================
    {//begin routine
-//============================================================================  
 
     initRhoRealSlab(&rho_rs, xdim, yzdim[0], yzdim[1], numRealSpace, 
                     numRhoG, thisIndex);
@@ -244,7 +244,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     //ckout<<"starting run"<<endl;
     run();
 
-//============================================================================
+
    }//end routine
 //============================================================================
 
@@ -361,10 +361,10 @@ void CP_Rho_RealSpacePlane::doneFFT(){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// Here the density from all the states is added up. The data from all the
-// states is received via an array section reduction.
-//
+/** 
+ * Here the density from all the states is added up. The data from all the
+ * states is received via an array section reduction.
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 
@@ -402,7 +402,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 
 void CP_Rho_RealSpacePlane::ResumeFromSync()
 {
-
+//============================================================================
     if(config.useCommlib)
     {
 	ComlibResetSectionProxy(&realSpaceSectionCProxy);
@@ -423,15 +423,15 @@ void CP_Rho_RealSpacePlane::acceptDensity() {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// 
-// Make a copy of densities and compute one part of the energies using
-// CP_exc_calc
-//
+/** 
+ * Make a copy of densities and compute one part of the energies using
+ * CP_exc_calc
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::energyComputation()
 //============================================================================
     {//begin routine 
-//============================================================================
+
 
 // CkPrintf("In RhoRealSpacePlane[%d] energyComp %d %d\n",thisIndex, CkMyPe(),CmiMemoryUsage());
 
@@ -439,7 +439,7 @@ void CP_Rho_RealSpacePlane::energyComputation()
            rho_rs.sizeX * rho_rs.sizeZ * sizeof(complex));
     // doing the rho_r subroutine here:
     
-    /*
+    /**
      * Conflict with rho_rs.doBwFFT()
      *
      */
@@ -472,14 +472,14 @@ void CP_Rho_RealSpacePlane::energyComputation()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-// do FFT on rho_rs.doFFTonThis
-//
+/**
+ * do FFT on rho_rs.doFFTonThis
+ */
 //============================================================================
 void CP_Rho_RealSpacePlane::startTranspose()
 //============================================================================
    {//begin routine
-//============================================================================
+
 // CkPrintf("In RhoRealSpacePlane[%d] startTranspose %d %d\n",thisIndex, CkMyPe(),CmiMemoryUsage());
     int planeSize = rho_rs.sizeX * rho_rs.sizeZ;
     int dataSize = rho_rs.sizeX;
@@ -526,7 +526,7 @@ void CP_Rho_RealSpacePlane::startTranspose()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptDensity(int size, double *arr, int ycoord) {
-    /* for debugging: should never be true*/ 
+    /** for debugging: should never be true*/ 
 
    if (count >= nstates) {
         ckerr << "Phase Three " << thisIndex << " got one plane too many" << endl;
@@ -642,7 +642,6 @@ void CP_Rho_RealSpacePlane::acceptEnergyForSumming(int size, complex *densities,
                                                    int zindex) 
 //============================================================================
    {//begin routine
-//============================================================================
 
     int planeSize = rho_rs.sizeX * rho_rs.sizeZ;
 

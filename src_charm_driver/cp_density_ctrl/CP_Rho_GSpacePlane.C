@@ -1,22 +1,24 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-//
-//  This is a description of the "life" of a CP_Rho_GSpacePlane  object
-// 
-//  At the start of the program, the constructor CP_Rho_GSpacePlane is called.
-//  The RealSpaceDensity objects send data to CP_Rho_GSpacePlane using the 
-//  acceptData() method. Inverse ffts in z and x directions are performed 
-//  before the data is received, so here inverse fft in y direction is 
-//  performed. This data is processed using the CP_hart_eext_calc. Then forward
-//  fft in the y direction is performed and data is send back to 
-//  RealSpaceDensity objects.
-// 
-//  The CP_Rho_GSpacePlaneHelper objects essentially help to split the work involved
-//  in g-space density computation. They receive their share of the work
-//  through the method recvCP_Rho_GSpacePlanePart() and send the processed 
-//  data back to CP_Rho_GSpacePlane objects using the recvProcessedPart() method.
-// 
+/** \file CP_Rho_GSpacePlane.C
+ *
+ *  This is a description of the "life" of a CP_Rho_GSpacePlane  object
+ * 
+ *  At the start of the program, the constructor CP_Rho_GSpacePlane is called.
+ *  The RealSpaceDensity objects send data to CP_Rho_GSpacePlane using the 
+ *  acceptData() method. Inverse ffts in z and x directions are performed 
+ *  before the data is received, so here inverse fft in y direction is 
+ *  performed. This data is processed using the CP_hart_eext_calc. Then forward
+ *  fft in the y direction is performed and data is send back to 
+ *  RealSpaceDensity objects.
+ * 
+ *  The CP_Rho_GSpacePlaneHelper objects essentially help to split the work involved
+ *  in g-space density computation. They receive their share of the work
+ *  through the method recvCP_Rho_GSpacePlanePart() and send the processed 
+ *  data back to CP_Rho_GSpacePlane objects using the recvProcessedPart() method.
+ *
+  */ 
 //============================================================================
 
 #include "charm++.h"
@@ -55,9 +57,8 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
 	       int numRealSpace, int numRealSpaceDensity, bool _useCommlib,
 	       ComlibInstanceHandle _fftcommInstance) 
 //============================================================================
-   {//begin routine
-//============================================================================
-
+{//begin routine
+    
     CkAssert(numRealSpaceDensity == 1);
     initRhoGSlab(&rho_gs, xdim, sizeYZ[0], sizeYZ[1], numRealSpace, 
                  numRealSpaceDensity, thisIndex);
@@ -162,7 +163,6 @@ void CP_Rho_GSpacePlane::computeK(const int size,
                     const int xdim, const int ydim, const int zdim) 
 //============================================================================
    {//begin routine
-//============================================================================
 
   int ksize = rho_gs.xdim;
 
@@ -206,7 +206,6 @@ void CP_Rho_GSpacePlane::computeK(const int size,
 //============================================================================
 void CP_Rho_GSpacePlane::acceptData(int size, complex *densities, int yindex, 
                       int zcoord, int planeNum)
-//============================================================================
 {
 	//cout<<"-->accepting data"<<endl;
 	// copy the data at the right place
@@ -223,7 +222,6 @@ void CP_Rho_GSpacePlane::acceptData(int size, complex *densities, int yindex,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GSpacePlane::acceptData() { 
-//============================================================================
 
     if (count == rho_gs.sizeY) {
         count = 0;
@@ -320,7 +318,9 @@ void CP_Rho_GSpacePlane::acceptData() {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// For the parallel fft library
+/** For the parallel fft library.
+ *
+ */
 //============================================================================
 void CP_Rho_GSpacePlane::doneIFFT(int id)
 {
@@ -367,7 +367,6 @@ void CP_Rho_GSpacePlane::recvProcessedPart(int size, complex *points, int pos)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GSpacePlane::recvProcessedPart(){
-//============================================================================
 
     if (helperCount == config.rhoGHelpers) {
         helperCount = 0;
@@ -398,7 +397,7 @@ void CP_Rho_GSpacePlane::recvProcessedPart(){
             commInstance.endIteration();
     }// helpr = config.rhoGhelpers
 
-//---------------------------------------------------------------------------
+
    }//end routine
 //============================================================================
 void CP_Rho_GSpacePlane::ResumeFromSync()
@@ -416,7 +415,6 @@ CP_Rho_GSpacePlaneHelper::CP_Rho_GSpacePlaneHelper(int sizeX, size2d sizeYZ,
                                                    int pos)
 //============================================================================
    {//begin routine
-//============================================================================
     helperWidth = sizeYZ[0]/config.rhoGHelpers;
 
     if( (sizeYZ[0] % config.rhoGHelpers) !=0 ){
@@ -472,7 +470,6 @@ CP_Rho_GSpacePlaneHelper::CP_Rho_GSpacePlaneHelper(int sizeX, size2d sizeYZ,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_GSpacePlaneHelper::~CP_Rho_GSpacePlaneHelper()
-//============================================================================
 {
     delete [] k_x;	
     delete [] k_y;	
@@ -489,7 +486,7 @@ CP_Rho_GSpacePlaneHelper::~CP_Rho_GSpacePlaneHelper()
 void CP_Rho_GSpacePlaneHelper::recvRhoGPart(int size, complex *points)
 //============================================================================
    {//begin routine
-//============================================================================
+
    CkAssert(size == rho_gs.size);
 
 //   CkPrintf("In RhoGSpacePlaneHelper[%d %d] Recv\n",thisIndex.x,thisIndex.y);
@@ -529,7 +526,7 @@ void CP_Rho_GSpacePlaneHelper::recvRhoGPart(int size, complex *points)
     // fwd FFT is done to produce Vks in Real space
     // The result of first 1D FFT is store in rho_gs->chunk
     // ????
-//---------------------------------------------------------------------------
+
    }//end routine
 //============================================================================
 

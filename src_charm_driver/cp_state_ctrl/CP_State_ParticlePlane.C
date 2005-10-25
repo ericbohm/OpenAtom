@@ -1,7 +1,7 @@
 //=========================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=========================================================================
-/*
+/** \file CP_State_ParticlePlane.C
  * Life-cycle of a CP_State_ParticlePlane:
  *
  * The particle-plane array is a shadow of the g-space planes. This means
@@ -24,7 +24,7 @@
  * planes in the state using the getForces() method, which computes
  * forces and adds these forces to the forces compputed using electron
  * density in the g-space planes. 
-
+ *
  * Important information:
  * 1. The dimensionality of the Z-matrix depends upon how may orbital levels
  * are considered (l = 0,1...). The current code assumes that only l = 0
