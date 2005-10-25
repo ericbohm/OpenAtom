@@ -1,3 +1,6 @@
+/** \file matmul.ci
+ *
+ */
 module matmul {
 	message mm_matrix_data{
 		double data[];
