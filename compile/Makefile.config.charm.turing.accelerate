@@ -7,7 +7,6 @@ MAKE_CPAIMD_DRV_INC = $(CPAIMD)/src_charm_driver/compile
 MAKE_CPAIMDDP_DRV_INC = $(CPAIMD)/srcdp_charm_driver/compile
 CHARMLIB            = -module CkMulticast -module CkSparseContiguousReducer \
                       -module DummyLB -module RefineLB -module RefineCommLB \
-                      -module ckPairCalculator \
                       -L$(FFT_HOME)/lib -module commlib -lfftw \
                       -lrfftw -lm -module fftlib -faltivec -framework Accelerate
 
