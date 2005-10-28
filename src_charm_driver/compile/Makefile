@@ -44,7 +44,7 @@ PCHEADERS= $(PAIRCALC)/pairCalculator.h\
 #===========================================================================
 
 
-OBJS   = ckPairCalculator.o pairCalculator.o matmul.o cpaimd.o StructFactorCache.o StructureFactor.o \
+OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o StructFactorCache.o StructureFactor.o \
 	 CP_State_GSpacePlane.o CP_State_ParticlePlane.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o \
@@ -92,16 +92,16 @@ exe:	$(OBJS_DECL) $(OBJS)
 #===========================================================================
 
 #===========================================================================
-../main/matmul.decl.h : $(MAIN)/matmul.ci
+../main/CLA_Matrix.decl.h : $(MAIN)/CLA_Matrix.ci
 	$(ECHO) $@
-	$(CHARMC) $(MAIN)/matmul.ci $(OPTS) $(FLAGS) $(OPT_FORT)
-	/bin/cp -f matmul.decl.h $(MAIN)/matmul.decl.h
-	/bin/cp -f matmul.def.h $(MAIN)/matmul.def.h
+	$(CHARMC) $(MAIN)/CLA_Matrix.ci $(OPTS) $(FLAGS) $(OPT_FORT)
+	/bin/cp -f CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.decl.h
+	/bin/cp -f CLA_Matrix.def.h $(MAIN)/CLA_Matrix.def.h
 #---------------------------------------------------------------------------
-matmul.o : $(MAIN)/matmul.decl.h $(MAIN)/matmul.C $(MAIN)/matmul.h \
+CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C $(MAIN)/CLA_Matrix.h \
           $(ORTHO)/ortho.h 
 	$(ECHO) $@
-	$(CHARMC) -c $(MAIN)/matmul.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
