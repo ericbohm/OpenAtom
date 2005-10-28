@@ -2,19 +2,16 @@
  *
  */
 
+
+
 mainmodule cpaimd {	
 
 	readonly int nstates;
 	readonly int sizeX;
 	readonly int nchareG;
-	readonly int Ortho_UE_step2;
-	readonly int Ortho_UE_step3;
-	readonly int Ortho_UE_error;
-	readonly bool Ortho_use_local_cb;
-
 	extern module CkSparseContiguousReducer;
         extern module ckPairCalculator;
-	extern module matmul; 
+	extern module CLA_Matrix; 
 	readonly Config config;
 	readonly PairCalcID pairCalcID1;
 	readonly PairCalcID pairCalcID2;
@@ -26,9 +23,6 @@ mainmodule cpaimd {
 	readonly CProxy_CP_Rho_GSpacePlane rhoGProxy;
 	readonly CProxy_CP_Rho_GSpacePlaneHelper rhoGHelperProxy;
 	readonly CProxy_Ortho orthoProxy;
-	readonly CProxy_matmul matmulProxy1;
-	readonly CProxy_matmul matmulProxy2;
-	readonly CProxy_matmul matmulProxy3;
 	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_EnergyGroup egroupProxy;
@@ -148,6 +142,7 @@ mainmodule cpaimd {
 		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
 	};
 
+	class CLA_Matrix_interface;
 
 	array [2D] Ortho{
 
@@ -155,19 +150,25 @@ mainmodule cpaimd {
 		entry void acceptSectionLambda(CkReductionMsg *msg);
 		entry void resume();
 		entry Ortho();
-		entry Ortho(int s_grain);
+		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
+		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
+		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
+		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
+		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);
 		entry void setPCproxy(CProxySection_PairCalculator inproxy);
 		entry void start_calc(CkReductionMsg *msg);
 		entry void do_iteration();
-		entry void step_2();
-		entry void step_3();
-		entry void error_step();
 		entry void collect_results();
 		entry void print_results();
   		entry void collect_error(CkReductionMsg *msg);
 		entry void ready();
-      };
+		entry void all_ready();
+	};
+
+	group OrthoMap : CkArrayMap {
+		entry OrthoMap(int M);
+	};
 
 	group GSMap : CkArrayMap {
 		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);

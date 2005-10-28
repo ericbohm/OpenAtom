@@ -1,0 +1,38 @@
+/**
+ * Module: CLA_Matrix
+ * Purpose: dense matrix-matrix multiplication
+ *
+ * Usage:
+ *  - To create the arrays, use the make_multiplier call detailed in
+ *  CLA_Matrix.h.
+ *  - To multiply once you have the CLA_Matrix_interface object o, do this:
+ *   o.multiply(alpha, beta, data, fptr, usr_data, thisIndex.x, thisIndex.y)
+ *
+ *   Note: When mentioning which parameters below are used, we refer only to
+ *   the 2D algorithm. Notes for the 3D algorithm will be added later.
+ *
+ *   Alpha and beta should be doubles. Only the alpha and beta passed to the C
+ *   array will be used. Data should be a double* pointing to
+ *   the data to be multiplied if we are at the chare array bound to the A
+ *   or B arrays. Otherwise (we are at C), it should be the location where to
+ *   store the result. We need to pass the index since we will use ckLocal
+ *   calls. Once the multiplication has finished, the C array will call
+ *   to function pointed to by fptr, passing it usr_data. These arguments will
+ *   be ignored by A and B. fptr should take a void* as an argument are return
+ *   void.
+ */
+
+module CLA_Matrix{
+  message CLA_Matrix_msg{
+    double data[];
+  };
+  array [2D] CLA_Matrix{
+    entry void CLA_Matrix();
+    // for 2D algorithm
+    entry void CLA_Matrix(int M, int K, int N, int m, int k, int n, int part,
+     CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2,
+     CProxy_ArrayElement bound, CkCallback ready);
+    entry void receiveA(CLA_Matrix_msg *m);
+    entry void receiveB(CLA_Matrix_msg *m);
+  };
+}

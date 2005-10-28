@@ -94,7 +94,6 @@
 #include "groups.h"
 #include "cpaimd.h"
 #include "ortho.h"
-#include "matmul.h"
 #include "sim_subroutines.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
@@ -144,9 +143,6 @@ CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 CProxy_CP_Rho_GSpacePlane rhoGProxy;
 CProxy_CP_Rho_GSpacePlaneHelper rhoGHelperProxy;
 CProxy_Ortho orthoProxy;
-CProxy_matmul matmulProxy1;
-CProxy_matmul matmulProxy2;
-CProxy_matmul matmulProxy3;
 CProxy_CPcharmParaInfoGrp scProxy;
 CProxy_AtomsGrp atomsGrpProxy;
 CProxy_EnergyGroup egroupProxy;
@@ -159,11 +155,6 @@ int atom_integrate_done;  // not a real global : more like a group of size 1
 int nstates;  // readonly globals
 int sizeX;
 int nchareG;
-int Ortho_UE_step2;
-int Ortho_UE_step3;
-int Ortho_UE_error;
-bool Ortho_use_local_cb;
-
 
 //============================================================================
 // For using the multicast library :  Set some reduction clients
@@ -275,12 +266,6 @@ main::main(CkArgMsg *m) {
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
      traceRegisterUserEvent("Scalcmap", Scalcmap_);
      traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
-     Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
-     Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
-     Ortho_UE_error = traceRegisterUserEvent("Ortho error");
-     /* choose whether ortho should use local callback */
-     Ortho_use_local_cb = true;
-
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
 
@@ -354,13 +339,12 @@ main::main(CkArgMsg *m) {
   //-------------------------------------------------------------
   // Create stuff for ortho which PC invokes by section reduction
 
-    orthoProxy = CProxy_Ortho::ckNew();
-    CkArrayOptions opts(0);
-    opts.bindTo(orthoProxy);
-    matmulProxy1 = CProxy_matmul::ckNew(opts);
-    matmulProxy2 = CProxy_matmul::ckNew(opts);
-    matmulProxy3 = CProxy_matmul::ckNew(opts);
-    int init_pe = 0;
+    int chunks = (nstates + config.sGrainSize - 1) / config.sGrainSize;
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks);
+    CkArrayOptions orthoOpts;
+    orthoOpts.setMap(orthoMap);
+    orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+
     CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
     orthoProxy.ckSetReductionClient(orthoReduction);
     
@@ -375,33 +359,35 @@ main::main(CkArgMsg *m) {
 
     // punch in an actual map for this, 3d cube for BG/L  spread them out to maximize bi-section band
 
-    for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize) {
-      for (int s2 = s1; s2 < nstates; s2 += config.sGrainSize) {
+    /* create matrix multiplication objects */
+    CLA_Matrix_interface matA1, matB1, matC1;
+    CLA_Matrix_interface matA2, matB2, matC2;
+    CLA_Matrix_interface matA3, matB3, matC3;
+
+    CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
+     orthoProxy(0, 0));
+    make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+    make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+
+
+    for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize)
+      for (int s2 = 0; s2 < nstates; s2 += config.sGrainSize) {
 	int indX = s1 / config.sGrainSize;
 	int indY = s2 / config.sGrainSize;
-	orthoProxy(indX, indY).insert(config.sGrainSize, init_pe);
-	int chunks = nstates / config.sGrainSize;
-	matmulProxy1(indX, indY).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indX, indY)), init_pe);
-	matmulProxy2(indX, indY).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indX, indY)), init_pe);
-	matmulProxy3(indX, indY).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indX, indY)), init_pe);
-	if(s2>s1) // non diagonal 
-	  { 
-	    init_pe = (init_pe + 1) % CkNumPes();
-	    orthoProxy(indY, indX).insert(config.sGrainSize, init_pe);
-	    int chunks = nstates / config.sGrainSize;
-	    matmulProxy1(indY, indX).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indY, indX)), init_pe);
-	    matmulProxy2(indY, indX).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indY, indX)), init_pe);
-	    matmulProxy3(indY, indX).insert(chunks, config.sGrainSize, CkCallback(CkIndex_Ortho::ready(), orthoProxy(indY, indX)), init_pe);
-	  }
-	init_pe = (init_pe + 1) % CkNumPes();
-	
+	orthoProxy(indX, indY).insert(config.sGrainSize, config.sGrainSize,
+         matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
       }
-    }
     orthoProxy.doneInserting();
-    matmulProxy1.doneInserting();
-    matmulProxy2.doneInserting();
-    matmulProxy3.doneInserting();
-
 
 //============================================================================ 
 // Initialize the density chare arrays
