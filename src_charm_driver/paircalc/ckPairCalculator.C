@@ -148,17 +148,19 @@ PairCalculator::pup(PUP::er &p)
   p|symmetric;
   p|conserveMemory;
   p|lbpaircalc;
-  p|cb;
   p|cpreduce;
+  p|cb;
   p|cb_aid;
   p|cb_ep;
   p|existsLeft;
   p|existsRight;
   p|existsOut;
+  p|existsNew;
   p|mCastGrpId;
   p|cookie;
   p|resumed;
   if (p.isUnpacking()) {
+      mynewData=NULL;
     resultCookies=new CkSectionInfo[grainSize];
     if(symmetric && (thisIndex.x != thisIndex.y))
       otherResultCookies= new CkSectionInfo[grainSize];
@@ -274,8 +276,10 @@ void PairCalculator::initResultSection(initResultMsg *msg)
 }
 
 void PairCalculator::ResumeFromSync() {
-  if(!resumed){
   resumed=true;
+  // we own no proxies so we have nothing to reset
+  if(!resumed){
+
 #ifdef _PAIRCALC_DEBUG_
       CkPrintf("[%d,%d,%d,%d,%d] resumes from sync\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric);
 #endif
@@ -557,6 +561,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	mcastGrp->contribute(N*sizeof(complex),mynewData+j*N, sumMatrixDoubleType, resultCookies[j],mycb);
     }
     delete [] mynewData;
+    existsNew=false;
     if(symmetric && thisIndex.x != thisIndex.y)
 	delete [] othernewData;
 
@@ -583,6 +588,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     CkPrintf("Hey! matrix2 isn't null!\n");
 
   mynewData = new complex[N*grainSize];
+  existsNew=true;
   
   if(symmetric && (thisIndex.x != thisIndex.y)){
     othernewData = new complex[N*grainSize];
