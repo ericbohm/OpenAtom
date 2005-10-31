@@ -928,7 +928,7 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
   CkAssert(numLines == size);
 
   if(ffttempdata==NULL) {
-    ffttempdata = new complex[expandedDataSize];
+    ffttempdata = (complex *)fftw_malloc(expandedDataSize *sizeof(complex));
     memset(ffttempdata, 0, sizeof(complex)*expandedDataSize);
   }//endif
 
