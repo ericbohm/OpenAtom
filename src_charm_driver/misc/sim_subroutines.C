@@ -368,7 +368,7 @@ void GStateSlab::doBwFFT(complex *fftData) {
    }//endfor
    compressGSpace(fftData, expandtype);
 
-   delete [] fftData;
+   fftw_free(fftData);
    fftData = NULL;
 
 //==============================================================================
@@ -702,7 +702,7 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
       rs->size = rs->nsize;
    }//endif
 
-   rs->planeArr = new complex[(rs->size)];
+   rs->planeArr = (complex *)fftw_malloc(rs->size *sizeof(complex)); //new complex[(rs->size)];
 
 //==============================================================================    
    }//end routine
