@@ -49,41 +49,9 @@ extern CProxy_AtomsGrp atomsGrpProxy;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-Ortho::Ortho(int s_grain){
-    this->n = nstates;
-    this->k = s_grain;
-    this->k2 = k * k;
-    this->A = new double[k2];
-    this->B = new double[k2];
-    this->C = new double[k2];
-    this->tmp_arr = new double[k2];
-    num_ready = 0;
-    usesAtSync=CmiTrue;
-    setMigratable(false);
-    got_start = false;
-    if(thisIndex.x==0 && thisIndex.y==0)
-      {
-	ortho = new double[nstates * nstates];
-	orthoT = new double[nstates * nstates];
-	wallTimeArr = new double[config.maxIter];
-      }
-    else
-      {
-	ortho=NULL;
-	orthoT=NULL;
-	wallTimeArr=NULL;
-      }
-    numGlobalIter = 0;
-    
-  }
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ){
-    int s1=thisIndex.x*k;
-    int s2=thisIndex.y*k;
+    int s1=thisIndex.x*m;
+    int s2=thisIndex.y*n;
     if(thisIndex.x <= thisIndex.y) //we get the reduction
     {
 
@@ -100,75 +68,13 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::do_iteration(void){
-    step = 1;
-    memset(C, 0, sizeof(double) * k2);
-    if(thisIndex.x == thisIndex.y)
-      for(int i = 0; i < k; i++)
-	C[i * k + i] = 3;
-    if(Ortho_use_local_cb)
-	matmulProxy1(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(A, B, C, -1, 1, Ortho::step_2_cb, (void*) this);
-    else
-      matmulProxy1(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(A, B, C, -1, 1, CkCallback(CkIndex_Ortho::step_2(), thisProxy(thisIndex.x, thisIndex.y)));
-  }
-
-//============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::step_2(){
-    step = 2;
-    if(Ortho_use_local_cb)
-      matmulProxy2(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(B, C, tmp_arr, 0.5, 0, Ortho::step_3_cb, (void*) this);
-    else
-      matmulProxy2(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(B, C, tmp_arr, 0.5, 0, CkCallback(CkIndex_Ortho::step_3(), thisProxy(thisIndex.x, thisIndex.y)));
-  }
-
-//============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::step_3(){
-    step = 3;
-    CmiMemcpy(B, A, sizeof(double) * k2);
-    if(Ortho_use_local_cb)
-      matmulProxy3(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(C, B, A, 0.5, 0, Ortho::error_cb, (void*) this);
-    else
-      matmulProxy3(thisIndex.x, thisIndex.y).ckLocal()->start_mat_mul(C, B, A, 0.5, 0, CkCallback(CkIndex_Ortho::error_step(), thisProxy(thisIndex.x, thisIndex.y)));
-  }
-
-//============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::error_step(){
-    step = 4;
-    double ret = 0;
-    for(int i = 0; i < k2; i++){
-      double tmp = B[i] - A[i];
-      ret += tmp * tmp;
-    }
-    double *tmp = B;
-    B = tmp_arr;
-    tmp_arr = tmp;
-    contribute(sizeof(double), &ret, CkReduction::sum_double);
-}
-
-//============================================================================
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::collect_error(CkReductionMsg *msg) {
     CmiAssert(thisIndex.x == 0 && thisIndex.y == 0);
     //			end_t = CmiWallTimer();
     double error = *((double *) msg->getData());
     delete msg;
     iterations++;
-    error = sqrt(error / (n * n));
+    error = sqrt(error / (nstates * nstates));
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
     if(error > INVSQR_TOLERANCE && iterations < INVSQR_MAX_ITER){
       //				start_t = CmiWallTimer();
@@ -194,7 +100,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	CkPrintf("======================================================\n");
       }
     got_start = true;
-    int chunksize=k;
+    int chunksize = m;
     double *S = (double*) msg->getData();
     step = 0;
     iterations = 0;
@@ -231,17 +137,17 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }
     fclose(outfile);
 #endif
-    for(int i = 0; i < k2; i++)
+    for(int i = 0; i < m * n; i++)
       B[i] = S[i] / 2;
     delete msg;
-    memset(A, 0, sizeof(double) * k2);
+    memset(A, 0, sizeof(double) * m * n);
     step = 0;
     iterations = 0;
     /* see if we have a non-zero part of I or T (=3I) */
     if(thisIndex.x == thisIndex.y)
-      for(int i = 0; i < k; i++)
-	A[i * k + i] = 1;
-    if(num_ready == 3)
+      for(int i = 0; i < m; i++)
+	A[i * m + i] = 1;
+    if(num_ready == 1)
       do_iteration();
   }
 
@@ -305,7 +211,7 @@ void Ortho::resume()
 	 */
 //#if !CONVERSE_VERSION_ELAN || CMK_BLUEGENE_CHARM
       if(thisIndex.y<=thisIndex.x)
-	finishPairCalcSection(k2, A, pcProxy);
+	finishPairCalcSection(m * n, A, pcProxy);
       //else no one to talk to 
 //#endif
 	
@@ -322,14 +228,10 @@ void
 Ortho::acceptAllLambda(CkReductionMsg *msg) {
     delete msg;
     CkAbort("do not call acceptAllLambda");
-
 }
-
-
 
 void 
 Ortho::acceptSectionLambda(CkReductionMsg *msg) {
-    
   double *lambda = (double *)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(double);
 #ifdef _CP_DEBUG_LMAT_
@@ -342,10 +244,16 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   fclose(fp);
 #endif
   // revise this to do a matmul replacing multiplyforgamma
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt)
-    {
-	CkAbort("the gamma code is broken\n");
+  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
+    matA1.multiply(1, 0, A, Ortho::gamma_done_cb, (void*) this,
+     thisIndex.x, thisIndex.y);
+    matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
+     thisIndex.x, thisIndex.y);
+    matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
+     thisIndex.x, thisIndex.y);
       // transform Tlambda = T*lambda: store in lambda
+/*
+	CkAbort("the gamma code is broken\n");
       double *scr = new double [nstates*nstates];
       CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
       multiplyForGamma(orthoT, scr, lambda, nstates);
@@ -353,7 +261,8 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       finishPairCalcSection2(lambdaCount, lambda, orthoT, pcLambdaProxy);
       // finish pair calc
       CkPrintf("[%d,%d] finishing\n",thisIndex.x, thisIndex.y);
-    }
+*/
+  }
   else
     {
      // finish pair calc
@@ -367,6 +276,9 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 }// end routine
 //==============================================================================
 
+void Ortho::gamma_done(){
+  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy);
+}
 
 void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n)
 {
@@ -379,4 +291,104 @@ void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int 
   char transformT='T';
   DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alpha, orthoT, &n_in, lambda, &k_in, &beta, gamma, &n_in);      
 
+}
+
+//==============================================================================
+//New functions necessary for using CLA_Matrix
+
+Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
+ CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
+ CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
+ CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
+ CLA_Matrix_interface matB3, CLA_Matrix_interface matC3){
+  /* do basic initialization */
+  this->m = m;
+  this->n = n;
+  this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
+  this->matA2 = matA2; this->matB2 = matB2; this->matC2 = matC2;
+  this->matA3 = matA3; this->matB3 = matB3; this->matC3 = matC3;
+  A = new double[m * n];
+  B = new double[m * n];
+  C = new double[m * n];
+  tmp_arr = new double[m * n];
+  step = 0;
+
+  num_ready = 0;
+  usesAtSync=CmiTrue;
+  setMigratable(false);
+  got_start = false;
+  if(thisIndex.x==0 && thisIndex.y==0){
+    ortho = new double[nstates * nstates];
+    orthoT = new double[nstates * nstates];
+    wallTimeArr = new double[config.maxIter];
+  }
+  else {
+    ortho=NULL;
+    orthoT=NULL;
+    wallTimeArr=NULL;
+  }
+  numGlobalIter = 0;
+}
+
+
+/* start step 1 on proxy 1, the callback will be for step 2
+ * S2 = 3 * I - T * S1
+ * currently A has T, B has S1, need to construct 3*I in C
+ */
+void Ortho::do_iteration(void){
+  step = 1;
+  memset(C, 0, m * n * sizeof(double));
+  if(thisIndex.x == thisIndex.y){
+    for(int i = 0; i < n; i++)
+      C[i * n + i] = 3;
+  }
+  matA1.multiply(-1, 1, A, Ortho::step_2_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matB1.multiply(-1, 1, B, Ortho::step_2_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matC1.multiply(-1, 1, C, Ortho::step_2_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+}
+
+/* S1 = 0.5 * S3 * S2 (on proxy 2)
+ * currently A has T, B has S1, C has S2
+ */
+void Ortho::step_2(void){
+  step = 2;
+  matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matB2.multiply(0.5, 0, C, Ortho::step_3_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matC2.multiply(0.5, 0, tmp_arr, Ortho::step_3_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+}
+
+/* T = 0.5 * S2 * S3 (do S3 = T before) (on proxy 3)
+ * currently A has T, B has S1 (old), C has S2, tmp_arr has new S1
+ */
+void Ortho::step_3(){
+  step = 3;
+  memcpy(B, A, m * n * sizeof(double));
+  matA3.multiply(0.5, 0, C, Ortho::tol_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matB3.multiply(0.5, 0, B, Ortho::tol_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+  matC3.multiply(0.5, 0, A, Ortho::tol_cb, (void*) this,
+   thisIndex.x, thisIndex.y);
+}
+
+/* calculate error and reset pointers (for step 1)
+ * current: T -> A, S1 -> tmp_arr, S2 -> C, S3 -> B
+ */
+void Ortho::tolerance_check(){
+  step = 4;
+  double ret = 0;
+  for(int i = 0; i < m * n; i++){
+    double tmp = B[i] - A[i];
+    ret += tmp * tmp;
+  }
+  double *tmp = B;
+  B = tmp_arr;
+  tmp_arr = tmp;
+  contribute(sizeof(double), &ret, CkReduction::sum_double);
 }
