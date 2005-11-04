@@ -37,6 +37,9 @@ class Ortho : public CBase_Ortho{
   // catch lambda for later non_minimization use
   void acceptAllLambda(CkReductionMsg *msg); 
 
+  // catch lbresume reduction
+  void lbresume(CkReductionMsg *msg); 
+
   // get our copy of the pcproxy
   void setPCproxy(CProxySection_PairCalculator inproxy){pcProxy=inproxy;}
 
@@ -54,10 +57,23 @@ class Ortho : public CBase_Ortho{
   void do_iteration(void);
 
   void ResumeFromSync() {
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
-      mcastGrp->resetSection(pcProxy);
-      mcastGrp->resetSection(pcLambdaProxy);
-      resume();
+    /*
+    if(thisIndex.x <= thisIndex.y)
+      {
+
+	CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
+	mcastGrp->resetSection(pcProxy);
+	setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));
+	if(thisIndex.x!=thisIndex.y)
+	  thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
+
+      }
+
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID2.mCastGrpId).ckLocalBranch();               
+//      mcastGrp->resetSection(pcLambdaProxy);
+
+//      resume(); // should be handled by ortho reduction
+*/
   }
   void makeSections(int indexSize, int *indexZ);
 
@@ -87,6 +103,7 @@ class Ortho : public CBase_Ortho{
     p | pcProxy;
     p | pcLambdaProxy;
     p | numGlobalIter;
+    p | lbcaught;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
       { 
 	ortho = new double[nstates * nstates];
@@ -185,6 +202,8 @@ class Ortho : public CBase_Ortho{
   CProxySection_PairCalculator pcLambdaProxy;
   int num_ready;
   bool got_start;
+  int lbcaught;
+
   double *A, *B, *C, *tmp_arr;
   int step;
   /* Note, for now m and n are always equal. When we move to chunks not all
@@ -194,6 +213,7 @@ class Ortho : public CBase_Ortho{
   int m, n;
   CLA_Matrix_interface matA1, matB1, matC1, matA2, matB2, matC2, matA3,
    matB3, matC3;
+
 };
 
 class OrthoMap : public CkArrayMap {

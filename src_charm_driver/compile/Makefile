@@ -31,7 +31,7 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
 	 -I../misc -I$(STRUCTFACT) -I$(TOPINC) \
 	 -I../paircalc  -I$(SRC_COMPILE)\
          -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
-	
+
 LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
          -lrfftw -lm -module fftlib                      #-memory paranoid
 #===========================================================================
@@ -109,10 +109,10 @@ ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
 	cp ckPairCalculator.decl.h ckPairCalculator.def.h ../main
 
 ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
-	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS)
+	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS) $(OPT_FORT)
 
 pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h
-	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS)
+	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS) $(OPT_FORT)
 
 #---------------------------------------------------------------------------
 #===========================================================================

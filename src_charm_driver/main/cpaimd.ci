@@ -77,6 +77,7 @@ mainmodule cpaimd {
 			complex pts[m],int nx,int ny,int nz);
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
+		entry void syncpsi();
 		entry void acceptNewPsi(CkReductionMsg *msg);
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
@@ -149,6 +150,7 @@ mainmodule cpaimd {
 		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void acceptSectionLambda(CkReductionMsg *msg);
 		entry void resume();
+		entry void lbresume(CkReductionMsg *msg);
 		entry Ortho();
 		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
 		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,

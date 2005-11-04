@@ -23,7 +23,7 @@
 
 #define PRE_BALANCE_STEP 2
 
-#define FIRST_BALANCE_STEP 10
+#define FIRST_BALANCE_STEP 3
 
 #define TRACE_ON_STEP 4
 #define TRACE_OFF_STEP 7

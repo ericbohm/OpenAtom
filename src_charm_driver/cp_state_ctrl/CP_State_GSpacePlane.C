@@ -1392,8 +1392,12 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
       }
     */
     CkPrintf("G %d %d atsync\n",thisIndex.x, thisIndex.y);
-//    isAtSyncPairCalc(&gpairCalcID1);
-//    isAtSyncPairCalc(&gpairCalcID2);
+
+    if(thisIndex.x==0 && thisIndex.y==0)
+      {
+	  isAtSyncPairCalc(&gpairCalcID1);
+	  isAtSyncPairCalc(&gpairCalcID2);
+      }
     AtSync();
 }
 //==============================================================================
@@ -1404,24 +1408,16 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
 //==============================================================================
 void CP_State_GSpacePlane::ResumeFromSync() {
 //    CmiPrintf("ResumeFromSync calls resume\n");
-  //takes care of the paircalc proxies
 
-
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
-  mcastGrp->resetSection(lambdaproxy);
-  mcastGrp = CProxy_CkMulticastMgr(gpairCalcID1.mCastGrpId).ckLocalBranch();
-  mcastGrp->resetSection(psiproxy);
-  if(AllExpected>1)
-      mcastGrp->resetSection(psiproxyother);
-  gpairCalcID1.resetProxy();
-  gpairCalcID2.resetProxy();
-
-  //takes care of the paircalc result proxies which we own
+  // reset commlib proxies
   if(config.useCommlib)
       ComlibResetProxy(&real_proxy);
 
-
-
+  // reset lambda PC proxies
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
+  mcastGrp->resetSection(lambdaproxy);
+  setResultProxy(&lambdaproxy, thisIndex.x, gpairCalcID2.GrainSize, gpairCalcID2.mCastGrpId, true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+  gpairCalcID2.resetProxy();
 
   LBTurnInstrumentOff();
 //  CmiPrintf("G ResumeFromSync %d %d!\n",thisIndex.x, thisIndex.y);
@@ -1430,7 +1426,20 @@ void CP_State_GSpacePlane::ResumeFromSync() {
   }//end routine
 //==============================================================================
 
+void CP_State_GSpacePlane::syncpsi()
+{
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
+  mcastGrp->resetSection(psiproxy);
+  setResultProxy(&psiproxy,thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId, true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+  if(AllExpected>1)
+  {
+      mcastGrp->resetSection(psiproxyother);
+      setResultProxy(&psiproxyother, thisIndex.x, gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId, true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+  }
+  //takes care of the paircalc result proxies which we own via the pairCalcID
+  gpairCalcID1.resetProxy();
 
+}
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================

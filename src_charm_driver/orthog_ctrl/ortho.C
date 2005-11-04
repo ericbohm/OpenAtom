@@ -46,22 +46,6 @@ extern  PairCalcID pairCalcID1;
 extern  PairCalcID pairCalcID2;
 extern CProxy_AtomsGrp atomsGrpProxy;
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::makeSections(int indexSize, int *indexZ){
-    int s1=thisIndex.x*m;
-    int s2=thisIndex.y*n;
-    if(thisIndex.x <= thisIndex.y) //we get the reduction
-    {
-
-	pcProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, 0);
-	if(thisIndex.x!=thisIndex.y)
-	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
-    }
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
-
-}
 
 //============================================================================
 
@@ -204,20 +188,9 @@ void Ortho::resume()
 //============================================================================
     {//begin routine
 //============================================================================
-	/*
-	 * Consider a set of rows (of thickness config.sGrainSize) starting at s.
-	 * Send this set of rows to S_Calculator (s, s). That will use some part
-	 * and send the appropriate parts to the correct S_Calculator guys.
-	 */
-//#if !CONVERSE_VERSION_ELAN || CMK_BLUEGENE_CHARM
+
       if(thisIndex.y<=thisIndex.x)
 	finishPairCalcSection(m * n, A, pcProxy);
-      //else no one to talk to 
-//#endif
-	
-	// reset values for the next round
-        //         memset(ortho, 0, sizeof(double)*nstates*nstates);
-	//         memset(orthoT, 0, sizeof(double)*nstates*nstates);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -228,6 +201,34 @@ void
 Ortho::acceptAllLambda(CkReductionMsg *msg) {
     delete msg;
     CkAbort("do not call acceptAllLambda");
+}
+
+
+void 
+Ortho::lbresume(CkReductionMsg *msg) {
+    delete msg;
+    lbcaught++;
+    if(lbcaught==1) //gspace is all done lambda reduction reset
+	gSpacePlaneProxy.syncpsi();
+    if(lbcaught==2) //gspace is all done lambda and psi reduction resets
+      setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId,  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));      
+    if(lbcaught==3)
+      {
+	if(thisIndex.x <= thisIndex.y) //lambda is done
+	  {
+	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
+	    mcastGrp->resetSection(pcProxy);
+	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));
+	    if(thisIndex.x!=thisIndex.y)
+	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
+	  }
+      }
+    if(lbcaught==4) //everyone is done
+    {
+	CkPrintf("O [%d %d] resumes\n",thisIndex.x,thisIndex.y);
+	resume();
+	lbcaught=0;
+    }
 }
 
 void 
@@ -265,16 +266,32 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   }
   else
     {
-     // finish pair calc
-	// look up asymmetric backward path make sure we send right part
+	// finish pair calc
 	finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy);
-      //CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+	if(thisIndex.x==0 && thisIndex.y==0)
+	    CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
     }
-    
+
+
   delete msg;
   //----------------------------------------------------------------------------
 }// end routine
 //==============================================================================
+
+void Ortho::makeSections(int indexSize, int *indexZ){
+    int s1=thisIndex.x*m;
+    int s2=thisIndex.y*n;
+    if(thisIndex.x <= thisIndex.y) //we get the reduction
+    {
+
+	pcProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, 0);
+	if(thisIndex.x!=thisIndex.y)
+	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
+    }
+    pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
+
+}
+
 
 void Ortho::gamma_done(){
   finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy);

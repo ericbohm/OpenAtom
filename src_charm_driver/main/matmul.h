@@ -58,7 +58,7 @@ class matmul:public CBase_matmul {
 //		bool abort_calc;
 };
 
-class mm_matrix_data:public CMessage_mm_matrix_data, public CkMcastBaseMsg{
+class mm_matrix_data: public CkMcastBaseMsg, public CMessage_mm_matrix_data {
 	public:
 		mm_matrix_data();
 		mm_matrix_data(double *data, int from, int size);

@@ -180,6 +180,8 @@ class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
   CkCallback cb;
   CkGroupID mCastGrpId;
+  CkCallback synccb;
+  bool lbsync;
   friend class CMessage_initGRedMsg;
 };
 
@@ -188,6 +190,8 @@ class initResultMsg : public CkMcastBaseMsg, public CMessage_initResultMsg {
   int offset;
   int dest;
   CkGroupID mCastGrpId;
+  CkCallback synccb;
+  bool lbsync;
   friend class CMessage_initGRedMsg;
 };
 
@@ -310,6 +314,7 @@ class PairCalculator: public CBase_PairCalculator {
     CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
     resumed=false;
+    rck=0;
     AtSync();
   };
   void ResumeFromSync();
@@ -354,6 +359,7 @@ class PairCalculator: public CBase_PairCalculator {
   double *outData;
 
   /* to support the simpler section reduction*/
+  int rck;
   CkGroupID mCastGrpId;
 
   CkSectionInfo *resultCookies;

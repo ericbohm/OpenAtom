@@ -160,6 +160,7 @@ int nchareG;
 // For using the multicast library :  Set some reduction clients
 
 CkGroupID mCastGrpId; 
+CkGroupID mCastGrpId2; 
 // For using the communication library
 ComlibInstanceHandle commInstance;
 ComlibInstanceHandle commRealInstance;
@@ -287,6 +288,7 @@ main::main(CkArgMsg *m) {
 
     mCastGrpId = CProxy_CkMulticastMgr::ckNew();
 
+
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,
                 gSpacePPC,realSpacePPC,sim);
 
@@ -326,7 +328,7 @@ main::main(CkArgMsg *m) {
 
     int gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
 
-
+   //symmetric AKA Psi
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId );
 
     CkArrayIndex2D myindex(0, 0);
@@ -334,6 +336,7 @@ main::main(CkArgMsg *m) {
     gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
     int myPack=0;
 
+    //asymmetric AKA Lambda
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
     
   //-------------------------------------------------------------
@@ -437,22 +440,22 @@ main::main(CkArgMsg *m) {
 
     if (config.useCommlibMulticast) {
         DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
-	    (realSpacePlaneProxy.ckGetArrayID(), 1);
+	    (realSpacePlaneProxy.ckGetArrayID());
         
         RingMulticastStrategy *rstrat = new RingMulticastStrategy
-            (realSpacePlaneProxy.ckGetArrayID(), 1);
+            (realSpacePlaneProxy.ckGetArrayID());
         
         MultiRingMulticast *mrstrat = new MultiRingMulticast
-            (realSpacePlaneProxy.ckGetArrayID(), 1);
+            (realSpacePlaneProxy.ckGetArrayID());
         
         DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID());
 
         RingMulticastStrategy *r1strat = new RingMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID());
 
         MultiRingMulticast *mr1strat = new MultiRingMulticast
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID());
 
 	if(CkNumNodes()>64) //multiring should be good on large runs, but not on BG/L
 	  {

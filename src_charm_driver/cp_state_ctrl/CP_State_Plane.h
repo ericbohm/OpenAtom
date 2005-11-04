@@ -98,6 +98,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void initGSpace(int, RunDescriptor *, int, complex *,int,int,int);
+	void syncpsi();
 	void doIFFT(GSIFFTMsg *);
 	void doFFT();
 	void startNewIter ();

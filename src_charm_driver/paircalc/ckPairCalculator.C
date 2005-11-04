@@ -70,7 +70,7 @@ void registersumMatrixDouble(void)
 
 
 // sum together matrices of doubles
-
+// possibly faster than sum_double due to minimizing copies
 inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 {
   double *ret=(double *)msgs[0]->getData();
@@ -120,13 +120,17 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCa
   outData = NULL;
   mynewData= NULL;
   othernewData= NULL;
-//  usesAtSync=true;
+  usesAtSync=true;
   if(lbpaircalc)
       setMigratable(true);
   else
       setMigratable(false);
-  if(symmetric)
+/*  if(symmetric)
+  {  
+      usesAtSync=false;
       setMigratable(false);
+  }
+*/
   resultCookies=NULL;
   otherResultCookies=NULL;
   resultCookies=new CkSectionInfo[grainSize];
@@ -159,30 +163,36 @@ PairCalculator::pup(PUP::er &p)
   p|mCastGrpId;
   p|cookie;
   p|resumed;
-  if (p.isUnpacking()) {
+  p|rck;
+  if (p.isUnpacking()) 
+  {
       mynewData=NULL;
-    resultCookies=new CkSectionInfo[grainSize];
-    if(symmetric && (thisIndex.x != thisIndex.y))
-      otherResultCookies= new CkSectionInfo[grainSize];
-    if(existsOut)
-      {
-	outData= new double[grainSize*grainSize];
-      }
-    else
-      outData=NULL;
-    if(existsLeft)
-      inDataLeft = new double[2*numExpected*N];
-    else
-      inDataLeft=NULL;
-    if(existsRight)
-      inDataRight = new double[2*numExpected*N];
-    else
-      inDataRight=NULL;
+      othernewData=NULL;
+      resultCookies=new CkSectionInfo[grainSize];
+      if(symmetric && (thisIndex.x != thisIndex.y))
+	  otherResultCookies= new CkSectionInfo[grainSize];
+      else
+	  otherResultCookies=NULL;
+      if(existsOut)
+	  outData= new double[grainSize*grainSize];
+      else
+	  outData=NULL;
+      if(existsLeft)
+	  inDataLeft = new double[2*numExpected*N];
+      else
+	  inDataLeft=NULL;
+      if(existsRight)
+	  inDataRight = new double[2*numExpected*N];
+      else
+	  inDataRight=NULL;
 
   }
-  p(resultCookies, grainSize);
+  int i;
+  for (i=0; i<grainSize; i++) p|resultCookies[i];
   if(symmetric && (thisIndex.x != thisIndex.y))
-    p(otherResultCookies, grainSize);
+    for (i=0; i<grainSize; i++) p|otherResultCookies[i];
+  for (int i=0; i<grainSize; i++)
+    CmiAssert(resultCookies[i].get_redNo() > 0);
   if(existsOut)
     p(outData, grainSize*grainSize);
   if(existsLeft)
@@ -212,12 +222,14 @@ PairCalculator::~PairCalculator()
 #endif
   if(outData!=NULL)
     delete [] outData;
-
   if(inDataLeft!=NULL)
     delete [] inDataLeft;
-
   if(inDataRight!=NULL)
     delete [] inDataRight;
+  if(mynewData!=NULL)
+    delete [] mynewData;
+  if(othernewData!=NULL)
+    delete [] othernewData;
   // redundant paranoia
   outData=NULL;
   inDataRight=NULL;
@@ -226,9 +238,9 @@ PairCalculator::~PairCalculator()
   existsRight=false;
   existsNew=false;
   existsOut=false;
-  if(resultCookies)
+  if(resultCookies!=NULL)
     delete [] resultCookies;
-  if(symmetric && (thisIndex.x != thisIndex.y) && otherResultCookies)
+  if(symmetric && (thisIndex.x != thisIndex.y) && otherResultCookies !=NULL)
     delete [] otherResultCookies;
 }
 
@@ -247,31 +259,43 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   cb=msg->cb;
   mCastGrpId=msg->mCastGrpId; //redundant
   cpreduce=section;
+  if(msg->lbsync)
+  {
+      int foo=1;
+      contribute(sizeof(int), &foo , CkReduction::sum_int, msg->synccb);
+  }
   //    delete msg; do not delete nokeep method
 }
 
-//initialize the section cookie for each slice of the result
+//!initialize the section cookie for each slice of the result
 void PairCalculator::initResultSection(initResultMsg *msg)
 {
 
-  CkSectionInfo localcookie;
-  CkGetSectionInfo(localcookie,msg);
   CkAssert(msg->offset<grainSize);
   if(symmetric && msg->dest == thisIndex.x && thisIndex.x != thisIndex.y)
   {
-      otherResultCookies[msg->offset]=localcookie;
+      CkGetSectionInfo(otherResultCookies[msg->offset],msg);
+
 #ifdef _PAIRCALC_DEBUG_SPROXY_
       CkPrintf("[%d,%d,%d,%d,%d] other initResultSection for dest %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset);
 #endif
   }
   else
   {
-      resultCookies[msg->offset]=localcookie;
+      CkGetSectionInfo(resultCookies[msg->offset],msg);
+
 #ifdef _PAIRCALC_DEBUG_SPROXY_
       CkPrintf("[%d,%d,%d,%d,%d] initResultSection for dest %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->dest, msg->offset);
 #endif
   }
-  mCastGrpId=msg->mCastGrpId;  //redundant
+  rck++;
+
+  mCastGrpId=msg->mCastGrpId;  //arguably redundant
+  //to force synchronize in lb resumption
+  if(msg->lbsync && rck==grainSize)
+  {
+      contribute(sizeof(int), &rck, CkReduction::sum_int, msg->synccb);
+  }
   //    delete msg; do not delete nokeep method
 }
 
@@ -503,6 +527,7 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
 
     CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
     mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
+    //mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, CkReduction::sum_double, cookie, cb);
 
 
 #ifndef CMK_OPTIMIZE
@@ -539,6 +564,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	if (thisIndex.y != thisIndex.x) 
 
 	{ //othernewdata exists for we are symmetric and not on the diagonal
+	    CkAssert(othernewData!=NULL);
 	    for(int j=0;j<grainSize;j++)
 	    {
 
@@ -548,22 +574,27 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 		CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, N,j,thisIndex.x+j,thisIndex.w);
 #endif
 		mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, sumMatrixDoubleType, otherResultCookies[j], mycb);
+		//mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, CkReduction::sum_double, otherResultCookies[j], mycb);
 
 	    }
 	}
     }
+    CkAssert(mynewData!=NULL);
     for(int j=0;j<grainSize;j++) //mynewdata
     {
 	CkCallback mycb(cb_ep, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,N,j,thisIndex.y+j,thisIndex.w);
 #endif
-	mcastGrp->contribute(N*sizeof(complex),mynewData+j*N, sumMatrixDoubleType, resultCookies[j],mycb);
+	mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, sumMatrixDoubleType, resultCookies[j], mycb);
+	//mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, CkReduction::sum_double, resultCookies[j], mycb);
     }
     delete [] mynewData;
+    mynewData=NULL;
     existsNew=false;
     if(symmetric && thisIndex.x != thisIndex.y)
 	delete [] othernewData;
+    othernewData=NULL;
 
 }
 
@@ -579,21 +610,22 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   double *matrix2=msg->matrix2;
   bool unitcoef = false;
   if(cpreduce==section) //update cookie from multicast
-    CkGetSectionInfo(cookie,msg);
+      CkGetSectionInfo(cookie,msg);
   if(matrix2==NULL||size2<1) 
     {
       unitcoef = true;
     }
   else
-    CkPrintf("Hey! matrix2 isn't null!\n");
-
+      CkPrintf("Hey! matrix2 isn't null!\n");
+  CkAssert(mynewData==NULL);
   mynewData = new complex[N*grainSize];
   existsNew=true;
-  
   if(symmetric && (thisIndex.x != thisIndex.y)){
     othernewData = new complex[N*grainSize];
     bzero(othernewData,N*grainSize* sizeof(complex));
   }
+  else
+      othernewData=NULL;
 
   int offset = 0, index = thisIndex.y*S + thisIndex.x;
 
@@ -606,7 +638,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   double *amatrix=NULL;
 
   if(S!=grainSize && size!=matrixSize)
-    makeLocalCopy=true;
+      CkAbort("we don't support PC striding anymore");
   
   if(S==grainSize)// all at once no malloc
     {
@@ -620,31 +652,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
   double *localMatrix;
   double *outMatrix;
-
-  if(makeLocalCopy)
-    {
-      //      CkPrintf("Hey! makeLocalCopy is true!\n");
-#ifdef _PAIRCALC_DEBUG_PARANOID_
-      char ifilename[80];
-      sprintf(ifilename, "bwim1data.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-      FILE *ofile = fopen(ifilename, "w");
-      fprintf(ofile,"[%d,%d,%d,%d,%d] IM1\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-      for(int i=0;i<S*S;i++)
-	{
-	  fprintf(ofile,"%.10g\n",matrix1[i]);
-	}
-      fclose(ofile);
-#endif
-      // copy grainSize chunks at S offsets
-      amatrix=new double[matrixSize];
-      bzero(amatrix,matrixSize *sizeof(double));
-      CkAssert(size>=matrixSize);
-      for(int i=0;i<grainSize;i++){
-	localMatrix = (matrix1+index+i*S);
-	outMatrix   = (double *) (amatrix+i*grainSize);
-	memcpy(outMatrix,localMatrix,grainSize*sizeof(double));
-      }
-    }
 
   int m_in=grainSize;
   int n_in=N*2;
@@ -723,17 +730,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
   if(!unitcoef){ // CG non minimization case
-    // FIXME: we need to figure out a section arrangement for this
-    if(S!=grainSize)
-      for(int i=0;i<grainSize;i++){
-	localMatrix = (matrix2+index+i*S);
-	outMatrix   = amatrix+i*grainSize;
-	memcpy(outMatrix,localMatrix,grainSize*sizeof(double));
-      }
-    else
-      amatrix=matrix2+index;
-
-    double *rightd=reinterpret_cast <double *> (inDataRight);
+      amatrix=matrix2;
+      double *rightd=reinterpret_cast <double *> (inDataRight);
     // C = alpha*A*B + beta*C
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
@@ -745,13 +743,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
   } // end  CG case
 
-  if(makeLocalCopy)
-    delete [] amatrix;
-  // else we didn't allocate one
+
 
 #ifdef _PAIRCALC_VALID_OUT_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[N*grainSize-1].re,mynewData[N*grainSize-1].im);
 #endif
+
   sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
   CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
   *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower than non prioritized

@@ -8,10 +8,10 @@
 
 
 /* delegated paircalc proxies perform like fermented dung on BG/L */
-#ifdef CMK_VERSION_BLUEGENE
+/*#ifdef CMK_VERSION_BLUEGENE
 #define _PAIRCALC_DO_NOT_DELEGATE_ 1
 #endif
-
+*/
 /* a place to keep the section proxies for the reduction */
 
 class PairCalcID {
@@ -29,11 +29,12 @@ class PairCalcID {
   bool existsLproxy;
   bool existsLNotFromproxy;
   bool existsRproxy;
+  CkGroupID mCastGrpId;
   int priority;
   CProxySection_PairCalculator proxyLFrom;
   CProxySection_PairCalculator proxyLNotFrom;
   CProxySection_PairCalculator proxyRNotFrom;
-  CkGroupID mCastGrpId;
+
   PairCalcID() {}
   ~PairCalcID() {}
 
@@ -84,6 +85,7 @@ class PairCalcID {
     }
   PairCalcID &operator=(const PairCalcID& pid) {
     Aid=pid.Aid;
+    Gid=pid.Gid;    
     GrainSize=pid.GrainSize;
     BlkSize=pid.BlkSize;
     S=pid.S;
@@ -95,16 +97,17 @@ class PairCalcID {
     existsLproxy=pid.existsLproxy;
     existsLNotFromproxy=pid.existsLNotFromproxy;
     existsRproxy=pid.existsRproxy;
+    priority=pid.priority;
+    mCastGrpId=pid.mCastGrpId;
     proxyLFrom=pid.proxyLFrom;
     proxyLNotFrom=pid.proxyLNotFrom;
     proxyRNotFrom=pid.proxyRNotFrom;
-    mCastGrpId=pid.mCastGrpId;
-    priority=pid.priority;
     return *this;
   }
 
   void pup(PUP::er &p) {
     p|Aid;
+    p|Gid;
     p|GrainSize;
     p|BlkSize;
     p|S;
@@ -116,12 +119,11 @@ class PairCalcID {
     p|existsLproxy;
     p|existsLNotFromproxy;
     p|existsRproxy;
+    p|mCastGrpId;
+    p|priority;
     p|proxyLFrom;
     p|proxyLNotFrom;
     p|proxyRNotFrom;
-    p|mCastGrpId;
-    p|priority;
-
   }
 
 };
@@ -155,6 +157,6 @@ void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int m
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane);
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane);
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane);
-void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb);
-void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId);
+void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb);
+void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 #endif
