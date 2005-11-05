@@ -1381,7 +1381,7 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
       traceBegin();
     if(numIter == 3 * LOAD_BALANCE_STEP)
       traceEnd();
-    /* needs to be rewritten
+    /* needs to be rewritten completely
     if(config.lbgspace)
       {
 
@@ -1391,7 +1391,7 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
 
       }
     */
-    CkPrintf("G %d %d atsync\n",thisIndex.x, thisIndex.y);
+    //    CkPrintf("G %d %d atsync\n",thisIndex.x, thisIndex.y);
 
     if(thisIndex.x==0 && thisIndex.y==0)
       {

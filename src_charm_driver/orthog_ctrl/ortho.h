@@ -122,24 +122,6 @@ class Ortho : public CBase_Ortho{
       C = new double[m * n];
       tmp_arr = new double[m * n];
     }
-/*
-      if(step == 1)
-        if(Ortho_use_local_cb)
-	  matmulProxy1(thisIndex.x, thisIndex.y).ckLocal()->reset(C, Ortho::step_2_cb, (void*) this);
-        else
-	  matmulProxy1(thisIndex.x, thisIndex.y).ckLocal()->reset(C);
-      else if(step == 2)
-        if(Ortho_use_local_cb)
-	  matmulProxy2(thisIndex.x, thisIndex.y).ckLocal()->reset(tmp_arr, Ortho::step_3_cb, (void*) this);
-        else
-	  matmulProxy2(thisIndex.x, thisIndex.y).ckLocal()->reset(tmp_arr);
-      else if(step == 3)
-        if(Ortho_use_local_cb)
-	  matmulProxy3(thisIndex.x, thisIndex.y).ckLocal()->reset(A, Ortho::step_3_cb, (void*) this);
-        else
-	  matmulProxy3(thisIndex.x, thisIndex.y).ckLocal()->reset(A);
-    }
-*/
     p(A, m * n);
     p(B, m * n);
     p(C, m * n);
@@ -216,6 +198,9 @@ class Ortho : public CBase_Ortho{
 
 };
 
+/**
+ * provide procnum mapping for Ortho
+ */
 class OrthoMap : public CkArrayMap {
   public:
     OrthoMap(int NN):N(NN){}

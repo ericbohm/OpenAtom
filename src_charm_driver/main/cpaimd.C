@@ -440,22 +440,22 @@ main::main(CkArgMsg *m) {
 
     if (config.useCommlibMulticast) {
         DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
-	    (realSpacePlaneProxy.ckGetArrayID());
+	    (realSpacePlaneProxy.ckGetArrayID(), 1);
         
         RingMulticastStrategy *rstrat = new RingMulticastStrategy
-            (realSpacePlaneProxy.ckGetArrayID());
+            (realSpacePlaneProxy.ckGetArrayID(), 1);
         
         MultiRingMulticast *mrstrat = new MultiRingMulticast
-            (realSpacePlaneProxy.ckGetArrayID());
+            (realSpacePlaneProxy.ckGetArrayID(), 1);
         
         DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID());
+            (particlePlaneProxy.ckGetArrayID(), 1);
 
         RingMulticastStrategy *r1strat = new RingMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID());
+            (particlePlaneProxy.ckGetArrayID(), 1);
 
         MultiRingMulticast *mr1strat = new MultiRingMulticast
-            (particlePlaneProxy.ckGetArrayID());
+            (particlePlaneProxy.ckGetArrayID(), 1);
 
 	if(CkNumNodes()>64) //multiring should be good on large runs, but not on BG/L
 	  {

@@ -204,10 +204,13 @@ Ortho::acceptAllLambda(CkReductionMsg *msg) {
 }
 
 
+
 void 
 Ortho::lbresume(CkReductionMsg *msg) {
     delete msg;
     lbcaught++;
+    if(thisIndex.x ==0 && thisIndex.y==0)
+      CkPrintf("O [%d %d] caught lb %d",thisIndex.x, thisIndex.y, lbcaught);
     if(lbcaught==1) //gspace is all done lambda reduction reset
 	gSpacePlaneProxy.syncpsi();
     if(lbcaught==2) //gspace is all done lambda and psi reduction resets
@@ -252,17 +255,6 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
      thisIndex.x, thisIndex.y);
     matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
      thisIndex.x, thisIndex.y);
-      // transform Tlambda = T*lambda: store in lambda
-/*
-	CkAbort("the gamma code is broken\n");
-      double *scr = new double [nstates*nstates];
-      CmiMemcpy(scr,lambda, nstates*nstates*sizeof(double));
-      multiplyForGamma(orthoT, scr, lambda, nstates);
-      delete [] scr;
-      finishPairCalcSection2(lambdaCount, lambda, orthoT, pcLambdaProxy);
-      // finish pair calc
-      CkPrintf("[%d,%d] finishing\n",thisIndex.x, thisIndex.y);
-*/
   }
   else
     {
@@ -329,7 +321,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   C = new double[m * n];
   tmp_arr = new double[m * n];
   step = 0;
-
+  lbcaught=0;
   num_ready = 0;
   usesAtSync=CmiTrue;
   setMigratable(false);

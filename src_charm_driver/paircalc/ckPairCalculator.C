@@ -125,12 +125,6 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCa
       setMigratable(true);
   else
       setMigratable(false);
-/*  if(symmetric)
-  {  
-      usesAtSync=false;
-      setMigratable(false);
-  }
-*/
   resultCookies=NULL;
   otherResultCookies=NULL;
   resultCookies=new CkSectionInfo[grainSize];
