@@ -39,7 +39,7 @@
 <TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">Software</FONT></TD></TR>
 <TR bgcolor="#FFFFFF"><TD>Currently we have a Charm++ implementation of the core of the CP method. You
  can check out the latest build using CVS. The code is available under the
- module name "new_leanCP". Charm++ and <a href="http://www.fftw.org">FFTW</a>
+ module name "leanCP". Charm++ and <a href="http://www.fftw.org">FFTW</a>
  are required to run the code.   
 </TD></TR>
 <TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">People</FONT></TD></TR>
@@ -298,12 +298,8 @@ main::main(CkArgMsg *m) {
     
     control_physics_to_driver();
 
-//============================================================================ 
-// Some intense initialization of paircalculator : Comments anyone?
-//   Can we hide all this in a function call?
 
-  //-------------------------------------------------------------
-  // Create mapping classes for Paircalcular
+    //* planearray for paircalc and ortho
     int indexSize = nchareG;
 
     int* indexZ = new int[indexSize];
@@ -311,6 +307,56 @@ main::main(CkArgMsg *m) {
         indexZ[count] = i;
         count++;
     }
+
+//============================================================================ 
+// Initialize paircalculators for Psi and Lambda
+
+    init_pair_calculators( nstates,  indexSize, indexZ, gSpacePPC, doublePack, sim);
+
+//============================================================================ 
+// initialize Ortho
+
+    init_ortho_chares(nstates, indexSize, indexZ);
+
+
+//============================================================================ 
+// Initialize the density chare arrays
+    
+    init_rho_chares(sizeYZ,gSpacePPC,realSpacePPC,rhoGPPC);
+
+//============================================================================ 
+// Initialize commlib strategies for later association and delegation
+
+    init_commlib_strategies(sizeYZ, rhoGPPC, realSpacePPC);
+
+
+
+//============================================================================
+// clean up
+
+    delete m;
+    delete sim;
+    delete [] indexZ;
+
+//============================================================================
+
+    CkPrintf("\n------------------------------------------------\n");
+    CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
+    CkPrintf("================================================\n\n");
+//--------------------------------------------------------------------------
+   }// end Main
+//============================================================================
+
+/**
+ * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
+ */
+void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, int doublePack, CPcharmParaInfo *sim)
+{
+  PRINT_LINE_STAR;
+  PRINTF("Building Psi and Lambda Pair Calculators\n");
+  PRINT_LINE_DASH;printf("\n");
+  //-------------------------------------------------------------
+  // Create mapping classes for Paircalcular
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
                    sizeX / gSpacePPC,config.sGrainSize,CmiTrue,sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG) ;
@@ -338,71 +384,23 @@ main::main(CkArgMsg *m) {
 
     //asymmetric AKA Lambda
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
-    
-  //-------------------------------------------------------------
-  // Create stuff for ortho which PC invokes by section reduction
 
-    int chunks = (nstates + config.sGrainSize - 1) / config.sGrainSize;
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks);
-    CkArrayOptions orthoOpts;
-    orthoOpts.setMap(orthoMap);
-    orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+}
 
-    CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
-    orthoProxy.ckSetReductionClient(orthoReduction);
-    
-    // extra triangle ortho elements are really a waste of our time
-    // and resources, but we don't have a triangular solver for
-    // inv_square, so we'll just make do.
-
-    // They need to exist solely so that the inv_sq method can work.
-    // So we need to copy their mirror elements data into them.
-    // then when complete they need to know not to call finishpaircalc.
-    // Because their redundant data has nowhere to go.
-
-    // punch in an actual map for this, 3d cube for BG/L  spread them out to maximize bi-section band
-
-    /* create matrix multiplication objects */
-    CLA_Matrix_interface matA1, matB1, matC1;
-    CLA_Matrix_interface matA2, matB2, matC2;
-    CLA_Matrix_interface matA3, matB3, matC3;
-
-    CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
-     orthoProxy(0, 0));
-    make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
-    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
-    make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
-
-
-    for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize)
-      for (int s2 = 0; s2 < nstates; s2 += config.sGrainSize) {
-	int indX = s1 / config.sGrainSize;
-	int indY = s2 / config.sGrainSize;
-	orthoProxy(indX, indY).insert(config.sGrainSize, config.sGrainSize,
-         matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
-      }
-    orthoProxy.doneInserting();
 
 //============================================================================ 
-// Initialize the density chare arrays
-    
-    init_rho_chares(sizeYZ,gSpacePPC,realSpacePPC,rhoGPPC);
-
-//============================================================================ 
-// Sameer's new communication strategies  : function call anyone?
-//                                          comments?
-
+/**
+ * Initialize Commlib communication strategies  
+ */ 
+//                                          
+//============================================================================
+void init_commlib_strategies(size2d sizeYZ, int rhoGPPC, int realSpacePPC)
+{
+  PRINT_LINE_STAR;
+  PRINTF("Building Commlib strategies\n");
+  PRINT_LINE_DASH;printf("\n");
     int i = 0;
-    //Initialize the communication library strategies.
+
     if (config.useCommlib) {        
         int nsrcelements = sizeYZ[1]/rhoGPPC;
         int ndestelements = sizeYZ[0]/realSpacePPC;
@@ -440,22 +438,22 @@ main::main(CkArgMsg *m) {
 
     if (config.useCommlibMulticast) {
         DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
-	    (realSpacePlaneProxy.ckGetArrayID(), 1);
+	    (realSpacePlaneProxy.ckGetArrayID(),1);
         
         RingMulticastStrategy *rstrat = new RingMulticastStrategy
-            (realSpacePlaneProxy.ckGetArrayID(), 1);
+            (realSpacePlaneProxy.ckGetArrayID(),1);
         
         MultiRingMulticast *mrstrat = new MultiRingMulticast
-            (realSpacePlaneProxy.ckGetArrayID(), 1);
+            (realSpacePlaneProxy.ckGetArrayID(),1);
         
         DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID(),1);
 
         RingMulticastStrategy *r1strat = new RingMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID(),1);
 
         MultiRingMulticast *mr1strat = new MultiRingMulticast
-            (particlePlaneProxy.ckGetArrayID(), 1);
+            (particlePlaneProxy.ckGetArrayID(),1);
 
 	if(CkNumNodes()>64) //multiring should be good on large runs, but not on BG/L
 	  {
@@ -470,32 +468,80 @@ main::main(CkArgMsg *m) {
 	
     }        
     // end Sameer's new communication strategies 
+}
 
 //============================================================================
-// clean up
-
-    delete m;
-    delete sim;
-
-//============================================================================
-    orthoProxy.makeSections(indexSize, indexZ);
-
-    delete [] indexZ;
-
-    CkPrintf("\n------------------------------------------------\n");
-    CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
-    CkPrintf("================================================\n\n");
-//--------------------------------------------------------------------------
-   }// end Main
-//============================================================================
-
-
-//============================================================================
-//Create the array elements for the GSpace, Particle and Real Space planes
+/**
+ ** Create stuff for ortho which PC invokes by section reduction
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+void init_ortho_chares(int nstates, int indexSize, int *indexZ)
+{
+  //-------------------------------------------------------------
+  PRINT_LINE_STAR;
+  PRINTF("Building Ortho Chares\n");
+  PRINT_LINE_DASH;printf("\n");
 
+    int chunks = (nstates + config.sGrainSize - 1) / config.sGrainSize;
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks);
+    CkArrayOptions orthoOpts;
+    orthoOpts.setMap(orthoMap);
+    orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+
+    CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
+    orthoProxy.ckSetReductionClient(orthoReduction);
+    
+    // extra triangle ortho elements are really a waste of our time
+    // and resources, but we don't have a triangular solver for
+    // inv_square, so we'll just make do.
+
+    // They need to exist solely so that the inv_sq method can work.
+    // So we need to copy their mirror elements data into them.
+    // then when complete they need to know not to call finishpaircalc.
+    // Because their redundant data has nowhere to go.
+
+    /* create matrix multiplication objects */
+    CLA_Matrix_interface matA1, matB1, matC1;
+    CLA_Matrix_interface matA2, matB2, matC2;
+    CLA_Matrix_interface matA3, matB3, matC3;
+
+    CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
+     orthoProxy(0, 0));
+    make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+    make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
+     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
+     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     MM_ALG_2D);
+
+
+    for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize)
+      for (int s2 = 0; s2 < nstates; s2 += config.sGrainSize) {
+	int indX = s1 / config.sGrainSize;
+	int indY = s2 / config.sGrainSize;
+	orthoProxy(indX, indY).insert(config.sGrainSize, config.sGrainSize,
+         matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
+      }
+    orthoProxy.doneInserting();
+    orthoProxy.makeSections(indexSize, indexZ);
+
+}
+
+//============================================================================
+/**
+ *Create the array elements for the GSpace, Particle and Real Space planes
+ */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
                  int doublePack,int gSpacePPC,int realSpacePPC,
                  CPcharmParaInfo *sim)

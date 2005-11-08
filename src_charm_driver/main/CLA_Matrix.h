@@ -71,7 +71,7 @@ class CLA_Matrix_interface {
    CkCallback cbC, int algorithm);
 };
 
-class CLA_Matrix_msg : public CMessage_CLA_Matrix_msg, public CkMcastBaseMsg {
+class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg  {
   public:
     CLA_Matrix_msg(double *data, int d1, int d2, int fromX, int fromY);
     double *data;
