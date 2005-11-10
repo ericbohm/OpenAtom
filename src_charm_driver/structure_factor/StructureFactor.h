@@ -90,10 +90,10 @@ class StructureFactor : public CBase_StructureFactor
       p|numSfDups;
       p|natm_nl_grp_max;
       p|numdest;
-      p(structFactor,gsSize*natm_nl_grp_max);
-      p(structFactor_fx,gsSize*natm_nl_grp_max);
-      p(structFactor_fy,gsSize*natm_nl_grp_max);
-      p(structFactor_fz,gsSize*natm_nl_grp_max);
+      p((char*)structFactor,gsSize*natm_nl_grp_max*sizeof(complex));
+      p((char*)structFactor_fx,gsSize*natm_nl_grp_max*sizeof(complex));
+      p((char*)structFactor_fy,gsSize*natm_nl_grp_max*sizeof(complex));
+      p((char*)structFactor_fz,gsSize*natm_nl_grp_max*sizeof(complex));
       p(k_x,gsSize);
       p(k_y,gsSize);
       p(k_z,gsSize);

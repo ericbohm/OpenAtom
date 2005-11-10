@@ -237,7 +237,7 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
 	snprintf(out, 100, "[%d] accepted SF for %d %d without any registered particles",CkMyPe(), planeIndex, atmIndex);
 	CkAbort(out);
     }
-    delete msg;
+    //    delete msg; do not delete nokeep
 }
 //==============================================================================
 

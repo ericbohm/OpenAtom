@@ -46,13 +46,14 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
 				      structFactor_fz,ag->atoms, config.doublePack, 
 				      numSfGrps, thisIndex.x);
       int totalsize=gsSize*natm_nl_grp_max;
+      int totalbytesize=gsSize*natm_nl_grp_max*sizeof(complex);
       for(int i=0;i<numdest;i++)
 	{
 	  // create message 
 #ifdef _CP_DEBUG_SF_CALC_
 	  CkPrintf("[%d %d %d] sending %d to %d\n",thisIndex.x,thisIndex.y,thisIndex.z,i,destinations[i]);
 #endif
-	  StructFactorMsg *msg = new (totalsize, totalsize, totalsize, totalsize, 0) StructFactorMsg;
+	  StructFactorMsg *msg = new (totalsize, totalsize, totalsize, totalsize, 8*sizeof(int)) StructFactorMsg;
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(msg) = config.sfpriority+thisIndex.x;
 	  msg->datalen = totalsize;
