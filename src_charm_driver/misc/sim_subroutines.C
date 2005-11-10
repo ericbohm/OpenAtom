@@ -87,10 +87,10 @@ void GStateSlab::pup(PUP::er &p) {
 	   packedPlaneDataTemp = new complex[numPoints];
 	   packedForceData     = new complex[numPoints];
 	}//endif
-	p((void *) packedPlaneData, numPoints*sizeof(complex));
-	p((void *) packedPlaneDataCG, numPoints*sizeof(complex));
-	p((void *) packedPlaneDataTemp, numPoints*sizeof(complex));
-	p((void *) packedForceData, numPoints*sizeof(complex));
+	p((char *) packedPlaneData, numPoints*sizeof(complex));
+	p((char *) packedPlaneDataCG, numPoints*sizeof(complex));
+	p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
+	p((char *) packedForceData, numPoints*sizeof(complex));
 
 //==============================================================================
   }//end routine
@@ -332,7 +332,7 @@ complex* FFTcache::doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs,
     if(fftReqd){
         fftw(plan,        // direction Z now
 	     numLines,    // these many ffts : one for every line of z in the chare
-	     (fftw_complex *)fftData, //input data
+	     reinterpret_cast <fftw_complex *> (fftData), //input data
 	     1,           //stride
 	     nfftz,       //distance between z-data sets
 	     NULL, 0, 0); // junk because input array stores the output (in-place)
@@ -357,18 +357,55 @@ void GStateSlab::doBwFFT(complex *fftData) {
    fftw_plan plan = sc->bwdYPlan;  // the Y is a misnomer : its Z
    int expandtype = 2;
    int nfftz      = planeSize[1];
+#ifdef _CP_DEBUG_VKS_FORCES_
+   if(iplane_ind==0 && istate_ind==0){
+       FILE *fp = fopen("vks_pre_fft_forces_s0_p0.out","w");
+       complex *forces = fftData;
+       for(int i=0;i<numLines;i++){
+	   for(int j=0;j<nfftz;j++){
+	       int offset=i*nfftz+j;
+	       fprintf(fp," %g %g\n", forces[offset].re,forces[offset].im);
+	   }
+       }
+       fclose(fp);
+   }
+#endif
 
    if(fftReqd){
         fftw(plan,        // direction Z
 	     numLines,    // these many ffts : lines of z
-	     (fftw_complex *)fftData, //input data
+	     reinterpret_cast <fftw_complex *> (fftData), //input data
 	     1,           //stride
 	     nfftz,       //distance between arrays
 	     NULL, 0, 0); // junk because input array stores output (in-place)
    }//endfor
-   compressGSpace(fftData, expandtype);
+#ifdef _CP_DEBUG_VKS_FORCES_
+   if(iplane_ind==0 && istate_ind==0){
+       FILE *fp = fopen("vks_expanded_fft_forces_s0_p0.out","w");
+       complex *forces = fftData;
+       for(int i=0;i<numLines;i++){
+	   for(int j=0;j<nfftz;j++){
+	       int offset=i*nfftz+j;
+	       fprintf(fp," %g %g\n", forces[offset].re,forces[offset].im);
+	   }
+       }
+       fclose(fp);
+   }
+#endif
 
+   compressGSpace(fftData, expandtype);
+#ifdef _CP_DEBUG_VKS_FORCES_
+   if(iplane_ind==0 && istate_ind==0){
+       FILE *fp = fopen("vks_fft_forces_s0_p0.out","w");
+       complex *forces = packedForceData;
+       for(int i=0;i<numPoints;i++){
+	   fprintf(fp," %g %g\n", forces[i].re,forces[i].im);
+       }
+       fclose(fp);
+   }
+#endif
    fftw_free(fftData);
+//   delete [] fftData;
    fftData = NULL;
 
 //==============================================================================
@@ -521,7 +558,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
       fftw(fwdZ1DdpPlan,    // y-plan (label lies)
   	   nplane_x,        // how many < sizeX/2 + 1
-	   (fftw_complex *)(planeArr),//input data
+	   reinterpret_cast <fftw_complex *> (planeArr),//input data
  	   stride,          // stride betwen elements (y is inner)
   	   1,               // array separation (nffty elements)
 	   NULL,0,0);       // output data is input data
@@ -529,7 +566,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
       rfftwnd_complex_to_real(fwdX1DdpPlan,
 			      planeSize[0],    // how many
-			      (fftw_complex *)planeArr, 
+			      reinterpret_cast <fftw_complex *> (planeArr), 
                               1,               // stride (x is inner)
                               stride,          // array separation
     		              NULL,0,0);       // output array is real 
@@ -574,7 +611,8 @@ void RealStateSlab::zeroOutPlanes() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::allocate() {
-  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
+//  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
+    if(planeArr == NULL) {planeArr = new complex[size];}
 }
 //==============================================================================
 
@@ -583,7 +621,8 @@ void RealStateSlab::allocate() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::destroy() {
-  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
+//  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
+  if(planeArr != NULL) {delete [] planeArr; planeArr=NULL;}
 }
 //==============================================================================
 
@@ -642,10 +681,27 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 			planeSize[0],          // these many 1D ffts
 			realArr,1,(sizeX+2),   // x is inner here
                         NULL,0,0);            
-     for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
+
+     for (int i=0; i<stride*planeSize[0];i++){
+	 planeArr[i].im = -planeArr[i].im;
+     }
+
+#ifdef _CP_DEBUG_VKS_RSPACE_
+     if(ind_state<3 && ind_plane<3)
+     {
+	 char fname[80];
+	 snprintf(fname,80,"vks_state%d_plane%d_comp.out",ind_state, ind_plane);
+	 FILE *cfp = fopen(fname,"w");
+	 for (int i=0; i<stride*planeSize[0];i++){
+	     fprintf(cfp,"%g %g\n",planeArr[i].re,planeArr[i].im);
+	 }
+	 fclose(cfp);
+     }
+#endif
+
      fftw(bwdZ1DdpPlan,
 	     nplane_x, // these many 1D ffts
-	     (fftw_complex *)planeArr, 
+	     reinterpret_cast <fftw_complex * > (planeArr), 
   	     stride,1,NULL,0,0);
   }//endif : double pack and in-place
 
@@ -702,7 +758,8 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
       rs->size = rs->nsize;
    }//endif
 
-   rs->planeArr = (complex *)fftw_malloc(rs->size *sizeof(complex)); //new complex[(rs->size)];
+//   rs->planeArr = (complex *)fftw_malloc(rs->size *sizeof(complex)); //new complex[(rs->size)];
+   rs->planeArr = new complex[(rs->size)];
 
 //==============================================================================    
    }//end routine
@@ -735,7 +792,7 @@ complex *RhoRealSlab::doBwFFT()
         complex *fftResults = (complex *) fftw_malloc(planeSize*sizeof(complex));
 
         // do x-y plane fft in-place
-        fftwnd_one(fft2dBwPlan, (fftw_complex *)fftResults, NULL);
+        fftwnd_one(fft2dBwPlan, reinterpret_cast <fftw_complex *> (fftResults), NULL);
         memcpy(fftResults,doFFTonThis, planeSize * sizeof(complex));
 
 return doFFTonThis;
@@ -752,7 +809,7 @@ void RhoRealSlab::doFwFFT(){
 	double StartTime=CmiWallTimer();
 #endif
 
-        fftwnd_one(fft2dFwPlan,(fftw_complex *)doFFTonThis, NULL);
+        fftwnd_one(fft2dFwPlan, reinterpret_cast <fftw_complex *> (doFFTonThis), NULL);
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(VksofRFFT_, StartTime, CmiWallTimer());    
 #endif
@@ -830,13 +887,24 @@ void RhoGSlab::doBwFFT(int index){
     double *dtemp2=(double*) temp2;
     double *dchunk=(double*) chunk;
     for (x = 0; x < sizeX; x++) {
-      for (y = 0; y < sizeY; y++){temp1[y].re = chunk[y * sizeX + x].re;temp1[y].im = chunk[y * sizeX + x].im;}
-//	for (y = 0; y < sizeY*2; y++){dtemp1[y] = dchunk[y * sizeX + x];}
+      for (y = 0; y < sizeY; y++){
+	  temp1[y].re = chunk[y * sizeX + x].re;
+	  temp1[y].im = chunk[y * sizeX + x].im;
+#ifdef _CP_DEBUG_VKS_FORCES_
+	  CkAssert(isnan(temp1[y].re)==0);
+	  CkAssert(isnan(temp1[y].im)==0);
+#endif
+      }
       fftw_one(fft1dBwPlan,temp1,temp2);
-      for (y = 0; y < sizeY; y++){chunk[y * sizeX + x].re = temp1[y].re;chunk[y * sizeX + x].im = temp1[y].im;}
-//      for (y = 0; y < sizeY*2; y++){dchunk[y * sizeX + x] = dtemp1[y];}
+      for (y = 0; y < sizeY; y++){
+	  chunk[y * sizeX + x].re = temp1[y].re;
+	  chunk[y * sizeX + x].im = temp1[y].im;
+#ifdef _CP_DEBUG_VKS_FORCES_
+	  CkAssert(isnan(temp1[y].re)==0);
+	  CkAssert(isnan(temp1[y].im)==0);
+#endif
+      }
     }//endfor
-
     fftw_free(temp1);
     fftw_free(temp2);
 }
