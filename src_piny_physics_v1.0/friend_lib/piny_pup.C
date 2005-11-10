@@ -44,7 +44,8 @@
     if (p.isUnpacking()) {
       *vec = (complex *)cmalloc(nlen*sizeof(complex),"piny_pup")-1;
     }/*endif*/
-    p(&(*vec)[1],nlen);
+    complex *temp = &(*vec)[1];
+    p((char *)temp,nlen*sizeof(complex));
    }/* endif nlen */
   }/*end routine */
 /*==========================================================================*/
