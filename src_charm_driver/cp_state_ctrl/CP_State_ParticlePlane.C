@@ -221,14 +221,14 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p(k_z, gSpaceNumPoints);
 	p(count,numSfGrps);
 	p(haveSFAtmGrp,numSfGrps);
-	p(zmatrixSum,zsize);
-	p(zmatrixSum_fx,zsize);
-	p(zmatrixSum_fy,zsize);
-	p(zmatrixSum_fz,zsize);
-	p(zmatrix,zsize);
-	p(zmatrix_fx,zsize);
-	p(zmatrix_fy,zsize);
-	p(zmatrix_fz,zsize);
+	p((char*)zmatrixSum,zsize *sizeof(complex));
+	p((char*)zmatrixSum_fx,zsize *sizeof(complex));
+	p((char*)zmatrixSum_fy,zsize *sizeof(complex));
+	p((char*)zmatrixSum_fz,zsize *sizeof(complex));
+	p((char*)zmatrix,zsize *sizeof(complex));
+	p((char*)zmatrix_fx,zsize *sizeof(complex));
+	p((char*)zmatrix_fy,zsize *sizeof(complex));
+	p((char*)zmatrix_fz,zsize *sizeof(complex));
 	p|reductionPlaneNum;
 	// Dont pack zmatrixSum
 	p|sizeX;
