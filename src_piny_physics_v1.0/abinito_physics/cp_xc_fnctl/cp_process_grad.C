@@ -19,8 +19,7 @@
 */
 //============================================================================
 
-void
-CPXCFNCTS::CP_div_rho_gspace_calc(
+void CPXCFNCTS::CP_div_rho_gspace_calc(
              complex* gradientCorrection,
              const int *k_x, const int *k_y, const int *k_z, 
              int size, complex* rhoIGX, complex* rhoIGY, complex* rhoIGZ) 
@@ -77,8 +76,7 @@ CPXCFNCTS::CP_div_rho_gspace_calc(
 */
 //============================================================================
 
-void
-CPXCFNCTS::CP_white_byrd_gspace_calc(
+void CPXCFNCTS::CP_white_byrd_gspace_calc(
 	                     complex *rhoIGX, complex *rhoIGY, complex *rhoIGZ, 
                              int *k_x, int *k_y, int *k_z, const int size,
                              const int nf1,const int nf2,const int nf3,
@@ -146,12 +144,23 @@ CPXCFNCTS::CP_white_byrd_gspace_calc(
   }/*end for*/
 
 
-  
-  //============================================================================
-}/* end function */
+ 
+//============================================================================
+  }/* end function */
 //============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CPXCFNCTS::CP_fetch_hmati(double **hmati_ret, double *tpi){
 
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+#include "../class_defs/allclass_strip_gen.h"
+  double *hmati = gencell->hmati;
 
+  *hmati_ret    = &hmati[0];
+  *tpi          = 2.0*M_PI; 
 
+}
+//============================================================================

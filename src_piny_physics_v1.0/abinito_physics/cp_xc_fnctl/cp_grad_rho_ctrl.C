@@ -24,8 +24,8 @@
 
 void CPXCFNCTS::CP_getGGAFunctional(
           const int npts, const int nf1,const int nf2,const int nf3,
-          complex *density,complex *rhoIRX, complex *rhoIRY, complex *rhoIRZ, 
-          complex *gradientCorrection,int iyPlane_ind,double *exc_gga_ret)
+          double *density,double *rhoIRX, double *rhoIRY, double *rhoIRZ, 
+          double *gradientCorrection,int iyPlane_ind,double *exc_gga_ret)
 
 //============================================================================
 {/* Begin function */
@@ -70,20 +70,15 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //----------------------------------------------------------
 // Get density and decide if the loop should be done
 
-        rho   =  density[i].re;
+        rho   =  density[i];
         if(rho > rho_cut){
 
 //----------------------------------------------------------
 // Calculate magnitude square of gradient of density
-         //FIX later in fft!!!
 
-         rhoIRX[i].re /=  vol;
-         rhoIRY[i].re /=  vol;
-         rhoIRZ[i].re /=  vol;
-
-          g_rho2 = rhoIRX[i].re*rhoIRX[i].re 
-                 + rhoIRY[i].re*rhoIRY[i].re 
-                 + rhoIRZ[i].re*rhoIRZ[i].re;
+          g_rho2 = rhoIRX[i]*rhoIRX[i] 
+                 + rhoIRY[i]*rhoIRY[i] 
+                 + rhoIRZ[i]*rhoIRZ[i];
 
 //----------------------------------------------------------
 // Calculate the switching function and its derivative
@@ -124,24 +119,24 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //----------------------------------------------------------
 // Construct output for the FFT
 
-         gradientCorrection[i] = complex((dfx_drho + dfc_drho));
+         gradientCorrection[i] = (dfx_drho + dfc_drho);
 
          g_rhoi = 1.0/sqrt(g_rho2);
-         unit_gx = rhoIRX[i].re*g_rhoi;
-         unit_gy = rhoIRY[i].re*g_rhoi;
-         unit_gz = rhoIRZ[i].re*g_rhoi;
+         unit_gx = rhoIRX[i]*g_rhoi;
+         unit_gy = rhoIRY[i]*g_rhoi;
+         unit_gz = rhoIRZ[i]*g_rhoi;
 
          dfxc_dgrho = dfx_dgrho + dfc_dgrho;
-         rhoIRX[i] = complex(unit_gx*dfxc_dgrho);
-         rhoIRY[i] = complex(unit_gy*dfxc_dgrho);
-         rhoIRZ[i] = complex(unit_gz*dfxc_dgrho);
+         rhoIRX[i] = unit_gx*dfxc_dgrho;
+         rhoIRY[i] = unit_gy*dfxc_dgrho;
+         rhoIRZ[i] = unit_gz*dfxc_dgrho;
 
         } else {  /* Density is less than cutoff */
 
-          gradientCorrection[i] = complex(0.0,0.0);
-          rhoIRX[i] = complex(0.0,0.0);
-          rhoIRY[i] = complex(0.0,0.0);
-          rhoIRZ[i] = complex(0.0,0.0);
+          gradientCorrection[i] = 0.0;
+          rhoIRX[i] = 0.0;
+          rhoIRY[i] = 0.0;
+          rhoIRZ[i] = 0.0;
 
         } /* Endif density is greater than cutoff */
          

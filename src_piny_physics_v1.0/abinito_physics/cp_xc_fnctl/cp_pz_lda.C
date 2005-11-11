@@ -11,7 +11,7 @@
 void
 CPXCFNCTS::CP_exc_calc(
       const int npts, const int nf1, const int nf2, const int nf3,
-      complex *density,complex *result,double *exc_ret,double *muxc_ret)
+      double *density,double *result,double *exc_ret,double *muxc_ret)
 
 //============================================================================
 // Function:  Exchange-correlation functional
@@ -83,7 +83,7 @@ CPXCFNCTS::CP_exc_calc(
 
 //-------------------------------------------------------------------------
 // III. Exchange part
-      rho_r_val = density[i].re;
+      rho_r_val = density[i];
       fpin = fpi*rho_r_val;
       rs   = pow((3.0/fpin),power);
       sqtrs = sqrt(rs);
@@ -117,7 +117,7 @@ CPXCFNCTS::CP_exc_calc(
 // VI. Potential contributions
 
 
-    result[i] += complex((xfact + mufact));
+    result[i] += (xfact + mufact);
 
 
     vxc += (xfact + mufact)*rho_r_val;

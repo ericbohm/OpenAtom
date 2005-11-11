@@ -20,7 +20,7 @@ struct RunDescriptor {
        mychar(inchar) {}
   RunDescriptor(int px, int py, int pz, int pposition, int plength, int pinc) 
     :   x(px), y (py), z (pz), position(pposition), length(plength),inc( pinc)
-  {}
+  {mychar=0;}
   RunDescriptor(){}
   RunDescriptor(int i){}
   RunDescriptor(const RunDescriptor &r) {x = r.x; y = r.y; z = r.z;
@@ -30,7 +30,15 @@ struct RunDescriptor {
                  position = r.position; length = r.length; inc = r.inc;
 		 mychar=r.mychar;
   }
-  void pup(PUP::er &p) {p(x); p(y); p(z); p(position); p(length); p(inc);p(mychar);}
+  void pup(PUP::er &p) {
+    p|x; 
+    p|y; 
+    p|z; 
+    p|position; 
+    p|length; 
+    p|inc;
+    p|mychar;
+  }
 };
 
 //===================================================================================

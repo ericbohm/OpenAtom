@@ -14,9 +14,9 @@
 //============================================================================
 
 void CPLOCAL::CP_hart_eext_calc(
-           const int ncoef, complex *chunk,const int natm, Atom *atoms,
-           complex *result, double *ehart_ret,double *eext_ret,double *ewd_ret,
-           const int *k_x, const int *k_y, const int *k_z, int mydoublePack)
+           const int ncoef, complex *rho,const int natm, Atom *atoms,
+           complex *vks, double *ehart_ret,double *eext_ret,double *ewd_ret,
+           const int *k_x, const int *k_y, const int *k_z, int index)
 
 //============================================================================
 // Function:  Hartree and External potentials
@@ -26,7 +26,7 @@ void CPLOCAL::CP_hart_eext_calc(
 //                     MUST BE SENT OUT.  FOR CUBIC SYSTEMS, HMATI 
 //                     JUST 1/L ON ITS DIAGONAL, BUT ONE SHOULD ALLOW
 //                     FOR A GENERAL 3x3 MATRIX (hmat) AND ITS INVERSE (hmati).
-//                     I ALSO ASSUME result IS ZEROED SOMEWHERE SO THAT I
+//                     I ALSO ASSUME vks IS ZEROED SOMEWHERE SO THAT I
 //                     CAN ACCUMULATE IT.
 //                     FINALLY, THE ATOMIC COORDINATES (x,y,z) AND THEIR CHARGES (q)
 //                     NEED TO BE PASSED IN
@@ -125,15 +125,15 @@ void CPLOCAL::CP_hart_eext_calc(
 // Some useful constants
 
    falp2 = 4.0*alp_ewd*alp_ewd;
-   wght = 1.0;  if(mydoublePack==1){wght = 2.0;}
+   wght = 2.0;
 
 //----------------------------------------------------------------------------
-// Initialize the results = vks(g) from Hartree and Exchange Correlation
+// Initialize vks(g) from Hartree and Exchange Correlation
 
 #ifdef GJM_DEBUG_SIZE
    PRINTF(" %d : coefs in CP_hart_eext_calc\n",ncoef);
 #endif
-   memset(result,0,sizeof(complex)*ncoef);
+   memset(vks,0,sizeof(complex)*ncoef);
 
 //----------------------------------------------------------------------------
 // Set up variables for break point calculations (helpful vectors!)
@@ -148,8 +148,8 @@ void CPLOCAL::CP_hart_eext_calc(
 
    // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
    for(int iatm = 0; iatm < natm; iatm++){
-      double arg_tmp = tpi*(hmati[1]*atoms[iatm].x + hmati[4]*atoms[iatm].y 
-                          + hmati[7]*atoms[iatm].z);
+      double arg_tmp = tpi*(hmati[3]*atoms[iatm].x + hmati[6]*atoms[iatm].y 
+                          + hmati[9]*atoms[iatm].z);
       ei_inc[iatm] = complex(cos(arg_tmp),sin(arg_tmp));
    } /* endfor */
 
@@ -177,7 +177,9 @@ void CPLOCAL::CP_hart_eext_calc(
    int kz_old        = k_z[0];
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-   FILE *fp = fopen("vks_hart_eext_stuff.out","a+");
+   char myFileName[100];
+   sprintf(myFileName, "Vext_Gspace_%d.out", index);
+   FILE *fp = fopen(myFileName,"w");
 #endif
 
    for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
@@ -199,17 +201,17 @@ void CPLOCAL::CP_hart_eext_calc(
 // II. Use these to construct the Hartree energy and its potential
 
        HartreeFact = fpi/(g2*vol);
-       ehart      += HartreeFact*chunk[i].getMagSqr()*wght_now;
+       ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
 
 #ifndef GLENN_DEBUG_ON
-       result[i] += chunk[i]*HartreeFact;
+       vks[i] += rho[i]*HartreeFact;
 #endif
        count+=1.0;
 
 //----------------------------------------------------------------------------
 // III. Get the structure factor:  If condition chosen to ensure we get in first time
 
-       if(kx_old != k_x[i]-1 || ky_old != k_y[i] || kz_old != k_z[i] || igo==0) {
+       if(kx_old != k_x[i] || ky_old != k_y[i] || kz_old != k_z[i]-1 || igo==0) {
          for(int iatm = 0; iatm < natm; iatm++){
            double arg = atoms[iatm].x*gx + atoms[iatm].y*gy + atoms[iatm].z*gz;
            h[iatm] = complex(cos(arg),sin(arg));
@@ -247,22 +249,22 @@ void CPLOCAL::CP_hart_eext_calc(
 
        EwdEnergy += EwdFact*sewd.getMagSqr()*wght_now;
 
-       double sumr    = sewd.re*EwdFact*wght_now;
-       double sumi    = sewd.im*EwdFact*wght_now;
-       double chunk_r = chunk[i].re*wght_now;
-       double chunk_i = chunk[i].im*wght_now;
+       double sumr   = sewd.re*EwdFact*wght_now;
+       double sumi   = sewd.im*EwdFact*wght_now;
+       double rho_r  = rho[i].re*wght_now;
+       double rho_i  = -rho[i].im*wght_now;
 
        for(int iatm=0; iatm < natm; iatm++){
-         double chunk_temp_r = (chunk_r*vtemp[iatm]
+         double rho_temp_r = (rho_r*vtemp[iatm]
                              +  sumr*atoms[iatm].q);
-         double chunk_temp_i = (-chunk_i*vtemp[iatm]
+         double rho_temp_i = (-rho_i*vtemp[iatm]
                              +   sumi*atoms[iatm].q);
-         double srx = (gx*chunk_temp_r);
-         double sry = (gy*chunk_temp_r);
-         double srz = (gz*chunk_temp_r);
-         double six = (gx*chunk_temp_i);
-         double siy = (gy*chunk_temp_i);
-         double siz = (gz*chunk_temp_i);
+         double srx = (gx*rho_temp_r);
+         double sry = (gy*rho_temp_r);
+         double srz = (gz*rho_temp_r);
+         double six = (gx*rho_temp_i);
+         double siy = (gy*rho_temp_i);
+         double siz = (gz*rho_temp_i);
 
          atoms[iatm].fx += (srx*h[iatm].im - six*h[iatm].re);
          atoms[iatm].fy += (sry*h[iatm].im - siy*h[iatm].re);
@@ -270,37 +272,38 @@ void CPLOCAL::CP_hart_eext_calc(
        }/*endfor*/
 
 #ifndef GLENN_DEBUG_ON
-       result[i] += vext.conj(); // minus (PINY CONV) but plus (THIS CODE CONV)
+       vks[i] += vext.conj(); 
 #endif
 
-       eext += (chunk[i]*vext).re*wght_now;
-
+       eext += (rho[i]*vext).re*wght_now;
        for(int iatm=0; iatm < natm; iatm++){h[iatm] = h[iatm]*ei_inc[iatm];}
 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
+       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g\n",k_x[i],k_y[i],k_z[i],
+		rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        if(k_x[i] == 0 && k_y[i] == 1 && k_z[i] == 4){
          fprintf(fp,"0 1 4 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
        if(k_x[i] == 0 && k_y[i] == 4 && k_z[i] == 1){
          fprintf(fp,"0 4 1 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
        if(k_x[i] == 1 && k_y[i] == 0 && k_z[i] == 4){
          fprintf(fp,"1 0 4 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
        if(k_x[i] == 1 && k_y[i] == 4 && k_z[i] == 0){
          fprintf(fp,"1 4 0 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
        if(k_x[i] == 4 && k_y[i] == 1 && k_z[i] == 0){
          fprintf(fp,"4 1 0 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
        if(k_x[i] == 4 && k_y[i] == 0 && k_z[i] == 1){
          fprintf(fp,"4 0 1 : %g %g : %g %g : %g %g\n",
-          chunk[i].re,chunk[i].im,vext.re,vext.im,result[i].re,result[i].im);
+          rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
        }//endif
 #endif
        kx_old = k_x[i];
@@ -312,7 +315,6 @@ void CPLOCAL::CP_hart_eext_calc(
      }// endif : ecut
 
    }/* endfor */
-
 //----------------------------------------------------------------------------
 // Deal with g=0 : double pack weight is 1 just like non-double pack
 
@@ -326,10 +328,14 @@ void CPLOCAL::CP_hart_eext_calc(
      }/*endfor*/
      int i = izero;
 #ifndef GLENN_DEBUG_ON
-      result[i].re += vext.re;
+      vks[i].re += vext.re;
 #endif
-      e0 = vext.re*chunk[i].re;
+      e0 = vext.re*rho[i].re;
       eext += e0;
+#ifdef _CP_DEBUG_VKS_HART_EEXT_
+      fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g\n",
+		rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
+#endif
 
    }//endif
 
@@ -344,7 +350,6 @@ void CPLOCAL::CP_hart_eext_calc(
    *ehart_ret = ehart/2.0;
    *eext_ret  = eext;
    *ewd_ret   = EwdEnergy/2.0;
-
 
 //----------------------------------------------------------------------------
 // VII. Free temporary memory

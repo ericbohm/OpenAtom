@@ -8,28 +8,42 @@
 // src_charm_driver/misc/sim_subroutines.C
 //#define _CP_DEBUG_NON_LOCAL_ONLY_
 //#define _CP_DEBUG_VKS_ONLY_
+//#define _CP_DEBUG_FFTR_VKSR_
+
+//=============================================================================
+// src_charm_driver/utilities/util.C
+//#define _CP_DEBUG_UTIL_VERBOSE_
+//#define _CP_DEBUG_LINE_
+
+//=============================================================================
+// include/CPcharmParaInfo.h
 
 //=============================================================================
 // src_charm_driver/cp_density_ctrl/CP_Rho_RealSpacePlane.C : 
-//#define _CP_DEBUG_VKS_RSPACE_
-//#define _CP_DEBUG_RHO_
+//#define _CP_DEBUG_RHOR_VERBOSE_
+//#define _CP_DEBUG_RHOR_RHO_
+//#define _CP_DEBUG_RHOR_VKSA_
+//#define _CP_DEBUG_RHOR_VKSB_
+//#define _CP_DEBUG_RHOR_VKSC_
+//#define _CP_DEBUG_RHOR_VKSD_
+//#define _CP_DEBUG_RHOR_VKSE_
 
 //=============================================================================
 // src_charm_driver/cp_density_ctrl/CP_Rho_GSpacePlane.C : 
 //#define _CP_DEBUG_VKS_GSPACE_
 //#define _CP_DEBUG_VKS_FORCES_
+//#define _CP_DEBUG_RHOG_VERBOSE_
+//#define _CP_DEBUG_RHOG_RHOG_
+//#define _CP_DEBUG_RHOG_VKSA_
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C    
 //#define _CP_DEBUG_OLDFORCE_
 //#define _CP_DEBUG_LMAT_
+//#define _CP_DEBUG_LMAT_
+//#define _CP_DEBUG_STATEG_VERBOSE_
 #define _CP_DEBUG_COEF_SCREEN_
 
-//=============================================================================
-// src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 
-//#define _CP_DEBUG_VKS_RSPACE_
-
-//=============================================================================
 //=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 
 //#define _CP_DEBUG_SF_CALC_
@@ -37,6 +51,11 @@
 //=============================================================================
 // src_charm_driver/structure_factor/StructFactorCache.C : 
 //#define _CP_DEBUG_SF_CACHE_
+
+//=============================================================================
+// src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 
+//#define _CP_DEBUG_STATER_VKS_
+//#define _CP_DEBUG_STATER_VERBOSE_
 
 //=============================================================================
 // src_charm_driver/orthog_ctrl/ortho.C
