@@ -1,15 +1,25 @@
 #==================================================================
 # General definitions 
 
+#-----------------------------------------------------------------
+# Compile options : Fortran underscore convention
+DBG_OPT          = 
+OPTS             = $(DBG_OPT) -O3
+F_COMPILER       = f77 $(OPTS) 
+F_COMPILER_NOPT  = f77 $(DBG_OPT)
+OPT_FORT         = -DFORTRANUNDERSCORE
+RUNCOMMAND       = ../cpaimd.x	
+#-----------------------------------------------------------------
 
-OPTS = -O3 
-
+#-----------------------------------------------------------------
+# Directories : 
 F_COMPILER  = f77 $(OPTS)
-F_COMPILER_NOPT  = f77
 CPAIMD      = ..
 FFT_HOME    = /usr/users/3/skumar3/fftw
 MYMATH_HOME = ../src_mathlib
 OPT_FORT    = -DFORTRANUNDERSCORE
+#-----------------------------------------------------------------
+#==================================================================
 
 # Blas/Lapack/Eispack by fortran
 #BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
