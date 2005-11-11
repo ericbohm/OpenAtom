@@ -38,7 +38,8 @@ class ParaGrpParse{
 
 //---------------------------------------------------------------------------
 // functions
-static void get_chareG_line_prms(int , int ,int ,int *,int *,int *,int *,int *);
+static void get_chareG_line_prms(int , int ,int ,int *,int *,int *,int *,int *,
+				 bool);
 
 static void flip_data_set(int , int *, int *, int *, int *,complex *);
 

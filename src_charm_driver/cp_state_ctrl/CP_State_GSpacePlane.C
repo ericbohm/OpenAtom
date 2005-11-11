@@ -63,6 +63,7 @@ extern Config config;
 extern PairCalcID pairCalcID1;
 extern PairCalcID pairCalcID2;
 
+extern CProxy_main mainProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern CProxy_Ortho orthoProxy;
@@ -185,6 +186,8 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
       RTH_Runtime_resume(run_thread);
   }
 //============================================================================
+
+//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
   void printEnergyEke(void *param, void *msg){
@@ -255,7 +258,9 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 }
 //============================================================================
 
-
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void CP_State_GSpacePlane::makePCproxies(){
 //  CkPrintf("[%d %d] calling makePCproxies\n",thisIndex.x, thisIndex.y);
   lambdaproxy=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y);
@@ -263,6 +268,7 @@ void CP_State_GSpacePlane::makePCproxies(){
   if(AllExpected>1)
     psiproxyother=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y);
 }
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -377,18 +383,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 	  }//endfor : atm groups
       }//endfor : dup groups
       sfCompSectionProxy = 
-	  CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
-					       (CkArrayIndexMax *) sfelems.getVec(), sfelems.size());
+	CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
+					     (CkArrayIndexMax *) 
+					     sfelems.getVec(), sfelems.size());
   }//endif : state=0 
 
 //============================================================================
 // head of the planes does the file reading for each state
 // to be triggered by the doneinit reduction at proc0.
-
-//  CkPrintf("G-space constructore completed\n");
-
-//  if(thisIndex.y == 0){readFile();}
-
 //---------------------------------------------------------------------------
     }//end routine
 //============================================================================
@@ -449,9 +451,6 @@ void CP_State_GSpacePlane::readFile() {
   char fname[1024];
   int ind_state=thisIndex.x;
   sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
-//  CkPrintf("[%d %d] reading %s/state%d.out\n",thisIndex.x,thisIndex.y,
-//                                         config.dataPath, ind_state + 1);
-//  CkPrintf(".");
   //------------------------------------------------------------------
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
 
@@ -465,7 +464,9 @@ void CP_State_GSpacePlane::readFile() {
             kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0);
 
   if(config.low_x_size != nplane && config.doublePack){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Mismatch in planesize\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
 
@@ -492,7 +493,12 @@ void CP_State_GSpacePlane::readFile() {
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++) {
 	  runDesc[j] = sortedRunDescriptors[x][j];
       }//endfor
-      if(ioff>numData){CkPrintf("Error reading\n");CkExit();}
+      if(ioff>numData){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("Error reading\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit();
+      }//endif
 
       gSpacePlaneProxy(ind_state, x).initGSpace(runsToBeSent,runDesc,
                                                 numPoints,dataToBeSent,nx,ny,nz);
@@ -542,7 +548,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
    { //begin routine
 //============================================================================
 
-//#ifdef _CP_GS_VERBOSE_
+//#ifdef _CP_DEBUG_STATEG_VERBOSE_
 //  CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
 //#endif
 
@@ -631,13 +637,9 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
 /* This reduction is done to signal the end of initialization */
 
-  //  delete [] points; ???? why not?
-  //  delete [] runs; ???? why not?
-
-//  CkPrintf("initGSpace end : %d.%d %d\n",thisIndex.x,thisIndex.y,size);
   int i=1;
-
-  contribute(sizeof(int), &i, CkReduction::sum_int);    
+  contribute(sizeof(int), &i, CkReduction::sum_int, 
+	     CkCallback(CkIndex_main::doneInit(0),mainProxy));
 
 //---------------------------------------------------------------------------
    }// end routine
@@ -731,10 +733,10 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
 //============================================================================
 // Check Load Balancing, Increment counter, set done flags equal to false.
-
+#ifndef CMK_OPTIMIZE
     if(iteration==TRACE_ON_STEP ){traceBegin();}
   if(iteration==TRACE_OFF_STEP){traceEnd();}
-
+#endif
 /*    if(iteration % (LOAD_BALANCE_STEP -2)==0){traceBegin();}
     if(iteration % (LOAD_BALANCE_STEP +3)==0){traceEnd();LBTurnInstrumentOff();}
 */
@@ -876,8 +878,6 @@ void CP_State_GSpacePlane::sendFFTData () {
   int numLines = gs.numLines; // same amount of data to each realspace chare puppy
   int sizeZ    = gs.planeSize[1];
 
-//  CkPrintf("sendFFTdata : %d.%d %d\n",thisIndex.x,thisIndex.y,sizeZ);
-
   for(int z=0; z < sizeZ; z++) {
 
     RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;
@@ -932,7 +932,7 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
     memset(ffttempdata, 0, sizeof(complex)*expandedDataSize);
   }//endif
 
-  // z=offset is inner index : collections of z-lines of constant (x,y)
+  // z=offset is inner index : collections of z-lines of constant (gx,gy)
   for(int i=0,j=offset; i< numLines; i++,j+=sizeZ){ffttempdata[j] = partlyIFFTd[i];}
 
   delete msg;
@@ -944,7 +944,7 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
     //put contribute here to reduction with a broadcast client
     int wehaveours=1;
     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	       CkCallback(CkIndex_CP_State_GSpacePlane::gdoneIFFT(NULL),gSpacePlaneProxy));
+      CkCallback(CkIndex_CP_State_GSpacePlane::gdoneIFFT(NULL),gSpacePlaneProxy));
 #endif
     RTH_Runtime_resume(run_thread);
   }
@@ -964,7 +964,8 @@ void CP_State_GSpacePlane::doIFFT () {
 #endif
 
   gs.doBwFFT(ffttempdata);
-
+  fftw_free(ffttempdata);
+  ffttempdata = NULL;
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceBwFFT_, StartTime, CmiWallTimer());
 #endif    
@@ -1241,7 +1242,6 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 //=============================================================================
 
   int N         = msg->getSize()/sizeof(complex);
-  //  CkPrintf("[%d %d] accept new psi reduction N %d partialCount %d \n",thisIndex.x, thisIndex.y, N, partialCount);
 
   complex *data = (complex *)msg->getData();
   complex *psi  = gs.packedPlaneData;
@@ -1534,23 +1534,26 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int index)
-{
+//==============================================================================
+   {//begin routine
+//==============================================================================
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-   double gx, gy, gz, g2;
-   double *hmati    = gencell->hmati;
-   double ecut      = cpcoeffs_info->ecut_psi; // KS-state cutoff in Ryd
+  double gx, gy, gz, g2;
+  double *hmati    = gencell->hmati;
+  double ecut      = cpcoeffs_info->ecut_psi; // KS-state cutoff in Ryd
+  double tpi       = 2.0*M_PI;
+  double wght      = 2.0;
+  double norm      = 0.0;
+  double norm2     = 0.0;
+  double eke       = 0.0;
+  double eke2      = 0.0;
 
-   double tpi=2.0*M_PI;
-   double wght=2.0;
-   double norm = 0.0;
-   double norm2 = 0.0;
-   double eke   = 0.0;
-   double eke2  = 0.0;
+//==============================================================================
 
    for(int i = 0; i < ncoef; i++){
      
@@ -1570,7 +1573,9 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
        eke2      += (wght_now*g2)*psi_g[i].getMagSqr();
        norm2     += (wght_now)*psi_g[i].getMagSqr();
      }else{
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Why the cutoff\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
      }//endif
 

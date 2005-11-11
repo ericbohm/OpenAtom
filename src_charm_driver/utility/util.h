@@ -190,8 +190,10 @@ class Config {
 	int low_x_size;
 	int high_x_size;
         int nchareG;
+        int nchareRhoG;
 	int inPlaceFFT;
         double gExpandFact;
+        double gExpandFactRho;
 	void print();
 
 	int conserveMemory;
@@ -219,12 +221,20 @@ class Config {
 PUPbytes(Config);
 #endif
 //===================================================================================
-
-
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-//   Ramkumar's state input/output routines
+// rho space run descriptors for spherical cutoff fft support
+
+void make_rho_runs(CPcharmParaInfo *sim);
+
+void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
+                      int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
+                      int sizeX, int sizeY, int sizeZ);
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+//   input/output routines, including states, run descriptors, and line balancing
 //===================================================================================
 
 void   readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );

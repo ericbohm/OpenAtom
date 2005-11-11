@@ -11,10 +11,11 @@
 #ifndef _initsim_h_
 #define _initsim_h_
 
+#include "../../include/RunDescriptor.h"
+
 #ifdef _CP_USE_BLAS_GATHER_
 include "../../src_mathlib/mathlib.h"
 #endif
-
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -91,24 +92,27 @@ public:
 //==============================================================================
 class RhoRealSlab {
 public:
-   complex *doFFTonThis;    // copy of CP_Rho_RealSpacePlane Density data to do FFT on
    int sizeX, sizeY, sizeZ;
-   fftwnd_plan fft2dFwPlan, fft2dBwPlan;
-   complex *Vks;           // copy of CP_Rho_RealSpacePlane energy/potential 
-   complex *density;       // copy of CP_Rho_RealSpacePlane density 
+
+   double *Vks;            // energy/potential  : packed
+   double *density;        // rho(r) : packed
+   double *doFFTonThis;    // fft sized guy
+   double *rhoIRX, *rhoIRY, *rhoIRZ, *gradientCorrection; // fft sized guys
 
    /* return values from rhoRSubroutine in subroutine.C */
    double exc_ret, muxc_ret, exc_gga_ret;
 
    /* used in the subroutines doDensitySum and doRhoRSubroutine */
    int size;
+   int trueSize;
    int xdim, ydim, zdim;
    int startx, starty, startz; 
  
    RhoRealSlab() {}
    ~RhoRealSlab();
-   void doFwFFT();
-   complex *doBwFFT();
+   void doFwFFTGtoR(int,double);
+   void uPackAndScale(double *, double *,double );
+
 };
 //==============================================================================
 
@@ -120,21 +124,39 @@ class RhoGSlab {
  public:
 	/* Stuff that is currently in CP_Rho_GSpacePlane's private variables */
 	int sizeX, sizeY, sizeZ;
-	fftw_plan fft1dFwPlan, fft1dBwPlan;
-	complex *chunk;        
-	
+	int runsToBeSent;
+	int numRuns;
+	int numLines;
+	int numFull;
+	int numPoints;
+	RunDescriptor *runs;
+
+	complex *Rho;       // Is big enough to be expanded!
+	complex *divRhoX;   // Is big enough to be expanded!
+	complex *divRhoY;   // Is big enough to be expanded!
+	complex *divRhoZ;   // Is big enough to be expanded!
+	complex *packedRho;
+        complex *packedVks;
+ 
+        int *k_x, *k_y, *k_z;
+
 	/* return values from rhoGSubroutine in subroutine.C */
 	double ehart_ret, eext_ret, ewd_ret;
 	
 	/* used in the subroutine doRhoGSubroutine */
 	int size;
 	int xdim, ydim, zdim; 
-	int startx, starty, startz;
 	
 	RhoGSlab() {}
 	~RhoGSlab();
-	void doBwFFT(int ); 
-	void doFwFFT(); 
+	void doBwFFTRtoG(int); 
+	void doFwFFTGtoR(int); 
+	void setKVectors(int *n);
+	void compressGSpace(const complex *, int );
+	void expandRhoGSpace(complex* , complex *);
+        void divRhoGdot(double *,double );
+        void createWhiteByrd(double *, double );
+
 };
 //==============================================================================
 
@@ -164,6 +186,7 @@ class FFTcache: public Group {
 		       int nfftz, bool fftReqd);
 	double* doRealFwFFT(complex *);
 	void doRealBwFFT(const double *vks, complex *,int ,int);
+	void doRhoRealtoRhoG(double *realArr);
 };
 //==============================================================================
 
@@ -200,9 +223,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
                        int realSpaceUnits, int stateIndex, int thisPlane);
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim, 
-                     int numRealSpace, int numRhoG, int myIndex);
-void initRhoGSlab(RhoGSlab *rho_gs, int xdim, int ydim, int zdim, int numRealSpace, 
-                  int numRealSpaceDensity, int myIndex);
+                     int numRealSpace, int numRhoG, int myIndexX,int myIndexY);
 void configureCPcharmParaInfoAndAtoms(double ecut_cp, int cp_min_opt, int, size2d, 
                                       CPcharmParaInfo *, int&, Atom **, const char *);
 

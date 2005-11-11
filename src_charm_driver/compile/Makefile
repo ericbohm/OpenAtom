@@ -64,7 +64,7 @@ CHARMLIBS:
 #	(cd $(CHARMBASE)/tmp/libs/ck-libs/paircalc;\
 #	make OPTS="$(OPTS) $(OPT_FORT)" FFTW_HOME="$(FFT_HOME)";)
 	(cd $(CHARMBASE)/tmp/libs/ck-libs/fftlib;\
-	make OPTS="$(OPTS) -nobs " FFTW_HOME="$(FFT_HOME)";)
+	make OPTS="$(OPTS) $(OPT_FORT) -nobs " FFTW_HOME="$(FFT_HOME)";)
 #===========================================================================
 
 

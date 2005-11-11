@@ -6,13 +6,420 @@
  */
 //===================================================================================
 
+#define CHARM_ON
+#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "util.h"
 #include "para_grp_parse.h"
 #include "CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
 #include "../../src_mathlib/mathlib.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 extern Config config;
 extern int sizeX;
+
+
+#ifndef M_PI
+#define M_PI       3.14159265358979323846
+#endif
+//===================================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+
+void make_rho_runs(CPcharmParaInfo *sim){
+
+//===================================================================================
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp                     = CP::get();
+
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+//===================================================================================
+// set up the rho kvectors
+
+   int *kx;
+   int *ky;
+   int *kz;
+   int nline_tot; 
+   int nPacked;
+   int sizeX     = sim->sizeX;
+   int sizeY     = sim->sizeY;
+   int sizeZ     = sim->sizeZ;
+   double *hmati = gencell->hmati;
+   double ecut4  = 8.0*cpcoeffs_info->ecut; // convert to Ryd extra factor of 2.0
+
+   get_rho_kvectors(ecut4,hmati,&kx,&ky,&kz,&nline_tot,&nPacked,sizeX,sizeY,sizeZ);
+
+//===================================================================================
+// Reorder the kvectors to produce better balance for the lines : 
+
+    int *kx_ind     = new int[nline_tot];
+    int *kx_line    = new int[nline_tot];
+    int *ky_line    = new int[nline_tot];
+    int *istrt_line = new int [nline_tot];
+    int *iend_line  = new int [nline_tot];
+    int *npts_line  = new int [nline_tot];
+
+    int nplane_x=0;
+    int ic = 0;
+    istrt_line[0] = 0;
+    for(int i = 1;i<nPacked;i++){
+      int iii = abs(kx[i]);
+      nplane_x = (iii > nplane_x ? iii : nplane_x);
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        iend_line[ic] = i;
+        npts_line[ic] = iend_line[ic]-istrt_line[ic];
+        ic++;
+        istrt_line[ic] = i;
+      }//endfor
+    }//endfor
+    iend_line[ic] = nPacked;
+    npts_line[ic] = iend_line[ic]-istrt_line[ic];
+    ic++;
+    if(ic!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    nplane_x      += 1;
+
+    double temp    = ((double)nplane_x)*config.gExpandFactRho;
+    int nchareRhoG = (int)temp;
+    int nx             = sim->sizeX;
+    int ny             = sim->sizeY;
+    int nz             = sim->sizeZ;
+    int *kxt        = new int[nPacked];
+    int *kyt        = new int[nPacked];
+    int *kzt        = new int[nPacked];
+    memcpy(kxt,kx,(nPacked*sizeof(int)));
+    memcpy(kyt,ky,(nPacked*sizeof(int)));
+    memcpy(kzt,kz,(nPacked*sizeof(int)));
+
+    int jc      = 0;
+    int lc      = 0;
+    for(int i=0;i<nchareRhoG; i++){
+      for(int j=i;j<nline_tot;j+=nchareRhoG){
+        for(int lt=istrt_line[j],l=jc;lt<iend_line[j];lt++,l++){
+          kx[l]    = kxt[lt];
+          ky[l]    = kyt[lt];
+          kz[l]    = kzt[lt];
+	}//endfor
+        jc+=npts_line[j];
+        lc++;
+      }//endfor
+    }//endfor
+    if(jc!=nPacked)  {
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-pts!\n");  
+      CkExit();
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    }//endif
+    if(lc!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines!\n");
+      CkExit();
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    }//endif
+
+    delete [] kxt;
+    delete [] kyt;
+    delete [] kzt;
+
+    ic            = 0;
+    istrt_line[0] = 0;
+    kx_line[0]    = kx[0];
+    ky_line[0]    = ky[0];
+    if(ky_line[0]<0){ky_line[0]+=ny;}
+    if(kx_line[0]<0){kx_line[0]+=nx;}
+    for(int i = 1;i<nPacked;i++){
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        iend_line[ic] = i;
+        npts_line[ic] = iend_line[ic]-istrt_line[ic];
+        ic++;
+        istrt_line[ic] = i;
+        kx_line[ic] = kx[i];
+        ky_line[ic] = ky[i];
+        if(ky_line[ic]<0){ky_line[ic]+=ny;}
+        if(kx_line[ic]<0){kx_line[ic]+=nx;}
+      }//endfor
+    }//endfor
+    iend_line[ic] = nPacked;
+    npts_line[ic] = iend_line[ic]-istrt_line[ic];
+    ic++;
+    if(ic!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines.b!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+//===================================================================================
+// Create runs using reorder k-vectors
+
+    int nrun_tot       = 1;
+    int run_length_sum = 0;
+    int run_length     = 1;
+    int curr_x         = kx[0];
+    int curr_y         = ky[0];
+    int curr_z         = kz[0];
+    if(curr_x<0){curr_x+=nx;}
+    if(curr_y<0){curr_y+=ny;}
+    if(curr_z<0){curr_z+=nz;}
+    int tmpz           = curr_z;
+    int nline_tot_now  = 1;
+    CkVec<RunDescriptor> runs;
+
+    for(int pNo=1;pNo<nPacked;pNo++) {
+      int x = kx[pNo];
+      int y = ky[pNo];
+      int z = kz[pNo];
+      if (x<0){x+=nx;}
+      if (y<0){y+=ny;}
+      if (z<0){z+=nz;}
+      // Count the lines of z by twos
+      if (z == tmpz + 1 && x == curr_x && y == curr_y) {
+        // same half line : keep counting
+        run_length++;
+        tmpz += 1;
+      }else{
+        // We have changed half lines so increment run index
+        // Each line of z, constant x,y is stored in 2 run descriptors 
+        // Example : -3 -2 -1 is a separate ``run of z''
+        //            0 1 2 3 is a separte  ``run of z''
+        //            for a line with only a 0 add a zero length descriptor
+        //            to represent the missing negative part of the line.
+        runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+        nrun_tot      +=1;
+        run_length_sum += run_length;
+        curr_x          = x;
+        curr_y          = y;
+        curr_z          = z;
+        tmpz            = z;
+        run_length      = 1;
+        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
+          nrun_tot      +=1;
+	}//endif
+      }//endif
+      if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
+        nline_tot_now++;
+        if( (nrun_tot-1)/2 != nline_tot_now-1){
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Broken Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
+		   kx[pNo],ky[pNo],kz[pNo],kx[(pNo-1)],ky[(pNo-1)],kz[(pNo-1)],
+                   nrun_tot-1,nline_tot_now-1);
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkExit();
+        }//endif
+      }//endif
+    }//endfor
+    // Record the last run of z.
+    runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+    run_length_sum += run_length;
+
+    if(run_length_sum!=nPacked){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("The rundescriptor didn't assign all pts to rho runs \n"); 
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
+
+    if((nrun_tot %2)!=0 || nrun_tot != 2*nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("The rho rundescriptor MUST find an even number of half-lines\n");
+      CkPrintf("The rho rundescriptor MUST find the correct number of lines\n");
+      CkPrintf("%d %d %d %d\n",nrun_tot,nrun_tot/2,nline_tot,
+                                  nline_tot_now);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    CkPrintf("nline_tot %d nchareRhoG %d\n", nline_tot, nchareRhoG);
+    for(int i=0;i<nline_tot;i+=2){
+      RunDescriptor *Desi  = &runs[i];
+      RunDescriptor *Desi1 = &runs[(i+1)];
+      //      CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i, Desi->x, Desi1->x, Desi->y, Desi1->y);
+      if( (Desi->x != Desi1->x) || (Desi->y != Desi1->y) ){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("The rho rundescriptor MUST pair up the half-lines\n");
+        CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i, Desi->x, Desi1->x, Desi->y, Desi1->y);
+	CkPrintf("or you will not be a happy camper :\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit(); 
+      }//endfor 
+    }//endfor
+
+//===================================================================================
+// Decompose lines to balance points
+
+    int *istrt_lgrp   = new int [sizeX];
+    int *iend_lgrp    = new int [sizeX];
+    int *npts_lgrp    = new int [sizeX];
+    int *nline_lgrp   = new int [sizeX];
+
+    ParaGrpParse::get_chareG_line_prms(nPacked,nchareRhoG,nline_tot,npts_line,
+                               istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,false);
+
+//============================================================================
+// Create the line decomposition and a sorted run descriptor
+// There are two rundescriptors per line : Noah's arc sort
+
+    int nlines_max=0;
+    for(int i=0;i<nchareRhoG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
+    int **index_tran_upack_rho = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
+   
+    int yspace=sizeX/2+1;
+
+    for(int igrp=0;igrp<nchareRhoG;igrp++){
+      for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
+        index_tran_upack_rho[igrp][j] = kx_line[i] + ky_line[i]*yspace;
+      }//endfor
+    }//endfor
+
+    CkVec<RunDescriptor> *RhosortedRunDescriptors;
+    RhosortedRunDescriptors = new CkVec<RunDescriptor> [sizeX];
+    for(int igrp = 0; igrp < nchareRhoG; igrp++){
+      for(int i=istrt_lgrp[igrp];i<iend_lgrp[igrp];i++){
+ 	 int j  = 2*i;
+ 	 int j1 = 2*i+1;
+         RhosortedRunDescriptors[igrp].push_back(runs[j]);
+         RhosortedRunDescriptors[igrp].push_back(runs[j1]);
+      }//endfor
+    }//endfor
+
+    for(int igrp = nchareRhoG; igrp < sizeX; igrp++){
+      RhosortedRunDescriptors[igrp].length() = 0;
+    }//endfor
+
+  for(int x = 0; x < nchareRhoG; x ++) {
+      int runsToBeSent = RhosortedRunDescriptors[x].size();
+      int numPoints    = 0;
+      for (int j = 0; j < RhosortedRunDescriptors[x].size(); j++){
+        numPoints += RhosortedRunDescriptors[x][j].length;
+      }//endfor
+  }//endfor
+
+//============================================================================
+// variables that could be used for mapping but aren't
+  double *pts_per_chare = new double[sizeX];
+  double *lines_per_chare = new double[sizeX];
+  for(int i=0;i<nchareRhoG;i++)
+    {
+      pts_per_chare[i]=(double) npts_lgrp[i];
+      lines_per_chare[i]=(double) nline_lgrp[i];
+    }
+//============================================================================
+// Pack up the stuff
+
+    sim->nplane_rho_x            = nplane_x;
+    sim->nchareRhoG              = nchareRhoG;
+    sim->npts_per_chareRhoG      = npts_lgrp;
+    sim->index_tran_upack_rho    = index_tran_upack_rho;
+    sim->nlines_max_rho          = nlines_max;
+    sim->nlines_per_chareRhoG    = nline_lgrp;
+    sim->RhosortedRunDescriptors = RhosortedRunDescriptors;
+    sim->npts_tot_rho            = nPacked;
+    sim->nlines_tot_rho          = nline_tot;
+    sim->lines_per_chareRhoG     = lines_per_chare;
+    sim->pts_per_chareRhoG       = pts_per_chare;
+//============================================================================
+// Clean up the memory
+
+    delete [] kx_ind;
+    delete [] kx_line;
+    delete [] ky_line;
+    delete [] istrt_line;
+    delete [] iend_line;
+    delete [] npts_line;
+    delete [] kx;
+    delete [] ky;
+    delete [] kz;
+    delete [] istrt_lgrp;
+    delete [] iend_lgrp;
+
+//============================================================================
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+
+void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
+                      int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
+                      int sizeX, int sizeY, int sizeZ)
+
+//============================================================================
+  {//begin routine
+//============================================================================
+// count the k-vectors
+
+  double tpi  = 2.0*M_PI;
+  int ka_max  = sizeX/2-1;
+  int kb_max  = sizeY/2-1;
+  int kc_max  = sizeZ/2-1;
+
+  int nPacked = 0;
+  for(int ka=0;ka<=ka_max;ka++){
+    for(int kb=-kb_max;kb<=kb_max;kb++){
+      for(int kc=-kc_max;kc<=kc_max;kc++){
+        double gx = tpi*(ka*hmati[1] + kb*hmati[2] + kc*hmati[3]);
+        double gy = tpi*(ka*hmati[4] + kb*hmati[5] + kc*hmati[6]);
+        double gz = tpi*(ka*hmati[7] + kb*hmati[8] + kc*hmati[9]);
+        double g2 = gx*gx+gy*gy+gz*gz;
+        if(g2<=ecut4){nPacked++;}
+      }//endfor
+    }//endfor
+  }//endfor
+
+//============================================================================
+// fill the k-vectors
+
+  int *kx = new int[nPacked];
+  int *ky = new int[nPacked];
+  int *kz = new int[nPacked];
+
+  int ic = 0;
+  for(int ka=0;ka<=ka_max;ka++){
+    for(int kb=-kb_max;kb<=kb_max;kb++){
+     for(int kc=-kc_max;kc<=kc_max;kc++){
+       double gx = tpi*(ka*hmati[1] + kb*hmati[2] + kc*hmati[3]);
+       double gy = tpi*(ka*hmati[4] + kb*hmati[5] + kc*hmati[6]);
+       double gz = tpi*(ka*hmati[7] + kb*hmati[8] + kc*hmati[9]);
+       double g2 = gx*gx+gy*gy+gz*gz;
+       if(g2<=ecut4){
+         kx[ic]=ka;
+         ky[ic]=kb;
+         kz[ic]=kc;
+         ic++;
+       }//endif
+     }//endfor
+   }//endfor
+ }//endfor
+
+//============================================================================
+// Count the lines
+
+  int nline_tot = 1;
+  for(int i=1; i<nPacked;i++){
+    if(kx[i]!=kx[(i-1)] || ky[i]!=ky[i-1]){nline_tot++;}
+  }//endfor
+  
+//============================================================================
+// Set return values
+
+   *kx_ret        = kx;
+   *ky_ret        = ky;
+   *kz_ret        = kz;
+   *nline_tot_ret = nline_tot;
+   *nPacked_ret   = nPacked;
+
+//============================================================================
+   }//end routine
+//============================================================================
 
 
 //===================================================================================
@@ -31,7 +438,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 //===================================================================================
 // A little screen output for the fans
 
-#ifdef _CP_UTIL_VERBOSE_
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
     CkPrintf("Reading state from file: %s\n",fromFile);
 #endif
     if(ibinary_opt < 0 || ibinary_opt > 1){
@@ -79,7 +486,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     if(curr_z<0){curr_z+=nz;}
     int tmpz           = curr_z;
     int nline_tot_now  = 1;
-
+ 
     for(int pNo=1;pNo<nPacked;pNo++) {
       int x = kx[pNo];
       int y = ky[pNo];
@@ -99,10 +506,6 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         //            0 1 2 3 is a separte  ``run of z''
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
-        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
-          nrun_tot      +=1;
-	}//endif
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
         nrun_tot      +=1;
         run_length_sum += run_length;
@@ -111,6 +514,10 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         curr_z          = z;
         tmpz            = z;
         run_length      = 1;
+        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
+          nrun_tot      +=1;
+	}//endif
       }//endif
       if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
         nline_tot_now++;
@@ -197,7 +604,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 //===================================================================================
 // A little output to the screen!
 
-#ifdef _CP_UTIL_VERBOSE_
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
      CkPrintf("Done reading state from file: %s\n",fromFile);
 #endif
 
@@ -222,7 +629,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 // A little screen output for the fans
 
     int nchareG = config.nchareG;
-#ifdef _CP_UTIL_VERBOSE_
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
     CkPrintf("Reading state from file: %s\n",fromFile);
 #endif
     if(ibinary_opt < 0 || ibinary_opt > 1){
@@ -375,7 +782,12 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     iend_line[ic] = nPacked;
     npts_line[ic] = iend_line[ic]-istrt_line[ic];
     ic++;
-    if(ic!=nline_tot){CkPrintf("Toasty Line Flip-lines!\n");CkExit();}
+    if(ic!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
     complex *arrCPt = new complex[nPacked];
     int *kxt        = new int[nPacked];
@@ -400,8 +812,18 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
         lc++;
       }//endfor
     }//endfor
-    if(jc!=nPacked)  {CkPrintf("Toasty Line Flip-pts!\n");  CkExit();}
-    if(lc!=nline_tot){CkPrintf("Toasty Line Flip-lines!\n");CkExit();}
+    if(jc!=nPacked)  {
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-pts!\n");  
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    if(lc!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
     ic            = 0;
     istrt_line[0] = 0;
@@ -418,17 +840,25 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     iend_line[ic] = nPacked;
     npts_line[ic] = iend_line[ic]-istrt_line[ic];
     ic++;
-    if(ic!=nline_tot){CkPrintf("Toasty Line Flip-lines.b!\n");CkExit();}
+    if(ic!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines.b!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
 //===================================================================================
 // Decompose if necessary : note istrt_lgrp, iend_lgrp only define when iget_decomp==1
 
     if(iget_decomp==1){
       if(istrt_lgrp==NULL || iend_lgrp == NULL){
-        CkPrintf("Toasty Line Flip memory!\n");CkExit();
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("Toasty Line Flip memory!\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit();
       }//endif
       ParaGrpParse::get_chareG_line_prms(nPacked,nchareG,nline_tot,npts_line,
-                               istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp);
+                               istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,true);
     }//endif
 
 //===================================================================================
@@ -462,11 +892,21 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
       }//endfor
       loff += nline_lgrp[i];
     }//endfor
-    if(joff!=nPacked)  {CkPrintf("Toasty Line Flip-pts.2!\n");  CkExit();}
-    if(loff!=nline_tot){CkPrintf("Toasty Line Flip-lines.2!\n");CkExit();}
+    if(joff!=nPacked)  {
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-pts.2!\n");  
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    if(loff!=nline_tot){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Toasty Line Flip-lines.2!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
 //===================================================================================
-// 
+// Debug output
 
 #ifdef _CP_DEBUG_LINE_
     double norm = 0;
@@ -520,7 +960,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     delete [] kx_tmp;
     delete [] kx_ind;
 
-#ifdef _CP_UTIL_VERBOSE_
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
      CkPrintf("Done reading state from file: %s\n",fromFile);
 #endif
 
@@ -538,13 +978,15 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
 
 //===================================================================================
 
-#ifdef _CP_UTIL_VERBOSE_
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
      CkPrintf("Reading state info from file: %s\n",fromFile);
 #endif
 
+//===================================================================================
+
      if(ibinary_opt < 0 || ibinary_opt > 1){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("Bad binary option\n",ibinary_opt); CkExit();
+       CkPrintf("Bad binary option\n",ibinary_opt);
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
      }//endif
@@ -594,7 +1036,7 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
            CkPrintf("Can't open state file :%s", fromFile);
            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
            CkExit();
-         }
+         }//endif
          fread(&(nPacked),sizeof(int),n,fp);
          fread(&(nx),sizeof(int),n,fp);
          fread(&(ny),sizeof(int),n,fp);
@@ -684,6 +1126,7 @@ void Config::print() {
 	          << "lambdapriority: " << lambdapriority << endl
 	          << "psipriority: " << psipriority << endl
                   << "gExpandFact: " << gExpandFact << endl
+                  << "gExpandFactRho: " << gExpandFactRho << endl
 		  << "rhogpriority: " << rhogpriority << endl;
    CkPrintf("\n");
 
@@ -745,6 +1188,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.rhogpriority    = 2000000;   // unused?
     config.priority        = 10;        // unused?
     config.gExpandFact     = 1.0;
+    config.gExpandFactRho     = 1.0;
 
 //===================================================================================
 // Read parameters
@@ -872,13 +1316,16 @@ void Config::readConfig(const char* fileName, Config &config,
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
+        else if (!strcmp(parameterName, "gExpandFactRho")){
+               sscanf(parameterValue,"%lg",&(config.gExpandFactRho));
+               }
         else {
             config.numSet --;
             CkPrintf("@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@\n");
             ckout << "Unknown parameter: " << parameterName << endl;
             CkPrintf("@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@\n");
             CkExit();
-        }
+        }//endif
     }//end while reading
     configFile.close();
     CkPrintf("   Closing cpaimd config file : %s\n",fileName);
@@ -910,6 +1357,10 @@ void Config::readConfig(const char* fileName, Config &config,
     int nchareG         = ((int)temp);
 //    nchareG             = MIN(nchareG,sizex);
     config.nchareG      = nchareG;
+    int nplane_x_rho        = 2*minx+1;
+    double temp_rho         = (config.gExpandFactRho)*((double)nplane_x_rho);
+    int nchareRhoG         = ((int)temp_rho);
+    config.nchareRhoG      = nchareRhoG;
 
 //===================================================================================
 // Consistency Checks on the input
@@ -930,6 +1381,14 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
+    if(nchareRhoG<nplane_x_rho){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Too few rhog-space chares %d %d\n",nplane_x_rho,nchareRhoG);
+      CkPrintf("This probably could work but I'd check first.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
     if(config.pesPerState>config.nchareG){
       CkPrintf("Warning : pesPerState > %d %g %d\n",config.nchareG,
                  config.gExpandFact,sizex);
@@ -938,6 +1397,14 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.nchareG>sizex){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Error: nchareG> sizex : reduce gExpandFact\n");
+      CkPrintf("Memory allocations needs love in pups and elsewhere!\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+    if(config.nchareRhoG>sizex){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Error: nchareRhoG> sizex : reduce gExpandFactRho\n");
       CkPrintf("Memory allocations needs love in pups and elsewhere!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
@@ -1059,9 +1526,8 @@ void Config::readConfig(const char* fileName, Config &config,
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
-
 //============================================================================
-     { //begin rotunie
+  { //begin rotunie
 //============================================================================
 // Set the file name and data points
 

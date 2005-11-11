@@ -19,6 +19,18 @@
 //============================================================================
 
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void bailout(void *param, int dataSize, void *data) 
+{
+  CkPrintf("Done FFTing\n");
+  CkExit();
+}
+//============================================================================
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -68,10 +80,31 @@ public:
 	int size;
 	int offset;
 	complex *data;
-/*	GSIFFTMsg(int _size, int _offset, complex *_data) : size(_size), offset(_offset) {
-	    CmiMemcpy(data, _data, sizeof(complex)*size);
-	}
-*/
+};
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class RhoGSFFTMsg: public CMessage_RhoGSFFTMsg {
+public:
+	int size;
+	int offset;
+	int iopt;
+	complex *data;
+};
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class RhoRSFFTMsg: public CMessage_RhoRSFFTMsg {
+public:
+    int size; 
+    int senderIndex;
+    int iopt;
+    complex *data;
 };
 //============================================================================
 
@@ -225,35 +258,31 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void acceptDensity(int, double *, int);
 	void acceptEnergyForSumming(int, complex *, int);
 	void acceptEnergyForSumming();
-	void doRingMulticast();
 	void energyComputation();
-	void startTranspose();
 	void doneFFT();
 	void run();
 	void ResumeFromSync();
-	void resumeThread(PPDummyMsg *dmsg);
-	void foo(void);
-	bool gotAllRhoEnergy;
- 	bool doneDoingFFT;
+	void fftRhoRtoRhoG();
+        void acceptGradRhoVks(RhoRSFFTMsg *);
+        void GradCorr();
+        void whiteByrdFFT();
+        void sendPartlyFFTtoRhoG(int );
+        void acceptWhiteByrd(RhoRSFFTMsg *msg);
+	void doMulticast();
  private:
-
+	double FFTscale;        
 	double volumeFactor;        
 	double probScale;             
 	int count, countFFTdata, numMcastSent;
 	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
+        int countGradVks[5], doneGradRhoVks;
+        int countWhiteByrd;
         //Comlib multicast proxy
         CProxySection_CP_State_RealSpacePlane realSpaceSectionCProxy;
 	CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
 	RhoRealSlab rho_rs; 
 	int cmid;
 	int *pes;
-	bool doneGradientCorrection, doneRhoGStuff;
-	complex *rhoIRX, *rhoIRY, *rhoIRZ, *gradientCorrection;
-	void doMulticast();
-	void doneFFT(int);
-	
-	int vectorFFTCount;
-	int id;
 	RTH_Runtime* run_thread;
 };
 //============================================================================
@@ -262,49 +291,33 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class CP_Rho_GSpacePlane: public NormalSlabArray {
+class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
  public:
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
 	CP_Rho_GSpacePlane(int, size2d, int, int, bool, ComlibInstanceHandle);
 	~CP_Rho_GSpacePlane();
-	void acceptData(int, complex *, int, int, int);
+	void acceptData(RhoGSFFTMsg *msg);
 	void acceptData();
 	void recvProcessedPart(int, complex *, int);
 	void recvProcessedPart();
 	void run();
 	void ResumeFromSync();
+        void divRhoVksGspace();
+        void RhoGSendRhoR(int );
+        void acceptWhiteByrd(RhoGSFFTMsg *);
+        void acceptWhiteByrd();
+        void HartExcVksG();
  private:
-	int count, helperCount, helperWidth;
+        int nPacked;
+	int count;
+        int countWhiteByrd[4];
+        int doneWhiteByrd;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
 	RhoGSlab rho_gs;
 	AtomsGrp *atom;
-	complex *rhoIGX, *rhoIGY, *rhoIGZ, *gradientCorrection;
-	void doneIFFT(int);
-	void doneIFFT();
 	int vectorIFFTCount;
-	int* k_x, *k_y, *k_z;
-        void computeK(const int size,
-		      const int startx, const int starty, const int startz,
-		      const int xdim, const int ydim, const int zdim);
-	RTH_Runtime* run_thread;
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class CP_Rho_GSpacePlaneHelper: public CBase_CP_Rho_GSpacePlaneHelper {
-public:
-	CP_Rho_GSpacePlaneHelper(CkMigrateMessage *m) {}
-	CP_Rho_GSpacePlaneHelper(int, size2d, int);
-	~CP_Rho_GSpacePlaneHelper();
-	void recvRhoGPart(int, complex *);
-private:
-	RhoGSlab rho_gs;
 	int *k_x, *k_y, *k_z;
-	int helperWidth, helperPos;
-	complex *temp;
+	RTH_Runtime* run_thread;
 };
 //============================================================================
 

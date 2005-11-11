@@ -38,7 +38,7 @@ extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CkReduction::reducerType complexVectorAdderType;
+extern CProxy_main mainProxy;
 extern CkGroupID mCastGrpId;
 extern Config config;
 extern int sizeX;
@@ -189,12 +189,12 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
+//===============/=============================================================
 void CP_State_RealSpacePlane::doFFT()
 {
         flagsRecd = true;
         count = 0;
-#ifdef _CP_RS_VERBOSE_
+#ifdef _CP_DEBUG_STATER_VERBOSE_
         ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
 #endif
         doReduction();
@@ -225,8 +225,10 @@ void CP_State_RealSpacePlane::doReduction(){
 
 //============================================================================
 // Perform the Reduction to get the density
-
-//    CkPrintf("In RealSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,CmiMemoryUsage());
+#ifdef _CP_DEBUG_STATER_VERBOSE_
+    CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,
+                CmiMemoryUsage());
+#endif
 
     if (config.useGReduction) {
 
@@ -235,7 +237,7 @@ void CP_State_RealSpacePlane::doReduction(){
         CkMulticastMgr *mcastGrp = 
             CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
         CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                      CkArrayIndex1D(thisIndex.y),
+                      CkArrayIndex2D(thisIndex.y,0),
                       rhoRealProxy.ckGetArrayID());
 
 #ifndef CMK_OPTIMIZE    
@@ -249,8 +251,7 @@ void CP_State_RealSpacePlane::doReduction(){
       //delete [] data;
 #endif    
     }else {
-        rhoRealProxy[thisIndex.y].acceptDensity(rs.planeSize[0] * sizeX
-                                                , data, thisIndex.y);
+      CkPrintf("Must useGReduction\n"); CkExit();
     }//endif
 
     delete [] data;
@@ -313,15 +314,17 @@ void CP_State_RealSpacePlane::doProduct(int Size, const double *Vks)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/* doing the product */
+/**
+/* doing the product 
+*/
 //============================================================================
 void CP_State_RealSpacePlane::doProduct() {
 //============================================================================
-// check size
 
-//#ifdef _CP_RS_VERBOSE_
-//    CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n", thisIndex.x, thisIndex.y,CmiMemoryUsage());
-//#endif
+#ifdef _CP_DEBUG_STATER_VERBOSE_
+   CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
+             thisIndex.x, thisIndex.y,CmiMemoryUsage());
+#endif
 
 //===================================================================
 // debugging
@@ -389,14 +392,18 @@ void CP_State_RealSpacePlane::doProduct() {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/* Setting up the multicast trees for Gengbin's library */
+/**
+/* Setting up the multicast trees for Gengbin's library 
+*/
 //============================================================================
 void 
 CP_State_RealSpacePlane::init(ProductMsg *msg)
 {
-    int i; contribute(sizeof(int), &i, CkReduction::sum_int);
+    int i=1; 
     CkGetSectionInfo(cookie, msg);
-    delete msg;
+    contribute(sizeof(int), &i, CkReduction::sum_int, 
+	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
+    // do not delete nokeep message
 }
 //============================================================================
 

@@ -15,7 +15,6 @@
 #include "cpaimd.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 
 //==============================================================================
 
@@ -332,7 +331,7 @@ complex* FFTcache::doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs,
     if(fftReqd){
         fftw(plan,        // direction Z now
 	     numLines,    // these many ffts : one for every line of z in the chare
-	     reinterpret_cast <fftw_complex *> (fftData), //input data
+	     (fftw_complex *)fftData, //input data
 	     1,           //stride
 	     nfftz,       //distance between z-data sets
 	     NULL, 0, 0); // junk because input array stores the output (in-place)
@@ -357,56 +356,16 @@ void GStateSlab::doBwFFT(complex *fftData) {
    fftw_plan plan = sc->bwdYPlan;  // the Y is a misnomer : its Z
    int expandtype = 2;
    int nfftz      = planeSize[1];
-#ifdef _CP_DEBUG_VKS_FORCES_
-   if(iplane_ind==0 && istate_ind==0){
-       FILE *fp = fopen("vks_pre_fft_forces_s0_p0.out","w");
-       complex *forces = fftData;
-       for(int i=0;i<numLines;i++){
-	   for(int j=0;j<nfftz;j++){
-	       int offset=i*nfftz+j;
-	       fprintf(fp," %g %g\n", forces[offset].re,forces[offset].im);
-	   }
-       }
-       fclose(fp);
-   }
-#endif
 
    if(fftReqd){
         fftw(plan,        // direction Z
 	     numLines,    // these many ffts : lines of z
-	     reinterpret_cast <fftw_complex *> (fftData), //input data
+	     (fftw_complex *)fftData, //input data
 	     1,           //stride
 	     nfftz,       //distance between arrays
 	     NULL, 0, 0); // junk because input array stores output (in-place)
    }//endfor
-#ifdef _CP_DEBUG_VKS_FORCES_
-   if(iplane_ind==0 && istate_ind==0){
-       FILE *fp = fopen("vks_expanded_fft_forces_s0_p0.out","w");
-       complex *forces = fftData;
-       for(int i=0;i<numLines;i++){
-	   for(int j=0;j<nfftz;j++){
-	       int offset=i*nfftz+j;
-	       fprintf(fp," %g %g\n", forces[offset].re,forces[offset].im);
-	   }
-       }
-       fclose(fp);
-   }
-#endif
-
    compressGSpace(fftData, expandtype);
-#ifdef _CP_DEBUG_VKS_FORCES_
-   if(iplane_ind==0 && istate_ind==0){
-       FILE *fp = fopen("vks_fft_forces_s0_p0.out","w");
-       complex *forces = packedForceData;
-       for(int i=0;i<numPoints;i++){
-	   fprintf(fp," %g %g\n", forces[i].re,forces[i].im);
-       }
-       fclose(fp);
-   }
-#endif
-   fftw_free(fftData);
-//   delete [] fftData;
-   fftData = NULL;
 
 //==============================================================================
   }//end routine
@@ -558,7 +517,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
       fftw(fwdZ1DdpPlan,    // y-plan (label lies)
   	   nplane_x,        // how many < sizeX/2 + 1
-	   reinterpret_cast <fftw_complex *> (planeArr),//input data
+	   (fftw_complex *)(planeArr),//input data
  	   stride,          // stride betwen elements (y is inner)
   	   1,               // array separation (nffty elements)
 	   NULL,0,0);       // output data is input data
@@ -566,7 +525,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
       rfftwnd_complex_to_real(fwdX1DdpPlan,
 			      planeSize[0],    // how many
-			      reinterpret_cast <fftw_complex *> (planeArr), 
+			      (fftw_complex *)planeArr, 
                               1,               // stride (x is inner)
                               stride,          // array separation
     		              NULL,0,0);       // output array is real 
@@ -611,8 +570,7 @@ void RealStateSlab::zeroOutPlanes() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::allocate() {
-//  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
-    if(planeArr == NULL) {planeArr = new complex[size];}
+  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
 }
 //==============================================================================
 
@@ -621,9 +579,44 @@ void RealStateSlab::allocate() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::destroy() {
-//  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
-  if(planeArr != NULL) {delete [] planeArr; planeArr=NULL;}
+  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
 }
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doRhoRealtoRhoG(double *realArr)
+//==============================================================================
+ {//begin routine 
+   //==============================================================================
+
+   int nplane_rho_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_rho_x;
+
+   //==============================================================================
+   // Case : doublePack  and inplace no options thats how it is
+   
+   rfftwnd_real_to_complex(bwdX1DdpPlan,
+			   planeSize[0],          // these many 1D ffts
+			   realArr,1,(sizeX+2),   // x is inner here
+			   NULL,0,0);            
+   complex *planeArr = reinterpret_cast<complex*> (realArr);
+   int stride = sizeX/2+1;
+
+#ifdef CMK_VERSION_BLUEGENE
+   CmiNetworkProgress();
+#endif
+
+   for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
+
+   fftw(bwdZ1DdpPlan,
+	nplane_rho_x, // these many 1D ffts
+	(fftw_complex *)planeArr, 
+	stride,1,NULL,0,0);
+
+   //==============================================================================
+ }//end routine
 //==============================================================================
 
 
@@ -651,7 +644,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 //==============================================================================
 // Output
 
-#ifdef _CP_DEBUG_VKS_RSPACE_
+#ifdef _CP_DEBUG_FFTR_VKSR_
    if(config.doublePack){
      if(ind_state==0 && ind_plane==0){
         double *realArr = reinterpret_cast<double*> (planeArr);
@@ -681,27 +674,14 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 			planeSize[0],          // these many 1D ffts
 			realArr,1,(sizeX+2),   // x is inner here
                         NULL,0,0);            
-
-     for (int i=0; i<stride*planeSize[0];i++){
-	 planeArr[i].im = -planeArr[i].im;
-     }
-
-#ifdef _CP_DEBUG_VKS_RSPACE_
-     if(ind_state<3 && ind_plane<3)
-     {
-	 char fname[80];
-	 snprintf(fname,80,"vks_state%d_plane%d_comp.out",ind_state, ind_plane);
-	 FILE *cfp = fopen(fname,"w");
-	 for (int i=0; i<stride*planeSize[0];i++){
-	     fprintf(cfp,"%g %g\n",planeArr[i].re,planeArr[i].im);
-	 }
-	 fclose(cfp);
-     }
+#ifdef CMK_VERSION_BLUEGENE
+   CmiNetworkProgress();
 #endif
 
+     for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
      fftw(bwdZ1DdpPlan,
 	     nplane_x, // these many 1D ffts
-	     reinterpret_cast <fftw_complex * > (planeArr), 
+	     (fftw_complex *)planeArr, 
   	     stride,1,NULL,0,0);
   }//endif : double pack and in-place
 
@@ -758,62 +738,30 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
       rs->size = rs->nsize;
    }//endif
 
-//   rs->planeArr = (complex *)fftw_malloc(rs->size *sizeof(complex)); //new complex[(rs->size)];
    rs->planeArr = new complex[(rs->size)];
 
 //==============================================================================    
    }//end routine
 //==============================================================================
 
-
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-RhoRealSlab::~RhoRealSlab()
-{
-	fftwnd_destroy_plan(fft2dFwPlan);
-	fftwnd_destroy_plan(fft2dBwPlan);
-	//delete [] Vks;  // I wonder why this isn't deleted
+RhoRealSlab::~RhoRealSlab(){
+
+	//delete [] Vks;  I wonder why this isn't deleted
 	delete [] density;
-	fftw_free(doFFTonThis);
-}
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-complex *RhoRealSlab::doBwFFT()
-{
-
-        memcpy(density, doFFTonThis,  sizeX * sizeY * sizeof(complex));
-     
-	int planeSize       = sizeX * sizeZ;
-        complex *fftResults = (complex *) fftw_malloc(planeSize*sizeof(complex));
-
-        // do x-y plane fft in-place
-        fftwnd_one(fft2dBwPlan, reinterpret_cast <fftw_complex *> (fftResults), NULL);
-        memcpy(fftResults,doFFTonThis, planeSize * sizeof(complex));
-
-return doFFTonThis;
-}
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void RhoRealSlab::doFwFFT(){
-	int j, planeSize = sizeX * sizeZ;
-#ifndef CMK_OPTIMIZE
-	double StartTime=CmiWallTimer();
-#endif
-
-        fftwnd_one(fft2dFwPlan, reinterpret_cast <fftw_complex *> (doFFTonThis), NULL);
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(VksofRFFT_, StartTime, CmiWallTimer());    
-#endif
-
+        complex *dummy;
+	dummy  = reinterpret_cast<complex*> (doFFTonThis);
+	fftw_free((fftw_complex *)dummy);
+	dummy  = reinterpret_cast<complex*> (rhoIRX);
+	fftw_free((fftw_complex *)dummy);
+	dummy  = reinterpret_cast<complex*> (rhoIRY);
+	fftw_free((fftw_complex *)dummy);
+	dummy  = reinterpret_cast<complex*> (rhoIRZ);
+	fftw_free((fftw_complex *)dummy);
+	dummy  = reinterpret_cast<complex*> (gradientCorrection);
+	fftw_free((fftw_complex *)dummy);
 }
 //==============================================================================
 
@@ -824,7 +772,7 @@ void RhoRealSlab::doFwFFT(){
 /* This gets called at the end of the RealSpaceDensity Constructor */
 //==============================================================================
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
-                     int numRealSpace, int numRhoG, int myIndex)
+                     int numRealSpace, int numRhoG, int myIndexX, int myIndexY)
 //==============================================================================
    {//begin routine
 //==============================================================================
@@ -833,25 +781,33 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 	rho_rs->sizeY = ydim;
 	rho_rs->sizeZ = zdim;
 
-	rho_rs->fft2dFwPlan = fftw2d_create_plan(rho_rs->sizeZ, rho_rs->sizeX, 
-                FFTW_FORWARD, FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-	rho_rs->fft2dBwPlan = fftw2d_create_plan(rho_rs->sizeZ, rho_rs->sizeX, 
-                FFTW_BACKWARD, FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-
-	rho_rs->size = rho_rs->sizeX * rho_rs->sizeZ;
 	rho_rs->xdim = rho_rs->sizeX;
-	rho_rs->Vks     =  new complex[rho_rs->size];
-	rho_rs->density =  new complex[rho_rs->size];
-
-	//we copy the real densities into the real parts of these and do our stuff.
-        int sizenow = rho_rs->size;
-	rho_rs->doFFTonThis = (complex *) fftw_malloc(sizenow*sizeof(complex));
 	rho_rs->ydim = 1;
 	rho_rs->zdim = rho_rs->sizeZ;
+
 	rho_rs->startx = 0;
 	rho_rs->starty = 0;
 	rho_rs->startz = 0; 
-	// rho_rs->type = XY_PLANE; 
+
+	rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeZ);
+	rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeZ);
+        int sizenow      = rho_rs->size;
+
+	rho_rs->Vks     =  new double[sizenow];
+	rho_rs->density =  new double[sizenow];
+        int csizenow    = sizenow/2;
+
+        complex *dummy;
+	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+	rho_rs->doFFTonThis = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+	rho_rs->rhoIRX      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+	rho_rs->rhoIRY      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+	rho_rs->rhoIRZ      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+	rho_rs->gradientCorrection = reinterpret_cast<double*> (dummy);
 
 //==============================================================================
    }//end routine
@@ -863,10 +819,253 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 //==============================================================================
 RhoGSlab::~RhoGSlab()
 {
-	fftw_destroy_plan(fft1dFwPlan);
-	fftw_destroy_plan(fft1dBwPlan);
-	fftw_free(chunk);
 }
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/*
+ * In G-space our representation uses wrapping of coordinates.
+ * When reading from the files, if x < 0, x += sizeX;
+ */
+//==============================================================================
+
+void RhoGSlab::setKVectors(int *n){
+
+//======================================================================
+// Construct the k-vectors
+
+  k_x = new int[numPoints];
+  k_y = new int[numPoints];
+  k_z = new int[numPoints];
+  
+  int r, i, dataCovered = 0;
+  int x, y, z;
+  for (r = 0; r < numRuns; r++) { // 2*number of lines z
+    x = runs[r].x;
+    if (x > sizeX/2) x -= sizeX;
+    y = runs[r].y;
+    if (y > sizeY/2) y -= sizeY;
+    z = runs[r].z;
+    if (z > sizeZ/2) z -= sizeZ;
+
+    for (i = 0; i < runs[r].length; i++) { //pts in lines of z
+      k_x[dataCovered] = x;
+      k_y[dataCovered] = y;
+      k_z[dataCovered] = (z+i);
+      dataCovered++;
+    }//endfor
+  }//endfor
+
+  CkAssert(dataCovered == numPoints);
+
+//==============================================================================
+// Set the return values
+
+  *n    = numPoints;
+  
+//==============================================================================
+  }//end routine
+//==============================================================================
+
+//=============================================================================
+// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void RhoGSlab::expandRhoGSpace(complex* data, complex *packedData)
+
+//==============================================================================
+  {//begin routine
+//==============================================================================
+// Expand out lines of z so that an FFT can be performed on them
+//   The ``run'' stores each line in two parts
+//      0,1,2,3 have offset, joff = r*nfftz 
+//     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
+//      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
+//   Total size is nlines*nfftz where nlines=numRuns/2
+
+  memset(data,0,sizeof(complex)*numFull);
+  int nfftz = sizeZ;
+
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff = l*nfftz + runs[r].z;
+    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+      data[j] = packedData[k];
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    joff = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+      data[j] = packedData[k];
+    }//endfor
+    koff += runs[r1].length;
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+//==============================================================================
+// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void RhoGSlab::divRhoGdot(double *hmati, double tpi){
+
+//==============================================================================
+
+  int nfftz = sizeZ;
+  double gx,gy,gz;
+
+//==============================================================================
+
+  memset(divRhoX, 0, sizeof(complex)*numFull);
+  memset(divRhoY, 0, sizeof(complex)*numFull);
+  memset(divRhoZ, 0, sizeof(complex)*numFull);
+
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff = l*nfftz + runs[r].z;
+    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      complex tmp = (packedRho[k].multiplyByi())*(-1.0);
+      divRhoX[j] = tmp*gx;
+      divRhoY[j] = tmp*gy;
+      divRhoZ[j] = tmp*gz;
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    joff = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      complex tmp = (packedRho[k].multiplyByi())*(-1.0);
+      divRhoX[j] = tmp*gx;
+      divRhoY[j] = tmp*gy;
+      divRhoZ[j] = tmp*gz;
+    }//endfor
+    koff += runs[r1].length;
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
+//==============================================================================
+// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
+
+//==============================================================================
+
+  int nfftz = sizeZ;
+  double gx,gy,gz;
+  complex tmp;
+
+//==============================================================================
+
+  complex *whitebyrd = Rho;
+  memset(whitebyrd,0,sizeof(complex)*numFull);
+
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff = l*nfftz + runs[r].z;
+    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
+      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    joff = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
+      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
+    }//endfor
+    koff += runs[r1].length;
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
+//==============================================================================
+//==============================================================================
+// Expanded rhogspace of size numFull =numRuns/2*nfftz to packed size numPoints
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void RhoGSlab::compressGSpace(const complex *expnddata, int type) {
+//==============================================================================
+// Contract lines of z after the backFFT has been performed.
+//   The ``run'' stores each line in two parts
+//      0,1,2,3 have offset, joff = r*nfftz 
+//     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
+//      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
+
+  complex *data;
+  switch(type){
+    case 0 : data = packedRho; break;
+  }//endif
+
+  int nfftz = sizeZ;
+
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff = l*nfftz + runs[r].z;
+    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+      data[k]= expnddata[j];
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    joff = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+      data[k] = expnddata[j];
+    }//endfor
+    koff += runs[r1].length;
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+//==============================================================================
+  }//end routine
 //==============================================================================
 
 
@@ -876,102 +1075,150 @@ RhoGSlab::~RhoGSlab()
 // complete the transform of rho(r) to rho(g) : last FFT after tranpose
 // 
 //==============================================================================
-void RhoGSlab::doBwFFT(int index){
+void RhoGSlab::doBwFFTRtoG(int expandtype){
+//==============================================================================
 
-    // do the line inv-fft
-    fftw_complex *temp1 = (fftw_complex *) fftw_malloc(sizeY*sizeof(complex));
-    fftw_complex *temp2 = (fftw_complex *) fftw_malloc(sizeY*sizeof(complex));
+   FFTcache *sc   = fftCacheProxy.ckLocalBranch();
+   fftw_plan plan = sc->bwdYPlan;  // Y label is a misnomer : its Z
+   int nfftz      = sizeZ;
 
-    int x, y;
-    double *dtemp1=(double*) temp1;
-    double *dtemp2=(double*) temp2;
-    double *dchunk=(double*) chunk;
-    for (x = 0; x < sizeX; x++) {
-      for (y = 0; y < sizeY; y++){
-	  temp1[y].re = chunk[y * sizeX + x].re;
-	  temp1[y].im = chunk[y * sizeX + x].im;
-#ifdef _CP_DEBUG_VKS_FORCES_
-	  CkAssert(isnan(temp1[y].re)==0);
-	  CkAssert(isnan(temp1[y].im)==0);
-#endif
-      }
-      fftw_one(fft1dBwPlan,temp1,temp2);
-      for (y = 0; y < sizeY; y++){
-	  chunk[y * sizeX + x].re = temp1[y].re;
-	  chunk[y * sizeX + x].im = temp1[y].im;
-#ifdef _CP_DEBUG_VKS_FORCES_
-	  CkAssert(isnan(temp1[y].re)==0);
-	  CkAssert(isnan(temp1[y].im)==0);
-#endif
-      }
-    }//endfor
-    fftw_free(temp1);
-    fftw_free(temp2);
-}
+   complex *partlyfftData;
+   switch(expandtype){
+     case 0: partlyfftData = Rho; break;
+     case 1: partlyfftData = divRhoX; break;
+     case 2: partlyfftData = divRhoY; break;
+     case 3: partlyfftData = divRhoZ; break;
+   }//endif
+
+   fftw(plan,        // direction Z
+        numLines,    // these many ffts : lines of z
+	(fftw_complex *)partlyfftData, //input data
+	1,           //stride
+	nfftz,       //distance between arrays
+	NULL, 0, 0); // junk because input array stores output (in-place)
+
+   if(expandtype==0){compressGSpace(partlyfftData, expandtype);}
+
+//==============================================================================
+  }//end routine
 //==============================================================================
 
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RhoGSlab::doFwFFT() {
-
-    complex *temp1 = (complex *) fftw_malloc(sizeY*sizeof(complex));
-    complex *temp2 = (complex *) fftw_malloc(sizeY*sizeof(complex));
-
-    // do the fwd-fft
-    int y, x;
-    for (x = 0; x < sizeX; x++) {
-      for (y = 0; y < sizeY; y++){temp1[y] = chunk[y * sizeX + x];}
-      fftw_complex *temp_in  = reinterpret_cast<fftw_complex *>(temp1);
-      fftw_complex *temp_out = reinterpret_cast<fftw_complex *>(temp2);
-      fftw_one(fft1dFwPlan,temp_in,temp_out);
-      for (y = 0; y < sizeY; y++){chunk[y * sizeX + x] = temp1[y];}
-    }//endfor x
-
-    fftw_free(temp1);
-    fftw_free(temp2);
-
-}
+void RhoGSlab::doFwFFTGtoR(int iopt){
 //==============================================================================
 
+   int nfftz      = sizeZ;
+   FFTcache *sc   = fftCacheProxy.ckLocalBranch();
+   fftw_plan plan = sc->fwdYPlan; // for historic reasons its called `y' plan
+                                  // but it contains the `z' plan.
 
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-/* This gets called at the end of the CP_Rho_GSpacePlane constructor  */
-//==============================================================================
-void initRhoGSlab(RhoGSlab *rho_gs, int xdim, int ydim, int zdim, int numRealSpace, 
-                            int numRealSpaceDensity, int myIndex)
-//==============================================================================
-   {//begin routine
-//==============================================================================
+   complex *fftData;
+   switch(iopt){
+     case 0 : fftData = Rho;     break;
+     case 1 : fftData = divRhoX; break;
+     case 2 : fftData = divRhoY; break;
+     case 3 : fftData = divRhoZ; break;
+   }//end switch
 
-	rho_gs->sizeX = xdim;
-	rho_gs->sizeY = ydim;
-	rho_gs->sizeZ = zdim;
-	rho_gs->fft1dFwPlan = fftw_create_plan(
-          rho_gs->sizeY,FFTW_FORWARD,FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-	rho_gs->fft1dBwPlan = fftw_create_plan(
-          rho_gs->sizeY,FFTW_BACKWARD,FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-
-	// NOTE on in-memory  handling of the chunk:
-	// The chunk is handled as a series of x-z planes, with pencils in x direction
-        int sizenow = rho_gs->sizeY * rho_gs->sizeX;
-	rho_gs->chunk = (complex *) fftw_malloc(sizenow*sizeof(complex));
-
-	rho_gs-> size = rho_gs->sizeX * rho_gs->sizeY;
-	/* complex *rho_g = rho_gs.chunk;*/
-	rho_gs->xdim = rho_gs->sizeX;
-	rho_gs->ydim = rho_gs->sizeY;
-	rho_gs->zdim = 1;
-	rho_gs->startx = 0;
-	rho_gs->starty = 0;
-	rho_gs->startz = myIndex;
-	//   rho_gs->type = ZX_PLANE;
-
-	return;
+   fftw(plan,        // direction Z now
+        numLines,    // these many ffts : one for every line of z in the chare
+	(fftw_complex *)fftData, //input data
+         1,           //stride
+         nfftz,       //distance between z-data sets
+         NULL, 0, 0); // junk because input array stores the output (in-place)
 
 //==============================================================================
    }//end routine
 //==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
+//==============================================================================
+
+   FFTcache *fsc             = fftCacheProxy.ckLocalBranch();
+   fftw_plan    fwdZ1DdpPlan = fsc->fwdZ1DdpPlan; 
+   rfftwnd_plan fwdX1DdpPlan = fsc->fwdX1DdpPlan; 
+
+   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+   int nplane_x           = sim->nplane_rho_x;
+   int pSize              = (sizeX+2) * sizeY;
+   int stride             = sizeX/2+1;
+
+   double *data;
+   switch(iopt){
+     case 0: data = doFFTonThis; break;
+     case 1: data = rhoIRX; break;
+     case 2: data = rhoIRY; break;
+     case 3: data = rhoIRZ; break;
+   }//endif
+  complex *planeArr = reinterpret_cast<complex*> (data);
+
+//==============================================================================
+// FFT along Y direction : Y moves with stride sizex/2+1 through memory
+
+   fftw(fwdZ1DdpPlan,    // y-plan (label lies)
+	nplane_x,        // how many < sizeX/2 + 1
+        (fftw_complex *)(planeArr),//input data
+ 	stride,          // stride betwen elements (x is inner)
+  	1,               // array separation (nffty elements)
+	NULL,0,0);       // output data is input data
+
+#ifdef CMK_VERSION_BLUEGENE
+   CmiNetworkProgress();
+#endif
+
+  // fftw only gives you one sign for real to complex : so do it yourself
+  for(int i=0;i<stride*sizeY;i++){planeArr[i].im = -planeArr[i].im;}
+
+//==============================================================================
+// FFT along X direction : X moves with stride 1 through memory
+
+  rfftwnd_complex_to_real(fwdX1DdpPlan,
+		          sizeY,    // how many
+			  (fftw_complex *)planeArr, 
+                          1,               // stride (x is inner)
+                          stride,          // array separation
+  		          NULL,0,0);       // output array is real 
+
+//==============================================================================
+// copy out to a nice stride in memory
+
+  double *temp = gradientCorrection;
+  memcpy(temp,data,pSize*sizeof(double));
+
+  for(int i=0,i2=0;i<sizeY;i++,i2+=2){
+    for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+      data[j] = temp[(j+i2)]*probScale;
+    }//endfor
+  }//endfor
+
+//==============================================================================
+  }//end if
+//==============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void RhoRealSlab::uPackAndScale(double *uPackData, double *PackData, 
+                                double scale)
+//============================================================================
+   {//begin routine
+//============================================================================
+
+   for(int i=0,i2=0;i<sizeZ;i++,i2+=2){
+     for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+       uPackData[(j+i2)] = PackData[j]*scale;
+     }//endfor
+     uPackData[sizeX]   = 0.0;
+     uPackData[sizeX+1] = 0.0;
+   }//endfor
+
+//============================================================================
+   }
+//============================================================================

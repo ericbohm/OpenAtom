@@ -128,6 +128,7 @@ class Ortho : public CBase_Ortho{
     p(tmp_arr, m * n);
   }
 
+
   void collect_error(CkReductionMsg *msg);
 
   void start_calc(CkReductionMsg *msg);
