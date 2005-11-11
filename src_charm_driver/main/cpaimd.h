@@ -23,10 +23,10 @@
 
 #define PRE_BALANCE_STEP 2
 
-#define FIRST_BALANCE_STEP 3
+#define FIRST_BALANCE_STEP 10
 
-#define TRACE_ON_STEP 4
-#define TRACE_OFF_STEP 7
+#define TRACE_ON_STEP 1
+#define TRACE_OFF_STEP 3
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
@@ -45,6 +45,7 @@ class main : public Chare {
  public:
     main(CkMigrateMessage *m) { }
     main(CkArgMsg *);
+    void doneInit(CkReductionMsg *msg);
 
 };
 //============================================================================
@@ -313,7 +314,7 @@ void init_ortho_chares(int, int, int *);
 void init_commlib_strategies(size2d, int, int);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(size2d,int, int, int,int,int,int,CPcharmParaInfo *);
-void init_rho_chares(size2d , int, int,int);
+void init_rho_chares(size2d , int, int,int,CPcharmParaInfo*);
 void control_physics_to_driver();
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret);

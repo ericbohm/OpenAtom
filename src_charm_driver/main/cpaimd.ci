@@ -2,13 +2,16 @@
  *
  */
 
-
-
 mainmodule cpaimd {	
 
 	readonly int nstates;
 	readonly int sizeX;
 	readonly int nchareG;
+	readonly int Ortho_UE_step2;
+	readonly int Ortho_UE_step3;
+	readonly int Ortho_UE_error;
+	readonly bool Ortho_use_local_cb;
+
 	extern module CkSparseContiguousReducer;
         extern module ckPairCalculator;
 	extern module CLA_Matrix; 
@@ -16,12 +19,12 @@ mainmodule cpaimd {
 	readonly PairCalcID pairCalcID1;
 	readonly PairCalcID pairCalcID2;
 
+
 	readonly CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 	readonly CProxy_CP_State_ParticlePlane particlePlaneProxy;
 	readonly CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
 	readonly CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 	readonly CProxy_CP_Rho_GSpacePlane rhoGProxy;
-	readonly CProxy_CP_Rho_GSpacePlaneHelper rhoGHelperProxy;
 	readonly CProxy_Ortho orthoProxy;
 	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
@@ -36,6 +39,7 @@ mainmodule cpaimd {
 	readonly ComlibInstanceHandle mcastInstance;
 	readonly ComlibInstanceHandle ssInstance;
 	readonly ComlibInstanceHandle mssInstance;
+	readonly ComlibInstanceHandle gssInstance;
 	readonly ComlibInstanceHandle mcastInstancePP;
 
         readonly MDINTEGRATE  readonly_mdintegrate;
@@ -66,8 +70,13 @@ mainmodule cpaimd {
 
 	message RSFFTMsg {complex data[];};
 
+	message RhoGSFFTMsg {complex data[];};
+
+	message RhoRSFFTMsg {complex data[];};
+
 	mainchare main {
 		entry main();
+	        entry void doneInit(CkReductionMsg *msg);
 	};
 
 	array [2D]  CP_State_GSpacePlane {
@@ -112,29 +121,23 @@ mainmodule cpaimd {
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
 		entry void resumeProduct(RSDummyResume *msg);
-		entry void init(ProductMsg *m);
+		entry [nokeep] void init(ProductMsg *m);
 	};
 
-	array [1D] CP_Rho_RealSpacePlane: NormalSlabArray {	
+	array [2D] CP_Rho_RealSpacePlane {	
 		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool, ComlibInstanceHandle);
 		entry void acceptDensity(CkReductionMsg *m);
-		entry void acceptDensity(int size, double arr[size], int y);
-		entry void acceptEnergyForSumming(int n, complex arr[n], int);
-		entry void resumeThread (PPDummyMsg *dmsg);
-		entry void startTranspose();
+		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
+		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
 	};
 
 
-	array [1D] CP_Rho_GSpacePlane: NormalSlabArray {
+	array [2D] CP_Rho_GSpacePlane {
 		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool, ComlibInstanceHandle);
-		entry void acceptData(int n, complex arr[n], int, int, int);
-		entry void recvProcessedPart(int n, complex pts[n], int pos);
+		entry void acceptData(RhoGSFFTMsg *msg);
+		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
 	};
 
-	array [2D] CP_Rho_GSpacePlaneHelper {
-		entry CP_Rho_GSpacePlaneHelper(int, size2d, int);
-		entry void recvRhoGPart(int n, complex points[n]);
-	};
 
         array [3D] StructureFactor {
 	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
@@ -146,31 +149,33 @@ mainmodule cpaimd {
 	class CLA_Matrix_interface;
 
 	array [2D] Ortho{
-
-		entry void acceptAllLambda(CkReductionMsg *msg);
-		entry void acceptSectionLambda(CkReductionMsg *msg);
-		entry void resume();
-		entry void lbresume(CkReductionMsg *msg);
-		entry Ortho();
 		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
 		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
 		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3);
+		entry Ortho();
+		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void acceptSectionLambda(CkReductionMsg *msg);
+		entry void resume();
+		entry void lbresume(CkReductionMsg *msg);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);
 		entry void setPCproxy(CProxySection_PairCalculator inproxy);
 		entry void start_calc(CkReductionMsg *msg);
 		entry void do_iteration();
+		entry void step_2();
+		entry void step_3();
 		entry void collect_results();
 		entry void print_results();
   		entry void collect_error(CkReductionMsg *msg);
 		entry void ready();
 		entry void all_ready();
-	};
+      };
 
 	group OrthoMap : CkArrayMap {
 		entry OrthoMap(int M);
 	};
+
 
 	group GSMap : CkArrayMap {
 		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);

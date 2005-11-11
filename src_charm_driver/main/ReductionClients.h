@@ -22,33 +22,6 @@ void doneCreatingPP(void *param, int dataSize, void *data) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-int done_init = 0;
-void doneInit(void *param, int dataSize, void *data) {
-//    CkPrintf("done init %d\n",done_init);
-    if (done_init == 0) 
-    {
-	// kick off file reading in gspace
-	CkPrintf("Initiating import of states\n");
-	for(int s=0;s<nstates;s++)
-	    gSpacePlaneProxy(s,0).readFile();
-    }
-    if (done_init >= 1) {
-      if (done_init == 1){ 
- 	  CkPrintf("\n======================================================\n");
-          ckout << "Starting Iterations : " << endl;
-  	  CkPrintf("======================================================\n\n");
-  	  CkPrintf("\n======================================================\n");
-	  gSpacePlaneProxy.run();
-      }//endif
-    }
-    done_init++;
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void printEnergyHart(void *param, int dataSize, void *data){
   static double ehart = 0, eext = 0.0, ewd = 0.0;
   
@@ -89,13 +62,6 @@ void printEnergyEexc(void *param, int dataSize, void *data){
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void startTranspose(void *param, int dataSize, void *data) 
-{
-  rhoRealProxy.startTranspose();
-}
-//============================================================================
+
 
 #endif
