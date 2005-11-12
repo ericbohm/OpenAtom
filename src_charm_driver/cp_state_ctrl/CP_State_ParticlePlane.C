@@ -101,9 +101,11 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   totalEnergy          = 0.0;
   reductionPlaneNum    = 0;
 //  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
-  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
+  // figure out a reliable way to do this
+//  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
   // now expand that to spread these guys around
-  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
+  //  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
+  reductionPlaneNum= 0;
   contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
@@ -327,7 +329,7 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
        complex *zmatrix_fx_,complex *zmatrix_fy_,complex *zmatrix_fz_){
 //============================================================================
 // This method is invoked only CP_State_ParticlePlane(*,reductionPlaneNum)
-
+//  CkPrintf("PP [%d %d] reduceZ\n",thisIndex.x, thisIndex.y);
   count[atmIndex]++;
   int i,j;
   int zsize = natm_nl_grp_max * numSfGrps;
@@ -389,14 +391,14 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
     for (i = 0; i < nchareG; i ++){
       thisProxy(thisIndex.x, i).getForces(size,atmIndex, &zmatrixSum[zoffset]);
     }//endfor
-
+    //    CkPrintf("PP [%d %d] doneENL %d numSfGrps %d\n",thisIndex.x, thisIndex.y, doneEnl, numSfGrps);
     // done with Z stuff send out our ENL
-    if(thisIndex.y==0 && doneEnl==numSfGrps){
+    if(thisIndex.y==reductionPlaneNum && doneEnl==numSfGrps){
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       CkCallback cb=CkCallback(printEnl, NULL);
       mcastGrp->contribute(sizeof(double),(void*) &enl, 
 			   CkReduction::sum_double, enlCookie, cb);
-      //  CkPrintf("PP [%d %d] contributed ENL %g\n",thisIndex.x, thisIndex.y,enl);
+      //      CkPrintf("PP [%d %d] contributed ENL %g\n",thisIndex.x, thisIndex.y,enl);
       doneEnl=0;
       enl=0.0;
       bzero(zmatrixSum, zsize * sizeof(complex));
@@ -438,7 +440,7 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //============================================================================
 {//begin routine
 //============================================================================
-
+//  CkPrintf("PP [%d %d] getforces \n",thisIndex.x,thisIndex.y);
   doneForces++;
   CP_State_GSpacePlane *gsp = 
        gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
@@ -469,7 +471,7 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
       }//endif
       else      // and what of the else case?
 	{
-	  //	  CkPrintf("PP [%d %d] not finding doneDoingIFFT doing nothing\n",thisIndex.x, thisIndex.y);
+	  //	  	  CkPrintf("PP [%d %d] not finding doneDoingIFFT doing nothing\n",thisIndex.x, thisIndex.y);
 	}
 
   }//endif : doneforces
@@ -484,7 +486,8 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //============================================================================
 void CP_State_ParticlePlane::setEnlCookie(EnlCookieMsg *m){
   CkGetSectionInfo(enlCookie,m);
-  delete m;
+  //  CkPrintf("PP [%d %d] get enl cookie\n",thisIndex.x, thisIndex.y); 
+  //  delete m; 
 }
 //============================================================================
 
