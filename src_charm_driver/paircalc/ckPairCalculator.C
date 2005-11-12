@@ -239,10 +239,6 @@ PairCalculator::~PairCalculator()
 }
 
 
-
-
-
-
 // initialize the section cookie and the reduction client
 void PairCalculator::initGRed(initGRedMsg *msg)
 {
@@ -609,8 +605,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     {
       unitcoef = true;
     }
-  else
-      CkPrintf("Hey! matrix2 isn't null!\n");
   CkAssert(mynewData==NULL);
   mynewData = new complex[N*grainSize];
   existsNew=true;
@@ -656,9 +650,9 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   char transform='N';
   char transformT='T';
 
-#ifdef _PAIRCALC_DEBUG_PARANOID_
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
   char filename[80];
-  sprintf(filename, "bwlmodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+  sprintf(filename, "bwmlodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
   FILE *outfile = fopen(filename, "w");
 
 
@@ -669,15 +663,38 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       fprintf(outfile,"\n");
     }
   fclose(outfile);
-  sprintf(filename, "bwmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+
+  if(!unitcoef){ // CG non minimization case
+  sprintf(filename, "bwmrodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+  outfile = fopen(filename, "w");
+  fprintf(outfile,"[%d,%d,%d,%d,%d] LM\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  for(int i=0;i<N*grainSize;i++)
+    {
+      fprintf(outfile," %g %g",inDataLeft[i]);
+      fprintf(outfile,"\n");
+    }
+  fclose(outfile);
+  }
+  sprintf(filename, "bwm1idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
   FILE *moutfile = fopen(filename, "w");
-  fprintf(moutfile,"[%d,%d,%d,%d,%d] amatrix\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix1\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
   for (int i = 0; i < grainSize; i++) {
     for (int j = 0; j < grainSize; j++){ 
-      fprintf(moutfile,"%.10g\n",amatrix[i*grainSize+j]);
+      fprintf(moutfile,"%.10g\n",matrix1[i*grainSize+j]);
     }
   }
   fclose(moutfile);
+  if(!unitcoef){ // CG non minimization case
+  sprintf(filename, "bwm2idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+  moutfile = fopen(filename, "w");
+  fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix2\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  for (int i = 0; i < grainSize; i++) {
+    for (int j = 0; j < grainSize; j++){ 
+      fprintf(moutfile,"%.10g\n",matrix2[i*grainSize+j]);
+    }
+  }
+  fclose(moutfile);
+  }
 #endif
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
