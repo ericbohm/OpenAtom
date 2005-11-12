@@ -188,7 +188,12 @@ void Ortho::resume()
 //============================================================================
     {//begin routine
 //============================================================================
-
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
+	// copy orthoT for use in gamma computation
+	if(orthoT==NULL) //allocate if null
+	  { orthoT = new double[m * n];}
+	memcpy(orthoT,A,m*n*sizeof(double));
+      }
       if(thisIndex.y<=thisIndex.x)
 	finishPairCalcSection(m * n, A, pcProxy);
 
@@ -258,10 +263,10 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   }
   else
     {
-	// finish pair calc
-	finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy);
-	if(thisIndex.x==0 && thisIndex.y==0)
-	    CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+      // finish pair calc
+      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy);
+      if(thisIndex.x==0 && thisIndex.y==0)
+	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
     }
 
 
@@ -286,7 +291,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 
 
 void Ortho::gamma_done(){
-  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy);
+  finishPairCalcSection2(m * n, orthoT, A, pcLambdaProxy);
 }
 
 void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n)
@@ -326,15 +331,11 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   usesAtSync=CmiTrue;
   setMigratable(false);
   got_start = false;
+  ortho=NULL;
+  orthoT=NULL;
+  wallTimeArr=NULL;
   if(thisIndex.x==0 && thisIndex.y==0){
-    ortho = new double[nstates * nstates];
-    orthoT = new double[nstates * nstates];
     wallTimeArr = new double[config.maxIter];
-  }
-  else {
-    ortho=NULL;
-    orthoT=NULL;
-    wallTimeArr=NULL;
   }
   numGlobalIter = 0;
 }
