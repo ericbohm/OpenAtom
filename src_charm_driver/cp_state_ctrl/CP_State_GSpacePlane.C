@@ -135,14 +135,12 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 	  RTH_Suspend(); // wait for broadcast that all gspace is done  
       }
 #endif
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1){
-	c->sendLambda();        
+      c->sendLambda();        
+      RTH_Suspend();
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg == 1){
+	c->computeCgOverlap(); // add resume
 	RTH_Suspend();
-	if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg == 1){
-	  c->computeCgOverlap(); // add resume
-          RTH_Suspend();
-	}// endif : CP-CG minimization
-      }//endif : CP minimization
+      }// endif : CP-CG minimization
 #ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
@@ -152,7 +150,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #endif
       //------------------------------------------------------------------------
 
-    } // endif determine entry point
+    }// endif determine entry point
     //------------------------------------------------------------------------
 
     // start orthogonalization
@@ -641,6 +639,14 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   contribute(sizeof(int), &i, CkReduction::sum_int, 
 	     CkCallback(CkIndex_main::doneInit(0),mainProxy));
 
+//============================================================================
+//Some PC initialization that needs to happen here to avoid
+//constructor race conditions
+
+  gpairCalcID1=pairCalcID1;
+  gpairCalcID2=pairCalcID2;
+  makePCproxies();
+
 //---------------------------------------------------------------------------
    }// end routine
 //============================================================================
@@ -721,15 +727,6 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CkExit();
     } //endif
 
-//============================================================================
-//Some PC initialization that needs to happen here to avoid
-//constructor race conditions
-
-    if(iteration==0){
-	gpairCalcID1=pairCalcID1;
-	gpairCalcID2=pairCalcID2;
-	makePCproxies();
-    }//endif
 
 //============================================================================
 // Check Load Balancing, Increment counter, set done flags equal to false.
@@ -1002,7 +999,9 @@ bool CP_State_GSpacePlane::integrateForces () {
   if (pp->doneGettingForces) { 
     CkAssert(!doneDoingIFFT); //if doneDoingIFFT were already true
 			      //this would resume
+    //    CkPrintf("GSP [%d %d] donedoingifft, integrating \n", thisIndex.x, thisIndex.y);
     getForcesAndIntegrate();
+
     doneDoingIFFT = true;
     return true;
   }else {
@@ -1154,8 +1153,21 @@ void CP_State_GSpacePlane::integrateModForce() {
      forces = gs.packedForceData;
      forcesold = NULL;
   }//endif
+  if(cp_min_opt!=1){
+    if(thisIndex.x<3){
+      char forcefile[80];
+      snprintf(forcefile,80,"psi_force_%d_%d.out",thisIndex.x,thisIndex.y);
+      FILE *fp=fopen(forcefile,"w");
+      for(int i=0;i <ncoef;i++)
+	{
+	  fprintf(fp,"%d %d %d : %.10g %.10g : 0 0 : %g %g : %g\n",k_x[i], k_y[i], k_z[i],psi_g[i].re, psi_g[i].im, forces[i].re,forces[i].im, coef_mass[i] );
+	}
+      fclose(fp);
+    }
+    contribute(sizeof(int),&ncoef, CkReduction::sum_int, CkCallback(CkCallback::ckExit));
+  }
   CPINTEGRATE::CP_integrate(ncoef,istate,forces,forcesold,psi_g,
-			      k_x, k_y, k_z,coef_mass,gamma_conj_grad);
+  			      k_x, k_y, k_z,coef_mass,gamma_conj_grad);
 
 //=====================================================================
     } // end CP_State_GSpacePlane::integrateModForce
@@ -1209,9 +1221,9 @@ void  CP_State_GSpacePlane::sendPsi() {
   }//endif
 
   complex *data = gs.packedPlaneData;
-  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-    data=gs.packedPlaneDataTemp;
-  }//endif
+  //  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+  //    data=gs.packedPlaneDataTemp;
+  //  }//endif
 
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
