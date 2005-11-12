@@ -110,7 +110,7 @@ mainmodule cpaimd {
 			complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
 		entry void sumEnergies(double energy);
 		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
-		entry void setEnlCookie(EnlCookieMsg *m);	
+		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
 	};
 
 	array [2D] CP_State_RealSpacePlane {
