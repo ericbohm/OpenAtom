@@ -204,7 +204,15 @@ void CP_Rho_GSpacePlane::acceptData() {
 //      a)FFT b) Compress to sphere c) store in packedRho
 
     int ioptRho=0;
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+
     rho_gs.doBwFFTRtoG(ioptRho);
+
+#ifndef CMK_OPTIMIZE    
+    traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
+#endif
 
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgress();
@@ -227,15 +235,30 @@ void CP_Rho_GSpacePlane::acceptData() {
 
 //============================================================================
 // II) First compute hart+Exc and vks(g) using rho(g) then start gradient comp
-    
+
+#ifndef CMK_OPTIMIZE
+     StartTime=CmiWallTimer();
+#endif    
+
     HartExcVksG();
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
+#endif
 
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgress();
 #endif
 
+#ifndef CMK_OPTIMIZE
+     StartTime=CmiWallTimer();
+#endif    
+
     divRhoVksGspace();
 
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
+#endif
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -501,14 +524,26 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
   if(countWhiteByrd[iopt]==sizeZ){
     countWhiteByrd[iopt]=0;
     doneWhiteByrd++;
+
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif    
+
     rho_gs.doBwFFTRtoG(iopt);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
+#endif
+
   }//endif
 
   if(doneWhiteByrd==3){
     doneWhiteByrd=0;
+
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgress();    
 #endif
+
     acceptWhiteByrd();
   }//endif
 
@@ -526,6 +561,10 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   int ioptFFTWhite  = 0; 
   int ioptSendWhite = 4; 
   double tpi,*hmati;
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif    
+
   CPXCFNCTS::CP_fetch_hmati(&hmati,&tpi);
 
   rho_gs.createWhiteByrd(hmati,tpi);
@@ -534,6 +573,11 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 #endif
 
   rho_gs.doFwFFTGtoR(ioptFFTWhite); // stored in Rho
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(ByrdanddoFwFFTGtoR_, StartTime, CmiWallTimer());    
+#endif
+
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();    
 #endif

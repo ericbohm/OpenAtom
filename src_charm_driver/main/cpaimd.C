@@ -258,13 +258,17 @@ main::main(CkArgMsg *m) {
      traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
      traceRegisterUserEvent("GspaceFwFFT", GspaceFwFFT_);
      traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
-     traceRegisterUserEvent("RhoRtoGxyFFT", RhoRtoGxzFFT_);
-     traceRegisterUserEvent("RhoRtoGyFFT", RhoRtoGyFFT_);
-     traceRegisterUserEvent("RhoDivRhoXFFT", RhoDivRhoXFFT_);
-     traceRegisterUserEvent("RhoDivRhoYFFT", RhoDivRhoYFFT_);
-     traceRegisterUserEvent("RhoDivRhoZFFT", RhoDivRhoZFFT_);
-     traceRegisterUserEvent("VksofGFFT", VksofGFFT_);
-     traceRegisterUserEvent("VksofRFFT", VksofRFFT_);
+     traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
+     traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
+     traceRegisterUserEvent("WhiteByrdFFT", WhiteByrdFFT_);
+     traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
+     traceRegisterUserEvent("RhoRtoGFFT", RhoRtoGFFT_);
+     traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
+     traceRegisterUserEvent("ByrdanddoFwFFTGtoR",ByrdanddoFwFFTGtoR_);
+
+     traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
+     traceRegisterUserEvent("divRhoVksGspace",divRhoVksGspace_);
+
      traceRegisterUserEvent("DoFFTContribute", DoFFTContribute_);
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
      traceRegisterUserEvent("Scalcmap", Scalcmap_);
@@ -272,6 +276,7 @@ main::main(CkArgMsg *m) {
      Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
      Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
      Ortho_UE_error = traceRegisterUserEvent("Ortho error");
+
      /* choose whether ortho should use local callback */
      Ortho_use_local_cb = true;
 
@@ -885,17 +890,23 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
 		     CPcharmParaInfo *sim)
 
 //============================================================================
-    {//begin routine
+{//begin routine
 //============================================================================
 /*
  * create the array for real-space densities (two-dimensional chare array)
  */    
 //============================================================================
-    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(1);
+    int rhoRstride=CkNumPes()/(sizeYZ[1]/realSpacePPC);
+    int rhoGstride=CkNumPes()/(sim->nchareRhoG/rhoGPPC);
+    if(rhoRstride<1)
+	rhoRstride=1;
+    if(rhoGstride<1)
+	rhoGstride=1;
+    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(1);
+    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride);
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
@@ -916,19 +927,15 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC,
 			       rhoGPPC, fftuseCommlib, fftcommInstance,rhorsOpts);
 
-    int peg = 0;
-    int per = 0;
     for (i = 0; i < sizeYZ[1]; i++) //rhoreal
       {
 	rhoRealProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC,
 			       rhoGPPC, fftuseCommlib, fftcommInstance);
-	per =(per+1) % CkNumPes();
       }
     for (i = 0; i < sim->nchareRhoG; i++)  //rhog
       {
 	rhoGProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC, rhoGPPC, fftuseCommlib, 
                             fftcommInstance);
-	peg =(peg+1) % CkNumPes();
       }
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
     rhoGProxy.setReductionClient(printEnergyHart, NULL);

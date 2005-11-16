@@ -25,8 +25,8 @@
 
 #define FIRST_BALANCE_STEP 10
 
-#define TRACE_ON_STEP 1
-#define TRACE_OFF_STEP 3
+#define TRACE_ON_STEP 4
+#define TRACE_OFF_STEP 7
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
@@ -309,19 +309,23 @@ class CPcharmParaInfoGrp: public Group {
 //#define _CP_GROUP_REDUCTION_
 
 /******** User Trace Events *********/
-#define DoFFTContribute_  100
-#define doRealFwFFT_  110
-#define doRealBwFFT_  120
-#define GspaceFwFFT_  130
-#define GspaceBwFFT_  140
-#define RhoRtoGxzFFT_  150
-#define RhoRtoGyFFT_  151
-#define RhoDivRhoXFFT_  152
-#define RhoDivRhoYFFT_  153
-#define RhoDivRhoZFFT_  154
-#define VksofGFFT_  160
-#define VksofRFFT_  161
-#define AcceptStructFact_  162
+#define DoFFTContribute_     100
+#define doRealFwFFT_         110
+#define doRealBwFFT_         120
+#define GspaceFwFFT_         130
+#define GspaceBwFFT_         140
+#define RhoRtoGFFT_          150
+#define WhiteByrdFFT_        151
+#define PostByrdfwFFTGtoR_   152
+#define BwFFTRtoG_           153
+#define ByrdanddoFwFFTGtoR_  154
+#define HartExcVksG_         160
+#define divRhoVksGspace_     161
+#define AcceptStructFact_    162
+#define fwFFTGtoR0_          170
+#define fwFFTGtoRnot0_       171
+
+
 //200-300 reserved for paircalculator
 #define IntegrateModForces_  1000
 #define Scalcmap_            2000

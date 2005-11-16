@@ -287,7 +287,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
    CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret);
 
 #ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgressAfter(1);
+   CmiNetworkProgress();
 #endif
 
 //============================================================================
@@ -328,11 +328,11 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   fftCacheProxy.ckLocalBranch()->doRhoRealtoRhoG(doFFTonThis);
 
 #ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(RhoRtoGxzFFT_, StartTime, CmiWallTimer());    
+  traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());    
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgressAfter(1);
+   CmiNetworkProgress();
 #endif
 
 //============================================================================
@@ -491,10 +491,27 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   if (countGradVks[iopt] == nchareG){
     countGradVks[iopt]=0;
     doneGradRhoVks++;
+
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+
     if(iopt!=0){rho_rs.doFwFFTGtoR(iopt,probScale);}
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());    
+#endif
+
     if(iopt==0){
       double scale = 1.0;
+
+#ifndef CMK_OPTIMIZE
+      StartTime=CmiWallTimer();
+#endif
       rho_rs.doFwFFTGtoR(iopt,scale);
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(fwFFTGtoR0_, StartTime, CmiWallTimer());    
+#endif
       double *vksExc     = rho_rs.Vks;
       double *vksHartExt = rho_rs.doFFTonThis;
       int size           = (rho_rs.sizeX)*(rho_rs.sizeY);
@@ -595,8 +612,15 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
 // Start the white bird puppy : back fft of rhoirx, rhoiry, rhoirz
 
-   whiteByrdFFT();
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
 
+    whiteByrdFFT();
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(WhiteByrdFFT_, StartTime, CmiWallTimer());    
+#endif
 //============================================================================
    }//end routine
 //============================================================================
@@ -729,7 +753,16 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   if (countWhiteByrd == nchareG){
     countWhiteByrd=0;
     int iopt = 0; double scale = 1.0;
+
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+
     rho_rs.doFwFFTGtoR(iopt,scale);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(PostByrdfwFFTGtoR_, StartTime, CmiWallTimer());    
+#endif
 
     double *Vks       = rho_rs.Vks;
     double *whitebyrd = rho_rs.doFFTonThis;
