@@ -261,6 +261,9 @@ main::main(CkArgMsg *m) {
      traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
      traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
      traceRegisterUserEvent("WhiteByrdFFT", WhiteByrdFFT_);
+     traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
+     traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
+     traceRegisterUserEvent("WhiteByrdFFTZ", WhiteByrdFFTZ_);
      traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
      traceRegisterUserEvent("RhoRtoGFFT", RhoRtoGFFT_);
      traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
@@ -902,6 +905,8 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
 	rhoRstride=1;
     if(rhoGstride<1)
 	rhoGstride=1;
+    if(rhoRstride==rhoGstride && rhoGstride!=1) //offset them
+	rhoRstride++;
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);

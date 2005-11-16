@@ -612,15 +612,10 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
 // Start the white bird puppy : back fft of rhoirx, rhoiry, rhoirz
 
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
-#endif
 
     whiteByrdFFT();
 
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(WhiteByrdFFT_, StartTime, CmiWallTimer());    
-#endif
+
 //============================================================================
    }//end routine
 //============================================================================
@@ -648,9 +643,13 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
   memcpy(doFFTonThis,rhoIRX,npts*sizeof(double));
   rho_rs.uPackAndScale(rhoIRX,doFFTonThis,FFTscale);
-
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
   fftCacheProxy.ckLocalBranch()->doRhoRealtoRhoG(rhoIRX);
-
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());    
+#endif
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
 #endif
@@ -662,9 +661,13 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
   memcpy(doFFTonThis,rhoIRY,npts*sizeof(double));
   rho_rs.uPackAndScale(rhoIRY,doFFTonThis,FFTscale);
-
+#ifndef CMK_OPTIMIZE
+  StartTime=CmiWallTimer();
+#endif
   fftCacheProxy.ckLocalBranch()->doRhoRealtoRhoG(rhoIRY);
-
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());    
+#endif
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
 #endif
@@ -674,10 +677,19 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 // III) rhoIRZ : Unpack for real to complex FFT, perform FFT, transpose
 
+
   memcpy(doFFTonThis,rhoIRZ,npts*sizeof(double));
   rho_rs.uPackAndScale(rhoIRZ,doFFTonThis,FFTscale);
+#ifndef CMK_OPTIMIZE
+  StartTime=CmiWallTimer();
+#endif
 
   fftCacheProxy.ckLocalBranch()->doRhoRealtoRhoG(rhoIRZ);
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());    
+#endif
+
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
 #endif
