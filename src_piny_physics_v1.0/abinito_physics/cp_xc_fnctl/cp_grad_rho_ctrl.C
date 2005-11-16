@@ -65,7 +65,14 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //============================================================================
 // Start Loop over part of grid I have 
 
+   int nfreq_cmi_update=300;
    for(int i = 0; i < npts; i++){
+
+#ifdef CMK_VERSION_BLUEGENE
+      if((i+1)%nfreq_cmi_update==0){
+        CmiNetworkProgress();
+      }
+#endif
 
 //----------------------------------------------------------
 // Get density and decide if the loop should be done

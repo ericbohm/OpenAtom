@@ -79,8 +79,13 @@ CPXCFNCTS::CP_exc_calc(
 //-------------------------------------------------------------------------
 // II.  Start loop over FFT grid and evaluate terms in the functional
 
+   int nfreq_cmi_update = 300;
    for(int i=0 ; i< npts; i++){
-
+#ifdef CMK_VERSION_BLUEGENE
+      if((i+1)%nfreq_cmi_update==0){
+        CmiNetworkProgress();
+      }
+#endif   
 //-------------------------------------------------------------------------
 // III. Exchange part
       rho_r_val = density[i];
