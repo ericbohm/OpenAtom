@@ -260,7 +260,7 @@ main::main(CkArgMsg *m) {
      traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
      traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
      traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
-     traceRegisterUserEvent("WhiteByrdFFT", WhiteByrdFFT_);
+     traceRegisterUserEvent("GradCorrGGA", GradCorrGGA_);
      traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
      traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
      traceRegisterUserEvent("WhiteByrdFFTZ", WhiteByrdFFTZ_);

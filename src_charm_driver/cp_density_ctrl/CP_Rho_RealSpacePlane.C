@@ -579,9 +579,18 @@ void CP_Rho_RealSpacePlane::GradCorr(){
     for(int i=0;i<size;i++){gradientCorrection[i] = 0.0;}
 #define GGA_ON
 #ifdef GGA_ON
+
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+
     CPXCFNCTS::CP_getGGAFunctional(npts,nf1,nf2,nf3,density,
                rhoIRX,rhoIRY,rhoIRZ,gradientCorrection,thisIndex.x,exc_gga_ret);
     for(int i=0;i<npts;i++){Vks[i] += gradientCorrection[i];}
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
+#endif
+
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE

@@ -324,10 +324,10 @@ class CPcharmParaInfoGrp: public Group {
 #define AcceptStructFact_    162
 #define fwFFTGtoR0_          170
 #define fwFFTGtoRnot0_       171
-#define WhiteByrdFFT_        180
-#define WhiteByrdFFTX_        181
-#define WhiteByrdFFTY_        182
-#define WhiteByrdFFTZ_        183
+#define GradCorrGGA_         180
+#define WhiteByrdFFTX_       181
+#define WhiteByrdFFTY_       182
+#define WhiteByrdFFTZ_       183
 
 //200-300 reserved for paircalculator
 #define IntegrateModForces_  1000
