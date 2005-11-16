@@ -181,8 +181,14 @@ void CPLOCAL::CP_hart_eext_calc(
    sprintf(myFileName, "Vext_Gspace_%d.out", index);
    FILE *fp = fopen(myFileName,"w");
 #endif
-
+   int nfreq_cmi_update=100; 
    for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
+
+#ifdef CMK_VERSION_BLUEGENE
+      if((i+1)%nfreq_cmi_update==0){
+        CmiNetworkProgress();
+      }
+#endif
 
 //----------------------------------------------------------------------------
 // I.  Construct the reciprocal space vectors and their square magnitudes
