@@ -227,6 +227,34 @@ class SCalcMap : public CkArrayMap {
 };
 //============================================================================
 
+/**
+ * provide procnum mapping for Rho
+ */
+class RhoRSMap : public CkArrayMap {
+  public:
+    RhoRSMap(int NN):N(NN){}
+    virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      return (N * idx2d.index[0] + idx2d.index[1]) % CkNumPes();
+    }
+  private:
+    int N;
+};
+
+
+/**
+ * provide procnum mapping for Rho
+ */
+class RhoGSMap : public CkArrayMap {
+  public:
+    RhoGSMap(int NN):N(NN){}
+    virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      return (N * idx2d.index[0] + idx2d.index[1]) % CkNumPes();
+    }
+  private:
+    int N;
+};
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -311,7 +339,7 @@ class CPcharmParaInfoGrp: public Group {
 //============================================================================
 void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, int doublePack, CPcharmParaInfo *sim);
 void init_ortho_chares(int, int, int *);
-void init_commlib_strategies(size2d, int, int);
+void init_commlib_strategies(int, int);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(size2d,int, int, int,int,int,int,CPcharmParaInfo *);
 void init_rho_chares(size2d , int, int,int,CPcharmParaInfo*);

@@ -42,6 +42,9 @@ extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern ComlibInstanceHandle commRealInstance;
+extern ComlibInstanceHandle commRealIGXInstance;
+extern ComlibInstanceHandle commRealIGYInstance;
+extern ComlibInstanceHandle commRealIGZInstance;
 extern ComlibInstanceHandle mcastInstance;
 extern CProxy_FFTcache fftCacheProxy;
 extern CkGroupID mCastGrpId;
@@ -165,8 +168,15 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     realSpaceSectionProxy.init(dummyProductMessage);
 
     rhoGProxy_com = rhoGProxy;
+    rhoGProxyIGX_com = rhoGProxy;
+    rhoGProxyIGY_com = rhoGProxy;
+    rhoGProxyIGZ_com = rhoGProxy;
     if (config.useCommlib) {
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+/*	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+*/
     }//endif
 
 //============================================================================
@@ -360,19 +370,27 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Launch the communication
 
-//    if (config.useCommlib) {commRealInstance.beginIteration();}
+    if (config.useCommlib) { //start correct for each to many instance
+	switch(iopt){
+	    case 0 : commRealInstance.beginIteration(); break;
+	    case 1 : commRealIGXInstance.beginIteration(); break;
+	    case 2 : commRealIGYInstance.beginIteration(); break;
+	    case 3 : commRealIGZInstance.beginIteration(); break;
 
+	}
+    }
     for(int ic = 0; ic < nchareRhoG; ic ++) { // chare arrays to which we will send
 
       int sendFFTDataSize = nlines_per_chareRhoG[ic];
       RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+ 
       msg->size        = sendFFTDataSize;
       msg->iopt        = iopt;
       msg->offset      = thisIndex.x;    // z-index
       complex *data    = msg->data;
       if(config.prioFFTMsg){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x*sizeZ;
+	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x;
       }//endif
 
       for(int i=0;i<sendFFTDataSize;i++){
@@ -380,24 +398,24 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       }//endfor
 
       switch(iopt){
-	/*
-        case 0 : rhoGProxy_com(ic,0).acceptData(msg); break;
-        case 1 : rhoGProxy_com(ic,0).acceptWhiteByrd(msg); break;
-        case 2 : rhoGProxy_com(ic,0).acceptWhiteByrd(msg); break;
-        case 3 : rhoGProxy_com(ic,0).acceptWhiteByrd(msg); break;
-	*/
-	/*  Need to make multiple instances to avoid overlap violation
-	    of the bracketed each to many */
-        case 0 : rhoGProxy(ic,0).acceptData(msg); break;
-        case 1 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-        case 2 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-        case 3 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
+        case 0 : rhoGProxy_com(ic,0).acceptData(msg);   break;
+        case 1 : rhoGProxyIGX_com(ic,0).acceptWhiteByrd(msg); break;
+        case 2 : rhoGProxyIGY_com(ic,0).acceptWhiteByrd(msg); break;
+        case 3 : rhoGProxyIGZ_com(ic,0).acceptWhiteByrd(msg); break;
 
       }//end switch
 
     }//end for : chare sending
 
-    //    if (config.useCommlib){commRealInstance.endIteration();}
+    if (config.useCommlib) { // end for each to many instance
+	switch(iopt){
+	    case 0 : commRealInstance.endIteration(); break;
+	    case 1 : commRealIGXInstance.endIteration(); break;
+	    case 2 : commRealIGYInstance.endIteration(); break;
+	    case 3 : commRealIGZInstance.endIteration(); break;
+
+	}
+    }
 
 //---------------------------------------------------------------------------
   }//end routine
@@ -414,10 +432,6 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 
 //============================================================================
 
-#ifdef _CP_DEBUG_RHOR_VERBOSE_
-  CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
-	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
-#endif
 
 //============================================================================
 
@@ -431,7 +445,10 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
   int pSize              = (rho_rs.sizeX+2)*(rho_rs.sizeY);
-
+#ifdef _CP_DEBUG_RHOR_VERBOSE_
+  CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
+	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
+#endif
 //============================================================================
 // Perform some error checking
 

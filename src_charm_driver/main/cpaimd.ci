@@ -34,8 +34,15 @@ mainmodule cpaimd {
 	readonly CProxy_StructureFactor sfCompProxy;
 	
 	readonly CkGroupID mCastGrpId;
-	readonly ComlibInstanceHandle commInstance;
+	readonly ComlibInstanceHandle commGInstance0;
+	readonly ComlibInstanceHandle commGInstance1;
+	readonly ComlibInstanceHandle commGInstance2;
+	readonly ComlibInstanceHandle commGInstance3;	
+	readonly ComlibInstanceHandle commGByrdInstance;
 	readonly ComlibInstanceHandle commRealInstance;
+	readonly ComlibInstanceHandle commRealIGXInstance;
+	readonly ComlibInstanceHandle commRealIGYInstance;
+	readonly ComlibInstanceHandle commRealIGZInstance;
 	readonly ComlibInstanceHandle mcastInstance;
 	readonly ComlibInstanceHandle ssInstance;
 	readonly ComlibInstanceHandle mssInstance;
@@ -174,6 +181,14 @@ mainmodule cpaimd {
 
 	group OrthoMap : CkArrayMap {
 		entry OrthoMap(int M);
+	};
+
+	group RhoGSMap : CkArrayMap {
+		entry RhoGSMap(int M);
+	};
+
+	group RhoRSMap : CkArrayMap {
+		entry RhoRSMap(int M);
 	};
 
 

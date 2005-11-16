@@ -43,7 +43,12 @@ extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern int nstates;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
-extern ComlibInstanceHandle commInstance;
+extern ComlibInstanceHandle commGInstance0;
+extern ComlibInstanceHandle commGInstance1;
+extern ComlibInstanceHandle commGInstance2;
+extern ComlibInstanceHandle commGInstance3;
+extern ComlibInstanceHandle commGByrdInstance;
+
 extern CProxy_ComlibManager mgrProxy;
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_FFTcache fftCacheProxy;
@@ -102,9 +107,17 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
 
     setMigratable(false);
-    rhoRealProxy_com = rhoRealProxy;
+    rhoRealProxy0_com = rhoRealProxy;
+    rhoRealProxy1_com = rhoRealProxy;
+    rhoRealProxy2_com = rhoRealProxy;
+    rhoRealProxy3_com = rhoRealProxy;
+    rhoRealProxyByrd_com = rhoRealProxy;
     if(config.useCommlib){
-       ComlibAssociateProxy(&commInstance,rhoRealProxy_com);
+       ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+       ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+       ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+       ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+       ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
     }//endif
 
 //---------------------------------------------------------------------------
@@ -134,7 +147,6 @@ void CP_Rho_GSpacePlane::acceptData(RhoGSFFTMsg *msg) {
   CkPrintf("RGS [%d %d] receives message size %d offset %d numlines %d\n",
              thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
 #endif
-
 //============================================================================
 
   int size             = msg->size;
@@ -370,8 +382,16 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 
 //============================================================================
 // Do a Comlib Dance
+  if (config.useCommlib){
+    switch(iopt){
 
-//  if (config.useCommlib){commInstance.beginIteration();}
+	case 0 : commGInstance0.beginIteration();break;
+	case 1 : commGInstance1.beginIteration();break;
+	case 2 : commGInstance2.beginIteration();break;
+	case 3 : commGInstance3.beginIteration();break;
+	case 4 : commGByrdInstance.beginIteration();break;
+    }//end switc
+  }
 
 //============================================================================
   for(int z=0; z < sizeZ; z++) {
@@ -392,18 +412,12 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
 
     switch(iopt){
-      /*
-      case 0 : rhoRealProxy_com(z,0).acceptGradRhoVks(msg); break;
-      case 1 : rhoRealProxy_com(z,0).acceptGradRhoVks(msg); break;
-      case 2 : rhoRealProxy_com(z,0).acceptGradRhoVks(msg); break;
-      case 3 : rhoRealProxy_com(z,0).acceptGradRhoVks(msg); break;
-      case 4 : rhoRealProxy_com(z,0).acceptWhiteByrd(msg); break;
-      */
-      case 0 : rhoRealProxy(z,0).acceptGradRhoVks(msg); break;
-      case 1 : rhoRealProxy(z,0).acceptGradRhoVks(msg); break;
-      case 2 : rhoRealProxy(z,0).acceptGradRhoVks(msg); break;
-      case 3 : rhoRealProxy(z,0).acceptGradRhoVks(msg); break;
-      case 4 : rhoRealProxy(z,0).acceptWhiteByrd(msg); break;
+
+      case 0 : rhoRealProxy0_com(z,0).acceptGradRhoVks(msg); break;
+      case 1 : rhoRealProxy1_com(z,0).acceptGradRhoVks(msg); break;
+      case 2 : rhoRealProxy2_com(z,0).acceptGradRhoVks(msg); break;
+      case 3 : rhoRealProxy3_com(z,0).acceptGradRhoVks(msg); break;
+      case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
 
     }//end switch
 
@@ -412,7 +426,16 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Complete the commlib dance
     
-//  if (config.useCommlib){commInstance.endIteration();}
+  if (config.useCommlib){
+    switch(iopt){
+
+	case 0 : commGInstance0.endIteration();break;
+	case 1 : commGInstance1.endIteration();break;
+	case 2 : commGInstance2.endIteration();break;
+	case 3 : commGInstance3.endIteration();break;
+	case 4 : commGByrdInstance.endIteration();break;
+    }//end switc
+  }
 
 //---------------------------------------------------------------------------
    }//end routine
@@ -528,7 +551,11 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 void CP_Rho_GSpacePlane::ResumeFromSync(){
 
   if (config.useCommlib) {
-    ComlibResetProxy(&rhoRealProxy_com);
+    ComlibResetProxy(&rhoRealProxy0_com);
+    ComlibResetProxy(&rhoRealProxy1_com);
+    ComlibResetProxy(&rhoRealProxy2_com);
+    ComlibResetProxy(&rhoRealProxy3_com);
+    ComlibResetProxy(&rhoRealProxyByrd_com);
   }//endif
 
 }

@@ -507,3 +507,5 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
     return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7+idx4d.index[3])%CkNumPes();    
 
 }
+
+

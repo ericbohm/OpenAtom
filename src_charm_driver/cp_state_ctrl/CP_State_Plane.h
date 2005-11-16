@@ -268,6 +268,9 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         //Comlib multicast proxy
         CProxySection_CP_State_RealSpacePlane realSpaceSectionCProxy;
 	CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
+	CProxy_CP_Rho_GSpacePlane rhoGProxyIGX_com;
+	CProxy_CP_Rho_GSpacePlane rhoGProxyIGY_com;
+	CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
 	RhoRealSlab rho_rs; 
 	int cmid;
 	int *pes;
@@ -300,7 +303,11 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	int count;
         int countWhiteByrd[4];
         int doneWhiteByrd;
-        CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxy0_com;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxy1_com;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxy2_com;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxy3_com;
+        CProxy_CP_Rho_RealSpacePlane rhoRealProxyByrd_com;
 	RhoGSlab rho_gs;
 	AtomsGrp *atom;
 	int vectorIFFTCount;
