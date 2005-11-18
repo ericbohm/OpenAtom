@@ -918,23 +918,21 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
 //============================================================================
     int rhoRstride=CkNumPes()/(sizeYZ[1]/realSpacePPC);
     int rhoGstride=CkNumPes()/(sim->nchareRhoG/rhoGPPC);
-    int rhoGHartstride=rhoGstride+1;//try not to colocate this helper
-				    //as that renders it parallel
-				    //helperness moot
+
     if(rhoRstride<1)
 	rhoRstride=1;
     if(rhoGstride<1)
 	rhoGstride=1;
-    if(rhoGHartstride<1)
-	rhoGHartstride=1;
     if(rhoRstride==rhoGstride && rhoGstride!=1) //offset R from G
 	rhoRstride--;
-
+    int rhoGHartstride=rhoGstride;
+    int rhoGHartoff=0;
     int offsetFromZero=1;  // proc0 has reduction root issues avoid it if there are enough procs
-    if(rhoRstride==1)
-      offsetFromZero=0;
-
-    CkPrintf("offsetFromZero %d rhoRstride %d rhoGstride %d rhoGHartstride %d\n",offsetFromZero, rhoRstride, rhoGstride, rhoGHartstride);
+    if(rhoGstride==1)
+	offsetFromZero=0;
+    if(offsetFromZero>0)
+	rhoGHartoff=2;
+    CkPrintf("offsetFromZero %d rhoGHartoff %d rhoRstride %d rhoGstride %d rhoGHartstride %d\n",offsetFromZero, rhoGHartoff, rhoRstride, rhoGstride, rhoGHartstride);
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
@@ -943,7 +941,7 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride,offsetFromZero);
+    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride, rhoGHartoff);
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 

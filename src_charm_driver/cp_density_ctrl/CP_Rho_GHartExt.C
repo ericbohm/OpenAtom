@@ -99,7 +99,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
 
   rhoRealProxy_com = rhoRealProxy;
   if(config.useCommlib){
-    //    ComlibAssociateProxy(&commGHartInstance, rhoRealProxy_com);
+      ComlibAssociateProxy(&commGHartInstance, rhoRealProxy_com);
   }
 }
 
@@ -212,7 +212,7 @@ void CP_Rho_GHartExt::sendVks() {
 //============================================================================
 // Do a Comlib Dance
   if (config.useCommlib){
-    //	commGHartInstance.beginIteration();
+      commGHartInstance.beginIteration();
   }
   int numLines=rho_gs.numLines;
   
@@ -242,7 +242,7 @@ void CP_Rho_GHartExt::sendVks() {
 // Complete the commlib dance
     
   if (config.useCommlib){
-    //	commGHartInstance.endIteration();
+      commGHartInstance.endIteration();
   }
 
 //---------------------------------------------------------------------------

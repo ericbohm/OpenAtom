@@ -255,7 +255,7 @@ void CP_Rho_GSpacePlane::acceptData() {
     rhoGHartExtProxy(thisIndex.x,thisIndex.y).acceptData(msg);
 
 #ifdef CMK_VERSION_BLUEGENE
-    CmiNetworkProgress();
+    CmiNetworkProgressAfter(1); //really send this damn message please
 #endif
 
 #ifndef CMK_OPTIMIZE

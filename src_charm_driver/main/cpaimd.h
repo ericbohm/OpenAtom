@@ -233,9 +233,9 @@ class SCalcMap : public CkArrayMap {
 class RhoRSMap : public CkArrayMap {
   public:
     RhoRSMap(int NN,int ioff):N(NN), off(ioff) {}
-    virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
+    int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1] + off) % CkNumPes();
+      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
     }
     void pup(PUP::er &p)
       {
@@ -256,9 +256,10 @@ class RhoRSMap : public CkArrayMap {
 class RhoGSMap : public CkArrayMap {
   public:
     RhoGSMap(int NN, int ioff):N(NN), off(ioff){}
-    virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
+    int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1] + off) % CkNumPes();
+//      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
+      return (((N * idx2d.index[0])  + off) % CkNumPes());
     }
     void pup(PUP::er &p)
       {
