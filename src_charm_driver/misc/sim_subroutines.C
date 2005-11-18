@@ -794,7 +794,9 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
         int sizenow      = rho_rs->size;
 
 	rho_rs->Vks     =  new double[sizenow];
+	bzero(rho_rs->Vks, sizenow*sizeof(double));
 	rho_rs->density =  new double[sizenow];
+	bzero(rho_rs->density, sizenow*sizeof(double));
         int csizenow    = sizenow/2;
 
         complex *dummy;
@@ -819,6 +821,13 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 //==============================================================================
 RhoGSlab::~RhoGSlab()
 {
+  fftw_free(Rho);
+  fftw_free( divRhoX);
+  fftw_free( divRhoY);
+  fftw_free( divRhoX);
+  fftw_free( packedRho);
+  fftw_free( packedVks);
+  fftw_free( Vks);
 }
 //==============================================================================
 
@@ -1107,7 +1116,7 @@ void RhoGSlab::doBwFFTRtoG(int expandtype){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RhoGSlab::doFwFFTGtoR(int iopt){
+void RhoGSlab::doFwFFTGtoR(int iopt, int index){
 //==============================================================================
 
    int nfftz      = sizeZ;
@@ -1121,11 +1130,13 @@ void RhoGSlab::doFwFFTGtoR(int iopt){
      case 1 : fftData = divRhoX; break;
      case 2 : fftData = divRhoY; break;
      case 3 : fftData = divRhoZ; break;
+     case 4 : fftData = Vks;  break;
+   default: CkAbort("impossible iopt"); break;
    }//end switch
 
    fftw(plan,        // direction Z now
         numLines,    // these many ffts : one for every line of z in the chare
-	(fftw_complex *)fftData, //input data
+	reinterpret_cast<fftw_complex*>(fftData), //input data
          1,           //stride
          nfftz,       //distance between z-data sets
          NULL, 0, 0); // junk because input array stores the output (in-place)
@@ -1152,10 +1163,11 @@ void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
 
    double *data;
    switch(iopt){
-     case 0: data = doFFTonThis; break;
+     case 0: data = Vks; break;
      case 1: data = rhoIRX; break;
      case 2: data = rhoIRY; break;
      case 3: data = rhoIRZ; break;
+     case 4: data = doFFTonThis; break;
    }//endif
   complex *planeArr = reinterpret_cast<complex*> (data);
 

@@ -40,6 +40,7 @@
 
 extern Config config;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
+extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 extern int nstates;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
@@ -58,8 +59,7 @@ extern ComlibInstanceHandle mssInstance;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ, 
-	       int numRealSpace, int numRealSpaceDensity, bool _useCommlib,
-	       ComlibInstanceHandle _fftcommInstance) 
+	       int numRealSpace, int numRealSpaceDensity, bool _useCommlib)
 //============================================================================
     {//begin routine
 //============================================================================
@@ -87,6 +87,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     doneWhiteByrd = 0;
 
     int x = thisIndex.x;
+
     rho_gs.numRuns  = sortedRunDescriptors[x].size();
     rho_gs.numLines = sortedRunDescriptors[x].size()/2;
     rho_gs.numFull  = (rho_gs.numLines)*rho_gs.sizeZ;
@@ -105,7 +106,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     rho_gs.divRhoZ   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
     rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
     rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
-
+    rho_gs.Vks       = NULL;  // not used here
     setMigratable(false);
     rhoRealProxy0_com = rhoRealProxy;
     rhoRealProxy1_com = rhoRealProxy;
@@ -214,10 +215,6 @@ void CP_Rho_GSpacePlane::acceptData() {
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
-    CmiNetworkProgress();
-#endif
-
 //============================================================================
 // II) Debug output
 
@@ -232,7 +229,7 @@ void CP_Rho_GSpacePlane::acceptData() {
        }//endfor
      fclose(fp);
 #endif
-
+/* DEFUNCT we ship this work off now
 //============================================================================
 // II) First compute hart+Exc and vks(g) using rho(g) then start gradient comp
 
@@ -245,6 +242,17 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
 #endif
+*/
+     RhoGHartMsg *msg = new (rho_gs.numPoints,8*sizeof(int)) RhoGHartMsg;
+     msg->size        = rho_gs.numPoints;     
+     memcpy(msg->data, rho_gs.packedRho, rho_gs.numPoints*sizeof(complex));
+    
+    if(config.prioFFTMsg){
+       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
+    }//endif
+    
+    rhoGHartExtProxy(thisIndex.x,thisIndex.y).acceptData(msg);
 
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgress();
@@ -259,51 +267,6 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
 #endif
-//---------------------------------------------------------------------------
-   }//end routine
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_Rho_GSpacePlane::HartExcVksG() { 
-//============================================================================
-
-   AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-   complex *rho      = rho_gs.packedRho;
-   complex *vks      = rho_gs.packedVks;
-   int nsize         = rho_gs.numPoints;
-   int natm          = ag->natm;
-   Atom *atoms       = ag->atoms;
-   double *ehart_ret = &(rho_gs.ehart_ret);
-   double *eext_ret  = &(rho_gs.eext_ret);
-   double *ewd_ret   = &(rho_gs.ewd_ret);
-   int *k_x          = rho_gs.k_x;
-   int *k_y          = rho_gs.k_y;
-   int *k_z          = rho_gs.k_z;
-
-   CPLOCAL::CP_hart_eext_calc(nsize,rho,natm,atoms,vks,
-                              ehart_ret,eext_ret,ewd_ret,k_x,k_y,k_z,
-                              thisIndex.x);
-   double e[3];
-   e[0] = rho_gs.ehart_ret;
-   e[1] = rho_gs.eext_ret;
-   e[2] = rho_gs.ewd_ret;
-   contribute(3 * sizeof(double),e,CkReduction::sum_double);
-
-#ifdef _CP_DEBUG_RHOG_VKSA_
-     char myFileName[100];
-     sprintf(myFileName, "Vks_Gspace_%d%d.out", thisIndex.x,thisIndex.y);
-     FILE *fp = fopen(myFileName,"w");
-       for (int i = 0; i < rho_gs.numPoints; i++){ 
-              fprintf(fp," %d %d %d : %g %g\n",
-                 rho_gs.k_x[i],rho_gs.k_y[i],rho_gs.k_z[i],
-                 rho_gs.packedVks[i].re,rho_gs.packedVks[i].im);
-       }//endfor
-     fclose(fp);
-#endif
-
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -339,7 +302,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //--------------------------------------------------------------------------
 // I)   fft_gz(divRhoX), launch transpose to R-space
 
-  rho_gs.doFwFFTGtoR(ioptx); 
+  rho_gs.doFwFFTGtoR(ioptx, thisIndex.x); 
   RhoGSendRhoR(ioptx);
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
@@ -348,7 +311,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //--------------------------------------------------------------------------
 // II)  fft_gz(divRhoY), launch transpose to R-space
 
-  rho_gs.doFwFFTGtoR(iopty); 
+  rho_gs.doFwFFTGtoR(iopty, thisIndex.x); 
   RhoGSendRhoR(iopty);
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
@@ -357,7 +320,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //--------------------------------------------------------------------------
 // III)  fft_gz(divRhoZ), launch transpose  to R-space
 
-  rho_gs.doFwFFTGtoR(ioptz); 
+  rho_gs.doFwFFTGtoR(ioptz, thisIndex.x); 
   RhoGSendRhoR(ioptz);
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
@@ -365,14 +328,14 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
 //--------------------------------------------------------------------------
 // IV)  fft_gz(vks), launch transpose  to R-space
-
-  rho_gs.expandRhoGSpace(rho_gs.Rho,rho_gs.packedVks);
-  rho_gs.doFwFFTGtoR(ioptvks); 
-#ifdef CMK_VERSION_BLUEGENE
-  CmiNetworkProgress();
-#endif
-  RhoGSendRhoR(ioptvks);
-
+/*  this is now in Rho_GHartExt
+ *  rho_gs.expandRhoGSpace(rho_gs.Rho,rho_gs.packedVks);
+ *  rho_gs.doFwFFTGtoR(ioptvks); 
+ *#ifdef CMK_VERSION_BLUEGENE
+ *  CmiNetworkProgress();
+ *#endif
+ * RhoGSendRhoR(ioptvks);
+*/
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -426,8 +389,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     
     if(config.prioFFTMsg){
        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x*numLines
-                                                       + thisIndex.y;
+       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
     }//endif
 
     // beam out all points with same z to chare array index z
@@ -572,7 +534,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   CmiNetworkProgress();    
 #endif
 
-  rho_gs.doFwFFTGtoR(ioptFFTWhite); // stored in Rho
+  rho_gs.doFwFFTGtoR(ioptFFTWhite, thisIndex.x); // stored in Rho
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(ByrdanddoFwFFTGtoR_, StartTime, CmiWallTimer());    
@@ -585,7 +547,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   RhoGSendRhoR(ioptSendWhite);
 
 //---------------------------------------------------------------------------
-   }//end routine
+}//end routine
 //============================================================================
 
 

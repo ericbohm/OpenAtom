@@ -47,7 +47,7 @@ PCHEADERS= $(PAIRCALC)/pairCalculator.h\
 OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o StructFactorCache.o StructureFactor.o \
 	 CP_State_GSpacePlane.o CP_State_ParticlePlane.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
-	 CP_Rho_GSpacePlane.o \
+	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o \
          util.o ortho.o sim_subroutines.o  \
          groups.o map.o para_grp_parse.o
 
@@ -208,13 +208,33 @@ CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
 		      $(TOPINC)/RunDescriptor.h \
 		      $(HEAD)/misc/sim_subroutines.h \
 		      $(MAIN)/groups.h \
+		      $(MAIN)/cpaimd.h \
 		      $(STATE)/CP_State_Plane.h \
 		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
 		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 
 	$(ECHO) $@
-	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+CP_Rho_GHartExt.o: $(RHO)/CP_Rho_GHartExt.C \
+		      $(STATE)/CP_State_Plane.h \
+                      $(MAIN)/cpaimd.decl.h \
+                      $(MAIN)/cpaimd.def.h \
+		      $(TOPINC)/debug_flags.h \
+		      $(TOPINC)/RunDescriptor.h \
+		      $(HEAD)/misc/sim_subroutines.h \
+		      $(MAIN)/groups.h \
+		      $(MAIN)/cpaimd.h \
+		      $(STATE)/CP_State_Plane.h \
+		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
+
+	$(ECHO) $@
+	$(CHARMC) -c $(RHO)/CP_Rho_GHartExt.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+
 util.o: $(UTIL)/util.C $(UTIL)/util.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/util.C $(OPTS) $(FLAGS) $(OPT_FORT)

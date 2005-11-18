@@ -142,6 +142,7 @@ CProxy_CP_State_ParticlePlane particlePlaneProxy;
 CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
 CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 CProxy_CP_Rho_GSpacePlane rhoGProxy;
+CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 CProxy_Ortho orthoProxy;
 CProxy_CPcharmParaInfoGrp scProxy;
 CProxy_AtomsGrp atomsGrpProxy;
@@ -166,6 +167,7 @@ int done_init=0;
 
 CkGroupID mCastGrpId; 
 // For using the communication library
+ComlibInstanceHandle commGHartInstance;
 ComlibInstanceHandle commGInstance0;
 ComlibInstanceHandle commGInstance1;
 ComlibInstanceHandle commGInstance2;
@@ -490,6 +492,21 @@ void init_commlib_strategies(int numRhoG, int numReal)
         commRealIGXInstance= ComlibRegister(real_strat_igx);
         commRealIGYInstance= ComlibRegister(real_strat_igy);
         commRealIGZInstance= ComlibRegister(real_strat_igz);
+
+        rhoGElements = new CkArrayIndexMax[numRhoG];
+        for (i = 0; i < numRhoG; i++) {
+            rhoGElements[i] = CkArrayIndex2D(i,0);
+        }
+
+        rhoRealElements = new  CkArrayIndexMax[numReal];
+        for(i = 0; i < numReal; i++) {
+            rhoRealElements[i] = CkArrayIndex2D(i,0);
+        }
+
+        CharmStrategy *gstrathart = new EachToManyMulticastStrategy
+            (USE_MESH, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+             numRhoG, rhoGElements, numReal, rhoRealElements);
+        commGHartInstance = ComlibRegister(gstrathart);
 
 
         rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -901,52 +918,71 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
 //============================================================================
     int rhoRstride=CkNumPes()/(sizeYZ[1]/realSpacePPC);
     int rhoGstride=CkNumPes()/(sim->nchareRhoG/rhoGPPC);
+    int rhoGHartstride=rhoGstride+1;//try not to colocate this helper
+				    //as that renders it parallel
+				    //helperness moot
     if(rhoRstride<1)
 	rhoRstride=1;
     if(rhoGstride<1)
 	rhoGstride=1;
-    if(rhoRstride==rhoGstride && rhoGstride!=1) //offset them
-	rhoRstride++;
-    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride);
+    if(rhoGHartstride<1)
+	rhoGHartstride=1;
+    if(rhoRstride==rhoGstride && rhoGstride!=1) //offset R from G
+	rhoRstride--;
+
+    int offsetFromZero=1;  // proc0 has reduction root issues avoid it if there are enough procs
+    if(rhoRstride==1)
+      offsetFromZero=0;
+
+    CkPrintf("offsetFromZero %d rhoRstride %d rhoGstride %d rhoGHartstride %d\n",offsetFromZero, rhoRstride, rhoGstride, rhoGHartstride);
+    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride);
+    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero);
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
+
+    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride,offsetFromZero);
+    CkArrayOptions rhoghartOpts;
+    rhoghartOpts.setMap(rhogHartMap);
 
 
 
     int i;
     bool fftuseCommlib = config.fftuseCommlib;
-    ComlibInstanceHandle fftcommInstance;
-    if (fftuseCommlib) {        
-      int period_in_ms = 1, nmsgs = 1000;
-      StreamingStrategy * strat = new StreamingStrategy(period_in_ms, nmsgs);
-      fftcommInstance = CkGetComlibInstance();
-      fftcommInstance.setStrategy(strat);
-    }
-    rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC, 
-						 rhoGPPC, fftuseCommlib, 
-						 fftcommInstance,rhogsOpts);
-    rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC,
-			       rhoGPPC, fftuseCommlib, fftcommInstance,rhorsOpts);
 
+
+    rhoRealProxy = 
+      CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC,
+					  rhoGPPC, fftuseCommlib, rhorsOpts);
     for (i = 0; i < sizeYZ[1]; i++) //rhoreal
       {
 	rhoRealProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC,
-			       rhoGPPC, fftuseCommlib, fftcommInstance);
+				 rhoGPPC,  fftuseCommlib);
+
       }
+    rhoRealProxy.doneInserting();
+    rhoRealProxy.setReductionClient(printEnergyEexc, 0);
+
+    rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC, 
+						 rhoGPPC, fftuseCommlib, 
+						 rhogsOpts);
     for (i = 0; i < sim->nchareRhoG; i++)  //rhog
       {
-	rhoGProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC, rhoGPPC, fftuseCommlib, 
-                            fftcommInstance);
+	rhoGProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC, rhoGPPC, fftuseCommlib );
       }
-    rhoRealProxy.setReductionClient(printEnergyEexc, 0);
-    rhoGProxy.setReductionClient(printEnergyHart, NULL);
     rhoGProxy.doneInserting();
-    rhoRealProxy.doneInserting();
 
+
+    rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ, rhoghartOpts);
+    for (i = 0; i < sim->nchareRhoG; i++)  //rhoghart
+      {
+	rhoGHartExtProxy(i,0).insert(sizeYZ);
+      }
+
+    rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
+    rhoGHartExtProxy.doneInserting();
 
 //===========================================================================
 }//end routine

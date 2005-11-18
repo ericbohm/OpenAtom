@@ -228,32 +228,48 @@ class SCalcMap : public CkArrayMap {
 //============================================================================
 
 /**
- * provide procnum mapping for Rho
+ * provide procnum mapping for RhoR
  */
 class RhoRSMap : public CkArrayMap {
   public:
-    RhoRSMap(int NN):N(NN){}
+    RhoRSMap(int NN,int ioff):N(NN), off(ioff) {}
     virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1]) % CkNumPes();
+      return (N * idx2d.index[0] + idx2d.index[1] + off) % CkNumPes();
     }
+    void pup(PUP::er &p)
+      {
+	CkArrayMap::pup(p);
+	p|N;
+	p|off;
+      }
+    
   private:
     int N;
+    int off;
 };
 
 
 /**
- * provide procnum mapping for Rho
+ * provide procnum mapping for RhoG
  */
 class RhoGSMap : public CkArrayMap {
   public:
-    RhoGSMap(int NN):N(NN){}
+    RhoGSMap(int NN, int ioff):N(NN), off(ioff){}
     virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1]) % CkNumPes();
+      return (N * idx2d.index[0] + idx2d.index[1] + off) % CkNumPes();
     }
+    void pup(PUP::er &p)
+      {
+	CkArrayMap::pup(p);
+	p|N;
+	p|off;
+      }
+
   private:
     int N;
+    int off;
 };
 
 //============================================================================
@@ -346,6 +362,7 @@ class CPcharmParaInfoGrp: public Group {
 //============================================================================
 void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, int doublePack, CPcharmParaInfo *sim);
 void init_ortho_chares(int, int, int *);
+
 void init_commlib_strategies(int, int);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(size2d,int, int, int,int,int,int,CPcharmParaInfo *);

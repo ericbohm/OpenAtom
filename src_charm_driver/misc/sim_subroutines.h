@@ -137,6 +137,8 @@ class RhoGSlab {
 	complex *divRhoZ;   // Is big enough to be expanded!
 	complex *packedRho;
         complex *packedVks;
+        complex *Vks;       // Is big enough to be expanded!
+	                    
  
         int *k_x, *k_y, *k_z;
 
@@ -150,7 +152,7 @@ class RhoGSlab {
 	RhoGSlab() {}
 	~RhoGSlab();
 	void doBwFFTRtoG(int); 
-	void doFwFFTGtoR(int); 
+	void doFwFFTGtoR(int,int); 
 	void setKVectors(int *n);
 	void compressGSpace(const complex *, int );
 	void expandRhoGSpace(complex* , complex *);
