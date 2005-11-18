@@ -13,12 +13,18 @@
 // src_charm_driver/cp_density_ctrl/CP_Rho_RealSpacePlane.C : 
 #define _CP_DEBUG_VKS_RSPACE_
 #define _CP_DEBUG_RHO_
-
+#define _CP_DEBUG_RHOR_VKSA_
+#define _CP_DEBUG_RHOR_VKSC_
+#define _CP_DEBUG_RHOR_VKSD_
+#define _CP_DEBUG_RHOR_VKSE_
 //=============================================================================
 // src_charm_driver/cp_density_ctrl/CP_Rho_GSpacePlane.C : 
 #define _CP_DEBUG_VKS_GSPACE_
 #define _CP_DEBUG_VKS_FORCES_
-
+#define _CP_DEBUG_RHOG_RHOG_
+//=============================================================================
+// src_charm_driver/cp_density_ctrl/CP_Rho_GHartExt.C : 
+#define _CP_DEBUG_RHOG_VKSA_
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C    
 #define _CP_DEBUG_OLDFORCE_
@@ -26,11 +32,11 @@
 #define _CP_DEBUG_COEF_SCREEN_
 //=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 
-#define _CP_DEBUG_SF_CALC_
+//#define _CP_DEBUG_SF_CALC_
 
 //=============================================================================
 // src_charm_driver/structure_factor/StructFactorCache.C : 
-#define _CP_DEBUG_SF_CACHE_
+//#define _CP_DEBUG_SF_CACHE_
 
 //=============================================================================
 
