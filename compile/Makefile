@@ -40,10 +40,9 @@ full_code: physics cpaimd_driver mymathlib
 	$(CHARMC) -o ../binary/cpaimd.x \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB)  
+                   -lconv-util -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)  
 
 
-#======================================================================
 #======================================================================
 proj_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
@@ -51,30 +50,15 @@ proj_code: physics cpaimd_driver mymathlib
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
 		-tracemode summary \
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB)
-
-
-#======================================================================
-fulldp_code: physics cpaimddp_driver mymathlib
-	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o ../binary/cpaimd_dp.x \
-                  -language charm++ $(CHARMLIB) \
-                  -L../binary -lCharmDPDriver -lPinyInterface -lMyMathLib\
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB)
+                   -lconv-util -lrfftw -lfftw $(MATH_LIB)  $(LNK_OPTS)
 
 
 #======================================================================
 clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
 	/bin/rm -rf ../binary/cpaimd.x
 
-cleandp: clean_cpaimddp_driver clean_physics clean_mymathlib
-	/bin/rm -rf ../binary/cpaimd.x
-
 clean_cpaimd_driver:
 	cd $(MAKE_CPAIMD_DRV_INC); make clean; 
-
-clean_cpaimddp_driver:
-	cd $(MAKE_CPAIMDDP_DRV_INC); make clean; 
 
 clean_physics:
 	cd $(MAKE_PHYS_INC); make clean; 

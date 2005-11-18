@@ -1,39 +1,45 @@
 #==================================================================
 # General definitions 
 
-DBG_FLAG   = 
-OPTS_ONLY  = -O3
-OPTS       = $(OPTS_ONLY) $(DBG_FLAG)
-OPT_FORT   = -DFORTRANUNDERSCORE
-#==================================================================
 
+#-----------------------------------------------------------------
+# Compile options : Fortran underscore convention
+DBG_FLAG         =  
+OPTS             = -O2 $(DBG_FLAG)
+LNK_OPTS         = -memory gnu
 F_COMPILER       = ifc $(OPTS) 
 F_COMPILER_NOPT  = ifc $(DBG_FLAG)
+OPT_FORT         = -DFORTRANUNDERSCORE
+RUNCOMMAND       = ../cpaimd.x	
+#-----------------------------------------------------------------
 
-#==================================================================
+#-----------------------------------------------------------------
+# Directories : 
+CPAIMD      = ../
+FFT_HOME    = /expand8/home/glenn/fftw
 
-CPAIMD      = ..
-FFT_HOME    = $(HOME)/fftw
 MYMATH_HOME = ../src_mathlib
+
+VALID_DIR   = ../binary/water_32M_10Ry
+VALID_EXEC  = ../autotest
+AUTOTEST    = ../$(VALID_EXEC)
+#-----------------------------------------------------------------
 
 #==================================================================
 # Blas/Lapack/Eispack by fortran
 
-BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
+#BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
 LAPACK_FORT  = $(MYMATH_HOME)/lapack_routines.h
 EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
+MATH_LIB     = 
+#-----------------------------------------------------------------
 
-#==================================================================
-# Blas by vendor library 
-
-#BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h
-#LAPACK_FORT = $(MYMATH_HOME)/no_lapack_routines.h
+#-----------------------------------------------------------------
 #EISPACK_FORT = $(MYMATH_HOME)/no_eispack_routines.h
-
 #MATH_LIB    = -L${MKL_HOME}/lib/32 -lmkl_ia32 -lguide -lpthread
-#MATH_LIB    = -L/bgl/local/lib -ldgemm -lbglblas -ldgemm -llapack440 ../src_mathlib/xerbla.o
-#MATH_LIB    = -L$(HOME)/mylibs -ldgemm -lf77blas -latlas -ldgemm ../src_mathlib/xerbla.o 
-#MATH_LIB    = -L$(HOME)/mylibs -lf77blas -latlas ../src_mathlib/xerbla.o
-#MATH_LIB    = -L$(HOME)/mylibs -L/bgl/local/lib -ldgemm -lf77blas -latlas -llapack440 -ldgemm ../src_mathlib/xerbla.o 
+BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h
+MATH_LIB    =  -lgoto  $(MYMATH_HOME)/xerbla.o
+#MATH_LIB     = -lgoto  $(MYMATH_HOME)/xerbla.o -llapack
+#-----------------------------------------------------------------
 
 #==================================================================
