@@ -11,19 +11,17 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
-void CPINTEGRATE::CP_integrate
-              (const int ncoef, const int istate,complex *forces,complex *forcesold,
-               complex *psi_g,
+void CPINTEGRATE::CP_integrate(const int ncoef, const int istate,int iteration,
+               complex *forces,complex *forcesold,complex *psi_g,
                const int *k_x,const int *k_y, const int *k_z, 
-               double *cmass,double gamma_conj_grad)
-
+               double *cmass,double gamma_conj_grad,double *fictEke)
 //============================================================================
    { /* Begin Function */
 //---------------------------------------------------------------------------
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 #include "../class_defs/allclass_strip_gen.h"
+  complex *vpsi_g = forcesold;
 
   int ifound=0;
 
@@ -78,15 +76,11 @@ void CPINTEGRATE::CP_integrate
   }//endif
 
 //============================================================================
-// II) Car Parrinello :
+// II) Car Parrinello MD:
 
   if(cp_on==1){
-
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("CP not yet implemented\n");
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    EXIT();
-
+    CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,k_x,k_y,k_z,
+                     cmass,fictEke);
   }//endif
 
 //============================================================================

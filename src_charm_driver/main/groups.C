@@ -246,7 +246,7 @@ EnergyGroup::EnergyGroup () {
     estruct.eexc = 0;
     estruct.fmagPsi = 0;
     //unused still, NUM_ENERGIES should be increased to 9 later
-    estruct.efict = 0;
+    estruct.fictEke = 0;
 
     estruct.totalEnergy = 0;
 } 

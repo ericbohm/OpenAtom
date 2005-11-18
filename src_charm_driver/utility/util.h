@@ -34,8 +34,9 @@ class CPcharmParaInfo; //forward decl
 #define ENERGY_EEXT  5
 #define ENERGY_EWD   6
 #define ENERGY_FMAG  7
+#define ENERGY_FICTEKE 8
 
-#define NUM_ENERGIES 8
+#define NUM_ENERGIES 9
 
 #define MAX_CHAR_ARRAY_LENGTH 1024
 

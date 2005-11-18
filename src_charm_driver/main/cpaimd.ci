@@ -110,7 +110,7 @@ mainmodule cpaimd {
                 entry void resumeThread (PPDummyMsg *dmsg);
                 entry void psiCgOvlap(CkReductionMsg *);
 		entry void readFile();
-		entry void getForcesAndIntegrate();	
+		entry void combineForcesGetEke();	
 	};
 	
 	array [2D] CP_State_ParticlePlane {

@@ -61,7 +61,8 @@ ABINITIO_PHYSICS_FILES = cp_eke.o cp_nl_energy_forc.o cp_nlmat.o \
                          cp_process_grad.o cp_pz_lda.o cp_min_std.o \
                          cp_min_CG.o cp_control_integrate.o  \
                          cp_lowdin.o cp_rspace_ion.o \
-                         cp_grad_rho_ctrl.o cp_becke.o gen_wave.o
+                         cp_grad_rho_ctrl.o cp_becke.o gen_wave.o \
+                         cp_dynamics.o
 
 CLASSICAL_PHYSICS_FILES = control_integrate.o
 

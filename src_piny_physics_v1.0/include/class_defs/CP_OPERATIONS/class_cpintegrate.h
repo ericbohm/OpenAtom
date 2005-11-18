@@ -22,9 +22,9 @@ class CPINTEGRATE{
  //---------------------------------------------------------------------------
  // Functions
 
-  static void CP_integrate(const int , const int ,complex *,complex *,complex *,
+  static void CP_integrate(const int , const int ,int,complex *,complex *,complex *,
                            const int *,const int *, const int *,
-                           double *,double );
+                           double *,double ,double *);
 
   static void CP_integrate_min_STD(const int , const int ,complex *,complex *,
                            const int *,const int *, const int *,const double *);
@@ -39,6 +39,10 @@ class CPINTEGRATE{
   static void CheckCoefGradMag(const double);
 
   static void CP_fovlap_calc(const int, const int, complex *,double *);
+
+  static void CP_integrate_dyn(const int ,const int , int, complex *,complex *,
+                               complex *,const int *, const int *, const int *,
+                               double *, double *);
 
 //---------------------------------------------------------------------------
    }; //CPINTEGRATE

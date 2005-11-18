@@ -139,7 +139,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
-	void getForcesAndIntegrate();
+	void combineForcesGetEke();
 	void integrateModForce();
 	void pup(PUP::er &);
 	friend class CP_State_ParticlePlane;
@@ -156,7 +156,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void resetIterState ();
         void doIFFT ();
 	void readFile();
-        bool integrateForces ();
+        bool completedExtExcNlForces ();
 	// for experimental barrier
 	bool allDoneIFFT() {return allgdoneifft;}
 	void gdoneIFFT(CkReductionMsg *msg);
@@ -179,6 +179,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	double ehart_total;
 	double enl_total;
 	double eke_total;
+	double fictEke_total;
         double fmagPsi_total;
         double fovlap;
         double fovlap_old;

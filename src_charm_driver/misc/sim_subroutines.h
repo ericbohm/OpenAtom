@@ -40,17 +40,20 @@ public:
    int kx0_end;                // ending pt
 
    double eke_ret;            // kinetic energy
+   double fictEke_ret;        // fictitious kinetic energy
    double fovlap_loc;         // overlap
 
    RunDescriptor *runs;        // information about the lines in the collection [numRuns]
    complex *packedPlaneData;   // Non-zero data pts [numPoints]
    complex *packedPlaneDataTemp; 
-   complex *packedPlaneDataCG; 
+   complex *packedPlaneDataScr; 
    complex *packedForceData; 
+   complex *packedVelData; 
 
 
    GStateSlab() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
-                 packedForceData=NULL; packedPlaneDataCG=NULL;}
+                 packedForceData=NULL; packedPlaneDataScr=NULL; 
+                 packedVelData=NULL;}
    ~GStateSlab();
    complex* doFwFFT();
    void doBwFFT(complex*);

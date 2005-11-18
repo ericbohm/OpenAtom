@@ -47,7 +47,12 @@ class AtomsGrp: public Group {
   }
 
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 /* Structure that stores all energies */
 
 struct EnergyStruct {
@@ -72,12 +77,12 @@ struct EnergyStruct {
     double totalEnergy;
     double fmagPsi;
 
-    //unused still, NUM_ENERGIES should be increased to 9 later
-    double efict;
+    double fictEke;
 
 };
-
 PUPbytes(EnergyStruct);
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -90,36 +95,33 @@ PUPbytes(EnergyStruct);
 //============================================================================
 
 class EnergyGroup : public Group {
-
     
  public:
     EnergyStruct estruct;
     EnergyGroup();
     
     void updateEnergies(EnergyStruct &es) {
-      estruct.enl         = es.enl;
-      estruct.eext        = es.eext;
-      estruct.eke         = es.eke;
-      estruct.ehart       = es.ehart;
+      estruct.enl          = es.enl;
+      estruct.eke          = es.eke;
+      estruct.eext         = es.eext;
+      estruct.ehart        = es.ehart;
       estruct.eewald_recip = es.eewald_recip;
-      estruct.egga        = es.egga;
-      estruct.eexc        = es.eexc;
-      estruct.eexc        = es.eexc;
-      estruct.totalEnergy = es.totalEnergy;
-      estruct.fmagPsi     = es.fmagPsi;
+      estruct.egga         = es.egga;
+      estruct.eexc         = es.eexc;
+      estruct.fictEke      = es.fictEke;
+      estruct.totalEnergy  = es.totalEnergy;
+      estruct.fmagPsi      = es.fmagPsi;
 #ifdef _DEBUG_ESTRUCT_
        CkPrintf("Energies received %lf, %lf, %lf, %lf, %lf\n", 
-                 estruct.enl, estruct.eke,estruct.egga,estruct.ehart, 
-                 estruct.eext);
+                 estruct.enl,estruct.eke,estruct.eext,estruct.ehart, 
+                 estruct.eewald_recipt,estruct.egga,estruct.eexc,
+                 estruct.fictEke,estruct.totalEnergy);
 #endif
     }
 
-    inline EnergyStruct getEnergyStruct() {
-        return estruct;
-    }
+    inline EnergyStruct getEnergyStruct(){return estruct;}
 };
-
 EnergyStruct GetEnergyStruct();
-
+//============================================================================
 
 #endif // #ifndef _groups_h_

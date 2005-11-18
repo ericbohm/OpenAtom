@@ -467,13 +467,8 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
       doneGettingForces = true;
       doneForces=0;
       if (gsp->doneDoingIFFT) {
-	gsp->getForcesAndIntegrate(); //calls resume in G very yucky
+	gsp->combineForcesGetEke(); //calls resume in G very yucky
       }//endif
-      else      // and what of the else case?
-	{
-	  //	  	  CkPrintf("PP [%d %d] not finding doneDoingIFFT doing nothing\n",thisIndex.x, thisIndex.y);
-	}
-
   }//endif : doneforces
 
 //----------------------------------------------------------------------------

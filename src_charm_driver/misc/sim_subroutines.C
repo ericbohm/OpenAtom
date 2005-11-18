@@ -36,13 +36,15 @@ GStateSlab::~GStateSlab() {
     if(packedPlaneData    !=NULL) delete [] packedPlaneData;
     if(packedPlaneDataTemp!=NULL) delete [] packedPlaneDataTemp;
     if(packedForceData    !=NULL) delete [] packedForceData;
-    if(packedPlaneDataCG  !=NULL) delete [] packedPlaneDataCG;
+    if(packedPlaneDataScr !=NULL) delete [] packedPlaneDataScr;
+    if(packedVelData      !=NULL) delete [] packedVelData;
     if(runs               !=NULL) delete [] runs;
 
     packedPlaneData     = NULL;
     packedPlaneDataTemp = NULL;
     packedForceData     = NULL;
-    packedPlaneDataCG   = NULL;
+    packedPlaneDataScr  = NULL;
+    packedVelData       = NULL;
     runs                = NULL;
 
 }
@@ -82,14 +84,16 @@ void GStateSlab::pup(PUP::er &p) {
 
 	if (p.isUnpacking()) {
            packedPlaneData     = new complex[numPoints];
-	   packedPlaneDataCG   = new complex[numPoints];
+	   packedPlaneDataScr  = new complex[numPoints];
 	   packedPlaneDataTemp = new complex[numPoints];
 	   packedForceData     = new complex[numPoints];
+	   packedVelData       = new complex[numPoints];
 	}//endif
 	p((char *) packedPlaneData, numPoints*sizeof(complex));
-	p((char *) packedPlaneDataCG, numPoints*sizeof(complex));
+	p((char *) packedPlaneDataScr, numPoints*sizeof(complex));
 	p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
 	p((char *) packedForceData, numPoints*sizeof(complex));
+	p((char *) packedVelData, numPoints*sizeof(complex));
 
 //==============================================================================
   }//end routine

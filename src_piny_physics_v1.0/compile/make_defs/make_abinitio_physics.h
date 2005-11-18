@@ -83,6 +83,13 @@ cp_control_integrate.o :  $(STANDARD) $(FFTW) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_control_integrate.C
 #------------------------------------------------------------------
+cp_dynamics.o :  $(STANDARD) $(FFTW) \
+               $(COMPLEX)   \
+               $(CLASS_CP_INTEGRATE) \
+               $(CODE)/abinito_physics/cp_integrate/cp_dynamics.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_dynamics.C
+#------------------------------------------------------------------
 cp_rspace_ion.o :  $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
                $(CLASS_CP_RSPACEION) \
