@@ -58,7 +58,7 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
   */
   //    fftw_complex *myin=scratch2;
   fftw_complex *myin=in;
-  int split=10; 
+  int split=config.fftprogresssplit; 
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;
@@ -115,7 +115,7 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
 void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex *in, int istride,
 		 int idist, fftw_real *out, int ostride, int odist)
 {
-  int split=10; 
+    int split=config.fftprogresssplit; 
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;
@@ -161,7 +161,7 @@ void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex 
 void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *in, int istride,
 		 int idist, fftw_complex *out, int ostride, int odist)
 {
-  int split=10; 
+  int split=config.fftprogresssplit; 
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;

@@ -1127,7 +1127,8 @@ void Config::print() {
 	          << "psipriority: " << psipriority << endl
                   << "gExpandFact: " << gExpandFact << endl
                   << "gExpandFactRho: " << gExpandFactRho << endl
-		  << "rhogpriority: " << rhogpriority << endl;
+		  << "rhogpriority: " << rhogpriority << endl
+		  << "fftprogresssplit: " << fftprogresssplit << endl;
    CkPrintf("\n");
 
 //----------------------------------------------------------------------------------
@@ -1189,7 +1190,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.priority        = 10;        // unused?
     config.gExpandFact     = 1.0;
     config.gExpandFactRho     = 1.0;
-
+    config.fftprogresssplit =20;
 //===================================================================================
 // Read parameters
 
@@ -1311,6 +1312,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhorpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "fftprogresssplit"))
+            config.fftprogresssplit = atoi(parameterValue);
         else if (!strcmp(parameterName, "parlambda"))
             CkPrintf("@_parlambda is now compulsory_@\n");
         else if (!strcmp(parameterName, "gExpandFact")){

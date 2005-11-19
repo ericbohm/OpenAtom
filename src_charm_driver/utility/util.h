@@ -216,6 +216,7 @@ class Config {
 	int rhorpriority;
 	int rhogpriority;
 	int priority;
+	int fftprogresssplit;
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
 };
 #if ! CMK_BLUEGENE_CHARM
