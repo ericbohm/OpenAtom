@@ -27,6 +27,176 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 
 //==============================================================================
 
+//============================================================================
+/**
+ * split up an fft call into multiple invocations with cmiprogress
+ * calls between them.
+ */
+//============================================================================
+void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
+		 int idist, fftw_complex *out, int ostride, int odist)
+{
+
+  
+  /*  int sizefft=howmany*idist*istride;
+  CkPrintf("plan n %d, howmany %d istride %d idist %d ostride %d odist %d sizefft %d\n",plan->n,howmany, istride, idist, ostride, odist, sizefft);
+  // for debugging 
+  fftw_complex *scratch1=(fftw_complex *) fftw_malloc(sizefft*sizeof(complex));
+  memcpy(scratch1,in,sizeof(complex)*sizefft);
+  fftw(plan,         // da plan
+       howmany,     // how many 
+       scratch1,           //input data
+       istride,      // stride betwen elements 
+       idist,        // array separation
+       out,          // output data (null if inplace)
+       ostride,      // stride betwen elements  (0 inplace)
+       odist);       //array separation (0 inplace)
+
+
+  fftw_complex *scratch2=(fftw_complex *) fftw_malloc(sizefft*sizeof(complex));
+  memcpy(scratch2,in,sizeof(complex)*sizefft);
+  */
+  //    fftw_complex *myin=scratch2;
+  fftw_complex *myin=in;
+  int split=10; 
+  int thismany=split;
+  int inleft=howmany;
+  int numsplits=howmany/split;
+  if(numsplits<=0)
+    {numsplits=1;}
+  if(howmany>split && howmany%split!=0)
+    {numsplits++;}
+  
+  int inoff=0;
+  int outoff=0;
+  //  CkPrintf("numsplits %d\n",numsplits);
+  for(int i=0;i<numsplits;i++)
+    {
+      thismany=split;
+      if(inleft<split)
+	{thismany=inleft;}
+      //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+      fftw(plan,         // da plan
+	   thismany,     // how many 
+	   &(myin[inoff]),           //input data
+	   istride,      // stride betwen elements 
+	   idist,        // array separation
+	   (out==NULL) ? NULL : &(out[outoff]),          // output data (null if inplace)
+	   ostride,      // stride betwen elements  (0 inplace)
+	   odist);       //array separation (0 inplace)
+
+      inoff+=idist*(thismany);  
+      outoff+=odist*(thismany);
+      inleft-=thismany;      
+#ifdef CMK_VERSION_BLUEGENE
+      CmiNetworkProgress();
+#endif
+    }
+  /*  for(int j=0;j<sizefft;j++)
+    {
+      CkPrintf("%g %g\n",scratch1[j].re,scratch1[j].im);
+    }
+  CkPrintf("----\n");
+  for(int j=0;j<sizefft;j++)
+    {
+      CkPrintf("%g %g\n",scratch2[j].re,scratch2[j].im);
+    }
+  CkAbort("fftd\n");
+  */
+
+}
+
+//============================================================================
+/**
+ * split up an fft call into multiple invocations with cmiprogress
+ * calls between them.
+ */
+//============================================================================
+void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex *in, int istride,
+		 int idist, fftw_real *out, int ostride, int odist)
+{
+  int split=10; 
+  int thismany=split;
+  int inleft=howmany;
+  int numsplits=howmany/split;
+  if(numsplits<=0)
+    {numsplits=1;}
+  if(howmany>split && howmany%split!=0)
+    {numsplits++;}
+  
+  int inoff=0;
+  int outoff=0;
+  //  CkPrintf("numsplits %d\n",numsplits);
+  for(int i=0;i<numsplits;i++)
+    {
+      thismany=split;
+      if(inleft<split)
+	{thismany=inleft;}
+      //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+      rfftwnd_complex_to_real(plan,         // da plan
+	   thismany,     // how many 
+	   &(in[inoff]),           //input data
+	   istride,      // stride betwen elements 
+	   idist,        // array separation
+	   (out==NULL) ? NULL : &(out[outoff]),          // output data (null if inplace)
+	   ostride,      // stride betwen elements  (0 inplace)
+	   odist);       //array separation (0 inplace)
+
+      inoff+=idist*(thismany);  
+      outoff+=odist*(thismany);
+      inleft-=thismany;      
+#ifdef CMK_VERSION_BLUEGENE
+      CmiNetworkProgress();
+#endif
+    }
+
+}
+
+//============================================================================
+/**
+ * split up an fft call into multiple invocations with cmiprogress
+ * calls between them.
+ */
+//============================================================================
+void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *in, int istride,
+		 int idist, fftw_complex *out, int ostride, int odist)
+{
+  int split=10; 
+  int thismany=split;
+  int inleft=howmany;
+  int numsplits=howmany/split;
+  if(numsplits<=0)
+    {numsplits=1;}
+  if(howmany>split && howmany%split!=0)
+    {numsplits++;}
+  
+  int inoff=0;
+  int outoff=0;
+  //  CkPrintf("numsplits %d\n",numsplits);
+  for(int i=0;i<numsplits;i++)
+    {
+      thismany=split;
+      if(inleft<split)
+	{thismany=inleft;}
+      //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+      rfftwnd_real_to_complex(plan,         // da plan
+	   thismany,     // how many 
+	   &(in[inoff]),           //input data
+	   istride,      // stride betwen elements 
+	   idist,        // array separation
+	   (out==NULL) ? NULL : &(out[outoff]),          // output data (null if inplace)
+	   ostride,      // stride betwen elements  (0 inplace)
+	   odist);       //array separation (0 inplace)
+
+      inoff+=idist*(thismany);  
+      outoff+=odist*(thismany);
+      inleft-=thismany;      
+#ifdef CMK_VERSION_BLUEGENE
+      CmiNetworkProgress();
+#endif
+    }
+
+}
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -49,7 +219,6 @@ GStateSlab::~GStateSlab() {
 
 }
 //==============================================================================
-
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -329,11 +498,10 @@ complex* FFTcache::doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs,
     FFTcache *sc   = fftCacheProxy.ckLocalBranch();
     fftw_plan plan = sc->fwdYPlan; // for historic reasons its the `y' plan.
                                    // but sorry, its the z plan.
-
     expandGSpace(fftData,packedPlaneData,runs,numRuns,numFull,numPoints,nfftz);
 
     if(fftReqd){
-        fftw(plan,        // direction Z now
+        fft_split(plan,        // direction Z now
 	     numLines,    // these many ffts : one for every line of z in the chare
 	     (fftw_complex *)fftData, //input data
 	     1,           //stride
@@ -362,7 +530,7 @@ void GStateSlab::doBwFFT(complex *fftData) {
    int nfftz      = planeSize[1];
 
    if(fftReqd){
-        fftw(plan,        // direction Z
+        fft_split(plan,        // direction Z
 	     numLines,    // these many ffts : lines of z
 	     (fftw_complex *)fftData, //input data
 	     1,           //stride
@@ -519,7 +687,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
       data = new double[pSize];
       int stride = sizeX/2+1;
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
-      fftw(fwdZ1DdpPlan,    // y-plan (label lies)
+      fft_split(fwdZ1DdpPlan,    // y-plan (label lies)
   	   nplane_x,        // how many < sizeX/2 + 1
 	   (fftw_complex *)(planeArr),//input data
  	   stride,          // stride betwen elements (y is inner)
@@ -527,7 +695,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 	   NULL,0,0);       // output data is input data
       // fftw only gives you one sign for real to complex : so do it yourself
       for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-      rfftwnd_complex_to_real(fwdX1DdpPlan,
+      rfftwnd_complex_to_real_split(fwdX1DdpPlan,
 			      planeSize[0],    // how many
 			      (fftw_complex *)planeArr, 
                               1,               // stride (x is inner)
@@ -601,7 +769,7 @@ void FFTcache::doRhoRealtoRhoG(double *realArr)
    //==============================================================================
    // Case : doublePack  and inplace no options thats how it is
    
-   rfftwnd_real_to_complex(bwdX1DdpPlan,
+   rfftwnd_real_to_complex_split(bwdX1DdpPlan,
 			   planeSize[0],          // these many 1D ffts
 			   realArr,1,(sizeX+2),   // x is inner here
 			   NULL,0,0);            
@@ -614,7 +782,7 @@ void FFTcache::doRhoRealtoRhoG(double *realArr)
 
    for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
 
-   fftw(bwdZ1DdpPlan,
+   fft_split(bwdZ1DdpPlan,
 	nplane_rho_x, // these many 1D ffts
 	(fftw_complex *)planeArr, 
 	stride,1,NULL,0,0);
@@ -674,7 +842,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
          realArr[(j+i2)] = realArr[(j+i2)]*vks[j];
        }//endfor
      }//endfor
-     rfftwnd_real_to_complex(bwdX1DdpPlan,
+     rfftwnd_real_to_complex_split(bwdX1DdpPlan,
 			planeSize[0],          // these many 1D ffts
 			realArr,1,(sizeX+2),   // x is inner here
                         NULL,0,0);            
@@ -683,7 +851,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 #endif
 
      for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-     fftw(bwdZ1DdpPlan,
+     fft_split(bwdZ1DdpPlan,
 	     nplane_x, // these many 1D ffts
 	     (fftw_complex *)planeArr, 
   	     stride,1,NULL,0,0);
@@ -1103,7 +1271,7 @@ void RhoGSlab::doBwFFTRtoG(int expandtype){
      case 3: partlyfftData = divRhoZ; break;
    }//endif
 
-   fftw(plan,        // direction Z
+   fft_split(plan,        // direction Z
         numLines,    // these many ffts : lines of z
 	(fftw_complex *)partlyfftData, //input data
 	1,           //stride
@@ -1138,7 +1306,7 @@ void RhoGSlab::doFwFFTGtoR(int iopt, int index){
    default: CkAbort("impossible iopt"); break;
    }//end switch
 
-   fftw(plan,        // direction Z now
+   fft_split(plan,        // direction Z now
         numLines,    // these many ffts : one for every line of z in the chare
 	reinterpret_cast<fftw_complex*>(fftData), //input data
          1,           //stride
@@ -1178,7 +1346,7 @@ void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 
-   fftw(fwdZ1DdpPlan,    // y-plan (label lies)
+   fft_split(fwdZ1DdpPlan,    // y-plan (label lies)
 	nplane_x,        // how many < sizeX/2 + 1
         (fftw_complex *)(planeArr),//input data
  	stride,          // stride betwen elements (x is inner)
@@ -1195,7 +1363,7 @@ void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
 
-  rfftwnd_complex_to_real(fwdX1DdpPlan,
+  rfftwnd_complex_to_real_split(fwdX1DdpPlan,
 		          sizeY,    // how many
 			  (fftw_complex *)planeArr, 
                           1,               // stride (x is inner)
@@ -1238,3 +1406,5 @@ void RhoRealSlab::uPackAndScale(double *uPackData, double *PackData,
 //============================================================================
    }
 //============================================================================
+
+
