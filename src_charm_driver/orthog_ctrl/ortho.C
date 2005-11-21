@@ -291,7 +291,9 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 
 
 void Ortho::gamma_done(){
-  finishPairCalcSection2(m * n, orthoT, A, pcLambdaProxy);
+
+  //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
+  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy);
 }
 
 void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n)

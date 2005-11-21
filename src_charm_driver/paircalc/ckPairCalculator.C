@@ -685,20 +685,21 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   }
   fclose(moutfile);
   if(!unitcoef){ // CG non minimization case
-  sprintf(filename, "bwm2idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-  moutfile = fopen(filename, "w");
-  fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix2\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-  for (int i = 0; i < grainSize; i++) {
-    for (int j = 0; j < grainSize; j++){ 
-      fprintf(moutfile,"%.10g\n",matrix2[i*grainSize+j]);
+    sprintf(filename, "bwm2idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+    moutfile = fopen(filename, "w");
+    fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix2\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+    for (int i = 0; i < grainSize; i++) {
+      for (int j = 0; j < grainSize; j++){ 
+	fprintf(moutfile,"%.10g\n",matrix2[i*grainSize+j]);
+      }
     }
-  }
-  fclose(moutfile);
+    fclose(moutfile);
   }
 #endif
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
+
   if(symmetric)
     DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
   else
@@ -748,6 +749,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     StartTime=CmiWallTimer();
 #endif
     betad=1.0;
+    alphad=-1.0;  //subtract it
     DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
