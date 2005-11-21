@@ -1,7 +1,5 @@
 //======================================================
 // Things to do : 
-//    Rejigger invokation of combineForcesGetEke.
-//    Remove releasecomputeZ since I can't see why I need it.
 //    move resetiterstate
 //======================================================
 
@@ -107,34 +105,34 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 //============================================================================
   while(1) {
  //===========================================================================
- // (I) Compute the forces and Integrate code block
+ // (I) Compute the forces and coef evolution code block
 
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1 || 
        c->first_step != 1){
     //------------------------------------------------------------------------
-    // (A)start new iteration : do partial FFT in forward direction and start
-    //                       non-local energy computation
+    // (A)start new iteration : Reset counters
        c->startNewIter();
     //------------------------------------------------------------------------
-    // (B)send partially FFT'd data to StateRSpacePlanes
+    // (B) Start SF/computeZ, psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
+       c->releaseSFComputeZ();
+       c->doFFT(); 
        c->sendFFTData();
-       RTH_Suspend(); // wait for partially IFFT'd data to arive from RealSpacePlanes
+       RTH_Suspend(); // wait for (psi*vks)[gx,gy,z] to arive from RealSpace
     //------------------------------------------------------------------------
-    // (C)complete IFFT
+    // (C)complete IFFT of (psi*vks)=F to F(gx,gy,gz)
        c->doIFFT();  // Message from realspace arrives : doifft(msg) resumes
     //------------------------------------------------------------------------
-    // (D)Combine non-local, eext, hart and exc forces then compute eke forces
+    // (D)Combine non-local and vks forces then compute eke forces
+    //    If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
        if (!(c->completedExtExcNlForces())){
-         RTH_Suspend(); // wait for non-local pseudo part computation to finish
-                        // combineForcesGetEke() resumes
+         RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
+                        // PP calls combineForcesGetEke() which invokes resume
        }//endif
 #ifdef GIFFT_BARRIER
        if(!(c->allDoneIFFT())){
 	  RTH_Suspend(); // wait for broadcast that all gspace is done  
        }//endif
 #endif
-       // c->combineForcesGetEke() invoked from completedExt() or pp->getforces()
-       // since pp is ``bound'' to gs no messages are sent. They are the same proc.
     //------------------------------------------------------------------------
     // (E) Add contraint forces (rotate forces to non-orthogonal frame)
        c->sendLambda();        
@@ -161,10 +159,6 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     c->sendPsi();      // send to Pair Calculator
     c->first_step = 0; // its not the first step anymore
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
-
- //==========================================================================
- // (IV) Reset interation control variables before starting new iteration
-    c->resetIterState(); 
 
   } //end while: Go back to top of loop (no suspending : no pausing)
 //============================================================================
@@ -739,6 +733,27 @@ void CP_State_GSpacePlane::startNewIter ()  {
     } //endif
 
 //============================================================================
+// Reset all the counters etc.
+
+  ecount              = 0;
+  allEnergiesReceived = 0;
+  total_energy        = 0.0;
+  displace_count      = 0;
+  doneDoingIFFT       = false;
+  count               = 0;   // 'count' is used to check if all IFFT'd data 
+                             // has arrived from RealSpacePlane
+  doneDoingIFFT       = false;
+  allgdoneifft        = false;
+
+  CP_State_ParticlePlane *pp = 
+                   particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();        
+  pp->doneGettingForces = false;
+  pp->doneEnl           = 0;
+  pp->enl               = 0.0;
+  pp->doneForces        = 0;
+
+
+//============================================================================
 // Check Load Balancing, Increment counter, set done flags equal to false.
 
 #ifndef CMK_OPTIMIZE
@@ -754,14 +769,17 @@ void CP_State_GSpacePlane::startNewIter ()  {
 	}//endif
     }//endif
 
-    doneDoingIFFT         = false;
-    allgdoneifft          = false;
+//---------------------------------------------------------------------------
+    }//end routine
+//============================================================================
 
-//============================================================================  
-// Launch the structure factor  :  state=dup index, plane=plane index launches
-//                                 all the atm groups
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::releaseSFComputeZ() {
+//==============================================================================
 
-    if(thisIndex.x==0){
+  if(thisIndex.x==0){
        //multicast to all states of our plane and dups using the section proxy
 	SFDummyMsg *msg = new(8*sizeof(int)) SFDummyMsg;
 	CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -769,17 +787,24 @@ void CP_State_GSpacePlane::startNewIter ()  {
 	sfCompSectionProxy.computeSF(msg);
     }//endif
 
-   // ComputeZ is now triggered by the arrival of the structure factor
-   // at the sfcache : Sensibly!
-
-//============================================================================  
-// FFT launch  : psi(gx,gy,gz) -> psi(gx,gy,z)
-
-    doFFT (); 
-
-//---------------------------------------------------------------------------
-    }//end routine
-//============================================================================
+//==============================================================================
+//check all SFs
+  CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  for(int i=0;i<config.numSfGrps;i++){
+      if(pp->haveSFAtmGrp[i]>=0){
+	    PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
+	    pmsg->atmGrp=i;
+	    pmsg->sfindex=pp->haveSFAtmGrp[i];
+	    CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
+	    *(int*)CkPriorityPtr(pmsg) = config.sfpriority+i+config.numSfGrps; 
+            //lower than sf and sfcache
+	    particlePlaneProxy(thisIndex.x, thisIndex.y).computeZ(pmsg);
+      }//endif
+  }//endfor
+  
+//----------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
 
 
 //============================================================================
@@ -1372,9 +1397,6 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     //--------------------------------------------------------------------
 #endif
     //--------------------------------------------------------------------
-    // (C) Clean up SF for next iteration
-    releaseComputeZ();
-    //--------------------------------------------------------------------
     // (D) Go back to the top
     RTH_Runtime_resume(run_thread);
   } // if partialCount
@@ -1382,61 +1404,6 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 //----------------------------------------------------------------------------
    }//end routine
 //==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_State_GSpacePlane::releaseComputeZ() {
-//==============================================================================
-//check all SFs
-
-  CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  for(int i=0;i<config.numSfGrps;i++){
-      if(pp->haveSFAtmGrp[i]>=0){
-	    PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
-	    pmsg->atmGrp=i;
-	    pmsg->sfindex=pp->haveSFAtmGrp[i];
-	    CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
-	    *(int*)CkPriorityPtr(pmsg) = config.sfpriority+i+config.numSfGrps; 
-            //lower than sf and sfcache
-	    particlePlaneProxy(thisIndex.x, thisIndex.y).computeZ(pmsg);
-      }//endif
-  }//endfor
-  
-//----------------------------------------------------------------------------
-  }//end routine
-//==============================================================================
-
-
-//============================================================================
-/**
- * This method is used to reset the state variables before starting new
- * iteration.
- */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_GSpacePlane::resetIterState () {
-//============================================================================
-
-  ecount              = 0;
-  allEnergiesReceived = 0;
-  total_energy        = 0.0;
-  displace_count      = 0;
-  doneDoingIFFT       = false;
-  count               = 0;   // 'count' is used to check if all IFFT'd data 
-                             // has arrived from RealSpacePlane
-  CP_State_ParticlePlane *pp = 
-                   particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();        
-  pp->doneGettingForces = false;
-  pp->doneEnl           = 0;
-  pp->enl               = 0.0;
-  pp->doneForces        = 0;
-
-//----------------------------------------------------------------------------
-  }//end routine
-//============================================================================
 
 
 //==============================================================================

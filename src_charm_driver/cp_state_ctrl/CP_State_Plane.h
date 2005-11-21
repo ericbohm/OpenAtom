@@ -153,14 +153,13 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void run ();
         void resumeThread (PPDummyMsg *dmsg);
         void sendFFTData ();
-        void resetIterState ();
         void doIFFT ();
 	void readFile();
         bool completedExtExcNlForces ();
 	// for experimental barrier
 	bool allDoneIFFT() {return allgdoneifft;}
 	void gdoneIFFT(CkReductionMsg *msg);
-	void releaseComputeZ();
+	void releaseSFComputeZ();
         int first_step;
 
  private:
