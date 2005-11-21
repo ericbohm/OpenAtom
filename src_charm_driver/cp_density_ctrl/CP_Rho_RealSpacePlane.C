@@ -64,14 +64,14 @@ RTH_Routine_code(CP_Rho_RealSpacePlane,run) {
 
     // 1st entry point is the constructor which invokes run() to put you here.
     RTH_Suspend(); 
-    // 2nd entry point is acceptDensity(msg *)
+    // 2nd entry point is acceptDensity(msg *) data from statereal
     c->acceptDensity();
     RTH_Suspend(); 
     // 3rd entry point is acceptGradRhoVks(RhoRSFFTMsg *)
     c->GradCorr();
     RTH_Suspend(); 
-    // 4th entry point is acceptWhiteByrd(RhoRSFFTMsg *) || acceptHartVks
-    // whichever arrives last
+    // 4th entry point is acceptWhiteByrd(RhoRSFFTMsg *) || acceptHartVks.
+    // Whichever arrives LAST calls resume (the last shall be first).
     c->doMulticast();
 
   } //end while not done
@@ -238,6 +238,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 #endif
 
 //============================================================================
+
     RTH_Runtime_resume(run_thread);
 
 //============================================================================
@@ -524,6 +525,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 //============================================================================
 void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
+
    double *density            = rho_rs.density;
    double *rhoIRX             = rho_rs.rhoIRX;
    double *rhoIRY             = rho_rs.rhoIRY;
@@ -565,6 +567,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
     CPXCFNCTS::CP_getGGAFunctional(npts,nf1,nf2,nf3,density,
                rhoIRX,rhoIRY,rhoIRZ,gradientCorrection,thisIndex.x,exc_gga_ret);
     for(int i=0;i<npts;i++){Vks[i] += gradientCorrection[i];}
+
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
 #endif
@@ -581,7 +584,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
    double exc[2];
    exc[0]=rho_rs.exc_ret;
    exc[1]=rho_rs.exc_gga_ret;
-   contribute(2*sizeof(double),exc, CkReduction::sum_double);
+   contribute(2*sizeof(double),exc,CkReduction::sum_double);
 
 //============================================================================
 
@@ -599,9 +602,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
 // Start the white bird puppy : back fft of rhoirx, rhoiry, rhoirz
 
-
     whiteByrdFFT();
-
 
 //============================================================================
    }//end routine
@@ -624,6 +625,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
    double *rhoIRY      = rho_rs.rhoIRY;
    double *rhoIRZ      = rho_rs.rhoIRZ;
    double *gradientCorrection = rho_rs.gradientCorrection; //scratch
+
 //============================================================================
 // I) rhoIRX : Unpack for real to complex FFT, perform FFT, transpose
 
@@ -713,7 +715,6 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   complex *partiallyFFTd = msg->data;
   int pSize              = (rho_rs.sizeX+2)*(rho_rs.sizeY);
 
-
 //============================================================================
 // Perform some error checking
 
@@ -778,17 +779,16 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
         fprintf(fp,"%g\n",rho_rs.Vks[i]);
     }//endfor
 #endif
-    if(doneHartVks)
-      {
+    if(doneHartVks){
 	doneWhiteByrd=false;
 	doneHartVks=false;
 	RTH_Runtime_resume(run_thread);
-      }
-    else{
+    }else{
       //rely on hartvks to resume
       doneWhiteByrd=true;
-    }
-  }//endif
+    }//endif
+
+  }//endif : communication from rhog has all arrived safely
 
 //============================================================================
 }//end routine
@@ -801,8 +801,8 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
+//============================================================================
 
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int nchareG            = sim->nchareRhoG;
@@ -828,12 +828,9 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
 
   delete msg;  
   CkAssert(iopt==0);
-  if (countGradVks[iopt] == nchareG)
-    {
+  if (countGradVks[iopt] == nchareG){
       countGradVks[iopt]=0;
       double scale = 1.0;
-
-
 #ifdef _CP_DEBUG_RHOR_VKSA_
       char fmyFileName[MAX_CHAR_ARRAY_LENGTH];
       sprintf(fmyFileName, "HartRho_Realb4fft_%d_%d_0.out", thisIndex.x,thisIndex.y);
@@ -867,25 +864,27 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
 #endif
       for(int i=0;i<size;i++){vksExc[i]+=vksHartExt[i];}
 
-      if(doneWhiteByrd)
-	{
+      if(doneWhiteByrd){
 	  doneHartVks=false;
 	  doneWhiteByrd=false;
 	  RTH_Runtime_resume(run_thread);
-	}
-      else
-	{//rely on whitebyrd to resume
+       }else{
+         //rely on whitebyrd to resume
 	  doneHartVks=true;
-	}
-    }
-}
+       }//endif : check if whitebyrd is done
+
+  }//endif : communication from rhog 
+
+//============================================================================
+  }//end routine 
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
-// Send vks back to the states
+// Send vks back to the states in real space
 
    if ((config.useGMulticast+config.useCommlibMulticast)!=1) {
      CkAbort("No multicast strategy\n");
@@ -912,8 +911,9 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 
    }//endif
    bzero(rho_rs.Vks,rho_rs.sizeX * rho_rs.sizeZ*sizeof(double));
+
 //============================================================================
-}//end routine
+   }//end routine
 //============================================================================
 
 

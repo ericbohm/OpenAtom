@@ -236,7 +236,6 @@ void make_rho_runs(CPcharmParaInfo *sim){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-    CkPrintf("nline_tot %d nchareRhoG %d\n", nline_tot, nchareRhoG);
     for(int i=0;i<nline_tot;i+=2){
       RunDescriptor *Desi  = &runs[i];
       RunDescriptor *Desi1 = &runs[(i+1)];

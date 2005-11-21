@@ -40,7 +40,7 @@ full_code: physics cpaimd_driver mymathlib
 	$(CHARMC) -o ../binary/cpaimd.x \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)  
+                  -lconv-util -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)  
 
 
 #======================================================================
@@ -49,8 +49,8 @@ proj_code: physics cpaimd_driver mymathlib
 	$(CHARMC) -o ../binary/cpaimd.x \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
-		-tracemode summary \
-                   -lconv-util -lrfftw -lfftw $(MATH_LIB)  $(LNK_OPTS)
+	          -tracemode summary \
+                  -lconv-util -lrfftw -lfftw $(MATH_LIB)  $(LNK_OPTS)
 
 
 #======================================================================

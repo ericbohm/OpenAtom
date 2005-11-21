@@ -229,20 +229,10 @@ void CP_Rho_GSpacePlane::acceptData() {
        }//endfor
      fclose(fp);
 #endif
-/* DEFUNCT we ship this work off now
+
 //============================================================================
-// II) First compute hart+Exc and vks(g) using rho(g) then start gradient comp
+// II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
 
-#ifndef CMK_OPTIMIZE
-     StartTime=CmiWallTimer();
-#endif    
-
-    HartExcVksG();
-
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
-#endif
-*/
      RhoGHartMsg *msg = new (rho_gs.numPoints,8*sizeof(int)) RhoGHartMsg;
      msg->size        = rho_gs.numPoints;     
      memcpy(msg->data, rho_gs.packedRho, rho_gs.numPoints*sizeof(complex));
@@ -326,16 +316,6 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
   CmiNetworkProgress();
 #endif
 
-//--------------------------------------------------------------------------
-// IV)  fft_gz(vks), launch transpose  to R-space
-/*  this is now in Rho_GHartExt
- *  rho_gs.expandRhoGSpace(rho_gs.Rho,rho_gs.packedVks);
- *  rho_gs.doFwFFTGtoR(ioptvks); 
- *#ifdef CMK_VERSION_BLUEGENE
- *  CmiNetworkProgress();
- *#endif
- * RhoGSendRhoR(ioptvks);
-*/
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -413,7 +393,6 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     
   if (config.useCommlib){
     switch(iopt){
-
 	case 0 : commGInstance0.endIteration();break;
 	case 1 : commGInstance1.endIteration();break;
 	case 2 : commGInstance2.endIteration();break;

@@ -80,8 +80,7 @@ extern CProxy_ComlibManager mgrProxy;
 extern ComlibInstanceHandle mssInstance;
 extern CProxy_StructureFactor sfCompProxy;
 
-//energy group proxy
-extern CProxy_EnergyGroup egroupProxy;
+extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 extern int nstates;
 extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
@@ -109,6 +108,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
   while(1) {
  //===========================================================================
  // (I) Compute the forces and Integrate code block
+
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1 || 
        c->first_step != 1){
     //------------------------------------------------------------------------
@@ -134,6 +134,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        }//endif
 #endif
        // c->combineForcesGetEke() invoked from completedExt() or pp->getforces()
+       // since pp is ``bound'' to gs no messages are sent. They are the same proc.
     //------------------------------------------------------------------------
     // (E) Add contraint forces (rotate forces to non-orthogonal frame)
        c->sendLambda();        
@@ -154,15 +155,19 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());    
 #endif
     }// endif determine entry point
+
  //==========================================================================
  // (III)Orthogonalization code block
     c->sendPsi();      // send to Pair Calculator
     c->first_step = 0; // its not the first step anymore
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
+
  //==========================================================================
  // (IV) Reset interation control variables before starting new iteration
     c->resetIterState(); 
+
   } //end while: Go back to top of loop (no suspending : no pausing)
+//============================================================================
 
 //--------------------------------------------------------------------------
   } RTH_Routine_end(CP_State_GSpacePlane,run)
@@ -807,8 +812,11 @@ void CP_State_GSpacePlane::doFFT() {
 #endif
 
 #ifndef _FULL_CPAIMD_
-  CmiMemcpy(gs.packedPlaneData, gs.packedPlaneDataTemp, sizeof(complex)*gs.numPoints);
-  memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+  CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+            sizeof(complex)*gs.numPoints);
+  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
 #endif      
 
 // Do fft in forward direction, 1-D, in z direction
@@ -915,7 +923,7 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
       CkCallback(CkIndex_CP_State_GSpacePlane::gdoneIFFT(NULL),gSpacePlaneProxy));
 #endif
     RTH_Runtime_resume(run_thread);
-  }
+  }//endif : has everyone arrived?
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -927,8 +935,8 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
 void CP_State_GSpacePlane::doIFFT () {
 //============================================================================
+//now do the IFFT  does the ifft in place (this is done on the forceArr)
 
-  //now do the IFFT  does the ifft in place (this is done on the forceArr)
 #ifndef CMK_OPTIMIZE    
   double StartTime=CmiWallTimer();
 #endif
@@ -945,6 +953,9 @@ void CP_State_GSpacePlane::doIFFT () {
   double scaleFactor = 1/double(scProxy.ckLocalBranch()->cpcharmParaInfo->sizeX * 
                                 scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY * 
                                 scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ);
+//============================================================================
+// set the forces from vks
+
   complex *forces = gs.packedForceData;
   for(int index=0; index<gs.numPoints; index++){
     forces[index].re = -2.0 * forces[index].re * scaleFactor;
@@ -1064,6 +1075,13 @@ void  CP_State_GSpacePlane::sendLambda() {
 
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  if(gs.ihave_kx0==1 && cp_min_opt==0){
+    double rad2i = 1.0/sqrt(2.0);
+    double rad2  = sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i]   *= rad2i;}
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
+  }//endif
 
   if(config.gSpaceNumChunks!=1){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1099,11 +1117,19 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
 
   if(config.doublePack==1){
+   if(cp_min_opt==1){
     for(int i=0; i<gs.numPoints; i++){
        double wght  = (k_x[i]==0 ? 0.5 : 1);
        force[i].re -= wght*data[i].re;
        force[i].im -= wght*data[i].im;
      }//endfor
+   }else{
+     for(int i=0; i<gs.numPoints; i++){force[i]  = data[i]*(-1.0);}
+     if(gs.ihave_kx0==1){
+       double rad2i = 1.0/sqrt(2.0);
+       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
+     }//endif
+   }//endif
   }else{
     for(int i=0; i<gs.numPoints; i++){
        force[i].re -= 0.5*data[i].re;
@@ -1175,19 +1201,14 @@ void CP_State_GSpacePlane::integrateModForce() {
   }//endif
   ireset=0;
 
-  int istate      = gs.istate_ind;
-  int ncoef       = gs.numPoints;
-  complex *psi_g  = gs.packedPlaneData; 
-  complex *forces = gs.packedForceData; 
-  complex *vpsi_g; 
-  complex *forcesold;
-  if(cp_min_opt==1){
-     forcesold = gs.packedPlaneDataScr;
-     vpsi_g    = NULL;
-  }else{
-     forcesold = NULL;
-     vpsi_g    = gs.packedVelData;
-     complex *psi_g_scr  = gs.packedPlaneDataScr;
+  int istate         = gs.istate_ind;
+  int ncoef          = gs.numPoints;
+  complex *psi_g     = gs.packedPlaneData; 
+  complex *forces    = gs.packedForceData; 
+  complex *vpsi_g    = gs.packedVelData; // for cp not minimization
+  complex *forcesold = gs.packedVelData; // for miniziation not cp
+  if(cp_min_opt==0){
+     complex *psi_g_scr = gs.packedPlaneDataScr; //retrieve non-orthog psi
      memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
   }//endif
 
@@ -1261,8 +1282,8 @@ void  CP_State_GSpacePlane::sendPsi() {
 
   complex *data=gs.packedPlaneData;
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-     int ncoef = gs.numPoints;
-     complex *scr  = gs.packedPlaneDataScr;
+     int ncoef     = gs.numPoints;
+     complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
      memcpy(scr,data,sizeof(complex)*ncoef);
   }//endif
 
@@ -1590,7 +1611,8 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
     estruct.totalEnergy  = total_energy;
     estruct.fmagPsi      = fmagPsi_total;
 
-    egroupProxy.updateEnergies(estruct);
+    egroupProxy.updateEnergies(estruct); // broadcast the complete set of energies
+                                         // to the group so that all procs have them.
 
   }// got all the energies
 

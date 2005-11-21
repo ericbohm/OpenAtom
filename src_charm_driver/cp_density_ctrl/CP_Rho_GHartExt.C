@@ -102,27 +102,30 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
       ComlibAssociateProxy(&commGHartInstance, rhoRealProxy_com);
   }
 }
-
-CP_Rho_GHartExt::~CP_Rho_GHartExt()
-{
-}
-
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg)
+CP_Rho_GHartExt::~CP_Rho_GHartExt()
 {
+}
+//============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
 // compute hart+Ext and vks(g) using rho(g) 
   
-
-  rho_gs.packedRho   = msg->data;  // why bother copying this readonly data?
+  rho_gs.packedRho = msg->data;  // why bother copying this readonly data?
   HartExtVksG();
   rho_gs.packedRho=NULL;  
   delete msg;  
+
 }
+//============================================================================
 
 
 //============================================================================
@@ -130,7 +133,7 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg)
 //============================================================================
 void CP_Rho_GHartExt::HartExtVksG() { 
 //============================================================================
-
+// get the variables
    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
    int natm          = ag->natm;
    Atom *atoms       = ag->atoms;
@@ -148,6 +151,9 @@ void CP_Rho_GHartExt::HartExtVksG() {
    int *k_y=rho_gs.k_y;
    int *k_z=rho_gs.k_z;
 
+//============================================================================
+// compute vks(g) from hart eext and reduce eext and ehart
+
 #ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
@@ -163,7 +169,6 @@ void CP_Rho_GHartExt::HartExtVksG() {
    e[1] = eext_ret;
    e[2] = ewd_ret;
    contribute(3 * sizeof(double),e,CkReduction::sum_double);
-
 #ifdef _CP_DEBUG_RHOG_VKSA_
      char myFileName[100];
      sprintf(myFileName, "Vks_Gspace_%d%d.out", thisIndex.x,thisIndex.y);
@@ -175,10 +180,15 @@ void CP_Rho_GHartExt::HartExtVksG() {
        }//endfor
      fclose(fp);
 #endif
+
+//============================================================================
+// partly fft vks  fft_gz(vks)
+
      bzero(Vks, numFull*sizeof(complex));
      rho_gs.expandRhoGSpace(Vks, vks);
      int ioptvks=4;
      rho_gs.doFwFFTGtoR(ioptvks, thisIndex.x); 
+
 #ifdef _CP_DEBUG_RHOG_VKSA_
      sprintf(myFileName, "Vks_GspaceAFFT_%d%d.out", thisIndex.x,thisIndex.y);
      fp = fopen(myFileName,"w");
@@ -189,10 +199,13 @@ void CP_Rho_GHartExt::HartExtVksG() {
      fclose(fp);
 #endif
 
+//============================================================================
+// send vks_hart_ext back to rho_real where fft(gx,gy) will be performed
+
      sendVks();
 
 //---------------------------------------------------------------------------
-}//end routine
+  }//end routine
 //============================================================================
 
 
@@ -208,15 +221,15 @@ void CP_Rho_GHartExt::sendVks() {
 #endif
 
 //============================================================================
-
-//============================================================================
 // Do a Comlib Dance
+
   if (config.useCommlib){
       commGHartInstance.beginIteration();
   }
   int numLines=rho_gs.numLines;
   
 //============================================================================
+
   int sizeZ=rho_gs.sizeZ;
   for(int z=0; z < sizeZ; z++) {
 
@@ -246,7 +259,7 @@ void CP_Rho_GHartExt::sendVks() {
   }
 
 //---------------------------------------------------------------------------
-}// end routine
+  }// end routine
 //============================================================================
 
 

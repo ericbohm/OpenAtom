@@ -79,6 +79,7 @@ void CPINTEGRATE::CP_integrate(const int ncoef, const int istate,int iteration,
 // II) Car Parrinello MD:
 
   if(cp_on==1){
+    ifound++;
     CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,k_x,k_y,k_z,
                      cmass,fictEke);
   }//endif

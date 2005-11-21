@@ -1,3 +1,6 @@
+// Things to do
+// dofft should do the fft
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -59,10 +62,11 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
 
   while(1) {
   
+    // constructor invokes run and then you suspend (no work yet)
     RTH_Suspend(); 
-    c->doFFT();
-    RTH_Suspend(); 
-    c->doProduct();
+    c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
+    RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
+    c->doProduct(); // vks(r) arrives in doproduct(msg) which resumes
 
   } //end while not done
 
@@ -115,8 +119,7 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void
-reduce(void *data)
+void reduce(void *data)
 {
     CkIndex2D idx = *(CkIndex2D *) data;
     realSpacePlaneProxy(idx.x, idx.y).ckLocal()->doReduction();
@@ -190,8 +193,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===============/=============================================================
-void CP_State_RealSpacePlane::doFFT()
-{
+void CP_State_RealSpacePlane::doFFT(){
         flagsRecd = true;
         count = 0;
 #ifdef _CP_DEBUG_STATER_VERBOSE_
@@ -284,13 +286,10 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
     CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
     *(int*)CkPriorityPtr(pmsg) = config.rsifftpriority;
     thisProxy(thisIndex.x,thisIndex.y).resumeProduct(pmsg);
+
 }
 //============================================================================
 
-void CP_State_RealSpacePlane::ResumeFromSync(){
-    if(config.useCommlib)
-	ComlibResetProxy(&gproxy);
-}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -298,7 +297,8 @@ void CP_State_RealSpacePlane::ResumeFromSync(){
 void CP_State_RealSpacePlane::resumeProduct(RSDummyResume *msg){
     delete msg;
     RTH_Runtime_resume(run_thread);
-    }
+}
+//============================================================================
 
 
 //============================================================================
@@ -363,6 +363,7 @@ void CP_State_RealSpacePlane::doProduct() {
     int planeSize  = sizeY*sizeX;
     int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
     int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+
     if (config.useCommlib){mssInstance.beginIteration();}
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
@@ -378,6 +379,7 @@ void CP_State_RealSpacePlane::doProduct() {
       gproxy(thisIndex.x, ic).doIFFT(msg); // send the message
     }//end for : chare sending
     if (config.useCommlib){mssInstance.endIteration();}
+
     if(config.conserveMemory){
       rs.destroy();
     }else{
@@ -396,14 +398,21 @@ void CP_State_RealSpacePlane::doProduct() {
 /* Setting up the multicast trees for Gengbin's library 
 */
 //============================================================================
-void 
-CP_State_RealSpacePlane::init(ProductMsg *msg)
-{
+void CP_State_RealSpacePlane::init(ProductMsg *msg){
     int i=1; 
     CkGetSectionInfo(cookie, msg);
     contribute(sizeof(int), &i, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
     // do not delete nokeep message
+}
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::ResumeFromSync(){
+    if(config.useCommlib)
+	ComlibResetProxy(&gproxy);
 }
 //============================================================================
 
