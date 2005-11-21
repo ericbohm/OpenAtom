@@ -85,12 +85,15 @@
  * end of mainpage
  */
 
- 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================ 
 #include <math.h>
 #include "charm++.h"
 #include "ckarray.h"
 #include "util.h"
-
+//============================================================================
 #include "groups.h"
 #include "cpaimd.h"
 #include "ortho.h"
@@ -99,12 +102,15 @@
 #include "StructureFactor.h"
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
-
+#include "MultiRingMulticast.h"
+//============================================================================
 #include "../include/CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
 #include "../../src_piny_physics_v1.0/include/charm_defs/Interface_ctrl.decl.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
+//============================================================================
+
 
 
 //============================================================================
@@ -121,8 +127,8 @@ extern MDINTRA      readonly_mdintra;
 extern GENERAL_DATA readonly_general_data;
 extern CP           readonly_cp; 
 /* @} */
+//============================================================================
 
-#include "MultiRingMulticast.h"
 
 //============================================================================
 /**
@@ -151,9 +157,11 @@ CProxy_FFTcache fftCacheProxy;
 CProxy_StructFactCache sfCacheProxy;
 CProxy_StructureFactor sfCompProxy;
 
-int atom_integrate_done;  // not a real global : more like a group of size 1
+//============================================================================
 
-int nstates;  // readonly globals
+//============================================================================
+int atom_integrate_done;  // not a real global : more like a group of size 1
+int nstates;              // readonly globals
 int sizeX;
 int nchareG;
 int Ortho_UE_step2;
@@ -161,6 +169,8 @@ int Ortho_UE_step3;
 int Ortho_UE_error;
 bool Ortho_use_local_cb;
 int done_init=0;
+//============================================================================
+
 
 //============================================================================
 // For using the multicast library :  Set some reduction clients
@@ -183,8 +193,8 @@ ComlibInstanceHandle mssInstance;
 ComlibInstanceHandle gssInstance;
 ComlibInstanceHandle mcastInstancePP;
 CkReduction::reducerType complexVectorAdderType;
-
 #include "ReductionClients.h"
+//============================================================================
 
 
 //============================================================================
@@ -196,10 +206,10 @@ CkReduction::reducerType complexVectorAdderType;
 //============================================================================
 
 main::main(CkArgMsg *m) {
-   done_init=0;
 //============================================================================
 /** Check arguments : Tell people what we are doing */
 
+    done_init=0;
     if (m->argc < 3) {
       CkAbort("Usage: pgm config_file_charm config_file_piny");
     }//endif
@@ -254,7 +264,7 @@ main::main(CkArgMsg *m) {
     CkPrintf("================================================\n\n");
 
 //============================================================================
-// Set user trace events
+// Set user trace events for projections optimizations
 
      traceRegisterUserEvent("doRealFwFFT", doRealFwFFT_);
      traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
@@ -311,38 +321,34 @@ main::main(CkArgMsg *m) {
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,
                 gSpacePPC,realSpacePPC,sim);
 
-
-
 //============================================================================    
 // Transfer parameters from physics to driver
-//    read in atoms/states : create atoms group 
+//    read in atoms : create atoms group 
     
     control_physics_to_driver();
 
 //============================================================================ 
 // Initialize the density chare arrays
 
-
     init_rho_chares(sizeYZ,gSpacePPC,realSpacePPC,rhoGPPC, sim);
+
 //============================================================================ 
-// Some intense initialization of paircalculator : Comments anyone?
-//   Can we hide all this in a function call?
+// Create mapping classes for Paircalcular
+
     mainProxy=thishandle;
   //-------------------------------------------------------------
-  // Create mapping classes for Paircalcular
     int indexSize = nchareG;
 
     int* indexZ = new int[indexSize];
     for(int i=0, count=0; i<nchareG; i++){
         indexZ[count] = i;
         count++;
-    }
-
+    }//endif
 
 //============================================================================ 
 // Initialize paircalculators for Psi and Lambda
 
-    init_pair_calculators( nstates,  indexSize, indexZ, gSpacePPC, doublePack, sim);
+    init_pair_calculators( nstates,indexSize,indexZ,gSpacePPC,doublePack,sim);
 
 //============================================================================ 
 // initialize Ortho
@@ -353,8 +359,6 @@ main::main(CkArgMsg *m) {
 // Initialize commlib strategies for later association and delegation
 
     init_commlib_strategies(sim->nchareRhoG, sizeYZ[1]);
-
-
 
 //============================================================================
 // clean up
@@ -368,20 +372,31 @@ main::main(CkArgMsg *m) {
     CkPrintf("\n------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
     CkPrintf("================================================\n\n");
+
 //============================================================================
    }// end Main
 //============================================================================
 
+
+//============================================================================    
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================    
 /**
  * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
  */
-void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, int doublePack, CPcharmParaInfo *sim)
-{
+//============================================================================    
+void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, 
+                           int doublePack, CPcharmParaInfo *sim)
+//============================================================================    
+   {
+//============================================================================    
+
   PRINT_LINE_STAR;
   PRINTF("Building Psi and Lambda Pair Calculators\n");
   PRINT_LINE_DASH;printf("\n");
   //-------------------------------------------------------------
   // Create mapping classes for Paircalcular
+
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
                    sizeX / gSpacePPC,config.sGrainSize,CmiTrue,sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG) ;
@@ -390,7 +405,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePP
   	           sizeX / gSpacePPC,config.sGrainSize, CmiFalse,sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG);
     
-    CkGroupID scalc_sym_id = scMap_sym.ckGetGroupID();
+    CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
     CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
 
 
@@ -407,19 +422,24 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePP
     gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
     int myPack=0;
 
-    //asymmetric AKA Lambda
+    //asymmetric AKA Lambda AKA Gamma
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId);
 
-}
+//============================================================================ 
+   }//end routine
+//============================================================================ 
 
+//============================================================================ 
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================ 
 /**
  * Initialize Commlib communication strategies  
  */ 
 //                                          
 //============================================================================
-void init_commlib_strategies(int numRhoG, int numReal)
-{
+void init_commlib_strategies(int numRhoG, int numReal){
+//============================================================================
+
   PRINT_LINE_STAR;
   PRINTF("Building Commlib strategies\n");
   PRINT_LINE_DASH;printf("\n");
@@ -584,7 +604,7 @@ void init_commlib_strategies(int numRhoG, int numReal)
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGByrdInstance = ComlibRegister(gstratByrd);
 
-    }
+    }//endif : use commlib
 
 
     if (config.useCommlibMulticast) {
@@ -617,9 +637,12 @@ void init_commlib_strategies(int numRhoG, int numReal)
 	      mcastInstancePP=ComlibRegister(r1strat);
 	  }
 	
-    }        
-    // end Sameer's new communication strategies 
-}
+    }// end Sameer's new communication strategies 
+
+//============================================================================
+   }//end routine
+//============================================================================
+
 
 //============================================================================
 /**
@@ -628,9 +651,9 @@ void init_commlib_strategies(int numRhoG, int numReal)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_ortho_chares(int nstates, int indexSize, int *indexZ)
-{
-  //-------------------------------------------------------------
+void init_ortho_chares(int nstates, int indexSize, int *indexZ){
+//============================================================================
+
   PRINT_LINE_STAR;
   PRINTF("Building Ortho Chares\n");
   PRINT_LINE_DASH;printf("\n");
@@ -684,18 +707,26 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ)
     orthoProxy.doneInserting();
     orthoProxy.makeSections(indexSize, indexZ);
 
-}
+//============================================================================
+   }//end routine 
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void main::doneInit(CkReductionMsg *msg){
-  delete msg;
+//============================================================================
+    delete msg;
     CkPrintf("done init %d\n",done_init);
-    if (done_init == 0) 
-    {
+
+    if (done_init == 0){
 	// kick off file reading in gspace
 	CkPrintf("Initiating import of states\n");
-	for(int s=0;s<nstates;s++)
+	for(int s=0;s<nstates;s++){
 	    gSpacePlaneProxy(s,0).readFile();
-    }
+	}//endfor
+    }//endif
     if (done_init >= 1) {
       if (done_init == 1){ 
  	  CkPrintf("\n======================================================\n");
@@ -707,6 +738,7 @@ void main::doneInit(CkReductionMsg *msg){
     }
     done_init++;
 }
+//============================================================================
 
 
 //============================================================================
@@ -792,7 +824,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 					      realSpacePPC);}}
 
     realSpacePlaneProxy.doneInserting();
-    CkPrintf("created %d * %d = %d rsp\n",nstates,sizeYZ[0],nstates*sizeYZ[0]);
     // 
     //    gSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
     //    realSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
@@ -860,7 +891,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	      pe_ind=iend;
 	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++)
 	  {
-//		CkPrintf("inserting SF[%d %d %d] to pe %d\n",AtmGrp,x,dup,listpe[x][pe_ind]);
 	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps, config.numSfDups, natm_nl_grp_max,  num_dup, &(listpe[x][istart]),atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
 	      pe_ind++;
 	      if(pe_ind>nsend[x])
@@ -928,11 +958,12 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
     int rhoGHartstride=rhoGstride;
     int rhoGHartoff=0;
     int offsetFromZero=1;  // proc0 has reduction root issues avoid it if there are enough procs
-    if(rhoGstride==1)
+    if(rhoGstride==1){
 	offsetFromZero=0;
-    if(offsetFromZero>0)
+    }
+    if(offsetFromZero>0){
 	rhoGHartoff=2;
-    CkPrintf("offsetFromZero %d rhoGHartoff %d rhoRstride %d rhoGstride %d rhoGHartstride %d\n",offsetFromZero, rhoGHartoff, rhoRstride, rhoGstride, rhoGHartstride);
+    }
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
