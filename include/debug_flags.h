@@ -42,6 +42,7 @@
 //#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_STATEG_VERBOSE_
+//#define _CP_DEBUG_DYNAMICS_
 #define _CP_DEBUG_COEF_SCREEN_
 
 //=============================================================================

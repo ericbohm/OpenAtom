@@ -205,7 +205,7 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
   delete m;
 
   int iopt   = (int) dd;
-  if(iopt==0){CkPrintf("Fict Eke    =  %5.8lf %d\n", d,iopt);}
+  if(iopt==0){CkPrintf("Fict Eke    =  %.10g\n", d);}
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d);  
 
 }
@@ -1266,6 +1266,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   //---------------------------------------------------------------
   // (A) Debug output before integration
+#ifdef _CP_DEBUG_DYNAMICS_
   if(cp_min_opt!=1){
     if(istate<3){
       char forcefile[80];
@@ -1280,6 +1281,7 @@ void CP_State_GSpacePlane::integrateModForce() {
       fclose(fp);
     }//endif
   }//endif
+#endif
   //---------------------------------------------------------------
   // (B) Numerical integration
   gs.fictEke_ret = 0.0;
@@ -1287,6 +1289,7 @@ void CP_State_GSpacePlane::integrateModForce() {
         k_x, k_y, k_z,coef_mass,gamma_conj_grad,&gs.fictEke_ret);
   //---------------------------------------------------------------
   // (C) Debug output after integration
+#ifdef _CP_DEBUG_DYNAMICS_
   if(cp_min_opt!=1){
     if(thisIndex.x<3){
       char forcefile[80];
@@ -1301,9 +1304,10 @@ void CP_State_GSpacePlane::integrateModForce() {
       fclose(fp);
     }//endif
   }//endif
+#endif
 
 //==========================================================================
-// Contribute FictKe
+// Contribute FictKe : screen output non-orthogonal psi
 
   double sendme[2];
   sendme[0] = gs.fictEke_ret;
@@ -1316,7 +1320,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   if(thisIndex.x==0 && thisIndex.y==0){
     atomsGrpProxy.StartRealspaceForces();
-  }
+  }//endif
 
 //------------------------------------------------------------------------------
    } // end CP_State_GSpacePlane::integrateModForce
@@ -1399,7 +1403,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
     }//endif
     //--------------------------------------------------------------------
-    // (B) Generate some screen output
+    // (B) Generate some screen output of orthogonal psi
     screenOutputPsi();
     //--------------------------------------------------------------------
     // (D) Go back to the top or exit
@@ -1420,13 +1424,14 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 void CP_State_GSpacePlane::screenOutputPsi(){
 //==============================================================================
 
-  complex *psi  = gs.packedPlaneData;
+  int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
   complex *vpsi = gs.packedVelData;
   complex *fpsi = gs.packedForceData;
+  complex *psi  = gs.packedPlaneData; //orthogonal psi
+  if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} //non-orthogonal psi
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
-    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
