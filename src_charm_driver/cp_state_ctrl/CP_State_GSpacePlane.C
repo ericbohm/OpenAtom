@@ -87,6 +87,7 @@ extern ComlibInstanceHandle mcastInstancePP;
 extern CProxy_FFTcache fftCacheProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 
+void cleanExit(void *, void *);
 void printMagForcePsi(void *, void *);
 void printFictEke(void *, void *);
 void printEnergyEke(void *, void *);
@@ -113,13 +114,13 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     // (A)start new iteration : Reset counters
        c->startNewIter();
     //------------------------------------------------------------------------
-    // (B) Start SF/computeZ, psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
+    // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
        c->releaseSFComputeZ();
        c->doFFT(); 
        c->sendFFTData();
-       RTH_Suspend(); // wait for (psi*vks)[gx,gy,z] to arive from RealSpace
+       RTH_Suspend(); // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
     //------------------------------------------------------------------------
-    // (C)complete IFFT of (psi*vks)=F to F(gx,gy,gz)
+    // (C)complete IFFT of F(gx,gy,z) to F(gx,gy,gz)
        c->doIFFT();  // Message from realspace arrives : doifft(msg) resumes
     //------------------------------------------------------------------------
     // (D)Combine non-local and vks forces then compute eke forces
@@ -156,9 +157,10 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 
  //==========================================================================
  // (III)Orthogonalization code block
+
     c->sendPsi();      // send to Pair Calculator
-    c->first_step = 0; // its not the first step anymore
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
+    c->first_step = 0; // its not the first step anymore
 
   } //end while: Go back to top of loop (no suspending : no pausing)
 //============================================================================
@@ -192,6 +194,22 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
 }
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+  void printFictEke(void *param, void *msg){
+  
+  CkReductionMsg *m=(CkReductionMsg *)msg;
+  double d   = ((double *)m->getData())[0];
+  double dd  = ((double *)m->getData())[1];
+  delete m;
+
+  int iopt   = (int) dd;
+  if(iopt==0){CkPrintf("Fict Eke    =  %5.8lf %d\n", d,iopt);}
+  gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d);  
+
+}
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -209,20 +227,20 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
 }
 //============================================================================
 
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-  void printFictEke(void *param, void *msg){
+void cleanExit(void *param, void *msg){
   
   CkReductionMsg *m=(CkReductionMsg *)msg;
-  double d   = ((double *)m->getData())[0];
-  double dd  = ((double *)m->getData())[1];
   delete m;
+  CkPrintf("======================================================\n\n\n");
 
-  int iopt   = (int) dd;
-  if(iopt==0){CkPrintf("Fict Eke    =  %5.8lf %d\n", d,iopt);}
-  gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d);  
-
+  CkPrintf("======================================================\n");
+  CkPrintf("         Open Atom Simulation Complete                \n");
+  CkPrintf("======================================================\n");
+  CkExit();
 }
 //============================================================================
 
@@ -724,7 +742,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
 //============================================================================
 // Check for flow of control errors
 
-    if( atom_integrate_done==0){
+    if(atom_integrate_done==0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error : Starting new iter before\n");
       CkPrintf("finishing atom integrate\n");
@@ -768,6 +786,12 @@ void CP_State_GSpacePlane::startNewIter ()  {
 	    LBTurnInstrumentOn();
 	}//endif
     }//endif
+
+//============================================================================
+// Output psi at start of minimization for debugging
+
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 
 //---------------------------------------------------------------------------
     }//end routine
@@ -1245,11 +1269,12 @@ void CP_State_GSpacePlane::integrateModForce() {
   if(cp_min_opt!=1){
     if(istate<3){
       char forcefile[80];
-      snprintf(forcefile,80,"Bpsi_force_%d_%d.out",thisIndex.x,thisIndex.y);
+      snprintf(forcefile,80,"Bpsi_force_%d_%d_%d.out",thisIndex.x,thisIndex.y,iteration);
       FILE *fp=fopen(forcefile,"w");
       for(int i=0;i <ncoef;i++){
-	  fprintf(fp,"%d %d %d : %.10g %.10g : 0 0 : %g %g : %g\n",
+	  fprintf(fp,"%d %d %d : %.10g %.10g : %g %g : %g %g : %g\n",
                   k_x[i], k_y[i], k_z[i],psi_g[i].re,psi_g[i].im,
+                  vpsi_g[i].re,vpsi_g[i].im,
                   forces[i].re,forces[i].im, coef_mass[i]);
       }//endfor
       fclose(fp);
@@ -1265,25 +1290,33 @@ void CP_State_GSpacePlane::integrateModForce() {
   if(cp_min_opt!=1){
     if(thisIndex.x<3){
       char forcefile[80];
-      snprintf(forcefile,80,"Apsi_force_%d_%d.out",thisIndex.x,thisIndex.y);
+      snprintf(forcefile,80,"Apsi_force_%d_%d_%d.out",thisIndex.x,thisIndex.y,iteration);
       FILE *fp=fopen(forcefile,"w");
       for(int i=0;i <ncoef;i++){
-	  fprintf(fp,"%d %d %d : %.10g %.10g : 0 0 : %g %g : %g\n",
+	  fprintf(fp,"%d %d %d : %.10g %.10g : %g %g : %g %g : %g\n",
                   k_x[i], k_y[i], k_z[i],psi_g[i].re,psi_g[i].im,
+                  vpsi_g[i].re,vpsi_g[i].im,
                   forces[i].re,forces[i].im, coef_mass[i]);
       }//endfor
       fclose(fp);
     }//endif
-    contribute(sizeof(int),&ncoef, CkReduction::sum_int, CkCallback(CkCallback::ckExit));
   }//endif
 
 //==========================================================================
+// Contribute FictKe
 
   double sendme[2];
   sendme[0] = gs.fictEke_ret;
   sendme[1] = (double)cp_min_opt;
   contribute(2*sizeof(double),sendme,CkReduction::sum_double, 
              CkCallback(printFictEke, NULL));
+
+//==========================================================================
+// Launch the atoms 
+
+  if(thisIndex.x==0 && thisIndex.y==0){
+    atomsGrpProxy.StartRealspaceForces();
+  }
 
 //------------------------------------------------------------------------------
    } // end CP_State_GSpacePlane::integrateModForce
@@ -1367,6 +1400,30 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     }//endif
     //--------------------------------------------------------------------
     // (B) Generate some screen output
+    screenOutputPsi();
+    //--------------------------------------------------------------------
+    // (D) Go back to the top or exit
+    if(iteration==config.maxIter){
+      int i;
+      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+    }//endif
+    RTH_Runtime_resume(run_thread);
+  } // if partialCount
+
+//----------------------------------------------------------------------------
+   }//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::screenOutputPsi(){
+//==============================================================================
+
+  complex *psi  = gs.packedPlaneData;
+  complex *vpsi = gs.packedVelData;
+  complex *fpsi = gs.packedForceData;
+
 #ifdef _CP_DEBUG_COEF_SCREEN_
     int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
     int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
@@ -1377,18 +1434,24 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 	  CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
+            double vre=vpsi[i].re;
+            double vim=vpsi[i].im;
+            if(iteration>1){
+	    }
  	    CkPrintf("VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vpsi[i].re,vpsi[i].im);
+		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
 	  CkPrintf("------------------------------------------------------\n");
 	}//endif
 	if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
+          double vre=vpsi[i].re;
+          double vim=vpsi[i].im;
 	  CkPrintf("------------------------------------------------------\n");
 	  CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
  	    CkPrintf("VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vpsi[i].re,vpsi[i].im);
+		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
 	  CkPrintf("------------------------------------------------------\n");
 	}//endif
@@ -1396,10 +1459,6 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     }//endif
     //--------------------------------------------------------------------
 #endif
-    //--------------------------------------------------------------------
-    // (D) Go back to the top
-    RTH_Runtime_resume(run_thread);
-  } // if partialCount
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -1412,10 +1471,12 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 void CP_State_GSpacePlane::isAtSync(int numIter) {
 //==============================================================================
 
+#ifndef CMK_OPTIMIZE
     if(numIter == 2 * LOAD_BALANCE_STEP)
       traceBegin();
     if(numIter == 3 * LOAD_BALANCE_STEP)
       traceEnd();
+#endif
     /* needs to be rewritten completely
     if(config.lbgspace)
       {

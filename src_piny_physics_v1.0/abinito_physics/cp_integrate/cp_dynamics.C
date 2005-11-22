@@ -35,7 +35,7 @@ void CPINTEGRATE::CP_integrate_dyn(const int ncoef, const int istate,int iterati
 // Update the velcoties to full step (if not the intial step).
 // Compute the Fictious Kinetic Energy at time t (e.g. t=0 on initial step)
 
-   if(iteration!=0){
+   if(iteration>1){
       for(int i = 0; i < ncoef; i++){
         vpsi[i] += forces[i]*(dt2/cmass[i]);     
       }//endfor

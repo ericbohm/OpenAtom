@@ -77,11 +77,20 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 void Ortho::start_calc(CkReductionMsg *msg){
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-	atomsGrpProxy.StartRealspaceForces(); 
-	CkPrintf("------------------------------------------------------\n");
-	CkPrintf("Iteration %d done\n", numGlobalIter+1);
-	CkPrintf("======================================================\n\n");
-	CkPrintf("======================================================\n");
+//	atomsGrpProxy.StartRealspaceForces(); 
+        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
+  	  CkPrintf("------------------------------------------------------\n");
+	  CkPrintf("Iteration %d done\n", numGlobalIter+1);
+	  CkPrintf("======================================================\n\n");
+	  CkPrintf("======================================================\n");
+	}else{
+          if(numGlobalIter>0){
+ 	   CkPrintf("======================================================\n\n");
+	   CkPrintf("======================================================\n");
+	  }//endif
+	  CkPrintf("Beginning Iteration %d \n", numGlobalIter);
+  	  CkPrintf("------------------------------------------------------\n");
+	}//endif
       }
     got_start = true;
     int chunksize = m;
@@ -146,17 +155,20 @@ void Ortho::collect_results(void)
 #ifdef _CP_DEBUG_TMAT_
     print_results();
 #endif
+    int iprintout;
+    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+    if(cp_min_opt==1){iprintout=config.maxIter-1;}else{iprintout=config.maxIter;}
     if(thisIndex.x==0 && thisIndex.y==0)
       {
 	wallTimeArr[numGlobalIter] = CkWallTimer();
-	if (numGlobalIter+1 == config.maxIter) {
+	if (numGlobalIter == iprintout) {
+          CkPrintf("----------------------------\n");
 	  ckout << "wall times from within ortho" << endl;
 	  int t;
 	  for (t = 1; t < config.maxIter; t++)
 	    ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
 	  ckout << CkWallTimer() - wallTimeArr[t-1] << endl;
-	  CkPrintf("======================================================\n");
-	  CkExit();
+	  CkPrintf("------------------------------\n");
 	}
 	else
 	{
@@ -165,7 +177,7 @@ void Ortho::collect_results(void)
 	}
       }
     numGlobalIter++;
-    if (numGlobalIter < config.maxIter) 
+    if (numGlobalIter <= config.maxIter+1) 
       {
 	if ((config.lbgspace || config.lbpaircalc) &&(numGlobalIter== FIRST_BALANCE_STEP || numGlobalIter % LOAD_BALANCE_STEP == 0)) {
 	  CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
@@ -337,7 +349,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   orthoT=NULL;
   wallTimeArr=NULL;
   if(thisIndex.x==0 && thisIndex.y==0){
-    wallTimeArr = new double[config.maxIter];
+    wallTimeArr = new double[config.maxIter+2];
   }
   numGlobalIter = 0;
 }

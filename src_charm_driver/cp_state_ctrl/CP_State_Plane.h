@@ -133,6 +133,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void doFFT();
 	void startNewIter ();
 	void sendPsi();
+        void screenOutputPsi();
 	void sendLambda();
 	void makePCproxies();
 	void acceptNewPsi(CkReductionMsg *msg);

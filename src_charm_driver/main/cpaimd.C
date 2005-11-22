@@ -730,7 +730,11 @@ void main::doneInit(CkReductionMsg *msg){
     if (done_init >= 1) {
       if (done_init == 1){ 
  	  CkPrintf("\n======================================================\n");
-          ckout << "Starting Iterations : " << endl;
+          if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
+            ckout << "Running Open Atom CP Minimization: " << endl;
+	  }else{
+            ckout << "Running Open Atom CP Dynamics: " << endl;
+	  }//endif
   	  CkPrintf("======================================================\n\n");
   	  CkPrintf("\n======================================================\n");
 	  gSpacePlaneProxy.run();
