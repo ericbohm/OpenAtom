@@ -301,32 +301,10 @@ class CPcharmParaInfoGrp: public Group {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// Using non-symm to do the symm case if defined : Should get rid of 
-//#define _CP_TESTSYMM_
 
-// Not doing full CPAIMD computation if undefined : Should get rid of
-//#define _FULL_CPAIMD_ 
-
-// Not supporting the full interface reading : Should get rid of
-//#define _FIX_FOR_LOCAL_ATOMS_ONLY_ 
-
-/******** General VERBOSE flags ********/
-//#define _CP_GS_VERBOSE_
-//#define _CP_RS_VERBOSE_
-//#define _CP_UTIL_VERBOSE_
-
-/******** Debugging flags ********/
-//#define _CP_DEBUG_OLDFORCE_
-//#define _CP_DEBUG_NEWFORCE_
-//#define _CP_DEBUG_COEFFFINAL_
-//#define _CP_DEBUG_LMAT_
-//#define _CP_DEBUG_SMAT_
-//#define _CP_DEBUG_TMAT_
-//#define  _CP_DEBUG_NLMAT_
 
 /******** Optimization flags ********/
-//#define _CP_USE_BLAS_GATHER_
-//#define _CP_GROUP_REDUCTION_
+ //#define _CP_USE_BLAS_GATHER_
 
 /******** User Trace Events *********/
 #define DoFFTContribute_     100

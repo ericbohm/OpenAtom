@@ -10,7 +10,7 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-// CG minimization
+// Dynamics
 //============================================================================
 
 void CPINTEGRATE::CP_integrate_dyn(const int ncoef, const int istate,int iteration,
@@ -64,3 +64,41 @@ void CPINTEGRATE::CP_integrate_dyn(const int ncoef, const int istate,int iterati
 //============================================================================
   } /* End function */
 //============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+// Dynamics
+//============================================================================
+
+void CPINTEGRATE::CP_integrate_half_vel(int ncoef, int iteration, 
+                        complex *forces,complex *vpsi,complex *psi,
+                        int *k_x,int *k_y,int *k_z,double *cmass)
+
+//============================================================================
+   { /* Begin Function */
+//----------------------------------------------------------------------------
+// Local Variables
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+   double dt   = gentimeinfo->dt;
+   double dt2  = dt*0.5;
+
+//============================================================================
+
+   if(iteration>1){
+      for(int i = 0; i < ncoef; i++){
+        vpsi[i] += forces[i]*(dt2/cmass[i]);     
+      }//endfor
+      // apply nhc
+   }//endif
+
+//============================================================================
+  } /* End function */
+//============================================================================
+

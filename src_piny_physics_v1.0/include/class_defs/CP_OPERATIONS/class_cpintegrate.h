@@ -44,6 +44,9 @@ class CPINTEGRATE{
                                complex *,const int *, const int *, const int *,
                                double *, double *);
 
+  static void CP_integrate_half_vel(int ,int ,complex *,complex *,complex *,
+                                    int *,int *,int *,double *);
+
 //---------------------------------------------------------------------------
    }; //CPINTEGRATE
 //==========================================================================

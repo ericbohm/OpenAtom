@@ -1127,7 +1127,8 @@ void Config::print() {
                   << "gExpandFact: " << gExpandFact << endl
                   << "gExpandFactRho: " << gExpandFactRho << endl
 		  << "rhogpriority: " << rhogpriority << endl
-		  << "fftprogresssplit: " << fftprogresssplit << endl;
+		  << "fftprogresssplit: " << fftprogresssplit << endl
+		  << "stateOutputOn: " << stateOutputOn << endl;
    CkPrintf("\n");
 
 //----------------------------------------------------------------------------------
@@ -1188,8 +1189,9 @@ void Config::readConfig(const char* fileName, Config &config,
     config.rhogpriority    = 2000000;   // unused?
     config.priority        = 10;        // unused?
     config.gExpandFact     = 1.0;
-    config.gExpandFactRho     = 1.0;
-    config.fftprogresssplit =20;
+    config.gExpandFactRho  = 1.0;
+    config.fftprogresssplit=20;
+    config.stateOutputOn  = 0;
 //===================================================================================
 // Read parameters
 
@@ -1313,6 +1315,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhogpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "fftprogresssplit"))
             config.fftprogresssplit = atoi(parameterValue);
+        else if (!strcmp(parameterName, "stateOutputOn"))
+            config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "parlambda"))
             CkPrintf("@_parlambda is now compulsory_@\n");
         else if (!strcmp(parameterName, "gExpandFact")){
@@ -1515,6 +1519,13 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
+    if(config.stateOutputOn<0 ||config.stateOutputOn>1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("The state output flag must be 1(on) or 0 (off) \n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -1637,16 +1648,15 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
 
 
-//===================================================================================
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//===================================================================================
-void writePartState(int ncoef,complex *psi,complex *vpsi,complex *fpsi,double *mass,
-                    double dt,int *k_x,int *k_y,int *k_z,int cp_min_opt,
-                    int sizeX,int sizeY, int sizeZ,
-                    char *psiName,char *vpsiName)
-//============================================================================
+//=============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+void writePartState(int ncoef,complex *psi,complex *vpsi,
+                    int *k_x,int *k_y,int *k_z,int cp_min_opt,
+                    int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName)
+//=============================================================================
   { //begin rotunie
-//============================================================================
+//=============================================================================
   
   FILE *fp_psi  = fopen(psiName,"w");
     fprintf(fp_psi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
@@ -1658,10 +1668,8 @@ void writePartState(int ncoef,complex *psi,complex *vpsi,complex *fpsi,double *m
   if(cp_min_opt==0){
     FILE *fp_vpsi = fopen(vpsiName,"w");
       fprintf(fp_vpsi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
-      for(int i=1;i<ncoef;i++){
-        double vpsi_re = vpsi[i].re+0.5*dt*fpsi[i].re/mass[i];
-        double vpsi_im = vpsi[i].im+0.5*dt*fpsi[i].im/mass[i];
-        fprintf(fp_vpsi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],vpsi_re,vpsi_im);
+      for(int i=0;i<ncoef;i++){
+        fprintf(fp_vpsi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],vpsi[i].re,vpsi[i].im);
       }//endfor
     fclose(fp_vpsi);
   }//endif

@@ -217,11 +217,13 @@ class Config {
 	int rhogpriority;
 	int priority;
 	int fftprogresssplit;
+        int stateOutputOn;
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
 };
 #if ! CMK_BLUEGENE_CHARM
 PUPbytes(Config);
 #endif
+
 //===================================================================================
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -253,7 +255,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 
-void writePartState(int ,complex *,complex *,complex *,double *,double ,
+void writePartState(int ,complex *,complex *,
                     int *,int *,int *,int ,int,int,int,char *,char *);
 
 //===================================================================================

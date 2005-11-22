@@ -111,7 +111,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1 || 
        c->first_step != 1){
     //------------------------------------------------------------------------
-    // (A)start new iteration : Reset counters
+    // (A) Start new iteration : Reset counters
        c->startNewIter();
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
@@ -120,11 +120,11 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->sendFFTData();
        RTH_Suspend(); // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
     //------------------------------------------------------------------------
-    // (C)complete IFFT of F(gx,gy,z) to F(gx,gy,gz)
+    // (C) Complete IFFT of F(gx,gy,z) to F(gx,gy,gz)
        c->doIFFT();  // Message from realspace arrives : doifft(msg) resumes
     //------------------------------------------------------------------------
-    // (D)Combine non-local and vks forces then compute eke forces
-    //    If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
+    // (D) Combine non-local and vks forces then compute eke forces
+    //     If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
        if (!(c->completedExtExcNlForces())){
          RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
                         // PP calls combineForcesGetEke() which invokes resume
@@ -145,7 +145,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 	RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
       }// endif : CP-CG minimization
     //------------------------------------------------------------------------
-    // (G) Output the states
+    // (G) Output the states for cp dynamics
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
          c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
   	 if(c->iwrite_now==1){RTH_Suspend();}
@@ -162,13 +162,13 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     }// endif determine entry point
 
  //==========================================================================
- // (III) Orthogonalization and ouptut code block
+ // (III) Orthogonalization and output code block
    //------------------------------------------------------------------------
    // (A) Orthogonalize
     c->sendPsi();      // send to Pair Calculator
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
    //------------------------------------------------------------------------
-   // (B) Output the states
+   // (B) Output the states for minimization
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1){
        c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
        if(c->iwrite_now==1){RTH_Suspend();}
@@ -578,35 +578,43 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   int sizeX      = (sim->sizeX);
   int sizeY      = (sim->sizeY);
   int sizeZ      = (sim->sizeZ);
-  double dt      = (sim->dt);
   int ind_state  = (thisIndex.x+1);
   int ind_chare  = (thisIndex.y+1);
   int ncoef      = gSpaceNumPoints;
-  complex *vpsi  = gs.packedVelData;
-  complex *fpsi  = gs.packedForceData;
-  complex *psi   = gs.packedPlaneData;          // orthogonal psi
-  if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} // non-orthogonal psi
+  complex *psi   = gs.packedPlaneData;
 
 //============================================================================
 // Set the file names and write the files
 
   iwrite_now = 0;
-  if( ((iteration % ndump_frq)==0) || (iteration==config.maxIter) ){
-    iwrite_now = 1;
-    if(ind_state==1 && ind_chare==1){
-      CkPrintf("-----------------------------------\n");
-      CkPrintf("Writing states to disk on step %d\n",iteration);
-      CkPrintf("-----------------------------------\n");
-    }//endif
-    char psiName[200]; char vpsiName[200];
-    sprintf(psiName, "%s/newState%d_%d.out", config.dataPath,ind_state,ind_chare);
-    sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state,ind_chare);
-    writePartState(ncoef,psi,vpsi,fpsi,coef_mass,dt,k_x,k_y,k_z,cp_min_opt,
-                   sizeX,sizeY,sizeZ,psiName,vpsiName);
-    int i=0;
-    contribute(sizeof(int),&i,CkReduction::sum_int,
+  if(config.stateOutputOn==1){
+
+    if( ((iteration % ndump_frq)==0) || (iteration==config.maxIter) ){
+      complex *vpsi     = gs.packedPlaneDataScr;
+      if(cp_min_opt==0){
+        complex *forces   = gs.packedForceData;
+        complex *vpsi_old = gs.packedVelData;
+        memcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
+        CPINTEGRATE::CP_integrate_half_vel(ncoef,iteration,forces,vpsi,psi,
+                                           k_x,k_y,k_z,coef_mass);
+      }//endif
+      iwrite_now = 1;
+      if(ind_state==1 && ind_chare==1){
+        CkPrintf("-----------------------------------\n");
+        CkPrintf("Writing states to disk on step %d\n",iteration);
+        CkPrintf("-----------------------------------\n");
+      }//endif
+      char psiName[200]; char vpsiName[200];
+      sprintf(psiName, "%s/newState%d_%d.out", config.dataPath,ind_state,ind_chare);
+      sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state,ind_chare);
+      writePartState(ncoef,psi,vpsi,k_x,k_y,k_z,cp_min_opt,sizeX,sizeY,sizeZ,
+                     psiName,vpsiName);
+      int i=0;
+      contribute(sizeof(int),&i,CkReduction::sum_int,
        CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),gSpacePlaneProxy));
-  }//endif
+    }//endif : its time to write
+
+  }//endif : it is useful to write
   
 //---------------------------------------------------------------------------
    }//write the file
@@ -932,13 +940,13 @@ void CP_State_GSpacePlane::doFFT() {
   double StartTime=CmiWallTimer();
 #endif
 
-  //#ifndef _FULL_CPAIMD_
-  //  CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-  //            sizeof(complex)*gs.numPoints);
-  //  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-  //    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-  //  }//endif
-  //#endif      
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+            sizeof(complex)*gs.numPoints);
+  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
+#endif      
 
 // Do fft in forward direction, 1-D, in z direction
 // A local function not a message
@@ -1237,6 +1245,9 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   complex *force = gs.packedForceData;
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
 
+//==============================================================================
+// Get the modified forces
+
   if(config.doublePack==1){
    if(cp_min_opt==1){
     for(int i=0; i<gs.numPoints; i++){
@@ -1259,6 +1270,9 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   }//endif
   delete msg;  
 
+//==============================================================================
+// Compute the mag square of the forces
+
   double force_sq_sum=0.0;
   for(int i=0; i<gs.numPoints; i++){
     force_sq_sum+= force[i].getMagSqr();
@@ -1266,6 +1280,19 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   contribute(sizeof(double), &force_sq_sum, CkReduction::sum_double, 
 	     CkCallback(printMagForcePsi, NULL));
   
+//==============================================================================
+// Retrieve Non-orthog psi
+
+  if(cp_min_opt==0){
+     int ncoef          = gs.numPoints;
+     complex *psi_g     = gs.packedPlaneData;
+     complex *psi_g_scr = gs.packedPlaneDataScr;
+     memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+  }//endif
+
+//==============================================================================
+// Resume 
+
   RTH_Runtime_resume(run_thread);
 
 //==============================================================================
@@ -1328,10 +1355,6 @@ void CP_State_GSpacePlane::integrateModForce() {
   complex *forces    = gs.packedForceData; 
   complex *vpsi_g    = gs.packedVelData; // for cp not minimization
   complex *forcesold = gs.packedVelData; // for miniziation not cp
-  if(cp_min_opt==0){
-     complex *psi_g_scr = gs.packedPlaneDataScr; //retrieve non-orthog psi
-     memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
-  }//endif
 
 //==========================================================================
 // (II) Evolve the states using the forces/conjugate direction
@@ -1404,6 +1427,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 //==============================================================================
 void  CP_State_GSpacePlane::sendPsi() {
 //==============================================================================
+// Error checking
 
   acceptedPsi =false;
   if(config.gSpaceNumChunks!=1){
@@ -1413,6 +1437,9 @@ void  CP_State_GSpacePlane::sendPsi() {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
+
+//==============================================================================
+// Prepare the data : If cp dynamics is going, save the non-orthogonal puppies.
 
   complex *data=gs.packedPlaneData;
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
@@ -1425,6 +1452,8 @@ void  CP_State_GSpacePlane::sendPsi() {
     double rad2i = 1.0/sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
   }//endif
+
+//==============================================================================
 
   int s, c;
   int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;

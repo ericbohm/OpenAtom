@@ -17,6 +17,7 @@
 
 //=============================================================================
 // include/CPcharmParaInfo.h
+//#define _CP_DEBUG_PARAINFO_VERBOSE_
 
 //=============================================================================
 // src_charm_driver/cp_density_ctrl/CP_Rho_RealSpacePlane.C : 
@@ -44,6 +45,7 @@
 //#define _CP_DEBUG_STATEG_VERBOSE_
 //#define _CP_DEBUG_DYNAMICS_
 #define _CP_DEBUG_COEF_SCREEN_
+#define _CP_DEBUG_UPDATE_OFF_
 
 //=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 
