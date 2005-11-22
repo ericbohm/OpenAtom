@@ -45,6 +45,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_nl    = (cp->cppseudo.nonlocal.natm);
   double dt      = gentimeinfo->dt;
   int ndump_frq  = genfilenames->iwrite_dump;
+  double tol_norb = cpconstrnt->c_tolnorb;
 
 //========================================================================
 
@@ -79,6 +80,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
    sim->dt         = dt;
    sim->ndump_frq  = ndump_frq;
+   sim->tol_norb   = tol_norb;
 
 //-----------------------------------------------------------------------
   }//end routine
