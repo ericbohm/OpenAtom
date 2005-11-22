@@ -1635,3 +1635,37 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
   }//end routine
 //============================================================================
+
+
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+void writePartState(int ncoef,complex *psi,complex *vpsi,complex *fpsi,double *mass,
+                    double dt,int *k_x,int *k_y,int *k_z,int cp_min_opt,
+                    int sizeX,int sizeY, int sizeZ,
+                    char *psiName,char *vpsiName)
+//============================================================================
+  { //begin rotunie
+//============================================================================
+  
+  FILE *fp_psi  = fopen(psiName,"w");
+    fprintf(fp_psi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+    for(int i=0;i<ncoef;i++){
+      fprintf(fp_psi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
+    }//endfor
+  fclose(fp_psi);
+
+  if(cp_min_opt==0){
+    FILE *fp_vpsi = fopen(vpsiName,"w");
+      fprintf(fp_vpsi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+      for(int i=1;i<ncoef;i++){
+        double vpsi_re = vpsi[i].re+0.5*dt*fpsi[i].re/mass[i];
+        double vpsi_im = vpsi[i].im+0.5*dt*fpsi[i].im/mass[i];
+        fprintf(fp_vpsi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],vpsi_re,vpsi_im);
+      }//endfor
+    fclose(fp_vpsi);
+  }//endif
+
+//============================================================================
+  }//end routine
+//============================================================================

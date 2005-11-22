@@ -43,6 +43,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ibinary_opt= cpopts->iread_coef_binary;
   int natm_tot   = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl    = (cp->cppseudo.nonlocal.natm);
+  double dt      = gentimeinfo->dt;
+  int ndump_frq  = genfilenames->iwrite_dump;
 
 //========================================================================
 
@@ -74,6 +76,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ibinary_opt= ibinary_opt;
    sim->natm_tot   = natm_tot;
    sim->natm_nl    = natm_nl;
+
+   sim->dt         = dt;
+   sim->ndump_frq  = ndump_frq;
 
 //-----------------------------------------------------------------------
   }//end routine

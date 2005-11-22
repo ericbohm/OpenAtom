@@ -144,11 +144,17 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 	c->computeCgOverlap();
 	RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
       }// endif : CP-CG minimization
+    //------------------------------------------------------------------------
+    // (G) Output the states
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
+         c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
+  	 if(c->iwrite_now==1){RTH_Suspend();}
+      }//endif
+    //------------------------------------------------------------------------
+    // (H) Evolve the electrons to the next step (Atom integration is hidden)
 #ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
-    //------------------------------------------------------------------------
-    // (G) Evolve the electrons to the next step (Atom integration is hidden)
       c->integrateModForce();
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());    
@@ -156,11 +162,18 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     }// endif determine entry point
 
  //==========================================================================
- // (III)Orthogonalization code block
-
+ // (III) Orthogonalization and ouptut code block
+   //------------------------------------------------------------------------
+   // (A) Orthogonalize
     c->sendPsi();      // send to Pair Calculator
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
-    c->first_step = 0; // its not the first step anymore
+   //------------------------------------------------------------------------
+   // (B) Output the states
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1){
+       c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
+       if(c->iwrite_now==1){RTH_Suspend();}
+    }//endif
+    c->first_step = 0; // its not the first step anymore!
 
   } //end while: Go back to top of loop (no suspending : no pausing)
 //============================================================================
@@ -178,6 +191,15 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
       allgdoneifft=true;
       RTH_Runtime_resume(run_thread);
   }
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
+  delete msg;
+  RTH_Runtime_resume(run_thread);
+}
 //============================================================================
 
 //============================================================================
@@ -330,6 +352,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 //============================================================================
 
+  iwrite_now = 0;
   first_step = 1;
   iteration=0;
   partialCount=0;
@@ -450,9 +473,7 @@ CP_State_GSpacePlane::~CP_State_GSpacePlane(){
 // In this function data is read from files, and sent to the corresponding
 // G-space planes. Data reading will be done in chunk 0 of each state
 //============================================================================
-
 void CP_State_GSpacePlane::readFile() {
-
 //============================================================================
 // Local pointers
 
@@ -541,6 +562,56 @@ void CP_State_GSpacePlane::readFile() {
 //---------------------------------------------------------------------------
    }//read the file
 //============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+// In this function data is written to files the simpliest way possible
+//============================================================================
+void CP_State_GSpacePlane::writeStateDumpFile() {
+//============================================================================
+// Local pointers and variables
+
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int cp_min_opt = (sim->cp_min_opt);
+  int ndump_frq  = (sim->ndump_frq);
+  int sizeX      = (sim->sizeX);
+  int sizeY      = (sim->sizeY);
+  int sizeZ      = (sim->sizeZ);
+  double dt      = (sim->dt);
+  int ind_state  = (thisIndex.x+1);
+  int ind_chare  = (thisIndex.y+1);
+  int ncoef      = gSpaceNumPoints;
+  complex *vpsi  = gs.packedVelData;
+  complex *fpsi  = gs.packedForceData;
+  complex *psi   = gs.packedPlaneData;          // orthogonal psi
+  if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} // non-orthogonal psi
+
+//============================================================================
+// Set the file names and write the files
+
+  iwrite_now = 0;
+  if( ((iteration % ndump_frq)==0) || (iteration==config.maxIter) ){
+    iwrite_now = 1;
+    if(ind_state==1 && ind_chare==1){
+      CkPrintf("-----------------------------------\n");
+      CkPrintf("Writing states to disk on step %d\n",iteration);
+      CkPrintf("-----------------------------------\n");
+    }//endif
+    char psiName[200]; char vpsiName[200];
+    sprintf(psiName, "%s/newState%d_%d.out", config.dataPath,ind_state,ind_chare);
+    sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state,ind_chare);
+    writePartState(ncoef,psi,vpsi,fpsi,coef_mass,dt,k_x,k_y,k_z,cp_min_opt,
+                   sizeX,sizeY,sizeZ,psiName,vpsiName);
+    int i=0;
+    contribute(sizeof(int),&i,CkReduction::sum_int,
+       CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),gSpacePlaneProxy));
+  }//endif
+  
+//---------------------------------------------------------------------------
+   }//write the file
+//============================================================================
+
 
 
 //============================================================================
@@ -729,6 +800,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p | sfCompSectionProxy;
   p | gpairCalcID1;
   p | gpairCalcID2;
+  p | iwrite_now;
     
 //-------------------------------------------------------
    }// end routine : pup
@@ -860,13 +932,13 @@ void CP_State_GSpacePlane::doFFT() {
   double StartTime=CmiWallTimer();
 #endif
 
-#ifndef _FULL_CPAIMD_
-  CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-            sizeof(complex)*gs.numPoints);
-  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-  }//endif
-#endif      
+  //#ifndef _FULL_CPAIMD_
+  //  CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+  //            sizeof(complex)*gs.numPoints);
+  //  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+  //    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  //  }//endif
+  //#endif      
 
 // Do fft in forward direction, 1-D, in z direction
 // A local function not a message

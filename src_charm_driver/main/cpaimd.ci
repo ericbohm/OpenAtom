@@ -105,6 +105,7 @@ mainmodule cpaimd {
 		entry void isAtSync(int);
 		entry void startNewIter ();
 		entry void gdoneIFFT(CkReductionMsg *msg);
+		entry void psiWriteComplete(CkReductionMsg *msg);
 		entry void computeEnergies(int p, double d);
                 entry void run ();
                 entry void resumeThread (PPDummyMsg *dmsg);

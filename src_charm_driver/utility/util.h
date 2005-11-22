@@ -253,6 +253,9 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 
+void writePartState(int ,complex *,complex *,complex *,double *,double ,
+                    int *,int *,int *,int ,int,int,int,char *,char *);
+
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

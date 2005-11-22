@@ -142,6 +142,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptLambda(CkReductionMsg *msg);
 	void combineForcesGetEke();
 	void integrateModForce();
+        void writeStateDumpFile();
 	void pup(PUP::er &);
 	friend class CP_State_ParticlePlane;
 	void isAtSync(int);
@@ -162,7 +163,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void gdoneIFFT(CkReductionMsg *msg);
 	void releaseSFComputeZ();
         int first_step;
-
+        int iwrite_now;
+        void psiWriteComplete(CkReductionMsg *msg);
  private:
 	bool allgdoneifft;
 	bool doneDoingIFFT;

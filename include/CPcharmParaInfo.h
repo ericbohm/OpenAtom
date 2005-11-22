@@ -14,7 +14,8 @@ class CPcharmParaInfo {
 //=============================================================================
  public:
 
-   double vol;
+   double vol,dt;
+   int ndump_frq;
    int cp_opt; 
    int cp_std;
    int cp_wave;
@@ -64,6 +65,8 @@ class CPcharmParaInfo {
      CkPrintf("CPcharmParaInfo copy constructor\n");
 #endif
      vol         = s.vol;
+     dt          = s.dt;
+     ndump_frq   = s.ndump_frq;
      cp_opt      = s.cp_opt; 
      cp_std      = s.cp_std;
      cp_wave     = s.cp_wave;
@@ -210,7 +213,7 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
-      p|vol; 
+      p|vol; p|dt; p|ndump_frq;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
       p|sizeX;      p|sizeY;      p|sizeZ;  
