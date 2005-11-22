@@ -604,7 +604,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 RealStateSlab::~RealStateSlab() {
 //==============================================================================
 
-  if(planeArr != NULL) {delete [] planeArr;planeArr = NULL; }
+  if(planeArr != NULL) {fftw_free(planeArr);planeArr = NULL; }
 
 }
 //==============================================================================
@@ -910,7 +910,7 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
       rs->size = rs->nsize;
    }//endif
 
-   rs->planeArr = new complex[(rs->size)];
+   rs->planeArr = (complex *) fftw_malloc(rs->size * sizeof(complex));
 
 //==============================================================================    
    }//end routine
