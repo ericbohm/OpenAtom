@@ -98,13 +98,22 @@ mainmodule cpaimd {
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
 		entry void syncpsi();
-		entry void acceptNewPsi(CkReductionMsg *msg);
+
+		entry void acceptNewPsi(CkReductionMsg *msg);	
+
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
+
+		entry void acceptNewPsiV(CkReductionMsg *msg);
+		entry void requirePsiV();
+		entry void resumePsiV(CkReductionMsg *msg);
+		entry void gdonePsiV(CkReductionMsg *msg);
+
 		entry void makePCproxies();
 		entry void isAtSync(int);
 		entry void startNewIter ();
 		entry void gdoneIFFT(CkReductionMsg *msg);
+
 		entry void psiWriteComplete(CkReductionMsg *msg);
 		entry void computeEnergies(int p, double d);
                 entry void run ();
@@ -176,6 +185,8 @@ mainmodule cpaimd {
 		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void acceptSectionLambda(CkReductionMsg *msg);
 		entry void resume();
+		entry void resumeV(CkReductionMsg *msg);
+		entry void minCheck(CkReductionMsg *msg);
 		entry void lbresume(CkReductionMsg *msg);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);
 		entry void setPCproxy(CProxySection_PairCalculator inproxy);

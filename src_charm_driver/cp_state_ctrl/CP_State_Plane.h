@@ -129,14 +129,18 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	~CP_State_GSpacePlane(); 
 	void initGSpace(int, RunDescriptor *, int, complex *,int,int,int);
 	void syncpsi();
+	void requirePsiV();
 	void doIFFT(GSIFFTMsg *);
 	void doFFT();
 	void startNewIter ();
 	void sendPsi();
+	void sendPsiV();
+	bool weneedPsiV();
         void screenOutputPsi();
 	void sendLambda();
 	void makePCproxies();
 	void acceptNewPsi(CkReductionMsg *msg);
+	void acceptNewPsiV(CkReductionMsg *msg);
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
@@ -153,6 +157,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void computeCgOverlap();
 
         void run ();
+        void resumePsiV (CkReductionMsg *msg);
         void resumeThread (PPDummyMsg *dmsg);
         void sendFFTData ();
         void doIFFT ();
@@ -161,15 +166,18 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	// for experimental barrier
 	bool allDoneIFFT() {return allgdoneifft;}
 	void gdoneIFFT(CkReductionMsg *msg);
+	void gdonePsiV(CkReductionMsg *msg);
 	void releaseSFComputeZ();
         int first_step;
         int iwrite_now;
         void psiWriteComplete(CkReductionMsg *msg);
+	int iteration;
  private:
+	bool needPsiV;
 	bool allgdoneifft;
 	bool doneDoingIFFT;
 	bool initialized;
-	int iteration;
+
 	int count;
 	GStateSlab gs; 
 	bool flagsSent;

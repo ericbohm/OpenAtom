@@ -115,6 +115,11 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->startNewIter();
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
+       /*       if(c->weneedPsiV()) 
+	 {
+	   RTH_Suspend(); // wait for all psiv to be done
+	 }
+       */
        c->releaseSFComputeZ();
        c->doFFT(); 
        c->sendFFTData();
@@ -173,6 +178,11 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
        if(c->iwrite_now==1){RTH_Suspend();}
     }//endif
+    if(c->weneedPsiV()) //ortho will have told us this
+      {
+	c->sendPsiV();
+	RTH_Suspend();     // Wait for new PsiV : resume is called in acceptNewPsiV
+      }
     c->first_step = 0; // its not the first step anymore!
 
   } //end while: Go back to top of loop (no suspending : no pausing)
@@ -192,6 +202,19 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
       RTH_Runtime_resume(run_thread);
   }
 //============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::gdonePsiV(CkReductionMsg *msg){
+      delete msg;
+      //let my nonlocals go!
+      needPsiV=false;
+      RTH_Runtime_resume(run_thread);
+  }
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -289,6 +312,18 @@ void CP_State_GSpacePlane::resumeThread (PPDummyMsg *dmsg) {
   RTH_Runtime_resume(run_thread);
 }
 //============================================================================
+
+//============================================================================
+// entry method to resume execution
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::resumePsiV (CkReductionMsg *msg) {
+  delete msg;
+  RTH_Runtime_resume(run_thread);
+}
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -394,6 +429,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   doneDoingIFFT = false;
   allgdoneifft=false;
   acceptedPsi=true; // we start out with a psi
+  needPsiV=false; // don't need tolerance check in first step
 //============================================================================
 
   initGStateSlab(&gs, sizeX, size, gSpaceUnits, realSpaceUnits, 
@@ -764,6 +800,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 //============================================================================
 
   ArrayElement2D::pup(p);
+  p|needPsiV;
   p|doneDoingIFFT;
   p|allgdoneifft;
   p|initialized;
@@ -1110,7 +1147,7 @@ bool CP_State_GSpacePlane::completedExtExcNlForces () {
 
   CP_State_ParticlePlane *pp = 
                   particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();        
-              
+
   if (pp->doneGettingForces) { 
     CkAssert(!doneDoingIFFT); //if doneDoingIFFT were already true,
 			      // we shouldn't be here so exit
@@ -1226,7 +1263,7 @@ void  CP_State_GSpacePlane::sendLambda() {
   int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
 
   startPairCalcLeft(&gpairCalcID2, toSend, psi + c * numPoints, 
-		    thisIndex.x, thisIndex.y);
+		    thisIndex.x, thisIndex.y, false);
   startPairCalcRight(&gpairCalcID2, toSend, force + c * numPoints, 
 		     thisIndex.x, thisIndex.y);
 
@@ -1464,10 +1501,52 @@ void  CP_State_GSpacePlane::sendPsi() {
   int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
 
   startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
-		    thisIndex.x, thisIndex.y);
+		    thisIndex.x, thisIndex.y, false);
 
 //----------------------------------------------------------------------------
     }// end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void  CP_State_GSpacePlane::sendPsiV() {
+//==============================================================================
+
+  if(config.gSpaceNumChunks!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, while gSpaceNumChunk!=1 is cool, I'm \n");
+    CkPrintf("afraid you'll have to do the implementation yourself!\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  complex *data=gs.packedVelData;
+  /*  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+     int ncoef     = gs.numPoints;
+     complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
+     memcpy(scr,data,sizeof(complex)*ncoef);
+  }//endif
+  */
+
+  if(gs.ihave_kx0==1){
+    double rad2i = 1.0/sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
+  }//endif
+
+  int s, c;
+  int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;
+  int numPoints = gs.numPoints / config.gSpaceNumChunks;
+  int dataCovered = gs.numPoints;
+
+  c = 0;
+  int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
+
+  startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
+		    thisIndex.x, thisIndex.y, true);
+
+//----------------------------------------------------------------------------
+}// end routine
 //==============================================================================
 
 
@@ -1517,6 +1596,51 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 
 //----------------------------------------------------------------------------
    }//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
+//=============================================================================
+// (I) Unpack the contribution to newpsi (orthonormal psi)
+
+  int N         = msg->getSize()/sizeof(complex);
+  complex *data = (complex *)msg->getData();
+  complex *vpsi = gs.packedVelData;
+
+  if(partialCount<1){
+    for(int i=0; i<N; i++){vpsi[i] = data[i];}
+  }else{
+    for(int i=0; i<N; i++){vpsi[i] += data[i];}
+  }//endif
+  
+  delete msg;
+
+//=============================================================================
+// (II) If you have got it all : Rescale it, produce some output
+
+  partialCount++;//psi arrives in as many as 2 reductions
+
+  if(partialCount==AllExpected){ 
+    //--------------------------------------------------------------------
+    // (A) Reset counters and rescale the kx=0 stuff
+    partialCount=0;
+    if(gs.ihave_kx0==1){
+      double rad2 = sqrt(2.0);
+      for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
+    }//endif
+    /* debugging barrier
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+      CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
+    */
+    needPsiV=false;
+    RTH_Runtime_resume(run_thread);
+  } // if partialCount
+
+//----------------------------------------------------------------------------
+}//end routine
 //==============================================================================
 
 //==============================================================================
@@ -1826,5 +1950,14 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
     CkAbort("GSP do not call acceptAllLambda\n");
 }// end routine
 //==============================================================================
+
+void CP_State_GSpacePlane::requirePsiV() {
+  needPsiV=true;
+  int foo=1;
+  // when everyone is ready, restart Ortho's backward path
+  contribute(sizeof(int), &foo, CkReduction::min_int, CkCallback(CkIndex_Ortho::resumeV(NULL), orthoProxy));
+}
+
+bool CP_State_GSpacePlane::weneedPsiV() { return needPsiV;}
 
 

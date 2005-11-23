@@ -26,6 +26,11 @@
 #define _PAIRCALC_USE_ZGEMM_
 #define _PAIRCALC_USE_DGEMM_
 
+#define NORMALPC   0
+#define KEEPORTHO  1
+#define PSIV       2
+
+
 //#define _PAIRCALC_SECONDPHASE_LOADBAL_
 enum redtypes {section=0, machine=1, sparsecontiguous=2};
 PUPbytes(redtypes);
@@ -102,9 +107,9 @@ class PairCalcReducer : public Group {
  public:
   PairCalcReducer(CkMigrateMessage *m) { }
   PairCalcReducer(){ 
-      acceptCount = 0; numRegistered[0] = 0; numRegistered[1] = 0;
-      reduction_elementCount = 0;
-      tmp_matrix = NULL;
+    acceptCount = 0; numRegistered[0] = 0; numRegistered[1] = 0;
+    reduction_elementCount = 0;
+    tmp_matrix = NULL;
   }
   ~PairCalcReducer() {if (tmp_matrix !=NULL) delete [] tmp_matrix;}
   void clearRegister()
@@ -119,10 +124,10 @@ class PairCalcReducer : public Group {
       numRegistered[0]=0;
       numRegistered[1]=0;
       /*      if(tmp_matrix!=NULL)
-	{
-	  delete [] tmp_matrix;
-	  tmp_matrix=NULL;
-	}
+	      {
+	      delete [] tmp_matrix;
+	      tmp_matrix=NULL;
+	      }
       */
     }
   void broadcastEntireResult(entireResultMsg *msg);
@@ -155,13 +160,13 @@ class PairCalcReducer : public Group {
   bool symmtype;
   CkCallback cb;
 
-void pup(PUP::er &p){
+  void pup(PUP::er &p){
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("PairCalcReducer on %d pupping\n",CkMyPe());
+    CkPrintf("PairCalcReducer on %d pupping\n",CkMyPe());
 #endif
-  p|localElements[0];
-  p|localElements[1];
-  p(numRegistered,2);
+    p|localElements[0];
+    p|localElements[1];
+    p(numRegistered,2);
     p|acceptCount;
     p|reduction_elementCount;
     p|isAllReduce;
@@ -235,12 +240,14 @@ class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsM
   bool fromRow;
   bool flag_dp;
   complex *points;
-  void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points)
+  bool doPsiV;
+  void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV)
     {
       size=_size;
       sender=_sender;
       fromRow=_fromRow;
       flag_dp=_flag_dp;
+      doPsiV=_doPsiV;
       memcpy(points,_points,size*sizeof(complex));
     }
   friend class CMessage_calculatePairsMsg;
@@ -253,19 +260,22 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
   double *matrix2;
   int size;
   int size2;
-
-  void init(int _size, int _size2, double *_points1, double *_points2)
+  int actionType;
+  void init(int _size, int _size2, double *_points1, double *_points2, bool _actionType)
     {
       size=_size;
       size2=_size2;
       memcpy(matrix1,_points1,size*sizeof(double));
       memcpy(matrix2,_points2,size2*sizeof(double));
+      actionType=_actionType;
     }
-  void init1(int _size, double *_points1)
+  void init1(int _size, double *_points1, int _actionType)
     {
       size=_size;
       size2=0;
       memcpy(matrix1,_points1,size*sizeof(double));
+      actionType=_actionType;
+      // this field does nothing in minimization
       matrix2=NULL;
     }
   friend class CMessage_multiplyResultMsg;
@@ -306,7 +316,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, bool conserveMemory, bool lbpaircalc, redtypes reduce);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -318,11 +328,13 @@ class PairCalculator: public CBase_PairCalculator {
     rck=0;
     AtSync();
   };
+  void multiplyForward(bool);
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
-  void calculatePairs_gemm(calculatePairsMsg *msg);
+  void acceptPairData(calculatePairsMsg *msg);
   void sendBWResult(sendBWsignalMsg *msg);
   void multiplyResult(multiplyResultMsg *msg);
+  void multiplyPsiV();
   void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
@@ -330,14 +342,14 @@ class PairCalculator: public CBase_PairCalculator {
   inline double compute_entry(int n, complex *psi1, complex *psi2, int op) 
     {
 
-        int i;
-        register double sum = 0;
-        for (i = 0; i < n; i++) {
-            sum += psi1[i].re * psi2[i].re +  psi1[i].im * psi2[i].im;
-        }
+      int i;
+      register double sum = 0;
+      for (i = 0; i < n; i++) {
+	sum += psi1[i].re * psi2[i].re +  psi1[i].im * psi2[i].im;
+      }
         
-        return sum;
-  }
+      return sum;
+    }
 
  private:
   int numRecd, numExpected, grainSize, S, blkSize, N;
@@ -348,17 +360,18 @@ class PairCalculator: public CBase_PairCalculator {
   CkCallback cb;
   CkArrayID cb_aid;
   int cb_ep;
+  int cb_ep_tol;
   bool existsLeft;
   bool existsRight;
   bool existsOut;
   bool existsNew;
   bool resumed;
   CkSectionInfo cookie; 
-
   complex *mynewData, *othernewData;
   double *inDataLeft, *inDataRight;
   double *outData;
-
+  int actionType;
+  
   /* to support the simpler section reduction*/
   int rck;
   CkGroupID mCastGrpId;

@@ -20,6 +20,22 @@
  * result within its "column" AKA quadrant via the Ortho array.
  * Resulting in sub matrices on Ortho which could be pasted together
  * on ortho[0,0] for the complete matrix.
+ *
+ * For the dynamics (non minization) case we have an additional
+ * multiplication of gamma= lambda*orthoT.  And we pass both gamma and
+ * orthoT to the PC instead.
+ *
+ * For dynamics we also have a tolerance check for orthoT.  The
+ * tolerance check is a min and max reduction on OrthoT.  If it falls
+ * out of the tolerance range we have to correct the velocities.  We
+ * notify the PC of this via a flag in the finishsection call.  It
+ * will then be handled by gspace.  We will keep the tolerance flag
+ * and set orthoT to the unit AKA identity matrix for the gamma
+ * calculation.
+ *
+ * We will perform that tolerance check every config.toleranceInterval
+ * steps.
+ *
  */
 //============================================================================
 
@@ -100,7 +116,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
     if(thisIndex.x < thisIndex.y)
       { //we have a spare to copy to  
 	//make a copy
-	//	CkPrintf("[%d,%d] sending copy to [%d,%d]\n",thisIndex.x, thisIndex.y,thisIndex.y,thisIndex.x);
 	CkReductionMsg *omsg=CkReductionMsg::buildNew(msg->getSize(),msg->getData());
 	// transpose it
 	double *dest= (double*) omsg->getData();;
@@ -132,7 +147,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
 #endif
     for(int i = 0; i < m * n; i++)
       B[i] = S[i] / 2;
-    delete msg;
     memset(A, 0, sizeof(double) * m * n);
     step = 0;
     iterations = 0;
@@ -140,8 +154,15 @@ void Ortho::start_calc(CkReductionMsg *msg){
     if(thisIndex.x == thisIndex.y)
       for(int i = 0; i < m; i++)
 	A[i * m + i] = 1;
-    if(num_ready == 1)
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0 && numGlobalIter % config.toleranceInterval==0 && numGlobalIter!=0) 
+      { // do tolerance check on smat, do_iteration will be called by reduction root
+ 	CkPrintf("doing tolerance check on SMAT \n");
+	double min =array_diag_min(m,m, S);
+	contribute(sizeof(double),&min, CkReduction::min_double, CkCallback(CkIndex_Ortho::minCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
+      }
+    else if(num_ready == 1)
       do_iteration();
+    delete msg;
   }
 
 
@@ -193,13 +214,43 @@ void Ortho::collect_results(void)
   }
 
 
+void Ortho::minCheck(CkReductionMsg *msg)
+{
+  double tolMin=fabs(((double *) msg->getData())[0]);
+  delete msg;
+  CkPrintf("SMAT tol    = %g\n", tolMin);
+  if(tolMin < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb)
+    {
+      toleranceCheckOrthoT=false;
+      thisProxy.do_iteration();
+    }
+  else
+    {
+      // smat is outside of the tolerance range  need new PsiV
+      toleranceCheckOrthoT=true;
+      gSpacePlaneProxy.requirePsiV();  //gspace will trigger our resume
+    }
+}
 
+void Ortho::resumeV(CkReductionMsg *msg) // gspace tolerance check entry
+{
+  delete msg;
+  do_iteration();
+}
 
+/**
+ * Resume execution by finishing the backward path of the Psi calculator
+ */
 void Ortho::resume() 
 
 //============================================================================
     {//begin routine
 //============================================================================
+      int actionType=0; //normal
+      if(toleranceCheckOrthoT)
+	{
+	  actionType=1;  //keepOrtho
+	}
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
 	// copy orthoT for use in gamma computation
 	if(orthoT==NULL) //allocate if null
@@ -207,7 +258,7 @@ void Ortho::resume()
 	memcpy(orthoT,A,m*n*sizeof(double));
       }
       if(thisIndex.y<=thisIndex.x)
-	finishPairCalcSection(m * n, A, pcProxy);
+	finishPairCalcSection(m * n, A, pcProxy, actionType);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -276,12 +327,10 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   else
     {
       // finish pair calc
-      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy);
+      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy,0);
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
     }
-
-
   delete msg;
   //----------------------------------------------------------------------------
 }// end routine
@@ -305,7 +354,20 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 void Ortho::gamma_done(){
 
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
-  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy);
+  if(toleranceCheckOrthoT)
+    {// replace orthoT with the identity matrix
+
+      for(int i=0;i<m;i++)
+	for(int j=0;j<n;j++)
+	  {
+	    if(i!=j)
+	      orthoT[i*n+j]=0.0;	      
+	    else
+	      orthoT[i*n+j]=1.0;	      
+	  }
+    }
+  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
+  toleranceCheckOrthoT=false;
 }
 
 void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n)
@@ -345,6 +407,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   usesAtSync=CmiTrue;
   setMigratable(false);
   got_start = false;
+  toleranceCheckOrthoT=false;
   ortho=NULL;
   orthoT=NULL;
   wallTimeArr=NULL;
@@ -416,3 +479,5 @@ void Ortho::tolerance_check(){
   tmp_arr = tmp;
   contribute(sizeof(double), &ret, CkReduction::sum_double);
 }
+
+

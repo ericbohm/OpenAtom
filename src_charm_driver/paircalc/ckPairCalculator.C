@@ -50,14 +50,28 @@
  * cross-section of a sphere.  So the actual data is sparse and is         *
  * represented by a contiguous set of the nonzero elements.  This is       * 
  * commonly referred to as N or size within the calculator.                *
- *                                                                         */
+ *
+ * In the dynamics case there are two additional complications. In the
+ * backward path of the asymmetric pairculator we will receive 2 input
+ * matrices, gamma and orthoT.  Where orthoT came from the
+ * orthonormalization following the symmetric paircalculator.  And
+ * gamma was produced by a multiplication with orthoT in the Ortho
+ * object.
+ *
+ * If ortho falls out of tolerance then Ortho will signal the GSP that
+ * a tolerance update is needed.  We then proceed with the psi
+ * calculation as normal.  On receipt of newpsi, Gspace will then
+ * react by sending the PC the Psi velocities (PsiV) which we will
+ * multiply with the orthoT we kept from the previous invocation of
+ * the backward path.  We will then ship the corrected velocities back
+ * to gspace via the acceptnewVpsi reduction.  Same procedure as for
+ * acceptnewpsi, just a different entry method.  */
 //**************************************************************************
 
 
 #include "ckPairCalculator.h"
 
 #define PARTITION_SIZE 500
-
 
 ComlibInstanceHandle mcastInstanceCP;
 
@@ -91,7 +105,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb, CkArrayID cb_aid, int cb_ep, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -104,7 +118,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCa
   this->cb = cb;
   this->N = -1;
   this->cb_aid = cb_aid;
-  this->cb_ep = cb_ep;
+  this->cb_ep = _cb_ep;
+  this->cb_ep_tol = _cb_ep_tol;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -150,6 +165,7 @@ PairCalculator::pup(PUP::er &p)
   p|cb;
   p|cb_aid;
   p|cb_ep;
+  p|cb_ep_tol;
   p|existsLeft;
   p|existsRight;
   p|existsOut;
@@ -158,6 +174,7 @@ PairCalculator::pup(PUP::er &p)
   p|cookie;
   p|resumed;
   p|rck;
+  p|actionType;
   if (p.isUnpacking()) 
   {
       mynewData=NULL;
@@ -300,12 +317,13 @@ void PairCalculator::ResumeFromSync() {
   }
 }
 
+
 /**
  * Forward path multiply.  Accumulates rows and columns when all
- * arrive it multiplies and contributes.
+ * arrive it call the multiply
  */
 void
-PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
+PairCalculator::acceptPairData(calculatePairsMsg *msg)
 {
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
@@ -393,138 +411,154 @@ PairCalculator::calculatePairs_gemm(calculatePairsMsg *msg)
    *  NOTE: For this to work the data chunks of the same plane across
    *  all states must be of the same size
    */
-
   // copy the input into our matrix
-
-
   /*
    * Once we have accumulated all rows  we gemm it.
-   * (numExpected X N) X (N X numExpected) = (numExpected X numExpected)
    */
-  /* To make this work, we transpose the first matrix (A).
-     In C++ it appears to be:
-     * (ydima X ydimb) = (ydima X xdima) X (xdimb X ydimb)
 
-     * Which would be wrong, this works because we're using fortran
-     * BLAS, which has a transposed perspective (column major), so the
-     * actual multiplication is:
-     *
-     * (xdima X xdimb) = (xdima X ydima) X (ydimb X xdimb)
-     *
-     * Since xdima==xdimb==numExpected==grainSize this gives us the
-     * solution matrix we want in one step.
-     */
-
-  if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) {
-    if(!existsOut){
-      CkAssert(outData==NULL);
-      existsOut=true;
-      outData = new double[grainSize * grainSize];
-      bzero(outData, sizeof(double)* grainSize * grainSize);
-#ifdef _PAIRCALC_DEBUG_
-       CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,grainSize, grainSize);
-#endif
-    }
-
-
-    char transform='N';
-    int doubleN=2*N;
-    char transformT='T';
-    int m_in=numExpected;
-    int n_in=numExpected;
-    int k_in=doubleN;
-    int lda=doubleN;   //leading dimension A
-    int ldb=doubleN;   //leading dimension B
-    int ldc=numExpected;   //leading dimension C
-
-    double alpha=double(1.0);//multiplicative identity
-    double beta=double(0.0); // C is unset
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
-#endif
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d,%d,%d,%d,%d] gemming %c %c %d %d %d %f A %d B %d %f C %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,transformT,transform, m_in, n_in, k_in, alpha, lda, ldb, beta, ldc);
-#endif
-    if( numRecd == numExpected * 2)
+  if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) 
+    {
+    if(!msg->doPsiV)
       {
-#ifdef _PAIRCALC_DEBUG_PARANOID_
-	char filename[80];
-	sprintf(filename, "fwlmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-	FILE *loutfile = fopen(filename, "w");
-	fprintf(loutfile,"[%d,%d,%d,%d,%d] inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-	for(int i=0;i<N*2;i++)
-	  for(int j=0;j<numExpected;j++)
-	    fprintf(loutfile,"%d %d %g \n",i,j,inDataLeft[i*numExpected+j]);
-	fclose(loutfile);
-	sprintf(filename, "fwrmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-	FILE *routfile = fopen(filename, "w");
-	fprintf(routfile,"[%d,%d,%d,%d,%d] inDataRight\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-	for(int i=0;i<N*2;i++)
-	  for(int j=0;j<numExpected;j++)
-	    fprintf(routfile,"%d %d %g\n",i,j,inDataRight[i*numExpected+j]);
-	fclose(routfile);
-#endif
-
-	DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataRight, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-	// switching solves a transposition problem
-	//	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataRight, &ldb, &beta, outData, &ldc);
+	actionType=0;
+	multiplyForward(msg->flag_dp);	
       }
-    else if (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)
+    else
       {
-#ifdef _PAIRCALC_DEBUG_PARANOID_
-	char filename[80];
-	sprintf(filename, "fwlmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-	FILE *loutfile = fopen(filename, "w");
-	fprintf(loutfile,"[%d,%d,%d,%d,%d] inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-	for(int i=0;i<N*2;i++)
-	  for(int j=0;j<numExpected;j++)
-	    fprintf(loutfile,"%d %d %g \n",i,j,inDataLeft[i*numExpected+j]);
-	fclose(loutfile);
-#endif
-	DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-      } 
 
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-    numRecd = 0; 
-    if (msg->flag_dp) {
-	for (int i = 0; i < grainSize*grainSize; i++)
-	  outData[i] *= 2.0;
-    }
-#ifdef _PAIRCALC_DEBUG_PARANOID_
-    char filename[80];
-    sprintf(filename, "fwgmodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-    FILE *outfile = fopen(filename, "w");
-
-
-    fprintf(outfile,"[%d,%d,%d,%d,%d] outData=C\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-    for(int i=0;i<grainSize;i++)
-      {
-	for(int j=0;j<grainSize;j++)
-	  fprintf(outfile," %g",outData[i*grainSize+j]);
-	  fprintf(outfile,"\n");
+	multiplyPsiV();
       }
-    fclose(outfile);
-#endif
+    }
+}
 
-#ifdef _PAIRCALC_VALID_OUT_
-    CkPrintf("[PAIRCALC] [%d %d %d %d %d] forward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, outData[0],outData[1],outData[grainSize*grainSize-2],outData[grainSize*grainSize-1]);
-#endif
-#ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
-#endif
+/**
+ * Forward path multiply.  
+ *
+ *   * (numExpected X N) X (N X numExpected) = (numExpected X numExpected)
+ * To make this work, we transpose the first matrix (A).
+ In C++ it appears to be:
+ * (ydima X ydimb) = (ydima X xdima) X (xdimb X ydimb)
+ * Which would be wrong, this works because we're using fortran
+ * BLAS, which has a transposed perspective (column major), so the
+ * actual multiplication is:
+ *
+ * (xdima X xdimb) = (xdima X ydima) X (ydimb X xdimb)
+ *
+ * Since xdima==xdimb==numExpected==grainSize this gives us the
+ * solution matrix we want in one step.
+ */
+void
+PairCalculator::multiplyForward(bool flag_dp)
+{
 
-    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-    mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
-    //mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, CkReduction::sum_double, cookie, cb);
-
-
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(220, StartTime, CmiWallTimer());
+  CkAssert(numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected));
+  if(!existsOut){
+    CkAssert(outData==NULL);
+    existsOut=true;
+    outData = new double[grainSize * grainSize];
+    bzero(outData, sizeof(double)* grainSize * grainSize);
+#ifdef _PAIRCALC_DEBUG_
+    CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,grainSize, grainSize);
 #endif
   }
+  char transform='N';
+  int doubleN=2*N;
+  char transformT='T';
+  int m_in=numExpected;
+  int n_in=numExpected;
+  int k_in=doubleN;
+  int lda=doubleN;   //leading dimension A
+  int ldb=doubleN;   //leading dimension B
+  int ldc=numExpected;   //leading dimension C
 
+  double alpha=double(1.0);//multiplicative identity
+  double beta=double(0.0); // C is unset
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d,%d,%d,%d,%d] gemming %c %c %d %d %d %f A %d B %d %f C %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,transformT,transform, m_in, n_in, k_in, alpha, lda, ldb, beta, ldc);
+#endif
+  if( numRecd == numExpected * 2)
+    {
+#ifdef _PAIRCALC_DEBUG_PARANOID_
+      char filename[80];
+      sprintf(filename, "fwlmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+      FILE *loutfile = fopen(filename, "w");
+      fprintf(loutfile,"[%d,%d,%d,%d,%d] inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      for(int i=0;i<N*2;i++)
+	for(int j=0;j<numExpected;j++)
+	  fprintf(loutfile,"%d %d %g \n",i,j,inDataLeft[i*numExpected+j]);
+      fclose(loutfile);
+      sprintf(filename, "fwrmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+      FILE *routfile = fopen(filename, "w");
+      fprintf(routfile,"[%d,%d,%d,%d,%d] inDataRight\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      for(int i=0;i<N*2;i++)
+	for(int j=0;j<numExpected;j++)
+	  fprintf(routfile,"%d %d %g\n",i,j,inDataRight[i*numExpected+j]);
+      fclose(routfile);
+#endif
+      CkAssert(inDataRight!=NULL);
+      CkAssert(inDataLeft!=NULL);
+      CkAssert(outData!=NULL);
+      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataRight, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
+      // switching solves a transposition problem
+      //	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataRight, &ldb, &beta, outData, &ldc);
+    }
+  else if (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)
+    {
+#ifdef _PAIRCALC_DEBUG_PARANOID_
+      char filename[80];
+      sprintf(filename, "fwlmdata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+      FILE *loutfile = fopen(filename, "w");
+      fprintf(loutfile,"[%d,%d,%d,%d,%d] inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      for(int i=0;i<N*2;i++)
+	for(int j=0;j<numExpected;j++)
+	  fprintf(loutfile,"%d %d %g \n",i,j,inDataLeft[i*numExpected+j]);
+      fclose(loutfile);
+#endif
+      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
+    } 
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
+  numRecd = 0; 
+  if (flag_dp) {
+    for (int i = 0; i < grainSize*grainSize; i++)
+      outData[i] *= 2.0;
+  }
+
+#ifdef _PAIRCALC_DEBUG_PARANOID_
+  char filename[80];
+  sprintf(filename, "fwgmodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+  FILE *outfile = fopen(filename, "w");
+
+
+  fprintf(outfile,"[%d,%d,%d,%d,%d] outData=C\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  for(int i=0;i<grainSize;i++)
+    {
+      for(int j=0;j<grainSize;j++)
+	fprintf(outfile," %g",outData[i*grainSize+j]);
+      fprintf(outfile,"\n");
+    }
+  fclose(outfile);
+#endif
+
+
+#ifndef CMK_OPTIMIZE
+  StartTime=CmiWallTimer();
+#endif
+
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
+  //mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, CkReduction::sum_double, cookie, cb);
+
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
 }
 
 //PairCalculator::multiplyResult(int size, double *matrix1, double *matrix2)
@@ -536,74 +570,70 @@ PairCalculator::multiplyResultI(multiplyResultMsg *msg)
   }
 
 
-// entry method to allow us to delay this outbound communication
-// to minimize brain dead BG/L interference we have a signal to prioritize this
-/* Send the results via multiple reductions */
-void
-PairCalculator::sendBWResult(sendBWsignalMsg *msg)
+/**
+ * Tolerance correction PsiV Backward path multiplication
+ */
+void 
+PairCalculator::multiplyPsiV()
 {
+  //reset for next time
+  numRecd=0;
 
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d %d %d %d %d]: sendBWResult\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric);
-#endif
-    delete msg; // contains nothing
-    // Now we have results in mynewData and if(symmetric) othernewData
-    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  // this is the same as the regular one matrix backward path
+  // with the following exceptions
 
-    if(symmetric){  // we have this othernewdata issue for the symmetric case
-	if (thisIndex.y != thisIndex.x) 
+  // inDataLeft and inDataRight contain PsiV
+  
+  // outData contains the orthoT from the previous (standard) backward
+  // path invocation
 
-	{ //othernewdata exists for we are symmetric and not on the diagonal
-	    CkAssert(othernewData!=NULL);
-	    for(int j=0;j<grainSize;j++)
-	    {
-
-		CkCallback mycb(cb_ep, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
-
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-		CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, N,j,thisIndex.x+j,thisIndex.w);
-#endif
-		mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, sumMatrixDoubleType, otherResultCookies[j], mycb);
-		//mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, CkReduction::sum_double, otherResultCookies[j], mycb);
-
-	    }
-	}
-    }
-    CkAssert(mynewData!=NULL);
-    for(int j=0;j<grainSize;j++) //mynewdata
-    {
-	CkCallback mycb(cb_ep, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,N,j,thisIndex.y+j,thisIndex.w);
-#endif
-	mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, sumMatrixDoubleType, resultCookies[j], mycb);
-	//mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, CkReduction::sum_double, resultCookies[j], mycb);
-    }
-    delete [] mynewData;
-    mynewData=NULL;
-    existsNew=false;
-    if(symmetric && thisIndex.x != thisIndex.y)
-	delete [] othernewData;
-    othernewData=NULL;
+  // make a message
+  multiplyResultMsg *psiV= new ( grainSize*grainSize,0,0 ) multiplyResultMsg;
+  // copy in outData
+  CkAssert(outData!=NULL);
+  // this is slightly silly but we'll live with some memory inefficiency
+  // in the infrequently called tolerance check
+  psiV->init1(grainSize*grainSize, outData,PSIV);
+  // convert this to an inline call once this all works
+  thisProxy(thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z).multiplyResult(psiV);
 
 }
 
+/**
+ * Backward path multiplication
+ */
 void
 PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d %d %d %d %d]: Accept Result with size %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size);
+  CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, msg->actionType);
 #endif
   int size=msg->size;
   int size2=msg->size2;
   double *matrix1=msg->matrix1;
   double *matrix2=msg->matrix2;
+  actionType=msg->actionType;
   bool unitcoef = false;
   if(cpreduce==section) //update cookie from multicast
       CkGetSectionInfo(cookie,msg);
   if(matrix2==NULL||size2<1) 
     {
       unitcoef = true;
+    }
+  if(symmetric && actionType==KEEPORTHO) // there will be a psiV step following
+    {
+      if(outData==NULL)
+	{
+	  CkAssert(!existsOut);
+	  outData=new double[grainSize*grainSize];
+	  existsOut=true;
+	}
+      CkAssert(size==grainSize*grainSize);
+      //keep the orthoT we just received in matrix1
+      memcpy(outData, matrix1, size*sizeof(double));
+      // it is safe to reuse this memory 
+      // normal backward path has no use for outData
+      // forward path won't be called again until after we're done with outData.
     }
   CkAssert(mynewData==NULL);
   mynewData = new complex[N*grainSize];
@@ -779,7 +809,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       }
       existsLeft=false;
       existsRight=false;
-      if(outData!=NULL)
+      if(outData!=NULL && actionType!=KEEPORTHO)
 	{
 	  delete [] outData;
 	  outData = NULL;
@@ -788,6 +818,62 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 }
 
+// entry method to allow us to delay this outbound communication
+// to minimize brain dead BG/L interference we have a signal to prioritize this
+/* Send the results via multiple reductions */
+void
+PairCalculator::sendBWResult(sendBWsignalMsg *msg)
+{
+
+#ifdef _PAIRCALC_DEBUG_
+    CkPrintf("[%d %d %d %d %d]: sendBWResult with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
+#endif
+
+    delete msg; // contains nothing
+    // Now we have results in mynewData and if(symmetric) othernewData
+    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+    int cp_entry=cb_ep;
+    if(actionType==PSIV)
+      {
+	cp_entry= cb_ep_tol;
+      }
+    if(symmetric){  // we have this othernewdata issue for the symmetric case
+	if (thisIndex.y != thisIndex.x) 
+
+	{ //othernewdata exists for we are symmetric and not on the diagonal
+	    CkAssert(othernewData!=NULL);
+	    for(int j=0;j<grainSize;j++)
+	    {
+
+	      
+	      CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+		CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, N,j,thisIndex.x+j,thisIndex.w);
+#endif
+		mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, sumMatrixDoubleType, otherResultCookies[j], mycb);
+		//mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, CkReduction::sum_double, otherResultCookies[j], mycb);
+
+	    }
+	}
+    }
+    CkAssert(mynewData!=NULL);
+    for(int j=0;j<grainSize;j++) //mynewdata
+    {
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,N,j,thisIndex.y+j,thisIndex.w);
+#endif
+	mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, sumMatrixDoubleType, resultCookies[j], mycb);
+	//mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, CkReduction::sum_double, resultCookies[j], mycb);
+    }
+    delete [] mynewData;
+    mynewData=NULL;
+    existsNew=false;
+    if(symmetric && thisIndex.x != thisIndex.y)
+	delete [] othernewData;
+    othernewData=NULL;
+
+}
 
 
 #if CONVERSE_VERSION_ELAN
@@ -889,7 +975,8 @@ PairCalcReducer::broadcastEntireResult(entireResultMsg *imsg)
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("bcasteres:On Pe %d -- %d objects\n", CkMyPe(), localElements[imsg->symmetric].length());
 #endif
-  multiplyResultMsg *msg= new (size,0,0) multiplyResultMsg;
+  CkAbort("you should not be in this code!\n");
+  /*  multiplyResultMsg *msg= new (size, 0, 0) multiplyResultMsg;
   msg->init1(imsg->size,imsg->matrix);
   for (int i = 0; i < localElements[imsg->symmetric].length(); i++)
     {
@@ -901,6 +988,7 @@ PairCalcReducer::broadcastEntireResult(entireResultMsg *imsg)
 
     }
   delete imsg;
+  */
 }
 
 
@@ -910,6 +998,8 @@ PairCalcReducer::broadcastEntireResult(int size, double* matrix, bool symmtype)
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("bcasteres:On Pe %d -- %d objects\n", CkMyPe(), localElements[symmtype].length());
 #endif
+  CkAbort("you should not be in this code\n");
+  /*
   multiplyResultMsg *msg= new (size,0,0) multiplyResultMsg;
   msg->init1(size,matrix);
   for (int i = 0; i < localElements[symmtype].length(); i++)
@@ -923,13 +1013,15 @@ PairCalcReducer::broadcastEntireResult(int size, double* matrix, bool symmtype)
     }
   
   //  delete msg;
-
+  */
 
 }
 
 void
 PairCalcReducer::broadcastEntireResult(int size, double* matrix1, double* matrix2, bool symmtype){
     CkPrintf("On Pe %d -- %d objects\n", CkMyPe(), localElements[symmtype].length());
+    CkAbort("you should not be i nthis code \n");
+    /*
     multiplyResultMsg *msg= new (size,size,0) multiplyResultMsg;
     msg->init(size,size,matrix1,matrix2);
     for (int i = 0; i < localElements[symmtype].length(); i++)
@@ -937,13 +1029,16 @@ PairCalcReducer::broadcastEntireResult(int size, double* matrix1, double* matrix
 	CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[symmtype])[0].id, (localElements[symmtype])[i].idx,CK_MSG_KEEP);
       }
     //    delete msg;
-
+    */
 }
+
 
 void
 PairCalcReducer::broadcastEntireResult(entireResultMsg2 *imsg)
 {
     CkPrintf("On Pe %d -- %d objects\n", CkMyPe(), localElements[imsg->symmetric].length());
+    CkAbort(" you should not be in this code \n");
+    /*
     multiplyResultMsg *msg= new (imsg->size,imsg->size,0) multiplyResultMsg;
     msg->size=imsg->size;
     msg->size2=imsg->size;
@@ -954,7 +1049,7 @@ PairCalcReducer::broadcastEntireResult(entireResultMsg2 *imsg)
 	CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[imsg->symmetric])[0].id, (localElements[imsg->symmetric])[i].idx,CK_MSG_KEEP);
       }
     delete imsg;
-
+    */
 }
 
 

@@ -128,18 +128,18 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId);
 
-void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
 void startPairCalcRight(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
-extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy);
+extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int actionType);
 
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy);
+extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int actionType);
 
 CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int c);
 

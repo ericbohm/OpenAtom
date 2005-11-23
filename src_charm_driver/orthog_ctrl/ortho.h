@@ -46,8 +46,12 @@ class Ortho : public CBase_Ortho{
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
 
-  //		void S_to_T(CkReductionMsg *); replaced
+  void minCheck(CkReductionMsg *msg);
+
+  void resumeV(CkReductionMsg *msg);
+
   void resume();
+
   void multiplyForGamma(double *orthoT, double *lambda, double *gamma,int n);
 
   /* start step 1 on proxy 1, the callback will be for step 2
@@ -104,6 +108,7 @@ class Ortho : public CBase_Ortho{
     p | pcLambdaProxy;
     p | numGlobalIter;
     p | lbcaught;
+    p | toleranceCheckOrthoT;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
       { 
 	ortho = new double[nstates * nstates];
@@ -187,6 +192,9 @@ class Ortho : public CBase_Ortho{
   bool got_start;
   int lbcaught;
 
+  bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
+  
+
   double *A, *B, *C, *tmp_arr;
   int step;
   /* Note, for now m and n are always equal. When we move to chunks not all
@@ -212,5 +220,30 @@ class OrthoMap : public CkArrayMap {
   private:
     int N;
 };
+
+/**
+ * OrthoT tolerance check util
+ */
+inline double array_diag_min(int sizem, int sizen, double *array)
+{
+  double min_ret=fabs(array[0]);
+  int offset;
+  double absval;
+  for(int i=0;i<sizem;i++)
+    for(int j=0;j<sizen;j++)
+      {
+	offset=i*sizen+j;
+	absval=fabs(array[offset]);
+	if(i!=j)
+	  {
+	    min_ret = (min_ret<absval) ? min_ret : absval;
+	  }
+	else //substract 1 from diagonal
+	  {
+	    min_ret = (min_ret<absval-1.0) ? min_ret : absval-1.0;
+	  }
+      }  
+  return min_ret;
+}
 
 #endif // #ifndef _ortho_h_

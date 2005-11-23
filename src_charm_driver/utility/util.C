@@ -1128,7 +1128,9 @@ void Config::print() {
                   << "gExpandFactRho: " << gExpandFactRho << endl
 		  << "rhogpriority: " << rhogpriority << endl
 		  << "fftprogresssplit: " << fftprogresssplit << endl
-		  << "stateOutputOn: " << stateOutputOn << endl;
+		  << "stateOutputOn: " << stateOutputOn << endl
+	     << "toleranceInterval: " << toleranceInterval << endl;
+
    CkPrintf("\n");
 
 //----------------------------------------------------------------------------------
@@ -1190,8 +1192,9 @@ void Config::readConfig(const char* fileName, Config &config,
     config.priority        = 10;        // unused?
     config.gExpandFact     = 1.0;
     config.gExpandFactRho  = 1.0;
-    config.fftprogresssplit=20;
-    config.stateOutputOn  = 0;
+    config.fftprogresssplit= 20;
+    config.stateOutputOn  =  0;
+    config.toleranceInterval=5;
 //===================================================================================
 // Read parameters
 
@@ -1317,6 +1320,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.fftprogresssplit = atoi(parameterValue);
         else if (!strcmp(parameterName, "stateOutputOn"))
             config.stateOutputOn = atoi(parameterValue);
+        else if (!strcmp(parameterName, "toleranceInterval"))
+            config.toleranceInterval = atoi(parameterValue);
         else if (!strcmp(parameterName, "parlambda"))
             CkPrintf("@_parlambda is now compulsory_@\n");
         else if (!strcmp(parameterName, "gExpandFact")){

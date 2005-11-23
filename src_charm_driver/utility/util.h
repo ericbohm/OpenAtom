@@ -218,6 +218,7 @@ class Config {
 	int priority;
 	int fftprogresssplit;
         int stateOutputOn;
+	int toleranceInterval;
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
 };
 #if ! CMK_BLUEGENE_CHARM
