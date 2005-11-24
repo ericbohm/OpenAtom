@@ -1080,58 +1080,62 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::print() {
+void Config::print(char *fname_in) {
 //===================================================================================
 
-   CkPrintf("\n");
-   ckout     << "gSpacePPC: " << gSpacePPC << endl
-                  << "realSpacePPC: " << realSpacePPC << endl
-                  << "rhoGPPC: " << rhoGPPC << endl
-                  << "dataPath: " << dataPath << endl
-                  << "maxIter: " << maxIter << endl
-                  << "sGrainSize: " << sGrainSize << endl
-                  << "gSpaceNumChunks: " << gSpaceNumChunks << endl
-                  << "rhoGHelpers: " << rhoGHelpers << endl
-                  << "nstates: " << nstates << endl
-                  << "useCommlib: " << useCommlib << endl
-                  << "useGMulticast: " << useGMulticast << endl
-                  << "useGReduction: " << useGReduction << endl
-                  << "multicastDelayMS: " << multicastDelayMS << endl
-                  << "numMulticastMsgs: " << numMulticastMsgs << endl
-                  << "numPartialReduction: " << numPartialReduction << endl
-                  << "useCommlibMulticast: " << useCommlibMulticast << endl
-                  << "reductionDelayMS: " << reductionDelayMS << endl
-                  << "checkForces: " << checkForces << endl
-		  << "doublePack: " << doublePack << endl
-		  << "inPlaceFFT: " << inPlaceFFT << endl
-		  << "doublePack: " << doublePack << endl
-                  << "low_x_size: " << low_x_size <<endl
-                  << "high_x_size: " << high_x_size <<endl
-	          << "conserveMemory: " << conserveMemory << endl
-	          << "lbpaircalc: " << lbpaircalc << endl
-   	          << "lbgspace: " << lbgspace << endl
-	          << "pesPerState: " << pesPerState << endl
-	          << "RpesPerState: " << RpesPerState << endl
-	          << "GpesPerState: " << GpesPerState << endl
-	          << "localSF: " << localSF << endl
-	          << "delayCompStruct: " << delayCompStruct << endl
-	          << "gspacesum: " << gspacesum << endl
-	          << "numSfGrps: " << numSfGrps << endl
-	          << "numSfDups: " << numSfDups << endl
-   	          << "sfpriority: " << sfpriority << endl
-	          << "rsfftpriority: " << rsfftpriority << endl
-	          << "gsfftpriority: " << gsfftpriority << endl
-	          << "rsifftpriority: " << rsifftpriority << endl
-	          << "lambdapriority: " << lambdapriority << endl
-	          << "psipriority: " << psipriority << endl
-                  << "gExpandFact: " << gExpandFact << endl
-                  << "gExpandFactRho: " << gExpandFactRho << endl
-		  << "rhogpriority: " << rhogpriority << endl
-		  << "fftprogresssplit: " << fftprogresssplit << endl
-		  << "stateOutputOn: " << stateOutputOn << endl
-	     << "toleranceInterval: " << toleranceInterval << endl;
+   char fname[1024];
+   sprintf(fname,"%s.out",fname_in);
+   CkPrintf("   Writing all parameters both specified and default, to %s\n",fname);
 
-   CkPrintf("\n");
+   FILE *fp = fopen(fname,"w");
+     fprintf(fp,"dataPath: %s\n",dataPath);
+     fprintf(fp,"gSpacePPC: %d\n",gSpacePPC);
+     fprintf(fp,"realSpacePPC: %d\n",realSpacePPC);
+     fprintf(fp,"rhoGPPC: %d\n",rhoGPPC);
+     fprintf(fp,"maxIter: %d\n",maxIter);
+     fprintf(fp,"sGrainSize: %d\n",sGrainSize);
+     fprintf(fp,"gSpaceNumChunks: %d\n",gSpaceNumChunks);
+     fprintf(fp,"rhoGHelpers: %d\n",rhoGHelpers);
+     fprintf(fp,"nstates: %d\n",nstates);
+     fprintf(fp,"useCommlib: %d\n",useCommlib);
+     fprintf(fp,"useGMulticast: %d\n",useGMulticast);
+     fprintf(fp,"useGReduction: %d\n",useGReduction);
+     fprintf(fp,"multicastDelayMS: %d\n",multicastDelayMS);
+     fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
+     fprintf(fp,"numPartialReduction: %d\n",numPartialReduction);
+     fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
+     fprintf(fp,"reductionDelayMS: %d\n",reductionDelayMS);
+     fprintf(fp,"checkForces: %d\n",checkForces);
+     fprintf(fp,"doublePack: %d\n",doublePack);
+     fprintf(fp,"inPlaceFFT: %d\n",inPlaceFFT);
+     fprintf(fp,"doublePack: %d\n",doublePack);
+     fprintf(fp,"low_x_size: %d\n",low_x_size);
+     fprintf(fp,"high_x_size: %d\n",high_x_size);
+     fprintf(fp,"conserveMemory: %d\n",conserveMemory);
+     fprintf(fp,"lbpaircalc: %d\n",lbpaircalc);
+     fprintf(fp,"lbgspace: %d\n",lbgspace);
+     fprintf(fp,"pesPerState: %d\n",pesPerState);
+     fprintf(fp,"RpesPerState: %d\n",RpesPerState);
+     fprintf(fp,"GpesPerState: %d\n",GpesPerState);
+     fprintf(fp,"localSF: %d\n",localSF);
+     fprintf(fp,"delayCompStruct: %d\n",delayCompStruct);
+     fprintf(fp,"gspacesum: %d\n",gspacesum);
+     fprintf(fp,"numSfGrps: %d\n",numSfGrps);
+     fprintf(fp,"numSfDups: %d\n",numSfDups);
+     fprintf(fp,"sfpriority: %d\n",sfpriority);
+     fprintf(fp,"rsfftpriority: %d\n",rsfftpriority);
+     fprintf(fp,"gsfftpriority: %d\n",gsfftpriority);
+     fprintf(fp,"rsifftpriority: %d\n",rsifftpriority);
+     fprintf(fp,"lambdapriority: %d\n",lambdapriority);
+     fprintf(fp,"psipriority: %d\n",psipriority);
+     fprintf(fp,"rhogpriority: %d\n",rhogpriority);
+     fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
+     fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
+     fprintf(fp,"gExpandFact: %g\n",gExpandFact);
+     fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
+     fprintf(fp,"toleranceInterval: %d\n",toleranceInterval);
+   fclose(fp);
+
 
 //----------------------------------------------------------------------------------
    }//end routine
@@ -1151,6 +1155,7 @@ void Config::readConfig(const char* fileName, Config &config,
 //===================================================================================
 // Initialize parameters
 
+    config.rhoGHelpers     = 1;
     config.nstates         = nstates_in;
     config.maxIter         = maxIter_in;
     config.checkForces     = 0;
@@ -1323,7 +1328,7 @@ void Config::readConfig(const char* fileName, Config &config,
         else if (!strcmp(parameterName, "toleranceInterval"))
             config.toleranceInterval = atoi(parameterValue);
         else if (!strcmp(parameterName, "parlambda"))
-            CkPrintf("@_parlambda is now compulsory_@\n");
+            CkPrintf("      Warning : parlambda is compulsory. It can't be set.\n");
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
@@ -1339,7 +1344,7 @@ void Config::readConfig(const char* fileName, Config &config,
         }//endif
     }//end while reading
     configFile.close();
-    CkPrintf("   Closing cpaimd config file : %s\n",fileName);
+    CkPrintf("   Closing cpaimd config file : %s\n\n",fileName);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
       config.RpesPerState=config.pesPerState;
@@ -1357,7 +1362,7 @@ void Config::readConfig(const char* fileName, Config &config,
     sprintf (fname, "%s/state1.out", config.dataPath);
     CkPrintf("   Opening state file : %s\n",fname);
     readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
-    CkPrintf("   Closing state file : %s\n",fname);
+    CkPrintf("   Closing state file : %s\n\n",fname);
 
     config.numFFTPoints = nkf1 * nkf2 * nkf3;
     config.low_x_size   = minx+1;
@@ -1549,7 +1554,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
 // Set the file name and data points
 
-    char fname[1000]; sprintf(fname, "%s/state%d.out", config.dataPath,1);
+    char fname[1000]; sprintf(fname,"%s/state%d.out",config.dataPath,1);
     int numData        = config.numData;
     int ibinary_opt    = sim->ibinary_opt;
     int sizeY          = sim->sizeY;

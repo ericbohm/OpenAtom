@@ -1,36 +1,45 @@
-#include "../../include/class_defs/vx_smpl.h"
-
 //=================================================================== 
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=================================================================== 
-
-vx_smpl::vx_smpl(double*        velx,
-                 double*        vely,
-                 double*        velz,    
-                 double*        mass,    
-                 double*        text_atm, 
-                 int            natm,      
-                 GENENSOPTS*    genensopts,  
-                 MDVEL_SAMP*    vel_samp,    
-                 MDGHOST_ATOMS* ghost_atoms,
-                 MDCONSTRNT*    mdconstrnt)
-//=================================================================== 
-{//begin routine 
+#include "../../include/class_defs/ATOM_OPERATIONS/class_vx_smpl.h"
+#include "../class_defs/allclass_gen.h"
+#include "../class_defs/allclass_mdintegrate.h"
+#include "../class_defs/allclass_mdintra.h"
+#include "../class_defs/allclass_mdatoms.h"
 //=================================================================== 
 
- //-------------------  Local pointers ----------------------
+
+//=================================================================== 
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=================================================================== 
+// Some list of velocites
+//=================================================================== 
+void VX_SMPL::ctrlSamplAtomVel(int natm,double *vx,double *vy,
+                                     double *vz,double *mass)
+//=================================================================== 
+  {//begin routine 
+//=================================================================== 
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  MDATOMS      *mdatoms      = MDATOMS::get();
+  MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+  MDINTRA      *mdintra      = MDINTRA::get();
+
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_mdatoms.h"
+#include "../class_defs/allclass_strip_mdintegrate.h"
+#include "../class_defs/allclass_strip_mdintra.h"
 
   int iconstrnt      = mdconstrnt->iconstrnt;
-
-  int nghost_tot     = ghost_atoms->nghost_tot;
-  int *ighost_map    = ghost_atoms->ighost_map;
-
+  int nghost_tot     = mdghost_atoms->nghost_tot;
+  int *ighost_map    = mdghost_atoms->ighost_map;
   int nfreeze        = mdconstrnt->nfreeze;
   int *freeze_map    = mdconstrnt->freeze_map;
-
   int npt_f          = genensopts->npt_f;
   int npt_i          = genensopts->npt_i;
   int nve            = genensopts->nve;
   int nvt            = genensopts->nvt;
+  double *t_ext      = mdclatoms_info->text_atm;
 
 //=================================================================== 
 // 0) Write to screen                                                 
@@ -40,47 +49,29 @@ vx_smpl::vx_smpl(double*        velx,
     PRINT_LINE_DASH;printf("\n");
 
 //=================================================================== 
-// I) Sample atom velocities                                           
+// I) Sample atom velocities : velocities passed to start at vx[0]
 
-   vx_smpl::sampl_vx(velx,vely,velz,mass,text_atm,natm,
-         	           &(vel_samp->iseed),
-                     &(vel_samp->iseed2),
-                     &(vel_samp->qseed));
+   sampl3DVelMultiT(natm,vx,vy,vz,mass,&t_ext[1],
+       	          &(mdvel_samp->iseed),&(mdvel_samp->iseed2),
+                  &(mdvel_samp->qseed));
 
 //==================================================================== 
-//==================================================================== 
-
 // II) Project onto surface of constraint                              
 
   if(iconstrnt==1){
-     int iproj_vel = 1;
+      PRINTF("Correction to velocities due to projection\n");
+      PRINTF("on surface on constraint not implemented in vx_smpl\n");
+  }//endif
 
-     if(iproj_vel == 1) {
-     if(npt_f==1 || npt_i == 1){
-       PRINTF("Correction to velocities due to projection onto surface of constraint has \n");
-       PRINTF(" not implemented for npt_i or npt_f \n");
-       exit(1);
-     }
-
-     if(nve  ==1 || nvt==1){
-       PRINTF("Correction to velocities due to projection onto surface of constraint has \n");
-       PRINTF(" not implemented for nve or nvt \n");
-       //       proj_vel( );
-     }
-
-    }// endif iproj_vel  
-  }//endif iconstrnt 
- 
 //==================================================================== 
 // III) Zero velocities of ghost atoms if any                          
 
   if(nghost_tot > 0) {
-    int ighost;
-   for(ighost=1;ighost <= nghost_tot;ighost++){
-    int igloc = ighost_map[ighost];
-     velx[igloc] = 0.0;
-     vely[igloc] = 0.0;
-     velz[igloc] = 0.0;
+   for(int ighost=1;ighost <= nghost_tot;ighost++){
+    int igloc = ighost_map[ighost]-1;
+     vx[igloc] = 0.0;
+     vy[igloc] = 0.0;
+     vz[igloc] = 0.0;
    }//endfor 
   }//endif 
 
@@ -88,12 +79,11 @@ vx_smpl::vx_smpl(double*        velx,
 // III) Zero velocities of freeze atoms if any                          
 
   if(nfreeze > 0) {
-    int i;
-   for(i=1;i <= nfreeze;i++){
-     int igloc = freeze_map[i];
-     velx[igloc] = 0.0;
-     vely[igloc] = 0.0;
-     velz[igloc] = 0.0;
+   for(int i=1;i <= nfreeze;i++){
+     int igloc = freeze_map[i]-1;
+     vx[igloc] = 0.0;
+     vy[igloc] = 0.0;
+     vz[igloc] = 0.0;
    }//endfor 
   }//endif 
 
@@ -104,65 +94,240 @@ vx_smpl::vx_smpl(double*        velx,
     PRINTF("Atomic velocity sampling complete\n");
     PRINT_LINE_STAR;printf("\n");
 
-//==================================================================== 
+//--------------------------------------------------------------------
    }//end routine 
 //==================================================================== 
 
 
-//==================================================================== 
-// Particle Velocities  
-//==================================================================== 
+//=================================================================== 
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=================================================================== 
+// Atom Velocities
+//=================================================================== 
+void VX_SMPL::ctrlSamplAtomVel(int natm, Atom *atoms){
+//=================================================================== 
 
-void vx_smpl::sampl_vx(double* velx,              // x-comp of atom velocities
-                       double* vely,              // y-comp of atom velocities
-                       double* velz,              // z-comp of atom velocities
-                       double* mass,
-                       double* text_atm,
-                       int     natm_tot,
-                       int*    iseed,
-                       int*    iseed2,
-                       double* qseed)
-// =================================================================== 
-{//begin routine 
-// ===================================================================
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  MDATOMS      *mdatoms      = MDATOMS::get();
+  MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+  MDINTRA      *mdintra      = MDINTRA::get();
 
-   int iatm;
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_mdatoms.h"
+#include "../class_defs/allclass_strip_mdintegrate.h"
+#include "../class_defs/allclass_strip_mdintra.h"
 
-#define COMPARING_TO_OLD_PINY
-#ifdef  COMPARING_TO_OLD_PINY
-
-   double *temp = (new double[natm_tot]) - 1;
-
-   gaussran(natm_tot,iseed,iseed2,qseed,temp);
-   int i;
-   for(i=1; i <= natm_tot; i++){ velx[i] = temp[i]; }
-   gaussran(natm_tot,iseed,iseed2,qseed,temp);
-   for(i=1; i <= natm_tot; i++){ vely[i] = temp[i]; }
-   gaussran(natm_tot,iseed,iseed2,qseed,temp);
-   for(i=1; i <= natm_tot; i++){ velz[i] = temp[i]; }
-
-   delete [] (temp+1);
-
-#else
-   for(iatm=1;iatm<= natm_tot;iatm++){
-     gaussran(1,iseed,iseed2,qseed,&(velx[iatm]));
-     gaussran(1,iseed,iseed2,qseed,&(vely[iatm]));
-     gaussran(1,iseed,iseed2,qseed,&(velz[iatm]));
-   }//endfor 
-#endif
-
-   for(iatm=1; iatm <= natm_tot; iatm++){
-
-    double start_temp = text_atm[iatm];
-    double width = sqrt(start_temp/(mass[iatm]*BOLTZ));
-    velx[iatm] *= width;
-    vely[iatm] *= width;
-    velz[iatm] *= width;
-
-   }//endfor 
+   int iconstrnt   = mdconstrnt->iconstrnt;
+   int nghost_tot  = mdghost_atoms->nghost_tot;
+   int *ighost_map = mdghost_atoms->ighost_map;
+   int nfreeze     = mdconstrnt->nfreeze;
+   int *freeze_map = mdconstrnt->freeze_map;
+   int npt_f       = genensopts->npt_f;
+   int npt_i       = genensopts->npt_i;
+   int nve         = genensopts->nve;
+   int nvt         = genensopts->nvt;
+   double *t_ext   = mdclatoms_info->text_atm;
 
 //=================================================================== 
+// 0) Write to screen                                                 
+
+   PRINT_LINE_STAR;
+   PRINTF("Sampling atomic velocities\n");
+   PRINT_LINE_DASH;printf("\n");
+
+//=================================================================== 
+// I) Sample atom velocities : atoms start at 0 : atoms[0].vx 
+
+   sampl3DVelMultiT(natm,atoms,&t_ext[1],
+       	          &(mdvel_samp->iseed),&(mdvel_samp->iseed2),
+                  &(mdvel_samp->qseed));
+
+//==================================================================== 
+// II) Project onto surface of constraint                              
+
+  if(iconstrnt==1){
+      PRINTF("Correction to velocities due to projection\n");
+      PRINTF("on surface on constraint not implemented in vx_smpl\n");
+  }//endif
+
+//==================================================================== 
+// III) Zero velocities of ghost atoms if any                          
+
+  if(nghost_tot > 0) {
+   for(int ighost=1;ighost <= nghost_tot;ighost++){
+     int igloc = ighost_map[ighost]-1;
+     atoms[igloc].vx = 0.0;
+     atoms[igloc].vy = 0.0;
+     atoms[igloc].vz = 0.0;
+   }//endfor 
+  }//endif 
+
+//==================================================================== 
+// III) Zero velocities of freeze atoms if any                          
+
+  if(nfreeze > 0) {
+   for(int i=1;i <= nfreeze;i++){
+     int igloc = freeze_map[i]-1;
+     atoms[igloc].vx = 0.0;
+     atoms[igloc].vy = 0.0;
+     atoms[igloc].vz = 0.0;
+   }//endfor 
+  }//endif 
+
+//==================================================================== 
+// III) Write to screen                                                
+
+    PRINT_LINE_DASH;
+    PRINTF("Atomic velocity sampling complete\n");
+    PRINT_LINE_STAR;printf("\n");
+
+//--------------------------------------------------------------------
+   }//end routine 
+//==================================================================== 
+
+
+//=================================================================== 
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================
+// NHC Velocities
+//=================================================================== 
+void VX_SMPL::ctrlSamplAtomNhcVel(int natm,AtomNHC *atomsNHC){
+
+  MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+#include "../class_defs/allclass_strip_mdintegrate.h"
+
+  for(int i=0;i<natm;i++){
+    double kT    = atomsNHC[i].kT;
+    int len_nhc  = atomsNHC[i].len_nhc;
+    double *vx   = atomsNHC[i].vx;
+    double *vy   = atomsNHC[i].vy;
+    double *vz   = atomsNHC[i].vz;
+    double *mass = atomsNHC[i].m;
+    sampl3DVelOneT(len_nhc,vx,vy,vz,mass,kT,&(mdvel_samp->iseed),
+                     &(mdvel_samp->iseed2),&(mdvel_samp->qseed));
+  }//endfor
+
+}//end routine
+//=================================================================== 
+
+
+//==================================================================== 
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==================================================================== 
+// Velocities  
+//==================================================================== 
+void VX_SMPL::sampl3DVelMultiT(int natm, double* vx, double* vy,
+                       double* vz, double* mass, double* t_ext,
+                       int* iseed, int* iseed2, double* qseed)
+//=================================================================== 
+   {//begin routine 
+//===================================================================
+// Sample unit gaussian
+
+   double *temp = new double[natm];
+   double *ptemp = temp-1;
+
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vx[i] = temp[i];}
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vy[i] = temp[i];}
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vz[i] = temp[i];}
+
+//===================================================================
+// Apply the width
+
+   for(int i=0;i<natm;i++){
+     double start_temp = t_ext[i];
+     double width = sqrt(start_temp/(mass[i]*BOLTZ));
+     vx[i] *= width;
+     vy[i] *= width;
+     vz[i] *= width;
+   }//endfor 
+
+//------------------------------------------------------------------
  } //end routine 
 //=================================================================== 
+
+
+//==================================================================== 
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==================================================================== 
+// Velocities of Atoms
+//==================================================================== 
+void VX_SMPL::sampl3DVelMultiT(int natm, Atom *atoms, double* t_ext,
+                                      int* iseed, int* iseed2, double* qseed)
+//=================================================================== 
+   {//begin routine 
+//===================================================================
+// Sample unit gaussian
+
+   double *temp = new double[natm];
+   double *ptemp = temp-1;
+
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){atoms[i].vx = temp[i];}
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){atoms[i].vy = temp[i];}
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){atoms[i].vz = temp[i];}
+
+   delete [] temp;
+
+//===================================================================
+// Apply the width 
+
+   for(int i=0;i<natm;i++){
+     double start_temp = t_ext[i];
+     double width = sqrt(start_temp/(atoms[i].m*BOLTZ));
+     atoms[i].vx *= width;
+     atoms[i].vy *= width;
+     atoms[i].vz *= width;
+   }//endfor 
+
+//------------------------------------------------------------------
+ } //end routine 
+//=================================================================== 
+
+
+//==================================================================== 
+// Velocities  
+//==================================================================== 
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==================================================================== 
+void VX_SMPL::sampl3DVelOneT(int natm, double* vx, double* vy,
+                       double* vz,double* mass,double  kT,
+                       int* iseed,int* iseed2, double* qseed)
+//=================================================================== 
+   {//begin routine 
+//===================================================================
+// Sample unit gaussian
+
+   double *temp = new double[natm];
+   double *ptemp = temp-1;
+
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vx[i] = temp[i]; }
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vy[i] = temp[i]; }
+   gaussran(natm,iseed,iseed2,qseed,ptemp);
+   for(int i=0;i<natm;i++){vz[i] = temp[i]; }
+
+   delete [] temp;
+
+//===================================================================
+// Apply the width
+
+   for(int i=0;i<natm;i++){
+     double width = sqrt(kT/mass[i]); //kT has boltz
+     vx[i] *= width;
+     vy[i] *= width;
+     vz[i] *= width;
+   }//endfor 
+
+//------------------------------------------------------------------
+ } //end routine 
+//=================================================================== 
+
 
 

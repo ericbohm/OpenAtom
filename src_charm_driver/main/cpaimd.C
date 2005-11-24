@@ -236,9 +236,9 @@ main::main(CkArgMsg *m) {
 //============================================================================    
 /* Invoke Ramkumar input class */
 
-    CkPrintf("\n================================================\n");
+    CkPrintf("\n======================================================\n");
     CkPrintf("Cpaimd-Charm-Driver input started \n");
-    CkPrintf("------------------------------------------------\n");
+    CkPrintf("---------------------------------------------------------\n\n");
 
     Config::readConfig(m->argv[1],config,sim->nstates,
                        sim->sizeX,sim->sizeY,sim->sizeZ,
@@ -257,9 +257,9 @@ main::main(CkArgMsg *m) {
     nstates          = config.nstates;    // globals on all procs
     sizeX            = sim->sizeX;
 
-    config.print();
+    config.print(m->argv[1]);
 
-    CkPrintf("------------------------------------------------\n");
+    CkPrintf("\n------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver input completed \n");
     CkPrintf("================================================\n\n");
 
@@ -369,9 +369,13 @@ main::main(CkArgMsg *m) {
 
 //============================================================================
 
-    CkPrintf("\n------------------------------------------------\n");
+    CkPrintf("\n-----------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
-    CkPrintf("================================================\n\n");
+    CkPrintf("======================================================\n\n");
+
+    CkPrintf("======================================================\n");
+    CkPrintf("Launching chare arrays and obtaining data sets  \n");
+    CkPrintf("------------------------------------------------------\n\n");
 
 //============================================================================
    }// end Main
@@ -460,7 +464,8 @@ void init_commlib_strategies(int numRhoG, int numReal){
             rhoRealElements[i] = idx2d; 
         }
 
-        CkPrintf("making real_strat with src numReal %d dest numRhoG %d\n",numReal,numRhoG);
+        CkPrintf("Making real_strategy with src numReal %d dest numRhoG %d\n",
+                  numReal,numRhoG);
         CharmStrategy *real_strat = new EachToManyMulticastStrategy
             (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              numReal, rhoRealElements, numRhoG, rhoGElements);
@@ -719,7 +724,15 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 void main::doneInit(CkReductionMsg *msg){
 //============================================================================
     delete msg;
-    CkPrintf("done init %d\n",done_init);
+
+    if(done_init==0){
+      CkPrintf("Completed chare instantiation phase %d\n",done_init+1);
+    }else{
+      CkPrintf("Completed chare data acquisition phase %d\n",done_init+1);
+      CkPrintf("\n-----------------------------------------------------\n");
+      CkPrintf("Chare array launch and initialization complete       \n");
+      CkPrintf("======================================================\n\n");
+    }//endif
 
     if (done_init == 0){
 	// kick off file reading in gspace
@@ -805,7 +818,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
      */
 
     int s,x;
-//    CkPrintf("making nstates %d nchareG %d gspace objects\n",nstates,nchareG);
+    CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
     for (s = 0; s < nstates; s++){
       for (x = 0; x <nchareG; x++){
              gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, gSpacePPC, 
@@ -1036,13 +1049,22 @@ void control_physics_to_driver(){
 // make a group : create a proxy for the atom class and also a reduction client
 
     PhysicsAtomPosInit *PhysicsAtom  = new PhysicsAtomPosInit();
-    int natm    = PhysicsAtom->natm_tot;
-    int natm_nl = PhysicsAtom->natm_nl;
-    Atom *atoms = new Atom[natm];
-    PhysicsAtom->DriverAtomInit(atoms);
+    int natm          = PhysicsAtom->natm_tot;
+    int natm_nl       = PhysicsAtom->natm_nl;
+    int len_nhc       = PhysicsAtom->len_nhc;
+    int iextended_on  = PhysicsAtom->iextended_on;
+    int cp_min_opt    = PhysicsAtom->cp_min_opt;
+    int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
+    double kT         = PhysicsAtom->kT;
+    Atom *atoms       = new Atom[natm];
+    AtomNHC *atomsNHC = new AtomNHC[natm];
 
-    atomsGrpProxy = CProxy_AtomsGrp::ckNew(natm,natm_nl,atoms);
+    PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
+    atomsGrpProxy = CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
+                                           cp_min_opt,cp_wave_opt,kT,atoms,atomsNHC);
+
     delete [] atoms;
+    delete [] atomsNHC;
     delete PhysicsAtom;
 
 //=====================================================================

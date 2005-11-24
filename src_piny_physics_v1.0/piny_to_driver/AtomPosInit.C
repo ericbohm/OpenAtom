@@ -1,5 +1,5 @@
 #include "../include/class_defs/AtomPosInit.h"
-#include "../../classical_physics/vel_smpl_atms/vx_smpl.h"
+#include "../include/class_defs/vx_smpl.h"
 
 AtomPosInit::AtomPosInit () {
 

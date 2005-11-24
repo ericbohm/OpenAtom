@@ -64,7 +64,8 @@ ABINITIO_PHYSICS_FILES = cp_eke.o cp_nl_energy_forc.o cp_nlmat.o \
                          cp_grad_rho_ctrl.o cp_becke.o gen_wave.o \
                          cp_dynamics.o
 
-CLASSICAL_PHYSICS_FILES = control_integrate.o
+CLASSICAL_PHYSICS_FILES = control_integrate.o write_output.o write_gen_header.o \
+                          integration_drivers.o
 
 #===========================================================================
 

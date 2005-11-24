@@ -23,6 +23,8 @@
 #include "../class_defs/allclass_mdinter.h"
 #include "../class_defs/allclass_mdintra.h"
 #include "../class_defs/typedefs_par.h"
+#include "../../../include/Atoms.h"
+#include "../class_defs/ATOM_OPERATIONS/class_atomoutput.h"
 
 #include "../proto_defs/proto_parse_entry.h"
 #include "../proto_defs/proto_parse_local.h"
@@ -41,7 +43,6 @@
 
 #include "../proto_defs/proto_math.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
-
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -361,12 +362,14 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                mdinteract->brnch_root_skin,
                mdinteract->nter_typ);
 #endif
+
+//========================================================================
+// Initialize the output configuration/trajectory files
+
+   ATOMOUTPUT::initialize_piny_output();
   
 //========================================================================
 // XVI) Flush the buffers                                                 
-  
-//  printf("Before finishing parse \n");  DEBUG_READ_INT
-
 
   FFLUSH(stdout);
   FFLUSH(stderr);

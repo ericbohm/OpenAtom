@@ -89,7 +89,7 @@ include make_spec.h
 #remove all objs and libs
 #==========================
 clean       :
-	/bin/rm -f $(LIB) $(LIB_DECLS) $(LIB_OBJS) $(DECLS) $(OBJS) $(ULIBS) *.o charmrun $(CODE)/include/class_defs/Reader.h $(CODE)/include/class_defs/AtomPosInit.h $(CODE)/include/class_defs/vx_smpl.h
+	/bin/rm -f $(LIB) $(LIB_DECLS) $(LIB_OBJS) $(DECLS) $(OBJS) $(ULIBS) *.o charmrun 
 
 #==========================
 #remove care objs and libs

@@ -36,8 +36,9 @@ CLASS_CP_INTEGRATE = $(CODE)/include/class_defs/CP_OPERATIONS/class_cpintegrate.
 CLASS_CP_RSPACEION = $(CODE)/include/class_defs/CP_OPERATIONS/class_cprspaceion.h
 CLASS_CHARM_ATOM = $(CODE)/../include/Atoms.h
 CLASS_ATOM_INTEGRATE = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h
+CLASS_ATOM_OUTPUT = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_atomoutput.h
 CLASS_CP_GEN_WAVE  = $(CODE)/include/class_defs/CP/class_gen_wave.h
-
+CLASS_VX_SMPL  = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_vx_smpl.h
 
 #-------------------------------------------------------
 #               PROTO_TYPES

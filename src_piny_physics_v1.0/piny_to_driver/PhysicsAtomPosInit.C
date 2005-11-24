@@ -2,9 +2,8 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
+
 //============================================================================
-
-
 #include "standard_include.h"
 #include "../include/class_defs/allclass_mdintegrate.h"
 #include "../include/class_defs/allclass_mdatoms.h"
@@ -14,22 +13,20 @@
 #include "../include/class_defs/allclass_cp.h"
 #include "../include/class_defs/typedefs_par.h"
 #include "../include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
-#include "../../classical_physics/vel_smpl_atms/vx_smpl.h"
+#include "../include/class_defs/ATOM_OPERATIONS/class_vx_smpl.h"
 #include "../proto_defs/proto_coords_entry.h"
 #include "../proto_defs/proto_coords_local.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 #include "../../../include/Atoms.h"
+//============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
-PhysicsAtomPosInit::PhysicsAtomPosInit () 
-
+PhysicsAtomPosInit::PhysicsAtomPosInit (){
 //============================================================================
-   {
-//============================================================================
+// Get the readonly structures ready to go
 
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
   MDATOMS      *mdatoms      = MDATOMS::get();
@@ -38,25 +35,36 @@ PhysicsAtomPosInit::PhysicsAtomPosInit ()
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
-  pi_beads      = (mdatoms->mdclatoms_info.pi_beads);
-  natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
-  natm_nl       = (cp->cppseudo.nonlocal.natm);
-  iextended_on  = (mdintegrate->mdtherm_info.iextended_on);
-                                                                               
-//--------------------------------------------------------------------------
-//  If pi_beads is > 1, you have pi_beads independent classical systems.
-//   That is, if you have 256 water molecules and pi_beads=25,
-//   you have 256 x 25 particle positions. Now, the 25 copies don't interact
-//   via the intermolecule, intramolecular potentials, so far as leanMD
-//   is concerned you will have spawn  25 independent calculations.  The
-//   interactions among the copies is very simple
-// 
-//       PHI_PI_BEADS       = sum_ij f_i (pos[j].x[i] -pos[j+1].x[i])^2
-//                  pos[pi_beads+1]. x  = pos[1].x
-// 
-//   Anyway, with some luck, we will get to this before too long. The
-//   parallelism is interesting 
-//--------------------------------------------------------------------------
+ MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+#include "../class_defs/allclass_strip_mdatoms.h"
+
+//============================================================================
+// Copy out some useful variables and error check
+
+  pi_beads      = (mdclatoms_info->pi_beads);
+  natm_tot      = (mdclatoms_info->natm_tot);
+  natm_nl       = (cppseudo->nonlocal.natm);
+  iextended_on  = (mdtherm_info->iextended_on);
+  kT            = (genstatepoint->t_ext)/BOLTZ;
+  cp_min_opt    = (gensimopts->cp_wave_min+gensimopts->cp_min);
+  istart_typ    = gensimopts->istart;
+  num_nhc       = (mdtherm_info->num_nhc);
+  len_nhc       = (mdtherm_info->len_nhc);
+  cp_wave_opt   = (gensimopts->cp_wave);
+
+  if(iextended_on==1){
+    if(num_nhc != 3*natm_tot){
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("Presently only massive thermstatting is supported.\n");
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+       EXIT(1);
+    }//endif
+  }//endif
+
+//============================================================================
+// Malloc the piny data structure : Lazy man way. Use piny input routines.
 
   mdclatoms_pos = (MDCLATOMS_POS *)
                 cmalloc(pi_beads*sizeof(MDCLATOMS_POS),"PhysicsAtomPosInit.C")-1;
@@ -80,29 +88,33 @@ PhysicsAtomPosInit::PhysicsAtomPosInit ()
   therm_bead    = (MDTHERM_POS *)
                    cmalloc(pi_beads*sizeof(MDTHERM_POS),"PhysicsAtomPosInit.C")-1;
 
-  if(iextended_on==1){
-    num_nhc = (mdintegrate->mdtherm_info.num_nhc);
-    len_nhc = (mdintegrate->mdtherm_info.len_nhc);
+  if(iextended_on==1 && num_nhc>0){
     therm_class.num_nhc = num_nhc;
     therm_class.len_nhc = len_nhc;
     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
+    mass_nhc            = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
+    double **mass_nhc_in= mdtherm_info->mass_nhc;
+    for(int j=1;j<=len_nhc;j++){
+    for(int i=1;i<=num_nhc;i++){
+      mass_nhc[j][i] = mass_nhc_in[j][i];
+    }}
   }// endif
+
+//============================================================================
+//  Fill the Piny Data Structures : Resampl atom velocities if necessary
 
   read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
              mdclatoms_pos,&therm_class,therm_bead);
 
-  for(int ip=1;ip<=pi_beads;ip++){
-    vx_smpl vsampler (mdclatoms_pos[ip].vx,
-                      mdclatoms_pos[ip].vy,
-                      mdclatoms_pos[ip].vz,
-                      mdatoms->mdclatoms_info.mass,
-                      mdatoms->mdclatoms_info.text_atm,
-                      mdatoms->mdclatoms_info.natm_tot,
-                      &(general_data->genensopts),
-                      &(mdintegrate->mdvel_samp),
-                      &(mdintra->mdghost_atoms),
-                      &(mdintra->mdconstrnt)); 
+  if(istart_typ<3){
+    for(int ip=1;ip<=pi_beads;ip++){
+      double *vx   = mdclatoms_pos[ip].vx;
+      double *vy   = mdclatoms_pos[ip].vy;
+      double *vz   = mdclatoms_pos[ip].vz;
+      double *mass = mdclatoms_info->mass;
+      VX_SMPL::ctrlSamplAtomVel(natm_tot,&vx[1],&vy[1],&vz[1],&mass[1]);
+    }//endif
   }//endif
 
 //----------------------------------------------------------------------------
@@ -113,14 +125,27 @@ PhysicsAtomPosInit::PhysicsAtomPosInit ()
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNHC){
+//============================================================================
+// Local pointers and Error checking
 
-void PhysicsAtomPosInit::DriverAtomInit (Atom *atoms) {
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp                     = CP::get();
+  MDATOMS      *mdatoms      = MDATOMS::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+#include "../include/class_defs/allclass_strip_mdatoms.h"
+  int istart = gensimopts->istart;
+
+  if(natm_in != natm_tot){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Bad atom number to DriverAtomInit\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
 
 //============================================================================
-
-  MDATOMS      *mdatoms      = MDATOMS::get();
-#include "../include/class_defs/allclass_strip_mdatoms.h"
-  int i,j;
+// Atom Initialization 
 
   double *x  = mdclatoms_pos[1].x;
   double *y  = mdclatoms_pos[1].y;
@@ -131,7 +156,7 @@ void PhysicsAtomPosInit::DriverAtomInit (Atom *atoms) {
   double *q  = mdclatoms_info->q;
   double *m  = mdclatoms_info->mass;
 
-  for(i=0,j=1;i<natm_tot;i++,j++){
+  for(int i=0,j=1;i<natm_tot;i++,j++){
     atoms[i].x  =  x[j];
     atoms[i].y  =  y[j];
     atoms[i].z  =  z[j];
@@ -140,25 +165,74 @@ void PhysicsAtomPosInit::DriverAtomInit (Atom *atoms) {
     atoms[i].vz = vz[j];
     atoms[i].q  = q[j];
     atoms[i].m  = m[j];
+    atoms[i].fx = 0.0;
+    atoms[i].fy = 0.0;
+    atoms[i].fz = 0.0;
   }//endfor
 
-}
+//============================================================================
+// AtomNHC Initialization 
+
+  for(int i=0;i<natm_tot;i++){
+    atomsNHC[i].m       = new double[len_nhc];
+    atomsNHC[i].vx      = new double[len_nhc]; 
+    atomsNHC[i].vy      = new double[len_nhc];
+    atomsNHC[i].vz      = new double[len_nhc];
+    atomsNHC[i].fx      = new double[len_nhc];
+    atomsNHC[i].fy      = new double[len_nhc];
+    atomsNHC[i].fz      = new double[len_nhc];
+    atomsNHC[i].len_nhc = len_nhc;
+    atomsNHC[i].kT      = kT;
+    atomsNHC[i].posKT   = 0.0;
+    for(int j=0;j<len_nhc;j++){
+      atomsNHC[i].m[j] =1.0;
+      atomsNHC[i].vx[j]=0.0;
+      atomsNHC[i].vy[j]=0.0;
+      atomsNHC[i].vz[j]=0.0;
+      atomsNHC[i].fx[j]=0.0;
+      atomsNHC[i].fy[j]=0.0;
+      atomsNHC[i].fz[j]=0.0;
+    }//endif
+  }//endfor
+
+  if(cp_min_opt==0 && iextended_on==1  && num_nhc>0){
+    for(int i=0;i<natm_tot;i++){
+      int iii = 3*i+1;
+      for(int j=0,j1=1;j<len_nhc;j++,j1++){
+        atomsNHC[i].m[j]  = mass_nhc[j1][iii];
+      }//endfor
+    }//endfor
+    if(istart>=4){
+      double **v_nhc = therm_class.v_nhc;
+      for(int i=0;i<natm_tot;i++){
+        int iii = 3*i+1;
+        for(int j=0,j1=1;j<len_nhc;j++,j1++){
+          atomsNHC[i].m[j]  = mass_nhc[j1][iii];
+          atomsNHC[i].vx[j] = v_nhc[j1][iii];
+          atomsNHC[i].vy[j] = v_nhc[j1][(iii+1)];
+          atomsNHC[i].vz[j] = v_nhc[j1][(iii+2)];
+        }//endfor
+      }//endfor
+    }else{
+      VX_SMPL::ctrlSamplAtomNhcVel(natm_tot,atomsNHC);
+    }//endif
+  }//endif
+
+//----------------------------------------------------------------------------
+  }//end routine
 //============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
-PhysicsAtomPosInit::~PhysicsAtomPosInit () 
-
-//============================================================================
-   {//begin routine
+PhysicsAtomPosInit::~PhysicsAtomPosInit (){
 //============================================================================
 
-  if(iextended_on==1){
+  if(iextended_on==1  && num_nhc>0){
     cfree_mat(therm_class.x_nhc,1,len_nhc,1,num_nhc);
     cfree_mat(therm_class.v_nhc,1,len_nhc,1,num_nhc);
+    cfree_mat(mass_nhc,1,len_nhc,1,num_nhc);
   }// endif
 
   cfree (&(therm_bead[1]),"~AtomPosInit()");
@@ -175,5 +249,5 @@ PhysicsAtomPosInit::~PhysicsAtomPosInit ()
   cfree (&(mdclatoms_pos[1]),"~AtomPosInit()");
 
 //---------------------------------------------------------------------------
-  }
+  }//end routine
 //============================================================================

@@ -87,16 +87,6 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
 #endif
 
 //=======================================================================
-// III) Control the simulations : Parallelism invoked within calls below.
-//                               readonly classes automatically communicated
-//                               to all PROCESSOR(S) by pup magic.
-
-#define CP_OFF
-#ifdef CP_ON
-  control_cp(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp);
-#endif
-
-//=======================================================================
 // IV)  Exit, stage left 
 
   // inform caller that initialization is done
@@ -109,7 +99,6 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
   PRINTF("Completed Piny Parameter setup\n");
   PRINT_LINE_STAR 
   PRINTF("\n");
-
 
 //----------------------------------------------------------------------
    }//end main

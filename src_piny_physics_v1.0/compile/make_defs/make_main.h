@@ -36,12 +36,9 @@ PhysicsAtomPosInit.o     : $(STANDARD) $(DEFINES) \
 vx_smpl.o     :          $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
-                         $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) \
-                         $(CODE)/classical_physics/vel_smpl_atms/vx_smpl.C \
-                         $(CODE)/classical_physics/vel_smpl_atms/vx_smpl.h
+                         $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) $(CLASS_VX_SMPL) \
+                         $(CODE)/classical_physics/vel_smpl_atms/vx_smpl.C 
 	$(ECHO) $@
-	cp -f $(CODE)/classical_physics/vel_smpl_atms/vx_smpl.h \
-              $(CODE)/include/class_defs/
 	$(COBJ) $(CODE)/classical_physics/vel_smpl_atms/vx_smpl.C
                                                                                
 #==========================================================================

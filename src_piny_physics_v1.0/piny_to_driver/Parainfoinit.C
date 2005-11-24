@@ -45,7 +45,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_nl    = (cp->cppseudo.nonlocal.natm);
   double dt      = gentimeinfo->dt;
   int ndump_frq  = genfilenames->iwrite_dump;
-  double tol_norb = cpconstrnt->c_tolnorb;
+  double tol_norb= cpconstrnt->c_tolnorb;
 
 //========================================================================
 
@@ -59,6 +59,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 //========================================================================
 
    sim->vol        = vol;
+   sim->tol_norb   = tol_norb;
+   sim->dt         = dt;
+   sim->ndump_frq  = ndump_frq;
 
    sim->cp_min_opt = cp_min_opt;
    sim->cp_min_cg  = cp_min_cg;
@@ -77,10 +80,6 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ibinary_opt= ibinary_opt;
    sim->natm_tot   = natm_tot;
    sim->natm_nl    = natm_nl;
-
-   sim->dt         = dt;
-   sim->ndump_frq  = ndump_frq;
-   sim->tol_norb   = tol_norb;
 
 //-----------------------------------------------------------------------
   }//end routine

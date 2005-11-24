@@ -28,6 +28,7 @@ extern CProxy_EnergyGroup egroupProxy;
 extern Config config;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
+extern CProxy_EnergyGroup egroupProxy;	
 void IntegrationComplete(void *, void *);
 
 //==============================================================================
@@ -40,18 +41,32 @@ void IntegrationComplete(void *, void *);
  *
  *
  */
-
-AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a) 
-{
-	natm    = n;
-        natm_nl = n_nl;
-	atoms   = new Atom[natm];
-	CmiMemcpy(atoms, a, natm * sizeof(Atom));
-        pot_ewd_rs_loc = 0.0;
-        pot_ewd_rs     = 0.0;
-        atom_integrate_done = 1;  //so that code can start working
-
+//==============================================================================
+AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
+                   int cp_wave_opt_, double kT_, Atom* a, AtomNHC *aNHC){
+	natm                = n;
+        natm_nl             = n_nl;
+        len_nhc             = len_nhc_;
+        iextended_on        = iextended_on_;
+        cp_min_opt          = cp_min_opt_;
+        cp_wave_opt         = cp_wave_opt_;
+        iteration           = 0;
+        kT                  = kT_;
+        pot_ewd_rs_loc      = 0.0;
+        pot_ewd_rs          = 0.0;
+        eKinetic            = 0.0;
+        eKineticNhc         = 0.0;
+        potNhc              = 0.0;    
+        atom_integrate_done = 1;  // initial conditions are `done'
+	atoms               = new Atom[natm];
+	atomsNHC            = new AtomNHC[natm];
+	CmiMemcpy(atoms, a, natm * sizeof(Atom)); // atoms has no vectors
+        for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
 	zeroforces();
+        if(iextended_on==1 && cp_min_opt==0){
+           zeronhc();
+           computeFNhc();
+	}//endif
 }
 //==============================================================================
 
@@ -63,14 +78,12 @@ AtomsGrp::AtomsGrp(int n, int n_nl, Atom* a)
  *
  *
  */
-
-AtomsGrp::~AtomsGrp() 
-{
+//==============================================================================
+AtomsGrp::~AtomsGrp(){
 	delete [] atoms;
+	delete [] atomsNHC;
 }
 //==============================================================================
-
-
 
 
 //==============================================================================
@@ -80,9 +93,8 @@ AtomsGrp::~AtomsGrp()
  *
  *
  */
-
-CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim) 
-{
+//==============================================================================
+CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim){
 	cpcharmParaInfo = new CPcharmParaInfo(sim);
 }
 //==============================================================================
@@ -95,13 +107,11 @@ CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim)
  *
  *
  */
-
-CPcharmParaInfoGrp::~CPcharmParaInfoGrp()
-{
+//==============================================================================
+CPcharmParaInfoGrp::~CPcharmParaInfoGrp(){
 	delete cpcharmParaInfo;
 }
 //==============================================================================
-
 
 
 //==========================================================================
@@ -171,11 +181,16 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 // Local pointers
 
   int i,j;
-  double *ftot = (double *) msg->getData();
-  AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
-  int myid     = CkMyPe();
-  int natm     = ag->natm;
-  Atom *atoms  = ag->atoms;
+  double *ftot      = (double *) msg->getData();
+  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+  int myid          = CkMyPe();
+  int natm          = ag->natm;
+  int len_nhc       = ag->len_nhc;
+  int cp_min_opt    = ag->cp_min_opt;
+  int cp_wave_opt   = ag->cp_wave_opt;
+  int iextended_on  = ag->iextended_on;
+  Atom *atoms       = ag->atoms;
+  AtomNHC *atomsNHC = ag->atomsNHC;
 
 //============================================================
 // Copy out the reduction of energy and forces
@@ -207,24 +222,34 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #ifdef GJM_DBG_ATMS
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
 #endif
-  ATOMINTEGRATE::ATOM_integrate(natm,ag->atoms,myid);
-  atom_integrate_done = 1;  // flip the global flag back
-  zeroforces();
+  double eKinetic_loc;
+  double eKineticNhc_loc;
+  double potNhc_loc;
+  ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
+                    cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
+                    &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc);
+  ag->eKinetic    = eKinetic_loc;
+  ag->eKineticNhc = eKineticNhc_loc;
+  ag->potNhc      = potNhc_loc; // before evolution
 
 //============================================================
-// Initiate another reduction that then sends a broadcast to gspace.
-// That is the possibly slower and correct way of going about this
-// Low priority task to get rid of the atom_integrate_done global variable
+// Get ready for the next iteration : 
+//    increment counter, flip integrate flag, zero forces.
+
+  ag->iteration++;
+  atom_integrate_done = 1;
+  zeroforces();
 
 //-------------------------------------------------------------------------
    }//end routine
 //==========================================================================
 
-//===========
+
+//==========================================================================
 //Energy group that can retrieve the energies from
-
-extern CProxy_EnergyGroup egroupProxy;	
-
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 EnergyGroup::EnergyGroup () {
     //non local
     estruct.enl = 0;
@@ -245,13 +270,17 @@ EnergyGroup::EnergyGroup () {
     estruct.egga = 0;
     estruct.eexc = 0;
     estruct.fmagPsi = 0;
-    //unused still, NUM_ENERGIES should be increased to 9 later
+
     estruct.fictEke = 0;
-
     estruct.totalEnergy = 0;
-} 
+} //end routine
+//==========================================================================
 
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 EnergyStruct GetEnergyStruct() {
     return egroupProxy.ckLocalBranch()->getEnergyStruct();
 }
-
+//==========================================================================

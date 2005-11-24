@@ -10,5 +10,26 @@ control_integrate.o :  $(STANDARD) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/classical_physics/integrate/control_integrate.C
 #------------------------------------------------------------------
+integration_drivers.o :  $(STANDARD) \
+               $(CLASS_CHARM_ATOM) \
+               $(CLASS_ATOM_INTEGRATE) \
+               $(CODE)/classical_physics/integrate/integration_drivers.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/classical_physics/integrate/integration_drivers.C
+#------------------------------------------------------------------
+write_gen_header.o :  $(STANDARD) \
+               $(CLASS_CHARM_ATOM) \
+               $(CLASS_ATOM_OUTPUT) \
+               $(CODE)/classical_physics/output/write_gen_header.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/classical_physics/output/write_gen_header.C
+#------------------------------------------------------------------
+write_output.o :  $(STANDARD) \
+               $(CLASS_CHARM_ATOM) \
+               $(CLASS_ATOM_OUTPUT) \
+               $(CODE)/classical_physics/output/write_output.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/classical_physics/output/write_output.C
+#------------------------------------------------------------------
 
 #===================================================================

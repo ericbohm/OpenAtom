@@ -150,7 +150,6 @@ using namespace std;
 class Config {
  public:
 	Config() { numSet = 0; numParams = 24;}
-
 	int numParams;
 	int numSet;
 	int nstates;
@@ -161,25 +160,21 @@ class Config {
 	int sGrainSize;
 	int gSpaceNumChunks;
 	int rhoGHelpers;
-	char dataPath[MAX_CHAR_ARRAY_LENGTH];
 	int multicastDelayMS;
 	int numMulticastMsgs;
 	int numPartialReduction;
 	int reductionDelayMS;
-
 	int useCommlibMulticast;
 	int useCommlib;
 	int fftuseCommlib;
 	int useGMulticast;
 	int useGReduction;
-
 	int checkForces;
 	int atomIndex;
 	int stateIndex;
 	int planeIndex;
 	int xIndex;
 	int yIndex;
-	double displacement;
 	int numFFTPoints;
         int numData;      // nPacked = number of non-zero g-space data pts
 	int delayComputeZ;
@@ -187,16 +182,11 @@ class Config {
 	int RpesPerState;
 	int GpesPerState;
 	int doublePack;
-	//
 	int low_x_size;
 	int high_x_size;
         int nchareG;
         int nchareRhoG;
 	int inPlaceFFT;
-        double gExpandFact;
-        double gExpandFactRho;
-	void print();
-
 	int conserveMemory;
 	int prioFFTMsg; 
 	int localSF;
@@ -219,29 +209,39 @@ class Config {
 	int fftprogresssplit;
         int stateOutputOn;
 	int toleranceInterval;
+        double gExpandFact;
+        double gExpandFactRho;
+	double displacement;
+	char dataPath[MAX_CHAR_ARRAY_LENGTH];
+	void print(char *fname_in);
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
 };
 #if ! CMK_BLUEGENE_CHARM
 PUPbytes(Config);
 #endif
-
 //===================================================================================
+
+
+
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 // rho space run descriptors for spherical cutoff fft support
-
+//===================================================================================
 void make_rho_runs(CPcharmParaInfo *sim);
 
 void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
                       int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
                       int sizeX, int sizeY, int sizeZ);
 //===================================================================================
+
+
+
+//===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 //   input/output routines, including states, run descriptors, and line balancing
 //===================================================================================
-
 void   readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
 
 void   readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
@@ -258,7 +258,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 
 void writePartState(int ,complex *,complex *,
                     int *,int *,int *,int ,int,int,int,char *,char *);
-
 //===================================================================================
 
 #endif //__PFFTUTIL_H__
