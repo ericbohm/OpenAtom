@@ -1,7 +1,8 @@
 #==================================================================
 #          General definitions 
 #-----------------------------------------------------------------
-# Compile options : Fortran underscore convention
+# Compile options and Fortran underscore convention
+#-----------------------------------------------------------------
 DBG_FLAG         =  
 OPTS             = -O3 $(DBG_FLAG)
 LNK_OPTS         = -memory gnu 
@@ -10,7 +11,8 @@ F_COMPILER_NOPT  = ifc $(DBG_FLAG)
 OPT_FORT         = -DFORTRANUNDERSCORE
 RUNCOMMAND       = ../cpaimd.x	
 #-----------------------------------------------------------------
-# Directories : 
+# Directories :  (fftw must be the full path)
+#-----------------------------------------------------------------
 CPAIMD      = ../
 FFT_HOME    = /expand8/home/glenn/fftw
 MYMATH_HOME = ../src_mathlib
@@ -24,14 +26,17 @@ AUTOTEST    = ../$(VALID_EXEC)
 #==================================================================
 #            Blas/Lapack/Eispack
 #-----------------------------------------------------------------
-#        By fortran
+#        Fortran Source
 #BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
 LAPACK_FORT  = $(MYMATH_HOME)/lapack_routines.h
 EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
 #MATH_LIB     = 
 #-----------------------------------------------------------------
-#        By library
+#        Optimized Libraries
+#-----------------------------------------------------------------
 BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h
+#BLAS_FORT   = $(MYMATH_HOME)/no_blas_routines.h
+#LAPACK_FORT  = $(MYMATH_HOME)/no_lapack_routines.h
 #EISPACK_FORT = $(MYMATH_HOME)/no_eispack_routines.h
 MATH_LIB    = -lgoto  $(MYMATH_HOME)/xerbla.o
 #MATH_LIB    = -lgoto  $(MYMATH_HOME)/xerbla.o -llapack
