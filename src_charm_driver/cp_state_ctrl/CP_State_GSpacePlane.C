@@ -467,9 +467,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 					     sfelems.getVec(), sfelems.size());
   }//endif : state=0 
 
-//============================================================================
-// head of the planes does the file reading for each state
-// to be triggered by the doneinit reduction at proc0.
 //---------------------------------------------------------------------------
     }//end routine
 //============================================================================

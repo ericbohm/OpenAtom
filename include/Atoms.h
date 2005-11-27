@@ -67,18 +67,15 @@ class AtomNHC {
    int len_nhc;
    double kT;
    double posKT;
-   double *fx,*fy,*fz;
-   double *vx,*vy,*vz;
-   double *m;
-
+   double fx[5],fy[5],fz[5];
+   double vx[5],vy[5],vz[5];
+   double m[5];
   AtomNHC() {}
   AtomNHC(int len_nhc_in,double kT_in, double *vx_in, double *vy_in, double *vz_in, 
           double *m_in) {
      len_nhc = len_nhc_in;
+     checkLenNHC(len_nhc);
      kT      = kT_in;
-      m = new double[len_nhc];
-     vx = new double[len_nhc]; vy = new double[len_nhc]; vz = new double[len_nhc];
-     fx = new double[len_nhc]; fy = new double[len_nhc]; fz = new double[len_nhc];
      posKT = 0.0;
      for(int i=0;i<len_nhc;i++){
         m[i] =  m_in[i]; 
@@ -89,10 +86,8 @@ class AtomNHC {
   AtomNHC(AtomNHC *a) { 
      len_nhc = a->len_nhc;
      kT      = a->kT;
-      m = new double[len_nhc];
-     vx = new double[len_nhc]; vy = new double[len_nhc]; vz = new double[len_nhc];
-     fx = new double[len_nhc]; fy = new double[len_nhc]; fz = new double[len_nhc];
      posKT = 0.0;
+     checkLenNHC(len_nhc);
      for(int i=0;i<len_nhc;i++){
         m[i] = a->m[i]; 
        vx[i] = a->vx[i]; vy[i] = a->vy[i]; vz[i] = a->vz[i];
@@ -104,10 +99,8 @@ class AtomNHC {
             double *m_in) {
      len_nhc = len_nhc_in;
      kT      = kT_in;
-      m = new double[len_nhc];
-     vx = new double[len_nhc]; vy = new double[len_nhc]; vz = new double[len_nhc];
-     fx = new double[len_nhc]; fy = new double[len_nhc]; fz = new double[len_nhc];
      posKT = 0.0;
+     checkLenNHC(len_nhc);
      for(int i=0;i<len_nhc;i++){
         m[i] =  m_in[i]; 
        vx[i] = vx_in[i]; vy[i] = vy_in[i]; vz[i] = vz_in[i];
@@ -117,10 +110,8 @@ class AtomNHC {
   void Init(AtomNHC *a) { 
      len_nhc = a->len_nhc;
      kT      = a->kT;
-      m = new double[len_nhc];
-     vx = new double[len_nhc]; vy = new double[len_nhc]; vz = new double[len_nhc];
-     fx = new double[len_nhc]; fy = new double[len_nhc]; fz = new double[len_nhc];
      posKT = 0.0;
+     checkLenNHC(len_nhc);
      for(int i=0;i<len_nhc;i++){
         m[i] = a->m[i]; 
        vx[i] = a->vx[i]; vy[i] = a->vy[i]; vz[i] = a->vz[i];
@@ -128,27 +119,23 @@ class AtomNHC {
      }//endfor
   }//end Init
 
-  ~AtomNHC() {
-     delete [] m;
-     delete [] vx; delete [] vy; delete [] vz;
-     delete [] fx; delete [] fy; delete [] fz;
-     m  = NULL;
-     vx = NULL; vy = NULL; vz = NULL;
-     fx = NULL; fy = NULL; fz = NULL;
-   }// destructor
+  ~AtomNHC() { }// destructor
 
    void pup(PUP::er &p) {
      p|len_nhc; p|kT; p|posKT;
-     if (p.isUnpacking()){
-        m = new double[len_nhc];
-       vx = new double[len_nhc]; vy = new double[len_nhc]; vz = new double[len_nhc];
-       fx = new double[len_nhc]; fy = new double[len_nhc]; fz = new double[len_nhc];
-     }//endif
      p(m,len_nhc);
      p(vx,len_nhc); p(vy,len_nhc); p(vz,len_nhc);
      p(fx,len_nhc); p(fy,len_nhc); p(fz,len_nhc);
   }//routine
 
+   void checkLenNHC(int mylen_nhc){
+     if(mylen_nhc>5){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("The maximum allowed Atm NHC len is 5.\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+     }//endif
+   }//endif
 };//end AtomNHC
 
 PUPmarshall(AtomNHC);

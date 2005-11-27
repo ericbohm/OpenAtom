@@ -57,6 +57,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
 //============================================================================
 {//begin routine
 //============================================================================
+
   iopt=0;
   CkAssert(sizeX>0); //check for startup wackiness
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      

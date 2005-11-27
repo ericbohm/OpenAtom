@@ -13,8 +13,7 @@
 
 extern CProxy_StructFactCache sfCacheProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
-StructureFactor::StructureFactor(CkMigrateMessage *m)
-{}
+StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 void StructureFactor::computeSF(SFDummyMsg *msg)
 {

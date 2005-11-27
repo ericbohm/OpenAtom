@@ -62,6 +62,12 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
        EXIT(1);
     }//endif
   }//endif
+  if(len_nhc>5){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("The maximum allowed Atm NHC len is 5.\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
 //============================================================================
 // Malloc the piny data structure : Lazy man way. Use piny input routines.
@@ -174,13 +180,6 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 // AtomNHC Initialization 
 
   for(int i=0;i<natm_tot;i++){
-    atomsNHC[i].m       = new double[len_nhc];
-    atomsNHC[i].vx      = new double[len_nhc]; 
-    atomsNHC[i].vy      = new double[len_nhc];
-    atomsNHC[i].vz      = new double[len_nhc];
-    atomsNHC[i].fx      = new double[len_nhc];
-    atomsNHC[i].fy      = new double[len_nhc];
-    atomsNHC[i].fz      = new double[len_nhc];
     atomsNHC[i].len_nhc = len_nhc;
     atomsNHC[i].kT      = kT;
     atomsNHC[i].posKT   = 0.0;
