@@ -750,7 +750,7 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      int ind_state = thisIndex.x+1;
      char psiName[200]; char vpsiName[200];
        sprintf(psiName, "%s/newState%d.out", config.dataPath,ind_state);
-       sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state);
+       sprintf(vpsiName,"%s/newVstate%d.out",config.dataPath,ind_state);
        writePartState(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
                       sizeX,sizeY,sizeZ,psiName,vpsiName);
      delete [] tpsi;
