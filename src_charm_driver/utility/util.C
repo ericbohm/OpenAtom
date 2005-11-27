@@ -771,6 +771,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 
     int *kx_ind     = new int[nline_tot];
     int *kx_line    = new int[nline_tot];
+    int *ky_line    = new int[nline_tot];
     int *istrt_line = new int [nline_tot];
     int *iend_line  = new int [nline_tot];
     int *npts_line  = new int [nline_tot];
@@ -833,6 +834,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     ic            = 0;
     istrt_line[0] = 0;
     kx_line[0]    = kx[0];
+    ky_line[0]    = ky[0];
     for(int i = 1;i<nPacked;i++){
       if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
         iend_line[ic] = i;
@@ -840,6 +842,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
         ic++;
         istrt_line[ic] = i;
         kx_line[ic] = kx[i];
+        ky_line[ic] = ky[i];
       }//endfor
     }//endfor
     iend_line[ic] = nPacked;
@@ -871,6 +874,8 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 //      note istrt_lgrp, iend_lgrp only define when iget_decomp==1
 
     int *kx_tmp = new int[nline_tot];
+    int *ky_tmp = new int[nline_tot];
+    int *k_tmp  = new int[nline_tot];
     memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
     memcpy(kxt,kx,(nPacked*sizeof(int)));
     memcpy(kyt,ky,(nPacked*sizeof(int)));
@@ -881,9 +886,10 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     for(int i=0;i<nchareG;i++){
       for(int l=0;l<nline_lgrp[i];l++){
         kx_tmp[l] = kx_line[(l+loff)];
+        ky_tmp[l] = ky_line[(l+loff)];
         kx_ind[l] = l;
       }//endfor
-      if(nline_lgrp[i]>1){sort_commence(nline_lgrp[i],kx_tmp,kx_ind);}
+      if(nline_lgrp[i]>1){sort_kxky(nline_lgrp[i],kx_tmp,ky_tmp,kx_ind,k_tmp);}
       for(int l=0;l<nline_lgrp[i];l++){
         int istrt = istrt_line[(kx_ind[l]+loff)];
         int iend  = iend_line[(kx_ind[l]+loff)];
@@ -962,7 +968,10 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     delete [] iend_line;
     delete [] npts_line;
     delete [] kx_line;
+    delete [] ky_line;
     delete [] kx_tmp;
+    delete [] ky_tmp;
+    delete [] k_tmp;
     delete [] kx_ind;
 
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
@@ -1707,6 +1716,31 @@ void writePartState(int ncoef,complex *psi,complex *vpsi,
       }//endfor
     fclose(fp_vpsi);
   }//endif
+
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+//=============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+void sort_kxky(int n,int *kx,int *ky,int *index,int *kyt){
+//=============================================================================
+
+ int nk0=0;
+ for(int i=0;i<n;i++){index[i]=i;}
+ for(int i=0;i<n;i++){
+   if(kx[i]==0){
+     int itmp   = index[nk0];
+     index[nk0] = index[i];
+     index[i]   = itmp;
+     nk0++;
+   }//endif
+ }//endfor
+
+ for(int i=0;i<nk0;i++){kyt[i]=ky[index[i]];}
+ sort_commence(nk0,kyt,index);
 
 //============================================================================
   }//end routine

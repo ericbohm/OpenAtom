@@ -255,6 +255,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,
                int iget_decomp,int iget_vstate);
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
+void sort_kxky(int ,int *,int *,int *,int *);
 
 void writePartState(int ,complex *,complex *,
                     int *,int *,int *,int ,int,int,int,char *,char *);

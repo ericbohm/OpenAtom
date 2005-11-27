@@ -1725,6 +1725,11 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
       int i;
       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
     }//endif
+    if(iteration==config.maxIter && cp_min_opt==1 && config.stateOutputOn==0){
+      int i;
+      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+    }///endif
+
     RTH_Runtime_resume(run_thread);
   } // if partialCount
 

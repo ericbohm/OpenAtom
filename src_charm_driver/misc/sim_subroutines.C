@@ -451,7 +451,7 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   CkAssert(dataCovered == numPoints);
 
 //======================================================================
-// Find pts with k_x==0 then check the layout
+// Find pts with k_x==0 then check the layout : kx=0 first
 
   ihave_kx0 = 0;
   kx0_strt = 0;
@@ -465,10 +465,17 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   }//endif
   kx0_end = kx0_strt + nkx0;
 
-  for(i=1;i<numPoints;i++){  
-    if(k_x[i]<k_x[(i-1)]){
+  if(kx0_strt!=0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("kx=0 should be stored first\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  for(i=0;i<nkx0;i++){  
+    if(k_x[i]!=0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("kx should be stored in increasing order\n");
+      CkPrintf("kx should be stored consecutively\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
