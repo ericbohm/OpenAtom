@@ -387,6 +387,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 //============================================================================
 
+  countFileOut = 0;
   iwrite_now = 0;
   first_step = 1;
   iteration=0;
@@ -637,9 +638,6 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = (sim->cp_min_opt);
   int ndump_frq  = (sim->ndump_frq);
-  int sizeX      = (sim->sizeX);
-  int sizeY      = (sim->sizeY);
-  int sizeZ      = (sim->sizeZ);
   int ind_state  = (thisIndex.x+1);
   int ind_chare  = (thisIndex.y+1);
   int ncoef      = gSpaceNumPoints;
@@ -666,14 +664,38 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
         CkPrintf("Writing states to disk on step %d\n",iteration);
         CkPrintf("-----------------------------------\n");
       }//endif
-      char psiName[200]; char vpsiName[200];
-      sprintf(psiName, "%s/newState%d_%d.out", config.dataPath,ind_state,ind_chare);
-      sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state,ind_chare);
-      writePartState(ncoef,psi,vpsi,k_x,k_y,k_z,cp_min_opt,sizeX,sizeY,sizeZ,
-                     psiName,vpsiName);
-      int i=0;
-      contribute(sizeof(int),&i,CkReduction::sum_int,
-       CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),gSpacePlaneProxy));
+      GStateOutMsg *msg  = new (ncoef,ncoef,ncoef,ncoef,ncoef,
+                              8*sizeof(int)) GStateOutMsg;
+      if(config.prioFFTMsg){
+         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+         *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+                                     thisIndex.x*gs.planeSize[0]+thisIndex.y;
+      }//endif
+      msg->size        = ncoef;
+      msg->senderIndex = thisIndex.y;  // planenumber
+      complex *data    = msg->data;
+      complex *vdata   = msg->vdata; 
+      int *mk_x        = msg->k_x;
+      int *mk_y        = msg->k_y;
+      int *mk_z        = msg->k_z;
+      for (int i=0;i<ncoef; i++){
+        data[i]  = psi[i];
+        vdata[i] = vpsi[i];
+        mk_x[i]  = k_x[i];
+        mk_y[i]  = k_y[i];
+        mk_z[i]  = k_z[i];
+      }//endfor
+      gSpacePlaneProxy(thisIndex.x,0).collectFileOutput(msg);
+      if(thisIndex.y!=0){
+        int i = 0;
+        if(iteration==config.maxIter && cp_min_opt==1){
+          contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+	}else{
+          contribute(sizeof(int),&i,CkReduction::sum_int,
+                   CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),
+                              gSpacePlaneProxy));
+	}//endif
+      }//endif
     }//endif : its time to write
 
   }//endif : it is useful to write
@@ -682,6 +704,73 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
    }//write the file
 //============================================================================
 
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
+//============================================================================
+
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int sizeX        = (sim->sizeX);
+  int sizeY        = (sim->sizeY);
+  int sizeZ        = (sim->sizeZ);
+  int npts_tot     = (sim->npts_tot);
+  int *ipacked_off = (sim->index_output_off);
+  int cp_min_opt   = (sim->cp_min_opt);
+
+  if(countFileOut==0){
+    tpsi  = new complex[npts_tot];
+    tvpsi = new complex[npts_tot];
+    tk_x  = new int[npts_tot];
+    tk_y  = new int[npts_tot];
+    tk_z  = new int[npts_tot];
+  }//endif
+  countFileOut++;
+
+  int ncoef      = msg->size;
+  int myplane    = msg->senderIndex;
+  complex *data  = msg->data;
+  complex *vdata = msg->vdata; 
+  int *mk_x      = msg->k_x;
+  int *mk_y      = msg->k_y;
+  int *mk_z      = msg->k_z;
+  int ioff       = ipacked_off[myplane];
+  for(int i=0,j=ioff;i<ncoef;i++,j++){
+    tpsi[j]  = data[i];
+    tvpsi[j] = vdata[i];
+    tk_x[j]  = mk_x[i];
+    tk_y[j]  = mk_y[i];
+    tk_z[j]  = mk_z[i];
+  }//endfor
+
+  if(countFileOut==nchareG){
+     countFileOut = 0;
+     int ind_state = thisIndex.x+1;
+     char psiName[200]; char vpsiName[200];
+       sprintf(psiName, "%s/newState%d.out", config.dataPath,ind_state);
+       sprintf(vpsiName,"%s/newVstate%d_%d.out",config.dataPath,ind_state);
+       writePartState(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
+                      sizeX,sizeY,sizeZ,psiName,vpsiName);
+     delete [] tpsi;
+     delete [] tvpsi;
+     delete [] tk_x;
+     delete [] tk_y;
+     delete [] tk_z;
+     int i=0;
+     if(iteration==config.maxIter && cp_min_opt==1){
+       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+     }else{
+       contribute(sizeof(int),&i,CkReduction::sum_int,
+                CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),
+                           gSpacePlaneProxy));
+     }//endif
+  }//endif
+
+//============================================================================
+  }//end routine
+//============================================================================
 
 
 //============================================================================
@@ -694,7 +783,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
  * runDescSize: number of run-descriptors
  * size: the total number of non-zero points
  * points: pointer to the total data.
- *
+n *
  * The data is copied into the planes.
  */
 //============================================================================
@@ -850,6 +939,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|iteration;
   p|ireset;
   p|count;
+  p|countFileOut;
   gs.pup(p);
   p|flagsSent;
   p|partialCount;
@@ -1630,7 +1720,8 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     screenOutputPsi();
     //--------------------------------------------------------------------
     // (D) Go back to the top or exit
-    if(iteration==config.maxIter){
+    int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+    if(iteration==config.maxIter && cp_min_opt==0){
       int i;
       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
     }//endif

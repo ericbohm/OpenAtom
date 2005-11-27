@@ -122,6 +122,22 @@ public:
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+class GStateOutMsg: public CMessage_GStateOutMsg {
+public:
+    int size; 
+    int senderIndex;
+    complex *data;
+    complex *vdata;
+    int *k_x;
+    int *k_y;
+    int *k_z;
+};
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
 	CP_State_GSpacePlane(int, size2d, int, int, int);
@@ -141,6 +157,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void sendLambda();
 	void makePCproxies();
 	void acceptNewPsi(CkReductionMsg *msg);
+        void collectFileOutput(GStateOutMsg *msg);
 	void acceptNewPsiV(CkReductionMsg *msg);
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
@@ -181,6 +198,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 
         int istart_typ_cp;
 	int count;
+        int countFileOut;
 	GStateSlab gs; 
 	bool flagsSent;
 	int partialCount;
@@ -205,6 +223,12 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int localState;
 	int AllExpected;
 	bool acceptedPsi;
+        complex *tpsi;
+        complex *tvpsi;
+	int *tk_x;
+	int *tk_y;
+	int *tk_z;
+
 
 	complex *ffttempdata; 
 	int ireset;

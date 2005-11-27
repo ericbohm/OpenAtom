@@ -1634,13 +1634,30 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
       sortedRunDescriptors[igrp].length() = 0;
     }//endfor
 
-  for(int x = 0; x < nchareG; x ++) {
+    int *index_output_off = new int[nchareG];
+    int numPoints    = 0;
+    for(int x = 0; x < nchareG; x ++) {
+      index_output_off[x] = numPoints;
+      int nnn = 0;
       int runsToBeSent = sortedRunDescriptors[x].size();
-      int numPoints    = 0;
-      for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
+      for (int j = 0; j < runsToBeSent; j++){
         numPoints += sortedRunDescriptors[x][j].length;
+        nnn       += sortedRunDescriptors[x][j].length;
       }//endfor
-  }//endfor
+      if(nnn != npts_lgrp[x]){
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkPrintf("Incorrect number of points in gspace chare\n");
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkExit();
+      }//endif
+    }//endfor
+ 
+    if(numPoints!=numData){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Incorrect number of total g-space points\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
 
 //============================================================================
 // Pack up the stuff, clean up the memory and exit
@@ -1652,6 +1669,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     sim->sortedRunDescriptors = sortedRunDescriptors;
     sim->npts_tot             = numData;
     sim->nlines_tot           = nline_tot;
+    sim->index_output_off     = index_output_off;
 
     delete [] istrt_lgrp;
     delete [] iend_lgrp;

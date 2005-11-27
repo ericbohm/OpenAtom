@@ -85,6 +85,14 @@ mainmodule cpaimd {
 
 	message RhoRSFFTMsg {complex data[];};
 
+	message GStateOutMsg {
+		complex data[];
+		complex vdata[];
+		int k_x[];
+		int k_y[];
+		int k_z[];
+	};
+	
 	mainchare main {
 		entry main();
 	        entry void doneInit(CkReductionMsg *msg);
@@ -100,6 +108,7 @@ mainmodule cpaimd {
 		entry void doFFT();
 		entry void syncpsi();
 
+                entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 
 		entry void acceptLambda(CkReductionMsg *msg);

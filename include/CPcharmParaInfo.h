@@ -41,6 +41,7 @@ class CPcharmParaInfo {
    CkVec<RunDescriptor> *sortedRunDescriptors; // description of collection
    int *nlines_per_chareG;   // lines in each collection (g-space)
    int *npts_per_chareG;     // pts in each collection   (g-space)
+   int *index_output_off;    // offset to unpack output fore each chareg
    int **index_tran_upack;   // unpack indicies for each chareG
 
 
@@ -151,6 +152,7 @@ class CPcharmParaInfo {
        }//endfor
      }//endfor
      npts_per_chareG   = new int[nchareG];
+     index_output_off  = new int[nchareG];
      nlines_per_chareG = new int[nchareG];
      lines_per_chareG  = new double[nchareG];
      pts_per_chareG    = new double[nchareG];
@@ -159,6 +161,7 @@ class CPcharmParaInfo {
        lines_per_chareG[i]  = s.lines_per_chareG[i];
        pts_per_chareG[i]    = s.pts_per_chareG[i];
        npts_per_chareG[i]   = s.npts_per_chareG[i];
+       index_output_off[i]  = s.index_output_off[i];
      }//endfor
      index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
      for(int i=0;i<nchareG;i++){
@@ -180,6 +183,7 @@ class CPcharmParaInfo {
        pts_per_chareG=NULL;
        nlines_per_chareG=NULL; 
        npts_per_chareG=NULL;
+       index_output_off=NULL;
 
        lines_per_chareRhoG=NULL; 
        pts_per_chareRhoG=NULL;
@@ -194,6 +198,7 @@ class CPcharmParaInfo {
       delete [] nlines_per_chareG; nlines_per_chareG = NULL;
       delete []  pts_per_chareG;    pts_per_chareG   = NULL;
       delete [] npts_per_chareG;   npts_per_chareG   = NULL;
+      delete [] index_output_off;   index_output_off   = NULL;
 
       delete []  lines_per_chareRhoG;  lines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoG; nlines_per_chareRhoG = NULL;
@@ -261,6 +266,7 @@ class CPcharmParaInfo {
         pts_per_chareG    = new double[nchareG];
         nlines_per_chareG = new int[nchareG];
         npts_per_chareG   = new int[nchareG];
+        index_output_off  = new int[nchareG];
         index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
         sortedRunDescriptors = new CkVec<RunDescriptor> [nchareG];
       }//endif : unpacking
@@ -271,6 +277,7 @@ class CPcharmParaInfo {
       p(nlines_per_chareG,nchareG);
       p(pts_per_chareG,nchareG);
       p(npts_per_chareG,nchareG);
+      p(index_output_off,nchareG);
       for(int igrp=0;igrp<nchareG;igrp++){
 	p|sortedRunDescriptors[igrp];
       }//endfor
