@@ -125,6 +125,7 @@ void set_wave_params(char *molsetname,char fun_key[],
   /* 4) /cp_tau_nhc{} */
   sscanf(wave_dict[4].keyarg,"%lg",&dnum);
   cp_parse->cp_tau_nhc=dnum;
+  cpopts->cp_tau_nhc  =dnum;
   index = 4;
   if((dnum <=0)){
     keyarg_barf(wave_dict,molsetname,fun_key,index);

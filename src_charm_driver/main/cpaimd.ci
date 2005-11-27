@@ -94,7 +94,8 @@ mainmodule cpaimd {
 		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
                         int numG, int numR, int s_grain);
 		entry void initGSpace(int n, RunDescriptor r[n], int m, 
-			complex pts[m],int nx,int ny,int nz);
+			complex pts[m],int mv, complex vpts[mv], 
+                        int nx,int ny,int nz,int istart_cp);
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
 		entry void syncpsi();

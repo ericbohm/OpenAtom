@@ -457,7 +457,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     int nktot = 0;
     readState(nPacked, arrCP, fromFile, ibinary_opt, nline_tot_ret, 
               nplane_ret, kx, ky, kz, &nx, &ny, &nz,
-              istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp);
+              istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp,0);
     int nplane    = (*nplane_ret);
     int nline_tot = (*nline_tot_ret);
     int nchareG   = config.nchareG;
@@ -620,7 +620,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 	       int *nline_tot_ret,int *nplane_ret, int *kx, int *ky, int *kz, 
                int *nx_ret, int *ny_ret, int *nz_ret,
                int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
-               int iget_decomp) 
+               int iget_decomp,int iget_vstate) 
 
 //===================================================================================
    {//begin routine
@@ -628,8 +628,14 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 // A little screen output for the fans
 
     int nchareG = config.nchareG;
+    char stuff[25];
+    if(iget_vstate==0){
+      strcpy(stuff,"coef");
+    }else{
+      strcpy(stuff,"velocity");
+    }
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
-    CkPrintf("Reading state from file: %s\n",fromFile);
+      CkPrintf("Reading %s state file: %s\n",stuff,fromFile);
 #endif
     if(ibinary_opt < 0 || ibinary_opt > 1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -647,7 +653,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        FILE *fp=fopen(fromFile,"r");
          if (fp==NULL){
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't open state file %s\n",fromFile);
+            CkPrintf("Can't open %s state file %s\n",stuff,fromFile);
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
             CkExit();
          }//endif
@@ -663,7 +669,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
            double re,im;
   	   if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
               CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-              CkPrintf("Can't parse packed state location %s\n",fromFile);
+              CkPrintf("Can't parse packed %s state location %s\n",stuff,fromFile);
               CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
               CkExit();
            }//endif
@@ -679,7 +685,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        FILE *fp=fopen(fromFile,"rb");
          if (fp==NULL){
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't open state file %s\n",fromFile);
+            CkPrintf("Can't open %s state file %s\n",stuff,fromFile);
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
             CkExit();
          }
@@ -960,7 +966,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     delete [] kx_ind;
 
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
-     CkPrintf("Done reading state from file: %s\n",fromFile);
+     CkPrintf("Done reading %s state from file: %s\n",stuff,fromFile);
 #endif
 
 //----------------------------------------------------------------------------------

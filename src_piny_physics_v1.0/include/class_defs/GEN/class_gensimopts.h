@@ -10,6 +10,7 @@ class GENSIMOPTS {
  //----------------
  public:
   int istart;                 // Opt: startup type
+  int istart_cp;              // Opt: startup type
   int md;                     // Opt: Classical MD                         
   int pimd;                   // Opt: Path integral MD                     
   int minimize;               // Opt: Classical minimization               
@@ -40,6 +41,7 @@ class GENSIMOPTS {
  //con-destruct:
    GENSIMOPTS(){
      istart           = 0;
+     istart_cp        = 0;
      md               = 0;
      pimd             = 0;
      minimize         = 0;
@@ -72,6 +74,7 @@ class GENSIMOPTS {
   void pup(PUP::er &p){
     //pupping ints
         p | istart;
+        p | istart_cp;
         p | md;
         p | pimd;
         p | minimize;
@@ -111,6 +114,7 @@ class GENSIMOPTS {
 
     // ints
      fprintf(fp,"istart %d\n",istart);
+     fprintf(fp,"istart_cp %d\n",istart_cp);
      fprintf(fp,"md %d\n",md);
      fprintf(fp,"pimd %d\n",pimd);
      fprintf(fp,"minimize %d\n",minimize);

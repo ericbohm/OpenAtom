@@ -510,32 +510,42 @@ void CP_State_GSpacePlane::readFile() {
 //============================================================================
 // Local pointers
 
-  int numData     = config.numData;
-  int ibinary_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->ibinary_opt;
-  CkVec <RunDescriptor> *sortedRunDescriptors=
-                scProxy.ckLocalBranch()->cpcharmParaInfo->sortedRunDescriptors;
-  int *npts_lgrp  = scProxy.ckLocalBranch()->cpcharmParaInfo->npts_per_chareG;
-  int *nline_lgrp = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
-  int *istrt_lgrp = NULL;
-  int *iend_lgrp  = NULL;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int numData       = config.numData;
+  int ibinary_opt   = sim->ibinary_opt;
+  int istart_typ_cp = sim->istart_typ_cp;
+  CkVec <RunDescriptor> *sortedRunDescriptors = sim->sortedRunDescriptors;
+  int *npts_lgrp    = sim->npts_per_chareG;
+  int *nline_lgrp   = sim->nlines_per_chareG;
+  int *istrt_lgrp   = NULL;
+  int *iend_lgrp    = NULL;
 
 //============================================================================
 // Set the file name using the config path and state number
 
   char fname[1024];
   int ind_state=thisIndex.x;
-  sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
   //------------------------------------------------------------------
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
 
-  complex *complexPoints = new complex[numData];
+  complex *complexPoints  = new complex[numData];
+  complex *vcomplexPoints = NULL;
+  if(istart_typ_cp>=3){vcomplexPoints = new complex[numData];}
+
   int *kx=  new int[numData];
   int *ky=  new int[numData];
   int *kz=  new int[numData];
   int nlines_tot,nplane,nx,ny,nz;
 
+  if(istart_typ_cp>=3){
+    sprintf(fname, "%s/vState%d.out", config.dataPath, ind_state + 1);
+    readState(numData,vcomplexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
+            kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,1);
+  }//endif
+
+  sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
   readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
-            kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0);
+            kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
 
   if(config.low_x_size != nplane && config.doublePack){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -556,17 +566,32 @@ void CP_State_GSpacePlane::readFile() {
       int runsToBeSent = sortedRunDescriptors[x].size();
       int numPoints    = 0;
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
-	  numPoints += sortedRunDescriptors[x][j].length;
+	numPoints += sortedRunDescriptors[x][j].length;
       }//endfor
 
       complex *dataToBeSent  = new complex[numPoints];
-      RunDescriptor *runDesc = new RunDescriptor[runsToBeSent];
       complex *temp          = complexPoints+ioff;
       CmiMemcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
 
+      int numPointsV;
+      complex *vdataToBeSent;
+      if(istart_typ_cp>=3){
+         numPointsV          = numPoints;
+         vdataToBeSent       = new complex[numPoints];
+         complex *vtemp      = vcomplexPoints+ioff;
+         CmiMemcpy(vdataToBeSent,vtemp,(sizeof(complex) * numPoints));
+      }else{
+         numPointsV          = 1;
+         vdataToBeSent       = new complex[numPointsV];
+         vdataToBeSent[0].re = 0.0;
+         vdataToBeSent[0].im = 0.0;
+      }//endif
+
+      RunDescriptor *runDesc = new RunDescriptor[runsToBeSent];
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++) {
-	  runDesc[j] = sortedRunDescriptors[x][j];
+        runDesc[j] = sortedRunDescriptors[x][j];
       }//endfor
+
       if(ioff>numData){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("Error reading\n");
@@ -575,8 +600,11 @@ void CP_State_GSpacePlane::readFile() {
       }//endif
 
       gSpacePlaneProxy(ind_state, x).initGSpace(runsToBeSent,runDesc,
-                                                numPoints,dataToBeSent,nx,ny,nz);
+                                                numPoints,dataToBeSent,
+                                                numPointsV,vdataToBeSent,
+                                                nx,ny,nz,istart_typ_cp);
       delete [] dataToBeSent;
+      delete [] vdataToBeSent;
       delete [] runDesc;
 
       ioff += numPoints;
@@ -588,6 +616,7 @@ void CP_State_GSpacePlane::readFile() {
 // Clean up
 
   delete [] complexPoints;
+  if(istart_typ_cp>=3){delete [] vcomplexPoints;}
   delete [] kx;
   delete [] ky;
   delete [] kz;
@@ -675,7 +704,9 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
                                       RunDescriptor* runs, 
                                       int            size, 
                                       complex*       points,
-                                      int nx, int ny, int nz) 
+                                      int            vsize, 
+                                      complex*       vpoints,
+                                      int nx, int ny, int nz, int istart_cp) 
 //============================================================================
    { //begin routine
 //============================================================================
@@ -693,8 +724,8 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
 // Setup gs
 
-  gs.eke_ret  = 0.0;
-    
+  istart_typ_cp  = istart_cp;
+  gs.eke_ret     = 0.0;  
   gs.numRuns     = runDescSize;
   gs.numLines    = runDescSize/2;
   gs.numFull     = (gs.numLines)*nz;
@@ -724,7 +755,13 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   memset(gs.packedForceData, 0, sizeof(complex)*gs.numPoints);
   memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
-  memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+
+  if(istart_typ_cp>=3){
+    CkAssert(vsize == size);
+    CmiMemcpy(gs.packedVelData, vpoints, sizeof(complex)*gs.numPoints);
+  }else{
+    memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+  }//endif
 
 //============================================================================
 // Setup gpspaceplane and particle plane
@@ -754,8 +791,16 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //  CPNONLOCAL::CP_eke_calc(ncoef,gs.istate_ind,forces,psi_g,k_x,k_y,k_z,eke_ret,
 //			    config.doublePack);
 //  CkPrintf("eke %g : %d %d \n",gs.eke_ret,gs.istate_ind,gs.iplane_ind);
+//  gs.eke_ret = 0;
 
-  gs.eke_ret = 0;
+//============================================================================
+// Init NHC, Sample velocities 
+
+  int maxNHC = LEN_NHC_CP;
+  CPINTEGRATE::initCPNHC(ncoef,maxNHC,&gs.len_nhc_cp,&gs.kTCP,&gs.tauNHCCP,gs.mNHC);
+
+  CPINTEGRATE::CPSmplVel(gs.numPoints,coef_mass,gs.packedVelData,
+                       gs.len_nhc_cp,gs.mNHC,gs.vNHC,gs.kTCP,istart_typ_cp);
 
 //============================================================================
 // Send the k's to the structure factor 
@@ -797,6 +842,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 //============================================================================
 
   ArrayElement2D::pup(p);
+  p|istart_typ_cp;
   p|needPsiV;
   p|doneDoingIFFT;
   p|allgdoneifft;
@@ -1415,7 +1461,7 @@ void CP_State_GSpacePlane::integrateModForce() {
   // (B) Numerical integration
   gs.fictEke_ret = 0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
-        k_x, k_y, k_z,coef_mass,gamma_conj_grad,&gs.fictEke_ret);
+                      k_x, k_y, k_z,coef_mass,gamma_conj_grad,&gs.fictEke_ret);
   //---------------------------------------------------------------
   // (C) Debug output after integration
 #ifdef _CP_DEBUG_DYNAMICS_

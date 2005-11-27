@@ -27,13 +27,14 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
+  int ndump_frq  = genfilenames->iwrite_dump;
+  int istart_typ_cp = gensimopts->istart_cp;
   int cp_opt     = (gensimopts->cp+gensimopts->cp_wave);
   int cp_min_opt = (gensimopts->cp_wave_min+gensimopts->cp_min);
   int cp_std     = gensimopts->cp;
   int cp_wave    = gensimopts->cp_wave;
   int cp_min_cg  = genminopts->cp_min_cg;
   int cp_min_std = genminopts->cp_min_std;
-  double vol     = gencell->vol;
   int *kmax      = cpewald->kmax_cp_dens_cp_box;
   int nkf1       = 4*(kmax[1]+1);
   int nkf2       = 4*(kmax[2]+1);
@@ -43,8 +44,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ibinary_opt= cpopts->iread_coef_binary;
   int natm_tot   = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl    = (cp->cppseudo.nonlocal.natm);
+
+  double vol     = gencell->vol;
   double dt      = gentimeinfo->dt;
-  int ndump_frq  = genfilenames->iwrite_dump;
   double tol_norb= cpconstrnt->c_tolnorb;
 
 //========================================================================
@@ -56,12 +58,29 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      EXIT(1);
    }//endif
 
+   if(cp_opt==1 && istart_typ_cp ==0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("No gen-wave restarts for cp-dynamics\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
+
+   if(istart_typ_cp ==0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("No gen-wave restarts yet. Sorry\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }
+
+
 //========================================================================
 
    sim->vol        = vol;
    sim->tol_norb   = tol_norb;
    sim->dt         = dt;
+
    sim->ndump_frq  = ndump_frq;
+   sim->istart_typ_cp  = istart_typ_cp;
 
    sim->cp_min_opt = cp_min_opt;
    sim->cp_min_cg  = cp_min_cg;

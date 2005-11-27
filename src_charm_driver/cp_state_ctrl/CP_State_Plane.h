@@ -127,7 +127,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CP_State_GSpacePlane(int, size2d, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
-	void initGSpace(int, RunDescriptor *, int, complex *,int,int,int);
+	void initGSpace(int, RunDescriptor *, int, complex *,int ,complex *,
+                        int,int,int,int);
 	void syncpsi();
 	void requirePsiV();
 	void doIFFT(GSIFFTMsg *);
@@ -178,6 +179,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool doneDoingIFFT;
 	bool initialized;
 
+        int istart_typ_cp;
 	int count;
 	GStateSlab gs; 
 	bool flagsSent;

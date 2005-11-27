@@ -258,7 +258,7 @@ void CPLOCAL::CP_hart_eext_calc(
        double sumr   = sewd.re*EwdFact*wght_now;
        double sumi   = sewd.im*EwdFact*wght_now;
        double rho_r  = rho[i].re*wght_now;
-       double rho_i  = -rho[i].im*wght_now;
+       double rho_i  = rho[i].im*wght_now;
 
        for(int iatm=0; iatm < natm; iatm++){
          double rho_temp_r = (rho_r*vtemp[iatm]

@@ -47,6 +47,12 @@ class CPINTEGRATE{
   static void CP_integrate_half_vel(int ,int ,complex *,complex *,complex *,
                                     int *,int *,int *,double *);
 
+  static void initCPNHC(int,int ,int *,double *,double *,double *);
+  static void CPSmplVel(int,double *,complex *,int ,double *,double *,
+                        double ,int);
+  static void sampl1DVelOneT(int , double* ,double* ,double );
+
+
 //---------------------------------------------------------------------------
    }; //CPINTEGRATE
 //==========================================================================

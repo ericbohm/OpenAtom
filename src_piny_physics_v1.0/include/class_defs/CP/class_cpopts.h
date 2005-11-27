@@ -67,6 +67,7 @@ class CPOPTS{
   double tol_coef;            // Num: cp and cp_wave fcoef tolerance
   double cp_hess_cut,cp_hess_tau;// Num: Hessian cutoff and Hessian tau 
   double pseud_hess_loc;      // Num: Local contribution to Hessian
+  double cp_tau_nhc;
 
  //----------------
  //con-destruct:
@@ -170,6 +171,7 @@ class CPOPTS{
       p | cp_hess_cut;
       p | cp_hess_tau;
       p | pseud_hess_loc;
+      p | cp_tau_nhc;
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())
      state_class_out ();
@@ -231,6 +233,7 @@ class CPOPTS{
      fprintf(fp,"cp_hess_cut %g\n",cp_hess_cut);
      fprintf(fp,"cp_hess_tau %g\n",cp_hess_tau);
      fprintf(fp,"pseud_hess_loc %g\n",pseud_hess_loc);
+     fprintf(fp,"cp_tau_nhc %g\n",cp_tau_nhc);
     fclose(fp);
     
   }// end routine 

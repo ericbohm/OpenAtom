@@ -16,6 +16,7 @@ class CPcharmParaInfo {
 
    double vol,dt,tol_norb;
    int ndump_frq;
+   int istart_typ_cp;
    int cp_opt; 
    int cp_std;
    int cp_wave;
@@ -68,6 +69,7 @@ class CPcharmParaInfo {
      tol_norb    = s.tol_norb;
      dt          = s.dt;
      ndump_frq   = s.ndump_frq;
+     istart_typ_cp = s.istart_typ_cp;
      cp_opt      = s.cp_opt; 
      cp_std      = s.cp_std;
      cp_wave     = s.cp_wave;
@@ -214,7 +216,7 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
-      p|vol; p|dt; p|tol_norb; p|ndump_frq;
+      p|vol; p|dt; p|tol_norb; p|ndump_frq;  p|istart_typ_cp;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
       p|sizeX;      p|sizeY;      p|sizeZ;  

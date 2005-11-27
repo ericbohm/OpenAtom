@@ -252,7 +252,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,
 	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
 	       int *ky, int *kz, int *nx_ret, int *ny_ret, int *nz_ret,
                int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
-               int iget_decomp);
+               int iget_decomp,int iget_vstate);
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 

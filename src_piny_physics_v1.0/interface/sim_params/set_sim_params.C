@@ -571,7 +571,8 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if(strcasecmp(dict[19].keyarg,"restart_all")==0)  {
        cp_parse->istart_cp = 4; ifound++;}
     index=19;
-  if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    gensimopts->istart_cp = cp_parse->istart_cp;
   /*-----------------------------------------------------------------------*/ 
   /* 20)\diis_hist_len{#} */
      sscanf(dict[20].keyarg,"%lg",&real_key_arg);
@@ -1898,6 +1899,7 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     index=10;
     if(cp_parse->cp_tau_nhc_def<=0) 
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    cpopts->cp_tau_nhc  = cp_parse->cp_tau_nhc_def;
   /*-----------------------------------------------------------------------*/ 
   /* 11)\cp_respa_steps_nhc{#} */
     sscanf(dict[11].keyarg,"%lg",&real_key_arg);

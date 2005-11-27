@@ -247,7 +247,10 @@ void GStateSlab::pup(PUP::er &p) {
         p|ihave_kx0;
         p|kx0_strt;
         p|kx0_end;
-
+        p|kTCP;
+        p|len_nhc_cp;
+        p|kTCP;
+        p|tauNHCCP;
 	if (p.isUnpacking()) {runs = new RunDescriptor[numRuns];}
 	for (int i = 0; i < numRuns; i++){runs[i].pup(p);}
 
@@ -263,6 +266,10 @@ void GStateSlab::pup(PUP::er &p) {
 	p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
 	p((char *) packedForceData, numPoints*sizeof(complex));
 	p((char *) packedVelData, numPoints*sizeof(complex));
+        p(xNHC,len_nhc_cp);
+        p(vNHC,len_nhc_cp);
+        p(fNHC,len_nhc_cp);
+        p(mNHC,len_nhc_cp);
 
 //==============================================================================
   }//end routine

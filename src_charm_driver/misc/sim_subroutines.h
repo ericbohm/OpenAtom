@@ -17,6 +17,8 @@
 include "../../src_mathlib/mathlib.h"
 #endif
 
+#define LEN_NHC_CP 4;
+
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -49,8 +51,13 @@ public:
    complex *packedPlaneDataScr; 
    complex *packedForceData; 
    complex *packedVelData; 
-
-
+   int     len_nhc_cp;
+   double  kTCP;
+   double  tauNHCCP;
+   double  xNHC[4];
+   double  vNHC[4];
+   double  fNHC[4];
+   double  mNHC[4];
    GStateSlab() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
                  packedForceData=NULL; packedPlaneDataScr=NULL; 
                  packedVelData=NULL;}
