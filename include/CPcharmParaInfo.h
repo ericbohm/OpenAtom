@@ -143,6 +143,7 @@ class CPcharmParaInfo {
    int nstates;
    int ntime;
    int ibinary_opt;
+   int ibinary_write_opt;
    int nplane_x;   // # of non-zero planes of gx
    int nchareG;    // # of collections of lines in g-space
    int nlines_tot; // total number of lines in g-space
@@ -200,6 +201,7 @@ class CPcharmParaInfo {
      nstates     = s.nstates;
      ntime       = s.ntime;
      ibinary_opt = s.ibinary_opt;
+     ibinary_write_opt = s.ibinary_write_opt;
      nplane_x    = s.nplane_x;
      nchareG     = s.nchareG;
      nlines_tot  = s.nlines_tot;
@@ -344,12 +346,12 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
-      p|vol; p|dt; p|tol_norb; p|ndump_frq;  p|istart_typ_cp;
+      p|vol;  p|dt; p|tol_norb;   p|ndump_frq;  p|istart_typ_cp;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
       p|sizeX;      p|sizeY;      p|sizeZ;  
-      p|nplane_x;   p|nchareG;   p|natm_tot;   p|natm_nl;
-      p|nstates;    p|ntime;      p|ibinary_opt;
+      p|nplane_x;   p|nchareG;    p|natm_tot;    p|natm_nl;
+      p|nstates;    p|ntime;      p|ibinary_opt; p|ibinary_write_opt;
       p|natm_tot;   p|natm_nl;    p|numSfGrps;
       p|natm_nl_grp_max;   p|nlines_tot; p|npts_tot;
       p|nlines_max;

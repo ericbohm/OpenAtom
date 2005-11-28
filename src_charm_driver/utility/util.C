@@ -1793,32 +1793,135 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
-void writePartState(int ncoef,complex *psi,complex *vpsi,
+void writeStateFile(int ncoef,complex *psi,complex *vpsi,
                     int *k_x,int *k_y,int *k_z,int cp_min_opt,
-                    int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName)
+                    int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName,
+                    int ibinary_write_opt)
 //=============================================================================
   { //begin rotunie
 //=============================================================================
-  
-  FILE *fp_psi  = fopen(psiName,"w");
-    fprintf(fp_psi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
-    for(int i=0;i<ncoef;i++){
-      fprintf(fp_psi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
+
+  int *index = new int [ncoef];
+  int *ktemp = new int [ncoef];
+  int istrt=0;
+  sort_psi_output(ncoef,k_x,k_y,k_z,index,ktemp,&istrt);
+  int ncoef_true=ncoef-istrt;
+
+  FILE *fp  = fopen(psiName,"w");
+   if(ibinary_write_opt==0){
+    fprintf(fp,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+    for(int i=istrt+1;i<ncoef;i++){
+      fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
+                      psi[index[i]].re,psi[index[i]].im);
     }//endfor
-  fclose(fp_psi);
+      int i = istrt;
+      fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
+                      psi[index[i]].re,psi[index[i]].im);
+   }else{
+    int n=1;
+    fwrite(&ncoef_true,sizeof(int),n,fp);
+    fwrite(&sizeX,sizeof(int),n,fp);
+    fwrite(&sizeY,sizeof(int),n,fp);
+    fwrite(&sizeZ,sizeof(int),n,fp);
+    for(int i=istrt+1;i<ncoef;i++){
+      fwrite(&k_x[index[i]],sizeof(int),n,fp);
+      fwrite(&k_y[index[i]],sizeof(int),n,fp);
+      fwrite(&k_z[index[i]],sizeof(int),n,fp);
+      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
+    }//endfor
+      int i = istrt;
+      fwrite(&k_x[index[i]],sizeof(int),n,fp);
+      fwrite(&k_y[index[i]],sizeof(int),n,fp);
+      fwrite(&k_z[index[i]],sizeof(int),n,fp);
+      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
+   }//endif
+  fclose(fp);
 
   if(cp_min_opt==0){
-    FILE *fp_vpsi = fopen(vpsiName,"w");
-      fprintf(fp_vpsi,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
-      for(int i=0;i<ncoef;i++){
-        fprintf(fp_vpsi,"%d %d %d %g %g\n",k_x[i],k_y[i],k_z[i],vpsi[i].re,vpsi[i].im);
+    fp  = fopen(vpsiName,"w");
+    if(ibinary_write_opt==0){
+      fprintf(fp,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+      for(int i=istrt+1;i<ncoef;i++){
+        fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
+                      vpsi[index[i]].re,vpsi[index[i]].im);
       }//endfor
-    fclose(fp_vpsi);
+        int i = istrt;
+        fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
+                      vpsi[index[i]].re,vpsi[index[i]].im);
+    }else{
+      int n=1;
+      fwrite(&ncoef_true,sizeof(int),n,fp);
+      fwrite(&sizeX,sizeof(int),n,fp);
+      fwrite(&sizeY,sizeof(int),n,fp);
+      fwrite(&sizeZ,sizeof(int),n,fp);
+      for(int i=istrt+1;i<ncoef;i++){
+        fwrite(&k_x[index[i]],sizeof(int),n,fp);
+        fwrite(&k_y[index[i]],sizeof(int),n,fp);
+        fwrite(&k_z[index[i]],sizeof(int),n,fp);
+        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
+        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
+      }//endfor
+        int i = istrt;
+        fwrite(&k_x[index[i]],sizeof(int),n,fp);
+        fwrite(&k_y[index[i]],sizeof(int),n,fp);
+        fwrite(&k_z[index[i]],sizeof(int),n,fp);
+        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
+        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
+    }//endif
+    fclose(fp);
   }//endif
+
+  delete [] index;
+  delete [] ktemp;
 
 //============================================================================
   }//end routine
 //============================================================================
+
+
+//=============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+void sort_psi_output(int n,int *kx,int *ky,int *kz,int *index,int *ktemp,int *istrt_ret){
+//=============================================================================
+// Find max and min
+
+  int kxmax = kx[0]; int kxmin=kx[0];
+  int kymax = ky[0]; int kymin=ky[0];
+  int kzmax = kz[0]; int kzmin=kz[0];
+  for(int i=0;i<n;i++){
+    kxmax = MAX(kxmax,kx[i]); kxmin = MIN(kxmin,kx[i]);
+    kymax = MAX(kymax,ky[i]); kymin = MIN(kymin,ky[i]);
+    kzmax = MAX(kzmax,kz[i]); kzmin = MIN(kzmin,kz[i]);
+  }//endfor
+  int nx = kxmax-kxmin+1;
+  int ny = kymax-kymin+1;
+  int nz = kzmax-kzmin+1;
+
+//=============================================================================
+// Create a sortable 1d array and sort
+
+
+  for(int i=0;i<n;i++){index[i]=i;}
+  for(int i=0;i<n;i++){ktemp[i]=(kz[i]-kzmin)+(ky[i]-kymin)*nz+(kx[i]-kxmin)*nz*ny;}
+  sort_commence(n,ktemp,index);
+
+//=============================================================================
+// Find g=0 term
+
+  int istrt=0;
+  for(int i=0;i<n;i++){
+    if(kx[index[i]]==0&&ky[index[i]]==0&&kz[index[i]]==0){
+      istrt=i; break;
+    }//endif
+  }//endfor
+  (*istrt_ret) = istrt;
+   
+//-----------------------------------------------------------------------------
+  }// end routine
+//=============================================================================
 
 
 //=============================================================================

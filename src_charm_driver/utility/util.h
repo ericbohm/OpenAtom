@@ -242,11 +242,12 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
 //===================================================================================
 //   input/output routines, including states, run descriptors, and line balancing
 //===================================================================================
-void   readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
 
-void   readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
-                         const char *,int ,int *,int *,int *,int *,int *,int *,
-                         int **, int **, int **,int **,int **,int);
+void readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
+
+void readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
+                       const char *,int ,int *,int *,int *,int *,int *,int *,
+                       int **, int **, int **,int **,int **,int);
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,
 	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
@@ -255,10 +256,14 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,
                int iget_decomp,int iget_vstate);
 
 void create_line_decomp_descriptor(CPcharmParaInfo *sim);
+
 void sort_kxky(int ,int *,int *,int *,int *,int);
 
-void writePartState(int ,complex *,complex *,
-                    int *,int *,int *,int ,int,int,int,char *,char *);
+void writeStateFile(int ,complex *,complex *,
+                    int *,int *,int *,int ,int,int,int,char *,char *,int);
+
+void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
+
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

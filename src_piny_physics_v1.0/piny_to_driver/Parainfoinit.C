@@ -42,6 +42,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nstates    = cpcoeffs_info->nstate_up;
   int ntime      = gentimeinfo->ntime;
   int ibinary_opt= cpopts->iread_coef_binary;
+  int ibinary_write_opt= cpopts->iwrite_coef_binary;
   int natm_tot   = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl    = (cp->cppseudo.nonlocal.natm);
 
@@ -80,7 +81,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->dt         = dt;
 
    sim->ndump_frq  = ndump_frq;
-   sim->istart_typ_cp  = istart_typ_cp;
+   sim->istart_typ_cp = istart_typ_cp;
 
    sim->cp_min_opt = cp_min_opt;
    sim->cp_min_cg  = cp_min_cg;
@@ -97,6 +98,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->nstates    = nstates;
    sim->ntime      = ntime;
    sim->ibinary_opt= ibinary_opt;
+   sim->ibinary_write_opt = ibinary_write_opt;
    sim->natm_tot   = natm_tot;
    sim->natm_nl    = natm_nl;
 

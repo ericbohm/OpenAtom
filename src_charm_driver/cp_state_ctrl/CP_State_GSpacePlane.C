@@ -712,6 +712,7 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
   int npts_tot     = (sim->npts_tot);
   int *ipacked_off = (sim->index_output_off);
   int cp_min_opt   = (sim->cp_min_opt);
+  int ibinary_write_opt = sim->ibinary_write_opt;
 
   if(countFileOut==0){
     tpsi  = new complex[npts_tot];
@@ -744,8 +745,8 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      char psiName[200]; char vpsiName[200];
        sprintf(psiName, "%s/newState%d.out", config.dataPath,ind_state);
        sprintf(vpsiName,"%s/newVstate%d.out",config.dataPath,ind_state);
-       writePartState(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
-                      sizeX,sizeY,sizeZ,psiName,vpsiName);
+       writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
+                      sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt);
      delete [] tpsi;
      delete [] tvpsi;
      delete [] tk_x;
