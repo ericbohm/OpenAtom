@@ -60,11 +60,11 @@ void ATOMOUTPUT::initialize_piny_output()
   fclose(fp);
 
   strcpy(file_typ,"pos_file");
-  write_gen_header(ibinary,iwrite_confp,file_typ,cpname);
+  write_gen_header_cp(ibinary,iwrite_confp,file_typ,cpname);
 
   if(low_lim_par<=high_lim_par){
      strcpy(file_typ,"par_file");
-     write_gen_header(ibinary,iwrite_par_confp,file_typ,cpparname);
+     write_gen_header_cp(ibinary,iwrite_par_confp,file_typ,cpparname);
   }//endif
 
 //==========================================================================

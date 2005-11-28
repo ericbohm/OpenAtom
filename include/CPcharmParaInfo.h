@@ -8,6 +8,122 @@
 #include "../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
 
 //=============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+class RedundantCommPkg {
+  public :
+      int nk0_max;
+      int nchareG;
+      int num_recv_tot; //how many chares do I recieve from
+      int num_send_tot; //how many chares do I send to
+      int *num_send;
+      int **lst_send;
+      int *num_recv;
+      int **lst_recv;
+
+  RedundantCommPkg(){
+     nk0_max=0; nchareG=0; 
+     num_send = NULL;
+     lst_send = NULL;
+     num_recv = NULL;
+     lst_recv = NULL;
+  }
+
+  void Init(int nk0_max_,int nchareG_){
+    nk0_max  = nk0_max_;
+    nchareG  = nchareG_;
+    num_send = new int[nchareG];
+    num_recv = new int[nchareG];
+    for(int i=0;i<nchareG;i++){num_send[i] = 0;}
+    for(int i=0;i<nchareG;i++){num_recv[i] = 0;}
+
+    lst_send = new int *[nchareG];
+    lst_recv = new int *[nchareG];
+    for(int i=0;i<nchareG;i++){
+      lst_send[i]=new int[nk0_max];
+      lst_recv[i]=new int[nk0_max];
+    }//endfor
+    for(int i=0;i<nchareG;i++){
+    for(int j=0;j<nk0_max;j++){
+      lst_send[i][j] = 0;
+      lst_recv[i][j] = 0;
+    }}
+  }
+
+  void Init(RedundantCommPkg *R){
+    nk0_max      = R->nk0_max;
+    nchareG      = R->nchareG;
+    num_recv_tot = R->num_recv_tot;
+    num_send_tot = R->num_send_tot;
+    Init(nk0_max,nchareG);
+    for(int i=0;i<nchareG;i++){
+      num_send[i]=R->num_send[i];
+      num_recv[i]=R->num_recv[i];
+    }//endfor
+    for(int i=0;i<nchareG;i++){
+      for(int j=0;j<num_send[i];j++){
+        lst_send[i][j]=R->lst_send[i][j];
+      }//endfor
+      for(int j=0;j<num_recv[i];j++){
+        lst_recv[i][j]=R->lst_recv[i][j];
+      }//endfor
+    }//endfor
+  }
+
+ ~RedundantCommPkg(){
+    delete [] num_send;
+    delete [] num_recv;
+    for(int j=0;j<nchareG;j++){
+      delete [] lst_send[j];
+      delete [] lst_recv[j];
+    }//endfor
+    delete [] lst_send;
+    delete [] lst_recv;
+  }
+
+  void pup(PUP::er &p){
+    p|nk0_max;        p|nchareG;
+    p|num_recv_tot;   p|num_send_tot;
+    int *lst_send_all = new int [nk0_max*nchareG];
+    int *lst_recv_all = new int [nk0_max*nchareG];
+    if(p.isUnpacking()) {
+      Init(nk0_max,nchareG);
+    }else{
+      int iii=0;
+      for(int i=0;i<nchareG;i++){
+      for(int j=0;j<nk0_max;j++){
+        lst_send_all[iii]=lst_send[i][j];
+        lst_recv_all[iii]=lst_recv[i][j];
+        iii++;
+      }}
+    }//endif
+    p(num_send,nchareG);
+    p(num_recv,nchareG);
+    p(lst_send_all,nk0_max*nchareG);
+    p(lst_recv_all,nk0_max*nchareG);
+    if(p.isUnpacking()) {
+      int iii=0;
+      for(int i=0;i<nchareG;i++){
+      for(int j=0;j<nk0_max;j++){
+        lst_send[i][j] = lst_send_all[iii];
+        lst_recv[i][j] = lst_recv_all[iii];
+        iii++;
+      }}
+    }//endif unpacking
+    delete [] lst_send_all;
+    delete [] lst_recv_all;
+  }
+
+//----------------------------------------------------------------------------
+   };// end class
+//=============================================================================
+
+
+//=============================================================================
+PUPmarshall(RedundantCommPkg);
+//=============================================================================
+
+//=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
 class CPcharmParaInfo {
@@ -57,6 +173,7 @@ class CPcharmParaInfo {
    int *npts_per_chareRhoG;     // pts in each collection   (rhog-space)
    int **index_tran_upack_rho;   // unpack indicies for each chareRhoG
    CkVec<RunDescriptor> *RhosortedRunDescriptors; // description of collection
+   RedundantCommPkg *RCommPkg;  // communication of redundant elements
 //=============================================================================
 
 
@@ -169,6 +286,10 @@ class CPcharmParaInfo {
         index_tran_upack[i][j] = s.index_tran_upack[i][j];
       }//endfor
      }//endfor
+
+     RCommPkg = new RedundantCommPkg [nchareG]; 
+     for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i]);}
+
      LBTurnInstrumentOff();
    }//end constructor
 //=============================================================================
@@ -189,6 +310,7 @@ class CPcharmParaInfo {
        pts_per_chareRhoG=NULL;
        nlines_per_chareRhoG=NULL; 
        npts_per_chareRhoG=NULL;
+       RCommPkg  = NULL;
    }
 //=============================================================================
 
@@ -204,6 +326,7 @@ class CPcharmParaInfo {
       delete [] nlines_per_chareRhoG; nlines_per_chareRhoG = NULL;
       delete []  pts_per_chareRhoG;    pts_per_chareRhoG   = NULL;
       delete [] npts_per_chareRhoG;   npts_per_chareRhoG   = NULL;
+      delete [] RCommPkg;             RCommPkg= NULL;
       /*      for(int i=0;i<nchareG;i++)
 	delete [] index_tran_upack[i];
       delete [] index_tran_upack;
@@ -298,17 +421,22 @@ class CPcharmParaInfo {
 #endif
 	  }//endif
       }//endif
+      if(p.isUnpacking()){
+         RCommPkg = new RedundantCommPkg [nchareG]; 
+      }//endif
+      for(int igrp=0;igrp<nchareG;igrp++){
+        RCommPkg[igrp].pup(p);
+      }//endfor
    };
-//=============================================================================
-
-//=============================================================================
-}; // end class
+//----------------------------------------------------------------------------
+   }; // end class
 //=============================================================================
 
 
-//=============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
 PUPmarshall(CPcharmParaInfo);
+//=============================================================================
+
+
 //=============================================================================
 #endif

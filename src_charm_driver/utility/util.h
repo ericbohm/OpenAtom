@@ -246,7 +246,7 @@ void   readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int 
 
 void   readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
                          const char *,int ,int *,int *,int *,int *,int *,int *,
-                         int **, int **, int);
+                         int **, int **, int **,int **,int **,int);
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,
 	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 

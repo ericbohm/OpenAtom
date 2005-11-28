@@ -85,6 +85,8 @@ mainmodule cpaimd {
 
 	message RhoRSFFTMsg {complex data[];};
 
+	message GSRedPsiMsg {complex data[];};
+
 	message GStateOutMsg {
 		complex data[];
 		complex vdata[];
@@ -110,6 +112,7 @@ mainmodule cpaimd {
 
                 entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
+		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);

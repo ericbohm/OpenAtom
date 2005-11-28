@@ -430,7 +430,8 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
                        int *nline_tot_ret,int *nplane_ret,
                        int *istrt_lgrp,int *iend_lgrp,
                        int *npts_lgrp,int *nline_lgrp,
-                       int **kx_line_ret, int **ky_line_ret,int iget_decomp)
+                       int **kx_line_ret, int **ky_line_ret,
+                       int **kx_ret,int **ky_ret, int **kz_ret, int iget_decomp)
 
 //===================================================================================
     {//begin routine
@@ -596,9 +597,9 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 
 //===================================================================================
 
-    delete[] kx;
-    delete[] ky;
-    delete[] kz;
+    *kx_ret =  kx;
+    *ky_ret =  ky;
+    *kz_ret =  kz;
 
 //===================================================================================
 // A little output to the screen!
@@ -1589,9 +1590,13 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int *nline_lgrp   = new int [sizeX];
     int *kx_line      = NULL;
     int *ky_line      = NULL;
+    int *kx           = NULL;
+    int *ky           = NULL;
+    int *kz           = NULL;
+
     readStateIntoRuns(numData,complexPoints,runDescriptorVec,fname,ibinary_opt,
                       &nline_tot,&(sim->nplane_x),istrt_lgrp,iend_lgrp,
-                      npts_lgrp,nline_lgrp,&kx_line,&ky_line,1);
+                      npts_lgrp,nline_lgrp,&kx_line,&ky_line,&kx,&ky,&kz,1);
     int nplane  = sim->nplane_x;
     int nchareG = sim->nchareG;
 
@@ -1662,11 +1667,96 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     }//endfor
  
     if(numPoints!=numData){
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("Incorrect number of total g-space points\n");
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkExit();
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Incorrect number of total g-space points\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
     }//endif
+
+//============================================================================
+// Figure out the unique/redundent communication :
+//   Send out the unique : Receive and over write the redudant.
+
+    // find the unique and redundent g's on each chare
+    int *num_uni = new int [nchareG];
+    int *num_red = new int [nchareG];
+    int nk0_max=0;
+    for(int i = 0; i < nchareG; i ++) {
+      num_uni[i]=0;
+      num_red[i]=0;
+      for(int j=0;j<npts_lgrp[i];j++){
+        int iii = j+index_output_off[i];
+        if(kx[iii]==0 && ky[iii]>0){num_uni[i]++;}
+        if(kx[iii]==0 && ky[iii]<0){num_red[i]++;}
+        if(kx[iii]==0 && ky[iii]==0 && kz[iii]>=0){num_uni[i]++;}
+        if(kx[iii]==0 && ky[iii]==0 && kz[iii]<0){num_red[i]++;}
+      }//endif
+      nk0_max=MAX(num_uni[i],nk0_max);
+      nk0_max=MAX(num_red[i],nk0_max);
+    }//endif
+
+    // Find where my unique guys go and make a list so I can send them.
+    // Make a list of where the unique guys arrive so I can receive them.
+    RedundantCommPkg *RCommPkg = new RedundantCommPkg [nchareG]; 
+    for(int i=0;i<nchareG;i++){RCommPkg[i].Init(nk0_max,nchareG);}
+
+    for(int i=0;i<nchareG;i++){
+      int  *num_send = RCommPkg[i].num_send;
+      int **lst_send = RCommPkg[i].lst_send;
+      for(int j=0;j<nchareG;j++){
+        int  *num_recv = RCommPkg[j].num_recv;
+        int **lst_recv = RCommPkg[j].lst_recv;
+        for(int ip=0;ip<num_uni[i];ip++){
+          int iii = ip+index_output_off[i] + num_red[i];
+          for(int jp=0;jp<num_red[j];jp++){
+            int jjj = jp+index_output_off[j];
+            if(ky[iii]==-ky[jjj] && kz[iii]==-kz[jjj]){
+              lst_send[j][num_send[j]] = ip+num_red[i];
+              lst_recv[i][num_recv[i]] = jp;
+              num_send[j]++;
+              num_recv[i]++;
+	    }//endif
+  	  }//endfor
+        }//endfor
+      }//endfor
+    }//endfor
+
+    for(int i=0;i<nchareG;i++){
+      int  *num_send   = RCommPkg[i].num_send;
+      int  *num_recv   = RCommPkg[i].num_recv;
+      int num_recv_tot = 0;
+      int num_send_tot = 0;
+      for(int j=0;j<nchareG;j++){ 
+        if(num_send[j]>0){num_send_tot++;}
+        if(num_recv[j]>0){num_recv_tot++;}
+      }//endif
+      RCommPkg[i].num_recv_tot = num_recv_tot;
+      RCommPkg[i].num_send_tot = num_send_tot;
+    }//endfor
+
+    for(int i=0;i<nchareG;i++){
+      int  *num_send = RCommPkg[i].num_send;
+      int **lst_send = RCommPkg[i].lst_send;
+      for(int j=0;j<nchareG;j++){
+        int  *num_recv = RCommPkg[j].num_recv;
+        int **lst_recv = RCommPkg[j].lst_recv;
+        if(num_send[j]!=num_recv[i]){
+          CkPrintf("Bad Num of Redundent g-vectors %d %d\n",i,j);
+          CkExit();
+	}//endif
+        for(int ip=0;ip<num_send[j];ip++){
+          int iii = index_output_off[i]+lst_send[j][ip];
+          int jjj = index_output_off[j]+lst_recv[i][ip];
+          if(kx[iii]!=0 || kx[jjj]!=0 || ky[iii]!=-ky[jjj] || kz[iii]!=-kz[jjj] ||
+             ky[iii]<0 || (kz[iii]<0 && ky[iii]==0)){
+            CkPrintf("Bad Num of Redundent g-vectors %d %d %d %d %d\n",iii,jjj,ip,i,j);
+            CkPrintf("%d %d %d : %d %d %d\n",kx[iii],ky[iii],kz[iii],
+                        		     kx[jjj],ky[jjj],kz[jjj]);
+            CkExit();
+   	  }//endif
+	}//endfor
+      }//endfor
+    }//endfor
 
 //============================================================================
 // Pack up the stuff, clean up the memory and exit
@@ -1679,12 +1769,18 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     sim->npts_tot             = numData;
     sim->nlines_tot           = nline_tot;
     sim->index_output_off     = index_output_off;
+    sim->RCommPkg             = RCommPkg;
 
     delete [] istrt_lgrp;
     delete [] iend_lgrp;
     delete [] complexPoints;
     delete [] kx_line;
     delete [] ky_line;
+    delete [] kx;
+    delete [] ky;
+    delete [] kz;
+    delete [] num_uni;
+    delete [] num_red;
 
 //============================================================================
   }//end routine

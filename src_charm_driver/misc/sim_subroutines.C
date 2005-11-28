@@ -454,7 +454,6 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
 // Find pts with k_x==0 then check the layout : kx=0 first
 
   ihave_kx0 = 0;
-  kx0_strt = 0;
   int nkx0  = 0;
   for(i=0;i<numPoints;i++){
     if(k_x[i]==0){

@@ -105,6 +105,18 @@ public:
 };
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class GSRedPsiMsg: public CMessage_GSRedPsiMsg {
+public:
+    int size; 
+    int senderIndex;
+    complex *data;
+};
+//============================================================================
+
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -162,6 +174,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
+        void acceptRedPsi(GSRedPsiMsg *msg);
+        void sendRedPsi();
 	void combineForcesGetEke();
 	void integrateModForce();
         void writeStateDumpFile();
@@ -199,6 +213,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int istart_typ_cp;
 	int count;
         int countFileOut;
+        int countRedPsi;
 	GStateSlab gs; 
 	bool flagsSent;
 	int partialCount;
