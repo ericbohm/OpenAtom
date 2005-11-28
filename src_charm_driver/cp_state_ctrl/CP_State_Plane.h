@@ -200,10 +200,12 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void gdoneIFFT(CkReductionMsg *msg);
 	void gdonePsiV(CkReductionMsg *msg);
 	void releaseSFComputeZ();
+        int numRecvRedPsi;
         int first_step;
         int iwrite_now;
         void psiWriteComplete(CkReductionMsg *msg);
 	int iteration;
+        int itemp;
  private:
 	bool needPsiV;
 	bool allgdoneifft;
