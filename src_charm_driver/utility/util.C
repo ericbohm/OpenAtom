@@ -834,9 +834,11 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 
     ic            = 0;
     istrt_line[0] = 0;
+    int kxmax     = kx[0];
     kx_line[0]    = kx[0];
     ky_line[0]    = ky[0];
     for(int i = 1;i<nPacked;i++){
+      kxmax = MAX(kx[i],kxmax);
       if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
         iend_line[ic] = i;
         npts_line[ic] = iend_line[ic]-istrt_line[ic];
@@ -874,9 +876,10 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 // For each decomposd chunk : sort on kx
 //      note istrt_lgrp, iend_lgrp only define when iget_decomp==1
 
+    int mal_size = MAX(nline_tot,(kxmax+1));
     int *kx_tmp = new int[nline_tot];
     int *ky_tmp = new int[nline_tot];
-    int *k_tmp  = new int[nline_tot];
+    int *k_tmp  = new int[mal_size];
     memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
     memcpy(kxt,kx,(nPacked*sizeof(int)));
     memcpy(kyt,ky,(nPacked*sizeof(int)));
@@ -890,7 +893,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
         ky_tmp[l] = ky_line[(l+loff)];
         kx_ind[l] = l;
       }//endfor
-      if(nline_lgrp[i]>1){sort_kxky(nline_lgrp[i],kx_tmp,ky_tmp,kx_ind,k_tmp);}
+      if(nline_lgrp[i]>1){sort_kxky(nline_lgrp[i],kx_tmp,ky_tmp,kx_ind,k_tmp,ny);}
       for(int l=0;l<nline_lgrp[i];l++){
         int istrt = istrt_line[(kx_ind[l]+loff)];
         int iend  = iend_line[(kx_ind[l]+loff)];
@@ -1821,7 +1824,44 @@ void writePartState(int ncoef,complex *psi,complex *vpsi,
 //=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
-void sort_kxky(int n,int *kx,int *ky,int *index,int *kyt){
+void sort_kxky(int n,int *kx,int *ky,int *index,int *ktemp,int sizeY){
+//=============================================================================
+// Sort on kx
+
+  for(int i=0;i<n;i++){index[i]=i;}
+  sort_commence(n,kx,index);
+  for(int i=0;i<n;i++){ktemp[i]=ky[i];}
+  for(int i=0;i<n;i++){ky[i]=ktemp[index[i]];}
+
+  if(kx[0]<0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Double pack only in sort kxky\n");  
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+//=============================================================================
+// Sort on ky for each kx
+
+  int kmin = kx[0];
+  int kmax = kx[(n-1)];
+  for(int i=kmin;i<=kmax;i++){ktemp[i]=0;}
+  for(int i=0;i<n;i++){ktemp[kx[i]]++;}
+
+  int ioff=0;
+  for(int i=kmin;i<=kmax;i++){
+    if(ktemp[i]>1){sort_commence(ktemp[i],&ky[ioff],&index[ioff]);}
+    ioff += ktemp[i];
+  }//endfor
+   
+//============================================================================
+  }//end routine
+//============================================================================
+
+//=============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+void sort_kxky_old(int n,int *kx,int *ky,int *index,int *kyt){
 //=============================================================================
 
  int nk0=0;
