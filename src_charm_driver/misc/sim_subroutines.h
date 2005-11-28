@@ -40,6 +40,7 @@ public:
    int ihave_kx0;              // plane zero is in the collection (stored consecutively)
    int kx0_strt;               // starting pt
    int kx0_end;                // ending pt
+   int nkx0,nkx0_uni,nkx0_red; // split kx=0 into unique and redundant parts
 
    double eke_ret;            // kinetic energy
    double fictEke_ret;        // fictitious kinetic energy

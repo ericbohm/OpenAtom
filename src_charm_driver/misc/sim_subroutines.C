@@ -247,6 +247,7 @@ void GStateSlab::pup(PUP::er &p) {
         p|ihave_kx0;
         p|kx0_strt;
         p|kx0_end;
+        p|nkx0; p|nkx0_uni; p|nkx0_red;
         p|kTCP;
         p|len_nhc_cp;
         p|kTCP;
@@ -454,8 +455,14 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
 // Find pts with k_x==0 then check the layout : kx=0 first
 
   ihave_kx0 = 0;
-  int nkx0  = 0;
+  nkx0  = 0;
+  nkx0_uni=0;
+  nkx0_red=0;
   for(i=0;i<numPoints;i++){
+    if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
+    if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
     if(k_x[i]==0){
       if(ihave_kx0==0){kx0_strt=i;}
       ihave_kx0=1;
@@ -470,15 +477,31 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
+  
+  if(nkx0!=nkx0_uni+nkx0_red){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Incorrect count of redundant guys\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
   for(i=0;i<nkx0;i++){  
     if(k_x[i]!=0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("kx should be stored consecutively\n");
+      CkPrintf("kx should be stored consecutively and first\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
   }//endif
+
+  for(i=0;i<nkx0_red;i++){  
+    if(k_y[i]>0 || (k_y[i]==0 && k_z[i]>=0)){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("ky <0 should be stored first\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+  }//endfor
 
 //==============================================================================
 // Set the return values
