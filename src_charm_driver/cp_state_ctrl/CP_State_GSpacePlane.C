@@ -152,13 +152,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
       }//endif
     //------------------------------------------------------------------------
     // (H) Evolve the electrons to the next step (Atom integration is hidden)
-#ifndef CMK_OPTIMIZE
-      double StartTime=CmiWallTimer();
-#endif
       c->integrateModForce();
-#ifndef CMK_OPTIMIZE
-      traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());    
-#endif
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
         c->sendRedPsi(); // Sync Redundant psi entries
         RTH_Suspend();  // Resume is called in acceptRedPsi(*msg);
@@ -1549,8 +1543,15 @@ void CP_State_GSpacePlane::integrateModForce() {
   //---------------------------------------------------------------
   // (B) Numerical integration
   gs.fictEke_ret = 0.0;
+#ifndef CMK_OPTIMIZE
+      double StartTime=CmiWallTimer();
+#endif
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                       k_x, k_y, k_z,coef_mass,gamma_conj_grad,&gs.fictEke_ret);
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());
+#endif
+
   //---------------------------------------------------------------
   // (C) Debug output after integration
 #ifdef _CP_DEBUG_DYNAMICS_
