@@ -48,6 +48,13 @@ class RSDummyResume: public CMessage_RSDummyResume {
 };
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class GSAtmMsg: public CMessage_GSAtmMsg {
+};
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -174,7 +181,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
-        void acceptRedPsi(GSRedPsiMsg *msg);
+        void acceptRedPsi(GSRedPsiMsg *msg);  
+        void doneRedPsiIntegrate();
         void sendRedPsi();
 	void combineForcesGetEke();
 	void integrateModForce();
@@ -187,7 +195,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	
 	void computeEnergies(int p, double d);
         void computeCgOverlap();
-
+        void waitForAtoms();
+        void acceptAtoms(GSAtmMsg *msg);
         void run ();
         void resumePsiV (CkReductionMsg *msg);
         void resumeThread (PPDummyMsg *dmsg);
@@ -206,6 +215,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void psiWriteComplete(CkReductionMsg *msg);
 	int iteration;
         int itemp;
+        int jtemp;
+        int finishedRedPsi;
+        int finishedCpIntegrate;
+
  private:
 	bool needPsiV;
 	bool allgdoneifft;
@@ -240,6 +253,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int localState;
 	int AllExpected;
 	bool acceptedPsi;
+	bool acceptedLambda;
         complex *tpsi;
         complex *tvpsi;
 	int *tk_x;

@@ -87,6 +87,8 @@ mainmodule cpaimd {
 
 	message GSRedPsiMsg {complex data[];};
 
+	message GSAtmMsg;
+
 	message GStateOutMsg {
 		complex data[];
 		complex vdata[];
@@ -110,6 +112,7 @@ mainmodule cpaimd {
 		entry void doFFT();
 		entry void syncpsi();
 
+                entry void acceptAtoms(GSAtmMsg *msg);
                 entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	

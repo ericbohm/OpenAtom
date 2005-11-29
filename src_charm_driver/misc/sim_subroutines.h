@@ -41,6 +41,7 @@ public:
    int kx0_strt;               // starting pt
    int kx0_end;                // ending pt
    int nkx0,nkx0_uni,nkx0_red; // split kx=0 into unique and redundant parts
+   int nkx0_zero;
 
    double eke_ret;            // kinetic energy
    double fictEke_ret;        // fictitious kinetic energy
@@ -52,6 +53,8 @@ public:
    complex *packedPlaneDataScr; 
    complex *packedForceData; 
    complex *packedVelData; 
+   complex *packedRedPsi;
+
    int     len_nhc_cp;
    double  kTCP;
    double  tauNHCCP;

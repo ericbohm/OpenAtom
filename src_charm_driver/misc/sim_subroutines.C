@@ -247,7 +247,7 @@ void GStateSlab::pup(PUP::er &p) {
         p|ihave_kx0;
         p|kx0_strt;
         p|kx0_end;
-        p|nkx0; p|nkx0_uni; p|nkx0_red;
+        p|nkx0; p|nkx0_uni; p|nkx0_red; p|nkx0_zero;
         p|kTCP;
         p|len_nhc_cp;
         p|kTCP;
@@ -261,12 +261,14 @@ void GStateSlab::pup(PUP::er &p) {
 	   packedPlaneDataTemp = new complex[numPoints];
 	   packedForceData     = new complex[numPoints];
 	   packedVelData       = new complex[numPoints];
+           packedRedPsi        = new complex[nkx0];
 	}//endif
 	p((char *) packedPlaneData, numPoints*sizeof(complex));
 	p((char *) packedPlaneDataScr, numPoints*sizeof(complex));
 	p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
 	p((char *) packedForceData, numPoints*sizeof(complex));
 	p((char *) packedVelData, numPoints*sizeof(complex));
+	p((char *) packedRedPsi, nkx0*sizeof(complex));
         p(xNHC,len_nhc_cp);
         p(vNHC,len_nhc_cp);
         p(fNHC,len_nhc_cp);
@@ -458,11 +460,13 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   nkx0  = 0;
   nkx0_uni=0;
   nkx0_red=0;
+  nkx0_zero=0;
   for(i=0;i<numPoints;i++){
     if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
     if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
     if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
     if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;}
     if(k_x[i]==0){
       if(ihave_kx0==0){kx0_strt=i;}
       ihave_kx0=1;
@@ -502,6 +506,17 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
       CkExit();
     }//endif
   }//endfor
+
+  for(i=nkx0_red;i<nkx0_uni;i++){  
+    if(k_y[i]<0 || (k_y[i]==0 && k_z[i]<0)){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("ky <0 should be stored first\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+  }//endfor
+
+  packedRedPsi  = new complex[nkx0];
 
 //==============================================================================
 // Set the return values
