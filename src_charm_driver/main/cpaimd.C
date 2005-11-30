@@ -691,16 +691,16 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
      orthoProxy(0, 0));
     make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
      nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
+     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     mCastGrpId, MM_ALG_2D);
     make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
      nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
+     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     mCastGrpId, MM_ALG_2D);
     make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
      nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     MM_ALG_2D);
+     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     mCastGrpId, MM_ALG_2D);
 
 
     for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize)

@@ -23,16 +23,42 @@
  */
 
 module CLA_Matrix{
+  /* used to send matrix chunks */
   message CLA_Matrix_msg{
     double data[];
   };
+
+  /* auxiliary array, map, and message classes for 3D algorithm */
+  message CLA_MM3D_mult_init_msg;
+  group CLA_MM3D_Map : CkArrayMap {
+    entry CLA_MM3D_Map(int M_chunks, int K_chunks, int N_chunks);
+  };
+  array [3D] CLA_MM3D_multiplier{
+    entry void CLA_MM3D_multiplier();
+    entry void CLA_MM3D_multiplier(int m, int k, int n);
+    entry void initialize_reduction(CLA_MM3D_mult_init_msg *m);
+    entry void receiveA(CLA_Matrix_msg *msg);
+    entry void receiveB(CLA_Matrix_msg *msg);
+  };
+  /* Main array used for all algorithms */
   array [2D] CLA_Matrix{
     entry void CLA_Matrix();
-    // for 2D algorithm
-    entry void CLA_Matrix(int M, int K, int N, int m, int k, int n, int part,
+
+    /* for 2D algorithm */
+    entry void CLA_Matrix(int M, int K, int N, int m, int k, int n,
+     int strideM, int strideK, int strideN, int part,
      CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2,
-     CProxy_ArrayElement bound, CkCallback ready);
+     CkCallback ready);
     entry void receiveA(CLA_Matrix_msg *m);
     entry void receiveB(CLA_Matrix_msg *m);
+
+    /* for 3D algorithm */
+    entry void CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
+     int m, int k, int n, int strideM, int strideK, int strideN, int part,
+     CkCallback cb, CkGroupID gid);
+    entry void ready(CkReductionMsg *m);
+    entry void readyC(CkReductionMsg *m);
+    entry void mult_done(CkReductionMsg *m);
   };
+
 }

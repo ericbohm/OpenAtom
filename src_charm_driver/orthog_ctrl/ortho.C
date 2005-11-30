@@ -206,6 +206,15 @@ void Ortho::collect_results(void)
 	    {
 	      gSpacePlaneProxy.isAtSync(numGlobalIter);
 	    }
+          matA1.sync(thisIndex.x, thisIndex.y);
+          matB1.sync(thisIndex.x, thisIndex.y);
+          matC1.sync(thisIndex.x, thisIndex.y);
+          matA2.sync(thisIndex.x, thisIndex.y);
+          matB2.sync(thisIndex.x, thisIndex.y);
+          matC2.sync(thisIndex.x, thisIndex.y);
+          matA3.sync(thisIndex.x, thisIndex.y);
+          matB3.sync(thisIndex.x, thisIndex.y);
+          matC3.sync(thisIndex.x, thisIndex.y);
 	  AtSync();
 	}
 	else
