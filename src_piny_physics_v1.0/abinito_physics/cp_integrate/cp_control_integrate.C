@@ -11,17 +11,19 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPINTEGRATE::CP_integrate(const int ncoef, const int istate,int iteration,
-               complex *forces,complex *forcesold,complex *psi_g,
-               const int *k_x,const int *k_y, const int *k_z, 
-               double *cmass,double gamma_conj_grad,double *fictEke)
+void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
+             complex *forces,complex *forcesold,complex *psi_g,double *cmass,
+             int *k_x,int *k_y, int *k_z, int len_nhc, int num_nhc,
+             double **fNHC,double**vNHC,double *xNHC,double mNHC,double kTCP,
+             double gamma_conj_grad,double *fictEke,int nkx0_red,int nkx0_uni,
+             int nkx0_zero)
 //============================================================================
    { /* Begin Function */
 //---------------------------------------------------------------------------
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
 #include "../class_defs/allclass_strip_gen.h"
-  complex *vpsi_g = forcesold;
+  complex *vpsi_g = forcesold; //they share memory
 
   int ifound=0;
 
@@ -80,8 +82,9 @@ void CPINTEGRATE::CP_integrate(const int ncoef, const int istate,int iteration,
 
   if(cp_on==1){
     ifound++;
-    CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,k_x,k_y,k_z,
-                     cmass,fictEke);
+    CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,cmass,
+                     k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,
+                     mNHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero);
   }//endif
 
 //============================================================================
@@ -108,9 +111,9 @@ void CPINTEGRATE::CP_integrate(const int ncoef, const int istate,int iteration,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void CPINTEGRATE::CP_create_mass(const int nktot,const int *k_x,const int *k_y,
-                                 const int *k_z,double *cmass, 
-                                 const int mydoublePack)
+void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,
+                                 int *k_z,double *cmass, 
+                                 int mydoublePack)
 
 //============================================================================
    { /* Begin Function */
@@ -184,7 +187,7 @@ void CPINTEGRATE::CP_create_mass(const int nktot,const int *k_x,const int *k_y,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void CPINTEGRATE::CheckCoefGradMag(const double fovlap)
+void CPINTEGRATE::CheckCoefGradMag(double fovlap)
 
 //============================================================================
    { /* Begin Function */

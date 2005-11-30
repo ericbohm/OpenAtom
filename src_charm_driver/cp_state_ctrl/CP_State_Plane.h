@@ -164,6 +164,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	~CP_State_GSpacePlane(); 
 	void initGSpace(int, RunDescriptor *, int, complex *,int ,complex *,
                         int,int,int,int);
+        void launchAtoms();
 	void syncpsi();
 	void requirePsiV();
 	void doIFFT(GSIFFTMsg *);
@@ -253,13 +254,13 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int localState;
 	int AllExpected;
 	bool acceptedPsi;
+	bool acceptedVPsi;
 	bool acceptedLambda;
         complex *tpsi;
         complex *tvpsi;
 	int *tk_x;
 	int *tk_y;
 	int *tk_z;
-
 
 	complex *ffttempdata; 
 	int ireset;

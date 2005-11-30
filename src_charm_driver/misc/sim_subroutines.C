@@ -209,6 +209,7 @@ GStateSlab::~GStateSlab() {
     if(packedPlaneDataScr !=NULL) delete [] packedPlaneDataScr;
     if(packedVelData      !=NULL) delete [] packedVelData;
     if(runs               !=NULL) delete [] runs;
+    destroyNHC();
 
     packedPlaneData     = NULL;
     packedPlaneDataTemp = NULL;
@@ -250,6 +251,7 @@ void GStateSlab::pup(PUP::er &p) {
         p|nkx0; p|nkx0_uni; p|nkx0_red; p|nkx0_zero;
         p|kTCP;
         p|len_nhc_cp;
+        p|num_nhc_cp;
         p|kTCP;
         p|tauNHCCP;
 	if (p.isUnpacking()) {runs = new RunDescriptor[numRuns];}
@@ -269,10 +271,34 @@ void GStateSlab::pup(PUP::er &p) {
 	p((char *) packedForceData, numPoints*sizeof(complex));
 	p((char *) packedVelData, numPoints*sizeof(complex));
 	p((char *) packedRedPsi, nkx0*sizeof(complex));
-        p(xNHC,len_nhc_cp);
-        p(vNHC,len_nhc_cp);
-        p(fNHC,len_nhc_cp);
-        p(mNHC,len_nhc_cp);
+        p|xNHC;
+        p|mNHC;
+        int nsize  = num_nhc_cp*len_nhc_cp;
+        double *vt = new double[nsize];
+        double *ft = new double[nsize];
+	if (!p.isUnpacking()) {
+          int iii=0;
+          for(int i =0;i<num_nhc_cp;i++){
+          for(int j =0;j<len_nhc_cp;j++){
+            vt[iii] = vNHC[i][j];
+            ft[iii] = fNHC[i][j];
+            iii++;
+          }}
+	}
+        p(vt,nsize);
+        p(ft,nsize);
+	if (p.isUnpacking()) {
+          initNHC();
+          int iii=0;
+          for(int i =0;i<num_nhc_cp;i++){
+          for(int j =0;j<len_nhc_cp;j++){
+            vNHC[i][j] = vt[iii];
+            fNHC[i][j] = ft[iii];
+            iii++;
+          }}
+	}
+        delete []vt;
+        delete []ft;
 
 //==============================================================================
   }//end routine
@@ -517,6 +543,7 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   }//endfor
 
   packedRedPsi  = new complex[nkx0];
+  memset(packedRedPsi, 0, sizeof(complex)*nkx0);
 
 //==============================================================================
 // Set the return values
@@ -643,6 +670,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 
    gs->iplane_ind   = iplane_ind;
    gs->istate_ind   = istate_ind; 
+   gs->initNHC();
 
 //==============================================================================
    }//end routine

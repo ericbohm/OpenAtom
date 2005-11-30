@@ -16,10 +16,10 @@
 //============================================================================
 
 void CPINTEGRATE::CP_integrate_min_CG
-             (const int ncoef, const int istate,complex *forces,complex *conj_grad,
+             (int ncoef, int istate,complex *forces,complex *conj_grad,
               complex *psi_g,
-              const int *k_x, const int *k_y, const int *k_z,
-              const double *cmass, double gamma)
+              int *k_x, int *k_y, int *k_z,
+              double *cmass, double gamma)
 
 //============================================================================
    { /* Begin Function */
@@ -113,9 +113,8 @@ void CPINTEGRATE::CP_integrate_min_CG
 // CG minimization
 //============================================================================
 
-void CPINTEGRATE::CP_fovlap_calc
-             (const int ncoef, const int istate,
-              complex *forces,double *fovlap_ret)
+void CPINTEGRATE::CP_fovlap_calc(int ncoef, int istate,complex *forces,
+                                 double *fovlap_ret)
 
 //============================================================================
    { /* Begin Function */

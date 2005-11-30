@@ -18,13 +18,17 @@ include "../../src_mathlib/mathlib.h"
 #endif
 
 #define LEN_NHC_CP 4;
+#define NUM_NHC_CP 4;
+
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 class GStateSlab {
-
+//==============================================================================
+// data 
 public:
+
    void pup(PUP::er &);
    int numNonZeroPlanes;
    int numRuns, numLines;      // numLines=numRun/2=number of lines in collection
@@ -54,18 +58,60 @@ public:
    complex *packedForceData; 
    complex *packedVelData; 
    complex *packedRedPsi;
-
    int     len_nhc_cp;
+   int     num_nhc_cp;
    double  kTCP;
    double  tauNHCCP;
-   double  xNHC[4];
-   double  vNHC[4];
-   double  fNHC[4];
-   double  mNHC[4];
+   double  xNHC;
+   double  mNHC;
+   double **vNHC;
+   double **vNHC_scr;
+   double **fNHC;
+
+//==============================================================================
+// Constuctor, Destructor and utilities
+
    GStateSlab() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
                  packedForceData=NULL; packedPlaneDataScr=NULL; 
+
                  packedVelData=NULL;}
    ~GStateSlab();
+
+   void copyVNHC(){
+     for(int i=0;i<num_nhc_cp;i++){
+     for(int j=0;j<len_nhc_cp;j++){
+       vNHC_scr[i][j] = vNHC[i][j];
+     }}//endfor
+   }//end routine
+
+   void initNHC(){
+     vNHC     = new double *[4];
+     vNHC_scr = new double *[4];
+     fNHC     = new double *[4];
+     for(int i=0;i<4;i++){
+       vNHC[i]    =new double[4];
+       vNHC_scr[i]=new double[4];
+       fNHC[i]    =new double[4];
+     }//endfor
+     for(int i=0;i<4;i++){
+     for(int j=0;j<4;j++){
+       vNHC[i][j]     = 0.0;
+       vNHC_scr[i][j] = 0.0;
+       fNHC[i][j]     = 0.0;
+     }}//endfor
+   }//end routine
+
+   void destroyNHC(){
+     for(int i=0;i<4;i++){
+       delete []vNHC[i];
+       delete []vNHC_scr[i];
+       delete []fNHC[i];
+     }//endfor
+     delete []vNHC;
+     delete []vNHC_scr;
+     delete []fNHC;
+   }//end routine
+
    complex* doFwFFT();
    void doBwFFT(complex*);
    void setKVectors(int *, int **, int **, int **);
@@ -73,7 +119,9 @@ public:
    void expandGSpace(complex* data, int type, complex *packedPlaneData);
    void compressGSpace(const complex *points, int type);
    void printGSpace(int type);
-};
+
+//-----------------------------------------------------------------------------
+  };
 //==============================================================================
 
 

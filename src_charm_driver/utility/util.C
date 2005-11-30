@@ -1809,14 +1809,14 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
   FILE *fp  = fopen(psiName,"w");
    if(ibinary_write_opt==0){
-    fprintf(fp,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+    fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
     for(int i=istrt+1;i<ncoef;i++){
-      fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
-                      psi[index[i]].re,psi[index[i]].im);
+      fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+                  k_x[index[i]],k_y[index[i]],k_z[index[i]]);
     }//endfor
       int i = istrt;
-      fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
-                      psi[index[i]].re,psi[index[i]].im);
+      fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+                  k_x[index[i]],k_y[index[i]],k_z[index[i]]);
    }else{
     int n=1;
     fwrite(&ncoef_true,sizeof(int),n,fp);
@@ -1824,32 +1824,32 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
     fwrite(&sizeY,sizeof(int),n,fp);
     fwrite(&sizeZ,sizeof(int),n,fp);
     for(int i=istrt+1;i<ncoef;i++){
+      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
       fwrite(&k_x[index[i]],sizeof(int),n,fp);
       fwrite(&k_y[index[i]],sizeof(int),n,fp);
       fwrite(&k_z[index[i]],sizeof(int),n,fp);
-      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
-      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
     }//endfor
       int i = istrt;
+      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
       fwrite(&k_x[index[i]],sizeof(int),n,fp);
       fwrite(&k_y[index[i]],sizeof(int),n,fp);
       fwrite(&k_z[index[i]],sizeof(int),n,fp);
-      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
-      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
    }//endif
   fclose(fp);
 
   if(cp_min_opt==0){
     fp  = fopen(vpsiName,"w");
     if(ibinary_write_opt==0){
-      fprintf(fp,"%d %d %d %d\n",ncoef,sizeX,sizeY,sizeZ);
+      fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
-        fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
-                      vpsi[index[i]].re,vpsi[index[i]].im);
+        fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+                   k_x[index[i]],k_y[index[i]],k_z[index[i]]);
       }//endfor
         int i = istrt;
-        fprintf(fp,"%d %d %d %g %g\n",k_x[index[i]],k_y[index[i]],k_z[index[i]],
-                      vpsi[index[i]].re,vpsi[index[i]].im);
+        fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+		k_x[index[i]],k_y[index[i]],k_z[index[i]]);
     }else{
       int n=1;
       fwrite(&ncoef_true,sizeof(int),n,fp);
@@ -1857,18 +1857,18 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
       fwrite(&sizeY,sizeof(int),n,fp);
       fwrite(&sizeZ,sizeof(int),n,fp);
       for(int i=istrt+1;i<ncoef;i++){
+        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
+        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
         fwrite(&k_x[index[i]],sizeof(int),n,fp);
         fwrite(&k_y[index[i]],sizeof(int),n,fp);
         fwrite(&k_z[index[i]],sizeof(int),n,fp);
-        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
-        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
       }//endfor
         int i = istrt;
+        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
+        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
         fwrite(&k_x[index[i]],sizeof(int),n,fp);
         fwrite(&k_y[index[i]],sizeof(int),n,fp);
         fwrite(&k_z[index[i]],sizeof(int),n,fp);
-        fwrite(&vpsi[index[i]].re,sizeof(double),n,fp);
-        fwrite(&vpsi[index[i]].im,sizeof(double),n,fp);
     }//endif
     fclose(fp);
   }//endif

@@ -15,9 +15,9 @@
 //============================================================================
 
 void CPINTEGRATE::CP_integrate_min_STD
-              (const int ncoef,const int istate,complex *forces,complex *psi_g,
-               const int *k_x, const int *k_y, const int *k_z,
-               const double *cmass)
+              (int ncoef,int istate,complex *forces,complex *psi_g,
+               int *k_x, int *k_y, int *k_z,
+               double *cmass)
 
 //============================================================================
    { /* Begin Function */
