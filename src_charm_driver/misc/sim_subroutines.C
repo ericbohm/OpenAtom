@@ -487,6 +487,7 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   nkx0_uni=0;
   nkx0_red=0;
   nkx0_zero=0;
+  kx0_strt =0;
   for(i=0;i<numPoints;i++){
     if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
     if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
@@ -503,7 +504,7 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
 
   if(kx0_strt!=0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("kx=0 should be stored first\n");
+    CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
