@@ -376,7 +376,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   fmagPsi_total     = d1;    // mag of psi force (all chares need it)
 
 //============================================================================
-// Output the mag force, send to the energy group, set the exit flag , resume
+// Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
     CkPrintf("MagForPsi   =  %5.8lf\n", d1);
@@ -400,6 +400,17 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
       CkPrintf("   CP wavefunction force tolerence reached!   \n");
       CkPrintf("----------------------------------------------\n");
     }//endif
+  }//endif
+
+//============================================================================
+// Do a little cputime management in GS class then resume
+
+  if(thisIndex.x==0 && thisIndex.y==0){
+     double cpuTimeOld = cpuTimeNow;
+     cpuTimeNow        = CkWallTimer();
+     if(iteration>1){
+       CkPrintf("CpuTime(GSP)= %g\n",cpuTimeNow-cpuTimeOld);
+     }//endif
   }//endif
 
   RTH_Runtime_resume(run_thread);
@@ -463,6 +474,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   fmagPsi_total  = 0.0;
   fmagPsi_total0 = 0.0; // chare(0,0) only
   fmagPsi_total_old = 0.0;
+  cpuTimeNow     = 0.0;
 
   iwrite_now          = 0;
   ireset_cg           = 1;
@@ -623,6 +635,7 @@ CP_State_GSpacePlane::~CP_State_GSpacePlane(){
   p|eext_total;
   p|ewd_total;
   p|total_energy;
+  p|cpuTimeNow;
 
   p|real_proxy;   // should I pup more proxies (lambda,psi,other?)
   p|sfCompSectionProxy;

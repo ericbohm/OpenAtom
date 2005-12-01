@@ -251,6 +251,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	double eext_total;
 	double ewd_total;
 	double total_energy;
+        double cpuTimeNow;
 	int gSpaceNumPoints;
 	GStateSlab gs; 
         double *coef_mass;

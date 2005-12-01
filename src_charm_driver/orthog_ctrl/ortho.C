@@ -198,7 +198,7 @@ void Ortho::collect_results(void){
 	  CkPrintf("------------------------------\n");
         }else{
 	  if(numGlobalIter>0){
-	    ckout <<"Iteration time : " << 
+	    ckout <<"Iteration time (ORTHO) : " << 
                wallTimeArr[itime] - wallTimeArr[itime-1] << endl;
 	  }//endif
         }//endif
