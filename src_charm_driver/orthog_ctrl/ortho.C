@@ -367,8 +367,10 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     {
       // finish pair calc
       finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy,0);
+#ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
+#endif
     }
   delete msg;
 
