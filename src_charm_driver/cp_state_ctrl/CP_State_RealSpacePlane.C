@@ -100,7 +100,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     if (config.useCommlib){
       ComlibAssociateProxy(&mssInstance,gproxy);
     }//endif
-
+    vks=NULL;
     run();
 }
 //============================================================================
@@ -280,7 +280,10 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
         ckout << msg->datalen << endl;
 	
     size=msg->datalen;
-    vks = msg->data;
+    double *vks_in = msg->data;
+    if(vks==NULL){vks = new double [size];}
+    memcpy(vks,vks_in,sizeof(double)*size);
+    //    delete msg;
 
     RSDummyResume *pmsg= new (8*sizeof(int)) RSDummyResume;
     CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
@@ -349,6 +352,8 @@ void CP_State_RealSpacePlane::doProduct() {
     fftCacheProxy.ckLocalBranch()->doRealBwFFT(vks,rs.planeArr,
                                        thisIndex.x,thisIndex.y);
     complex *vks_on_state = rs.planeArr;
+    delete [] vks;  vks = NULL;
+    
 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(doRealBwFFT_, StartTime, CmiWallTimer());

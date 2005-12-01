@@ -46,6 +46,7 @@
 //#define _CP_DEBUG_DYNAMICS_
 #define _CP_DEBUG_COEF_SCREEN_
 #define _CP_DEBUG_UPDATE_OFF_
+#define _CP_DEBUG_SFNL_OFF_
 
 //=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 

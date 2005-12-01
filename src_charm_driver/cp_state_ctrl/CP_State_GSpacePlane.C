@@ -107,14 +107,15 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
   while(1) {
  //===========================================================================
  // (I) Compute the forces and coef evolution code block
-
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1 || c->first_step!=1){
     //------------------------------------------------------------------------
     // (A) Start new iteration : Reset counters
        c->startNewIter();
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
+#ifndef _CP_DEBUG_SFNL_OFF_
        c->releaseSFComputeZ();
+#endif
        c->doFFT(); 
        c->sendFFTData();
        RTH_Suspend(); // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
@@ -124,10 +125,14 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (D) Combine non-local and vks forces then compute eke forces
     //     If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
+#ifndef _CP_DEBUG_SFNL_OFF_
        if (!(c->completedExtExcNlForces())){
          RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
-                        // PP calls combineForcesGetEke() which invokes resume
+                        // PP calls  which invokes resume
        }//endif
+#else
+       c->combineForcesGetEke();
+#endif
 #ifdef GIFFT_BARRIER
        if(!(c->allDoneIFFT())){
 	  RTH_Suspend(); // wait for broadcast that all gspace is done  
@@ -262,7 +267,9 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
   CkReductionMsg *m=(CkReductionMsg *)msg;
   double d = ((double *)m->getData())[0];
   delete m;
-
+#ifdef _CP_DEBUG_SFNL_OFF_
+  CkPrintf("ENL         = OFF FOR DEBUGGING\n");
+#endif
   CkPrintf("EKE         = %5.8lf\n", d);
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_EKE, d);
 }
@@ -1022,6 +1029,7 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
     }//endif
 
 //==============================================================================
+
 //check all SFs
   CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   for(int i=0;i<config.numSfGrps;i++){
@@ -1068,13 +1076,9 @@ void CP_State_GSpacePlane::doFFT() {
 #endif
 
 #ifdef  _CP_DEBUG_UPDATE_OFF_
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
-      CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-               sizeof(complex)*gs.numPoints);
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-        memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-      }//endif
-    }//endif
+   CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+             sizeof(complex)*gs.numPoints);
+   memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
 #endif      
 
 // Do fft in forward direction, 1-D, in z direction
@@ -1346,6 +1350,8 @@ void CP_State_GSpacePlane::launchAtoms() {
 //==============================================================================
 void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
+
+  acceptedLambda=false;
 
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
@@ -1711,7 +1717,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   ireset_cg = 0;
   if(iteration==1){ireset_cg=1;numReset_cg=0;}
-  if(iteration>1  && cp_min_opt==1){
+  if(iteration>1 && cp_min_opt==1 && cp_min_cg==1){
     if( (fmagPsi_total>1.1*fmagPsi_total_old && numReset_cg>=15) || 
         (fmagPsi_total>2.0*fmagPsi_total_old)){
       ireset_cg   = 1;
@@ -2038,7 +2044,6 @@ void CP_State_GSpacePlane::sendPsi() {
 
   c = 0;
   int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
-
   startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
 		    thisIndex.x, thisIndex.y, false);
 
