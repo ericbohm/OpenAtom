@@ -2106,10 +2106,14 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 /*========================================================================*/
   /* 1)\write_binary_cp_coef{on,off} */
     ifound  = 0;
-    if(strcasecmp(dict[1].keyarg,"on")==0)  
-       {cpopts->iwrite_coef_binary = 1;ifound++;}
     if(strcasecmp(dict[1].keyarg,"off")==0) 
        {cpopts->iwrite_coef_binary = 0;ifound++;}
+    if(strcasecmp(dict[1].keyarg,"on")==0)  
+       {cpopts->iwrite_coef_binary = 1;ifound++;}
+    if(strcasecmp(dict[1].keyarg,"off_gzip")==0) 
+       {cpopts->iwrite_coef_binary = 2;ifound++;}
+    if(strcasecmp(dict[1].keyarg,"on_gzip")==0) 
+       {cpopts->iwrite_coef_binary = 3;ifound++;}
     index=1;
    if(ifound == 0) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
@@ -2266,10 +2270,14 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   /*-----------------------------------------------------------------------*/ 
    /* 17)\read_binary_cp_coef{on,off} */
     ifound  = 0;
-    if(strcasecmp(dict[17].keyarg,"on")==0)  
-       {cpopts->iread_coef_binary = 1;ifound++;}
     if(strcasecmp(dict[17].keyarg,"off")==0) 
        {cpopts->iread_coef_binary = 0;ifound++;}
+    if(strcasecmp(dict[17].keyarg,"on")==0)  
+       {cpopts->iread_coef_binary = 1;ifound++;}
+    if(strcasecmp(dict[17].keyarg,"off_gzip")==0) 
+       {cpopts->iread_coef_binary = 2;ifound++;}
+    if(strcasecmp(dict[17].keyarg,"on_gzip")==0)  
+       {cpopts->iread_coef_binary = 3;ifound++;}
     index=17;
    if(ifound == 0) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/  
