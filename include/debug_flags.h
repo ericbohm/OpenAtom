@@ -44,9 +44,10 @@
 //#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_STATEG_VERBOSE_
 //#define _CP_DEBUG_DYNAMICS_
+//#define _CP_DEBUG_ORTHO_OFF_
+//#define _CP_DEBUG_SFNL_OFF_
 #define _CP_DEBUG_COEF_SCREEN_
 #define _CP_DEBUG_UPDATE_OFF_
-//#define _CP_DEBUG_SFNL_OFF_
 
 //=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 

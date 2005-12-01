@@ -145,7 +145,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (F) Add contraint forces (rotate forces to non-orthogonal frame)
        c->sendLambda();        
+#ifndef _CP_DEBUG_ORTHO_OFF_
        RTH_Suspend(); // wait for forces to be fixed up : acceptLambda resumes
+#endif
     //------------------------------------------------------------------------
     // Get sum sq forces (even under dynamics its good to have) : also cg thingy
 	c->computeCgOverlap();
@@ -173,7 +175,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    //------------------------------------------------------------------------
    // (A) Orthogonalize
     c->sendPsi();      // send to Pair Calculator
+#ifndef _CP_DEBUG_ORTHO_OFF_
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
+#endif
    //------------------------------------------------------------------------
    // (B) Output the states for minimization
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1){
@@ -393,6 +397,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     }//endif
   }//endif
 
+#ifndef _CP_DEBUG_ORTHO_OFF_
   if(cp_min_opt==1 && fmagPsi_total<=tol_cp_min){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
@@ -401,11 +406,16 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
       CkPrintf("----------------------------------------------\n");
     }//endif
   }//endif
+#endif
 
 //============================================================================
 // Do a little cputime management in GS class then resume
 
   if(thisIndex.x==0 && thisIndex.y==0){
+#ifdef _CP_DEBUG_ORTHO_OFF_
+      CkPrintf("==============================================\n");
+      CkPrintf("        Running with PC/Ortho Off             \n");
+#endif
      double cpuTimeOld = cpuTimeNow;
      cpuTimeNow        = CkWallTimer();
      if(iteration>1){
@@ -1369,12 +1379,15 @@ void  CP_State_GSpacePlane::sendLambda() {
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+
+#ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1 && cp_min_opt==0){
     double rad2i = 1.0/sqrt(2.0);
     double rad2  = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i]   *= rad2i;}
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
   }//endif
+#endif
 
   if(config.gSpaceNumChunks!=1){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1386,13 +1399,17 @@ void  CP_State_GSpacePlane::sendLambda() {
 
   int numPoints   = gs.numPoints / config.gSpaceNumChunks;
   int dataCovered = gs.numPoints;
+#ifndef _CP_DEBUG_ORTHO_OFF_
   int c = 0;
   int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
-
   startPairCalcLeft(&gpairCalcID2, toSend, psi + c * numPoints, 
 		    thisIndex.x, thisIndex.y, false);
   startPairCalcRight(&gpairCalcID2, toSend, force + c * numPoints, 
 		     thisIndex.x, thisIndex.y);
+#else
+  acceptedLambda=true;
+  memset(force, 0, sizeof(complex)*numPoints);
+#endif
 
 //-----------------------------------------------------------------------------
    }// end routine 
@@ -2043,10 +2060,12 @@ void CP_State_GSpacePlane::sendPsi() {
      memcpy(scr,data,sizeof(complex)*ncoef);
   }//endif
 
+#ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
   }//endif
+#endif
 
 //==============================================================================
 
@@ -2055,10 +2074,14 @@ void CP_State_GSpacePlane::sendPsi() {
   int numPoints = gs.numPoints / config.gSpaceNumChunks;
   int dataCovered = gs.numPoints;
 
+#ifndef _CP_DEBUG_ORTHO_OFF_
   c = 0;
   int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
   startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
 		    thisIndex.x, thisIndex.y, false);
+#else
+  acceptedPsi=true;
+#endif
 
 //----------------------------------------------------------------------------
     }// end routine
