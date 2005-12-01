@@ -226,8 +226,7 @@ GStateSlab::~GStateSlab() {
 //==============================================================================
 void GStateSlab::pup(PUP::er &p) {
 //==============================================================================
-// Dont have to pup fftw plans - they reside in CPcharmParaInfoGrp.
-// no they live in the fft cache group
+// Dont have to pup fftw plans - they live in the fft cache group
 
         p|numNonZeroPlanes;
 	p|numRuns;
@@ -243,17 +242,13 @@ void GStateSlab::pup(PUP::er &p) {
 	p|zdim;
 	p|iplane_ind;
         p|istate_ind;
-        p|eke_ret;
-        p|fovlap_loc;
         p|ihave_kx0;
         p|kx0_strt;
         p|kx0_end;
         p|nkx0; p|nkx0_uni; p|nkx0_red; p|nkx0_zero;
-        p|kTCP;
-        p|len_nhc_cp;
-        p|num_nhc_cp;
-        p|kTCP;
-        p|tauNHCCP;
+
+        p|eke_ret;
+        p|fictEke_ret;
 	if (p.isUnpacking()) {runs = new RunDescriptor[numRuns];}
 	for (int i = 0; i < numRuns; i++){runs[i].pup(p);}
 
@@ -271,6 +266,11 @@ void GStateSlab::pup(PUP::er &p) {
 	p((char *) packedForceData, numPoints*sizeof(complex));
 	p((char *) packedVelData, numPoints*sizeof(complex));
 	p((char *) packedRedPsi, nkx0*sizeof(complex));
+
+        p|len_nhc_cp;
+        p|num_nhc_cp;
+        p|kTCP;
+        p|tauNHCCP;
         p|xNHC;
         p|mNHC;
         int nsize  = num_nhc_cp*len_nhc_cp;
@@ -284,7 +284,7 @@ void GStateSlab::pup(PUP::er &p) {
             ft[iii] = fNHC[i][j];
             iii++;
           }}
-	}
+	}//endif sending
         p(vt,nsize);
         p(ft,nsize);
 	if (p.isUnpacking()) {
@@ -296,7 +296,7 @@ void GStateSlab::pup(PUP::er &p) {
             fNHC[i][j] = ft[iii];
             iii++;
           }}
-	}
+	}//endif receiving 
         delete []vt;
         delete []ft;
 

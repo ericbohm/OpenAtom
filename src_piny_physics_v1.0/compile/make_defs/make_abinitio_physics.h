@@ -90,6 +90,13 @@ cp_dynamics.o :  $(STANDARD) $(FFTW) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_dynamics.C
 #------------------------------------------------------------------
+cp_vel_sampl.o :  $(STANDARD) $(FFTW) \
+               $(COMPLEX)   \
+               $(CLASS_CP_INTEGRATE) \
+               $(CODE)/abinito_physics/cp_integrate/cp_vel_sampl.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_vel_sampl.C
+#------------------------------------------------------------------
 cp_rspace_ion.o :  $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
                $(CLASS_CP_RSPACEION) \

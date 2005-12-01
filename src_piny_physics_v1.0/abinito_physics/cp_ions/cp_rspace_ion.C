@@ -107,7 +107,6 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid,
 
        }//endfor
      }//endfor
-     PRINTF("EWALD_real  = %5.8lf\n",pot_ewd);
 #ifdef _CP_DEBUG_ATM_FORC_
      FILE *fp = fopen("atom_rspace_only_forc.out","w");
        for(int i=0;i<natm;i++){

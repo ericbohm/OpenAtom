@@ -159,23 +159,48 @@ public:
 //============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
+        int first_step; //control flags and functions reference by thread are public
+        int iwrite_now;
+	int iteration;
+        int exitFlag;
+        int finishedRedPsi;
+        int finishedCpIntegrate;
+
+	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
+	void pup(PUP::er &);
 	void initGSpace(int, RunDescriptor *, int, complex *,int ,complex *,
                         int,int,int,int);
+
         void launchAtoms();
 	void syncpsi();
 	void requirePsiV();
-	void doIFFT(GSIFFTMsg *);
 	void doFFT();
 	void startNewIter ();
 	void sendPsi();
 	void sendPsiV();
-	bool weneedPsiV();
         void screenOutputPsi();
 	void sendLambda();
 	void makePCproxies();
+        void doneRedPsiIntegrate();
+        void sendRedPsi();
+	void combineForcesGetEke();
+	void integrateModForce();
+        void writeStateDumpFile();
+	void isAtSync(int);
+	void ResumeFromSync();
+	bool weneedPsiV();
+        bool completedExtExcNlForces ();
+	bool allDoneIFFT() {return allgdoneifft;}
+	void doIFFT(GSIFFTMsg *);
+        void acceptAtoms(GSAtmMsg *msg);
+	void gdoneIFFT(CkReductionMsg *msg);
+	void gdonePsiV(CkReductionMsg *msg);
+        void resumePsiV (CkReductionMsg *msg);
+        void psiWriteComplete(CkReductionMsg *msg);
+	void releaseSFComputeZ();
 	void acceptNewPsi(CkReductionMsg *msg);
         void collectFileOutput(GStateOutMsg *msg);
 	void acceptNewPsiV(CkReductionMsg *msg);
@@ -183,95 +208,68 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
         void acceptRedPsi(GSRedPsiMsg *msg);  
-        void doneRedPsiIntegrate();
-        void sendRedPsi();
-	void combineForcesGetEke();
-	void integrateModForce();
-        void writeStateDumpFile();
-	void pup(PUP::er &);
-	friend class CP_State_ParticlePlane;
-	void isAtSync(int);
-	void ResumeFromSync();
-	void computeEnergies(void *param, void *msg);
-	
-	void computeEnergies(int p, double d);
         void computeCgOverlap();
         void waitForAtoms();
-        void acceptAtoms(GSAtmMsg *msg);
         void run ();
-        void resumePsiV (CkReductionMsg *msg);
-        void resumeThread (PPDummyMsg *dmsg);
         void sendFFTData ();
         void doIFFT ();
 	void readFile();
-        bool completedExtExcNlForces ();
-	// for experimental barrier
-	bool allDoneIFFT() {return allgdoneifft;}
-	void gdoneIFFT(CkReductionMsg *msg);
-	void gdonePsiV(CkReductionMsg *msg);
-	void releaseSFComputeZ();
+	void computeEnergies(int p, double d);
+ private:
+	int ireset_cg;
+        int numReset_cg;
+        int istart_typ_cp;
         int numRecvRedPsi;
-        int first_step;
-        int iwrite_now;
-        void psiWriteComplete(CkReductionMsg *msg);
-	int iteration;
+	int countIFFT;
+        int countFileOut;
+        int countRedPsi;
+	int ecount;
+	int countPsi;
+	int countVPsi;
+	int allEnergiesReceived;	
+	int AllPsiExpected;
         int itemp;
         int jtemp;
-        int finishedRedPsi;
-        int finishedCpIntegrate;
-
- private:
 	bool needPsiV;
 	bool allgdoneifft;
 	bool doneDoingIFFT;
 	bool initialized;
-
-        int istart_typ_cp;
-	int count;
-        int countFileOut;
-        int countRedPsi;
-	GStateSlab gs; 
-	bool flagsSent;
-	int partialCount;
-	int gSpaceNumPoints;
-        int* k_x, *k_y, *k_z;
-        double *coef_mass;
-	int sendFFTDataSize;
+	bool acceptedPsi;
+	bool acceptedVPsi;
+	bool acceptedLambda;
 	double ehart_total;
 	double enl_total;
 	double eke_total;
 	double fictEke_total;
         double fmagPsi_total;
+        double fmagPsi_total_old;
+        double fmagPsi_total0;
         double fovlap;
         double fovlap_old;
 	double egga_total;
 	double eexc_total;
 	double eext_total;
 	double ewd_total;
-	int ecount, displace_count;
 	double total_energy;
-	int allEnergiesReceived;	
-	int localState;
-	int AllExpected;
-	bool acceptedPsi;
-	bool acceptedVPsi;
-	bool acceptedLambda;
-        complex *tpsi;
-        complex *tvpsi;
-	int *tk_x;
-	int *tk_y;
-	int *tk_z;
-
-	complex *ffttempdata; 
-	int ireset;
+	int gSpaceNumPoints;
+	GStateSlab gs; 
+        double *coef_mass;
+        int *k_x, *k_y, *k_z;
+	int *tk_x,*tk_y,*tk_z;  // Temp memory for output (size could be 0)
+        complex *tpsi;          // Temp memory for output (needs careful pup)
+        complex *tvpsi;         // Temp memory for output
+	complex *ffttempdataGrp;// temp memory from group for fft (unpuppable!)
+	complex *ffttempdata;   // temp memory malloced and freed in scope for fft
+                                // probably should be pupped (size could be 0)
 	CProxy_CP_State_RealSpacePlane real_proxy;
 	CProxySection_StructureFactor sfCompSectionProxy;
 	CProxySection_PairCalculator lambdaproxy;
 	CProxySection_PairCalculator psiproxy;
 	CProxySection_PairCalculator psiproxyother;
-	RTH_Runtime* run_thread;
 	PairCalcID gpairCalcID1;
 	PairCalcID gpairCalcID2;
+
+	RTH_Runtime* run_thread; // why is this private?
 };
 //============================================================================
 
@@ -299,14 +297,14 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  private:
 	int numPlanes;
 	int count;
-	double *vks;
+	int sendFFTDataSize;
 	int size;
+	double *vks;
 	bool initialized, flagsRecd;
 	RealStateSlab rs;
 	CkSectionInfo cookie;
 	CProxy_CP_State_GSpacePlane gproxy;
 	RTH_Runtime* run_thread;
-	int sendFFTDataSize;
 };
 //============================================================================
 
@@ -451,10 +449,8 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 	int zsize, energy_count;
 	int sizeX, sizeY, sizeZ, gSpacePlanesPerChare;
 	int reductionPlaneNum;
-	// DY_NONLOCAL
         complex *zmatrix_fx,*zmatrix_fy,*zmatrix_fz;
         complex *zmatrixSum_fx,*zmatrixSum_fy,*zmatrixSum_fz;
-        // DY_NONLOCAL 
 	CkSectionInfo enlCookie; 
 	CProxySection_CP_State_ParticlePlane particlePlaneENLProxy;
  public: 

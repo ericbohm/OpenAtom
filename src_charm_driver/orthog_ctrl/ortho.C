@@ -163,97 +163,114 @@ void Ortho::start_calc(CkReductionMsg *msg){
     else if(num_ready == 1)
       do_iteration();
     delete msg;
+//============================================================================
   }
-
+//============================================================================
 
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::collect_results(void)
-  {
+void Ortho::collect_results(void){
+//============================================================================
+// Output Timings and debug information then increment iteration counter
+
+    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+    int iprintout;
+    if(cp_min_opt==1){iprintout=config.maxIter-1;}else{iprintout=config.maxIter;}
+    int itime       = numGlobalIter;
+    if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
+
 #ifdef _CP_DEBUG_TMAT_
     print_results();
 #endif
-    int iprintout;
-    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    if(cp_min_opt==1){iprintout=config.maxIter-1;}else{iprintout=config.maxIter;}
-    if(thisIndex.x==0 && thisIndex.y==0)
-      {
-	wallTimeArr[numGlobalIter] = CkWallTimer();
-	if (numGlobalIter == iprintout) {
+
+    if(thisIndex.x==0 && thisIndex.y==0){
+  	wallTimeArr[itime] = CkWallTimer();
+	if (numGlobalIter == iprintout && config.maxIter<30) {
           CkPrintf("----------------------------\n");
 	  ckout << "wall times from within ortho" << endl;
-	  int t;
-	  for (t = 1; t < config.maxIter; t++)
+	  for (int t = 1; t < iprintout; t++){
 	    ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
-	  ckout << CkWallTimer() - wallTimeArr[t-1] << endl;
+	  }//endfor
+	  ckout << wallTimeArr[itime] - wallTimeArr[itime-1] << endl;
 	  CkPrintf("------------------------------\n");
-	}
-	else
-	{
-	    if(numGlobalIter>0)
-		ckout <<"Iteration time : " << wallTimeArr[numGlobalIter] - wallTimeArr[numGlobalIter-1] << endl;
-	}
-      }
+        }else{
+	  if(numGlobalIter>0){
+	    ckout <<"Iteration time : " << 
+               wallTimeArr[itime] - wallTimeArr[itime-1] << endl;
+	  }//endif
+        }//endif
+    }//endif
+
     numGlobalIter++;
-    if (numGlobalIter <= config.maxIter+1) 
-      {
-	if ((config.lbgspace || config.lbpaircalc) &&(numGlobalIter== FIRST_BALANCE_STEP || numGlobalIter % LOAD_BALANCE_STEP == 0)) {
-	  CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
-	  if(thisIndex.x==0 && thisIndex.y==0)
-	    {
-	      gSpacePlaneProxy.isAtSync(numGlobalIter);
-	    }
-          matA1.sync(thisIndex.x, thisIndex.y);
-          matB1.sync(thisIndex.x, thisIndex.y);
-          matC1.sync(thisIndex.x, thisIndex.y);
-          matA2.sync(thisIndex.x, thisIndex.y);
-          matB2.sync(thisIndex.x, thisIndex.y);
-          matC2.sync(thisIndex.x, thisIndex.y);
-          matA3.sync(thisIndex.x, thisIndex.y);
-          matB3.sync(thisIndex.x, thisIndex.y);
-          matC3.sync(thisIndex.x, thisIndex.y);
-	  AtSync();
-	}
-	else
-	  resume();
-      }
-  }
+
+//=======================================================================
+// Load balance controller
+
+    if (numGlobalIter <= config.maxIter+1){
+
+      if ((config.lbgspace || config.lbpaircalc) &&
+          (numGlobalIter== FIRST_BALANCE_STEP||(numGlobalIter % LOAD_BALANCE_STEP) == 0)){
+           CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",
+               thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
+   	   if(thisIndex.x==0 && thisIndex.y==0){
+             gSpacePlaneProxy.isAtSync(numGlobalIter);
+	   }//endif
+       }else{
+ 	  resume();
+       }//endif
+
+    }//endif : we are still going
+
+//----------------------------------------------------------------------
+  }//end routine
+//=======================================================================
 
 
-void Ortho::minCheck(CkReductionMsg *msg)
-{
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::minCheck(CkReductionMsg *msg){
+//============================================================================
+
   double tolMin=fabs(((double *) msg->getData())[0]);
   delete msg;
+
   CkPrintf("SMAT tol    = %g\n", tolMin);
-  if(tolMin < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb)
-    {
+  if(tolMin < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
-    }
-  else
-    {
+  }else{
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       gSpacePlaneProxy.requirePsiV();  //gspace will trigger our resume
-    }
-}
+  }//endif
 
-void Ortho::resumeV(CkReductionMsg *msg) // gspace tolerance check entry
-{
+//============================================================================
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::resumeV(CkReductionMsg *msg){ // gspace tolerance check entry
   delete msg;
   do_iteration();
 }
+//============================================================================
 
+
+//============================================================================
 /**
  * Resume execution by finishing the backward path of the Psi calculator
  */
-void Ortho::resume() 
-
 //============================================================================
-    {//begin routine
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::resume(){
 //============================================================================
       int actionType=0; //normal
       if(toleranceCheckOrthoT)
@@ -274,16 +291,21 @@ void Ortho::resume()
 //============================================================================
 
 
-void 
-Ortho::acceptAllLambda(CkReductionMsg *msg) {
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::acceptAllLambda(CkReductionMsg *msg) {
     delete msg;
     CkAbort("do not call acceptAllLambda");
 }
+//============================================================================
 
 
-
-void 
-Ortho::lbresume(CkReductionMsg *msg) {
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::lbresume(CkReductionMsg *msg) {
+//============================================================================
     delete msg;
     lbcaught++;
     if(thisIndex.x ==0 && thisIndex.y==0)
@@ -309,12 +331,19 @@ Ortho::lbresume(CkReductionMsg *msg) {
 	resume();
 	lbcaught=0;
     }
-}
+//============================================================================
+  }//end routine
+//============================================================================
 
-void 
-Ortho::acceptSectionLambda(CkReductionMsg *msg) {
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
+//============================================================================
+
   double *lambda = (double *)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(double);
+
 #ifdef _CP_DEBUG_LMAT_
   char lmstring[80];
   snprintf(lmstring,80,"lmatrix_%d_%d.out",thisIndex.x,thisIndex.y);
@@ -324,6 +353,7 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     }
   fclose(fp);
 #endif
+
   // revise this to do a matmul replacing multiplyforgamma
   if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
     matA1.multiply(1, 0, A, Ortho::gamma_done_cb, (void*) this,
@@ -341,10 +371,15 @@ Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
     }
   delete msg;
-  //----------------------------------------------------------------------------
-}// end routine
+
+//----------------------------------------------------------------------------
+  }// end routine
 //==============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ){
     int s1=thisIndex.x*m;
     int s2=thisIndex.y*n;
@@ -357,11 +392,16 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     }
     pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
 
-}
+//----------------------------------------------------------------------------
+  }// end routine
+//==============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::gamma_done(){
-
+//============================================================================
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
   if(toleranceCheckOrthoT)
     {// replace orthoT with the identity matrix
@@ -377,10 +417,18 @@ void Ortho::gamma_done(){
     }
   finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
   toleranceCheckOrthoT=false;
-}
 
-void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n)
-{
+//----------------------------------------------------------------------------
+  }// end routine
+//==============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n){
+//============================================================================
+
   double alpha=1.0;
   double beta=0.0;
   int n_in=n;
@@ -388,19 +436,27 @@ void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int 
   int k_in=n;
   char transform='N';
   char transformT='T';
-  DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alpha, orthoT, &n_in, lambda, &k_in, &beta, gamma, &n_in);      
+  DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alpha, orthoT, &n_in, lambda, 
+        &k_in, &beta, gamma, &n_in);      
 
-}
-
+//-----------------------------------------------------------------------------
+  }// end routine
 //==============================================================================
-//New functions necessary for using CLA_Matrix
 
+
+//============================================================================
+//New functions necessary for using CLA_Matrix
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
  CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
  CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
  CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
  CLA_Matrix_interface matB3, CLA_Matrix_interface matC3){
-  /* do basic initialization */
+//============================================================================
+/* do basic initialization */
+
   this->m = m;
   this->n = n;
   this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
@@ -420,17 +476,28 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   ortho=NULL;
   orthoT=NULL;
   wallTimeArr=NULL;
-  if(thisIndex.x==0 && thisIndex.y==0){
+  if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
     wallTimeArr = new double[config.maxIter+2];
-  }
+  }else{
+    wallTimeArr = new double[30];
+    wallTimeArr[0]=0.0;
+    wallTimeArr[1]=0.0;
+  }//endif
   numGlobalIter = 0;
-}
+
+//============================================================================
+   }//end routine
+//============================================================================
 
 
+//============================================================================
 /* start step 1 on proxy 1, the callback will be for step 2
  * S2 = 3 * I - T * S1
  * currently A has T, B has S1, need to construct 3*I in C
  */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::do_iteration(void){
   step = 1;
   memset(C, 0, m * n * sizeof(double));
@@ -445,10 +512,16 @@ void Ortho::do_iteration(void){
   matC1.multiply(-1, 1, C, Ortho::step_2_cb, (void*) this,
    thisIndex.x, thisIndex.y);
 }
+//============================================================================
 
+
+//============================================================================
 /* S1 = 0.5 * S3 * S2 (on proxy 2)
  * currently A has T, B has S1, C has S2
  */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::step_2(void){
   step = 2;
   matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
@@ -458,10 +531,16 @@ void Ortho::step_2(void){
   matC2.multiply(0.5, 0, tmp_arr, Ortho::step_3_cb, (void*) this,
    thisIndex.x, thisIndex.y);
 }
+//============================================================================
 
+
+//============================================================================
 /* T = 0.5 * S2 * S3 (do S3 = T before) (on proxy 3)
  * currently A has T, B has S1 (old), C has S2, tmp_arr has new S1
  */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::step_3(){
   step = 3;
   memcpy(B, A, m * n * sizeof(double));
@@ -472,10 +551,16 @@ void Ortho::step_3(){
   matC3.multiply(0.5, 0, A, Ortho::tol_cb, (void*) this,
    thisIndex.x, thisIndex.y);
 }
+//============================================================================
 
+
+//============================================================================
 /* calculate error and reset pointers (for step 1)
  * current: T -> A, S1 -> tmp_arr, S2 -> C, S3 -> B
  */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void Ortho::tolerance_check(){
   step = 4;
   double ret = 0;
@@ -488,5 +573,6 @@ void Ortho::tolerance_check(){
   tmp_arr = tmp;
   contribute(sizeof(double), &ret, CkReduction::sum_double);
 }
+//============================================================================
 
 

@@ -130,7 +130,7 @@ class CPcharmParaInfo {
 //=============================================================================
  public:
 
-   double vol,dt,tol_norb;
+   double vol,dt,tol_norb,tol_cp_min;
    int ndump_frq;
    int istart_typ_cp;
    int cp_opt; 
@@ -186,6 +186,7 @@ class CPcharmParaInfo {
 #endif
      vol         = s.vol;
      tol_norb    = s.tol_norb;
+     tol_cp_min  = s.tol_cp_min;
      dt          = s.dt;
      ndump_frq   = s.ndump_frq;
      istart_typ_cp = s.istart_typ_cp;
@@ -346,14 +347,15 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
-      p|vol;  p|dt; p|tol_norb;   p|ndump_frq;  p|istart_typ_cp;
+      p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min;
+      p|ndump_frq;  p|istart_typ_cp;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
       p|sizeX;      p|sizeY;      p|sizeZ;  
       p|nplane_x;   p|nchareG;    p|natm_tot;    p|natm_nl;
       p|nstates;    p|ntime;      p|ibinary_opt; p|ibinary_write_opt;
       p|natm_tot;   p|natm_nl;    p|numSfGrps;
-      p|natm_nl_grp_max;   p|nlines_tot; p|npts_tot;
+      p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;
       p|nlines_max;
       p|nplane_rho_x; p|nchareRhoG; 
       p|nlines_max_rho; p|nlines_tot_rho; p|npts_tot_rho;

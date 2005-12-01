@@ -34,9 +34,9 @@ public:
    int numRuns, numLines;      // numLines=numRun/2=number of lines in collection
    int numPoints;              // number of non-zero pts in the collection
    int numFull;                // expanded data : nfftz*numLines
-   int mysizeX;                // size of the ffT in X dimension 
    size2d planeSize;           // size of the ffT in Y*Z dimension
    bool fftReqd;               // flags to indicate whether this data set of pencils
+   int mysizeX;                // size of the ffT in X dimension 
    int S_grainSize;            // PC decomposition
    int xdim, ydim, zdim;       // don't know what this is? doIntegrate?
    int iplane_ind;             // collection index
@@ -49,7 +49,6 @@ public:
 
    double eke_ret;            // kinetic energy
    double fictEke_ret;        // fictitious kinetic energy
-   double fovlap_loc;         // overlap
 
    RunDescriptor *runs;        // information about the lines in the collection [numRuns]
    complex *packedPlaneData;   // Non-zero data pts [numPoints]

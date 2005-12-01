@@ -46,6 +46,7 @@ class AtomsGrp: public Group {
   void contributeforces(double pot_ewald);
   void recvContribute(CkReductionMsg *);
   void StartRealspaceForces();
+  void outputAtmEnergy();
   void zeroforces() {
     for(int i=0; i<natm; i++){
       atoms[i].fx = 0;
@@ -105,29 +106,26 @@ class AtomsGrp: public Group {
 /* Structure that stores all energies */
 
 struct EnergyStruct {
-    //non local
-    double enl;
-
-    //local external energy
-    double eext;
     
-    double eke;
-    //hartree energy
-    double ehart;
+   int iteration;           // step upon which energies below computed
+    double enl;             // non local
+    double eext;            // local external energy
+    double eke;             // quantum kinetic energy 
+    double ehart;           // hartree energy
+    double egga;            // exchange correlation grad corr
+    double eexc;            // exchange correlation local
+    double fictEke;         // fict KE from cp dynamics
+    double fmagPsi;         // coef force magnitude
+    double eewald_recip;    // atm(ion)-atm(ion) recip (computed by psi chares)
+    double totalElecEnergy; // sum of electronic energies + ewald_recip 
+                            // no fict and no ewald_real
 
-    //ion-ion
-    double eewald_recip;
-    double eewald_real;
-
-    //exchange correlation
-    double egga;
-    double eexc;
-
-    double totalEnergy;
-    double fmagPsi;
-
-    double fictEke;
-
+   int iteration_atm;       // step upon which energies below computed.
+    double eewald_real;     // Real space ewald.
+    double eKinetic_atm;    // classical kinetic energy
+    double eKineticNhc_atm; // NHC kinetic energy
+    double potNhc_atm;      // NHC pot energy
+    double fmag_atm;        // magnitude of atm forces
 };
 PUPbytes(EnergyStruct);
 //============================================================================
@@ -149,7 +147,7 @@ class EnergyGroup : public Group {
     EnergyStruct estruct;
     EnergyGroup();
     
-    void updateEnergies(EnergyStruct &es) {
+    void updateEnergiesFromGS(EnergyStruct &es) {
       estruct.enl          = es.enl;
       estruct.eke          = es.eke;
       estruct.eext         = es.eext;
@@ -158,7 +156,7 @@ class EnergyGroup : public Group {
       estruct.egga         = es.egga;
       estruct.eexc         = es.eexc;
       estruct.fictEke      = es.fictEke;
-      estruct.totalEnergy  = es.totalEnergy;
+      estruct.totalElecEnergy  = es.totalElecEnergy;
       estruct.fmagPsi      = es.fmagPsi;
 #ifdef _DEBUG_ESTRUCT_
        CkPrintf("Energies received %lf, %lf, %lf, %lf, %lf\n", 

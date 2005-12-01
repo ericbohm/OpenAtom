@@ -17,7 +17,8 @@
 #include <math.h>
 
 //----------------------------------------------------------------------------
-
+#define CHARM_ON
+#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
@@ -162,6 +163,7 @@ void AtomsGrp::contributeforces(double pot_ewd_rs){
     ftot[j+2] = ag->atoms[i].fz;
   }//endfor
   ftot[3*natm]=pot_ewd_rs;
+  ag->pot_ewd_rs = pot_ewd_rs_loc;
 #ifdef GJM_DBG_ATMS
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
 #endif
@@ -183,6 +185,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   int i,j;
   double *ftot      = (double *) msg->getData();
   AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+  EnergyGroup *eg   = egroupProxy.ckLocalBranch();
   int myid          = CkMyPe();
   int natm          = ag->natm;
   int len_nhc       = ag->len_nhc;
@@ -198,18 +201,21 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #ifdef GJM_DBG_ATMS
   CkPrintf("GJM_DBG: inside recv forces %d : %d\n",myid,natm);
 #endif
+  double pot_ewd_rs = ftot[3*natm];
+  double fmag = 0.0;
   for(i=0,j=0;i<natm;i++,j+=3){
     atoms[i].fx = ftot[j];
     atoms[i].fy = ftot[j+1];
     atoms[i].fz = ftot[j+2];
+    fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
 #ifdef GJM_DEBUG_ATMS
     if(myid==0){
       CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
     }//endif
 #endif
   }//endfor
-  EnergyGroup *eg = egroupProxy.ckLocalBranch();
-  eg->estruct.eewald_real=ftot[3*natm];
+  fmag /= (double)(3*natm);
+  fmag  = sqrt(fmag);
   delete msg;
 
 #ifdef GJM_DEBUG_ATMS_EXIT
@@ -228,21 +234,72 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc);
+  iteration++;
+
+//============================================================
+// Tuck things : At present no reduction required for kin,nhc stuff
+
+  ag->pot_ewd_rs  = pot_ewd_rs;
   ag->eKinetic    = eKinetic_loc;
   ag->eKineticNhc = eKineticNhc_loc;
-  ag->potNhc      = potNhc_loc; // before evolution
+  ag->potNhc      = potNhc_loc;     
+  ag->iteration   = iteration;
+
+  eg->estruct.eewald_real     = pot_ewd_rs;  
+  eg->estruct.fmag_atm        = fmag;
+  eg->estruct.eKinetic_atm    = eKinetic_loc;
+  eg->estruct.eKineticNhc_atm = eKineticNhc_loc;  
+  eg->estruct.potNhc_atm      = potNhc_loc;  
+  eg->estruct.iteration_atm   = iteration;
 
 //============================================================
 // Get ready for the next iteration : 
-//    increment counter, flip integrate flag, zero forces.
+//      flip integrate flag, zero forces, output energy
 
-  ag->iteration++;
   atom_integrate_done = 1;
   zeroforces();
+  outputAtmEnergy();
 
 //-------------------------------------------------------------------------
    }//end routine
 //==========================================================================
+
+//==========================================================================
+// Atom energy output
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void AtomsGrp::outputAtmEnergy() {
+//==========================================================================
+  AtomsGrp *ag       = atomsGrpProxy.ckLocalBranch();
+  EnergyGroup *eg    = egroupProxy.ckLocalBranch();
+  int cp_min_opt     = ag->cp_min_opt;
+  int myid           = CkMyPe();  
+  double eKinetic    = eg->estruct.eKinetic_atm;
+  double eKineticNhc = eg->estruct.eKineticNhc_atm;
+  double fmag        = eg->estruct.fmag_atm;
+  double pot_ewd_rs  = eg->estruct.eewald_real;
+  int natm           = ag->natm;
+  int len_nhc        = ag->len_nhc;
+  double free_atm    = 3*((double)natm);
+  double free_Nhc    = free_atm*((double)len_nhc);
+
+  if(myid==0){
+     CkPrintf("EWALD_real  = %5.8lf\n",pot_ewd_rs);
+     if(cp_min_opt==0){
+        CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
+        CkPrintf("atm eKinNhc = %5.8lf\n",eKineticNhc);
+        CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
+        CkPrintf("atm TempNHC = %5.8lf\n",(2.0*eKineticNhc*BOLTZ/free_Nhc));
+     }else{
+        CkPrintf("atm fmag    = %5.8lf\n",fmag);
+     }//endif
+  }//endif
+
+//-------------------------------------------------------------------------
+   }//end routine
+//==========================================================================
+
 
 
 //==========================================================================
@@ -256,7 +313,6 @@ EnergyGroup::EnergyGroup () {
 
     //local external energy
     estruct.eext = 0;
-
     estruct.eke = 0;
 
     //hartree energy
@@ -271,8 +327,18 @@ EnergyGroup::EnergyGroup () {
     estruct.eexc = 0;
     estruct.fmagPsi = 0;
 
+    //CP Fict KE
     estruct.fictEke = 0;
-    estruct.totalEnergy = 0;
+
+    // total electronic part
+    estruct.totalElecEnergy = 0; // needs ewald_real to be physical
+ 
+    // atm stuff
+    estruct.eKinetic_atm    = 0;    // classical kinetic energy
+    estruct.eKineticNhc_atm = 0; // NHC kinetic energy
+    estruct.potNhc_atm      = 0;      // NHC pot energy
+    estruct.fmag_atm        = 0;        // magnitude of atm forces
+
 } //end routine
 //==========================================================================
 

@@ -133,7 +133,6 @@ mainmodule cpaimd {
 		entry void psiWriteComplete(CkReductionMsg *msg);
 		entry void computeEnergies(int p, double d);
                 entry void run ();
-                entry void resumeThread (PPDummyMsg *dmsg);
                 entry void psiCgOvlap(CkReductionMsg *);
 		entry void readFile();
 		entry void combineForcesGetEke();	
@@ -267,7 +266,7 @@ mainmodule cpaimd {
 
 	group EnergyGroup {
 		entry EnergyGroup();
-		entry void updateEnergies(EnergyStruct es);
+		entry void updateEnergiesFromGS(EnergyStruct es);
 	};
 	
 
