@@ -12,6 +12,8 @@ F_COMPILER_NOPT  = xlf $(DBG_FLAG)
 
 #==================================================================
 
+LOCAL_LIB_PATHS = -L$(HOME)/mylibs -L/bgl/local/lib
+LNK_OPTS    = -lz
 CPAIMD      = ..
 FFT_HOME    = $(HOME)/fftw_dh
 MYMATH_HOME = ../src_mathlib
@@ -34,6 +36,6 @@ LAPACK_FORT = $(MYMATH_HOME)/no_lapack_routines.h
 #MATH_LIB    = -L/bgl/local/lib -ldgemm -lbglblas -ldgemm -llapack440 ../src_mathlib/xerbla.o
 #MATH_LIB    = -L$(HOME)/mylibs -ldgemm -lf77blas -latlas -ldgemm ../src_mathlib/xerbla.o 
 #MATH_LIB    = -L$(HOME)/mylibs -lf77blas -latlas ../src_mathlib/xerbla.o
-MATH_LIB    = -L$(HOME)/mylibs -L/bgl/local/lib -ldgemm -lf77blas -latlas -llapack440 -ldgemm ../src_mathlib/xerbla.o 
+MATH_LIB    =  $(LOCAL_LIB_PATHS) -ldgemm -lf77blas -latlas -llapack440 -ldgemm ../src_mathlib/xerbla.o
 
 #==================================================================
