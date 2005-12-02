@@ -35,6 +35,7 @@
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 
+
 //============================================================================
 
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
@@ -67,8 +68,8 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
     c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
-    c->doProduct(); // vks(r) arrives in doproduct(msg) which resumes
 #endif
+    c->doProduct(); // vks(r) arrives in doproduct(msg) which resumes
 
   } //end while not done
 
@@ -333,6 +334,12 @@ void CP_State_RealSpacePlane::doProduct() {
              thisIndex.x, thisIndex.y,CmiMemoryUsage());
 #endif
 
+#ifdef _CP_DEBUG_RHO_OFF_
+   size = sizeX*rs.planeSize[0];
+   if(vks==NULL){vks = new double [size];}
+    memset(vks,0,sizeof(double)*size);
+#endif
+
 //===================================================================
 // debugging
 
@@ -345,6 +352,7 @@ void CP_State_RealSpacePlane::doProduct() {
       fclose(fp);
     }
 #endif    
+
 
 //===================================================================
 // Log the 2D-FFT call and do it : in place

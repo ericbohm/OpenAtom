@@ -3,6 +3,8 @@
 //    move resetiterstate
 //======================================================
 
+#define _CP_DEBUG_RHO_OFF_
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

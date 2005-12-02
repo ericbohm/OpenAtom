@@ -51,6 +51,8 @@ extern CkGroupID mCastGrpId;
 extern Config config;
 extern int nstates;
 
+#define _CP_DEBUG_HARTEEXT_OFF_
+
 bool is_pow2(int );
 
 //============================================================================
@@ -786,14 +788,10 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
     }//endfor
 #endif
 
-#ifndef _CP_DEBUG_HARTEEXT_OFF_
     doneWhiteByrd=true;
     if(doneHartVks){
       RTH_Runtime_resume(run_thread);
     }//endif
-#else
-    RTH_Runtime_resume(run_thread);
-#endif
 
   }//endif : communication from rhog has all arrived safely
 
