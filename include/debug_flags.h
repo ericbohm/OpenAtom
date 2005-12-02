@@ -28,6 +28,7 @@
 //#define _CP_DEBUG_RHOR_VKSC_
 //#define _CP_DEBUG_RHOR_VKSD_
 //#define _CP_DEBUG_RHOR_VKSE_
+//#define _CP_DEBUG_HARTEEXT_OFF_
 
 //=============================================================================
 // src_charm_driver/cp_density_ctrl/CP_Rho_GSpacePlane.C : 
@@ -36,6 +37,7 @@
 //#define _CP_DEBUG_RHOG_VERBOSE_
 //#define _CP_DEBUG_RHOG_RHOG_
 //#define _CP_DEBUG_RHOG_VKSA_
+//#define _CP_DEBUG_HARTEEXT_OFF_
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C    
@@ -50,17 +52,18 @@
 #define _CP_DEBUG_UPDATE_OFF_
 
 //=============================================================================
+// src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 
+//#define _CP_DEBUG_STATER_VKS_
+//#define _CP_DEBUG_STATER_VERBOSE_
+//#define _CP_DEBUG_RHO_OFF_
+
+//=============================================================================
 // src_charm_driver/structure_factor/StructureFactor.C : 
 //#define _CP_DEBUG_SF_CALC_
 
 //=============================================================================
 // src_charm_driver/structure_factor/StructFactorCache.C : 
 //#define _CP_DEBUG_SF_CACHE_
-
-//=============================================================================
-// src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 
-//#define _CP_DEBUG_STATER_VKS_
-//#define _CP_DEBUG_STATER_VERBOSE_
 
 //=============================================================================
 // src_charm_driver/orthog_ctrl/ortho.C

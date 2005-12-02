@@ -1001,7 +1001,6 @@ void CP_State_GSpacePlane::startNewIter ()  {
   countIFFT           = 0;   // 'count' is used to check if all IFFT'd data 
                              // has arrived from RealSpacePlane
   doneDoingIFFT       = false;
-  doneDoingIFFT       = false;
   allgdoneifft        = false;
   acceptedLambda      = false; // no forces yet
 
@@ -1027,6 +1026,16 @@ void CP_State_GSpacePlane::startNewIter ()  {
 	    LBTurnInstrumentOn();
 	}//endif
     }//endif
+
+//============================================================================
+
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  if(cp_min_opt==1){
+     CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+               sizeof(complex)*gs.numPoints);
+     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
+#endif      
 
 //============================================================================
 // Output psi at start of minimization for debugging
@@ -1097,12 +1106,6 @@ void CP_State_GSpacePlane::doFFT() {
 #ifndef CMK_OPTIMIZE    
   double StartTime=CmiWallTimer();
 #endif
-
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-   CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-             sizeof(complex)*gs.numPoints);
-   memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-#endif      
 
 // Do fft in forward direction, 1-D, in z direction
 // A local function not a message : get pointer to memory for fft group

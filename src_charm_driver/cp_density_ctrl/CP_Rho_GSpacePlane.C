@@ -233,6 +233,8 @@ void CP_Rho_GSpacePlane::acceptData() {
 //============================================================================
 // II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
 
+#ifndef _CP_DEBUG_HARTEEXT_OFF_
+
      RhoGHartMsg *msg = new (rho_gs.numPoints,8*sizeof(int)) RhoGHartMsg;
      msg->size        = rho_gs.numPoints;     
      memcpy(msg->data, rho_gs.packedRho, rho_gs.numPoints*sizeof(complex));
@@ -247,6 +249,19 @@ void CP_Rho_GSpacePlane::acceptData() {
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgressAfter(1); //really send this damn message please
 #endif
+
+#else
+
+  if(thisIndex.x==0 && thisIndex.y==0){
+    CkPrintf("EHART       = OFF FOR DEBUGGING\n");
+    CkPrintf("EExt        = OFF FOR DEBUGGING\n");
+    CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
+  }//endif
+
+#endif
+
+//============================================================================
+// III) Start grad corr computations
 
 #ifndef CMK_OPTIMIZE
      StartTime=CmiWallTimer();

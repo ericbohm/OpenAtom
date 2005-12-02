@@ -65,8 +65,10 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
     // constructor invokes run and then you suspend (no work yet)
     RTH_Suspend(); 
     c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
+#ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
     c->doProduct(); // vks(r) arrives in doproduct(msg) which resumes
+#endif
 
   } //end while not done
 
@@ -112,17 +114,6 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 void CP_State_RealSpacePlane::setNumPlanesToExpect(int num)
 {
     rs.numPlanesToExpect = num;
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void reduce(void *data)
-{
-    CkIndex2D idx = *(CkIndex2D *) data;
-    realSpacePlaneProxy(idx.x, idx.y).ckLocal()->doReduction();
 }
 //============================================================================
 
@@ -199,19 +190,6 @@ void CP_State_RealSpacePlane::doFFT(){
 #ifdef _CP_DEBUG_STATER_VERBOSE_
         ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
 #endif
-        doReduction();
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealSpacePlane::doReduction(){
-//============================================================================
-// double *data = rs.doRealFwFFT();  // 2-D forward FFT, in x*Z dimension,
-// data will contain the squared magnitudes of the fftd data.    
-// magnitude is computed and stored in *data
 //============================================================================
 // Perform the FFT
 
@@ -219,12 +197,37 @@ void CP_State_RealSpacePlane::doReduction(){
       double StartTime=CmiWallTimer();
 #endif
 
-      double *data = fftCacheProxy.ckLocalBranch()->doRealFwFFT(rs.planeArr);
+  // Data is allocated in fftcacheproxy. It is a local variable
+  // of the dorealfwfft function. You now own its memory.
+    double *data = fftCacheProxy.ckLocalBranch()->doRealFwFFT(rs.planeArr);
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(doRealFwFFT_, StartTime, CmiWallTimer());
 #endif    
+#ifndef _CP_DEBUG_RHO_OFF_
+        doReduction(data);
+#else
+  if(thisIndex.x==0 && thisIndex.y==0){
+    CkPrintf("EHART       = OFF FOR DEBUGGING\n");
+    CkPrintf("EExt        = OFF FOR DEBUGGING\n");
+    CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
+    CkPrintf("EEXC        = OFF FOR DEBUGGING\n");
+    CkPrintf("EGGA        = OFF FOR DEBUGGING\n");
+    CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
+  }//endif
+#endif
+}
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::doReduction(double *data){
+//============================================================================
+// double *data = rs.doRealFwFFT();  // 2-D forward FFT, in x*Z dimension,
+// data will contain the squared magnitudes of the fftd data.    
+// magnitude is computed and stored in *data
 //============================================================================
 // Perform the Reduction to get the density
 #ifdef _CP_DEBUG_STATER_VERBOSE_
@@ -241,21 +244,22 @@ void CP_State_RealSpacePlane::doReduction(){
         CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
                       CkArrayIndex2D(thisIndex.y,0),
                       rhoRealProxy.ckGetArrayID());
-
 #ifndef CMK_OPTIMIZE    
-      StartTime=CmiWallTimer();
+      double StartTime=CmiWallTimer();
 #endif
         mcastGrp->contribute(rs.planeSize[0] * sizeX * 
                              sizeof(double), data, CkReduction::sum_double, 
                              cookie, cb);
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
-      //delete [] data;
 #endif    
     }else {
       CkPrintf("Must useGReduction\n"); CkExit();
     }//endif
 
+    // data is allocated in fftcacheproxy routine : free it here.
+    // Data is not a member of the fftcache class but a local variable
+    // or temperorary variable whose pointer is passed back to this class
     delete [] data;
 
 //============================================================================

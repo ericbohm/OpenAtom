@@ -293,7 +293,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void setNumPlanesToExpect(int num);
 	void printData();
 	void init(ProductMsg *);
-	void doReduction();
+	void doReduction(double *);
 	void ResumeFromSync();	
  private:
 	int numPlanes;

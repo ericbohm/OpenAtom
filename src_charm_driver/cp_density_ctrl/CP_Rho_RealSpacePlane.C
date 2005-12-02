@@ -117,8 +117,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     count          = 0;
     countWhiteByrd = 0;
     doneGradRhoVks = 0;
-    doneHartVks   =false;
-    doneWhiteByrd   =false;
+    doneHartVks    = true;
+    doneWhiteByrd  = true;
     for(int i=0;i<4;i++){countGradVks[i]=0;}
     setMigratable(false);
 
@@ -213,6 +213,12 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
     CkPrintf("RhoReal accepting Density %d %d %d\n",
               thisIndex.x,thisIndex.y,CkMyPe());
+#endif
+
+    doneWhiteByrd  = false;
+    doneHartVks    = false;
+#ifdef _CP_DEBUG_HARTEEXT_OFF_
+    doneHartVks    = true;
 #endif
 
 //============================================================================
@@ -779,14 +785,15 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
         fprintf(fp,"%g\n",rho_rs.Vks[i]);
     }//endfor
 #endif
+
+#ifndef _CP_DEBUG_HARTEEXT_OFF_
+    doneWhiteByrd=true;
     if(doneHartVks){
-	doneWhiteByrd=false;
-	doneHartVks=false;
-	RTH_Runtime_resume(run_thread);
-    }else{
-      //rely on hartvks to resume
-      doneWhiteByrd=true;
+      RTH_Runtime_resume(run_thread);
     }//endif
+#else
+    RTH_Runtime_resume(run_thread);
+#endif
 
   }//endif : communication from rhog has all arrived safely
 
@@ -864,14 +871,10 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
 #endif
       for(int i=0;i<size;i++){vksExc[i]+=vksHartExt[i];}
 
+      doneHartVks = true;
       if(doneWhiteByrd){
-	  doneHartVks=false;
-	  doneWhiteByrd=false;
 	  RTH_Runtime_resume(run_thread);
-       }else{
-         //rely on whitebyrd to resume
-	  doneHartVks=true;
-       }//endif : check if whitebyrd is done
+      }//endif : check if whitebyrd is done
 
   }//endif : communication from rhog 
 
@@ -884,8 +887,18 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
 //============================================================================
 void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
-// Send vks back to the states in real space
+// Check for flow of control errors
 
+  if(!doneWhiteByrd || !doneHartVks){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Flow of Control Error : Attempting to rho multicast\n");
+    CkPrintf("without harteext or gradcorr (whitebyrd) \n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+//============================================================================
+// Send vks back to the states in real space
    if ((config.useGMulticast+config.useCommlibMulticast)!=1) {
      CkAbort("No multicast strategy\n");
    }//endif
