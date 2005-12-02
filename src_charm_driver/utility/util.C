@@ -17,7 +17,9 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 extern Config config;
 extern int sizeX;
-
+#if CMK_PROJECTIONS_USE_ZLIB
+#include "zlib.h"
+#endif
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
@@ -441,7 +443,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
     CkPrintf("Reading state from file: %s\n",fromFile);
 #endif
-    if(ibinary_opt < 0 || ibinary_opt > 1){
+    if(ibinary_opt < 0 || ibinary_opt > 3){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Bad binary option : %d %s\n",ibinary_opt,fromFile);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -638,7 +640,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
       CkPrintf("Reading %s state file: %s\n",stuff,fromFile);
 #endif
-    if(ibinary_opt < 0 || ibinary_opt > 1){
+    if(ibinary_opt < 0 || ibinary_opt > 3){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Bad binary option : %d\n",ibinary_opt);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -682,7 +684,103 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
            if(config.doublePack && x==0 && y==0 && z==0){break;}
 	}//endfor
        fclose(fp);
-    }else{
+    }
+#ifdef ZLIB_H
+    else if(ibinary_opt==2){
+      char bigenough[1000];  //we know our lines are shorter than this
+	char localFile[1000]; // fromFile is const
+	strcpy(localFile,fromFile);
+	strcat(localFile,".gz");
+	gzFile zfp=gzopen(localFile,"rb");
+         if (zfp==NULL){
+            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+            CkPrintf("Can't open %s state file %s\n",stuff,localFile);
+            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+            CkExit();
+         }//endif
+         int nPackedLoc;
+	 if(gzgets(zfp,bigenough,1000)!=Z_NULL)
+	   {
+	     if(4!=sscanf(bigenough,"%d%d%d%d",&nPackedLoc,&nx,&ny,&nz)){
+	       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	       CkPrintf("Can't parse size line of file %s\n",localFile);
+	       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	       CkExit();
+	     }//endif
+	   }
+	 else
+	   {
+             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+             CkPrintf("Can't parse size line of file %s\n",localFile);
+             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+             CkExit();
+	   }
+         for(int pNo=0;pNo<nPacked;pNo++) {
+           int x,y,z;
+           double re,im;
+	   if(gzgets(zfp,bigenough,1000)!=Z_NULL)
+	     {
+	       if(5!=sscanf(bigenough,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
+		 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+		 CkPrintf("Can't parse packed %s state location %s\n",stuff,localFile);
+		 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+		 CkExit();
+	       }//endif
+	     }
+	   else
+	     {
+	       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	       CkPrintf("Can't parse packed %s state location %s\n",stuff,localFile);
+	       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	       CkExit();
+	     }
+           arrCP[pNo] = complex(re, im);
+           kx[pNo]    = x;
+           ky[pNo]    = y;
+           kz[pNo]    = z;
+           nktot++;
+           if(config.doublePack && x==0 && y==0 && z==0){break;}
+	}//endfor
+       gzclose(zfp);
+    }
+    else if (ibinary_opt==3)
+      {
+	char localFile[1000]; // fromFile is const
+	strcpy(localFile,fromFile);
+	strcat(localFile,".gz");
+	gzFile zfp=gzopen(localFile,"rb");
+         if (zfp==NULL){
+            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+            CkPrintf("Can't open %s state file %s\n",stuff,localFile);
+            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+            CkExit();
+         }
+         int nPackedLoc;
+         int n=1;
+         gzread(zfp,&(nPackedLoc),sizeof(int));
+         gzread(zfp,&(nx),sizeof(int));
+         gzread(zfp,&(ny),sizeof(int));
+         gzread(zfp,&(nz),sizeof(int));
+         for(int pNo=0;pNo<nPacked;pNo++) {
+           int x,y,z;
+           double re,im;
+           gzread(zfp,&(re),sizeof(double));
+           gzread(zfp,&(im),sizeof(double));
+           gzread(zfp,&(x),sizeof(int));
+           gzread(zfp,&(y),sizeof(int));
+           gzread(zfp,&(z),sizeof(int));
+           arrCP[pNo] = complex(re, im);
+           kx[pNo]    = x;
+           ky[pNo]    = y;
+           kz[pNo]    = z;
+           nktot++;
+           if(config.doublePack && x==0 && y==0 && z==0){break;}
+	 }
+	 gzclose(zfp);
+    
+      }
+#endif
+    else{
        FILE *fp=fopen(fromFile,"rb");
          if (fp==NULL){
             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -994,104 +1092,197 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz,
                     const char *fromFile, int ibinary_opt) {
 
-//===================================================================================
+  //===================================================================================
 
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
-     CkPrintf("Reading state info from file: %s\n",fromFile);
+  CkPrintf("Reading state info from file: %s\n",fromFile);
 #endif
 
-//===================================================================================
+  //===================================================================================
 
-     if(ibinary_opt < 0 || ibinary_opt > 1){
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("Bad binary option\n",ibinary_opt);
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkExit();
-     }//endif
+  if(ibinary_opt < 0 || ibinary_opt > 3){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Bad binary option\n",ibinary_opt);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
-     int nktot;
-     int nplane0;
-     int n=1;
-     if(ibinary_opt==0){
+  int nktot;
+  int nplane0;
+  int n=1;
+  if(ibinary_opt==0)
+    {
 
-        FILE *fp=fopen(fromFile,"r");
-         if(fp==NULL){
-            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't open state file :%s", fromFile);
-            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkExit();
-         }//endif
-         if(4!=fscanf(fp,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
-            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkPrintf("Can't parse size line of file %s\n", fromFile);
-            CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-            CkExit();
-         }
-	 nktot=0;
-	 nplane0=0;
-         for(int pNo=0;pNo<nPacked;pNo++) {
-           double re,im; int x,y,z;
-           if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
-             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-             CkPrintf("Can't parse packed state location");
-             CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-             CkExit();
-           }
-           if(pNo==0){minx=x; maxx=x;}
-           if(x<minx){minx=x;}
-           if(x>maxx){maxx=x;}
-	   if(x==0){nplane0++;}
-	   nktot++;
-	   if(x==0 && y==0 && z==0 && config.doublePack)break;
-         }//endfor
-        fclose(fp);
+      FILE *fp=fopen(fromFile,"r");
+      if(fp==NULL){
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Can't open state file :%s", fromFile);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }//endif
+      if(4!=fscanf(fp,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Can't parse size line of file %s\n", fromFile);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+      nktot=0;
+      nplane0=0;
+      for(int pNo=0;pNo<nPacked;pNo++) {
+	double re,im; int x,y,z;
+	if(5!=fscanf(fp,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Can't parse packed state location");
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkExit();
+	}
+	if(pNo==0){minx=x; maxx=x;}
+	if(x<minx){minx=x;}
+	if(x>maxx){maxx=x;}
+	if(x==0){nplane0++;}
+	nktot++;
+	if(x==0 && y==0 && z==0 && config.doublePack)break;
+      }//endfor
+      fclose(fp);
+    }
+#ifdef ZLIB_H
+  else if(ibinary_opt==2){
+    char bigenough[1000];  //we know our lines are shorter than this
+    char localFile[1000]; // fromFile is const
+    strcpy(localFile,fromFile);
+    strcat(localFile,".gz");
+    gzFile zfp=gzopen(localFile,"rb");
+    if (zfp==NULL){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Can't open state file %s\n",localFile);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+    int nPackedLoc;
+    if(gzgets(zfp,bigenough,1000)!=Z_NULL)
+      {
+	if(4!=sscanf(bigenough,"%d%d%d%d",&nPacked,&nx,&ny,&nz)){
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Can't parse size line of file %s\n", localFile);
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkExit();
+	}
+      }
+    else
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Can't parse size line of file %s\n", localFile);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+    nktot=0;
+    nplane0=0;
+    for(int pNo=0;pNo<nPacked;pNo++) {
+      double re,im; int x,y,z;
+      if(gzgets(zfp,bigenough,1000)!=Z_NULL)
+	{
+	  if(5!=sscanf(bigenough,"%lg%lg%d%d%d",&re,&im,&x,&y,&z)){
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    CkPrintf("Can't parse packed state location");
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    CkExit();
+	  }
+	  if(pNo==0){minx=x; maxx=x;}
+	  if(x<minx){minx=x;}
+	  if(x>maxx){maxx=x;}
+	  if(x==0){nplane0++;}
+	  nktot++;
+	  if(x==0 && y==0 && z==0 && config.doublePack)break;
+	}//endif
+      else
+	{
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Can't parse size line of file %s\n", localFile);
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkExit();
+	}
+    }//endfor
+    gzclose(zfp);
+  }
+  else if(ibinary_opt==3){
+    char localFile[1000]; // fromFile is const
+    strcpy(localFile,fromFile);
+    strcat(localFile,".gz");
+    gzFile zfp=gzopen(localFile,"rb");
+      if (zfp==NULL){
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Can't open state file :%s", localFile);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }//endif
+      gzread(zfp,&(nPacked),sizeof(int));
+      gzread(zfp,&(nx),sizeof(int));
+      gzread(zfp,&(ny),sizeof(int));
+      gzread(zfp,&(nz),sizeof(int));
+      nktot=0;
+      nplane0=0;
+      for(int pNo=0;pNo<nPacked;pNo++) {
+	double re,im; int x,y,z;
+	gzread(zfp,&(re),sizeof(double));
+	gzread(zfp,&(im),sizeof(double));
+	gzread(zfp,&(x),sizeof(int));
+	gzread(zfp,&(y),sizeof(int));
+	gzread(zfp,&(z),sizeof(int));
+	if(pNo==0){minx=x; maxx=x;}
+	if(x<minx){minx=x;}
+	if(x>maxx){maxx=x;}
+	if(x==0){nplane0++;}
+	nktot++;
+	if(x==0 && y==0 && z==0 && config.doublePack)break;
+      }//endfor
+      gzclose(zfp);
+    }
+#endif
+    else{
+      FILE *fp=fopen(fromFile,"rb");
+      if (fp==NULL){
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Can't open state file :%s", fromFile);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }//endif
+      fread(&(nPacked),sizeof(int),n,fp);
+      fread(&(nx),sizeof(int),n,fp);
+      fread(&(ny),sizeof(int),n,fp);
+      fread(&(nz),sizeof(int),n,fp);
+      nktot=0;
+      nplane0=0;
+      for(int pNo=0;pNo<nPacked;pNo++) {
+	double re,im; int x,y,z;
+	fread(&(re),sizeof(double),n,fp);
+	fread(&(im),sizeof(double),n,fp);
+	fread(&(x),sizeof(int),n,fp);
+	fread(&(y),sizeof(int),n,fp);
+	fread(&(z),sizeof(int),n,fp);
+	if(pNo==0){minx=x; maxx=x;}
+	if(x<minx){minx=x;}
+	if(x>maxx){maxx=x;}
+	if(x==0){nplane0++;}
+	nktot++;
+	if(x==0 && y==0 && z==0 && config.doublePack)break;
+      }//endfor
+      fclose(fp);
 
-     }else{
+    }//endif
 
-        FILE *fp=fopen(fromFile,"rb");
-         if (fp==NULL){
-           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-           CkPrintf("Can't open state file :%s", fromFile);
-           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-           CkExit();
-         }//endif
-         fread(&(nPacked),sizeof(int),n,fp);
-         fread(&(nx),sizeof(int),n,fp);
-         fread(&(ny),sizeof(int),n,fp);
-         fread(&(nz),sizeof(int),n,fp);
-	 nktot=0;
-	 nplane0=0;
-         for(int pNo=0;pNo<nPacked;pNo++) {
-           double re,im; int x,y,z;
-           fread(&(re),sizeof(double),n,fp);
-           fread(&(im),sizeof(double),n,fp);
-           fread(&(x),sizeof(int),n,fp);
-           fread(&(y),sizeof(int),n,fp);
-           fread(&(z),sizeof(int),n,fp);
-           if(pNo==0){minx=x; maxx=x;}
-           if(x<minx){minx=x;}
-           if(x>maxx){maxx=x;}
-	   if(x==0){nplane0++;}
-	   nktot++;
-	   if(x==0 && y==0 && z==0 && config.doublePack)break;
-         }//endfor
-        fclose(fp);
+    if(minx<0){minx+=nx;}
+    n    = minx; 
+    minx = maxx; 
+    maxx = n;
 
-     }//endif
+    // a few extra g-vectors are needed for plane0 than necessary
 
-     if(minx<0){minx+=nx;}
-     n    = minx; 
-     minx = maxx; 
-     maxx = n;
+    if(config.doublePack){
+      nPacked=nktot+nplane0-1;
+    }//endif
 
-     // a few extra g-vectors are needed for plane0 than necessary
-
-     if(config.doublePack){
-       nPacked=nktot+nplane0-1;
-     }//endif
-
-//----------------------------------------------------------------------------------
-   }//end routine
+    //----------------------------------------------------------------------------------
+  }//end routine
 //===================================================================================
 
 
@@ -1807,50 +1998,135 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
   sort_psi_output(ncoef,k_x,k_y,k_z,index,ktemp,&istrt);
   int ncoef_true=ncoef-istrt;
 
-  FILE *fp  = fopen(psiName,"w");
    if(ibinary_write_opt==0){
-    fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
-    for(int i=istrt+1;i<ncoef;i++){
-      fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
-                  k_x[index[i]],k_y[index[i]],k_z[index[i]]);
-    }//endfor
-      int i = istrt;
-      fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
-                  k_x[index[i]],k_y[index[i]],k_z[index[i]]);
-   }else{
-    int n=1;
-    fwrite(&ncoef_true,sizeof(int),n,fp);
-    fwrite(&sizeX,sizeof(int),n,fp);
-    fwrite(&sizeY,sizeof(int),n,fp);
-    fwrite(&sizeZ,sizeof(int),n,fp);
-    for(int i=istrt+1;i<ncoef;i++){
-      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
-      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
-      fwrite(&k_x[index[i]],sizeof(int),n,fp);
-      fwrite(&k_y[index[i]],sizeof(int),n,fp);
-      fwrite(&k_z[index[i]],sizeof(int),n,fp);
-    }//endfor
-      int i = istrt;
-      fwrite(&psi[index[i]].re,sizeof(double),n,fp);
-      fwrite(&psi[index[i]].im,sizeof(double),n,fp);
-      fwrite(&k_x[index[i]],sizeof(int),n,fp);
-      fwrite(&k_y[index[i]],sizeof(int),n,fp);
-      fwrite(&k_z[index[i]],sizeof(int),n,fp);
+     FILE *fp  = fopen(psiName,"w");
+     fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
+     for(int i=istrt+1;i<ncoef;i++){
+       fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+	       k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+     }//endfor
+     int i = istrt;
+     fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+	     k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+     fclose(fp);
+   }
+#ifdef ZLIB_H
+   else if(ibinary_write_opt==2){
+     strcat(psiName,".gz");
+     gzFile zfp  = gzopen(psiName,"w");
+     gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
+     for(int i=istrt+1;i<ncoef;i++){
+       gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+	       k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+     }//endfor
+     int i = istrt;
+     gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
+	     k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+     gzclose(zfp);
+   }
+   else if(ibinary_write_opt==3){
+     strcat(psiName,".gz");
+     gzFile zfp  = gzopen(psiName,"w");
+     int n=1;
+     gzwrite(zfp,&ncoef_true,sizeof(int));
+     gzwrite(zfp,&sizeX,sizeof(int));
+     gzwrite(zfp,&sizeY,sizeof(int));
+     gzwrite(zfp,&sizeZ,sizeof(int));
+     for(int i=istrt+1;i<ncoef;i++){
+       gzwrite(zfp,&psi[index[i]].re,sizeof(double));
+       gzwrite(zfp,&psi[index[i]].im,sizeof(double));
+       gzwrite(zfp,&k_x[index[i]],sizeof(int));
+       gzwrite(zfp,&k_y[index[i]],sizeof(int));
+       gzwrite(zfp,&k_z[index[i]],sizeof(int));
+     }//endfor
+     int i = istrt;
+     gzwrite(zfp,&psi[index[i]].re,sizeof(double));
+     gzwrite(zfp,&psi[index[i]].im,sizeof(double));
+     gzwrite(zfp,&k_x[index[i]],sizeof(int));
+     gzwrite(zfp,&k_y[index[i]],sizeof(int));
+     gzwrite(zfp,&k_z[index[i]],sizeof(int));
+     gzclose(zfp);
+   }
+#endif
+   else{
+     FILE *fp  = fopen(psiName,"w");
+     int n=1;
+     fwrite(&ncoef_true,sizeof(int),n,fp);
+     fwrite(&sizeX,sizeof(int),n,fp);
+     fwrite(&sizeY,sizeof(int),n,fp);
+     fwrite(&sizeZ,sizeof(int),n,fp);
+     for(int i=istrt+1;i<ncoef;i++){
+       fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+       fwrite(&psi[index[i]].im,sizeof(double),n,fp);
+       fwrite(&k_x[index[i]],sizeof(int),n,fp);
+       fwrite(&k_y[index[i]],sizeof(int),n,fp);
+       fwrite(&k_z[index[i]],sizeof(int),n,fp);
+     }//endfor
+     int i = istrt;
+     fwrite(&psi[index[i]].re,sizeof(double),n,fp);
+     fwrite(&psi[index[i]].im,sizeof(double),n,fp);
+     fwrite(&k_x[index[i]],sizeof(int),n,fp);
+     fwrite(&k_y[index[i]],sizeof(int),n,fp);
+     fwrite(&k_z[index[i]],sizeof(int),n,fp);
+     fclose(fp);
    }//endif
-  fclose(fp);
+
 
   if(cp_min_opt==0){
-    fp  = fopen(vpsiName,"w");
+
     if(ibinary_write_opt==0){
+      FILE *fp  = fopen(vpsiName,"w");
       fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
         fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
                    k_x[index[i]],k_y[index[i]],k_z[index[i]]);
       }//endfor
-        int i = istrt;
-        fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+      int i = istrt;
+      fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+	      k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      fclose(fp);
+    }
+#ifdef ZLIB_H
+   else if(ibinary_write_opt==2){
+     strcat(vpsiName,".gz");
+     gzFile zfp=gzopen(vpsiName,"w");
+      gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
+      for(int i=istrt+1;i<ncoef;i++){
+        gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
+                   k_x[index[i]],k_y[index[i]],k_z[index[i]]);
+      }//endfor
+      int i = istrt;
+      gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
 		k_x[index[i]],k_y[index[i]],k_z[index[i]]);
-    }else{
+      gzclose(zfp);
+
+   }
+   else if(ibinary_write_opt==3){
+     strcat(vpsiName,".gz");
+     gzFile zfp=gzopen(vpsiName,"w");
+     int n=1;
+     gzwrite(zfp,&ncoef_true,sizeof(int));
+     gzwrite(zfp,&sizeX,sizeof(int));
+     gzwrite(zfp,&sizeY,sizeof(int));
+     gzwrite(zfp,&sizeZ,sizeof(int));
+     for(int i=istrt+1;i<ncoef;i++){
+       gzwrite(zfp,&vpsi[index[i]].re,sizeof(double));
+       gzwrite(zfp,&vpsi[index[i]].im,sizeof(double));
+       gzwrite(zfp,&k_x[index[i]],sizeof(int));
+       gzwrite(zfp,&k_y[index[i]],sizeof(int));
+       gzwrite(zfp,&k_z[index[i]],sizeof(int));
+     }//endfor
+     int i = istrt;
+     gzwrite(zfp,&vpsi[index[i]].re,sizeof(double));
+     gzwrite(zfp,&vpsi[index[i]].im,sizeof(double));
+     gzwrite(zfp,&k_x[index[i]],sizeof(int));
+     gzwrite(zfp,&k_y[index[i]],sizeof(int));
+     gzwrite(zfp,&k_z[index[i]],sizeof(int));
+     gzclose(zfp);
+   }//endif
+#endif
+else{
+      FILE *fp  = fopen(vpsiName,"w");
       int n=1;
       fwrite(&ncoef_true,sizeof(int),n,fp);
       fwrite(&sizeX,sizeof(int),n,fp);
@@ -1869,8 +2145,8 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
         fwrite(&k_x[index[i]],sizeof(int),n,fp);
         fwrite(&k_y[index[i]],sizeof(int),n,fp);
         fwrite(&k_z[index[i]],sizeof(int),n,fp);
+	fclose(fp);
     }//endif
-    fclose(fp);
   }//endif
 
   delete [] index;
