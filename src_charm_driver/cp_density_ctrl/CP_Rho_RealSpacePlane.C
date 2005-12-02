@@ -51,8 +51,6 @@ extern CkGroupID mCastGrpId;
 extern Config config;
 extern int nstates;
 
-#define _CP_DEBUG_HARTEEXT_OFF_
-
 bool is_pow2(int );
 
 //============================================================================
