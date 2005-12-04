@@ -44,7 +44,9 @@ extern Config config;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
+extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 extern ComlibInstanceHandle commGHartInstance;
+extern int atom_integrate_done;  // not a readonly global : a group of one element
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -88,9 +90,6 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
   int numFull=rho_gs.numFull;
   rho_gs.Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
   rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
-  // we'd rather use a pointer to the inbound message
-  //  rho_gs.packedRho = NULL;
-  // we don't use these gs_slab objects
   rho_gs.divRhoX   = NULL;
   rho_gs.divRhoY   = NULL;
   rho_gs.divRhoZ   = NULL;
@@ -118,15 +117,51 @@ CP_Rho_GHartExt::~CP_Rho_GHartExt()
 //============================================================================
 void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
-// compute hart+Ext and vks(g) using rho(g) 
+// Copy out the data and wait until we can use it
   
-  rho_gs.packedRho = msg->data;  // why bother copying this readonly data?
-  HartExtVksG();
-  rho_gs.packedRho=NULL;  
+  int ncoef    = rho_gs.numPoints;  
+  memcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
   delete msg;  
+
+// Check the flow of control to see if we can use the data.
+// Since gsp calls rsp and rsp invokes rho, all gsp must 
+// report to rsp before it goes, and all gsp check for atoms, you can't
+// really get this error. This could change so now you are safe.
+
+   if(atom_integrate_done==1){
+      HartExtVksG();
+   }else{
+      CkPrintf("Flow of Control Warning  in HartExtVks : atoms slow\n");
+      CkPrintf("Recaling myself %d %d\n",thisIndex.x,thisIndex.y);
+      CkPrintf("However, the current flow of control should not \n");
+      CkPrintf("permit this behaior! You should never be doing this!\n");
+      GHartDummyMsg *msgAtm = new(8*sizeof(int)) GHartDummyMsg;
+      CkSetQueueing(msgAtm, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msgAtm) = config.sfpriority;
+      rhoGHartExtProxy(thisIndex.x, thisIndex.y).waitForAtoms(msgAtm);
+   }//endif
 
 }
 //============================================================================
+
+
+//==============================================================================
+// I need the atoms before I start
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_Rho_GHartExt::waitForAtoms(GHartDummyMsg *msg) {
+   delete msg;
+   if(atom_integrate_done==1){
+      HartExtVksG();
+   }else{
+      GHartDummyMsg *msgAtm = new(8*sizeof(int)) GHartDummyMsg;
+      CkSetQueueing(msgAtm, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msgAtm) = config.sfpriority;
+      rhoGHartExtProxy(thisIndex.x,thisIndex.y).waitForAtoms(msgAtm);
+   }//endif
+}
+//==============================================================================
 
 
 //============================================================================
@@ -134,23 +169,25 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
 void CP_Rho_GHartExt::HartExtVksG() { 
 //============================================================================
-// get the variables
-   AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-   int natm          = ag->natm;
-   Atom *atoms       = ag->atoms;
-   double ehart_ret=0.0;
-   double eext_ret=0.0;
-   double ewd_ret=0.0;
-   int numPoints= rho_gs.numPoints;
-   int numLines= rho_gs.numLines;
-   int numFull= rho_gs.numFull;
-   complex *rho=rho_gs.packedRho;
-   complex *vks=rho_gs.packedVks;
-   complex *Vks=rho_gs.Vks;
-   bzero(vks, numPoints*sizeof(complex));
-   int *k_x=rho_gs.k_x;
-   int *k_y=rho_gs.k_y;
-   int *k_z=rho_gs.k_z;
+
+//============================================================================
+// Get the variables
+
+   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+   int natm         = ag->natm;
+   Atom *atoms      = ag->atoms;
+   double ehart_ret = 0.0;
+   double eext_ret  = 0.0;
+   double ewd_ret   = 0.0;
+   int numPoints    = rho_gs.numPoints;
+   int numLines     = rho_gs.numLines;
+   int numFull      = rho_gs.numFull;
+   complex *rho     = rho_gs.packedRho;
+   complex *vks     = rho_gs.packedVks;
+   complex *VksExpd = rho_gs.Vks;
+   int *k_x         = rho_gs.k_x;
+   int *k_y         = rho_gs.k_y;
+   int *k_z         = rho_gs.k_z;
 
 //============================================================================
 // compute vks(g) from hart eext and reduce eext and ehart
@@ -159,6 +196,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    double  StartTime=CmiWallTimer();
 #endif    
 
+   bzero(vks,numPoints*sizeof(complex));
    CPLOCAL::CP_hart_eext_calc(numPoints, rho, natm, atoms, vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
                               thisIndex.x);
@@ -185,8 +223,8 @@ void CP_Rho_GHartExt::HartExtVksG() {
 //============================================================================
 // partly fft vks  fft_gz(vks)
 
-     bzero(Vks, numFull*sizeof(complex));
-     rho_gs.expandRhoGSpace(Vks, vks);
+     bzero(VksExpd, numFull*sizeof(complex));
+     rho_gs.expandRhoGSpace(VksExpd, vks);
      int ioptvks=4;
      rho_gs.doFwFFTGtoR(ioptvks, thisIndex.x); 
 
@@ -195,7 +233,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
      fp = fopen(myFileName,"w");
        for (int i = 0; i < numFull; i++){ 
               fprintf(fp," %g %g\n",
-                 Vks[i].re, Vks[i].im);
+                 VksExpd[i].re, VksExpd[i].im);
        }//endfor
      fclose(fp);
 #endif

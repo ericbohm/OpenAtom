@@ -61,6 +61,7 @@ mainmodule cpaimd {
 	message PPDummyMsg;
 	message SFDummyMsg;
 	message RSDummyResume;
+	message GHartDummyMsg;
 
 	message ProductMsg {double data[];};	
 	
@@ -178,6 +179,7 @@ mainmodule cpaimd {
 	array [2D] CP_Rho_GHartExt {
 		entry CP_Rho_GHartExt(size2d);
 		entry void acceptData(RhoGHartMsg *msg);
+         	entry void waitForAtoms(GHartDummyMsg *msg);
 	}
 
 
@@ -258,6 +260,7 @@ mainmodule cpaimd {
 		entry void zeroforces();
                 entry void StartRealspaceForces();
                 entry void recvContribute(CkReductionMsg *);
+                entry void atomsDone(CkReductionMsg *);
 	};
 
 	group CPcharmParaInfoGrp {

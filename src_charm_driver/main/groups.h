@@ -45,6 +45,7 @@ class AtomsGrp: public Group {
   ~AtomsGrp();
   void contributeforces(double pot_ewald);
   void recvContribute(CkReductionMsg *);
+  void atomsDone(CkReductionMsg *);
   void StartRealspaceForces();
   void outputAtmEnergy();
   void zeroforces() {
@@ -107,7 +108,7 @@ class AtomsGrp: public Group {
 
 struct EnergyStruct {
     
-   int iteration;           // step upon which energies below computed
+   int iteration_gsp;       // step upon which energies below computed
     double enl;             // non local
     double eext;            // local external energy
     double eke;             // quantum kinetic energy 
@@ -146,6 +147,8 @@ class EnergyGroup : public Group {
  public:
     EnergyStruct estruct;
     EnergyGroup();
+    int iteration_gsp;
+    int iteration_atm;
     
     void updateEnergiesFromGS(EnergyStruct &es) {
       estruct.enl          = es.enl;
@@ -158,6 +161,8 @@ class EnergyGroup : public Group {
       estruct.fictEke      = es.fictEke;
       estruct.totalElecEnergy  = es.totalElecEnergy;
       estruct.fmagPsi      = es.fmagPsi;
+      estruct.iteration_gsp= es.iteration_gsp;
+      iteration_gsp        = es.iteration_gsp;
 #ifdef _DEBUG_ESTRUCT_
        CkPrintf("Energies received %lf, %lf, %lf, %lf, %lf\n", 
                  estruct.enl,estruct.eke,estruct.eext,estruct.ehart, 

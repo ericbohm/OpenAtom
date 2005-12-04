@@ -1,7 +1,11 @@
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
 /** \file StructureFactor.C
  *
  */
- 
+//============================================================================== 
+
 #include "util.h"
 #include "groups.h"
 #include "cpaimd.h"
@@ -11,16 +15,41 @@
 #include "StructFactorCache.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 
+//==============================================================================
+
+extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
+extern int atom_integrate_done;  // not a readonly global : a group of one element
+extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
-void StructureFactor::computeSF(SFDummyMsg *msg)
-{
-  delete msg; // prioritized trigger
+//==============================================================================
 
-  if(numdest)
-    { //we have work to do
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void StructureFactor::computeSF(SFDummyMsg *msg){
+//==============================================================================
+// 
+   delete msg; // prioritized trigger
+
+   if(numdest){
+     if(atom_integrate_done==0){
+       CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
+       CkPrintf("Recaling myself %d %d %d\n",thisIndex.x,thisIndex.y,thisIndex.z);
+       SFDummyMsg *msg = new(8*sizeof(int)) SFDummyMsg;
+       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+       *(int*)CkPriorityPtr(msg) = config.sfpriority;
+       sfCompProxy(thisIndex.x,thisIndex.y,thisIndex.z).computeSF(msg);
+     }//endif
+   }//endif
+
+//==============================================================================
+  if(numdest){ //we have work to do
+  //----------------------------------------------------------------------------
+  // Manage memory and compute SF
       CkAssert(gsSize>0);
 #ifdef _CP_DEBUG_SF_CALC_
       CkPrintf("[%d %d %d] compute\n",thisIndex.x,thisIndex.y,thisIndex.z);
@@ -28,26 +57,22 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
       // allow for clean slate 
       if(structFactor==NULL) {
 	structFactor    = new complex[natm_nl_grp_max*gsSize];
-      }
+      }//endif
       if(structFactor_fx==NULL) {
 	structFactor_fx    = new complex[natm_nl_grp_max*gsSize];
 	structFactor_fy    = new complex[natm_nl_grp_max*gsSize];
 	structFactor_fz    = new complex[natm_nl_grp_max*gsSize];
-      }
-
-      // compute
+      }//endif
       AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-
-
-      CPNONLOCAL::CP_calc_Struct_Fact(gsSize, 
-				      k_x, k_y,k_z, 
+      CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
 				      structFactor,structFactor_fx,structFactor_fy,
 				      structFactor_fz,ag->atoms, config.doublePack, 
-				      numSfGrps, thisIndex.x);
+				      numSfGrps,thisIndex.x);
+  //----------------------------------------------------------------------------
+  // Communicate the results
       int totalsize=gsSize*natm_nl_grp_max;
       int totalbytesize=gsSize*natm_nl_grp_max*sizeof(complex);
-      for(int i=0;i<numdest;i++)
-	{
+      for(int i=0;i<numdest;i++){
 	  // create message 
 #ifdef _CP_DEBUG_SF_CALC_
 	  CkPrintf("[%d %d %d] sending %d to %d\n",thisIndex.x,thisIndex.y,thisIndex.z,i,destinations[i]);
@@ -65,12 +90,16 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
 	  CmiMemcpy(msg->structFactor_fz,structFactor_fz,totalsize*sizeof(complex));
 	  // send message
 	  sfCacheProxy[destinations[i]].acceptStructFact(msg);      
-	}
-    }
-  else
-    {
+      }//endfor
+//==============================================================================
+// no work to do
+  }else{
 #ifdef _CP_DEBUG_SF_CALC_
       CkPrintf("[%d %d %d] redundant\n",thisIndex.x,thisIndex.y,thisIndex.z);
 #endif
-    }
-}
+  }//endif
+
+//==============================================================================
+   }//end routine
+//==============================================================================
+

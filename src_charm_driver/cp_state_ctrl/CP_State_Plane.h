@@ -30,6 +30,10 @@ class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
 };
 //============================================================================
 
+//============================================================================
+class GHartDummyMsg: public CMessage_GHartDummyMsg {
+};
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -226,7 +230,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int ecount;
 	int countPsi;
 	int countVPsi;
-	int allEnergiesReceived;	
 	int AllPsiExpected;
         int itemp;
         int jtemp;
@@ -236,6 +239,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool initialized;
 	bool acceptedPsi;
 	bool acceptedVPsi;
+        bool doneNewIter;
 	bool acceptedLambda;
 	double ehart_total;
 	double enl_total;
@@ -405,6 +409,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	~CP_Rho_GHartExt();
 	void acceptData(RhoGHartMsg *msg);
 	void HartExtVksG();
+        void waitForAtoms(GHartDummyMsg *);
 	void sendVks();
  private:
 	RhoGSlab rho_gs;

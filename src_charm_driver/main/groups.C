@@ -251,14 +251,20 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   eg->estruct.eKineticNhc_atm = eKineticNhc_loc;  
   eg->estruct.potNhc_atm      = potNhc_loc;  
   eg->estruct.iteration_atm   = iteration;
+  eg->iteration_atm           = iteration;
 
 //============================================================
 // Get ready for the next iteration : 
-//      flip integrate flag, zero forces, output energy
+//      zero forces, outputAtmEnergy, atomsDone
 
-  atom_integrate_done = 1;
   zeroforces();
   outputAtmEnergy();
+  // Sync the atoms with a reduction
+  //  int i=0;;
+  //  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+  //  contribute(sizeof(int,&i,CkReduction::sum_int,cb);
+  // Let the atoms go on this proc (we are in a group).
+  atom_integrate_done=1;
 
 //-------------------------------------------------------------------------
    }//end routine
@@ -300,6 +306,15 @@ void AtomsGrp::outputAtmEnergy() {
    }//end routine
 //==========================================================================
 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void AtomsGrp::atomsDone(CkReductionMsg *msg) {
+//==========================================================================
+  delete msg;
+  atom_integrate_done=1; // try to sync atoms up so that they are available
+}
+//==========================================================================
 
 
 //==========================================================================
@@ -308,6 +323,9 @@ void AtomsGrp::outputAtmEnergy() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 EnergyGroup::EnergyGroup () {
+    iteration_gsp = 0;
+    iteration_atm = 0;
+
     //non local
     estruct.enl = 0;
 
@@ -332,12 +350,16 @@ EnergyGroup::EnergyGroup () {
 
     // total electronic part
     estruct.totalElecEnergy = 0; // needs ewald_real to be physical
+    estruct.iteration_gsp = 0;
+
  
     // atm stuff
     estruct.eKinetic_atm    = 0;    // classical kinetic energy
     estruct.eKineticNhc_atm = 0; // NHC kinetic energy
     estruct.potNhc_atm      = 0;      // NHC pot energy
     estruct.fmag_atm        = 0;        // magnitude of atm forces
+    estruct.iteration_atm   = 0;
+
 
 } //end routine
 //==========================================================================

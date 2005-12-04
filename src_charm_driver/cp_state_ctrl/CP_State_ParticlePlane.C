@@ -52,6 +52,7 @@ extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
 extern CProxy_StructFactCache sfCacheProxy;
+extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 extern int nstates;
 extern int nchareG;
 extern Config config;
@@ -251,6 +252,7 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 }
 //============================================================================
 
+//============================================================================
 /* computeZ is triggered by the arrival of the structure factor for
    each atom group in the local sfcache. */
 //============================================================================
@@ -259,15 +261,40 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 //============================================================================    
 
-  
-    doneGettingForces = false;    
+    doneGettingForces = false;    //if you are here, you ain't done.
+                                  //It is also reset in sendLambda 
+                                  //which is when the results of the previous
+                                  //iteration are no longer needed.
     CP_State_GSpacePlane *gsp = 
         	        gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
     GStateSlab *gss = &(gsp->gs);
-    int atmIndex=m->atmGrp;
-    int sfindex=m->sfindex;
+    int atmIndex    = m->atmGrp;
+    int sfindex     = m->sfindex;
     delete m;
-    if(gsp->acceptedPsi){ //need Psi
+   
+
+    // you can't add to the energy group, until the previous step is done filling it.
+    // since computeZ leads to energies, thats no good. 
+    if(!gsp->acceptedPsi){
+      int iadd=0;
+      if(gsp->doneNewIter){iadd=1;}
+      if(egroupProxy.ckLocalBranch()->iteration_gsp != gsp->iteration-iadd){
+         CkPrintf("Flow of Control Warning in computeZ. \n");
+         CkPrintf("Energy group not filled yet\n");
+         PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
+  	 pmsg->atmGrp     = atmIndex;
+         pmsg->sfindex    = sfindex;
+         CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
+	 *(int*)CkPriorityPtr(pmsg) = config.sfpriority+config.numSfGrps; 
+         //lower than sf and sfcache
+         particlePlaneProxy(thisIndex.x, thisIndex.y).computeZ(pmsg);
+      }//endif
+    }//endif
+
+//============================================================================    
+// If you got here and you have the latest psi 
+
+    if(gsp->acceptedPsi){ //need latest Psi to computeZ
       StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
 
       complex *structureFactor;
@@ -294,13 +321,13 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       int mydoublePack = config.doublePack;
       int zoffset=natm_nl_grp_max * atmIndex;
       CPNONLOCAL::CP_enl_matrix_calc(gSpaceNumPoints,gss->packedPlaneData, k_x,k_y,k_z, 
-				     structureFactor,structureFactor_fx,structureFactor_fy,
-				     structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
-				     &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
+	     structureFactor,structureFactor_fx,structureFactor_fy,
+	     structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
+	     &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
 
       // reduce zmatrices over the planes of each state
       thisProxy(thisIndex.x, reductionPlaneNum).reduceZ(natm_nl_grp_max, atmIndex, 
-							&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],&zmatrix_fz[zoffset]);
+	&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],&zmatrix_fz[zoffset]);
 
       /*  overwritten each time so redundant
 	  bzero(&zmatrix[zoffset], natm_nl_grp_max * sizeof(complex));
@@ -310,13 +337,15 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       */
 
       haveSFAtmGrp[atmIndex]=-1; //this one is done
-    } // if gsp->acceptedPsi
-    else
-      { // we beat Psi here.  Set flag so Psi can kick this off
+//============================================================================    
+// If you got here and you don't have the latest psi (impossible now)
+    }else{
+      // we beat Psi here.  Set flag so Psi can kick this off
 	haveSFAtmGrp[atmIndex]=sfindex;
-      }
+    }//endif
+
 //----------------------------------------------------------------------------
-}//end routine
+  }//end routine
 //============================================================================
 
 
