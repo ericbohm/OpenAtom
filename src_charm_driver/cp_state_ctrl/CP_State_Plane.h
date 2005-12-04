@@ -339,6 +339,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         void sendPartlyFFTtoRhoG(int );
         void acceptWhiteByrd(RhoRSFFTMsg *msg);
 	void doMulticast();
+        int cp_grad_corr_on;
  private:
 	double FFTscale;        
 	double volumeFactor;        
@@ -381,6 +382,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         void RhoGSendRhoR(int );
         void acceptWhiteByrd(RhoGSFFTMsg *);
         void acceptWhiteByrd();
+        int cp_grad_corr_on;
  private:
         int nPacked;
 	int count;

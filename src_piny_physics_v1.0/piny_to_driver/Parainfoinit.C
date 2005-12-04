@@ -45,6 +45,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ibinary_write_opt = cpopts->iwrite_coef_binary;
   int natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl       = (cppseudo->nonlocal.natm);
+  int cp_grad_corr_on= cpopts->cp_gga;
+  CkPrintf("cp_grad_corr_on %d %d %d \n",cp_grad_corr_on,cpopts->cp_becke,cpopts->cp_lyp);
 
   double vol        = gencell->vol;
   double dt         = gentimeinfo->dt;
@@ -85,6 +87,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ndump_frq  = ndump_frq;
    sim->istart_typ_cp = istart_typ_cp;
 
+   sim->cp_grad_corr_on=cp_grad_corr_on;
    sim->cp_min_opt = cp_min_opt;
    sim->cp_min_cg  = cp_min_cg;
    sim->cp_min_std = cp_min_std;

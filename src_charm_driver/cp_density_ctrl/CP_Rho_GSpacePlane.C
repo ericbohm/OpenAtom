@@ -82,6 +82,8 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     rho_gs.ydim     = rho_gs.sizeY;
     rho_gs.zdim     = 1;
 
+    cp_grad_corr_on = sim->cp_grad_corr_on;
+
     count = 0;
     for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
     doneWhiteByrd = 0;
@@ -129,8 +131,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane()
-{
+CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
 }
 //============================================================================
 
@@ -267,7 +268,9 @@ void CP_Rho_GSpacePlane::acceptData() {
      StartTime=CmiWallTimer();
 #endif    
 
-    divRhoVksGspace();
+   if(cp_grad_corr_on!=0){
+      divRhoVksGspace();
+   }//endif
 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    

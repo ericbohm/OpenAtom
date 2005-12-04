@@ -310,10 +310,11 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     itemp = cpopts->cp_gga;
     cpopts->cp_gga = 0;
     cpopts->cp_laplacian_on = 0;
+    cpopts->cp_becke = 0;
     if(strcasecmp(dict[2].keyarg,"off")==0)    {
         ifound++;cpopts->cp_gga=0;}
     if(strcasecmp(dict[2].keyarg,"becke")==0)  {
-        ifound++;cpopts->cp_gga=1;}
+        ifound++;cpopts->cp_gga=1; cpopts->cp_becke=1;}
     if(strcasecmp(dict[2].keyarg,"pw91x")==0)  {
         ifound++;cpopts->cp_gga=1;}
     if(strcasecmp(dict[2].keyarg,"fila_1x")==0)  {
@@ -366,13 +367,14 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     ifound = 0;
     itemp = cpopts->cp_gga;
     cpopts->cp_gga = 0;
+    cpopts->cp_lyp = 0;
     index=3;
     if(strcasecmp(dict[3].keyarg,"off")==0)    {
       ifound++;cpopts->cp_gga=1;}
     if(strcasecmp(dict[3].keyarg,"pw91c")==0)  {
       ifound++;cpopts->cp_gga=1;}
     if(strcasecmp(dict[3].keyarg,"lyp")==0)    {
-      ifound++;cpopts->cp_gga=1;}
+      ifound++;cpopts->cp_gga=1; cpopts->cp_lyp=1;}
     if(strcasecmp(dict[3].keyarg,"pbe_c")==0)    {
       ifound++;cpopts->cp_gga=1;}
     if(strcasecmp(dict[3].keyarg,"lypm1")==0)    {

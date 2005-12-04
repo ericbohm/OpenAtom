@@ -42,9 +42,10 @@ void CPXCFNCTS::CP_getGGAFunctional(
     double srho,dsrho;            /* Switching function and its derivative */
     double rho,rho_cut,g_rho2,g_rhoi,rsw;
     int m;
+    int cp_becke = cpopts->cp_becke;
+    int cp_lyp   = cpopts->cp_lyp;
 
     double ex,ec,dfx_drho,fx,fc,dfx_dgrho,dfc_drho,dfc_dgrho,dfxc_dgrho;
-    double dfx_drho_tmp;
     static double beta = 0.0042;
     double unit_gx,unit_gy,unit_gz;
 
@@ -69,89 +70,89 @@ void CPXCFNCTS::CP_getGGAFunctional(
    for(int i = 0; i < npts; i++){
 
 #ifdef CMK_VERSION_BLUEGENE
-      if((i+1)%nfreq_cmi_update==0){
+     if((i+1)%nfreq_cmi_update==0){
         CmiNetworkProgress();
-      }
+     }//endif
 #endif
 
 //----------------------------------------------------------
 // Get density and decide if the loop should be done
 
-        rho   =  density[i];
-        if(rho > rho_cut){
+     rho   =  density[i];
+     if(rho > rho_cut){
 
 //----------------------------------------------------------
 // Calculate magnitude square of gradient of density
 
-          g_rho2 = rhoIRX[i]*rhoIRX[i] 
-                 + rhoIRY[i]*rhoIRY[i] 
-                 + rhoIRZ[i]*rhoIRZ[i];
+        g_rho2 = rhoIRX[i]*rhoIRX[i] 
+               + rhoIRY[i]*rhoIRY[i] 
+               + rhoIRZ[i]*rhoIRZ[i];
 
 //----------------------------------------------------------
 // Calculate the switching function and its derivative
 
-         rsw = (rho - rho_cut)*rho_heali;
-         rsw = (rsw < 1.0 ? rsw : 1.0);
-         rsw = (rsw > 0.0 ? rsw : 0.0);
-         srho = rsw*rsw*(3.0-2.0*rsw);
-         dsrho = 6.0*rsw*(1.0-rsw)*rho_heali;
+        rsw = (rho - rho_cut)*rho_heali;
+        rsw = (rsw < 1.0 ? rsw : 1.0);
+        rsw = (rsw > 0.0 ? rsw : 0.0);
+        srho = rsw*rsw*(3.0-2.0*rsw);
+        dsrho = 6.0*rsw*(1.0-rsw)*rho_heali;
 
 //----------------------------------------------------------
 // Calculate the exchange functional
 
+       fx  = 0.0;  dfx_drho  = 0.0;  dfx_dgrho = 0.0;
+       if(cp_becke==1){
          becke_gcx_lda(rho,g_rho2,&fx,&dfx_drho,&dfx_dgrho,beta);
+       }//endif
+
+       fc = 0.0;  dfc_drho  = 0.0;  dfc_dgrho = 0.0;
+       if(cp_lyp==1){ 
+         lyp_gcc(rho,g_rho2,&fc,&dfc_drho,&dfc_dgrho);
+       }//endif
 
 //----------------------------------------------------------
 // Process the output via the switching function
 
-         dfx_drho = (dfx_drho*srho + fx*dsrho);
-         dfx_dgrho *= srho;
-         fx *= srho;
+       dfx_drho = (dfx_drho*srho + fx*dsrho);
+       dfx_dgrho *= srho;
+       fx *= srho;
 
-//----------------------------------------------------------
-// Calculate the correlation functional
-
-         /*  Nothing for now */
-
-         dfc_drho = 0.0;
-         dfc_dgrho = 0.0;
-         fc = 0.0;
+       dfc_drho = (dfc_drho*srho + fc*dsrho);
+       dfc_dgrho *= srho;
+       fc *= srho;
 
 //----------------------------------------------------------
 // Finish the energy
 
-         ex += fx;
-         ec += fc;
+       ex += fx;
+       ec += fc;
 
 //----------------------------------------------------------
 // Construct output for the FFT
 
-         gradientCorrection[i] = (dfx_drho + dfc_drho);
+      gradientCorrection[i] = (dfx_drho + dfc_drho);
 
-         g_rhoi = 1.0/sqrt(g_rho2);
-         unit_gx = rhoIRX[i]*g_rhoi;
-         unit_gy = rhoIRY[i]*g_rhoi;
-         unit_gz = rhoIRZ[i]*g_rhoi;
+      g_rhoi = 1.0/sqrt(g_rho2);
+      unit_gx = rhoIRX[i]*g_rhoi;
+      unit_gy = rhoIRY[i]*g_rhoi;
+      unit_gz = rhoIRZ[i]*g_rhoi;
 
-         dfxc_dgrho = dfx_dgrho + dfc_dgrho;
-         rhoIRX[i] = unit_gx*dfxc_dgrho;
-         rhoIRY[i] = unit_gy*dfxc_dgrho;
-         rhoIRZ[i] = unit_gz*dfxc_dgrho;
+      dfxc_dgrho = dfx_dgrho + dfc_dgrho;
+      rhoIRX[i] = unit_gx*dfxc_dgrho;
+      rhoIRY[i] = unit_gy*dfxc_dgrho;
+      rhoIRZ[i] = unit_gz*dfxc_dgrho;
 
-        } else {  /* Density is less than cutoff */
+   } else {  /* Density is less than cutoff */
 
-          gradientCorrection[i] = 0.0;
-          rhoIRX[i] = 0.0;
-          rhoIRY[i] = 0.0;
-          rhoIRZ[i] = 0.0;
+      gradientCorrection[i] = 0.0;
+      rhoIRX[i] = 0.0;
+      rhoIRY[i] = 0.0;
+      rhoIRZ[i] = 0.0;
 
-        } /* Endif density is greater than cutoff */
+   } /* Endif density is greater than cutoff */
          
+ }//endfor
 
-//============================================================================
-// End Loop over grid
-
-}
 //============================================================================
 // Store the energy
 

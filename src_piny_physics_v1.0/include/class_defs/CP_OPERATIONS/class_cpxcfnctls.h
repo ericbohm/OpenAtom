@@ -40,6 +40,8 @@ static void CP_white_byrd_gspace_calc(
 
 static void becke_gcx_lda(double ,double , double *,double *,double *,double );
 
+static void lyp_gcc(double ,double ,double *,double *,double *);
+
 static void CP_fetch_hmati(double **, double *);
 
 //---------------------------------------------------------------------------

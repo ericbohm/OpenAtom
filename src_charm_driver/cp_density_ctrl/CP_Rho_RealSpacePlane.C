@@ -67,9 +67,11 @@ RTH_Routine_code(CP_Rho_RealSpacePlane,run) {
     // 2nd entry point is acceptDensity(msg *) data from statereal
     c->acceptDensity();
     RTH_Suspend(); 
-    // 3rd entry point is acceptGradRhoVks(RhoRSFFTMsg *)
-    c->GradCorr();
-    RTH_Suspend(); 
+    // 3rd entry point is acceptGradRhoVks(RhoRSFFTMsg *) 
+    if(c->cp_grad_corr_on!=0){
+       c->GradCorr();
+       RTH_Suspend(); 
+    }//endif
     // 4th entry point is acceptWhiteByrd(RhoRSFFTMsg *) || acceptHartVks.
     // Whichever arrives LAST calls resume (the last shall be first).
     c->doMulticast();
@@ -109,6 +111,9 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 #endif
 
 //============================================================================
+// set flag
+
+//============================================================================
 // Malloc Memory, Intialize counters, set constants
 
     initRhoRealSlab(&rho_rs, xdim, yzdim[0], yzdim[1], numRealSpace, 
@@ -126,6 +131,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     FFTscale             = 1.0/((double)config.numFFTPoints);
     volumeFactor         = (sim->vol)*FFTscale;
     probScale            = (1.0/(sim->vol));
+
+    cp_grad_corr_on      = sim->cp_grad_corr_on;
 
 //============================================================================
 // make sections in the realSpacePlane array. These will be used when 
@@ -193,8 +200,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane()
-{
+CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 }
 //============================================================================
 
@@ -214,8 +220,11 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
     CkPrintf("RhoReal accepting Density %d %d %d\n",
               thisIndex.x,thisIndex.y,CkMyPe());
 #endif
-
-    doneWhiteByrd  = false;
+   if(cp_grad_corr_on!=0){
+     doneWhiteByrd  = false;
+   }else{
+     doneWhiteByrd  = true;
+   }
     doneHartVks    = false;
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
     doneHartVks    = true;
@@ -297,6 +306,13 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 #ifdef CMK_VERSION_BLUEGENE
    CmiNetworkProgress();
 #endif
+
+  if(cp_grad_corr_on==0){
+    double exc[2];
+    exc[0]=rho_rs.exc_ret;
+    exc[1]=0.0;
+    contribute(2*sizeof(double),exc,CkReduction::sum_double);
+  }//endif
 
 //============================================================================
 // Invoke FFT to take rho(r) to rho(g)
@@ -442,9 +458,6 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 
 //============================================================================
 
-
-//============================================================================
-
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int nchareG            = sim->nchareRhoG;
   int **tranUnpack       = sim->index_tran_upack_rho;
@@ -531,6 +544,15 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 //============================================================================
 void CP_Rho_RealSpacePlane::GradCorr(){
 //============================================================================
+
+  if(cp_grad_corr_on==0){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Don't come in the grad corr routines when\n");
+     CkPrintf("gradient corrections are off\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }//endif
+
 
    double *density            = rho_rs.density;
    double *rhoIRX             = rho_rs.rhoIRX;
