@@ -447,6 +447,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         int natm_nl_grp_max;
         int numSfGrps;
  private:
+	int calcReductionPlaneNum(int);
 	void initKVectors(GStateSlab *);
 	bool doneGettingForces;
 	complex *myForces, *gspace;

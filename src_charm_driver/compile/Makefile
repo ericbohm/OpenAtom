@@ -32,8 +32,8 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
 	 -I../paircalc  -I$(SRC_COMPILE)\
          -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
 
-LIB    = -L$(FFT_HOME)/lib -module commlib -lfftw \
-         -lrfftw -lm -module fftlib                      #-memory paranoid
+LIB    = -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib -lfftw \
+         -lrfftw -lm $(LOCAL_LIB)            #-memory paranoid
 #===========================================================================
 PCHEADERS= $(PAIRCALC)/pairCalculator.h\
 	$(PAIRCALC)/pairutil.h \
@@ -59,12 +59,12 @@ TARGET_LIB = ../../binary/libCharmDriver.a
 
 #===========================================================================
 CHARMLIBS:
-	(cd $(CHARMBASE)/tmp/libs/ck-libs/sparseContiguousReducer;\
-	make OPTS="$(OPTS)";)
+#	(cd $(CHARMBASE)/tmp/libs/ck-libs/sparseContiguousReducer;\
+#	make OPTS="$(OPTS)";)
 #	(cd $(CHARMBASE)/tmp/libs/ck-libs/paircalc;\
 #	make OPTS="$(OPTS) $(OPT_FORT)" FFTW_HOME="$(FFT_HOME)";)
-	(cd $(CHARMBASE)/tmp/libs/ck-libs/fftlib;\
-	make OPTS="$(OPTS) $(OPT_FORT) -nobs " FFTW_HOME="$(FFT_HOME)";)
+#	(cd $(CHARMBASE)/tmp/libs/ck-libs/fftlib;\
+#	make OPTS="$(OPTS) $(OPT_FORT) -nobs " FFTW_HOME="$(FFT_HOME)";)
 #===========================================================================
 
 
@@ -119,7 +119,7 @@ pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h $(PA
 driverlib:	CHARMLIBS $(OBJS_DECL) $(OBJS) 
 	$(CHARMC) -o $(TARGET_LIB) $(OBJS) $(LIB) -language charm++ \
         -module CkMulticast -module CkSparseContiguousReducer \
-        $(OPTS) $(FLAGS) $(OPT_FORT)
+        $(OPTS) $(FLAGS) $(OPT_FORT) 
 
 cpaimd:    $(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o cpaimd $(OBJS) $(LIB) -language charm++ \

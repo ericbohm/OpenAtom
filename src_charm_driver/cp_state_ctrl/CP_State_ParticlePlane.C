@@ -100,13 +100,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   enl                  = 0.0;
   energy_count         = 0;
   totalEnergy          = 0.0;
-  reductionPlaneNum    = 0;
-//  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
-  // figure out a reliable way to do this
-//  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
-  // now expand that to spread these guys around
-  //  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
-  reductionPlaneNum= 0;
+  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
   contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
@@ -130,13 +124,14 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 //============================================================================
 // Create section proxy for ENL reduction ParticlePlane (any state#, reductionPlaneNum)
 
-  if(thisIndex.x==0 && thisIndex.y==reductionPlaneNum){
+  if(thisIndex.x==0 && thisIndex.y==0){
 
       CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
 
       CkArrayIndex2D idx(0, reductionPlaneNum);  // plane# = this plane#
       for (int j = 0; j < nstates; j++) {
 	idx.index[0] = j;
+	idx.index[1] = calcReductionPlaneNum(j);
 	elems[j] = idx;
       }//endfor
 
@@ -245,7 +240,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|doneEnl;
 	p|doneForces;
         p|enl_total;
-        p|reductionPlaneNum;
 	p|enlCookie;
 	p|particlePlaneENLProxy;
 	// "gspace" is not pup'ed since it is always assigned to
@@ -518,9 +512,23 @@ void CP_State_ParticlePlane::setEnlCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_ParticlePlane::ResumeFromSync(){
-  if(thisIndex.x==0 && thisIndex.y==reductionPlaneNum){
+  if(thisIndex.x==0 && thisIndex.y==0){
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
       mcastGrp->resetSection(particlePlaneENLProxy);
   }//endif
 }// end routine
 //============================================================================
+
+int CP_State_ParticlePlane::calcReductionPlaneNum(int state)
+{
+  
+  int nstatemax=nstates-1;
+  int ncharemax=nchareG-1;
+  int planeNum= state %ncharemax;
+  if(planeNum<0)
+    {
+      CkPrintf(" PP [%d %d] calc nstatemax %d ncharemax %d state %d planenum %d\n",thisIndex.x, thisIndex.y,nstatemax, ncharemax, state, planeNum); 
+      CkExit();
+    }
+  return planeNum;
+}
