@@ -223,6 +223,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void doIFFT ();
 	void readFile();
 	void computeEnergies(int p, double d);
+	void startFFT(CkReductionMsg *msg);
+	
  private:
 	int ireset_cg;
         int numReset_cg;

@@ -38,6 +38,7 @@
 #include "util.h"
 #include "groups.h"
 #include "cpaimd.h"
+#include "../../include/debug_flags.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 #include "StructFactorCache.h"
@@ -453,6 +454,16 @@ void CP_State_ParticlePlane::sumEnergies(double energy_) {
 //============================================================================
 
 
+void ParticleBarrierClient(void *param, void *msg) {
+  CkReductionMsg *m = (CkReductionMsg *)msg;
+  //delete m;
+  
+  printf("After particle plane barrier\n");
+  
+  gSpacePlaneProxy.startFFT(m);
+}
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -487,11 +498,19 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
   if(doneForces==numSfGrps){
       doneGettingForces = true;
       doneForces=0;
+
+#if !CP_PARTICLE_BARRIER
       if (gsp->doneDoingIFFT) {
 	gsp->combineForcesGetEke(); //calls resume in G very yucky
       }//endif
+#else
+      int dummy=0;
+      contribute(sizeof(int),&dummy,CkReduction::sum_int,
+		 CkCallback(ParticleBarrierClient, NULL));
+#endif
+      
   }//endif : doneforces
-
+  
 //----------------------------------------------------------------------------
 }//end routine
 //============================================================================

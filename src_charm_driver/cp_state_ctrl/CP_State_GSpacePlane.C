@@ -117,31 +117,37 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->myatom_integrate_flag=0; 
 #else
        c->startNewIter();
+
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
-#ifndef _CP_DEBUG_SFNL_OFF_
-       c->releaseSFComputeZ();
+#if  !_CP_DEBUG_SFNL_OFF_
+      c->releaseSFComputeZ();
+#if CP_PARTICLE_BARRIER
+      RTH_Suspend(); // wait this to finish : PP
+      //printf("Compute Z woke me up \n"); 
 #endif
-       c->doFFT(); 
-       c->sendFFTData();
-       RTH_Suspend(); // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
+#endif
+      c->doFFT(); 
+      c->sendFFTData();
+      RTH_Suspend(); // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
     //------------------------------------------------------------------------
     // (C) Complete IFFT of F(gx,gy,z) to F(gx,gy,gz)
        c->doIFFT();  // Message from realspace arrives : doifft(msg) resumes
     //------------------------------------------------------------------------
     // (D) Combine non-local and vks forces then compute eke forces
-    //     If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
-#ifndef _CP_DEBUG_SFNL_OFF_
+    // If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
+#if  _CP_DEBUG_SFNL_OFF_ || CP_PARTICLE_BARRIER
+       c->combineForcesGetEke();
+#else
        if (!(c->completedExtExcNlForces())){
-         RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
+	 RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
                         // PP calls  which invokes resume
        }//endif
-#else
-       c->combineForcesGetEke();
 #endif
+
 #ifdef GIFFT_BARRIER
        if(!(c->allDoneIFFT())){
-	  RTH_Suspend(); // wait for broadcast that all gspace is done  
+	 RTH_Suspend(); // wait for broadcast that all gspace is done  
        }//endif
 #endif
     //------------------------------------------------------------------------
@@ -267,6 +273,13 @@ void CP_State_GSpacePlane::gdonePsiV(CkReductionMsg *msg){
 //============================================================================
 
 
+void CP_State_GSpacePlane::startFFT(CkReductionMsg *msg) {
+  delete msg;
+  //printf("Starting FFTs %d, %d\n", thisIndex.x, thisIndex.y);
+  RTH_Runtime_resume(run_thread);
+}
+
+
 //============================================================================
 //     All GSpace objects have finished writing coefs : NECESSARY
 //============================================================================
@@ -288,7 +301,7 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
   CkReductionMsg *m=(CkReductionMsg *)msg;
   double d = ((double *)m->getData())[0];
   delete m;
-#ifdef _CP_DEBUG_SFNL_OFF_
+#if  _CP_DEBUG_SFNL_OFF_
   CkPrintf("ENL         = OFF FOR DEBUGGING\n");
 #endif
   CkPrintf("EKE         = %5.8lf\n", d);
@@ -1066,6 +1079,13 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 
+  //#ifdef  _CP_DEBUG_UPDATE_OFF_
+  //   CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+  //             sizeof(complex)*gs.numPoints);
+  //   memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  //#endif      
+
+
 //---------------------------------------------------------------------------
     }//end routine
 //============================================================================
@@ -1083,7 +1103,7 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
 	*(int*)CkPriorityPtr(msg) = config.sfpriority;
         msg->iteration_src = iteration;
 	sfCompSectionProxy.computeSF(msg);
-    }//endif
+  }//endif
 
 //==============================================================================
 //check all SFs
@@ -1117,7 +1137,10 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::doFFT() {
-
+  
+  if(thisIndex.x == 0 && thisIndex.y == 0)
+    printf("In Do FFT %d, %d\n", thisIndex.x, thisIndex.y);
+  
   // If there is no data to send, return immediately
   if (gs.numNonZeroPlanes == 0 || gs.fftReqd == false){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1134,15 +1157,16 @@ void CP_State_GSpacePlane::doFFT() {
 
 // Do fft in forward direction, 1-D, in z direction
 // A local function not a message : get pointer to memory for fft group
-
-  ffttempdataGrp = fftCacheProxy.ckLocalBranch()->doGSRealFwFFT(gs.packedPlaneData, 
-   	           gs.runs, gs.numRuns, gs.numLines, gs.numFull, gs.numPoints,
-                   gs.zdim, gs.fftReqd);
-
+  
+  ffttempdataGrp = fftCacheProxy.ckLocalBranch()->doGSRealFwFFT
+    (gs.packedPlaneData, gs.runs, gs.numRuns, gs.numLines, 
+     gs.numFull, gs.numPoints,
+     gs.zdim, gs.fftReqd);
+  
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
 #endif   
- 
+  
 }
 //============================================================================
 
@@ -1317,6 +1341,9 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //================================================================================
 // add forces from particle plane to forces from IFFT then zero them
 
+  if(thisIndex.x == 0 && thisIndex.y == 0)
+    printf("in combine forces and get eke\n");
+
   CP_State_ParticlePlane *pp = 
     particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
 
@@ -1368,16 +1395,17 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   }//endif
 #endif
 
-//========================================================================
-// If called from ParticlePlane, then resume the GSpacePlane computation
-// If called from here, you aren't suspended so don't resume.
-
-  if(doneDoingIFFT){
+  //========================================================================
+  // If called from ParticlePlane, then resume the GSpacePlane computation
+  // If called from here, you aren't suspended so don't resume.
+#if !CP_PARTICLE_BARRIER
+  if (doneDoingIFFT){
     RTH_Runtime_resume(run_thread);
   }//endif
-
-//-----------------------------------------------------------------------------
-  }//end routine
+#endif
+  
+  //-----------------------------------------------------------------------------
+}//end routine
 //==============================================================================
 
 
