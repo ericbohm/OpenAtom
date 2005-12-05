@@ -467,7 +467,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         CkPrintf("Making real_strategy with src numReal %d dest numRhoG %d\n",
                   numReal,numRhoG);
         CharmStrategy *real_strat = new EachToManyMulticastStrategy
-            (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+            (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              numReal, rhoRealElements, numRhoG, rhoGElements);
 
         commRealInstance= ComlibRegister(real_strat);
@@ -484,7 +484,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
         
         CharmStrategy *real_strat_igx = new EachToManyMulticastStrategy
-            (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+            (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              numReal, rhoRealElements, numRhoG,rhoGElements);
 
         rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -498,7 +498,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
         
         CharmStrategy *real_strat_igy = new EachToManyMulticastStrategy
-            (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+            (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              numReal, rhoRealElements, numRhoG,rhoGElements);
 
         rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -512,7 +512,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
         
         CharmStrategy *real_strat_igz = new EachToManyMulticastStrategy
-            (USE_MESH, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+            (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
              numReal, rhoRealElements, numRhoG,rhoGElements);
 
         commRealIGXInstance= ComlibRegister(real_strat_igx);
@@ -530,7 +530,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstrathart = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGHartInstance = ComlibRegister(gstrathart);
 
@@ -546,7 +546,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstrat0 = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGInstance0 = ComlibRegister(gstrat0);
 
@@ -561,7 +561,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstrat1 = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGInstance1 = ComlibRegister(gstrat1);
 
@@ -576,7 +576,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstrat2 = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGInstance2 = ComlibRegister(gstrat2);
 
@@ -591,7 +591,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstrat3 = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGInstance3 = ComlibRegister(gstrat3);
 
@@ -606,7 +606,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
         }
 
         CharmStrategy *gstratByrd = new EachToManyMulticastStrategy
-            (USE_MESH, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+            (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
              numRhoG, rhoGElements, numReal, rhoRealElements);
         commGByrdInstance = ComlibRegister(gstratByrd);
 
@@ -923,7 +923,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     if(config.useCommlib) {
         // Set some com strategy of Sameer
         ssInstance = CkGetComlibInstance();
-        StreamingStrategy *strat = new StreamingStrategy(0.2,10);
+        StreamingStrategy *strat = new StreamingStrategy(0.2,5);
         //strat->enableShortArrayMessagePacking();
         ssInstance.setStrategy(strat);
         

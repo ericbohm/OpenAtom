@@ -138,6 +138,7 @@ mainmodule cpaimd {
                 entry void psiCgOvlap(CkReductionMsg *);
 		entry void readFile();
 		entry void combineForcesGetEke();	
+		entry void startFFT(CkReductionMsg *msg);
 	};
 	
 	array [2D] CP_State_ParticlePlane {
