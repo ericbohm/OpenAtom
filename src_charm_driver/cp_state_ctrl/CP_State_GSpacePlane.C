@@ -2514,8 +2514,24 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
   }//end switch
 
 //==============================================================================
+// Less stuff arrive under debug conditions
 
-  if(ecount == NUM_ENERGIES){
+  int isub =0;
+#ifdef _CP_DEBUG_SFNL_OFF_
+  isub++;
+#endif
+
+#ifdef  _CP_DEBUG_RHO_OFF_
+  isub+=5;
+#endif
+
+#ifdef _CP_DEBUG_HARTEEXT_OFF_
+#ifndef  _CP_DEBUG_RHO_OFF_
+  isub+=3;
+#endif
+#endif
+
+  if(ecount == NUM_ENERGIES-isub){
 
     EnergyStruct estruct;
     estruct.enl             = enl_total;
