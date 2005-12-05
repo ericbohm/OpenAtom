@@ -20,8 +20,8 @@
 extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
-extern int atom_integrate_done;  // not a readonly global : a group of one element
 extern CProxy_EnergyGroup egroupProxy; //energy group proxy
+extern int atom_integrate_done;  // not a readonly global : a group of one element
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //==============================================================================
@@ -33,16 +33,22 @@ StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 void StructureFactor::computeSF(SFDummyMsg *msg){
 //==============================================================================
 // 
+   int iteration_src = msg->iteration_src;
    delete msg; // prioritized trigger
 
+   // The guy who called us is up to date. Are we? The caller is one ahead
+   // of the energy dude and the atoms because it fliped its iteration counter
+   // at the top of the loop.
    if(numdest){
-     if(atom_integrate_done==0){
+     if(atomsGrpProxy.ckLocalBranch()->iteration != 
+        egroupProxy.ckLocalBranch()->iteration_gsp || 
+        atomsGrpProxy.ckLocalBranch()->iteration != (iteration_src-1)){
        CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
-       CkPrintf("Recaling myself %d %d %d\n",thisIndex.x,thisIndex.y,thisIndex.z);
-       SFDummyMsg *msg = new(8*sizeof(int)) SFDummyMsg;
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.sfpriority;
-       sfCompProxy(thisIndex.x,thisIndex.y,thisIndex.z).computeSF(msg);
+       SFDummyMsg *newMsg = new(8*sizeof(int)) SFDummyMsg;
+       CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
+       *(int*)CkPriorityPtr(newMsg) = config.sfpriority;
+       newMsg->iteration_src = iteration_src;
+       sfCompProxy(thisIndex.x,thisIndex.y,thisIndex.z).computeSF(newMsg);
      }//endif
    }//endif
 

@@ -275,12 +275,10 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 
     // you can't add to the energy group, until the previous step is done filling it.
     // since computeZ leads to energies, thats no good. 
-    if(!gsp->acceptedPsi){
-      int iadd=0;
-      if(gsp->doneNewIter){iadd=1;}
-      if(egroupProxy.ckLocalBranch()->iteration_gsp != gsp->iteration-iadd){
+    // Since gps is bound to pp, this syncs pp with energy group correctly.
+    if(gsp->acceptedPsi){
+      if(!gsp->doneNewIter){ // false after send lambda, true after accept energy/atoms
          CkPrintf("Flow of Control Warning in computeZ. \n");
-         CkPrintf("Energy group not filled yet\n");
          PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
   	 pmsg->atmGrp     = atmIndex;
          pmsg->sfindex    = sfindex;

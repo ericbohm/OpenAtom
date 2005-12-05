@@ -28,7 +28,8 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads, 
-                                  int myid, Atom *atoms, AtomNHC *atomsNHC)
+                                  int myid, Atom *atoms, AtomNHC *atomsNHC,
+                                  int *iwrite_atm_ret,int output_on)
 //==========================================================================
   {//begin routine
 //=======================================================================
@@ -46,20 +47,30 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
 
 //==========================================================================
 // Make the case for writing the file
-
-  if( (itime % iwrite_confp)==0 && myid==0){
-    int low = 0; int high = natm;
-    write_atom_output_conf(low,high,pi_beads,atoms,cpname);
+  int iwrite_atm=0;
+  if( (itime % iwrite_confp)==0 && output_on==1){
+    iwrite_atm++;
+    if(myid==0){
+      int low = 0; int high = natm;
+      write_atom_output_conf(low,high,pi_beads,atoms,cpname);
+    }//endif
   }//endif
 
-  if( (itime % iwrite_par_confp)==0 && myid==0 && low_lim_par<high_lim_par){
-    write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
+  if( (itime % iwrite_par_confp)==0 && low_lim_par<high_lim_par && output_on==1){
+    iwrite_atm++;
+    if(myid==0){
+      write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
+    }//endif
   }//endif
 
-  if( (itime % iwrite_dump)==0 && myid==0){
-    write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC);
+  if( (itime % iwrite_dump)==0 && output_on==1){
+    iwrite_atm++;
+    if(myid==0){
+      write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC);
+    }//endif
   }//endif
 
+  (*iwrite_atm_ret)=iwrite_atm;
 //==========================================================================
   }//end routine
 //==========================================================================

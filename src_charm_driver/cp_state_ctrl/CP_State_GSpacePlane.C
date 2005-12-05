@@ -3,6 +3,7 @@
 //    move resetiterstate
 //======================================================
 
+//#define GLENN_DEBUG
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -83,7 +84,6 @@ extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 extern int nstates;
 extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
-extern int atom_integrate_done;  // not a readonly global : a group of one element
 extern ComlibInstanceHandle mcastInstancePP;
 extern CProxy_FFTcache fftCacheProxy;
 extern CProxy_StructFactCache sfCacheProxy;
@@ -112,6 +112,10 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1 || c->first_step!=1){
     //------------------------------------------------------------------------
     // (A) Start new iteration : Reset counters
+#ifdef GLENN_DEBUG
+       c->myenergy_reduc_flag  =0; 
+       c->myatom_integrate_flag=0; 
+#else
        c->startNewIter();
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
@@ -143,7 +147,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // E) The atoms can't go until all cp forces are accounted for.
     //    However, the atoms can overlap with all this lambda, psi stuff.
+#endif
        c->launchAtoms();
+#ifndef GLENN_DEBUG
     //------------------------------------------------------------------------
     // (F) Add contraint forces (rotate forces to non-orthogonal frame)
        c->sendLambda();        
@@ -170,12 +176,13 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 	}//endif
         c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
       }//endif
+#endif
     }// endif determine entry point
-
  //==========================================================================
  // (II) Orthogonalization and output code block
    //------------------------------------------------------------------------
    // (A) Orthogonalize
+#ifndef GLENN_DEBUG
     c->sendPsi();      // send to Pair Calculator
 #ifndef _CP_DEBUG_ORTHO_OFF_
     RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
@@ -195,15 +202,20 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
       }//endif
     }//endif
    //------------------------------------------------------------------------
-   // (D) Check for atom integration and update of energies
-    if(atom_integrate_done==0 || egroupProxy.ckLocalBranch()->iteration_gsp
-                               != c->iteration){
-      if(c->iteration>0){
-        c->waitForAtoms();
-        RTH_Suspend();     // resume called in acceptAtoms
-      }//endif
+   // (d) Check for Energy reduction completion
+    if(c->myenergy_reduc_flag==0 && c->iteration>0){
+      c->isuspend_energy=1;
+      RTH_Suspend();     // resume called in acceptEnergy
     }//endif
-    c->first_step = 0; // its not the first step anymore!
+#else
+   //------------------------------------------------------------------------
+   // (E) Check for atom integration 
+    if(c->myatom_integrate_flag==0 && c->iteration>0){
+      c->isuspend_atms=1;
+      RTH_Suspend();     // resume called in acceptAtoms
+    }//endif
+#endif
+    c->first_step = 0;          // its not the first step anymore!
  //--------------------------------------------------------------------------
    } //end while: Go back to top of the loop now (no suspending : no pausing)
 //============================================================================
@@ -326,6 +338,7 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
 void allDoneCPForces(void *param, void *msg){
   CkReductionMsg *m=(CkReductionMsg *)msg;
   delete m;
+  CkPrintf("All done CP forces\n");
   atomsGrpProxy.StartRealspaceForces();
 }
 //============================================================================
@@ -475,6 +488,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   initialized     = false;
   first_step      = 1;
   iteration       = 0;
+  myatom_integrate_flag=0;
+  myenergy_reduc_flag=0;
+  isuspend_energy=0;
+  isuspend_atms=0;
 
   total_energy   = 0.0;
   ehart_total    = 0.0;
@@ -615,6 +632,10 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|istart_typ_cp;
   p|iteration;
   p|exitFlag;
+  p|isuspend_energy;
+  p|isuspend_atms;
+  p|myatom_integrate_flag;
+  p|myenergy_reduc_flag;
   p|finishedCpIntegrate;
   p|finishedRedPsi;
   p|iwrite_now;
@@ -932,7 +953,11 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   }//endif
 
 //#ifdef _CP_DEBUG_DYNAMICS_
+#ifdef GLENN_DEBUG
+  memset(gs.packedPlaneData, 0, sizeof(complex)*gs.numPoints);
+#else
   memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+#endif
 //#endif
 
 //============================================================================
@@ -986,14 +1011,13 @@ void CP_State_GSpacePlane::startNewIter ()  {
 // Check for flow of control errors :
 
   if(iteration>0){
-   if(atom_integrate_done==0 || 
-     egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
+   if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
      atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error : Starting new iter before\n");
       CkPrintf("finishing atom integrate or iteration mismatch.\n");
-      CkPrintf("atom_int %d iter_gsp %d iter_energy %d iter_atm %d\n",
- 	        atom_integrate_done,iteration,
+      CkPrintf("iter_gsp %d iter_energy %d iter_atm %d\n",
+ 	        iteration,
 	        egroupProxy.ckLocalBranch()->iteration_gsp,
                 atomsGrpProxy.ckLocalBranch()->iteration);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1002,6 +1026,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
   } //endif
 
   doneNewIter = true;
+  myenergy_reduc_flag  =0; // energies not reduced for new iter
+  myatom_integrate_flag=0; // atoms not integrated on new iter
 
 //============================================================================
 // Reset all the counters that need to be reset (not more not less)
@@ -1055,6 +1081,7 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
 	SFDummyMsg *msg = new(8*sizeof(int)) SFDummyMsg;
 	CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	*(int*)CkPriorityPtr(msg) = config.sfpriority;
+        msg->iteration_src = iteration;
 	sfCompSectionProxy.computeSF(msg);
     }//endif
 
@@ -1322,6 +1349,7 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 			  config.doublePack);
   contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
 	     CkCallback(printEnergyEke, NULL));
+  myenergy_reduc_flag=0;
 
 //========================================================================
 // Debug output
@@ -1360,8 +1388,19 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
-  int i=0;
-  contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(allDoneCPForces,NULL));
+#ifdef GLENN_DEBUG
+  iteration++;
+  if(iteration==config.maxIter+1){
+    int i=0;
+    contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+  }else{
+#endif
+   int i=0;
+   contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(allDoneCPForces,NULL));
+#ifdef GLENN_DEBUG
+  }//endif
+#endif
+
 }//end routine
 //===============================================================================
 
@@ -2309,20 +2348,6 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 
 
 //==============================================================================
-// if I finish my integration but atoms are still going : wait (see comments below)
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_State_GSpacePlane::waitForAtoms() {
-   GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-    *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps; 
-    gSpacePlaneProxy(thisIndex.x, thisIndex.y).acceptAtoms(msg);
-}
-//==============================================================================
-
-
-//==============================================================================
 // Probe for atom completion : Could have atom group invoke this function directly
 //                             on all chares for which it is responsible.
 //                             There is an atom group on each proc. Some
@@ -2337,17 +2362,25 @@ void CP_State_GSpacePlane::waitForAtoms() {
 //==============================================================================
 void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
    delete msg;
-   if(atom_integrate_done==0 || egroupProxy.ckLocalBranch()->iteration_gsp
-                                != iteration){
-      CkPrintf("Spinning my wheels man\n");
-      GSAtmMsg *newMsg = new (8*sizeof(int)) GSAtmMsg;
-      CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(newMsg) = config.sfpriority+config.numSfGrps; 
-      gSpacePlaneProxy(thisIndex.x, thisIndex.y).acceptAtoms(newMsg);
-   }else{
-      RTH_Runtime_resume(run_thread);
+   myatom_integrate_flag=1;
+   if(isuspend_atms==1){ // I suspended to wait for atoms, resume me baby.
+     isuspend_atms=0;
+     RTH_Runtime_resume(run_thread);
    }//endif
-}
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
+   delete msg;
+   myenergy_reduc_flag=1;
+   if(isuspend_energy==1){ // I suspended to wait for energy, resume me baby.
+     isuspend_energy=0;
+     RTH_Runtime_resume(run_thread);
+   }//endif
+}//end routine
 //==============================================================================
 
 
@@ -2514,25 +2547,23 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
   }//end switch
 
 //==============================================================================
-// Less stuff arrive under debug conditions
+// if you debuggin you get fewer energies
 
   int isub =0;
 #ifdef _CP_DEBUG_SFNL_OFF_
   isub++;
 #endif
-
 #ifdef  _CP_DEBUG_RHO_OFF_
   isub+=5;
 #endif
-
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
 #ifndef  _CP_DEBUG_RHO_OFF_
   isub+=3;
 #endif
 #endif
 
-  if(ecount == NUM_ENERGIES-isub){
 
+  if(ecount == NUM_ENERGIES-isub){
     EnergyStruct estruct;
     estruct.enl             = enl_total;
     estruct.eke             = eke_total;

@@ -149,28 +149,7 @@ class EnergyGroup : public Group {
     EnergyGroup();
     int iteration_gsp;
     int iteration_atm;
-    
-    void updateEnergiesFromGS(EnergyStruct &es) {
-      estruct.enl          = es.enl;
-      estruct.eke          = es.eke;
-      estruct.eext         = es.eext;
-      estruct.ehart        = es.ehart;
-      estruct.eewald_recip = es.eewald_recip;
-      estruct.egga         = es.egga;
-      estruct.eexc         = es.eexc;
-      estruct.fictEke      = es.fictEke;
-      estruct.totalElecEnergy  = es.totalElecEnergy;
-      estruct.fmagPsi      = es.fmagPsi;
-      estruct.iteration_gsp= es.iteration_gsp;
-      iteration_gsp        = es.iteration_gsp;
-#ifdef _DEBUG_ESTRUCT_
-       CkPrintf("Energies received %lf, %lf, %lf, %lf, %lf\n", 
-                 estruct.enl,estruct.eke,estruct.eext,estruct.ehart, 
-                 estruct.eewald_recipt,estruct.egga,estruct.eexc,
-                 estruct.fictEke,estruct.totalEnergy);
-#endif
-    }
-
+    void updateEnergiesFromGS(EnergyStruct &);
     inline EnergyStruct getEnergyStruct(){return estruct;}
 };
 EnergyStruct GetEnergyStruct();

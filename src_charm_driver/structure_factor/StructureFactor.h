@@ -15,6 +15,8 @@
 extern Config config;
 
 class SFDummyMsg: public CMessage_SFDummyMsg {
+ public:
+  int iteration_src;
 };
 
 

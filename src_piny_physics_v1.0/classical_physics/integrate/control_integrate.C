@@ -20,7 +20,8 @@
 void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
                         int cp_min_opt, int cp_wave_opt, int iextended_on,
                         Atom *atoms,AtomNHC *atomsNHC,int myid,
-                        double *eKinetic,double *eKineticNhc,double *potNhc)
+                        double *eKinetic,double *eKineticNhc,double *potNhc,
+                        int *iwrite_atm,int output_on)
 //============================================================================
    {//begin routine 
 //============================================================================
@@ -42,7 +43,8 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
 //============================================================================
 // (II) Invoke atom output to dump and config files
 
-   ATOMOUTPUT::ctrl_piny_output(itime,natm,len_nhc,pi_beads,myid,atoms,atomsNHC);
+   ATOMOUTPUT::ctrl_piny_output(itime,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
+                                iwrite_atm,output_on);
 
 //============================================================================
 // (III) Evolve to first 1/2 step of the present step

@@ -166,9 +166,13 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int first_step; //control flags and functions reference by thread are public
         int iwrite_now;
 	int iteration;
+        int myatom_integrate_flag; // 0 after I launch, 1 after return of atoms
+        int myenergy_reduc_flag;   // 0 after I launch eke, 1 after return of energy
         int exitFlag;
         int finishedRedPsi;
         int finishedCpIntegrate;
+        int isuspend_energy;
+        int isuspend_atms;
 
 	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int);
@@ -200,6 +204,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool allDoneIFFT() {return allgdoneifft;}
 	void doIFFT(GSIFFTMsg *);
         void acceptAtoms(GSAtmMsg *msg);
+        void acceptEnergy(GSAtmMsg *msg);
 	void gdoneIFFT(CkReductionMsg *msg);
 	void gdonePsiV(CkReductionMsg *msg);
         void resumePsiV (CkReductionMsg *msg);
@@ -213,7 +218,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void acceptLambda(CkReductionMsg *msg);
         void acceptRedPsi(GSRedPsiMsg *msg);  
         void computeCgOverlap();
-        void waitForAtoms();
         void run ();
         void sendFFTData ();
         void doIFFT ();
