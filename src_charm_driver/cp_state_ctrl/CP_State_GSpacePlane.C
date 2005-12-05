@@ -121,10 +121,10 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ, FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real
 #if  !_CP_DEBUG_SFNL_OFF_
-      c->releaseSFComputeZ();
+     c->releaseSFComputeZ();
 #if CP_PARTICLE_BARRIER
-      RTH_Suspend(); // wait this to finish : PP
-      //printf("Compute Z woke me up \n"); 
+     RTH_Suspend(); // wait this to finish : PP
+     //printf("Compute Z woke me up \n"); 
 #endif
 #endif
       c->doFFT(); 
@@ -136,8 +136,10 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (D) Combine non-local and vks forces then compute eke forces
     // If NL-pseudo forces done, completedExtExcNlForces calls combineForcesGetEke
-#if  _CP_DEBUG_SFNL_OFF_ || CP_PARTICLE_BARRIER
+#if  _CP_DEBUG_SFNL_OFF_ 
        c->combineForcesGetEke();
+#elif CP_PARTICLE_BARRIER
+       c->completedExtExcNlForces();
 #else
        if (!(c->completedExtExcNlForces())){
 	 RTH_Suspend(); // If NL-pseudo forces are not finished then `suspend'.
@@ -155,6 +157,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //    However, the atoms can overlap with all this lambda, psi stuff.
 #endif
        c->launchAtoms();
+
 #ifndef GLENN_DEBUG
     //------------------------------------------------------------------------
     // (F) Add contraint forces (rotate forces to non-orthogonal frame)
@@ -207,15 +210,19 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
          RTH_Suspend();    // Wait for new PsiV : resume is called in acceptNewPsiV
       }//endif
     }//endif
-   //------------------------------------------------------------------------
-   // (d) Check for Energy reduction completion
+
+    /* RIPPING it out, Glenn add it when you have debugged it
+    //------------------------------------------------------------------------
+    // (d) Check for Energy reduction completion
     if(c->myenergy_reduc_flag==0 && c->iteration>0){
-      c->isuspend_energy=1;
-      RTH_Suspend();     // resume called in acceptEnergy
+    c->isuspend_energy=1;
+    RTH_Suspend();     // resume called in acceptEnergy
     }//endif
+    */
 #else
-   //------------------------------------------------------------------------
-   // (E) Check for atom integration 
+    
+    //------------------------------------------------------------------------
+    // (E) Check for atom integration 
     if(c->myatom_integrate_flag==0 && c->iteration>0){
       c->isuspend_atms=1;
       RTH_Suspend();     // resume called in acceptAtoms
@@ -1024,8 +1031,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
 // Check for flow of control errors :
 
   if(iteration>0){
-   if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
-     atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
+    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
+      atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error : Starting new iter before\n");
       CkPrintf("finishing atom integrate or iteration mismatch.\n");
@@ -1067,12 +1074,12 @@ void CP_State_GSpacePlane::startNewIter ()  {
   if(iteration==TRACE_OFF_STEP){traceEnd();}
 #endif
 
-    if(config.lbgspace || config.lbpaircalc){
-	if((iteration % (FIRST_BALANCE_STEP - PRE_BALANCE_STEP) == 0)  || 
-           (iteration % (LOAD_BALANCE_STEP - PRE_BALANCE_STEP) == 0)){
-	    LBTurnInstrumentOn();
-	}//endif
+  if(config.lbgspace || config.lbpaircalc){
+    if((iteration % (FIRST_BALANCE_STEP - PRE_BALANCE_STEP) == 0)  || 
+       (iteration % (LOAD_BALANCE_STEP - PRE_BALANCE_STEP) == 0)){
+      LBTurnInstrumentOn();
     }//endif
+  }//endif
 
 //============================================================================
 // Output psi at start of minimization for debugging
@@ -2404,10 +2411,13 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
 void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
    delete msg;
    myenergy_reduc_flag=1;
-   if(isuspend_energy==1){ // I suspended to wait for energy, resume me baby.
-     isuspend_energy=0;
-     RTH_Runtime_resume(run_thread);
-   }//endif
+
+   /* Glenn enable it when you have fixed, preferably as an option.
+      if(isuspend_energy==1){ // I suspended to wait for energy, resume me baby.
+      isuspend_energy=0;
+      RTH_Runtime_resume(run_thread);
+      }//endif
+   */
 }//end routine
 //==============================================================================
 
