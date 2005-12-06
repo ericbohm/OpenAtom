@@ -200,7 +200,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void isAtSync(int);
 	void ResumeFromSync();
 	bool weneedPsiV();
-        bool completedExtExcNlForces ();
+        void acceptNLForces ();
+        bool doneNLForces();
 	bool allDoneIFFT() {return allgdoneifft;}
 	void doIFFT(GSIFFTMsg *);
         void acceptAtoms(GSAtmMsg *msg);
@@ -417,11 +418,11 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	~CP_Rho_GHartExt();
 	void acceptData(RhoGHartMsg *msg);
 	void HartExtVksG();
-        void waitForAtoms(GHartDummyMsg *);
 	void sendVks();
  private:
 	RhoGSlab rho_gs;
 	int iopt;
+        int iteration;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
 };
 //============================================================================

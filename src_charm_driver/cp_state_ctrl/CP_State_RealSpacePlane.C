@@ -30,8 +30,8 @@
 
 #include "../../include/debug_flags.h"
 #include "util.h"
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 

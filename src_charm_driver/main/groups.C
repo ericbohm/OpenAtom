@@ -10,13 +10,11 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 
-//#define DEBUG_GLENN
-
 //==============================================================================
 #include "charm++.h"
-#include "groups.h"
 #include "util.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include <math.h>
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
@@ -28,7 +26,6 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //----------------------------------------------------------------------------
-extern int atom_integrate_done;  // not a readonly global : a group of one element
 extern CProxy_EnergyGroup egroupProxy;
 extern Config config;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
@@ -72,7 +69,6 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
            zeronhc();
            computeFNhc();
 	}//endif
-        atom_integrate_done=1;
 }
 //==============================================================================
 
@@ -135,8 +131,7 @@ void AtomsGrp::StartRealspaceForces(){
    int myid          = CkMyPe();
    double pot_ewd_rs = 0.0;
 
-   atom_integrate_done = 0;
-#ifndef DEBUG_GLENN
+#ifndef  _CP_DEBUG_PSI_OFF_
    if(myid==0){CPRSPACEION::CP_getionforce(natm,atoms,myid,&pot_ewd_rs);}
 #endif
 
@@ -241,9 +236,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   double potNhc_loc     =0.0;
   int iwrite_atm        =0;
 
-#ifdef DEBUG_GLENN
-  double dt     = (0.25/0.0241888);
-  double omega  = 0.01/dt;
+#ifdef  _CP_DEBUG_PSI_OFF_
+  double omega  = (0.0241888/15.0); // 15 fs^{-1}
   double omega2 = omega*omega;
   double pot_harm = 0.0;
   if(iteration==0){
@@ -261,14 +255,15 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
                                       atoms[i].y*atoms[i].y+
                                       atoms[i].z*atoms[i].z));
   }//endfor
+  pot_harm *= 0.5;
 #endif
   ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
                     output_on);
-#ifdef DEBUG_GLENN
+#ifdef  _CP_DEBUG_PSI_OFF_
   double etot_atm = eKinetic_loc+eKineticNhc_loc+potNhc_loc+pot_harm;
-  CkPrintf("iteration %d : tot energy %g on %d\n",iteration,etot_atm,myid);
+  CkPrintf("iteration %d : tot energy %.12g on %d\n",iteration,etot_atm,myid);
 #endif
   iteration++;
 
@@ -296,25 +291,30 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   zeroforces();
   outputAtmEnergy();
 
-  if(iwrite_atm!=0){
-     int i=0;
-     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
-     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-  }else{
-     atom_integrate_done = 1;
-     // since atoms is a group, should use point to point messages
-     // sent to gsp's assigned to my proc rather than a single bcast from proc=0
-     if(myid==0){ 
-        GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-        CkSetQueueing(msg,CK_QUEUEING_IFIFO);
-        *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps; 
-        gSpacePlaneProxy.acceptAtoms(msg);
-     }//endif
+  //--------------------------------------------------
+  //Sync Values : acceptAtoms(msg) invokes atomsDone()
+  int isync_atm = 0;
+  if((iteration % 50)==0 && cp_wave_opt==0 && cp_min_opt==0){
+    isync_atm=1;
+    sendAtoms();
+  }//endif
+  //------------------------------------------------
+  //Sync Timing : atomsDone(msg) invokes atomsDone()
+  if(iwrite_atm!=0 && isync_atm==0){
+    int i=0;
+    CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  }//endif
+  //-----------------------------------------------
+  // Just Go : Invoke atomsDone() now
+  if(iwrite_atm==0 && isync_atm==0){
+    atomsDone();
   }//endif
 
 //-------------------------------------------------------------------------
    }//end routine
 //==========================================================================
+
 
 //==========================================================================
 // Atom energy output
@@ -357,18 +357,155 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::atomsDone(CkReductionMsg *msg) {
+  void AtomsGrp::atomsDone(CkReductionMsg *msg) {
 //==========================================================================
   delete msg;
-  int myid = CkMyPe();
-  atom_integrate_done = 1;
-  if(myid==0){
+   atomsDone();
+}
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+   void AtomsGrp::atomsDone() {
+//==========================================================================
+   int myid = CkMyPe();
+   if(myid==0){
      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
      *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps; 
      gSpacePlaneProxy.acceptAtoms(msg);
-  }//endif
+   }//endif
 }
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+  void AtomsGrp::sendAtoms() {
+//==========================================================================
+
+  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+  int myid          = CkMyPe();
+  int natm          = ag->natm;
+  int len_nhc       = ag->len_nhc;
+  int iextended_on  = ag->iextended_on;
+  int iteration     = ag->iteration;
+  Atom *atoms       = ag->atoms;
+  AtomNHC *atomsNHC = ag->atomsNHC;
+
+  int nsize = 6*natm;
+  if(iextended_on==1){nsize += len_nhc*3*natm;}
+  double *atmData = new double [nsize];
+
+//==========================================================================
+// pack atom position and velocity
+
+  for(int i=0,j=0;i<natm;i++,j+=6){
+    atmData[(j)  ]=atoms[i].x;
+    atmData[(j+1)]=atoms[i].y;
+    atmData[(j+2)]=atoms[i].z;
+    atmData[(j+3)]=atoms[i].vx;
+    atmData[(j+4)]=atoms[i].vy;
+    atmData[(j+5)]=atoms[i].vz;
+  }//endfor
+
+//==========================================================================
+// pack NHC position and velocity
+
+  if(iextended_on==1){
+    int joff= 6*natm;
+    for(int i=0,j=joff;i<natm;i++,j+=3*len_nhc){
+      for(int k=0,m=j;k<len_nhc;k++,m+=3){
+	atmData[(m)]  =atomsNHC[i].vx[k];
+	atmData[(m+1)]=atomsNHC[i].vy[k];
+	atmData[(m+2)]=atomsNHC[i].vz[k];
+      }//endfor
+    }//endfor
+  }//endif
+
+//==========================================================================
+// Send the message to everyone in the group
+
+  if(myid==0){
+    CkPrintf("Synching atoms after iteration %d\n",iteration);
+    AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
+    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+    *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps;
+    double *data = msg->data;
+    msg->nsize=nsize;
+    memcpy(data,atmData,nsize*sizeof(double));
+    atomsGrpProxy.acceptAtoms(msg);
+  }//endif
+
+  delete [] atmData;  
+
+//-------------------------------------------------------------------------
+   }
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+  void AtomsGrp::acceptAtoms(AtomMsg *msg) {
+//==========================================================================
+
+  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+  int myid          = CkMyPe();
+  int natm          = ag->natm;
+  int len_nhc       = ag->len_nhc;
+  int iextended_on  = ag->iextended_on;
+  Atom *atoms       = ag->atoms;
+  AtomNHC *atomsNHC = ag->atomsNHC;
+  double *atmData   = msg->data;
+  int    nsizeMsg   = msg->nsize;
+  
+  int nsize = 6*natm;
+  if(iextended_on==1){nsize += len_nhc*3*natm;}
+  if(nsize!=nsizeMsg){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Incorrect message size in atmsgrp::acceptatoms \n");
+    CkPrintf("%d %d %d\n",myid,nsize,nsizeMsg);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  //==========================================================================
+  // pack atom position and velocity
+
+  for(int i=0,j=0;i<natm;i++,j+=6){
+    atoms[i].x = atmData[(j)  ];
+    atoms[i].y = atmData[(j+1)];
+    atoms[i].z = atmData[(j+2)];
+    atoms[i].vx= atmData[(j+3)];
+    atoms[i].vy= atmData[(j+4)];
+    atoms[i].vz= atmData[(j+5)];
+  }//endfor
+
+  //==========================================================================
+  // pack NHC position and velocity
+
+  if(iextended_on==1){
+    int joff= 6*natm;
+    for(int i=0,j=joff;i<natm;i++,j+=(3*len_nhc)){
+      for(int k=0,m=j;k<len_nhc;k++,m+=3){
+	atomsNHC[i].vx[k] = atmData[(m)];
+	atomsNHC[i].vy[k] = atmData[(m+1)];
+	atomsNHC[i].vz[k] = atmData[(m+2)];
+      }//endfor
+    }//endfor
+  }//endif
+
+  delete msg;
+//==========================================================================
+
+  atomsDone();
+
+//-------------------------------------------------------
+  }//end routine
 //==========================================================================
 
 

@@ -94,8 +94,8 @@
 #include "ckarray.h"
 #include "util.h"
 //============================================================================
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "ortho.h"
 #include "sim_subroutines.h"
 #include "StructFactorCache.h"
@@ -160,7 +160,6 @@ CProxy_StructureFactor sfCompProxy;
 //============================================================================
 
 //============================================================================
-int atom_integrate_done;  // not a real global : more like a group of size 1
 int nstates;              // readonly globals
 int sizeX;
 int nchareG;

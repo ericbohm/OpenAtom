@@ -31,8 +31,8 @@
 #include "charm++.h"
 #include "ckarray.h"
 #include "util.h"
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 

@@ -46,7 +46,6 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl       = (cppseudo->nonlocal.natm);
   int cp_grad_corr_on= cpopts->cp_gga;
-  CkPrintf("cp_grad_corr_on %d %d %d \n",cp_grad_corr_on,cpopts->cp_becke,cpopts->cp_lyp);
 
   double vol        = gencell->vol;
   double dt         = gentimeinfo->dt;

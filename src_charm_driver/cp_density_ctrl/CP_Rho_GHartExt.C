@@ -30,8 +30,8 @@
 
 #include "../../include/debug_flags.h"
 #include "util.h"
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 
@@ -46,7 +46,6 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 extern ComlibInstanceHandle commGHartInstance;
-extern int atom_integrate_done;  // not a readonly global : a group of one element
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -93,6 +92,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
   rho_gs.divRhoX   = NULL;
   rho_gs.divRhoY   = NULL;
   rho_gs.divRhoZ   = NULL;
+  iteration        = 0;
 
 
   setMigratable(false);
@@ -124,52 +124,22 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   delete msg;  
 
 // Check the flow of control to see if we can use the data.
-// Since gsp calls rsp and rsp invokes rho, all gsp must 
-// report to rsp before it goes, and all gsp check for atoms, you can't
-// really get this error. This could change so now you are safe.
-
-   if(atom_integrate_done==1){
+   if(atomsGrpProxy.ckLocalBranch()->iteration == iteration){
       HartExtVksG();
    }else{
-      CkPrintf("Flow of Control Warning  in HartExtVks : atoms slow\n");
-      CkPrintf("Recaling myself %d %d\n",thisIndex.x,thisIndex.y);
-      CkPrintf("However, the current flow of control should not \n");
-      CkPrintf("permit this behaior! You should never be doing this!\n");
-      GHartDummyMsg *msgAtm = new(8*sizeof(int)) GHartDummyMsg;
-      CkSetQueueing(msgAtm, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msgAtm) = config.sfpriority;
-      rhoGHartExtProxy(thisIndex.x, thisIndex.y).waitForAtoms(msgAtm);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Flow of Control Error in HartExtVks : atoms slow\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
    }//endif
-
 }
 //============================================================================
-
-
-//==============================================================================
-// I need the atoms before I start
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_Rho_GHartExt::waitForAtoms(GHartDummyMsg *msg) {
-   delete msg;
-   if(atom_integrate_done==1){
-      HartExtVksG();
-   }else{
-      GHartDummyMsg *msgAtm = new(8*sizeof(int)) GHartDummyMsg;
-      CkSetQueueing(msgAtm, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msgAtm) = config.sfpriority;
-      rhoGHartExtProxy(thisIndex.x,thisIndex.y).waitForAtoms(msgAtm);
-   }//endif
-}
-//==============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GHartExt::HartExtVksG() { 
-//============================================================================
-
 //============================================================================
 // Get the variables
 
@@ -200,6 +170,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    CPLOCAL::CP_hart_eext_calc(numPoints, rho, natm, atoms, vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
                               thisIndex.x);
+   iteration ++;
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
 #endif

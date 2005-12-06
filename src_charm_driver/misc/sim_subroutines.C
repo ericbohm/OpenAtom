@@ -11,8 +11,8 @@
 #include "util.h"
 #include "../../include/debug_flags.h"
 #include <math.h>
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 

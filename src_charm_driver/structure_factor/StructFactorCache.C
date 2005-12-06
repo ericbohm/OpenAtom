@@ -6,8 +6,8 @@
  
 #include "util.h"
 #include "fftlib.h"
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "StructFactorCache.h"
 #include "../../include/debug_flags.h"

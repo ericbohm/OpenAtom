@@ -26,7 +26,6 @@ void ATOMINTEGRATE::integrate_nve_2nd_half(int itime,int natm,Atom *atoms,
    double dt  = gentimeinfo->dt;
    double dt2 = dt*0.5;
 
-
 //============================================================================
 // Evolve the system : if its not the first time step
 
@@ -203,8 +202,8 @@ void ATOMINTEGRATE::computeENHC(int natm, int len_nhc,AtomNHC *atomsNHC,
    for(int i=0;i<natm;i++){
      for(int j=0;j<len_nhc;j++){
         eKinNHC += atomsNHC[i].m[j]*(atomsNHC[i].vx[j]*atomsNHC[i].vx[j]+
-                                         atomsNHC[i].vy[j]*atomsNHC[i].vy[j]+
-                                         atomsNHC[i].vz[j]*atomsNHC[i].vz[j]);
+                                     atomsNHC[i].vy[j]*atomsNHC[i].vy[j]+
+                                     atomsNHC[i].vz[j]*atomsNHC[i].vz[j]);
      }//endfor
    }//endfor
    eKinNHC *= 0.5;

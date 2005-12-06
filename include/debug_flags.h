@@ -5,6 +5,10 @@
 //=============================================================================
 
 //=============================================================================
+// src_charm_driver/main/groups.C
+//#define _CP_DEBUG_PSI_OFF_
+
+//=============================================================================
 // src_charm_driver/misc/sim_subroutines.C
 //#define _CP_DEBUG_NON_LOCAL_ONLY_
 //#define _CP_DEBUG_VKS_ONLY_
@@ -47,10 +51,11 @@
 //#define _CP_DEBUG_STATEG_VERBOSE_
 //#define _CP_DEBUG_DYNAMICS_
 //#define _CP_DEBUG_ORTHO_OFF_
-#define _CP_DEBUG_SFNL_OFF_     0
-#define CP_PARTICLE_BARRIER     0
+//#define _CP_DEBUG_SFNL_OFF_
+//#define _CP_DEBUG_PSI_OFF_
 #define _CP_DEBUG_COEF_SCREEN_
 #define _CP_DEBUG_UPDATE_OFF_
+//#define _CP_DEBUG_NONLOC_BARRIER_
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 

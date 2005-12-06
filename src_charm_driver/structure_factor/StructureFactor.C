@@ -7,8 +7,8 @@
 //============================================================================== 
 
 #include "util.h"
-#include "groups.h"
 #include "cpaimd.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "../../include/debug_flags.h"
 #include "StructureFactor.h"
@@ -21,7 +21,6 @@ extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_EnergyGroup egroupProxy; //energy group proxy
-extern int atom_integrate_done;  // not a readonly global : a group of one element
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //==============================================================================
@@ -37,7 +36,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
    delete msg; // prioritized trigger
 
    // The guy who called us is up to date. Are we? The caller is one ahead
-   // of the energy dude and the atoms because it fliped its iteration counter
+   // of the energy dude and the atoms because it flipped its iteration counter
    // at the top of the loop.
    if(numdest){
      if(atomsGrpProxy.ckLocalBranch()->iteration != 

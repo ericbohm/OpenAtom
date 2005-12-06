@@ -359,6 +359,9 @@ void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int , double *, double *);
 
 //============================================================================
 
+// stuff to be include before the decl or else
+#include "../../include/Atoms.h"
+#include "energy.h"
 #include "cpaimd.decl.h"
 
 #endif

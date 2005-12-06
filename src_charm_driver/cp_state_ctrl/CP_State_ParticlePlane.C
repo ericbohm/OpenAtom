@@ -36,9 +36,8 @@
 
 #include "charm++.h"
 #include "util.h"
-#include "groups.h"
 #include "cpaimd.h"
-#include "../../include/debug_flags.h"
+#include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
 #include "StructFactorCache.h"
@@ -101,7 +100,13 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   enl                  = 0.0;
   energy_count         = 0;
   totalEnergy          = 0.0;
-  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
+  reductionPlaneNum    = 0;
+//  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
+  // figure out a reliable way to do this
+//  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
+  // now expand that to spread these guys around
+  //  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
+  reductionPlaneNum= 0;
   contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
@@ -125,14 +130,13 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 //============================================================================
 // Create section proxy for ENL reduction ParticlePlane (any state#, reductionPlaneNum)
 
-  if(thisIndex.x==0 && thisIndex.y==0){
+  if(thisIndex.x==0 && thisIndex.y==reductionPlaneNum){
 
       CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
 
       CkArrayIndex2D idx(0, reductionPlaneNum);  // plane# = this plane#
       for (int j = 0; j < nstates; j++) {
 	idx.index[0] = j;
-	idx.index[1] = calcReductionPlaneNum(j);
 	elems[j] = idx;
       }//endfor
 
@@ -241,6 +245,7 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|doneEnl;
 	p|doneForces;
         p|enl_total;
+        p|reductionPlaneNum;
 	p|enlCookie;
 	p|particlePlaneENLProxy;
 	// "gspace" is not pup'ed since it is always assigned to
@@ -267,27 +272,11 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
     int sfindex     = m->sfindex;
     delete m;
    
-
-    // you can't add to the energy group, until the previous step is done filling it.
-    // since computeZ leads to energies, thats no good. 
-    // Since gps is bound to pp, this syncs pp with energy group correctly.
-    if(gsp->acceptedPsi){
-      if(!gsp->doneNewIter){ // false after send lambda, true after accept energy/atoms
-         CkPrintf("Flow of Control Warning in computeZ. \n");
-         PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
-  	 pmsg->atmGrp     = atmIndex;
-         pmsg->sfindex    = sfindex;
-         CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
-	 *(int*)CkPriorityPtr(pmsg) = config.sfpriority+config.numSfGrps; 
-         //lower than sf and sfcache
-         particlePlaneProxy(thisIndex.x, thisIndex.y).computeZ(pmsg);
-      }//endif
-    }//endif
-
 //============================================================================    
-// If you got here and you have the latest psi 
+// If you got here and you have the latest psi, correct iteration etc.
+// This ensure reduced psi for dynamics which you really really need!
 
-    if(gsp->acceptedPsi){ //need latest Psi to computeZ
+    if(gsp->acceptedPsi && gsp->doneNewIter){
       StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
 
       complex *structureFactor;
@@ -454,16 +443,6 @@ void CP_State_ParticlePlane::sumEnergies(double energy_) {
 //============================================================================
 
 
-void ParticleBarrierClient(void *param, void *msg) {
-  CkReductionMsg *m = (CkReductionMsg *)msg;
-  //delete m;
-  
-  printf("After particle plane barrier\n");
-  
-  gSpacePlaneProxy.startFFT(m);
-}
-
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -498,19 +477,9 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
   if(doneForces==numSfGrps){
       doneGettingForces = true;
       doneForces=0;
-
-#if !CP_PARTICLE_BARRIER
-      if (gsp->doneDoingIFFT) {
-	gsp->combineForcesGetEke(); //calls resume in G very yucky
-      }//endif
-#else
-      int dummy=0;
-      contribute(sizeof(int),&dummy,CkReduction::sum_int,
-		 CkCallback(ParticleBarrierClient, NULL));
-#endif
-      
+      gsp->acceptNLForces();
   }//endif : doneforces
-  
+
 //----------------------------------------------------------------------------
 }//end routine
 //============================================================================
@@ -531,23 +500,9 @@ void CP_State_ParticlePlane::setEnlCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_ParticlePlane::ResumeFromSync(){
-  if(thisIndex.x==0 && thisIndex.y==0){
+  if(thisIndex.x==0 && thisIndex.y==reductionPlaneNum){
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
       mcastGrp->resetSection(particlePlaneENLProxy);
   }//endif
 }// end routine
 //============================================================================
-
-int CP_State_ParticlePlane::calcReductionPlaneNum(int state)
-{
-  
-  int nstatemax=nstates-1;
-  int ncharemax=nchareG-1;
-  int planeNum= state %ncharemax;
-  if(planeNum<0)
-    {
-      CkPrintf(" PP [%d %d] calc nstatemax %d ncharemax %d state %d planenum %d\n",thisIndex.x, thisIndex.y,nstatemax, ncharemax, state, planeNum); 
-      CkExit();
-    }
-  return planeNum;
-}
