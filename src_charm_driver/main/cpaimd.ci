@@ -262,6 +262,7 @@ mainmodule cpaimd {
                 entry void StartRealspaceForces();
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
+                entry void energyDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
 	};
 

@@ -3,7 +3,7 @@
 //    move resetiterstate
 //======================================================
 
-#define _CP_DEBUG_NONLOC_BARRIER_OFF
+#define _CP_DEBUG_NONLOC_BARRIER_
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -58,6 +58,8 @@ class AtomsGrp: public Group {
   void recvContribute(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
   void atomsDone();
+  void energyDone(CkReductionMsg *);
+  void energyDone();
   void sendAtoms();
   void acceptAtoms(AtomMsg *);
   void StartRealspaceForces();
