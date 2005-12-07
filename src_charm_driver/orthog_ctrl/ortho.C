@@ -258,6 +258,7 @@ void Ortho::minCheck(CkReductionMsg *msg){
 //============================================================================
 void Ortho::resumeV(CkReductionMsg *msg){ // gspace tolerance check entry
   delete msg;
+  toleranceCheckOrthoT=true;
   do_iteration();
 }
 //============================================================================
