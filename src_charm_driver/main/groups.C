@@ -577,7 +577,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
                  estruct.fictEke,estruct.totalEnergy);
 #endif
     int i=0;
-    CkCallback cb(CkIndex_AtomsGrp::energyDone(NULL),atomsGrpProxy);
+    CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),egroupProxy);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 
 //-------------------------------------------------------------------------
@@ -588,7 +588,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-  void AtomsGrp::energyDone(CkReductionMsg *msg) {
+  void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;
    energyDone();
@@ -602,7 +602,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::energyDone(){
+void EnergyGroup::energyDone(){
 //==========================================================================
     int myid = CkMyPe();
     if(myid==0){

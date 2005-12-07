@@ -262,7 +262,6 @@ mainmodule cpaimd {
                 entry void StartRealspaceForces();
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
-                entry void energyDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
 	};
 
@@ -273,6 +272,7 @@ mainmodule cpaimd {
 	group EnergyGroup {
 		entry EnergyGroup();
 		entry void updateEnergiesFromGS(EnergyStruct es);
+                entry void energyDone(CkReductionMsg *);
 	};
 	
 

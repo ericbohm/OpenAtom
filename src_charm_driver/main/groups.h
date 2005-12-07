@@ -58,8 +58,6 @@ class AtomsGrp: public Group {
   void recvContribute(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
   void atomsDone();
-  void energyDone(CkReductionMsg *);
-  void energyDone();
   void sendAtoms();
   void acceptAtoms(AtomMsg *);
   void StartRealspaceForces();
@@ -137,6 +135,8 @@ class EnergyGroup : public Group {
     int iteration_gsp;
     int iteration_atm;
     void updateEnergiesFromGS(EnergyStruct &);
+    void energyDone(CkReductionMsg *);
+    void energyDone();
     inline EnergyStruct getEnergyStruct(){return estruct;}
 };
 EnergyStruct GetEnergyStruct();
