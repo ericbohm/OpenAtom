@@ -3,7 +3,7 @@
 //    move resetiterstate
 //======================================================
 
-#define _CP_DEBUG_NONLOC_BARRIER_
+#define _CP_DEBUG_WARN_SUSPEND_OFF_
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -208,14 +208,18 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    // (d) Check for Energy reduction completion : should just be a safety
     if(c->myenergy_reduc_flag==0 && c->iteration>0){
       c->isuspend_energy=1;
+#ifdef _CP_DEBUG_WARN_SUSPEND_
       CkPrintf("Suspend energy on proc %d : too many of these==bad scheme\n",CkMyPe());
+#endif
       RTH_Suspend();     // resume called in acceptEnergy
     }//endif
 #endif // you are moving everyting
    //------------------------------------------------------------------------
    // (E) Check for atom integration : should just be a safety
     if(c->myatom_integrate_flag==0 && c->iteration>0){
+#ifdef _CP_DEBUG_WARN_SUSPEND_
       CkPrintf("Suspend atms on proc %d : too many of these==bad scheme\n",CkMyPe());
+#endif
       c->isuspend_atms=1;
       RTH_Suspend();     // resume called in acceptAtoms
     }//endif
@@ -2367,6 +2371,8 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error : Iteration\n");
       CkPrintf("mismatch between atoms and g-space planes\n");
+      CkPrintf("suspend %d iteration_atm %d iteration_gsp %d\n",
+                isuspend_atms,iteration,atomsGrpProxy.ckLocalBranch()->iteration);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
