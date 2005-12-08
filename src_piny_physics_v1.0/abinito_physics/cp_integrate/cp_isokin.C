@@ -37,9 +37,9 @@ void CPINTEGRATE::cp_isoVel_update(int n,complex *v,complex *f,
 
    double temp = 0.0;
    for(int i=0;i<n;i++)      {temp +=  m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);}
-   for(int i=0;i<num_nhc;i++){temp += gammaNHC*mNHC*vNHC[i][0]*vNHC[i][0];}
+   for(int i=0;i<num_nhc;i++){temp += gamma*mNHC*vNHC[i][0]*vNHC[i][0];}
 
-   double sc = sqrt(gkT/temp);
+   double sc = sqrt(gkt/temp);
    for(int i=0;i<n;i++){v[i].re *=sc; v[i].im *=sc;}
    for(int i=0;i<num_nhc;i++){vNHC[i][0] *=sc;}
 

@@ -2189,7 +2189,6 @@ void  CP_State_GSpacePlane::sendPsiV() {
   complex *data=gs.packedVelData;
   //complex *data=tpsi;
 
-  complex *data=gs.packedVelData;
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 

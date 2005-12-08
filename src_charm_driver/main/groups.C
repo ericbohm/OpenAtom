@@ -589,7 +589,6 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-<<<<<<< groups.C
   void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;
@@ -611,37 +610,6 @@ void EnergyGroup::energyDone(){
         GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
          *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-         gSpacePlaneProxy.acceptEnergy(msg);
-    }//endif
-}
-//==========================================================================
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-=======
-  void EnergyGroup::energyDone(CkReductionMsg *msg) {
-//==========================================================================
-   delete msg;
-   energyDone();
-}
-//==========================================================================
-
-//==========================================================================
-// Needs to have each proc invoke directly acceptenergy method of the
-// gspaceplanes which are mapped to it. Without migration, we have that map
-// at startup. With migration, one must write an enroll/dropout routine.
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-void EnergyGroup::energyDone(){
-//==========================================================================
-    int myid = CkMyPe();
-    if(myid==0){
-        GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-         *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps;
          gSpacePlaneProxy.acceptEnergy(msg);
     }//endif
 }
