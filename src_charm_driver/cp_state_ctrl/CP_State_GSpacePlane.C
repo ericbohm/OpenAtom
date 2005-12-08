@@ -2100,6 +2100,10 @@ void CP_State_GSpacePlane::sendPsi() {
   acceptedPsi =false;
 
   complex *data=gs.packedPlaneData;
+  /*  if(tpsi==NULL)
+    tpsi  = new complex[gs.numPoints];
+  memcpy(tpsi,data,sizeof(complex)*gs.numPoints);
+  */
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
     //#ifdef  _CP_DEBUG_UPDATE_OFF_
     //    CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
@@ -2153,14 +2157,16 @@ void  CP_State_GSpacePlane::sendPsiV() {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
-
   complex *data=gs.packedVelData;
-  /*  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-     int ncoef     = gs.numPoints;
-     complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
-     memcpy(scr,data,sizeof(complex)*ncoef);
+  //complex *data=tpsi;
+
+  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+    complex *ldata= gs.packedPlaneData;
+    int ncoef     = gs.numPoints;
+    complex *scr  = gs.packedPlaneDataScr; //save old psi
+    memcpy(scr,ldata,sizeof(complex)*ncoef);
   }//endif
-  */
+  
 
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
