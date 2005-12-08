@@ -65,21 +65,21 @@ class MDGRP_BOND_WATTS {
 
      pup1d_dbl(p,&cos_thet0_2,ngrp_typ_33);
      pup1d_dbl(p,&sin_thet0_2,ngrp_typ_33);
-     pup2d_dbl(p,&eq_33, 3,ngrp_typ_33);
-     pup2d_dbl(p,&c_0_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_1_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_2_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_3_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_4_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_5_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&c_6_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_0_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_1_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_2_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_3_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_4_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_5_33,3,ngrp_typ_33);
-     pup2d_dbl(p,&dc_6_33,3,ngrp_typ_33);
+     pup2d_dbl(p,&eq_33, 3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_0_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_1_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_2_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_3_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_4_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_5_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&c_6_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_0_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_1_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_2_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_3_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_4_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_5_33,3,ngrp_typ_33,"mdgrpbondwatts");
+     pup2d_dbl(p,&dc_6_33,3,ngrp_typ_33,"mdgrpbondwatts");
     }//endif
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

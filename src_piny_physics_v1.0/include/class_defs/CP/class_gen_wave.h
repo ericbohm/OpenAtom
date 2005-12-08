@@ -53,7 +53,7 @@ class GEN_WAVE{
         pup1d_int(p,&nstate_dn_atm,natm_typ_cp);
         pup1d_dbl(p,&gpsi00,natm_typ_cp);
 
-        pup2d_dbl(p,&gpsi_now,natm_typ_cp,3);
+        pup2d_dbl(p,&gpsi_now,natm_typ_cp,3,"classgen_wave");
 
         pup3d_dbl(p,&gpsi0,natm_typ_cp,3,nsplin); 
         pup3d_dbl(p,&gpsi1,natm_typ_cp,3,nsplin); 

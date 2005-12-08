@@ -67,8 +67,8 @@ class MDRBAR_SIG_FREE {
     if(nfree>0){
      pup1d_int(p,&j1,nfree);    
      pup1d_int(p,&j2,nfree);    
-     pup2d_dbl(p,&hist,nhist_sig,nhist_bar);
-     pup2d_dbl(p,&hist_rn,nfree,nhist_bar);
+     pup2d_dbl(p,&hist,nhist_sig,nhist_bar,"mdbarsig");
+     pup2d_dbl(p,&hist_rn,nfree,nhist_bar,"mdbarsig");
      pup1d_char(p,&file,MAXWORD);
     }//endif
 #ifdef _PARALLEL_DEBUG_        

@@ -80,7 +80,7 @@ class MDTORS_FREE {
     pup1d_dbl(p,&eq,3);
     pup1d_char(p,&file,MAXWORD);
     if(num == 1){pup1d_dbl(p,&hist,nhist);}
-    if(num == 2){pup2d_dbl(p,&hist_2d,nhist,nhist);}
+    if(num == 2){pup2d_dbl(p,&hist_2d,nhist,nhist,"mdtorsfree");}
   }/* endif */
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

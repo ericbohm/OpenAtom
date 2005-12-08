@@ -112,21 +112,22 @@
 /*==========================================================================*/
 /* 2d double arrays                                                        */
 /*==========================================================================*/
-  void pup2d_dbl(PUP::er &p,double ***vec, int nlen_1,int nlen_2){
-
+  void pup2d_dbl(PUP::er &p,double ***vec, int nlen_1,int nlen_2, char*callerID){
    if(nlen_1 > 0 && nlen_2 > 0){
     int ir,ic;
     int index;
     int  psize       = nlen_1*nlen_2;
     double *pscratch = (double *) cmalloc(psize*sizeof(double),"piny_pup")-1;
+    double **vtmp = *vec;
     if (p.isUnpacking()) {
       *vec = cmall_mat(1,nlen_1,1,nlen_2,"piny_pup");
+      vtmp = *vec;
     }else{
     // packing 2d array into 1d array to be pupped
      index = 1;
      for(ir=1; ir <= nlen_1;  ir++){
      for(ic=1; ic <= nlen_2; ic++){
-      pscratch[index] = (*vec)[ir][ic];
+      pscratch[index] = vtmp[ir][ic];
       ++index;
      }} 
     }//endif
@@ -136,7 +137,7 @@
      index = 1;
      for(ir=1; ir <= nlen_1; ir++){
      for(ic=1; ic <= nlen_2; ic++){
-      (*vec)[ir][ic] = pscratch[index];
+      vtmp[ir][ic] = pscratch[index];
       ++index;
      }} 
     }//endif

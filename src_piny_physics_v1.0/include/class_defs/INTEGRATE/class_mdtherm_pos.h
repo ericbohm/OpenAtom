@@ -46,8 +46,8 @@ class MDTHERM_POS {
 
   // PUP arrays
 
-    pup2d_dbl(p,&x_nhc,len_nhc,num_nhc);
-    pup2d_dbl(p,&v_nhc,len_nhc,num_nhc);
+    pup2d_dbl(p,&x_nhc,len_nhc,num_nhc,"mdtherm_pos");
+    pup2d_dbl(p,&v_nhc,len_nhc,num_nhc,"mdtherm_pos");
 
 
   } // end pack/unpack 

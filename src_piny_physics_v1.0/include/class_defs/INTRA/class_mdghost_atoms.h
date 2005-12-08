@@ -57,7 +57,7 @@ class MDGHOST_ATOMS {
     pup1d_int(p,&ighost_map,nghost_tot);
     pup1d_int(p,&natm_comp,nghost_tot);
     pup2d_int(p,&iatm_comp,natm_comp_max,nghost_tot);
-    pup2d_dbl(p,&coef,natm_comp_max,nghost_tot);
+    pup2d_dbl(p,&coef,natm_comp_max,nghost_tot,"mdghost_atoms");
   }//endif
  
    if(natm_tot>0){

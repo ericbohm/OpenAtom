@@ -92,8 +92,8 @@ class MDTHERM_INFO{
       pup1d_dbl(p,&wdti16,25);
       if(num_nhc>0 && len_nhc>0){
         pup1d_dbl(p,&text_nhc,num_nhc);
-        pup2d_dbl(p,&mass_nhc,len_nhc,num_nhc);
-        pup2d_dbl(p,&gkt,len_nhc,num_nhc);
+        pup2d_dbl(p,&mass_nhc,len_nhc,num_nhc,"mdtherm_info");
+        pup2d_dbl(p,&gkt,len_nhc,num_nhc,"mdtherm_info");
       }//endif
     }// endif
 #ifdef _PARALLEL_DEBUG_        

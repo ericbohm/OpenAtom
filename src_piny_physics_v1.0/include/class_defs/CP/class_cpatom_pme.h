@@ -91,16 +91,16 @@ class CPATOM_PME{
       pup1d_dbl(p,&bweight_tot,nktot);
       pup1d_dbl(p,&bw_r,nktot);
       pup1d_dbl(p,&bw_i,nktot);
-      pup2d_dbl(p,&ua,n_interp,nlen_pme);
-      pup2d_dbl(p,&ub,n_interp,nlen_pme);
-      pup2d_dbl(p,&uc,n_interp,nlen_pme);
-      pup2d_dbl(p,&mn_a,n_interp,nlen_pme);
-      pup2d_dbl(p,&mn_b,n_interp,nlen_pme);
-      pup2d_dbl(p,&mn_c,n_interp,nlen_pme);
-      pup2d_dbl(p,&dmn_a,n_interp,nlen_pme);
-      pup2d_dbl(p,&dmn_b,n_interp,nlen_pme);
-      pup2d_dbl(p,&dmn_c,n_interp,nlen_pme);
-      pup2d_dbl(p,&qgrid_now,n_interp,nlen_pme);
+      pup2d_dbl(p,&ua,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&ub,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&uc,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&mn_a,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&mn_b,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&mn_c,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&dmn_a,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&dmn_b,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&dmn_c,n_interp,nlen_pme,"cpatom_pme");
+      pup2d_dbl(p,&qgrid_now,n_interp,nlen_pme,"cpatom_pme");
 #endif
 
     }//endif

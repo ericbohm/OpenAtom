@@ -47,6 +47,7 @@ void IntegrationComplete(void *, void *);
 //==============================================================================
 AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
                    int cp_wave_opt_, double kT_, Atom* a, AtomNHC *aNHC){
+
 	natm                = n;
         natm_nl             = n_nl;
         len_nhc             = len_nhc_;
@@ -373,7 +374,7 @@ void AtomsGrp::outputAtmEnergy() {
    if(myid==0){
      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-     *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps; 
+     *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
      gSpacePlaneProxy.acceptAtoms(msg);
    }//endif
 }
@@ -432,7 +433,7 @@ void AtomsGrp::outputAtmEnergy() {
     CkPrintf("Synching atoms after iteration %d\n",iteration);
     AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-    *(int*)CkPriorityPtr(msg) = config.sfpriority+config.numSfGrps;
+    *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
     double *data = msg->data;
     msg->nsize=nsize;
     memcpy(data,atmData,nsize*sizeof(double));
@@ -588,6 +589,38 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+<<<<<<< groups.C
+  void EnergyGroup::energyDone(CkReductionMsg *msg) {
+//==========================================================================
+   delete msg;
+   energyDone();
+}
+//==========================================================================
+
+//==========================================================================
+// Needs to have each proc invoke directly acceptenergy method of the
+// gspaceplanes which are mapped to it. Without migration, we have that map
+// at startup. With migration, one must write an enroll/dropout routine.
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void EnergyGroup::energyDone(){
+//==========================================================================
+    int myid = CkMyPe();
+    if(myid==0){
+        GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
+        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+         *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
+         gSpacePlaneProxy.acceptEnergy(msg);
+    }//endif
+}
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+=======
   void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;

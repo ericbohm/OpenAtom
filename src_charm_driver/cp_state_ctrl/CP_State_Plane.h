@@ -166,6 +166,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int first_step; //control flags and functions reference by thread are public
         int iwrite_now;
 	int iteration;
+        int nrotation;
         int myatom_integrate_flag; // 0 after I launch, 1 after return of atoms
         int myenergy_reduc_flag;   // 0 after I launch eke, 1 after return of energy
         int exitFlag;

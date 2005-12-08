@@ -115,24 +115,24 @@ class MDGRP_BOND_CON {
      //PUP the Double arrays
 
     if(ntyp_33>0){
-     pup2d_dbl(p,&al_33,3,ntyp_33);
-     pup2d_dbl(p,&eq_33,3,ntyp_33);
+     pup2d_dbl(p,&al_33,3,ntyp_33,"mdgrpbondcon");
+     pup2d_dbl(p,&eq_33,3,ntyp_33,"mdgrpbondcon");
     }
     if(ntyp_23>0){
-     pup2d_dbl(p,&al_23,2,ntyp_23);
-     pup2d_dbl(p,&eq_23,2,ntyp_23);
+     pup2d_dbl(p,&al_23,2,ntyp_23,"mdgrpbondcon");
+     pup2d_dbl(p,&eq_23,2,ntyp_23,"mdgrpbondcon");
     }
     if(ntyp_21>0){
-     pup2d_dbl(p,&al_21,1,ntyp_21);
-     pup2d_dbl(p,&eq_21,1,ntyp_21);
+     pup2d_dbl(p,&al_21,1,ntyp_21,"mdgrpbondcon");
+     pup2d_dbl(p,&eq_21,1,ntyp_21,"mdgrpbondcon");
     }
     if(ntyp_43>0){
-     pup2d_dbl(p,&al_43,3,ntyp_43);
-     pup2d_dbl(p,&eq_43,3,ntyp_43);
+     pup2d_dbl(p,&al_43,3,ntyp_43,"mdgrpbondcon");
+     pup2d_dbl(p,&eq_43,3,ntyp_43,"mdgrpbondcon");
     }
     if(ntyp_46>0){
-     pup2d_dbl(p,&al_46,6,ntyp_46);
-     pup2d_dbl(p,&eq_46,6,ntyp_46);
+     pup2d_dbl(p,&al_46,6,ntyp_46,"mdgrpbondcon");
+     pup2d_dbl(p,&eq_46,6,ntyp_46,"mdgrpbondcon");
     }
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

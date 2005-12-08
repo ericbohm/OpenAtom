@@ -32,7 +32,7 @@ void pup1d_cpl(PUP::er &,complex **, int );
 void pup1d_char(PUP::er &,char **, int );
 void pup2d_int_test(PUP::er &,int ***, int ,int);
 void pup2d_int(PUP::er &,int ***, int ,int);
-void pup2d_dbl(PUP::er &,double ***, int ,int);
+void pup2d_dbl(PUP::er &,double ***, int ,int,char *);
 void pup1d_name(PUP::er &,NAME **, int );
 void pup3d_dbl(PUP::er &,double ****, int ,int ,int );
 #endif

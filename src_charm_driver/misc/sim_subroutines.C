@@ -228,6 +228,7 @@ void GStateSlab::pup(PUP::er &p) {
 //==============================================================================
 // Dont have to pup fftw plans - they live in the fft cache group
 
+  CkPrintf("gs pup\n:");
         p|numNonZeroPlanes;
 	p|numRuns;
 	p|numLines;
@@ -246,9 +247,13 @@ void GStateSlab::pup(PUP::er &p) {
         p|kx0_strt;
         p|kx0_end;
         p|nkx0; p|nkx0_uni; p|nkx0_red; p|nkx0_zero;
-
         p|eke_ret;
         p|fictEke_ret;
+        p|ekeNhc_ret;
+        p|degfree;
+        p|degfreeNHC;
+        p|gammaNHC;
+
 	if (p.isUnpacking()) {runs = new RunDescriptor[numRuns];}
 	for (int i = 0; i < numRuns; i++){runs[i].pup(p);}
 
@@ -299,6 +304,7 @@ void GStateSlab::pup(PUP::er &p) {
 	}//endif receiving 
         delete []vt;
         delete []ft;
+  CkPrintf("end gs pup\n:");
 
 //==============================================================================
   }//end routine

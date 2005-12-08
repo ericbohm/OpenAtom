@@ -77,12 +77,12 @@ class CPDUAL_PME{
       pup1d_dbl(p,&rn1,n_interp_dual_pme);
       pup1d_dbl(p,&bw_r,nfft);
       pup1d_dbl(p,&bw_i,nfft);
-      pup2d_dbl(p,&uc,n_interp_dual_pme,nkf1_cp_box);
-      pup2d_dbl(p,&ua,n_interp_dual_pme,nkf2_cp_box);
-      pup2d_dbl(p,&ub,n_interp_dual_pme,nkf3_cp_box);
-      pup2d_dbl(p,&mn_a,n_interp_dual_pme,nkf1_cp_box);
-      pup2d_dbl(p,&mn_b,n_interp_dual_pme,nkf2_cp_box);
-      pup2d_dbl(p,&mn_c,n_interp_dual_pme,nkf3_cp_box);
+      pup2d_dbl(p,&uc,n_interp_dual_pme,nkf1_cp_box,"cpdual_pme");
+      pup2d_dbl(p,&ua,n_interp_dual_pme,nkf2_cp_box,"cpdual_pme");
+      pup2d_dbl(p,&ub,n_interp_dual_pme,nkf3_cp_box,"cpdual_pme");
+      pup2d_dbl(p,&mn_a,n_interp_dual_pme,nkf1_cp_box,"cpdual_pme");
+      pup2d_dbl(p,&mn_b,n_interp_dual_pme,nkf2_cp_box,"cpdual_pme");
+      pup2d_dbl(p,&mn_c,n_interp_dual_pme,nkf3_cp_box,"cpdual_pme");
      }// endif
 #endif
 #ifdef _PARALLEL_DEBUG_        

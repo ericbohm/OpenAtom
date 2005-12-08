@@ -18,7 +18,7 @@ include "../../src_mathlib/mathlib.h"
 #endif
 
 #define LEN_NHC_CP 4;
-#define NUM_NHC_CP 4;
+#define NUM_NHC_CP 20;
 
 
 //==============================================================================
@@ -45,10 +45,14 @@ public:
    int kx0_strt;               // starting pt
    int kx0_end;                // ending pt
    int nkx0,nkx0_uni,nkx0_red; // split kx=0 into unique and redundant parts
-   int nkx0_zero;
+   int nkx0_zero;              // ncoef_true=numPoints-nkx0_red
 
    double eke_ret;            // kinetic energy
    double fictEke_ret;        // fictitious kinetic energy
+   double ekeNhc_ret;         // NHC energies
+   double degfree;            // Degrees of freedom (ncoef_true+num_nhc-1)
+   double degfreeNHC;         // Degrees of freedom (num_nhc-1)*len_nhc
+   double gammaNHC;           // Degrees of freedom degfree/(degfree+1.0)
 
    RunDescriptor *runs;        // information about the lines in the collection [numRuns]
    complex *packedPlaneData;   // Non-zero data pts [numPoints]
@@ -84,15 +88,15 @@ public:
    }//end routine
 
    void initNHC(){
-     vNHC     = new double *[4];
-     vNHC_scr = new double *[4];
-     fNHC     = new double *[4];
-     for(int i=0;i<4;i++){
+     vNHC     = new double *[20];
+     vNHC_scr = new double *[20];
+     fNHC     = new double *[20];
+     for(int i=0;i<20;i++){
        vNHC[i]    =new double[4];
        vNHC_scr[i]=new double[4];
        fNHC[i]    =new double[4];
      }//endfor
-     for(int i=0;i<4;i++){
+     for(int i=0;i<20;i++){
      for(int j=0;j<4;j++){
        vNHC[i][j]     = 0.0;
        vNHC_scr[i][j] = 0.0;
@@ -101,7 +105,7 @@ public:
    }//end routine
 
    void destroyNHC(){
-     for(int i=0;i<4;i++){
+     for(int i=0;i<20;i++){
        delete []vNHC[i];
        delete []vNHC_scr[i];
        delete []fNHC[i];

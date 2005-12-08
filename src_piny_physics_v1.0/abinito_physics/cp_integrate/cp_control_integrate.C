@@ -16,7 +16,8 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
              int *k_x,int *k_y, int *k_z, int len_nhc, int num_nhc,
              double **fNHC,double**vNHC,double *xNHC,double mNHC,double kTCP,
              double gamma_conj_grad,double *fictEke,int nkx0_red,int nkx0_uni,
-             int nkx0_zero)
+             int nkx0_zero,double *ekeNhc,double degfree,double degfreeNHC,
+             double gammaNHC)
 //============================================================================
    { /* Begin Function */
 //---------------------------------------------------------------------------
@@ -84,7 +85,8 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
     ifound++;
     CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,cmass,
                      k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,
-                     mNHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero);
+                     mNHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero,
+                     ekeNhc,degfree,degfreeNHC,gammaNHC);
   }//endif
 
 //============================================================================

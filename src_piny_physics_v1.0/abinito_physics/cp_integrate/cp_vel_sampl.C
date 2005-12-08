@@ -12,8 +12,10 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
-                            int *num_nhc_ret, double *kTCP_ret,
-                            double *tau_ret,double *mNHC_ret)
+                        int *num_nhc_ret, double *kTCP_ret,
+                        double *tau_ret,double *mNHC_ret,double *degfree_ret,
+                        double *degfreeNHC_ret,double *gammaNHC_ret,int ncoef_true,
+                        int ncoef_zero)
 //============================================================================
   {// Begin Function 
 //============================================================================
@@ -24,7 +26,7 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
 #include "../class_defs/allclass_strip_cp.h"
 
   int len_nhc   = cptherm_info->len_c_nhc;
-  int num_nhc   = 3;
+  int num_nhc   = 1;
   double Text   = cpopts->te_ext;
   double tau_in = cpopts->cp_tau_nhc;
 
@@ -43,6 +45,16 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
   }//endif
+  if(len_nhc<2){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Minimum NHC len_nhc is 2 > %d\n",maxNum,num_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
+  double degfree    = (double)(2*ncoef_true-ncoef_zero+num_nhc-1);
+  double degfreeNHC = (double)( (len_nhc-1)*num_nhc );
+  double gammaNHC   = degfree/(degfree+1.0);
 
 //============================================================================
 
@@ -54,6 +66,10 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
   double pre     = tau*tau*kT;
   (*mNHC_ret)    = pre;
 
+  (*degfree_ret)    = degfree;
+  (*degfreeNHC_ret) = degfreeNHC;
+  (*gammaNHC_ret)   = gammaNHC;
+
 //============================================================================
    }// End function
 //============================================================================
@@ -64,7 +80,8 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
 //============================================================================
 void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
                             double mNHC,double **vNHC,double kT,int istart_typ_cp,
-                            int nkx0_red,int nkx0_uni,int nkx0_zero)
+                            int nkx0_red,int nkx0_uni,int nkx0_zero,
+                            double degfree,double degfreeNHC,double gammaNHC)
 //============================================================================
     {//Begin Function
 //============================================================================
@@ -87,14 +104,15 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
   int istrt  = nkx0_red+nkx0_zero;
   int iend   = nkx0_red+nkx0_uni;
 
-  double temp = 0.0;
-  for(int i=0;i<num_nhc;i++){temp += mNHC*vNHC[i][0]*vNHC[i][0];}
-  for(int i=istrt0;i<istrt;i++){temp += v[i].getMagSqr()*m[i];}
-  for(int i=istrt;i<iend;i++){temp += v[i].getMagSqr()*(2.0*m[i]);}
-  for(int i=iend;i<n;i++){temp += v[i].getMagSqr()*m[i];}
+  for(int i=istrt0;i<istrt;i++){v[i].im=0.0;} // zero imaginary part of g=0
 
-  int nfree    = 2*(n-istrt) + num_nhc;
-  double scale = sqrt( (((double)(nfree))*kT/temp) );
+  double temp = 0.0;
+  for(int i=0;i<num_nhc;i++)   {temp += gammaNHC*mNHC*vNHC[i][0]*vNHC[i][0];}
+  for(int i=istrt0;i<istrt;i++){temp += v[i].getMagSqr()*m[i];}
+  for(int i=istrt;i<iend;i++)  {temp += v[i].getMagSqr()*(2.0*m[i]);}
+  for(int i=iend;i<n;i++)      {temp += v[i].getMagSqr()*m[i];}
+
+  double scale = sqrt( (degfree*kT)/temp );
 
   for(int i=0;i<num_nhc;i++){vNHC[i][0] *= scale;}
   for(int i=0;i<n;i++){v[i].re *= scale;  v[i].im *= scale;}

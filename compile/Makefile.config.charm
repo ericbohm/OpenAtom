@@ -1,6 +1,7 @@
 #===============================================================================
 CHARMBASE           = /home/net/bohm/stable/charm/net-linux-ifc-icc
 #CHARMBASE           = /home/net/bohm/work/charm/net-linux-ifc-icc
+#CHARMBASE           = /home/net/bohm/stable/charm/net-linux
 
 CHARMC              = $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) 
 CPAIMD_DRV_SRC      = $(CPAIMD)/src_charm_driver

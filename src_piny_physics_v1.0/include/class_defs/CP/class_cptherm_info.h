@@ -85,10 +85,11 @@ class CPTHERM_INFO{
         pup1d_dbl(p,&wdti8,25);
         pup1d_dbl(p,&wdti16,25);
         if(massiv_flag==0){
+          int num_c_nhc1=num_c_nhc;
           pup1d_int(p,&icmapup_nhc,nstate);
           pup1d_int(p,&icmapdn_nhc,nstate);
-          pup2d_dbl(p,&c_gkt,num_c_nhc,len_c_nhc);
-          pup2d_dbl(p,&cmass_nhc,num_c_nhc,len_c_nhc);
+          pup2d_dbl(p,&c_gkt,len_c_nhc,num_c_nhc1,"cptherminfo");
+          pup2d_dbl(p,&cmass_nhc,len_c_nhc,num_c_nhc1,"cptherminfo");
 	}//endif
       }//endif
 #ifdef _PARALLEL_DEBUG_        

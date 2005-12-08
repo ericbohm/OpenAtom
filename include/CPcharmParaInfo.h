@@ -183,7 +183,7 @@ class CPcharmParaInfo {
    CPcharmParaInfo(CPcharmParaInfo &s){
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-     CkPrintf("CPcharmParaInfo copy constructor\n");
+    CkPrintf("CPcharmParaInfo copy constructor\n");
 #endif
      vol         = s.vol;
      tol_norb    = s.tol_norb;
@@ -303,7 +303,7 @@ class CPcharmParaInfo {
    CPcharmParaInfo() {
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-     CkPrintf("CPcharmParaInfo constructor\n");
+   CkPrintf("CPcharmParaInfo constructor\n");
 #endif
        lines_per_chareG=NULL; 
        pts_per_chareG=NULL;
@@ -433,6 +433,10 @@ class CPcharmParaInfo {
       for(int igrp=0;igrp<nchareG;igrp++){
         RCommPkg[igrp].pup(p);
       }//endfor
+#ifdef _CP_DEBUG_PARAINFO_VERBOSE_
+     CkPrintf("end CPcharmParaInfo pup\n");
+#endif
+
    };
 //----------------------------------------------------------------------------
    }; // end class

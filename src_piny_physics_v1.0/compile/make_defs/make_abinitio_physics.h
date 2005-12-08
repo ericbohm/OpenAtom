@@ -97,6 +97,13 @@ cp_vel_sampl.o :  $(STANDARD) $(FFTW) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_vel_sampl.C
 #------------------------------------------------------------------
+cp_isokin.o :  $(STANDARD) $(FFTW) \
+               $(COMPLEX)   \
+               $(CLASS_CP_INTEGRATE) \
+               $(CODE)/abinito_physics/cp_integrate/cp_isokin.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/abinito_physics/cp_integrate/cp_isokin.C
+#------------------------------------------------------------------
 cp_rspace_ion.o :  $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
                $(CLASS_CP_RSPACEION) \

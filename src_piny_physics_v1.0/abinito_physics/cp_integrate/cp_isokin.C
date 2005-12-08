@@ -1,0 +1,369 @@
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+#include "standard_include.h"
+#include "ckcomplex.h"
+
+#include "../class_defs/allclass_gen.h"
+#include "../class_defs/allclass_cp.h"
+#include "../class_defs/allclass_mdintegrate.h"
+
+#include "../class_defs/CP_OPERATIONS/class_cpintegrate.h"
+#include "../../mathlib/proto_math.h"
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CPINTEGRATE::cp_isoVel_update(int n,complex *v,complex *f,
+            double *m,int num_nhc,double **vNHC,double mNHC,double kT,
+            double degfree, double degfreeNHC, double gamma)
+//============================================================================
+  {//begin routine
+//============================================================================
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+   double dt   = gentimeinfo->dt;
+   double dt2  = dt*0.5;
+   double gkt  = degfree*kT;
+
+//============================================================================
+// Scale initial conditions for safety 
+
+   double temp = 0.0;
+   for(int i=0;i<n;i++)      {temp +=  m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);}
+   for(int i=0;i<num_nhc;i++){temp += gammaNHC*mNHC*vNHC[i][0]*vNHC[i][0];}
+
+   double sc = sqrt(gkT/temp);
+   for(int i=0;i<n;i++){v[i].re *=sc; v[i].im *=sc;}
+   for(int i=0;i<num_nhc;i++){vNHC[i][0] *=sc;}
+
+//============================================================================
+// Compute F*F/(m*GKT) and V*F/GKT
+
+    double ffdot = 0.0;
+    for(int i=0;i<n;i++){ffdot += (f[i].re*f[i].re+f[i].im*f[i].im)/m[i];}
+    ffdot /= gkt;
+
+    double pfdot   = 0.0;
+    for(int i=0;i<n;i++){pfdot += (f[i].re*v[i].re+f[i].im*v[i].im);}
+    pfdot /= gkt;
+
+//============================================================================
+// Compute the evolution parameters (s,sdot)
+
+    double s,sdot;
+    double ffdot_r = sqrt(ffdot);
+    double arg     = ffdot_r*dt2;
+    if(arg>1.0e-5){
+      s     = (pfdot/ffdot)*(cosh(arg)-1.0) + (1.0/ffdot_r)*sinh(arg);
+      sdot  = (pfdot/ffdot_r)*sinh(arg) + cosh(arg);
+    }else{
+      s     = (((ffdot*pfdot/24.0*dt2+ffdot/6.0)*dt2
+                +0.50*pfdot)*dt2+1.0)*dt2;
+      sdot  = ((ffdot*pfdot/6.0*dt2+ffdot/2.0)*dt2
+                +pfdot)*dt2+1.0;
+    }//endif
+
+//============================================================================
+// Evolve the velocities in the isokinetic constraint using s, sdot and the forces
+
+    for(int i=0;i<n;i++){
+      v[i].re = (v[i].re + f[i].re*s/m[i])/sdot;
+      v[i].im = (v[i].im + f[i].im*s/m[i])/sdot;
+    }//endfor
+    for(int i=0;i<num_nhc;i++){
+      vNHC[i][0] = vNHC[i][0]/sdot;
+    }//endfor
+
+//============================================================================
+// Prevent round off
+
+
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
+                  double *m,int len_nhc,int num_nhc,double *xNHC,
+                  double **vNHC,double **fNHC,double mNHC,double kT,
+                  double degfree, double degfreeNHC, double gammaNHC)
+//============================================================================
+  {//begin routine
+//============================================================================
+// Get the yoshida stuff out
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+  double dt  = gentimeinfo->dt;
+  int nresp  = cptherm_info->nres_c_nhc;
+  int nyosh  = cptherm_info->nyosh_c_nhc;
+
+  double wdti[20],wdti2[20],wdti4[20],wdti8[20];
+  double dti = dt/((double)nresp);
+  set_yosh(nyosh,dti,wdti,wdti2,wdti4,wdti8);
+
+//============================================================================
+// (I) Precompute  ekin of cp, scale initial conditions for safety
+//     get NHC forces
+
+   double ekin = 0.0;
+   for(int i=0;i<n;i++){
+     ekin +=  m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);
+   }//endfor
+   double temp = ekin;
+   for(int i=0;i<num_nhc;i++){temp += gammaNHC*mNHC*vNHC[i][0]*vNHC[i][0];}
+
+   double sc = sqrt(kT*degfree/temp);
+   for(int i=0;i<n;i++){v[i].re *=sc; v[i].im *=sc;}
+   for(int i=0;i<num_nhc;i++){vNHC[i][0] *=sc;}
+
+   for(int ic=1;ic<len_nhc;ic++){get_forc_NHC(num_nhc,ic,vNHC,fNHC,mNHC,kT);}
+
+//============================================================================
+// (II) Yoshida-Suzuki step yourself to heaven
+
+  double scale = 1.0;
+  for(int iresn=1;iresn<=nresp;iresn++){
+  for(int iyosh=1;iyosh<=nyosh;iyosh++){
+//--------------------------------------------------------------------------
+//  1) Evolve the last therm velocity in each chain                         
+    evolve_vNHCM(num_nhc,len_nhc,vNHC,fNHC,wdti4[iyosh]);
+//--------------------------------------------------------------------------
+//  2) Evolve the last-1 to the 2nd therm velocity in each chain
+    for(int ic=len_nhc-2;ic>=1;ic--){
+      evolve_vNHC(num_nhc,ic,vNHC,fNHC,wdti4[iyosh],wdti8[iyosh]);
+    }//endfor
+//--------------------------------------------------------------------------
+//  3) Evolve the particle velocities and the 1st therm (number 0)
+    evolve_v_vNHC(num_nhc,&ekin,&scale,vNHC,mNHC,kT,degfree,gammaNHC,wdti4[iyosh]);
+//--------------------------------------------------------------------------
+//  4) Evolve the therm positions                                           
+    evolve_pNHC(num_nhc,len_nhc,xNHC,vNHC,mNHC,kT,wdti2[iyosh]);
+//--------------------------------------------------------------------------
+//  5) Evolve the particle velocities and the 1st therm (number 0)
+    evolve_v_vNHC(num_nhc,&ekin,&scale,vNHC,mNHC,kT,degfree,gammaNHC,wdti4[iyosh]);
+//--------------------------------------------------------------------------
+//  6) Evolve the 1 to last-1 therm velocity in each chain : get forces
+    get_forc_NHC(num_nhc,1,vNHC,fNHC,mNHC,kT);
+    for(int ic=1,icp=2;ic<(len_nhc-1);ic++,icp++){
+      evolve_vNHC(num_nhc,ic,vNHC,fNHC,wdti4[iyosh],wdti8[iyosh]);
+      get_forc_NHC(num_nhc,icp,vNHC,fNHC,mNHC,kT);
+    }//endfor
+//--------------------------------------------------------------------------
+//  6) Evolve the last therm velocotiy in each chain                        
+    evolve_vNHCM(num_nhc,len_nhc,vNHC,fNHC,wdti4[iyosh]);
+//--------------------------------------------------------------------------
+  }}//endfor: iyosh,iresn
+
+//==========================================================================
+// Apply the scaling factor
+
+   for(int i=0;i<n;i++){
+     v[i].re *=scale; v[i].im *=scale;
+   }//endfor
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+inline void CPINTEGRATE::evolve_v_vNHC(int num_nhc,double *ekin_ret,double *scale_ret,
+                    double **vNHC,double mNHC,double kT,double degfree,
+                    double gammaNHC,double wdti4)
+//============================================================================
+   {// begin routine
+//============================================================================
+
+   double ekin  = (*ekin_ret);
+   double scale = (*scale_ret);
+   double gkt   = kT*degfree;
+
+   double temp = ekin;
+   for(int i=0;i<num_nhc;i++){
+     double aa = exp(-vNHC[i][1]*wdti4);
+     temp += (mNHC*vNHC[i][0]*vNHC[i][0]*gammaNHC*aa*aa);
+   }//endfor
+   double s = sqrt(gkt/temp);
+
+   ekin  *= (s*s);
+   scale *= s;
+   for(int i=0;i<num_nhc;i++){
+     double aa = exp(-vNHC[i][1]*wdti4);
+     vNHC[i][0] *= (s*aa);
+   }//endfor
+
+ (*ekin_ret)  = ekin;
+ (*scale_ret) = scale;
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+inline void CPINTEGRATE::get_forc_NHC(int num_nhc,int ic,double **vNHC,double **fNHC,
+                               double mNHC,double kT)
+//==========================================================================
+{//begin routine
+
+   int icm = ic-1;
+   for(int i=0;i<num_nhc;i++){
+     fNHC[i][ic] = (mNHC*vNHC[i][icm]*vNHC[i][icm]-kT)/mNHC;
+   }//endfor
+
+}//end routine
+//==========================================================================
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+inline void CPINTEGRATE::evolve_vNHCM(int num_nhc,int len_nhc,double **vNHC,double **fNHC,
+                               double wdti4)
+//==========================================================================
+{//begin routine
+
+  int ic = len_nhc-1;
+  for(int i=0;i<num_nhc;i++){
+    vNHC[i][ic] += fNHC[i][ic]*wdti4;
+  }//endfor
+
+}//end routine
+//==========================================================================
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+inline void CPINTEGRATE::evolve_vNHC(int num_nhc,int ic,double **vNHC,double **fNHC,
+                              double wdti4,double wdti8)
+//==========================================================================
+{//begin routine
+
+  int icp = ic+1;
+  double arg,aa;
+  for(int i=0;i<num_nhc;i++){
+    arg = -wdti8*vNHC[i][icp]; aa = exp(arg);  
+    vNHC[i][ic] = vNHC[i][ic]*aa*aa + wdti4*fNHC[i][ic]*aa;
+  }//endfor
+
+}//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+inline void CPINTEGRATE::evolve_pNHC(int num_nhc,int len_nhc,double *xNHC_ret,
+                              double **vNHC,double mNHC,double kT,double wdti2)
+//==========================================================================
+   {//begin routine
+//==========================================================================
+
+  double xNHC = (*xNHC_ret);
+
+  for(int i=0;i<num_nhc;i++){
+    xNHC -= (mNHC*vNHC[i][0]*vNHC[i][0]*vNHC[i][1]*wdti2);
+  }//endfor
+
+  double pre = (kT*wdti2);
+  for(int i=0;i<num_nhc;i++){
+  for(int ic=1;ic<len_nhc;ic++){
+    xNHC += pre*vNHC[i][ic];
+  }}//endfor
+
+  (*xNHC_ret)=xNHC;
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void CPINTEGRATE::set_yosh(int nyosh,double dt,double *wdt,double *wdt2,
+                             double *wdt4,double *wdt8)
+//========================================================================
+  {//begin routine
+//========================================================================
+// Find the yoshida steps you want
+
+  double temp,p2,onethird;
+  switch(nyosh){
+    case 1: 
+          wdt[1] = 1.0;
+         break;
+    case 3:
+          onethird = 1.0/3.0;
+          temp    = pow(2.0,onethird);
+          wdt[1] =  1.0/(2.0-temp);
+          wdt[2] = -temp/(2.0-temp);
+          wdt[3] =  1.0/(2.0-temp);
+         break;
+    case 5:
+          onethird = 1.0/3.0;
+          temp = pow(4.0,onethird);
+          p2    = 1.0/(4.0-temp);
+          wdt[1]  = p2;
+          wdt[2]  = p2;
+          wdt[3]  = 1.0-4.0*p2;
+          wdt[4]  = p2;
+          wdt[5]  = p2;
+         break;
+    case 7:
+          wdt[1] =  0.784513610477560;
+          wdt[2] =  0.235573213359357;
+          wdt[3] = -1.17767998417887;
+          wdt[4] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]);
+          wdt[5] = -1.17767998417887;
+          wdt[6] =  0.235573213359357;
+          wdt[7] =  0.784513610477560;
+         break;
+    case 9:
+          wdt[1] =  0.192;
+          wdt[2] =  0.554910818409783619692725006662999;
+          wdt[3] =  0.124659619941888644216504240951585;
+          wdt[4] = -0.843182063596933505315033808282941;
+          wdt[5] =  1.0 - 2.0*(wdt[1]+wdt[2]+wdt[3]+wdt[4]);
+          wdt[6] = -0.843182063596933505315033808282941;
+          wdt[7] =  0.124659619941888644216504240951585;
+          wdt[8] =  0.554910818409783619692725006662999;
+          wdt[9] =  0.192;
+         break;
+  }//switch
+
+//========================================================================
+// Scale the yosida steps by the time step
+
+  for(int i=1;i<=nyosh;i++){
+    wdt[i]  = wdt[i]*dt;
+    wdt2[i] = wdt[i]*0.5;
+    wdt4[i] = wdt[i]*0.25;
+    wdt8[i] = wdt[i]*0.125;
+  }//endfor
+
+//-------------------------------------------------------------------------
+   }// end routine
+//==========================================================================
+
+
+

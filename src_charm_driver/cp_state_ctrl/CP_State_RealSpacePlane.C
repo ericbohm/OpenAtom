@@ -94,6 +94,9 @@ void CP_State_RealSpacePlane::run () {
 CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits, 
                                                  int realSpaceUnits) {
 //============================================================================
+//  ckout << "State R Space Constructor : "
+//	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
+
     count = 0;
     initRealStateSlab(&rs, size, gSpaceUnits, realSpaceUnits, thisIndex.x, thisIndex.y);
     flagsRecd = false;

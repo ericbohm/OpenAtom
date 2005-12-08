@@ -3,9 +3,9 @@
 #-----------------------------------------------------------------
 # Compile options and Fortran underscore convention
 #-----------------------------------------------------------------
-DBG_FLAG         =  
-OPTS             = -O3 $(DBG_FLAG)
-LNK_OPTS         = -memory gnu 
+DBG_FLAG         =
+OPTS             = $(DBG_FLAG) -O3
+LNK_OPTS         = -memory gnu
 F_COMPILER       = ifc $(OPTS) 
 F_COMPILER_NOPT  = ifc $(DBG_FLAG)
 OPT_FORT         = -DFORTRANUNDERSCORE
