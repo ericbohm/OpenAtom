@@ -2129,7 +2129,8 @@ void CP_State_GSpacePlane::sendPsi() {
   acceptedPsi =false;
 
   complex *data=gs.packedPlaneData;
-  /*  if(tpsi==NULL)
+  /*
+  if(tpsi==NULL)
     tpsi  = new complex[gs.numPoints];
   memcpy(tpsi,data,sizeof(complex)*gs.numPoints);
   */

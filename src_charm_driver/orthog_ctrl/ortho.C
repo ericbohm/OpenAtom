@@ -360,12 +360,26 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   // revise this to do a matmul replacing multiplyforgamma
   if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
-    matA1.multiply(1, 0, A, Ortho::gamma_done_cb, (void*) this,
-     thisIndex.x, thisIndex.y);
+    if(toleranceCheckOrthoT)
+      {// replace orthoT with the identity matrix
+
+	for(int i=0;i<m;i++)
+	  for(int j=0;j<n;j++)
+	    {
+	      if(i!=j)
+		orthoT[i*n+j]=0.0;	      
+	      else
+		orthoT[i*n+j]=1.0;	      
+	    }
+	toleranceCheckOrthoT=false;
+      }
+
+    matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
+		   thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
-     thisIndex.x, thisIndex.y);
+		   thisIndex.x, thisIndex.y);
     matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
-     thisIndex.x, thisIndex.y);
+		   thisIndex.x, thisIndex.y);
   }
   else
     {
@@ -409,7 +423,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 void Ortho::gamma_done(){
 //============================================================================
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
-  if(toleranceCheckOrthoT)
+  /*  if(toleranceCheckOrthoT)
     {// replace orthoT with the identity matrix
 
       for(int i=0;i<m;i++)
@@ -421,6 +435,7 @@ void Ortho::gamma_done(){
 	      orthoT[i*n+j]=1.0;	      
 	  }
     }
+  */
   finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
   toleranceCheckOrthoT=false;
 
