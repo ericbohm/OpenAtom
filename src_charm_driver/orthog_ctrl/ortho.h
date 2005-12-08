@@ -226,7 +226,8 @@ class OrthoMap : public CkArrayMap {
  */
 inline double array_diag_min(int sizem, int sizen, double *array)
 {
-  double min_ret=fabs(array[0]);
+  double max_ret=fabs(fabs(array[0])-2.0);
+
   int offset;
   double absval;
   for(int i=0;i<sizem;i++)
@@ -236,14 +237,15 @@ inline double array_diag_min(int sizem, int sizen, double *array)
 	absval=fabs(array[offset]);
 	if(i!=j)
 	  {
-	    min_ret = (min_ret<absval) ? min_ret : absval;
+	    max_ret = (max_ret>absval) ? max_ret : absval;
 	  }
-	else //substract 1 from diagonal
+	else //substract 2 from diagonal
 	  {
-	    min_ret = (min_ret<absval-1.0) ? min_ret : absval-1.0;
+	    absval=fabs(absval-2.0);
+	    max_ret = (max_ret>absval) ? max_ret : absval;
 	  }
       }  
-  return min_ret;
+  return max_ret;
 }
 
 #endif // #ifndef _ortho_h_

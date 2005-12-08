@@ -157,7 +157,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0 && numGlobalIter % config.toleranceInterval==0 && numGlobalIter!=0) 
       { // do tolerance check on smat, do_iteration will be called by reduction root
  	CkPrintf("doing tolerance check on SMAT \n");
-	double min =array_diag_min(m,m, S);
+	double min =array_diag_min(m,n, S);
 	contribute(sizeof(double),&min, CkReduction::min_double, CkCallback(CkIndex_Ortho::minCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
       }
     else if(num_ready == 1)
@@ -245,6 +245,7 @@ void Ortho::minCheck(CkReductionMsg *msg){
   }else{
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
+      CkPrintf("recalculating PsiV due to tolerance failure \n");
       gSpacePlaneProxy.requirePsiV();  //gspace will trigger our resume
   }//endif
 
@@ -252,7 +253,9 @@ void Ortho::minCheck(CkReductionMsg *msg){
    }//end routine
 //============================================================================
 
-
+/**
+ * Resume execution with the vpsi tolerance correction flag on
+ */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
