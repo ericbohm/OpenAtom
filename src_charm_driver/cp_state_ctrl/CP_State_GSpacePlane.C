@@ -984,7 +984,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   memset(gs.packedPlaneData, 0, sizeof(complex)*gs.numPoints);
 #endif
 //#ifdef _CP_DEBUG_DYNAMICS_
-  //  memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+  memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
 //#endif
 
 //============================================================================
