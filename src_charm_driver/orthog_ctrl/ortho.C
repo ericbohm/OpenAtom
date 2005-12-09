@@ -157,8 +157,8 @@ void Ortho::start_calc(CkReductionMsg *msg){
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0 && numGlobalIter % config.toleranceInterval==0 && numGlobalIter!=0) 
       { // do tolerance check on smat, do_iteration will be called by reduction root
  	CkPrintf("doing tolerance check on SMAT \n");
-	double min =array_diag_min(m,n, S);
-	contribute(sizeof(double),&min, CkReduction::min_double, CkCallback(CkIndex_Ortho::minCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
+	double min =array_diag_max(m,n, S);
+	contribute(sizeof(double),&min, CkReduction::max_double, CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
       }
     else if(num_ready == 1)
       do_iteration();
@@ -232,14 +232,14 @@ void Ortho::collect_results(void){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::minCheck(CkReductionMsg *msg){
+void Ortho::maxCheck(CkReductionMsg *msg){
 //============================================================================
 
-  double tolMin=fabs(((double *) msg->getData())[0]);
+  double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
 
-  CkPrintf("SMAT tol    = %g\n", tolMin);
-  if(tolMin < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
+  CkPrintf("SMAT tol    = %g\n", tolMax);
+  if(tolMax < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
   }else{
@@ -360,20 +360,26 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
   // revise this to do a matmul replacing multiplyforgamma
   if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
+
     if(toleranceCheckOrthoT)
       {// replace orthoT with the identity matrix
-
-	for(int i=0;i<m;i++)
-	  for(int j=0;j<n;j++)
-	    {
-	      if(i!=j)
-		orthoT[i*n+j]=0.0;	      
-	      else
-		orthoT[i*n+j]=1.0;	      
-	    }
+	if(thisIndex.x!=thisIndex.y)
+	  { //not on diagonal
+	    bzero(orthoT,m*n*sizeof(double));
+	  }
+	else 
+	  { // on diagonal
+	    for(int i=0;i<m;i++)
+	      for(int j=0;j<n;j++)
+		{
+		  if(i!=j)
+		    orthoT[i*n+j]=0.0;	      
+		  else
+		    orthoT[i*n+j]=1.0;	      
+		}
+	  }
 	toleranceCheckOrthoT=false;
       }
-
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
@@ -423,21 +429,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 void Ortho::gamma_done(){
 //============================================================================
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
-  /*  if(toleranceCheckOrthoT)
-    {// replace orthoT with the identity matrix
-
-      for(int i=0;i<m;i++)
-	for(int j=0;j<n;j++)
-	  {
-	    if(i!=j)
-	      orthoT[i*n+j]=0.0;	      
-	    else
-	      orthoT[i*n+j]=1.0;	      
-	  }
-    }
-  */
   finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
-  toleranceCheckOrthoT=false;
 
 //----------------------------------------------------------------------------
   }// end routine

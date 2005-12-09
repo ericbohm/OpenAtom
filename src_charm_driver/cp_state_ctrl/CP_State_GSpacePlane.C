@@ -2129,8 +2129,8 @@ void CP_State_GSpacePlane::sendPsi() {
   acceptedPsi =false;
 
   complex *data=gs.packedPlaneData;
-  /*
-  if(tpsi==NULL)
+
+  /*  if(tpsi==NULL)
     tpsi  = new complex[gs.numPoints];
   memcpy(tpsi,data,sizeof(complex)*gs.numPoints);
   */
@@ -2188,7 +2188,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
     CkExit();
   }//endif
   complex *data=gs.packedVelData;
-  //complex *data=tpsi;
+  //  complex *data=tpsi;
 
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
      int ncoef     = gs.numPoints;

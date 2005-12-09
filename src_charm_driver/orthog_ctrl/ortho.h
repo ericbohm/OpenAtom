@@ -46,7 +46,7 @@ class Ortho : public CBase_Ortho{
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
 
-  void minCheck(CkReductionMsg *msg);
+  void maxCheck(CkReductionMsg *msg);
 
   void resumeV(CkReductionMsg *msg);
 
@@ -151,6 +151,44 @@ class Ortho : public CBase_Ortho{
       do_iteration();
   }
 
+/**
+ * OrthoT tolerance check util return max value
+ */
+  inline double array_diag_max(int sizem, int sizen, double *array)
+    {
+      double max_ret=fabs(fabs(array[0])-2.0);
+      int offset;
+      double absval;
+      if(thisIndex.x!=thisIndex.y)
+	{ 
+	  for(int i=0;i<sizem;i++)
+	    for(int j=0;j<sizen;j++)
+	      {
+		absval=fabs(array[i*sizen+j]);
+		max_ret = (max_ret>absval) ? max_ret : absval;
+	      }  
+	}
+      else
+	{//we are on the diagonal
+	  // if this becomes a bottleneck we can split the loop
+	  for(int i=0;i<sizem;i++)
+	    for(int j=0;j<sizen;j++)
+	      {
+		absval=fabs(array[i*sizen+j]);
+		if(i!=j)
+		  {
+		    max_ret = (max_ret>absval) ? max_ret : absval;
+		  }
+		else //substract 2 from diagonal
+		  {
+		    absval=fabs(absval-2.0);
+		    max_ret = (max_ret>absval) ? max_ret : absval;
+		  }
+	      }
+	}
+      return max_ret;
+    }
+
   Ortho(int m, int n, CLA_Matrix_interface matA1,
    CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
    CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
@@ -220,32 +258,5 @@ class OrthoMap : public CkArrayMap {
   private:
     int N;
 };
-
-/**
- * OrthoT tolerance check util
- */
-inline double array_diag_min(int sizem, int sizen, double *array)
-{
-  double max_ret=fabs(fabs(array[0])-2.0);
-
-  int offset;
-  double absval;
-  for(int i=0;i<sizem;i++)
-    for(int j=0;j<sizen;j++)
-      {
-	offset=i*sizen+j;
-	absval=fabs(array[offset]);
-	if(i!=j)
-	  {
-	    max_ret = (max_ret>absval) ? max_ret : absval;
-	  }
-	else //substract 2 from diagonal
-	  {
-	    absval=fabs(absval-2.0);
-	    max_ret = (max_ret>absval) ? max_ret : absval;
-	  }
-      }  
-  return max_ret;
-}
 
 #endif // #ifndef _ortho_h_
