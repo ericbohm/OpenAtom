@@ -157,8 +157,8 @@ void Ortho::start_calc(CkReductionMsg *msg){
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0 && numGlobalIter % config.toleranceInterval==0 && numGlobalIter!=0) 
       { // do tolerance check on smat, do_iteration will be called by reduction root
  	CkPrintf("doing tolerance check on SMAT \n");
-	double min =array_diag_max(m,n, S);
-	contribute(sizeof(double),&min, CkReduction::max_double, CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
+	double max =array_diag_max(m,n, S);
+	contribute(sizeof(double),&max, CkReduction::max_double, CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
       }
     else if(num_ready == 1)
       do_iteration();
@@ -230,6 +230,35 @@ void Ortho::collect_results(void){
 
 
 //============================================================================
+/**
+ * Resume execution by finishing the backward path of the Psi calculator
+ */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::resume(){
+//============================================================================
+      int actionType=0; //normal
+      if(toleranceCheckOrthoT)
+	{
+	  actionType=1;  //keepOrtho
+	}
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
+	// copy orthoT for use in gamma computation
+	if(orthoT==NULL) //allocate if null
+	  { orthoT = new double[m * n];}
+	memcpy(orthoT,A,m*n*sizeof(double));
+      }
+      if(thisIndex.y<=thisIndex.x)
+	finishPairCalcSection(m * n, A, pcProxy, actionType);
+
+//----------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
+
+//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::maxCheck(CkReductionMsg *msg){
@@ -264,34 +293,6 @@ void Ortho::resumeV(CkReductionMsg *msg){ // gspace tolerance check entry
   toleranceCheckOrthoT=true;
   do_iteration();
 }
-//============================================================================
-
-
-//============================================================================
-/**
- * Resume execution by finishing the backward path of the Psi calculator
- */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::resume(){
-//============================================================================
-      int actionType=0; //normal
-      if(toleranceCheckOrthoT)
-	{
-	  actionType=1;  //keepOrtho
-	}
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
-	// copy orthoT for use in gamma computation
-	if(orthoT==NULL) //allocate if null
-	  { orthoT = new double[m * n];}
-	memcpy(orthoT,A,m*n*sizeof(double));
-      }
-      if(thisIndex.y<=thisIndex.x)
-	finishPairCalcSection(m * n, A, pcProxy, actionType);
-
-//----------------------------------------------------------------------------
-   }//end routine
 //============================================================================
 
 
@@ -386,6 +387,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 		   thisIndex.x, thisIndex.y);
     matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
+    //completed gamma will call finishPairCalcSection
   }
   else
     {
@@ -429,6 +431,18 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 void Ortho::gamma_done(){
 //============================================================================
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
+#ifdef _CP_DEBUG_GMAT_
+    char fname[80];
+    snprintf(fname,80,"gamma.out_ortho_%d_%d",thisIndex.x,thisIndex.y);
+    FILE *outfile = fopen(fname, "w");
+    for(int i=0; i<m; i++){
+      for(int j=0; j<n; j++){
+	fprintf(outfile, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, S[i*n+j]);
+      }
+    }
+    fclose(outfile);
+#endif
+
   finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
 
 //----------------------------------------------------------------------------
