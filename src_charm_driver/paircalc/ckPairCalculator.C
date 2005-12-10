@@ -700,7 +700,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   fprintf(outfile,"[%d,%d,%d,%d,%d] LM\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
   for(int i=0;i<N*grainSize;i++)
     {
-      fprintf(outfile," %g %g",inDataLeft[i]);
+      fprintf(outfile," %g %g",inDataRight[i]);
       fprintf(outfile,"\n");
     }
   fclose(outfile);
@@ -714,17 +714,19 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
   }
   fclose(moutfile);
-  if(!unitcoef){ // CG non minimization case
-    sprintf(filename, "bwm2idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-    moutfile = fopen(filename, "w");
-    fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix2\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-    for (int i = 0; i < grainSize; i++) {
-      for (int j = 0; j < grainSize; j++){ 
-	fprintf(moutfile,"%.10g\n",matrix2[i*grainSize+j]);
+
+  if(!unitcoef)
+    { // CG non minimization case
+      sprintf(filename, "bwm2idata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+      moutfile = fopen(filename, "w");
+      fprintf(moutfile,"[%d,%d,%d,%d,%d] matrix2\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      for (int i = 0; i < grainSize; i++) {
+	for (int j = 0; j < grainSize; j++){ 
+	  fprintf(moutfile,"%.10g\n",matrix2[i*grainSize+j]);
+	}
       }
+      fclose(moutfile);
     }
-    fclose(moutfile);
-  }
 #endif
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
@@ -756,7 +758,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 
 
-#ifdef _PAIRCALC_DEBUG_PARANOID_
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
   sprintf(filename, "bwgmodata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
   FILE *ooutfile = fopen(filename, "w");
 
@@ -772,15 +774,29 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
   if(!unitcoef){ // CG non minimization case
-      amatrix=matrix2;
-      double *rightd=reinterpret_cast <double *> (inDataRight);
     // C = alpha*A*B + beta*C
+    // C= -1 * inRight * orthoT + C
+    
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
 #endif
     betad=1.0;
     alphad=-1.0;  //subtract it
-    DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
+    DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  matrix2, &k_in, &betad, mynewDatad, &n_in);
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+    sprintf(filename, "bwg2modata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
+    FILE *ooutfile = fopen(filename, "w");
+
+
+    fprintf(ooutfile,"[%d,%d,%d,%d,%d] outData=C\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+    for(int i=0;i<N*grainSize;i++)
+      {
+	fprintf(ooutfile," %g %g",mynewData[i].re,mynewData[i].im);
+	fprintf(ooutfile,"\n");
+      }
+    fclose(ooutfile);
+#endif
+
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
 #endif

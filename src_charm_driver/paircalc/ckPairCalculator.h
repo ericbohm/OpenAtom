@@ -15,7 +15,7 @@
 #include "RingMulticastStrategy.h"
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
-
+#include "debug_flags.h"
 // Flag to use sparse reduction or regular reduction
 
 // Debugging flag for Verbose output

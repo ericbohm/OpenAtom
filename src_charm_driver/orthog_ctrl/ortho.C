@@ -353,10 +353,11 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   char lmstring[80];
   snprintf(lmstring,80,"lmatrix_%d_%d.out",thisIndex.x,thisIndex.y);
   FILE *fp = fopen(lmstring,"w");
-  for(int i=0; i<lambdaCount; i++) {
-      fprintf(fp,"[%d] %.12g\n",i, lambda[i]);
+  for(int i=0; i<m; i++){
+    for(int j=0; j<n; j++){
+      fprintf(fp, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, lambda[i*n+j]);
     }
-  fclose(fp);
+  }
 #endif
 
   // revise this to do a matmul replacing multiplyforgamma
@@ -387,7 +388,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 		   thisIndex.x, thisIndex.y);
     matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
-    //completed gamma will call finishPairCalcSection
+    //completed gamma will call finishPairCalcSection2
   }
   else
     {
@@ -437,7 +438,7 @@ void Ortho::gamma_done(){
     FILE *outfile = fopen(fname, "w");
     for(int i=0; i<m; i++){
       for(int j=0; j<n; j++){
-	fprintf(outfile, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, S[i*n+j]);
+	fprintf(outfile, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, B[i*n+j]);
       }
     }
     fclose(outfile);
