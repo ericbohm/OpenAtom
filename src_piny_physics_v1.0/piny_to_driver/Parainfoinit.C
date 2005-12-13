@@ -82,6 +82,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->vol        = vol;
    sim->tol_norb   = tol_norb;
    sim->tol_cp_min = tol_cp_min;
+   sim->tol_cp_dyn = tol_cp_dyn;
    sim->dt         = dt;
 
    sim->ndump_frq  = ndump_frq;
