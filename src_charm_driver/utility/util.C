@@ -99,11 +99,13 @@ void make_rho_runs(CPcharmParaInfo *sim){
     memcpy(kxt,kx,(nPacked*sizeof(int)));
     memcpy(kyt,ky,(nPacked*sizeof(int)));
     memcpy(kzt,kz,(nPacked*sizeof(int)));
+ 
+    int nsplit = (3*nplane_x)/2;
 
     int jc      = 0;
     int lc      = 0;
-    for(int i=0;i<nchareRhoG; i++){
-      for(int j=i;j<nline_tot;j+=nchareRhoG){
+    for(int i=0;i<nsplit; i++){
+      for(int j=i;j<nline_tot;j+=nsplit){
         for(int lt=istrt_line[j],l=jc;lt<iend_line[j];lt++,l++){
           kx[l]    = kxt[lt];
           ky[l]    = kyt[lt];
