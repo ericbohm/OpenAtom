@@ -34,7 +34,7 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
  */
 //============================================================================
 void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
-		 int idist, fftw_complex *out, int ostride, int odist)
+	       int idist, fftw_complex *out, int ostride, int odist, int split)
 {
 
   
@@ -58,7 +58,6 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
   */
   //    fftw_complex *myin=scratch2;
   fftw_complex *myin=in;
-  int split=config.fftprogresssplit; 
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;
@@ -113,9 +112,10 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
  */
 //============================================================================
 void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex *in, int istride,
-		 int idist, fftw_real *out, int ostride, int odist)
+				   int idist, fftw_real *out, int ostride, int odist, int
+				   split)
 {
-    int split=config.fftprogresssplit; 
+
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;
@@ -159,9 +159,8 @@ void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex 
  */
 //============================================================================
 void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *in, int istride,
-		 int idist, fftw_complex *out, int ostride, int odist)
+				    int idist, fftw_complex *out, int ostride, int odist, int split)
 {
-  int split=config.fftprogresssplit; 
   int thismany=split;
   int inleft=howmany;
   int numsplits=howmany/split;
@@ -591,7 +590,7 @@ complex* FFTcache::doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs,
 	     (fftw_complex *)fftData, //input data
 	     1,           //stride
 	     nfftz,       //distance between z-data sets
-	     NULL, 0, 0); // junk because input array stores the output (in-place)
+		  NULL, 0, 0, config.fftprogresssplit); // junk because input array stores the output (in-place)
     }//endif
     return fftData;
 
@@ -620,7 +619,7 @@ void GStateSlab::doBwFFT(complex *fftData) {
 	     (fftw_complex *)fftData, //input data
 	     1,           //stride
 	     nfftz,       //distance between arrays
-	     NULL, 0, 0); // junk because input array stores output (in-place)
+		  NULL, 0, 0, config.fftprogresssplit); // junk because input array stores output (in-place)
    }//endfor
    compressGSpace(fftData, expandtype);
 
@@ -778,7 +777,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 	   (fftw_complex *)(planeArr),//input data
  	   stride,          // stride betwen elements (y is inner)
   	   1,               // array separation (nffty elements)
-	   NULL,0,0);       // output data is input data
+		NULL,0,0, config.fftprogresssplitReal);       // output data is input data
       // fftw only gives you one sign for real to complex : so do it yourself
       for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
       rfftwnd_complex_to_real_split(fwdX1DdpPlan,
@@ -786,7 +785,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 			      (fftw_complex *)planeArr, 
                               1,               // stride (x is inner)
                               stride,          // array separation
-    		              NULL,0,0);       // output array is real 
+			    NULL,0,0, config.fftprogresssplitReal);       // output array is real 
       // x is now the inner index as fftw has transposed for us
       double *realArr = reinterpret_cast<double*> (planeArr);
       for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
@@ -858,7 +857,7 @@ void FFTcache::doRhoRealtoRhoG(double *realArr)
    rfftwnd_real_to_complex_split(bwdX1DdpPlan,
 			   planeSize[0],          // these many 1D ffts
 			   realArr,1,(sizeX+2),   // x is inner here
-			   NULL,0,0);            
+				 NULL,0,0, config.fftprogresssplitReal);            
    complex *planeArr = reinterpret_cast<complex*> (realArr);
    int stride = sizeX/2+1;
 
@@ -871,7 +870,7 @@ void FFTcache::doRhoRealtoRhoG(double *realArr)
    fft_split(bwdZ1DdpPlan,
 	nplane_rho_x, // these many 1D ffts
 	(fftw_complex *)planeArr, 
-	stride,1,NULL,0,0);
+	     stride,1,NULL,0,0, config.fftprogresssplitReal);
 
    //==============================================================================
  }//end routine
@@ -931,7 +930,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
      rfftwnd_real_to_complex_split(bwdX1DdpPlan,
 			planeSize[0],          // these many 1D ffts
 			realArr,1,(sizeX+2),   // x is inner here
-                        NULL,0,0);            
+				   NULL,0,0, config.fftprogresssplitReal);            
 #ifdef CMK_VERSION_BLUEGENE
    CmiNetworkProgress();
 #endif
@@ -940,7 +939,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
      fft_split(bwdZ1DdpPlan,
 	     nplane_x, // these many 1D ffts
 	     (fftw_complex *)planeArr, 
-  	     stride,1,NULL,0,0);
+	       stride,1,NULL,0,0, config.fftprogresssplitReal);
   }//endif : double pack and in-place
 
 //==============================================================================
@@ -1362,7 +1361,7 @@ void RhoGSlab::doBwFFTRtoG(int expandtype){
 	(fftw_complex *)partlyfftData, //input data
 	1,           //stride
 	nfftz,       //distance between arrays
-	NULL, 0, 0); // junk because input array stores output (in-place)
+	     NULL, 0, 0, config.fftprogresssplit); // junk because input array stores output (in-place)
 
    if(expandtype==0){compressGSpace(partlyfftData, expandtype);}
 
@@ -1397,7 +1396,7 @@ void RhoGSlab::doFwFFTGtoR(int iopt, int index){
 	reinterpret_cast<fftw_complex*>(fftData), //input data
          1,           //stride
          nfftz,       //distance between z-data sets
-         NULL, 0, 0); // junk because input array stores the output (in-place)
+	     NULL, 0, 0, config.fftprogresssplit); // junk because input array stores the output (in-place)
 
 //==============================================================================
    }//end routine
@@ -1437,7 +1436,7 @@ void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
         (fftw_complex *)(planeArr),//input data
  	stride,          // stride betwen elements (x is inner)
   	1,               // array separation (nffty elements)
-	NULL,0,0);       // output data is input data
+	     NULL,0,0, config.fftprogresssplitReal);       // output data is input data
 
 #ifdef CMK_VERSION_BLUEGENE
    CmiNetworkProgress();
@@ -1454,7 +1453,7 @@ void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
 			  (fftw_complex *)planeArr, 
                           1,               // stride (x is inner)
                           stride,          // array separation
-  		          NULL,0,0);       // output array is real 
+				NULL,0,0, config.fftprogresssplitReal);       // output array is real 
 
 //==============================================================================
 // copy out to a nice stride in memory

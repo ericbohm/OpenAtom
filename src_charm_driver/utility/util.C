@@ -1342,6 +1342,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"psipriority: %d\n",psipriority);
      fprintf(fp,"rhogpriority: %d\n",rhogpriority);
      fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
+     fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
      fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
@@ -1410,6 +1411,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.gExpandFact     = 1.0;
     config.gExpandFactRho  = 1.0;
     config.fftprogresssplit= 20;
+    config.fftprogresssplitReal= 5;
     config.stateOutputOn  =  0;
     config.toleranceInterval=5;
 //===================================================================================
@@ -1535,6 +1537,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rhogpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "fftprogresssplit"))
             config.fftprogresssplit = atoi(parameterValue);
+        else if (!strcmp(parameterName, "fftprogresssplitReal"))
+            config.fftprogresssplitReal = atoi(parameterValue);
         else if (!strcmp(parameterName, "stateOutputOn"))
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))

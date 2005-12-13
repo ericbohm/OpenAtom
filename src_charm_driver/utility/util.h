@@ -207,6 +207,7 @@ class Config {
 	int rhogpriority;
 	int priority;
 	int fftprogresssplit;
+	int fftprogresssplitReal;
         int stateOutputOn;
 	int toleranceInterval;
         double gExpandFact;

@@ -296,13 +296,17 @@ void configureCPcharmParaInfoAndAtoms(double ecut_cp, int cp_min_opt, int, size2
 
 //==============================================================================
 void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
-		 int idist, fftw_complex *out, int ostride, int odist);
+	       int idist, fftw_complex *out, int ostride, int odist, int split);
 
-void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex *in, int istride,
-		 int idist, fftw_real *out, int ostride, int odist);
+void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, 
+				   fftw_complex *in, int istride,
+				   int idist, fftw_real *out, int ostride, 
+				   int odist, int split);
 
-void rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *in, int istride,
-		 int idist, fftw_complex *out, int ostride, int odist);
+void rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, 
+				   fftw_real *in, int istride,
+				   int idist, fftw_complex *out, 
+				   int ostride, int odist, int split);
 
 #endif
 //==============================================================================
