@@ -103,10 +103,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   reductionPlaneNum    = 0;
 //  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
   // figure out a reliable way to do this
-//  reductionPlaneNum =(int)( (float)thisIndex.x/(float)nstates*(float) (nchareG-1));
   // now expand that to spread these guys around
-  //  reductionPlaneNum= reductionPlaneNum *nstates %(nchareG-1);
-  reductionPlaneNum= 0;
+  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
   contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
@@ -137,6 +135,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
       CkArrayIndex2D idx(0, reductionPlaneNum);  // plane# = this plane#
       for (int j = 0; j < nstates; j++) {
 	idx.index[0] = j;
+	idx.index[1] = calcReductionPlaneNum(j);
 	elems[j] = idx;
       }//endfor
 
@@ -232,7 +231,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p((char*)zmatrix_fx,zsize *sizeof(complex));
 	p((char*)zmatrix_fy,zsize *sizeof(complex));
 	p((char*)zmatrix_fz,zsize *sizeof(complex));
-	p|reductionPlaneNum;
 	// Dont pack zmatrixSum
 	p|sizeX;
 	p|sizeY;
@@ -505,4 +503,27 @@ void CP_State_ParticlePlane::ResumeFromSync(){
       mcastGrp->resetSection(particlePlaneENLProxy);
   }//endif
 }// end routine
+//============================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/**
+ * spread the reduction plane numbers around to minimize map collisions
+ */
+int CP_State_ParticlePlane::calcReductionPlaneNum(int state)
+{
+  
+  int nstatemax=nstates-1;
+  int ncharemax=nchareG-1;
+  int planeNum= state %ncharemax;
+  if(planeNum<0)
+    {
+      CkPrintf(" PP [%d %d] calc nstatemax %d ncharemax %d state %d planenum %d\n",thisIndex.x, thisIndex.y,nstatemax, ncharemax, state, planeNum); 
+      CkExit();
+    }
+  return planeNum;
+}
 //============================================================================
