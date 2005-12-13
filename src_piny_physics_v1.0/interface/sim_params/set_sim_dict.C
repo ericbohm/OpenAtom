@@ -1154,9 +1154,9 @@ void set_sim_dict_nhc(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[15].keyarg,"1.0");
   /*---------------------------------------------------------------------*/
   /* 16)\cp_num_nhc_iso{#} */
-        strcpy((*dict)[15].error_mes,"a number >= 1");
-        strcpy((*dict)[15].keyword,"cp_num_nhc_iso");
-        strcpy((*dict)[15].keyarg,"2");
+        strcpy((*dict)[16].error_mes,"a number >= 1");
+        strcpy((*dict)[16].keyword,"cp_num_nhc_iso");
+        strcpy((*dict)[16].keyarg,"2");
   /*---------------------------------------------------------------------*/
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
