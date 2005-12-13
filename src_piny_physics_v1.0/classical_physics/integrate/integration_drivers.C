@@ -166,6 +166,95 @@ void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
 //============================================================================
 
 
+#ifdef JUNK
+//============================================================================
+//        NVT Integration : 2nd half
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
+                           Atom *atoms,AtomNHC *atomsNHC,double *eKinetic,
+                           double *eKineticNhc,double *potNhc)
+//============================================================================
+    {//begin routine 
+//============================================================================
+// Local variables
+
+   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+   GENERAL_DATA *general_data = GENERAL_DATA::get();
+   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+#include "../class_defs/allclass_strip_gen.h"
+
+   double dt  = gentimeinfo->dt;
+   double dt2 = dt*0.5;
+   int nresp  = mdtherm_info->nres_nhc;
+   int nyosh  = mdtherm_info->nyosh_nhc;
+
+//============================================================================
+// Evolve the system : if its not the first time step
+
+   if(itime>0){
+     for(int i =0;i<natm;i++){
+       atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
+       atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
+       atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
+     }//endfor  
+     applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
+   }//endif
+
+   computeEkin(natm,atoms,eKinetic);
+   computeENHC(natm,len_nhc,atomsNHC,eKineticNhc,potNhc);
+
+//----------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+//        NVT Integration : 1st half
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
+                                           Atom *atoms,AtomNHC *atomsNHC)
+//============================================================================
+    {//begin routine 
+//============================================================================
+// Local variables
+
+   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+   GENERAL_DATA *general_data = GENERAL_DATA::get();
+   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+#include "../class_defs/allclass_strip_gen.h"
+
+   double dt  = gentimeinfo->dt;
+   double dt2 = dt*0.5;
+   int nresp  = mdtherm_info->nres_nhc;
+   int nyosh  = mdtherm_info->nyosh_nhc;
+
+//============================================================================
+// Evolve the system : 
+
+   applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
+   for(int i =0;i<natm;i++){
+     atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
+     atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
+     atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
+   }//endfor  
+
+   for(int i=0;i<natm;i++){
+     atoms[i].x += dt*atoms[i].vx;
+     atoms[i].y += dt*atoms[i].vy;
+     atoms[i].z += dt*atoms[i].vz;
+   }//endfor  
+
+//----------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+#endif
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

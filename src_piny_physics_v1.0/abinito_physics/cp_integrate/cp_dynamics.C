@@ -8,7 +8,7 @@
 #include "../class_defs/CP_OPERATIONS/class_cpintegrate.h"
 #include "../../mathlib/proto_math.h"
 
-#define ISOKIN_OPT 0
+#define ISOKIN_OPT 1
 
 //============================================================================
 // Dynamics controller

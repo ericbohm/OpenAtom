@@ -1799,7 +1799,7 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_gen.h"
 
-  int ifound,index;
+  int ifound,index,int_key_arg;
   double real_key_arg;
 
 /*========================================================================*/
@@ -1966,7 +1966,16 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      cptherm_info->cp_therm_heat_fact = real_key_arg;
      index=15;
      if(real_key_arg<1.0){
-    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+       keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+     }/*endif*/
+
+   /*-----------------------------------------------------------------------*/ 
+  /* 16)\cp_num_nhc_iso{#} */
+     sscanf(dict[16].keyarg,"%d",&int_key_arg);
+     cptherm_info->num_c_nhc_iso = int_key_arg;
+     index=16;
+     if(int_key_arg<1){
+       keyarg_barf(dict,filename_parse->input_name,fun_key,index);
      }/*endif*/
 
 /*========================================================================*/

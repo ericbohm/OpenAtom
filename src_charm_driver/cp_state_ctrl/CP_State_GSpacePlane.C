@@ -401,6 +401,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt    = sim->cp_min_opt;
   double tol_cp_min = sim->tol_cp_min;
+  double tol_cp_dyn = sim->tol_cp_dyn;
   double d0         = ((double *)msg->getData())[0];
   double d1         = ((double *)msg->getData())[1];
          d1         = sqrt(d1); // piny convention
@@ -420,7 +421,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
-  if(cp_min_opt==0 && fmagPsi_total>10.0){
+  if(cp_min_opt==0 && fmagPsi_total>tol_cp_dyn){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

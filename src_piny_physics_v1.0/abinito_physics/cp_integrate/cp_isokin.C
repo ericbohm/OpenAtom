@@ -16,6 +16,73 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
+                        int *num_nhc_ret, double *kTCP_ret,
+                        double *tau_ret,double *mNHC_ret,double *degfree_ret,
+                        double *degfreeNHC_ret,double *gammaNHC_ret,int ncoef_true,
+                        int ncoef_zero)
+//============================================================================
+  {// Begin Function 
+//============================================================================
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+  int len_nhc   = cptherm_info->len_c_nhc;
+  int num_nhc   = cptherm_info->num_c_nhc_iso;
+  double Text   = cpopts->te_ext;
+  double tau_in = cpopts->cp_tau_nhc;
+
+  double kT     = Text/BOLTZ;
+  double tau    = tau_in/TIME_CONV;
+
+  if(len_nhc>maxLen){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Maximum NHC length is %d < %d\n",maxLen,len_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+  if(num_nhc>maxNum){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Maximum NHC number is %d < %d\n",maxNum,num_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+  if(len_nhc<2){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Minimum NHC len_nhc is 2 > %d\n",maxNum,num_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
+  double degfree    = (double)(2*ncoef_true-ncoef_zero+num_nhc-1);
+  double degfreeNHC = (double)( (len_nhc-1)*num_nhc );
+  double gammaNHC   = degfree/(degfree+1.0);
+
+//============================================================================
+
+  (*len_nhc_ret) = len_nhc;
+  (*num_nhc_ret) = num_nhc;
+  (*kTCP_ret)    = kT;
+  (*tau_ret)     = tau;
+  
+  double pre     = tau*tau*kT;
+  (*mNHC_ret)    = pre;
+
+  (*degfree_ret)    = degfree;
+  (*degfreeNHC_ret) = degfreeNHC;
+  (*gammaNHC_ret)   = gammaNHC;
+
+//============================================================================
+   }// End function
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void CPINTEGRATE::cp_isoVel_update(int n,complex *v,complex *f,
             double *m,int num_nhc,double **vNHC,double mNHC,double kT,
             double degfree, double degfreeNHC, double gamma)

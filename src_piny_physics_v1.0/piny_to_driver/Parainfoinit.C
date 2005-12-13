@@ -51,6 +51,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   double dt         = gentimeinfo->dt;
   double tol_norb   = cpconstrnt->c_tolnorb;
   double tol_cp_min = genminopts->tol_coef;
+  double tol_cp_dyn = cpopts->tol_coef;
 
 //========================================================================
 

@@ -14,6 +14,7 @@ class CPTHERM_INFO{
   int cp_any_on;              // Opt: Is cp of any type ``on''
   int nstate;                 // Num: # of states
   int num_c_nhc;              // Num: # of PW coeff NHC's            
+  int num_c_nhc_iso;              // Num: # of PW coeff NHC's            
   int len_c_nhc;              // Num: Lnth of PW coeff NHC's         
   int nres_c_nhc;             // Num: # of PW coeff RESPA NHC steps   
   int nyosh_c_nhc;            // Num: # of PW coeff Yosh NHC's steps  
@@ -45,6 +46,7 @@ class CPTHERM_INFO{
     cp_any_on      = 0;
     nstate         = 0;        
     num_c_nhc      = 0;     
+    num_c_nhc_iso  = 0;     
     len_c_nhc      = 0;     
     nres_c_nhc     = 0;    
     nyosh_c_nhc    = 0;   
@@ -66,6 +68,7 @@ class CPTHERM_INFO{
       p | cp_any_on;      
       p | nstate;      
       p | num_c_nhc;
+      p | num_c_nhc_iso;
       p | len_c_nhc;
       p | nres_c_nhc;
       p | nyosh_c_nhc;
@@ -109,6 +112,7 @@ class CPTHERM_INFO{
 
     // ints
       fprintf(fp,"num_c_nhc %d\n",num_c_nhc);
+      fprintf(fp,"num_c_nhc_iso %d\n",num_c_nhc_iso);
       fprintf(fp,"len_c_nhc %d\n",len_c_nhc);
       fprintf(fp,"nres_c_nhc %d\n",nres_c_nhc);
       fprintf(fp,"nyosh_c_nhc %d\n",nyosh_c_nhc);
