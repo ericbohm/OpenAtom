@@ -155,6 +155,7 @@ void startPairCalcLeftSlow(PairCalcID* aid, int n, complex* ptr, int myS, int my
 void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane);
+CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane);
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane);
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane);
 void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb);

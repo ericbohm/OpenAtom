@@ -202,6 +202,8 @@ class initResultMsg : public CkMcastBaseMsg, public CMessage_initResultMsg {
 };
 
 class sendBWsignalMsg : public CMessage_sendBWsignalMsg{
+ public:
+  bool otherdata;
 };
 
 class mySendMsg : public CMessage_mySendMsg {
@@ -338,18 +340,9 @@ class PairCalculator: public CBase_PairCalculator {
   void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
-  // this is never called we leave it here as an historical artifact
-  inline double compute_entry(int n, complex *psi1, complex *psi2, int op) 
-    {
 
-      int i;
-      register double sum = 0;
-      for (i = 0; i < n; i++) {
-	sum += psi1[i].re * psi2[i].re +  psi1[i].im * psi2[i].im;
-      }
-        
-      return sum;
-    }
+  void dumpMatrixDouble(const char *, double *,int,int);
+  void dumpMatrixComplex(const char *, complex *,int,int);
 
  private:
   int numRecd, numExpected, grainSize, S, blkSize, N;

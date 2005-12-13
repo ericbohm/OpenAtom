@@ -26,12 +26,11 @@
  * orthoT to the PC instead.
  *
  * For dynamics we also have a tolerance check for orthoT.  The
- * tolerance check is a min and max reduction on OrthoT.  If it falls
- * out of the tolerance range we have to correct the velocities.  We
- * notify the PC of this via a flag in the finishsection call.  It
- * will then be handled by gspace.  We will keep the tolerance flag
- * and set orthoT to the unit AKA identity matrix for the gamma
- * calculation.
+ * tolerance check is a min reduction on OrthoT.  If it falls out of
+ * the tolerance range we have to correct the velocities.  We notify
+ * the PC of this via a flag in the finishsection call.  It will then
+ * be handled by gspace.  We will keep the tolerance flag and set
+ * orthoT to the unit AKA identity matrix for the gamma calculation.
  *
  * We will perform that tolerance check every config.toleranceInterval
  * steps.
@@ -131,16 +130,16 @@ void Ortho::start_calc(CkReductionMsg *msg){
       }
     else if(thisIndex.x > thisIndex.y)
       { //we are a spare 
-	//	CkPrintf("[%d,%d] has its copy\n",thisIndex.x, thisIndex.y);
+	//	CkPrintf("[%d,%d] has its copy of S\n",thisIndex.x, thisIndex.y);
       }
 
 #ifdef _CP_DEBUG_SMAT_
     char fname[80];
-    snprintf(fname,80,"smatrix.out_ortho_%d_%d",thisIndex.x,thisIndex.y);
+    snprintf(fname,80,"smatrix.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
     FILE *outfile = fopen(fname, "w");
     for(int i=0; i<chunksize; i++){
       for(int j=0; j<chunksize; j++){
-	fprintf(outfile, "[%d %d] %10.9f \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
+	fprintf(outfile, "[%d %d] %.12g \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
       }
     }
     fclose(outfile);
@@ -182,10 +181,6 @@ void Ortho::collect_results(void){
     int itime       = numGlobalIter;
     if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
 
-#ifdef _CP_DEBUG_TMAT_
-    print_results();
-#endif
-
     if(thisIndex.x==0 && thisIndex.y==0){
   	wallTimeArr[itime] = CkWallTimer();
 	if (numGlobalIter == iprintout && config.maxIter<30) {
@@ -204,10 +199,13 @@ void Ortho::collect_results(void){
         }//endif
     }//endif
 
+#ifdef _CP_DEBUG_TMAT_
+    print_results();
+#endif
     numGlobalIter++;
-
 //=======================================================================
 // Load balance controller
+
 
     if (numGlobalIter <= config.maxIter+1){
 
@@ -245,6 +243,7 @@ void Ortho::resume(){
 	}
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
 	// copy orthoT for use in gamma computation
+	//	CkPrintf("O [%d %d] making copy of orthoT m %d n %d\n",thisIndex.x,thisIndex.y,m,n);
 	if(orthoT==NULL) //allocate if null
 	  { orthoT = new double[m * n];}
 	memcpy(orthoT,A,m*n*sizeof(double));
@@ -309,17 +308,25 @@ void Ortho::acceptAllLambda(CkReductionMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+/**
+ * this is a very paranoid heavily barriered resumption to avoid
+ *  nasty migration race conditions.
+ */
 void Ortho::lbresume(CkReductionMsg *msg) {
 //============================================================================
+
     delete msg;
     lbcaught++;
+    int lambdas=1;
+    if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt)
+      lambdas=2;
     if(thisIndex.x ==0 && thisIndex.y==0)
       CkPrintf("O [%d %d] caught lb %d",thisIndex.x, thisIndex.y, lbcaught);
-    if(lbcaught==1) //gspace is all done lambda reduction reset
+    if(lbcaught==lambdas) //gspace is all done lambda reduction reset
 	gSpacePlaneProxy.syncpsi();
-    if(lbcaught==2) //gspace is all done lambda and psi reduction resets
+    if(lbcaught==lambdas+1) //gspace is all done lambda and psi reduction resets
       setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId,  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));      
-    if(lbcaught==3)
+    if(lbcaught==lambdas+2)
       {
 	if(thisIndex.x <= thisIndex.y) //lambda is done
 	  {
@@ -330,7 +337,7 @@ void Ortho::lbresume(CkReductionMsg *msg) {
 	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
 	  }
       }
-    if(lbcaught==4) //everyone is done
+    if(lbcaught==lambdas+3) //everyone is done
     {
 	CkPrintf("O [%d %d] resumes\n",thisIndex.x,thisIndex.y);
 	resume();
@@ -351,13 +358,14 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 
 #ifdef _CP_DEBUG_LMAT_
   char lmstring[80];
-  snprintf(lmstring,80,"lmatrix_%d_%d.out",thisIndex.x,thisIndex.y);
+  snprintf(lmstring,80,"lmatrix_t:%d_%d_%d.out",numGlobalIter,thisIndex.x,thisIndex.y);
   FILE *fp = fopen(lmstring,"w");
   for(int i=0; i<m; i++){
     for(int j=0; j<n; j++){
-      fprintf(fp, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, lambda[i*n+j]);
+      fprintf(fp, "[%d %d] %.12g \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, lambda[i*n+j]);
     }
   }
+  fclose(fp);
 #endif
 
   // revise this to do a matmul replacing multiplyforgamma
@@ -382,12 +390,62 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	  }
 	toleranceCheckOrthoT=false;
       }
+    /*
+    if(numGlobalIter <10)
+      {
+	// evil orthO hack
+	CkPrintf("WARNING!!!!! Evil Ortho hack is in play!\n");
+	double denominator=nstates*nstates*10;	      
+	if(thisIndex.x!=thisIndex.y)
+	  { //not on diagonal
+	    for(int i=0;i<m;i++)
+	      for(int j=0;j<n;j++)
+		{
+		  double numerator=((i+thisIndex.x*m) - (j+thisIndex.y*n) * (i+thisIndex.x*m) - (j+thisIndex.y*n)); 
+		  orthoT[i*n+j]= numerator/denominator;
+		}
+	  }
+	else 
+	  { // on diagonal
+	    for(int i=0;i<m;i++)
+	      for(int j=0;j<n;j++)
+		{
+		  double numerator=((i+thisIndex.x*m) - (j+thisIndex.y*n) * (i+thisIndex.x*m) - (j+thisIndex.y*n)); 
+		  if(i!=j)
+		    orthoT[i*n+j]=numerator/denominator;
+		  else
+		    orthoT[i*n+j]=1.0+numerator/denominator;
+		}
+	  }
+
+      }
+
+    if(thisIndex.x!=thisIndex.y)
+      { //not on diagonal
+	bzero(orthoT,m*n*sizeof(double));
+      }
+    else 
+      { // on diagonal
+	for(int i=0;i<m;i++)
+	  for(int j=0;j<n;j++)
+	    {
+	      if(i!=j)
+		orthoT[i*n+j]=0.0;	      
+	      else
+		orthoT[i*n+j]=1.0;	      
+	    }
+      }
+    */
+    if(ortho==NULL)
+      ortho= new double[m*n];
+    memcpy(ortho,orthoT,m*n*sizeof(double));
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
     matC1.multiply(1, 0, B, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
+
     //completed gamma will call finishPairCalcSection2
   }
   else
@@ -434,17 +492,18 @@ void Ortho::gamma_done(){
   //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
 #ifdef _CP_DEBUG_GMAT_
     char fname[80];
-    snprintf(fname,80,"gamma.out_ortho_%d_%d",thisIndex.x,thisIndex.y);
+    snprintf(fname,80,"gamma.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
     FILE *outfile = fopen(fname, "w");
     for(int i=0; i<m; i++){
       for(int j=0; j<n; j++){
-	fprintf(outfile, "[%d %d] %10.9f \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, B[i*n+j]);
+	fprintf(outfile, "[%d %d] %.12g \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, B[i*n+j]);
       }
     }
     fclose(outfile);
 #endif
 
-  finishPairCalcSection2(m * n, B, orthoT, pcLambdaProxy,0);
+    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,0);
+  
 
 //----------------------------------------------------------------------------
   }// end routine

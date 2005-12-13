@@ -425,7 +425,8 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mag psi force too large for CP dynamics. Caio! \n");
+      CkPrintf("Mag psi force > %.10g too large for CP dynamics. Caio! \n",
+	       tol_cp_dyn);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
   }//endif
@@ -548,6 +549,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countFileOut    = 0;
   countRedPsi     = 0;
   countPsi        = 0;
+  countLambda     = 0;
   countVPsi       = 0;
   countIFFT       = 0;
   ecount          = 0; //No energies have been received.
@@ -555,11 +557,23 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   numRecvRedPsi   = sim->RCommPkg[thisIndex.x].num_recv_tot;
   int ourgrain    = thisIndex.x/config.sGrainSize*config.sGrainSize; 
   if(nstates == config.sGrainSize)
-    AllPsiExpected=1;
+      AllPsiExpected=1;
   else if(ourgrain<(nstates-config.sGrainSize)) // corner has no extras
     AllPsiExpected=2;
   else
     AllPsiExpected=1;
+
+  if(cp_min_opt==0) 
+    {    //expect non diagonal column results
+      if(nstates == config.sGrainSize)
+	AllLambdaExpected=1;
+      else 
+	AllLambdaExpected=2;
+    }
+  else  //no column reduction results in minimization
+    {
+      AllLambdaExpected=1;
+    }
 
 //============================================================================
 
@@ -697,7 +711,11 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|total_energy;
   p|cpuTimeNow;
 
-  p|real_proxy;   // should I pup more proxies (lambda,psi,other?)
+  p|real_proxy;   
+  p|lambdaproxy;
+  p|lambdaproxyother;
+  p|psiproxy;
+  p|psiproxyother;
   p|sfCompSectionProxy;
   p|gpairCalcID1;
   p|gpairCalcID2;
@@ -1023,7 +1041,12 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::makePCproxies(){
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int cp_min_opt = sim->cp_min_opt;
+
   lambdaproxy=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y);
+  if(AllLambdaExpected==2)  // need additional column reduction in dynamics
+    lambdaproxyother=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y);
   psiproxy=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y);
   if(AllPsiExpected>1)
     psiproxyother=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y);
@@ -1488,53 +1511,76 @@ void  CP_State_GSpacePlane::sendLambda() {
 void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 
-  complex *data = (complex *)msg->getData();
+  complex *data  = (complex *)msg->getData();
+  int       N    = msg->getSize()/sizeof(complex);
   complex *force = gs.packedForceData;
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
 
 //==============================================================================
 // Get the modified forces
 
+
+
+  countLambda++;//psi arrives in as many as 2 reductions
+//=============================================================================
+// (II) Add it in to our forces
+
+
   if(config.doublePack==1){
    if(cp_min_opt==1){
-    for(int i=0; i<gs.numPoints; i++){
+    for(int i=0; i<N; i++){
        double wght  = (k_x[i]==0 ? 0.5 : 1);
        force[i].re -= wght*data[i].re;
        force[i].im -= wght*data[i].im;
      }//endfor
-   }else{
-     for(int i=0; i<gs.numPoints; i++){force[i]  = data[i]*(-1.0);}
-     if(gs.ihave_kx0==1){
-       double rad2i = 1.0/sqrt(2.0);
-       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
+   }
+   else
+     {
+       if(countLambda==1)
+	 for(int i=0; i<N; i++){force[i]  = data[i]*(-1.0);}
+       else
+	 for(int i=0; i<N; i++){force[i]  += data[i]*(-1.0);}
      }//endif
-   }//endif
+ 
   }else{
-    for(int i=0; i<gs.numPoints; i++){
+    for(int i=0; i<N; i++){
        force[i].re -= 0.5*data[i].re;
        force[i].im -= 0.5*data[i].im;
     }//endfor
   }//endif
   delete msg;  
 
+//=============================================================================
+// (II) If you have got it all : Rescale it and resume
+
+  if(countLambda==AllLambdaExpected){ 
+
+   if(cp_min_opt==0){
+    // dynamics scale it out
+     if(gs.ihave_kx0==1){
+       double rad2i = 1.0/sqrt(2.0);
+       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
+     }//endif
+   }//endif
 //==============================================================================
 // Retrieve Non-orthog psi
 
-  if(cp_min_opt==0){
-     int ncoef          = gs.numPoints;
-     complex *psi_g     = gs.packedPlaneData;
-     complex *psi_g_scr = gs.packedPlaneDataScr;
-     memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
-  }//endif
-
+    if(cp_min_opt==0){
+      int ncoef          = gs.numPoints;
+      complex *psi_g     = gs.packedPlaneData;
+      complex *psi_g_scr = gs.packedPlaneDataScr;
+      memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+    }//endif
+    
 //==============================================================================
-// Resume 
+ // Resume 
 
-  acceptedLambda=true;
-  RTH_Runtime_resume(run_thread);
-
+    acceptedLambda=true;
+    countLambda=0;
+    RTH_Runtime_resume(run_thread);
+  }
 //==============================================================================
-  }//end routine
+}//end routine
 //==============================================================================
 
 //=========================================================================
@@ -2490,6 +2536,8 @@ void CP_State_GSpacePlane::ResumeFromSync() {
   // reset commlib proxies
   if(config.useCommlib)
       ComlibResetProxy(&real_proxy);
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int cp_min_opt = sim->cp_min_opt;
 
   // reset lambda PC proxies
   CkMulticastMgr *mcastGrp = 
@@ -2498,6 +2546,14 @@ void CP_State_GSpacePlane::ResumeFromSync() {
   setResultProxy(&lambdaproxy, thisIndex.x, gpairCalcID2.GrainSize, 
           gpairCalcID2.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
           orthoProxy));
+  if(cp_min_opt==0)
+    {
+      mcastGrp->resetSection(lambdaproxyother);
+      setResultProxy(&lambdaproxyother, thisIndex.x, gpairCalcID2.GrainSize, 
+		     gpairCalcID2.mCastGrpId, true,
+		     CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+    }
+
   gpairCalcID2.resetProxy();
 
   LBTurnInstrumentOff();

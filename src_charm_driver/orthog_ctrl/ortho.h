@@ -83,11 +83,11 @@ class Ortho : public CBase_Ortho{
 
   void print_results(void){
     char outname[80];
-    snprintf(outname,80,"tmatrix%d_%d.out",thisIndex.x,thisIndex.y);
+    snprintf(outname,80,"tmatrix_t:%d_%d_%d.out",numGlobalIter,thisIndex.x,thisIndex.y);
     FILE *outfile = fopen(outname, "w");
 	for(int i=0; i<m; i++){
 	  for(int j=0; j<n; j++){
-           fprintf(outfile, "%d %d %.10g \n",i+thisIndex.x*n+1,j+thisIndex.y*n+1, A[i*n+j]);
+           fprintf(outfile, "%d %d %.12g \n",i+thisIndex.x*n+1,j+thisIndex.y*n+1, A[i*n+j]);
 	  }
 	}
 	fclose(outfile);

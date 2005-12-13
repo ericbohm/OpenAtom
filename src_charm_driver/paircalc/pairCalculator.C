@@ -160,9 +160,11 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
  * section at a time using only the relevant processors instead of making them
  * all at once. We have each gspaceplane chare initialize its own section.
  * Each section will have S/grainsize members.  Such that PC(w,*,y,*)
- * contribute to GSP(y,w).  Symmetric case will additionally have
- * PC(w,x,y!=x,*) contributing to GSP(x,w) to fill out the total S/grainsize
- * contributions in each section.
+ * contribute to GSP(y,w).  
+ *
+ * Symmetric and asymm dynamics case will additionally have
+ * PC(w,x,y!=x,*) contributing to GSP(x,w) to fill out the total
+ * S/grainsize contributions in each section.
  *
  * Then return the section proxy.
  */
@@ -184,6 +186,38 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
+
+/**
+ * initialize  plane and column wise section reduction for lambda->gspace
+ */
+CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane)
+{
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  int GrainSize=pcid->GrainSize;
+  int offset=state % GrainSize;
+  int s1=state / GrainSize * GrainSize; //column
+  int S=pcid->S;
+  // all nondiagonal elements 
+  // so we'll have to make this the tedious explicit way
+  CkArrayIndexMax *elems= new CkArrayIndexMax[S/GrainSize-1];
+  int block=0;
+  int ecount=0;
+  for(int s2 = 0; s2<S; s2+=GrainSize)
+    {
+      if(s1!=s2)
+	{
+	  CkArrayIndex4D idx4d(plane,s1,s2,block);
+	  elems[ecount++]=idx4d;
+	}
+    }
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+  delete [] elems;
+  sectProxy.ckSectionDelegate(mcastGrp);
+  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  return sectProxy;
+}
+
+
 
 /**
  * initialize  plane and row wise section reduction for psi->gspace

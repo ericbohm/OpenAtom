@@ -238,7 +238,9 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int ecount;
 	int countPsi;
 	int countVPsi;
+	int countLambda;
 	int AllPsiExpected;
+	int AllLambdaExpected;
         int itemp;
         int jtemp;
 	bool needPsiV;
@@ -277,6 +279,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CProxy_CP_State_RealSpacePlane real_proxy;
 	CProxySection_StructureFactor sfCompSectionProxy;
 	CProxySection_PairCalculator lambdaproxy;
+	CProxySection_PairCalculator lambdaproxyother;
 	CProxySection_PairCalculator psiproxy;
 	CProxySection_PairCalculator psiproxyother;
 	PairCalcID gpairCalcID1;
