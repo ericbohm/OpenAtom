@@ -1818,7 +1818,7 @@ void CP_State_GSpacePlane::integrateModForce() {
   ireset_cg = 0;
   if(iteration==1){ireset_cg=1;numReset_cg=0;}
   if(iteration>1 && cp_min_opt==1 && cp_min_cg==1){
-    if( (fmagPsi_total>1.1*fmagPsi_total_old && numReset_cg>=15) || 
+    if( (fmagPsi_total>1.05*fmagPsi_total_old && numReset_cg>=5) || 
         (fmagPsi_total>2.0*fmagPsi_total_old)){
       ireset_cg   = 1;
       numReset_cg = 0;
