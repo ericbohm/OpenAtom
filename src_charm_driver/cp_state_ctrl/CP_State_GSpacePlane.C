@@ -2134,7 +2134,7 @@ void CP_State_GSpacePlane::sendPsi() {
     tpsi  = new complex[gs.numPoints];
   memcpy(tpsi,data,sizeof(complex)*gs.numPoints);
   */
-  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+  if(cp_min_opt==0){
     //#ifdef  _CP_DEBUG_UPDATE_OFF_
     //    CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
     //                sizeof(complex)*gs.numPoints);
@@ -2166,6 +2166,11 @@ void CP_State_GSpacePlane::sendPsi() {
 		    thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
+  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
+      config.stateOutputOn==0){
+      int i;
+      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+  }///endif
 #endif
 
 //----------------------------------------------------------------------------
