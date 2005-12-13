@@ -789,6 +789,9 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       {
 	cp_entry= cb_ep_tol;
       }
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
     if(otherdata){  // we have this othernewdata issue for the symmetric case
                     // and the asymmetric dynamic case
                     // for the off diagonal elements
@@ -799,7 +802,15 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	  CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, N,j,thisIndex.x+j,thisIndex.w);
 #endif
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+
 	  mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, sumMatrixDoubleType, otherResultCookies[j], mycb);
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+
 	  //mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, CkReduction::sum_double, otherResultCookies[j], mycb);
 
 	}
@@ -811,7 +822,13 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,N,j,thisIndex.y+j,thisIndex.w);
 #endif
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
 	mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, sumMatrixDoubleType, resultCookies[j], mycb);
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
 	//mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, CkReduction::sum_double, resultCookies[j], mycb);
     }
     delete [] mynewData;
