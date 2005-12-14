@@ -99,8 +99,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
     memcpy(kxt,kx,(nPacked*sizeof(int)));
     memcpy(kyt,ky,(nPacked*sizeof(int)));
     memcpy(kzt,kz,(nPacked*sizeof(int)));
- 
     int nsplit = (3*nplane_x)/2;
+
 
     int jc      = 0;
     int lc      = 0;
@@ -118,14 +118,14 @@ void make_rho_runs(CPcharmParaInfo *sim){
     if(jc!=nPacked)  {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Toasty Line Flip-pts!\n");  
-      CkExit();
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
     }//endif
     if(lc!=nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Toasty Line Flip-lines!\n");
-      CkExit();
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
     }//endif
 
     delete [] kxt;
@@ -243,11 +243,11 @@ void make_rho_runs(CPcharmParaInfo *sim){
     for(int i=0;i<nline_tot;i+=2){
       RunDescriptor *Desi  = &runs[i];
       RunDescriptor *Desi1 = &runs[(i+1)];
-      //      CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i, Desi->x, Desi1->x, Desi->y, Desi1->y);
+     //CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i,Desi->x,Desi1->x,Desi->y,Desi1->y);
       if( (Desi->x != Desi1->x) || (Desi->y != Desi1->y) ){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("The rho rundescriptor MUST pair up the half-lines\n");
-        CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i, Desi->x, Desi1->x, Desi->y, Desi1->y);
+        CkPrintf("i %d kx %d kx1 %d ky %d ky1 %d\n",i,Desi->x,Desi1->x,Desi->y,Desi1->y);
 	CkPrintf("or you will not be a happy camper :\n");
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
@@ -269,8 +269,12 @@ void make_rho_runs(CPcharmParaInfo *sim){
 // Create the line decomposition and a sorted run descriptor
 // There are two rundescriptors per line : Noah's arc sort
 
+    int nlines_min=nline_lgrp[0];
     int nlines_max=0;
-    for(int i=0;i<nchareRhoG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
+    for(int i=0;i<nchareRhoG;i++){
+      nlines_max=MAX(nlines_max,nline_lgrp[i]);
+      nlines_min=MIN(nlines_min,nline_lgrp[i]);
+    }//endfor
     int **index_tran_upack_rho = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
    
     int yspace=sizeX/2+1;
@@ -305,14 +309,33 @@ void make_rho_runs(CPcharmParaInfo *sim){
   }//endfor
 
 //============================================================================
-// variables that could be used for mapping but aren't
+// variables that could be used for mapping but aren't yet.
+
   double *pts_per_chare = new double[sizeX];
   double *lines_per_chare = new double[sizeX];
-  for(int i=0;i<nchareRhoG;i++)
-    {
-      pts_per_chare[i]=(double) npts_lgrp[i];
+  for(int i=0;i<nchareRhoG;i++){
+      pts_per_chare[i]  =(double) npts_lgrp[i];
       lines_per_chare[i]=(double) nline_lgrp[i];
-    }
+  }//endfor
+
+//============================================================================
+// Check for rhoghelper size
+
+  if(nlines_min==0){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("No lines in a RhoG collection. Your RhoG decomp stinks.\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit(); 
+  }//endif
+
+  if(nlines_min<config.rhoGHelpers){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("RhoGHelper parameter, %d, must be <= minimum number\n",config.rhoGHelpers);
+     CkPrintf("of lines in any RhoG chare array element, %d.\n",nlines_min);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit(); 
+  }//endif
+
 //============================================================================
 // Pack up the stuff
 
@@ -327,6 +350,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     sim->nlines_tot_rho          = nline_tot;
     sim->lines_per_chareRhoG     = lines_per_chare;
     sim->pts_per_chareRhoG       = pts_per_chare;
+
 //============================================================================
 // Clean up the memory
 
@@ -1677,13 +1701,6 @@ void Config::readConfig(const char* fileName, Config &config,
     if (sizez % config.rhoGPPC != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("z dimension should be divisible by rhoGPPC\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    if (sizey % config.rhoGHelpers != 0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("y dimension should be divisible by rhoGHelpers\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif

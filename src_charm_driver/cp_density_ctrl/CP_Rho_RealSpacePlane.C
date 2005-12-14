@@ -124,6 +124,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     doneGradRhoVks = 0;
     doneHartVks    = true;
     doneWhiteByrd  = true;
+    rhoGHelpers    = config.rhoGHelpers;
     for(int i=0;i<4;i++){countGradVks[i]=0;}
     setMigratable(false);
 
@@ -826,7 +827,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
+void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 //============================================================================
 
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
@@ -835,7 +836,8 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
   int *nlines_per_chareG = sim->nlines_per_chareRhoG;
    
   int size               = msg->size; 
-  int Index              = msg->senderIndex;
+  int Index              = msg->senderBigIndex;
+  int istrt_lines        = msg->senderStrtLine;
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
   int pSize              = (rho_rs.sizeX+2)*(rho_rs.sizeY);
@@ -844,16 +846,17 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoRSFFTMsg *msg){
 	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
 #endif
   countGradVks[iopt]++;
-  double *data=rho_rs.doFFTonThis;
+  double *data      = rho_rs.doFFTonThis;
   complex *planeArr = reinterpret_cast<complex*> (data);
   if(countGradVks[iopt]==1){memset(data,0,sizeof(double)*pSize);}
 
-  for(int i=0;i<size;i++){planeArr[tranUnpack[Index][i]] = partiallyFFTd[i];}
-
+  for(int i=0,j=istrt_lines;i<size;i++,j++){
+    planeArr[tranUnpack[Index][j]] = partiallyFFTd[i];
+  }//endfor
 
   delete msg;  
   CkAssert(iopt==0);
-  if (countGradVks[iopt] == nchareG){
+  if (countGradVks[iopt] == nchareG*rhoGHelpers){
       countGradVks[iopt]=0;
       double scale = 1.0;
 #ifdef _CP_DEBUG_RHOR_VKSA_

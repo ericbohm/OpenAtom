@@ -87,6 +87,8 @@ mainmodule cpaimd {
 
 	message RhoRSFFTMsg {complex data[];};
 
+	message RhoHartRSFFTMsg {complex data[];};
+
 	message GSRedPsiMsg {complex data[];};
 
 	message GSAtmMsg;
@@ -167,7 +169,7 @@ mainmodule cpaimd {
 		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool);
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
-		entry void acceptHartVks(RhoRSFFTMsg *msg);
+		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
 	};
 

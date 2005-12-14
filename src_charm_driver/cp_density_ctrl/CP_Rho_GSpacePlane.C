@@ -123,6 +123,34 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
        ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
     }//endif
 
+//============================================================================
+// Decompose
+
+   x                 = thisIndex.x;
+   rhoGHelpers       = config.rhoGHelpers;
+   int num_line_tot  = rho_gs.numLines;
+   numSplit          = new int [rhoGHelpers];
+   istrtSplit        = new int [rhoGHelpers];
+   iendSplit         = new int [rhoGHelpers];
+
+   int istrt_pts = 0;
+   for(int i=0;i<rhoGHelpers;i++){
+
+     int istrt_line,iend_line,num_line;
+     getSplitDecomp(&istrt_line,&iend_line,&num_line,num_line_tot,rhoGHelpers,i);
+
+     int num_pts=0;
+     for (int r=(2*istrt_line);r<(2*iend_line);r++){
+       num_pts += sortedRunDescriptors[x][r].length;
+     }//endif
+
+     istrtSplit[i] = istrt_pts;
+     numSplit[i]   = num_pts;     
+     iendSplit[i]  = istrt_pts+num_pts;
+
+     istrt_pts    += num_pts;
+   }//endfor
+
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -235,29 +263,35 @@ void CP_Rho_GSpacePlane::acceptData() {
 // II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
 
 #ifndef _CP_DEBUG_HARTEEXT_OFF_
-
-     RhoGHartMsg *msg = new (rho_gs.numPoints,8*sizeof(int)) RhoGHartMsg;
-     msg->size        = rho_gs.numPoints;     
-     memcpy(msg->data, rho_gs.packedRho, rho_gs.numPoints*sizeof(complex));
+     
+     complex *packedRho = rho_gs.packedRho;
+     for(int i=0;i<rhoGHelpers;i++){
+  
+       RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
+       msg->size        = numSplit[i];     
+       msg->senderIndex = thisIndex.x;
+       memcpy(msg->data,&packedRho[istrtSplit[i]],numSplit[i]*sizeof(complex));
     
-    if(config.prioFFTMsg){
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-    }//endif
+      if(config.prioFFTMsg){
+         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+         *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
+       }//endif
     
-    rhoGHartExtProxy(thisIndex.x,thisIndex.y).acceptData(msg);
+       int index = thisIndex.x*rhoGHelpers + i;
+       rhoGHartExtProxy(index,thisIndex.y).acceptData(msg);
 
 #ifdef CMK_VERSION_BLUEGENE
-    CmiNetworkProgressAfter(1); //really send this damn message please
+       CmiNetworkProgressAfter(1); //really send this damn message please
 #endif
+     }//endfor
 
 #else
 
-  if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("EHART       = OFF FOR DEBUGGING\n");
-    CkPrintf("EExt        = OFF FOR DEBUGGING\n");
-    CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
-  }//endif
+    if(thisIndex.x==0 && thisIndex.y==0){
+       CkPrintf("EHART       = OFF FOR DEBUGGING\n");
+       CkPrintf("EExt        = OFF FOR DEBUGGING\n");
+       CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
+     }//endif
 
 #endif
 

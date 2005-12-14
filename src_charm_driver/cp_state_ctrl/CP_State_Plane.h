@@ -16,6 +16,7 @@
 #include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
+void getSplitDecomp(int *,int *,int *,int , int ,int );
 //============================================================================
 
 
@@ -100,6 +101,7 @@ public:
 class RhoGHartMsg: public CMessage_RhoGHartMsg {
 public:
 	int size;
+        int senderIndex;
 	complex *data;
 };
 //============================================================================
@@ -111,6 +113,19 @@ class RhoRSFFTMsg: public CMessage_RhoRSFFTMsg {
 public:
     int size; 
     int senderIndex;
+    int iopt;
+    complex *data;
+};
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class RhoHartRSFFTMsg: public CMessage_RhoHartRSFFTMsg {
+public:
+    int size; 
+    int senderBigIndex;
+    int senderStrtLine;
     int iopt;
     complex *data;
 };
@@ -344,7 +359,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void ResumeFromSync();
 	void fftRhoRtoRhoG();
         void acceptGradRhoVks(RhoRSFFTMsg *);
-        void acceptHartVks(RhoRSFFTMsg *);
+        void acceptHartVks(RhoHartRSFFTMsg *);
         void GradCorr();
         void whiteByrdFFT();
         void sendPartlyFFTtoRhoG(int );
@@ -356,6 +371,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	double volumeFactor;        
 	double probScale;             
 	int count, countFFTdata, numMcastSent;
+        int rhoGHelpers;
 	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
         int countGradVks[5], doneGradRhoVks;
         int countWhiteByrd;
@@ -399,6 +415,10 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	int count;
         int countWhiteByrd[4];
         int doneWhiteByrd;
+        int rhoGHelpers;
+        int *numSplit;
+        int *istrtSplit;
+        int *iendSplit;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy0_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy1_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy2_com;
@@ -427,6 +447,13 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	RhoGSlab rho_gs;
 	int iopt;
         int iteration;
+        int ind_x;       // This chares index=thisIndex.x.
+        int ind_xdiv;    // This chare is a subcollection of rhog(ind_xdiv).
+        int ind_xrem;    // The subcollection index  0<= ind_rem < rhoGHelpers.
+        int rhoGHelpers; // The number of subcolletions of each rhog(ind_xdiv).
+        int istrt_lines;  // start of my subdivion of lines in rhog()
+        int iend_lines;   // end of my subdivion of lines in rhog()
+        int numLines;    // Number of lines in my subdivision
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
 };
 //============================================================================

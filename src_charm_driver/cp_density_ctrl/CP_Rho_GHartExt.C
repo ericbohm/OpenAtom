@@ -39,6 +39,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
 //============================================================================
+
 extern int sizeX;
 extern Config config;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
@@ -59,56 +60,75 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
 {//begin routine
 //============================================================================
 
-  iopt=0;
   CkAssert(sizeX>0); //check for startup wackiness
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
+
+  iopt            = 0;
+  iteration       = 0;
+  rhoGHelpers     = config.rhoGHelpers;
   rho_gs.sizeX    = sizeX;
   rho_gs.sizeY    = sizeYZ[0];
   rho_gs.sizeZ    = sizeYZ[1];
   rho_gs.xdim     = rho_gs.sizeX;
   rho_gs.ydim     = rho_gs.sizeY;
   rho_gs.zdim     = 1;
-  int x = thisIndex.x;
-  rho_gs.numRuns  = sortedRunDescriptors[x].size();
-  CkAssert(rho_gs.numRuns>0);
 
-  rho_gs.numLines = sortedRunDescriptors[x].size()/2;
-  rho_gs.numFull  = (rho_gs.numLines)*rho_gs.sizeZ;
-  rho_gs.size     = rho_gs.numFull;
-  rho_gs.runs     = new RunDescriptor[rho_gs.numRuns];
+//==================================================================================
+// Decomposition rhoG lines into slices of size rhoGHelper
+
+  ind_x            = thisIndex.x;
+  ind_xdiv         = (ind_x/rhoGHelpers);
+  ind_xrem         = (ind_x%rhoGHelpers);
+  int numLines_tot = sortedRunDescriptors[ind_xdiv].size()/2;
+
+  getSplitDecomp(&istrt_lines,&iend_lines,&numLines,
+                 numLines_tot,rhoGHelpers,ind_xrem);
+
+//==================================================================================
+// Carve out your rundescriptor, make the k-vectors , malloc the memory
+
+  rho_gs.numLines  = numLines;
+  rho_gs.numRuns   = (numLines*2);
+  rho_gs.numFull   = (numLines*rho_gs.sizeZ);
+  rho_gs.size      = rho_gs.numFull;
+  rho_gs.runs      = new RunDescriptor[(rho_gs.numRuns)];
   rho_gs.numPoints = 0;
-  for (int r = 0; r < rho_gs.numRuns; r++) {
-    rho_gs.numPoints += sortedRunDescriptors[x][r].length;
-    rho_gs.runs[r]    = sortedRunDescriptors[x][r];
+  for (int r = (2*istrt_lines),s=0; r < (2*iend_lines); r++,s++) {
+    rho_gs.numPoints += sortedRunDescriptors[ind_xdiv][r].length;
+    rho_gs.runs[s]    = sortedRunDescriptors[ind_xdiv][r];
   }//endfor
+
   int nPacked;
   rho_gs.setKVectors(&nPacked);
   CkAssert(nPacked==rho_gs.numPoints);
-  rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
+
   int numFull=rho_gs.numFull;
+  rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
   rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.divRhoX   = NULL;
   rho_gs.divRhoY   = NULL;
   rho_gs.divRhoZ   = NULL;
-  iteration        = 0;
 
+//==================================================================================
+// Set some proxies, set the migratable flag
 
   setMigratable(false);
 
   rhoRealProxy_com = rhoRealProxy;
   if(config.useCommlib){
-      ComlibAssociateProxy(&commGHartInstance, rhoRealProxy_com);
-  }
-}
+     ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
+  }//endif
+
+//---------------------------------------------------------------------------
+  }//end routine
 //============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_Rho_GHartExt::~CP_Rho_GHartExt()
-{
+CP_Rho_GHartExt::~CP_Rho_GHartExt(){
 }
 //============================================================================
 
@@ -119,7 +139,8 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
 // Copy out the data and wait until we can use it
   
-  int ncoef    = rho_gs.numPoints;  
+  int ncoef  = rho_gs.numPoints;
+  CkAssert(ncoef==msg->size);
   memcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
   delete msg;  
 
@@ -236,18 +257,17 @@ void CP_Rho_GHartExt::sendVks() {
   if (config.useCommlib){
       commGHartInstance.beginIteration();
   }
-  int numLines=rho_gs.numLines;
   
 //============================================================================
 
   int sizeZ=rho_gs.sizeZ;
   for(int z=0; z < sizeZ; z++) {
 
-    RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;
-    msg->size        = numLines;     // number of z-lines in this batch
-    msg->senderIndex = thisIndex.x;  // line batch index
-    msg->iopt        = iopt;         // iopt always 0 for us
-    // FIGURE OUT WHAT iopt should be
+    RhoHartRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoHartRSFFTMsg;
+    msg->size           = numLines;   // number of z-lines in this batch
+    msg->senderBigIndex = ind_xdiv;   // big line batch index
+    msg->senderStrtLine = istrt_lines;// where my lines start in big batch
+    msg->iopt           = iopt;       // iopt always 0 for us
     if(config.prioFFTMsg){
        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
        *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x + thisIndex.y;
@@ -273,3 +293,42 @@ void CP_Rho_GHartExt::sendVks() {
 //============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void getSplitDecomp(int *istrt_ret,int *iend_ret,int *n_ret,
+                    int ntot, int ndiv,int idiv) 
+//============================================================================
+  {//begin routine
+//============================================================================
+
+   if(idiv>=ndiv || ntot< ndiv){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Incorrect input to RhoGHart collection creator.\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+   }//endif
+
+   int n     = (ntot/ndiv);
+   int r     = (ntot%ndiv);
+
+   int istrt = n*idiv;
+   if(idiv>=r){istrt += r;}
+   if(idiv<r) {istrt += idiv;}
+   if(idiv<r) {n++;}
+   int iend  = n+istrt;
+
+   if(n==0){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("No lines in a RhoGHart collection!!\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+   }//endif
+  
+   (*n_ret)     = n;
+   (*istrt_ret) = istrt;
+   (*iend_ret)  = iend;
+
+//---------------------------------------------------------------------------
+  }//end routine
+//============================================================================
