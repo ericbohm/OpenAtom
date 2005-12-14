@@ -26,8 +26,8 @@
 #define FIRST_BALANCE_STEP 10
 
 #ifndef CMK_OPTIMIZE
-#define TRACE_ON_STEP 1000000
-#define TRACE_OFF_STEP 4000000
+#define TRACE_ON_STEP 4
+#define TRACE_OFF_STEP 7
 #endif
 
 #ifndef CmiMemcpy
@@ -258,22 +258,29 @@ class RhoRSMap : public CkArrayMap {
  */
 class RhoGSMap : public CkArrayMap {
   public:
-    RhoGSMap(int NN, int ioff):N(NN), off(ioff){}
+    RhoGSMap(int NN, int ioff, int iavoid):N(NN), off(ioff), avoid(iavoid){}
     int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
 //      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
-      return (((N * idx2d.index[0])  + off) % CkNumPes());
+      int pe=(((N * idx2d.index[0])  + off) % CkNumPes());
+      if(avoid>1 && (pe-off)%avoid==0)
+      {
+	  pe+=1;
+      }
+      return pe;
     }
     void pup(PUP::er &p)
       {
 	CkArrayMap::pup(p);
 	p|N;
+	p|avoid;
 	p|off;
       }
 
   private:
     int N;
     int off;
+    int avoid;
 };
 
 //============================================================================

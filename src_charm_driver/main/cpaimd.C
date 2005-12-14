@@ -988,11 +988,11 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero);
+    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero, rhoRstride);
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride, rhoGHartoff);
+    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride);
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 

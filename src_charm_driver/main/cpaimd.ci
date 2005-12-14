@@ -12,7 +12,6 @@ mainmodule cpaimd {
 	readonly int Ortho_UE_error;
 	readonly bool Ortho_use_local_cb;
 
-	extern module CkSparseContiguousReducer;
         extern module ckPairCalculator;
 	extern module CLA_Matrix; 
 	readonly Config config;
@@ -226,7 +225,7 @@ mainmodule cpaimd {
 	};
 
 	group RhoGSMap : CkArrayMap {
-		entry RhoGSMap(int M, int off);
+		entry RhoGSMap(int M, int off, int avoid);
 	};
 
 	group RhoRSMap : CkArrayMap {
