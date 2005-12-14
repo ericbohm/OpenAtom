@@ -315,7 +315,7 @@ main::main(CkArgMsg *m) {
 // Create the parainfo group from sim
 // Initialize chare arrays for real and g-space of states 
 
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew();
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
 
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,
                 gSpacePPC,realSpacePPC,sim);
