@@ -317,7 +317,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 	  for(int i=0;i<regPPs.particles.length();i++)// each particle
 	    {
 	      idx2d=regPPs.particles[i];
-	      gSpacePlaneProxy(idx2d.index[0],idx2d.index[1]).acceptAtoms(msg); 
+	      gSpacePlaneProxy(idx2d.index[0],idx2d.index[1]).ckLocal()->myatom_integrate_flag=1;
 
 	    /* Weirdness Alert: if this were done as a local branch it
 	     * could trigger a resume successivly in each GSP.  I'm
@@ -332,11 +332,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 	    }// end for
 	}//end for
     }
-  else
-    {
-      CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
-      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-    }
+  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 
 //-------------------------------------------------------------------------
 }//end routine
@@ -387,7 +384,38 @@ void AtomsGrp::outputAtmEnergy() {
   void AtomsGrp::atomsDone(CkReductionMsg *msg) {
 //==========================================================================
   delete msg;
-   atomsDone();
+  if(config.localAtomBarrier)
+    {
+      // atoms on this PE are done so use the forces
+      // Use the StructFactCache to determine who is local
+      StructFactCache *sfcache       = sfCacheProxy.ckLocalBranch();
+      GSAtmMsg *msg = new  GSAtmMsg;
+      CkArrayIndex2D idx2d;
+      for(int i=0; i<sfcache->ppList.length(); i++)
+	{
+	  PlaneAtom regPPs=sfcache->ppList[i];
+	  for(int i=0;i<regPPs.particles.length();i++)// each particle
+	    {
+	      idx2d=regPPs.particles[i];
+	      gSpacePlaneProxy(idx2d.index[0],idx2d.index[1]).acceptAtoms(msg); 
+
+	    /* Weirdness Alert: if this were done as a local branch it
+	     * could trigger a resume successivly in each GSP.  I'm
+	     * sure that would work ok, but it would play hell with
+	     * the comprehensibility of the GSP rth loop.  For now
+	     * we'll accept some charm message loop overhead to get
+	     * sanity and tracability.
+	     *
+	     * Probably be nicer as a [local] or [inline] method
+	     */
+
+	    }// end for
+	}//end for
+    }
+  else
+    {
+      atomsDone();
+    }
 }
 //==========================================================================
 
