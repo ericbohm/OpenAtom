@@ -53,6 +53,7 @@ PUPbytes(PlaneCount);
 
 class StructFactCache : public Group {
  public:
+    void printCountStructFact();
     int numSfGrps,natm_nl,natm_nl_grp_max, totalsize;
 
     StructFactCache(int numSfGrps_in,int natm_nl_in,int natm_nl_grp_max_in) 
@@ -73,7 +74,7 @@ class StructFactCache : public Group {
     void pup(PUP::er &p) {
        p|numSfGrps;  p|natm_nl;  p|natm_nl_grp_max, p|totalsize;
     }//routine
- private:
+
     CkVec<GSlabInfo> gSpaceSlabs;
     CkVec<int*> structFactorAtmGrps; 
     CkVec<complex*> structFactorList; 
@@ -83,12 +84,12 @@ class StructFactCache : public Group {
     CkVec<int> structFactorSize;
     CkVec<PlaneCount> planeCountList; 
     CkVec <PlaneAtom> ppList;
- 
+ private: 
     int existStructFact(int planeIndex);
     int incCountStructFact(int planeIndex);
     int decCountStructFact(int planeIndex);
- public:
-    void printCountStructFact();
+
+
 };
 
 #endif //_StructFactorCache_h_

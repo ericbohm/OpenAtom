@@ -210,6 +210,7 @@ class Config {
 	int fftprogresssplitReal;
         int stateOutputOn;
 	int toleranceInterval;
+	int localAtomBarrier;
         double gExpandFact;
         double gExpandFactRho;
 	double displacement;

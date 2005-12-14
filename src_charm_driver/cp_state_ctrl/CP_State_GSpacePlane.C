@@ -624,7 +624,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif : state=0 
 
 //---------------------------------------------------------------------------
-    }//end routine
+   }//end routine
 //============================================================================
 
 
@@ -2448,11 +2448,13 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 //                             would then know which chares upon which to 
 //                             invoke acceptAtoms. Careful, careful with migration
 //                             with this alternative scheme.
+//
+//  enable config.localAtomBarrier to trigger that behavior
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
-   delete msg;
+  //delete msg; do not delete nokeep message
    myatom_integrate_flag=1;
    if(atomsGrpProxy.ckLocalBranch()->iteration != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
