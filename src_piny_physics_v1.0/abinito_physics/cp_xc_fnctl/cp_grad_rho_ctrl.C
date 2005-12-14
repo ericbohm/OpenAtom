@@ -66,7 +66,7 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //============================================================================
 // Start Loop over part of grid I have 
 
-   int nfreq_cmi_update=300;
+   int nfreq_cmi_update=8;
    for(int i = 0; i < npts; i++){
 
 #ifdef CMK_VERSION_BLUEGENE
