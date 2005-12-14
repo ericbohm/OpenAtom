@@ -2476,7 +2476,7 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
-   delete msg;
+  //   delete msg; do not delete nokeep message
    myenergy_reduc_flag=1;
    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

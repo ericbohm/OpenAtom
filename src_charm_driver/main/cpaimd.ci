@@ -117,7 +117,7 @@ mainmodule cpaimd {
 		entry void syncpsi();
 
                 entry [nokeep] void acceptAtoms(GSAtmMsg *msg);
-                entry void acceptEnergy(GSAtmMsg *msg);
+                entry [nokeep] void acceptEnergy(GSAtmMsg *msg);
                 entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	

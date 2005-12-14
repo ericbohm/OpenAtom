@@ -1368,6 +1368,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
      fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
      fprintf(fp,"localAtomBarrier: %d\n",localAtomBarrier);
+     fprintf(fp,"localEnergyBarrier: %d\n",localEnergyBarrier);
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
      fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
@@ -1439,6 +1440,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.fftprogresssplitReal= 5;
     config.stateOutputOn  =  0;
     config.localAtomBarrier  =  0;
+    config.localEnergyBarrier  =  0;
     config.toleranceInterval=5;
 //===================================================================================
 // Read parameters
@@ -1567,6 +1569,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.fftprogresssplitReal = atoi(parameterValue);
         else if (!strcmp(parameterName, "localAtomBarrier"))
             config.localAtomBarrier = atoi(parameterValue);
+        else if (!strcmp(parameterName, "localEnergyBarrier"))
+            config.localEnergyBarrier = atoi(parameterValue);
         else if (!strcmp(parameterName, "stateOutputOn"))
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))

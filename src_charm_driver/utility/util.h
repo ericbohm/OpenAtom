@@ -211,6 +211,7 @@ class Config {
         int stateOutputOn;
 	int toleranceInterval;
 	int localAtomBarrier;
+	int localEnergyBarrier;
         double gExpandFact;
         double gExpandFactRho;
 	double displacement;
