@@ -239,8 +239,6 @@ void CP_State_RealSpacePlane::doReduction(double *data){
                 CmiMemoryUsage());
 #endif
 
-    if (config.useGReduction) {
-
       // we should be able to cache this setup stuff and only do it
       // once per iteration
         CkMulticastMgr *mcastGrp = 
@@ -257,9 +255,6 @@ void CP_State_RealSpacePlane::doReduction(double *data){
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    
-    }else {
-      CkPrintf("Must useGReduction\n"); CkExit();
-    }//endif
 
     // data is allocated in fftcacheproxy routine : free it here.
     // Data is not a member of the fftcache class but a local variable

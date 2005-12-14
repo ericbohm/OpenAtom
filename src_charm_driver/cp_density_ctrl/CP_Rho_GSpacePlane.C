@@ -70,8 +70,6 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
 
 //============================================================================
 
-    CkAssert(numRealSpaceDensity == 1);
-    CkAssert(config.rhoGPPC == 1);
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
     CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
 

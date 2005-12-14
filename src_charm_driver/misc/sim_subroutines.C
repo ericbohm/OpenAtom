@@ -768,7 +768,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 // Case doublePack && config.inPlaceFFT
 // 
 
-  if(config.doublePack && config.inPlaceFFT) {
+  if(config.doublePack) {
       data = new double[pSize];
       int stride = sizeX/2+1;
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
@@ -800,7 +800,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 //==============================================================================
 // Case !doublePack && config.inPlaceFFT
 
- if(!config.doublePack && config.inPlaceFFT){
+ if(!config.doublePack){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Fix the non-double pack FFT\n");
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -919,7 +919,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 //==============================================================================
 // Case : doublePack  and inplace 
 
-  if(config.doublePack && config.inPlaceFFT){
+  if(config.doublePack){
      double *realArr = reinterpret_cast<double*> (planeArr);
      int stride = sizeX/2+1;
      for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
@@ -944,7 +944,7 @@ void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
 
 //==============================================================================
 
-  if(!config.doublePack && config.inPlaceFFT){
+  if(!config.doublePack){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Fix the non-double pack FFT\n");
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

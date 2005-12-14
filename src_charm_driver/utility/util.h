@@ -149,51 +149,31 @@ using namespace std;
 //===================================================================================
 class Config {
  public:
-	Config() { numSet = 0; numParams = 24;}
-	int numParams;
-	int numSet;
-	int nstates;
-	int gSpacePPC;
-	int realSpacePPC;
-	int rhoGPPC;
-	int maxIter;
+	Config() { numSet = 0; numParams = 36;}
+	int numParams;   //fixed above
+	int numSet;      //fixed above
+	int nstates;     //determined by piny
+	int maxIter;     //determined by piny
+	int low_x_size;  //determined by piny
+	int high_x_size; //determined by piny
+	int numFFTPoints;//determined by piny : # real space points
+        int numData;     //determined by piny : nPacked = # of non-zero g-space pts
+        int nchareG;     //determined by piny  
+        int nchareRhoG;  //determined by piny 
 	int sGrainSize;
-	int gSpaceNumChunks;
 	int rhoGHelpers;
-	int multicastDelayMS;
-	int numMulticastMsgs;
-	int numPartialReduction;
-	int reductionDelayMS;
-	int useCommlibMulticast;
 	int useCommlib;
-	int fftuseCommlib;
+	int numMulticastMsgs;
 	int useGMulticast;
-	int useGReduction;
-	int checkForces;
-	int atomIndex;
-	int stateIndex;
-	int planeIndex;
-	int xIndex;
-	int yIndex;
-	int numFFTPoints;
-        int numData;      // nPacked = number of non-zero g-space data pts
-	int delayComputeZ;
+	int useCommlibMulticast;
 	int pesPerState;
 	int RpesPerState;
 	int GpesPerState;
 	int doublePack;
-	int low_x_size;
-	int high_x_size;
-        int nchareG;
-        int nchareRhoG;
-	int inPlaceFFT;
 	int conserveMemory;
 	int prioFFTMsg; 
-	int localSF;
-	int delayCompStruct;
 	int lbgspace;
 	int lbpaircalc;
-	int gspacesum;
         int numSfGrps;
         int numSfDups;
 	int sfpriority;
@@ -205,7 +185,6 @@ class Config {
 	int psipriority;
 	int rhorpriority;
 	int rhogpriority;
-	int priority;
 	int fftprogresssplit;
 	int fftprogresssplitReal;
         int stateOutputOn;
@@ -214,10 +193,10 @@ class Config {
 	int localEnergyBarrier;
         double gExpandFact;
         double gExpandFactRho;
-	double displacement;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];
 	void print(char *fname_in);
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
+        static void rangeExit(int , char *, int );
 };
 #if ! CMK_BLUEGENE_CHARM
 PUPbytes(Config);

@@ -246,9 +246,6 @@ main::main(CkArgMsg *m) {
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
     size2d sizeYZ    = size2d(sim->sizeY,sim->sizeZ);
-    int gSpacePPC    = config.gSpacePPC;  
-    int realSpacePPC = config.realSpacePPC;
-    int rhoGPPC      = config.rhoGPPC;
     nchareG          = config.nchareG;
     sim->nchareG     = nchareG; 
 
@@ -317,8 +314,7 @@ main::main(CkArgMsg *m) {
 
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
 
-    init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,
-                gSpacePPC,realSpacePPC,sim);
+    init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
 // Transfer parameters from physics to driver
@@ -329,7 +325,7 @@ main::main(CkArgMsg *m) {
 //============================================================================ 
 // Initialize the density chare arrays
 
-    init_rho_chares(sizeYZ,gSpacePPC,realSpacePPC,rhoGPPC, sim);
+    init_rho_chares(sizeYZ,sim);
 
 //============================================================================ 
 // Create mapping classes for Paircalcular
@@ -347,7 +343,7 @@ main::main(CkArgMsg *m) {
 //============================================================================ 
 // Initialize paircalculators for Psi and Lambda
 
-    init_pair_calculators( nstates,indexSize,indexZ,gSpacePPC,doublePack,sim);
+    init_pair_calculators( nstates,indexSize,indexZ,doublePack,sim);
 
 //============================================================================ 
 // initialize Ortho
@@ -388,7 +384,7 @@ main::main(CkArgMsg *m) {
  * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
  */
 //============================================================================    
-void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePPC, 
+void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
                            int doublePack, CPcharmParaInfo *sim)
 //============================================================================    
    {
@@ -401,11 +397,11 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ, int gSpacePP
   // Create mapping classes for Paircalcular
 
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
-                   sizeX / gSpacePPC,config.sGrainSize,CmiTrue,sim->nchareG, 
+                   sizeX,config.sGrainSize,CmiTrue,sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG) ;
     
     CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(config.nstates,
-  	           sizeX / gSpacePPC,config.sGrainSize, CmiFalse,sim->nchareG, 
+  	           sizeX,config.sGrainSize, CmiFalse,sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG);
     
     CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
@@ -772,8 +768,7 @@ void main::doneInit(CkReductionMsg *msg){
 //============================================================================
 
 void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
-                 int doublePack,int gSpacePPC,int realSpacePPC,
-                 CPcharmParaInfo *sim)
+                 int doublePack, CPcharmParaInfo *sim)
 
 //============================================================================
    { //begin routine 
@@ -794,12 +789,11 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     realSpaceOpts.setMap(rsMap);
     size2d sizeRealPlane(sizeYZ[1], sizeX);
 
-    realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,gSpacePPC,
-                                                                realSpacePPC, 
+    realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
                                                                 realSpaceOpts);
 
 								
-    fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane, realSpacePPC);
+    fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
     sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
     sfCompProxy = CProxy_StructureFactor::ckNew();
     
@@ -808,16 +802,15 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     CkArrayOptions gSpaceOpts;
     gSpaceOpts.setMap(gsMap);
 
-    gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ, gSpacePPC, 
-                                                          realSpacePPC, 
-                                                          config.sGrainSize, gSpaceOpts);
+    gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ,1, 
+                                                          1,config.sGrainSize, gSpaceOpts);
 
     // We bind the particlePlane array to the gSpacePlane array migrate together
     CkArrayOptions particleOpts;
     particleOpts.setMap(gsMap); // the maps for both the arrays are the same
     particleOpts.bindTo(gSpacePlaneProxy);
     particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
-		      gSpacePPC,numSfGrps,natm_nl,natm_nl_grp_max,particleOpts);
+		      1,numSfGrps,natm_nl,natm_nl_grp_max,particleOpts);
 
     /*
      * Insert the planes in the particle plane array, gSpacePlane array
@@ -827,10 +820,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
     for (s = 0; s < nstates; s++){
       for (x = 0; x <nchareG; x++){
-             gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, gSpacePPC, 
-                                    realSpacePPC,config.sGrainSize);
+             gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1, 
+                                    1,config.sGrainSize);
              particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
-				      gSpacePPC,numSfGrps,natm_nl,natm_nl_grp_max);
+				      1,numSfGrps,natm_nl,natm_nl_grp_max);
       }
     }
 
@@ -843,9 +836,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
      */
     int y;
     for (s = 0;  s < nstates; s++)
-        {for (y = 0; y < sizeYZ[0]; y += realSpacePPC)
-            {realSpacePlaneProxy(s, y).insert(sizeRealPlane, gSpacePPC, 
-					      realSpacePPC);}}
+        {for (y = 0; y < sizeYZ[0]; y += 1)
+            {realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1);}}
 
     realSpacePlaneProxy.doneInserting();
     // 
@@ -906,7 +898,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	dupmax=config.numSfDups;
     config.numSfDups=dupmax;
     for (int dup=0; dup<dupmax; dup++)
-      for (x = 0; x < nchareG; x += gSpacePPC)
+      for (x = 0; x < nchareG; x += 1)
       {
 	  int num_dup, istart, iend;
 	  get_grp_params( nsend[x],  config.numSfDups,  dup, x ,&num_dup,  &istart, &iend);
@@ -960,8 +952,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC,
-		     CPcharmParaInfo *sim)
+void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 //============================================================================
 {//begin routine
@@ -1008,26 +999,24 @@ void init_rho_chares(size2d sizeYZ, int gSpacePPC, int realSpacePPC, int rhoGPPC
 //============================================================================
 // Instantiate the chares
 
-    bool fftuseCommlib = config.fftuseCommlib;
+    bool dummy = true;
 
 //---------------------------------------------------------------------------
 // rhoreal
     rhoRealProxy = 
-      CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC,
-					  rhoGPPC, fftuseCommlib, rhorsOpts);
+      CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, 1, 1, dummy, rhorsOpts);
     for (int i = 0; i < nchareRhoR; i++) {
-	rhoRealProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC,
-				 rhoGPPC,  fftuseCommlib);
+	rhoRealProxy(i,0).insert(sizeX, sizeYZ, 1,1,dummy);
     }//endfor
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
 //---------------------------------------------------------------------------
 // rhog
-    rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, realSpacePPC, 
-						 rhoGPPC, fftuseCommlib, 
+    rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
+						 1, dummy, 
 						 rhogsOpts);
     for (int i = 0; i < nchareRhoG; i++){
-	rhoGProxy(i,0).insert(sizeX, sizeYZ, realSpacePPC, rhoGPPC, fftuseCommlib );
+	rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
     }//endfor
     rhoGProxy.doneInserting();
 //---------------------------------------------------------------------------

@@ -1478,23 +1478,12 @@ void  CP_State_GSpacePlane::sendLambda() {
   }//endif
 #endif
 
-  if(config.gSpaceNumChunks!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, while gSpaceNumChunk!=1 is cool, I'm \n");
-    CkPrintf("afraid you'll have to do the implementation yourself!\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
 
-  int numPoints   = gs.numPoints / config.gSpaceNumChunks;
-  int dataCovered = gs.numPoints;
+  int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  int c = 0;
-  int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
-  startPairCalcLeft(&gpairCalcID2, toSend, psi + c * numPoints, 
-		    thisIndex.x, thisIndex.y, false);
-  startPairCalcRight(&gpairCalcID2, toSend, force + c * numPoints, 
-		     thisIndex.x, thisIndex.y);
+  int toSend = numPoints;
+  startPairCalcLeft(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
+  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y);
 #else
   acceptedLambda=true;
   memset(force, 0, sizeof(complex)*numPoints);
@@ -2142,14 +2131,6 @@ void CP_State_GSpacePlane::sendPsi() {
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt = sim->cp_min_opt;
 
-  if(config.gSpaceNumChunks!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, while gSpaceNumChunk!=1 is cool, I'm \n");
-    CkPrintf("afraid you'll have to do the implementation yourself!\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
   if(finishedRedPsi==0 || finishedCpIntegrate==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Dude, you can't sendPsi without completing integrate\n");
@@ -2203,14 +2184,11 @@ void CP_State_GSpacePlane::sendPsi() {
 
   int s, c;
   int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;
-  int numPoints = gs.numPoints / config.gSpaceNumChunks;
-  int dataCovered = gs.numPoints;
+  int numPoints = gs.numPoints;
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  c = 0;
-  int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
-  startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
-		    thisIndex.x, thisIndex.y, false);
+  int toSend = numPoints;
+  startPairCalcLeft(&gpairCalcID1,toSend,data,thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
@@ -2232,13 +2210,6 @@ void  CP_State_GSpacePlane::sendPsiV() {
 
   nrotation++;
   acceptedVPsi=false;
-  if(config.gSpaceNumChunks!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, while gSpaceNumChunk!=1 is cool, I'm \n");
-    CkPrintf("afraid you'll have to do the implementation yourself!\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
   complex *data=gs.packedVelData;
   //  complex *data=tpsi;
 
@@ -2254,16 +2225,11 @@ void  CP_State_GSpacePlane::sendPsiV() {
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
   }//endif
 
-  int s, c;
   int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;
-  int numPoints = gs.numPoints / config.gSpaceNumChunks;
-  int dataCovered = gs.numPoints;
+  int numPoints = gs.numPoints;
+  int toSend    = numPoints;
 
-  c = 0;
-  int toSend = (c == config.gSpaceNumChunks - 1) ? dataCovered : numPoints;
-
-  startPairCalcLeft(&gpairCalcID1, toSend, data + c * numPoints, 
-		    thisIndex.x, thisIndex.y, true);
+  startPairCalcLeft(&gpairCalcID1,toSend,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
 }// end routine

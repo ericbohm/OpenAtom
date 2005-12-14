@@ -1325,54 +1325,47 @@ void Config::print(char *fname_in) {
 
    FILE *fp = fopen(fname,"w");
      fprintf(fp,"dataPath: %s\n",dataPath);
-     fprintf(fp,"gSpacePPC: %d\n",gSpacePPC);
-     fprintf(fp,"realSpacePPC: %d\n",realSpacePPC);
-     fprintf(fp,"rhoGPPC: %d\n",rhoGPPC);
-     fprintf(fp,"maxIter: %d\n",maxIter);
+     fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
-     fprintf(fp,"gSpaceNumChunks: %d\n",gSpaceNumChunks);
-     fprintf(fp,"rhoGHelpers: %d\n",rhoGHelpers);
-     fprintf(fp,"nstates: %d\n",nstates);
-     fprintf(fp,"useCommlib: %d\n",useCommlib);
-     fprintf(fp,"useGMulticast: %d\n",useGMulticast);
-     fprintf(fp,"useGReduction: %d\n",useGReduction);
-     fprintf(fp,"multicastDelayMS: %d\n",multicastDelayMS);
-     fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
-     fprintf(fp,"numPartialReduction: %d\n",numPartialReduction);
-     fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
-     fprintf(fp,"reductionDelayMS: %d\n",reductionDelayMS);
-     fprintf(fp,"checkForces: %d\n",checkForces);
-     fprintf(fp,"doublePack: %d\n",doublePack);
-     fprintf(fp,"inPlaceFFT: %d\n",inPlaceFFT);
-     fprintf(fp,"doublePack: %d\n",doublePack);
-     fprintf(fp,"low_x_size: %d\n",low_x_size);
-     fprintf(fp,"high_x_size: %d\n",high_x_size);
-     fprintf(fp,"conserveMemory: %d\n",conserveMemory);
-     fprintf(fp,"lbpaircalc: %d\n",lbpaircalc);
-     fprintf(fp,"lbgspace: %d\n",lbgspace);
      fprintf(fp,"pesPerState: %d\n",pesPerState);
-     fprintf(fp,"RpesPerState: %d\n",RpesPerState);
-     fprintf(fp,"GpesPerState: %d\n",GpesPerState);
-     fprintf(fp,"localSF: %d\n",localSF);
-     fprintf(fp,"delayCompStruct: %d\n",delayCompStruct);
-     fprintf(fp,"gspacesum: %d\n",gspacesum);
+     fprintf(fp,"gExpandFact: %g\n",gExpandFact);
+     fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
+     fprintf(fp,"rhoGHelpers: %d\n",rhoGHelpers);
      fprintf(fp,"numSfGrps: %d\n",numSfGrps);
      fprintf(fp,"numSfDups: %d\n",numSfDups);
+     fprintf(fp,"toleranceInterval: %d\n",toleranceInterval);
+     fprintf(fp,"localAtomBarrier: %d\n",localAtomBarrier);
+     fprintf(fp,"localEnergyBarrier: %d\n",localEnergyBarrier);
+     fprintf(fp,"lbpaircalc: %d\n",lbpaircalc);
+     fprintf(fp,"lbgspace: %d\n",lbgspace);
+     fprintf(fp,"useCommlib: %d\n",useCommlib);
+     fprintf(fp,"useGMulticast: %d\n",useGMulticast);
+     fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
+     fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
+     fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
+     fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
+     fprintf(fp,"RpesPerState: %d\n",RpesPerState);
+     fprintf(fp,"GpesPerState: %d\n",GpesPerState);
+     fprintf(fp,"prioFFTMsg %d\n",prioFFTMsg);
      fprintf(fp,"sfpriority: %d\n",sfpriority);
      fprintf(fp,"rsfftpriority: %d\n",rsfftpriority);
      fprintf(fp,"gsfftpriority: %d\n",gsfftpriority);
      fprintf(fp,"rsifftpriority: %d\n",rsifftpriority);
+     fprintf(fp,"gsifftpriority: %d\n",gsifftpriority);
      fprintf(fp,"lambdapriority: %d\n",lambdapriority);
-     fprintf(fp,"psipriority: %d\n",psipriority);
+     fprintf(fp,"rhorpriority: %d\n",rhorpriority);
      fprintf(fp,"rhogpriority: %d\n",rhogpriority);
-     fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
-     fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
-     fprintf(fp,"localAtomBarrier: %d\n",localAtomBarrier);
-     fprintf(fp,"localEnergyBarrier: %d\n",localEnergyBarrier);
-     fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
-     fprintf(fp,"gExpandFact: %g\n",gExpandFact);
-     fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
-     fprintf(fp,"toleranceInterval: %d\n",toleranceInterval);
+     fprintf(fp,"psipriority: %d\n",psipriority);
+     fprintf(fp,"doublePack: %d\n",doublePack);
+     fprintf(fp,"conserveMemory: %d\n",conserveMemory);
+     //     fprintf(fp,"nstates: %d\n",nstates);
+     //     fprintf(fp,"nchareG %d\n",nchareG);
+     //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
+     //     fprintf(fp,"maxIter: %d\n",maxIter);
+     //     fprintf(fp,"low_x_size: %d\n",low_x_size);
+     //     fprintf(fp,"high_x_size: %d\n",high_x_size);
+     //     fprintf(fp,"numData %d\n",numData);
+     //     fprintf(fp,"numFFTPoints %d\n",numFFTPoints);
    fclose(fp);
 
 
@@ -1394,54 +1387,44 @@ void Config::readConfig(const char* fileName, Config &config,
 //===================================================================================
 // Initialize parameters
 
-    config.rhoGHelpers     = 1;
     config.nstates         = nstates_in;
     config.maxIter         = maxIter_in;
-    config.checkForces     = 0;
-    config.atomIndex       = 0;
-    config.stateIndex      = 0;
-    config.planeIndex      = 0;
-    config.xIndex          = 0;
-    config.yIndex          = 0;
-    config.displacement    = 1e-6;
-    config.delayComputeZ   = 0;
-    config.pesPerState     = 1;    //Partition the states g-chares amongst the procs
-    config.RpesPerState    = 0; 
-    config.GpesPerState    = 0; 
-    config.doublePack      = 1;
-    config.inPlaceFFT	   = 1;
-    config.conserveMemory  = 0;
-    config.prioFFTMsg      = 0; 
-    config.localSF         = 0;
-    config.delayCompStruct  =0;
-    config.lbpaircalc      = 0;
-    config.lbgspace        = 0;
-    config.fftuseCommlib   = 0;
-    config.gspacesum       = 0;
-    config.numSfGrps       = 1;
-    config.numSfDups       = 1;
-    config.gSpacePPC       = 1;
-    config.realSpacePPC    = 1;
-    config.rhoGPPC         = 1;
-    config.gSpaceNumChunks = 1;
-    config.sfpriority      = 10000000;
-    config.rsfftpriority   = 1000000;
-    config.gsfftpriority   = 1000000;
-    config.rsifftpriority  = 100000000;
-    config.gsifftpriority  = 200000000;
-    config.lambdapriority  = 300000000;
-    config.psipriority     = 400000000;
-    config.rhorpriority    = 2000000;
-    config.rhogpriority    = 2000000;   // unused?
-    config.priority        = 10;        // unused?
-    config.gExpandFact     = 1.0;
-    config.gExpandFactRho  = 1.0;
-    config.fftprogresssplit= 20;
-    config.fftprogresssplitReal= 5;
-    config.stateOutputOn  =  0;
-    config.localAtomBarrier  =  0;
-    config.localEnergyBarrier  =  0;
-    config.toleranceInterval=5;
+
+    config.sGrainSize           = nstates_in;
+    config.rhoGHelpers          = 1;
+    config.pesPerState          = 1;
+    config.RpesPerState         = 0; 
+    config.GpesPerState         = 0; 
+    config.doublePack           = 1;
+    config.conserveMemory       = 0;
+    config.numMulticastMsgs     = 10;
+    config.useGMulticast        = 0;
+    config.useCommlibMulticast  = 1;
+    config.useCommlib           = 1;
+    config.lbpaircalc           = 0;
+    config.lbgspace             = 0;
+    config.numSfGrps            = 1;
+    config.numSfDups            = 1;
+    config.prioFFTMsg           = 1; 
+    config.sfpriority           = 10000000;
+    config.rsfftpriority        = 1000000;
+    config.gsfftpriority        = 1000000;
+    config.rsifftpriority       = 100000000;
+    config.gsifftpriority       = 200000000;
+    config.lambdapriority       = 300000000;
+    config.psipriority          = 400000000;
+    config.rhorpriority         = 2000000;
+    config.rhogpriority         = 2000000; 
+    config.gExpandFact          = 1.0;
+    config.gExpandFactRho       = 1.0;
+    config.fftprogresssplit     = 20;
+    config.fftprogresssplitReal = 5;
+    config.stateOutputOn        = 0;
+    config.localAtomBarrier     = 1;
+    config.localEnergyBarrier   = 1;
+    config.toleranceInterval    = 1;
+    strcpy(config.dataPath,"./");
+
 //===================================================================================
 // Read parameters
 
@@ -1463,84 +1446,36 @@ void Config::readConfig(const char* fileName, Config &config,
 	if (configFile.eof())
 	    break;
         config.numSet++;
-        if (!strcmp(parameterName, "gSpacePPC"))
-            config.gSpacePPC = atoi(parameterValue);
-        else if (!strcmp(parameterName, "realSpacePPC"))
-            config.realSpacePPC = atoi(parameterValue);
-        else if (!strcmp(parameterName, "rhoGPPC"))
-            config.rhoGPPC = atoi(parameterValue);
-        else if (!strcmp(parameterName, "dataPath"))
+        if (!strcmp(parameterName, "dataPath"))
             strcpy(config.dataPath, parameterValue);
         else if (!strcmp(parameterName, "sGrainSize"))
             config.sGrainSize = atoi(parameterValue);
-        else if (!strcmp(parameterName, "gSpaceNumChunks"))
-            config.gSpaceNumChunks = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))
             config.useCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGMulticast"))
             config.useGMulticast = atoi(parameterValue);
-        else if (!strcmp(parameterName, "useGReduction"))
-            config.useGReduction = atoi(parameterValue);
         else if (!strcmp(parameterName, "numMulticastMsgs"))
             config.numMulticastMsgs = atoi(parameterValue);
-        else if (!strcmp(parameterName, "multicastDelayMS"))
-            config.multicastDelayMS = atoi(parameterValue);
-        else if (!strcmp(parameterName, "numPartialReduction"))
-            config.numPartialReduction = atoi(parameterValue);
-        else if (!strcmp(parameterName, "reductionDelayMS"))
-            config.reductionDelayMS = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlibMulticast"))
             config.useCommlibMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhoGHelpers"))
             config.rhoGHelpers = atoi(parameterValue);
-        else if (!strcmp(parameterName, "delayComputeZ"))
-            config.delayComputeZ = atoi(parameterValue);
-        else if (!strcmp(parameterName, "delayCompStruct"))
-            config.delayCompStruct = atoi(parameterValue);
         else if (!strcmp(parameterName, "pesPerState"))
             config.pesPerState = atoi(parameterValue);
         else if (!strcmp(parameterName, "RpesPerState"))
             config.RpesPerState = atoi(parameterValue);
         else if (!strcmp(parameterName, "GpesPerState"))
             config.GpesPerState = atoi(parameterValue);
-        //1 or 0 to enable debugging of force computation
-        else if (!strcmp(parameterName, "checkForces"))
-            config.checkForces = atoi(parameterValue);
-        //which atom to displace
-        else if (!strcmp(parameterName, "atomIndex"))
-            config.atomIndex = atoi(parameterValue);
-        //which state to use
-        else if (!strcmp(parameterName, "stateIndex"))
-            config.stateIndex = atoi(parameterValue);
-        //which plane to displace
-        else if (!strcmp(parameterName, "planeIndex"))
-            config.planeIndex = atoi(parameterValue);
-        else if (!strcmp(parameterName, "xIndex"))
-            config.xIndex = atoi(parameterValue);
-        else if (!strcmp(parameterName, "yIndex"))
-            config.yIndex = atoi(parameterValue);
 	else if (!strcmp(parameterName, "doublePack"))
             config.doublePack = atoi(parameterValue);
-	else if (!strcmp(parameterName, "inPlaceFFT"))
-            config.inPlaceFFT = atoi(parameterValue);
-	else if (!strcmp(parameterName, "low_x_size"))
-	    config.low_x_size = atoi(parameterValue);
-	else if (!strcmp(parameterName, "high_x_size"))
-	    config.high_x_size = atoi(parameterValue);
 	else if (!strcmp(parameterName, "conserveMemory"))
 	    config.conserveMemory = atoi(parameterValue);
 	else if (!strcmp(parameterName, "prioFFTMsg"))
 	    config.prioFFTMsg = atoi(parameterValue);
-	else if (!strcmp(parameterName, "localSF"))
-	    config.localSF = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbgspace"))
 	    config.lbgspace = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbpaircalc"))
 	    config.lbpaircalc = atoi(parameterValue);
-        else if (!strcmp(parameterName, "fftuseCommlib"))
-            config.fftuseCommlib = atoi(parameterValue);
-        else if (!strcmp(parameterName, "gspacesum"))
-            config.gspacesum = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfGrps"))
             config.numSfGrps = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfDups"))
@@ -1575,8 +1510,6 @@ void Config::readConfig(const char* fileName, Config &config,
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))
             config.toleranceInterval = atoi(parameterValue);
-        else if (!strcmp(parameterName, "parlambda"))
-            CkPrintf("      Warning : parlambda is compulsory. It can't be set.\n");
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
@@ -1601,6 +1534,29 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.pesPerState>0 && config.GpesPerState <1){
       config.GpesPerState=config.pesPerState;
     }//endif
+
+//===================================================================================
+// Check the parameter ranges 
+
+    rangeExit(config.prioFFTMsg,"prioFFTMsg",1);
+    rangeExit(config.stateOutputOn,"stateOutputOn",1);
+    rangeExit(config.localAtomBarrier,"localAtomBarrier",1);
+    rangeExit(config.localEnergyBarrier,"localEnergyBarrier",1);
+    rangeExit(config.lbpaircalc,"lbpaircalc",1);
+    rangeExit(config.lbgspace,"lbgspace",1);
+    rangeExit(config.useGMulticast,"useGMulticast",1);
+    rangeExit(config.useCommlibMulticast,"useCommlibMulticast",1);
+    rangeExit(config.useCommlib,"useCommlib",1);
+    rangeExit(config.doublePack,"doublePack",1);
+    rangeExit(config.conserveMemory,"conserveMemory",1);
+    rangeExit(config.fftprogresssplit,"fftprogresssplit",0);
+    rangeExit(config.fftprogresssplitReal,"fftprogresssplitReal",0);
+    rangeExit(config.rhoGHelpers,"rhoGHelpers",0);
+    rangeExit(config.numMulticastMsgs,"numMulticastMsgs",0);
+    rangeExit(config.pesPerState,"pesPerState;",0);
+    rangeExit(config.GpesPerState,"GpesPerState;",0);
+    rangeExit(config.RpesPerState,"RpesPerState;",0);
+    rangeExit(config.toleranceInterval,"toleranceInterval;",0);
 
 //===================================================================================
 // Set FFT and g-space size
@@ -1688,27 +1644,6 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
-    if (sizex % config.gSpacePPC != 0) {
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("x dimension should be divisible by gSpacePPC\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    if (sizey % config.realSpacePPC != 0) {
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("y dimension should be divisible by realSpacePPC\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    if (sizez % config.rhoGPPC != 0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("z dimension should be divisible by rhoGPPC\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
 //-----------------------------------------------------------------------------------
 // Parameter values that are broken or must be within a certain range
 
@@ -1733,25 +1668,16 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
-    if(config.inPlaceFFT!=1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Non-place in FFT code is broken and not useful\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
     if(config.useCommlibMulticast!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("No commlib, no work. Sameer is happy!\n");
+      CkPrintf("No commlibMulticast no work. Sameer is happy!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
 
-    if(config.gSpacePPC!=1 || config.rhoGPPC!=1 || config.realSpacePPC!=1 || 
-       config.gSpaceNumChunks!=1){
+    if(config.useCommlibMulticast+config.useGMulticast!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The PPC and NumChunks have to be unity or the code is horribly\n");
-      CkPrintf("broken!\n");
+      CkPrintf("You can't use both the g and commlib multicast\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -1770,18 +1696,39 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
-    if(config.stateOutputOn<0 ||config.stateOutputOn>1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The state output flag must be 1(on) or 0 (off) \n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
 
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
 
 
+//============================================================================
+// ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Config::rangeExit(int param, char *name, int iopt){
+//============================================================================
+  switch(iopt){
+   case 0: 
+      if(param<1){
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkPrintf("The parameter %s must be >0 not %d \n",name,param);
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkExit();
+      }//endif
+      break;
+   case 1: 
+      if(param<0 || param>1){
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkPrintf("The parameter %s must be 1(on) or 0 (off) \n",name);
+          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+          CkExit();
+      }//endif
+      break;
+  }//end switch
+
+//----------------------------------------------------------------------------------
+  }//end routine
+//===================================================================================
 
 
 //============================================================================
