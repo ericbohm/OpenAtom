@@ -258,12 +258,13 @@ class RhoRSMap : public CkArrayMap {
  */
 class RhoGSMap : public CkArrayMap {
   public:
-    RhoGSMap(int NN, int ioff, int iavoid):N(NN), off(ioff), avoid(iavoid){}
+    RhoGSMap(int NN, int ioff, int iavoid, int iavoid_off):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off) {}
     int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
 //      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
       int pe=(((N * idx2d.index[0])  + off) % CkNumPes());
-      if(avoid>1 && (pe-off)%avoid==0)
+      // avoid PEs favored by the array characterized by the avoid and avoid_off parms
+      if(avoid>1 && (pe-avoid_off)%avoid==0)
       {
 	  pe+=1;
       }
@@ -275,12 +276,14 @@ class RhoGSMap : public CkArrayMap {
 	p|N;
 	p|avoid;
 	p|off;
+	p|avoid_off;
       }
 
   private:
     int N;
     int off;
     int avoid;
+    int avoid_off;
 };
 
 //============================================================================
