@@ -71,7 +71,7 @@ CHARMLIBS:
 #===========================================================================
 summary:$(OBJS)
 	$(CHARMC) -o $(TARGET_EXE).summary $(OBJS) $(LIB) \
-        -language charm++ -module CkMulticast -module CkSparseContiguousReducer \
+        -language charm++ -module CkMulticast \
         -tracemode summary $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
@@ -79,7 +79,7 @@ summary:$(OBJS)
 #===========================================================================
 proj:	$(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o $(TARGET_EXE).proj $(OBJS) $(LIB) -language charm++ \
-        -module CkMulticast -module CkSparseContiguousReducer \
+        -module CkMulticast \
         -tracemode projections $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
@@ -87,7 +87,7 @@ proj:	$(OBJS_DECL) $(OBJS)
 #===========================================================================
 exe:	$(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o $(TARGET_EXE) $(OBJS) $(LIB) -language charm++ \
-        -module CkMulticast -module CkSparseContiguousReducer \
+        -module CkMulticast \
         $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
@@ -118,12 +118,12 @@ pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h $(PA
 #===========================================================================
 driverlib:	CHARMLIBS $(OBJS_DECL) $(OBJS) 
 	$(CHARMC) -o $(TARGET_LIB) $(OBJS) $(LIB) -language charm++ \
-        -module CkMulticast -module CkSparseContiguousReducer \
+        -module CkMulticast \
         $(OPTS) $(FLAGS) $(OPT_FORT) 
 
 cpaimd:    $(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o cpaimd $(OBJS) $(LIB) -language charm++ \
-	 -module CkMulticast -module CkSparseContiguousReducer \
+	 -module CkMulticast \
 	 $(OPTS) $(FLAGS) $(OPT_FORT)
 
 #===========================================================================
