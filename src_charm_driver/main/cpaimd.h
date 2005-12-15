@@ -266,7 +266,8 @@ class RhoGSMap : public CkArrayMap {
       // avoid PEs favored by the array characterized by the avoid and avoid_off parms
       if(avoid>1 && (pe-avoid_off)%avoid==0)
       {
-	  pe+=1;
+	  pe=(pe+1) %CkNumPes();
+	  
       }
       return pe;
     }
