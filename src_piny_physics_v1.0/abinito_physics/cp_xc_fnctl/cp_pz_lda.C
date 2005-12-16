@@ -3,6 +3,8 @@
 
 #include "../class_defs/allclass_gen.h"
 #include "../class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
+#include "../class_defs/allclass_cp.h"
+
 
 //===========================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -25,8 +27,14 @@ CPXCFNCTS::CP_exc_calc(
 //--------------------------------------------------------------------------
 // Static variables        
 
+
   GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP           *cp           = CP::get();
+
 #include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+  int cp_lyp   = cpopts->cp_lyp;
 
   static double gamma = -0.14230;
   static double beta1 = 1.05290;
@@ -44,6 +52,9 @@ CPXCFNCTS::CP_exc_calc(
   double pi,rho_r_val,power,xfact,cfact,rs,fpin,fpi;
   double ex,ec,mufact,rat1,rat2,cf1,cf2,sqtrs,vxc;
   double lnrs;
+
+  double lyp_fact=1.0;
+  if(cp_lyp==1)lyp_fact=0.0;
 
 
 //=================================================================
@@ -112,6 +123,9 @@ CPXCFNCTS::CP_exc_calc(
             + power*(2.0*du - cu)*rs;
 
     }/*endif*/
+    
+    cfact  *= lyp_fact;
+    mufact *= lyp_fact;
 
 //-------------------------------------------------------------------------
 // V. Energies
