@@ -154,40 +154,32 @@ class Ortho : public CBase_Ortho{
 /**
  * OrthoT tolerance check util return max value
  */
-  inline double array_diag_max(int sizem, int sizen, double *array)
-    {
-      double max_ret=fabs(fabs(array[0])-2.0);
+  inline double array_diag_max(int sizem, int sizen, double *array){
       int offset;
-      double absval;
-      if(thisIndex.x!=thisIndex.y)
-	{ 
-	  for(int i=0;i<sizem;i++)
-	    for(int j=0;j<sizen;j++)
-	      {
-		absval=fabs(array[i*sizen+j]);
-		max_ret = (max_ret>absval) ? max_ret : absval;
-	      }  
-	}
-      else
-	{//we are on the diagonal
-	  // if this becomes a bottleneck we can split the loop
-	  for(int i=0;i<sizem;i++)
-	    for(int j=0;j<sizen;j++)
-	      {
-		absval=fabs(array[i*sizen+j]);
-		if(i!=j)
-		  {
-		    max_ret = (max_ret>absval) ? max_ret : absval;
-		  }
-		else //substract 2 from diagonal
-		  {
-		    absval=fabs(absval-2.0);
-		    max_ret = (max_ret>absval) ? max_ret : absval;
-		  }
-	      }
-	}
+      double absval, max_ret;
+      if(thisIndex.x!=thisIndex.y){ 
+          max_ret=fabs(array[0]);          
+	  for(int i=0;i<sizem;i++){
+          for(int j=0;j<sizen;j++){
+ 	    absval=fabs(array[i*sizen+j]);
+	    max_ret = (max_ret>absval) ? max_ret : absval;
+	  }}//endfor
+      }else{
+          absval=fabs(fabs(array[0]-2.0));
+          max_ret = absval;
+	  for(int i=0;i<sizem;i++){
+	  for(int j=0;j<sizen;j++){
+	    absval=fabs(array[i*sizen+j]);
+	    if(i!=j){
+ 	       max_ret = (max_ret>absval) ? max_ret : absval;
+	     }else{
+	       absval=fabs(absval-2.0);
+	       max_ret = (max_ret>absval) ? max_ret : absval;
+	     }//endif
+	  }}//endfor
+      }//endif
       return max_ret;
-    }
+  }//end routine
 
   Ortho(int m, int n, CLA_Matrix_interface matA1,
    CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,

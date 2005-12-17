@@ -90,10 +90,10 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
+    int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-//	atomsGrpProxy.StartRealspaceForces(); 
-        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
+        if(cp_min_opt==1){
   	  CkPrintf("------------------------------------------------------\n");
 	  CkPrintf("Iteration %d done\n", numGlobalIter+1);
 	  CkPrintf("======================================================\n\n");
@@ -144,26 +144,34 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }
     fclose(outfile);
 #endif
-    for(int i = 0; i < m * n; i++)
-      B[i] = S[i] / 2;
+    for(int i = 0; i < m * n; i++){
+      B[i] = S[i] / 2.0;
+    }
     memset(A, 0, sizeof(double) * m * n);
     step = 0;
     iterations = 0;
     /* see if we have a non-zero part of I or T (=3I) */
-    if(thisIndex.x == thisIndex.y)
-      for(int i = 0; i < m; i++)
+    if(thisIndex.x == thisIndex.y){
+      for(int i = 0; i < m; i++){
 	A[i * m + i] = 1;
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0 && numGlobalIter % config.toleranceInterval==0 && numGlobalIter!=0) 
-      { // do tolerance check on smat, do_iteration will be called by reduction root
- 	CkPrintf("doing tolerance check on SMAT \n");
-	double max =array_diag_max(m,n, S);
-	contribute(sizeof(double),&max, CkReduction::max_double, CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),thisProxy.ckGetArrayID()));
-      }
-    else if(num_ready == 1)
-      do_iteration();
+      }//endfor
+    }//endif
+    // do tolerance check on smat, do_iteration will be called by reduction root
+    if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter!=0){
+       if(thisIndex.x==0 && thisIndex.y==0){
+         CkPrintf("doing tolerance check on SMAT \n");
+       }//endif
+       double max =array_diag_max(m,n,S);
+       contribute(sizeof(double),&max, CkReduction::max_double, 
+                  CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),
+                  thisProxy.ckGetArrayID()));
+    }else{
+      if(num_ready == 1){do_iteration();}
+    }//endif
     delete msg;
+
 //============================================================================
-  }
+  }//end routine
 //============================================================================
 
 
