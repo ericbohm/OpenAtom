@@ -7,6 +7,7 @@
 #include "../../../include/Atoms.h"
 #include "../class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
 #include "../class_defs/ATOM_OPERATIONS/class_atomoutput.h"
+#include "../class_defs/allclass_mdintegrate.h"
 
 //============================================================================
 
@@ -82,6 +83,10 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
 //============================================================================
    {//begin routine 
 //============================================================================
+
+   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+   int isokin_opt = mdtherm_info->isokin_opt;
  
    (*eKinetic)    = 0.0;
    (*eKineticNhc) = 0.0;
@@ -89,8 +94,13 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
    switch(iextended_on){
      case 0 : integrate_nve_2nd_half(itime,natm,atoms,eKinetic);
               break;
-     case 1 : integrate_nvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
-                                     eKinetic,eKineticNhc,potNhc); 
+     case 1 : if(isokin_opt==0){
+                integrate_nvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
+                                        eKinetic,eKineticNhc,potNhc); 
+              }else{
+                integrate_isonvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
+                                        eKinetic,eKineticNhc,potNhc); 
+	      }//endif
               break;
    }//endif
 
@@ -110,9 +120,18 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
    {//begin routine 
 //============================================================================
 
+   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();
+   MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+   int isokin_opt = mdtherm_info->isokin_opt;
+
    switch(iextended_on){
      case 0 : integrate_nve_1st_half(natm,atoms); break;
-     case 1 : integrate_nvt_1st_half(natm,len_nhc,atoms,atomsNHC); break;
+     case 1 : if(isokin_opt==0){
+                integrate_nvt_1st_half(natm,len_nhc,atoms,atomsNHC); 
+              }else{
+                integrate_isonvt_1st_half(natm,len_nhc,atoms,atomsNHC); 
+              }//endif
+              break;
    }//endif
 
 //---------------------------------------------------------------------------

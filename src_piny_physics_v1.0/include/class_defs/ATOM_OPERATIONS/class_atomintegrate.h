@@ -33,8 +33,11 @@ class ATOMINTEGRATE{
    static void integrate_nvt_1st_half(int ,int ,Atom *,AtomNHC *);
    static void integrate_nvt_2nd_half(int ,int ,int ,Atom *,AtomNHC *,
                                       double *,double *,double *);
+   static void integrate_isonvt_1st_half(int ,int ,Atom *,AtomNHC *);
+   static void integrate_isonvt_2nd_half(int ,int ,int ,Atom *,AtomNHC *,
+                                         double *,double *,double *);
 
-   static void computeENHC(int ,int,AtomNHC *,double *,double *);
+   static void computeENHC(int ,int,AtomNHC *,double *,double *,double *,int);
    static void computeEkin(int , Atom *, double *);
 
    static void applyNHC      (int ,int ,Atom *,AtomNHC *,double ,int,int);
@@ -45,6 +48,12 @@ class ATOMINTEGRATE{
    static void evolve_vAtmNHC(int ,Atom *,AtomNHC *,double );
    static void evolve_pNHC   (int ,int , AtomNHC *,double );
    static void set_yosh      (int ,double ,double *,double *,double *,double *);
+
+   static void scaleIso(int ,Atom *,AtomNHC *);
+   static void applyIsoVel(int ,Atom *,AtomNHC *,double );
+   static void applyIsoNHC(int ,int ,Atom *,AtomNHC *,double ,int ,int );
+   static void evolve_vAtmIsoNHC(int, Atom *,AtomNHC *,double );
+   static void evolve_pIsoNHC(int, int ,AtomNHC *,double);
 
 //---------------------------------------------------------------------------
    }; //ATOMINTEGRATE

@@ -42,6 +42,7 @@ class AtomsGrp: public Group {
   int cp_min_opt;
   int cp_wave_opt;
   int iteration;
+  int isokin_opt;
   double kT;
   double pot_ewd_rs;      // total real space ewald energy
   double pot_ewd_rs_loc;  // local real space ewald energy
@@ -52,7 +53,7 @@ class AtomsGrp: public Group {
   AtomNHC *atomsNHC;
 
   AtomsGrp(CkMigrateMessage *m) {}
-  AtomsGrp(int,int,int, int ,int ,int,double ,Atom *,AtomNHC *);
+  AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *);
   ~AtomsGrp();
   void contributeforces(double pot_ewald);
   void recvContribute(CkReductionMsg *);

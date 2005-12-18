@@ -53,6 +53,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
   num_nhc       = (mdtherm_info->num_nhc);
   len_nhc       = (mdtherm_info->len_nhc);
   cp_wave_opt   = (gensimopts->cp_wave);
+  isokin_opt    = mdtherm_info->isokin_opt;
 
   if(iextended_on==1){
     if(num_nhc != 3*natm_tot){
@@ -216,6 +217,8 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
       VX_SMPL::ctrlSamplAtomNhcVel(natm_tot,atomsNHC);
     }//endif
   }//endif
+
+ 
 
 //----------------------------------------------------------------------------
   }//end routine

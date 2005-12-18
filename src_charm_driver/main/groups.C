@@ -37,6 +37,7 @@ void IntegrationComplete(void *, void *);
 //==============================================================================
 
 
+//#define _CP_DEBUG_PSI_OFF_
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -47,7 +48,7 @@ void IntegrationComplete(void *, void *);
  */
 //==============================================================================
 AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-                   int cp_wave_opt_, double kT_, Atom* a, AtomNHC *aNHC){
+                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC){
 
 	natm                = n;
         natm_nl             = n_nl;
@@ -55,6 +56,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
         iextended_on        = iextended_on_;
         cp_min_opt          = cp_min_opt_;
         cp_wave_opt         = cp_wave_opt_;
+        isokin_opt          = isokin_opt_;
         iteration           = 0;
         kT                  = kT_;
         pot_ewd_rs_loc      = 0.0;
@@ -198,6 +200,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   int iextended_on  = ag->iextended_on;
   Atom *atoms       = ag->atoms;
   AtomNHC *atomsNHC = ag->atomsNHC;
+  int isokin_opt    = ag->isokin_opt;
   int output_on     = config.stateOutputOn;
 
 //============================================================
@@ -243,13 +246,13 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   double omega2 = omega*omega;
   double pot_harm = 0.0;
   if(iteration==0){
-    for(i=0,j=0;i<natm;i++){
+    for(i=0;i<natm;i++){
       atoms[i].x = 0.0;
       atoms[i].y = 0.0;
       atoms[i].z = 0.0;
     }
   }
-  for(i=0,j=0;i<natm;i++){
+  for(i=0;i<natm;i++){
     atoms[i].fx = -omega2*atoms[i].x*atoms[i].m;
     atoms[i].fy = -omega2*atoms[i].y*atoms[i].m;;
     atoms[i].fz = -omega2*atoms[i].z*atoms[i].m;;
@@ -259,13 +262,20 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   }//endfor
   pot_harm *= 0.5;
 #endif
-  ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
+   ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
                     output_on);
 #ifdef  _CP_DEBUG_PSI_OFF_
-  double etot_atm = eKinetic_loc+eKineticNhc_loc+potNhc_loc+pot_harm;
-  CkPrintf("iteration %d : tot energy %.12g on %d\n",iteration,etot_atm,myid);
+   double etot_atm;
+   if(isokin_opt==0){
+     etot_atm = eKinetic_loc+eKineticNhc_loc+potNhc_loc+pot_harm;
+     CkPrintf("iteration %d : tot energy %.12g on %d\n",iteration,etot_atm,myid);
+   }else{
+     etot_atm = eKineticNhc_loc+potNhc_loc;
+     CkPrintf("iteration %d : tot energy %.12g %.12g on %d\n",iteration,etot_atm,
+                                                    (eKinetic_loc+pot_harm),myid);
+   }//endif
 #endif
   iteration++;
 
@@ -295,17 +305,20 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
   //--------------------------------------------------
   // Sync Values : proc 0 atoms are the master copy
+  //               acceptatoms calls atomsdone
   int isync_atm = 0;
   if((iteration % 50)==0 && cp_wave_opt==0 && cp_min_opt==0){
-    isync_atm=1;
-    sendAtoms();
+     isync_atm=1;
+     sendAtoms();
   }//endif
 
   //------------------------------------------------
   // Sync Timing : atomsDone(msg) invokes atomsDone()
-  i=0;
-  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
-  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  if(isync_atm==0){
+     i=0;
+     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  }//endif
 
 //-------------------------------------------------------------------------
 }//end routine
@@ -319,6 +332,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //==========================================================================
 void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
+
   AtomsGrp *ag       = atomsGrpProxy.ckLocalBranch();
   EnergyGroup *eg    = egroupProxy.ckLocalBranch();
   int cp_min_opt     = ag->cp_min_opt;
@@ -331,16 +345,25 @@ void AtomsGrp::outputAtmEnergy() {
   int natm           = ag->natm;
   int len_nhc        = ag->len_nhc;
   double free_atm    = 3*((double)natm);
-  double free_Nhc    = free_atm*((double)len_nhc);
+  int iextended_on   = ag->iextended_on;
+  int isokin_opt     = ag->isokin_opt;
 
   if(myid==0){
      CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs);
      if(cp_min_opt==0){
         CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
-        CkPrintf("atm eKinNhc = %5.8lf\n",eKineticNhc);
         CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
-        CkPrintf("atm TempNHC = %5.8lf\n",(2.0*eKineticNhc*BOLTZ/free_Nhc));
-        CkPrintf("atm potNHC = %5.8lf\n",potNhc);
+        if(iextended_on==1){
+          double free_Nhc;
+          if(isokin_opt==0){
+            free_Nhc    = free_atm*((double)len_nhc);
+          }else{
+            free_Nhc    = free_atm*((double)(len_nhc-1));
+	  }//endif
+          CkPrintf("atm eKinNhc = %5.8lf\n",eKineticNhc);
+          CkPrintf("atm TempNHC = %5.8lf\n",(2.0*eKineticNhc*BOLTZ/free_Nhc));
+          CkPrintf("atm potNHC  = %5.8lf\n",potNhc);
+	}//endif
      }else{
         CkPrintf("atm fmag    = %5.8lf\n",fmag);
      }//endif
@@ -356,8 +379,23 @@ void AtomsGrp::outputAtmEnergy() {
   void AtomsGrp::atomsDone(CkReductionMsg *msg) {
 //==========================================================================
   delete msg;
-  if(config.localAtomBarrier)
-    {
+      atomsDone();
+}
+//==========================================================================
+
+
+//==========================================================================
+// Needs to have each proc invoke directly acceptatoms method of the
+// gspaceplanes which are mapped to it. Without migration, we have that map
+// at startup. With migration, one must write an enroll/dropout routine.
+// All 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+   void AtomsGrp::atomsDone() {
+//==========================================================================
+
+ if(config.localAtomBarrier){
       // atoms on this PE are done so use the forces
       // Use the StructFactCache to determine who is local
       StructFactCache *sfcache       = sfCacheProxy.ckLocalBranch();
@@ -379,31 +417,17 @@ void AtomsGrp::outputAtmEnergy() {
 
 	    }// end for
 	}//end for
-    }
-  else
-    {
-      atomsDone();
-    }
-}
-//==========================================================================
 
+    }else{
 
-//==========================================================================
-// Needs to have each proc invoke directly acceptatoms method of the
-// gspaceplanes which are mapped to it. Without migration, we have that map
-// at startup. With migration, one must write an enroll/dropout routine.
-// All 
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-   void AtomsGrp::atomsDone() {
-//==========================================================================
-   int myid = CkMyPe();
-   if(myid==0){
-     GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-     *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-     gSpacePlaneProxy.acceptAtoms(msg);
+      int myid = CkMyPe();
+      if(myid==0){
+         GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
+         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+         *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
+         gSpacePlaneProxy.acceptAtoms(msg);
+      }//endif
+ 
    }//endif
 }
 //==========================================================================
@@ -528,6 +552,10 @@ void AtomsGrp::outputAtmEnergy() {
   }//endif
 
   delete msg;
+
+  //==========================================================================
+
+  atomsDone();
 
 //-------------------------------------------------------
   }//end routine

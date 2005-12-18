@@ -1977,6 +1977,30 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      if(int_key_arg<1){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
      }/*endif*/
+   /*-----------------------------------------------------------------------*/ 
+  /* 17)\atm_isokin_opt{on/off} */
+    ifound      = 0;
+    if(strcasecmp(dict[17].keyarg,"on")==0)  {
+      mdtherm_info->isokin_opt = 1; ;ifound++;}
+    if(strcasecmp(dict[17].keyarg,"off")==0) {
+      mdtherm_info->isokin_opt = 0; ;ifound++;}
+    index=17;
+    if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    if(mdtherm_info->isokin_opt==1 && mdtherm_info->len_nhc<3){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("With isokin_opt you need len_nhc >=3 \n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+    }/*endif*/
+   /*-----------------------------------------------------------------------*/ 
+  /* 18)\atm_num_nhc_iso{#} */
+     sscanf(dict[18].keyarg,"%d",&int_key_arg);
+     mdtherm_info->num_nhc_iso = int_key_arg;
+     index=18;
+     if(int_key_arg<1){
+       keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+     }/*endif*/
+
 
 /*========================================================================*/
     }/*end routine*/ 

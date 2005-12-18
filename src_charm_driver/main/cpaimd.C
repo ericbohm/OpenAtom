@@ -1052,13 +1052,16 @@ void control_physics_to_driver(){
     int iextended_on  = PhysicsAtom->iextended_on;
     int cp_min_opt    = PhysicsAtom->cp_min_opt;
     int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
+    int isokin_opt    = PhysicsAtom->isokin_opt;
     double kT         = PhysicsAtom->kT;
+  
     Atom *atoms       = new Atom[natm];
     AtomNHC *atomsNHC = new AtomNHC[natm];
 
     PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
     atomsGrpProxy = CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
-                                           cp_min_opt,cp_wave_opt,kT,atoms,atomsNHC);
+                                           cp_min_opt,cp_wave_opt,isokin_opt,
+                                           kT,atoms,atomsNHC);
 
     delete [] atoms;
     delete [] atomsNHC;

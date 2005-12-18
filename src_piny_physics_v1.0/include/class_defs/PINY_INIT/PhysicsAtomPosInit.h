@@ -30,6 +30,7 @@ class PhysicsAtomPosInit{
      int            num_nhc;
      int            len_nhc;
      int            istart_typ;
+     int            isokin_opt;
      double         kT;
      double       **mass_nhc;
      void DriverAtomInit (int,Atom *,AtomNHC *);

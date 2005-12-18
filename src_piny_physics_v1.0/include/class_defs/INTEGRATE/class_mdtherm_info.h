@@ -23,7 +23,8 @@ class MDTHERM_INFO{
   int nres_nhc;                /* Num: # of RESPA NHC steps           */  
   int nyosh_nhc;               /* Num: # of Yosh NHC steps            */  
   int therm_typ;               /* Num: 1=NHC, 2=GGMT                  */
-
+  int isokin_opt;
+  int num_nhc_iso;
   double dt_nhc,dti_nhc,wght;  /* Num: NHC respa time steps           */
 
   int *inhc_x,*inhc_y,*inhc_z; /* Map: Atm index -> to atm NHC;
@@ -46,6 +47,9 @@ class MDTHERM_INFO{
     nres_nhc     = 0;  
     nyosh_nhc    = 0; 
     therm_typ    = 0; 
+    isokin_opt   = 0;
+    num_nhc_iso  = 0;
+
     wdti   = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
     wdti2  = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
     wdti4  = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
@@ -74,6 +78,9 @@ class MDTHERM_INFO{
     p | nres_nhc;  
     p | nyosh_nhc; 
     p | therm_typ;   
+    p | isokin_opt;
+    p | num_nhc_iso;
+
     // PUP doubles 
     p | dt_nhc;
     p | dti_nhc;
@@ -119,6 +126,8 @@ class MDTHERM_INFO{
      fprintf(fp,"mdtherm_info: nres_nhc %d\n",nres_nhc);   
      fprintf(fp,"mdtherm_info: nyosh_nhc %d\n",nyosh_nhc);   
      fprintf(fp,"mdtherm_info: therm_typ %d\n",therm_typ);   
+     fprintf(fp,"mdtherm_info: isokin_opt %d\n",isokin_opt);
+     fprintf(fp,"mdtherm_info: num_nhc_iso %d\n",num_nhc_iso);
 
      fprintf(fp,"mdtherm_info: dt_nhc %.12g\n",dt_nhc);   
      fprintf(fp,"mdtherm_info: dti_nhc %.12g\n",dti_nhc);   
