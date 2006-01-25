@@ -26,8 +26,8 @@
 #define FIRST_BALANCE_STEP 10
 
 #ifndef CMK_OPTIMIZE
-#define TRACE_ON_STEP 4
-#define TRACE_OFF_STEP 7
+#define TRACE_ON_STEP 4000000
+#define TRACE_OFF_STEP 7000000
 #endif
 
 #ifndef CmiMemcpy

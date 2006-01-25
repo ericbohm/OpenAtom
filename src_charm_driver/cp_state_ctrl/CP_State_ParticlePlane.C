@@ -46,7 +46,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 
 //=========================================================================
-
+extern CProxy_main mainProxy;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
@@ -149,6 +149,9 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
       particlePlaneENLProxy.setEnlCookie(emsg);
 
   }//endif
+  int constructed=1;
+  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
 
 //---------------------------------------------------------------------------
    }//end routine

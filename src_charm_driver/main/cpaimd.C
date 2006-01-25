@@ -727,7 +727,7 @@ void main::doneInit(CkReductionMsg *msg){
 //============================================================================
     delete msg;
 
-    if(done_init==0){
+    if(done_init<3){
       CkPrintf("Completed chare instantiation phase %d\n",done_init+1);
     }else{
       CkPrintf("Completed chare data acquisition phase %d\n",done_init+1);
@@ -736,15 +736,15 @@ void main::doneInit(CkReductionMsg *msg){
       CkPrintf("======================================================\n\n");
     }//endif
 
-    if (done_init == 0){
+    if (done_init == 2){
 	// kick off file reading in gspace
 	CkPrintf("Initiating import of states\n");
 	for(int s=0;s<nstates;s++){
 	    gSpacePlaneProxy(s,0).readFile();
 	}//endfor
     }//endif
-    if (done_init >= 1) {
-      if (done_init == 1){ 
+    if (done_init >= 3) {
+      if (done_init == 3){ 
  	  CkPrintf("\n======================================================\n");
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             ckout << "Running Open Atom CP Minimization: " << endl;

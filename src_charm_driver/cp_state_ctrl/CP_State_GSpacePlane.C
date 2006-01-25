@@ -622,6 +622,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 					     (CkArrayIndexMax *) 
 					     sfelems.getVec(), sfelems.size());
   }//endif : state=0 
+  int constructed=1;
+  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
 
 //---------------------------------------------------------------------------
    }//end routine
