@@ -21,6 +21,7 @@ class CPcharmParaInfo; //forward decl
 #include <iostream>
 #include <fstream>
 #include <fftw.h>
+#include <rfftw.h>
 #include <charm++.h>
 #include <pairutil.h>
 

@@ -47,7 +47,6 @@
 #include "CP_State_Plane.h"
 #include "ortho.h"
 #include <unistd.h>
-#include "cksparsecontiguousreducer.h"
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
 

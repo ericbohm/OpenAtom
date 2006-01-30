@@ -16,7 +16,6 @@
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
 #include "pairCalculator.h"
-#include "fftlib.h"
 #include "ckhashtable.h"
 
 #define LOAD_BALANCE_STEP 10

@@ -32,7 +32,6 @@
 #include "groups.h"
 #include "sim_subroutines.h"
 #include "CP_State_Plane.h"
-#include <fftlib.h>
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
 //============================================================================

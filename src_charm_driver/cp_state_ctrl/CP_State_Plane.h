@@ -12,7 +12,6 @@
 //============================================================================
 #include "charm++.h"
 #include "ckmulticast.h"
-#include "fftlib.h"
 #include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"

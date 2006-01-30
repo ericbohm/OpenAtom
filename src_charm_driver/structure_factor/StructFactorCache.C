@@ -5,7 +5,6 @@
 //==============================================================================
  
 #include "util.h"
-#include "fftlib.h"
 #include "cpaimd.h"
 #include "groups.h"
 #include "sim_subroutines.h"

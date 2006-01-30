@@ -8,7 +8,6 @@
 #include "pairutil.h"
 #include "ckmulticast.h"
 #include "ckhashtable.h"
-#include "cksparsecontiguousreducer.h"
 #include "PipeBroadcastStrategy.h"
 #include "BroadcastStrategy.h"
 #include "DirectMulticastStrategy.h"
