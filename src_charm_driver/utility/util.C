@@ -1526,6 +1526,30 @@ void Config::readConfig(const char* fileName, Config &config,
     }//end while reading
     configFile.close();
     CkPrintf("   Closing cpaimd config file : %s\n\n",fileName);
+    
+
+
+
+//===================================================================================
+// Set FFT and g-space size from state file
+
+    char fname[1024];
+    int sizex,sizey,sizez,nPacked,minx,maxx;
+    sprintf (fname, "%s/state1.out", config.dataPath);
+    CkPrintf("   Opening state file : %s\n",fname);
+    readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
+    CkPrintf("   Closing state file : %s\n\n",fname);
+
+    config.numFFTPoints = nkf1 * nkf2 * nkf3;
+    config.low_x_size   = minx+1;
+    config.high_x_size  = maxx-1;
+    config.numData      = nPacked;
+    int nplane_x        = minx+1;
+    int nplane_x_rho        = 2*minx+1;
+
+//===================================================================================
+//come up with sane values if the user didn't bother to try
+    config.guesstimateParms(natm_nl);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
       config.RpesPerState=config.pesPerState;
@@ -1534,6 +1558,18 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.pesPerState>0 && config.GpesPerState <1){
       config.GpesPerState=config.pesPerState;
     }//endif
+
+//===================================================================================
+// Set FFT and g-space size based on config post guesstimate
+
+    double temp         = (config.gExpandFact)*((double)nplane_x);
+    int nchareG         = ((int)temp);
+//    nchareG             = MIN(nchareG,sizex);
+    config.nchareG      = nchareG;
+    double temp_rho         = (config.gExpandFactRho)*((double)nplane_x_rho);
+    int nchareRhoG         = ((int)temp_rho);
+    config.nchareRhoG      = nchareRhoG;
+
 
 //===================================================================================
 // Check the parameter ranges 
@@ -1559,31 +1595,8 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
 
 //===================================================================================
-// Set FFT and g-space size
-
-    char fname[1024];
-    int sizex,sizey,sizez,nPacked,minx,maxx;
-    sprintf (fname, "%s/state1.out", config.dataPath);
-    CkPrintf("   Opening state file : %s\n",fname);
-    readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
-    CkPrintf("   Closing state file : %s\n\n",fname);
-
-    config.numFFTPoints = nkf1 * nkf2 * nkf3;
-    config.low_x_size   = minx+1;
-    config.high_x_size  = maxx-1;
-    config.numData      = nPacked;
-    int nplane_x        = minx+1;
-    double temp         = (config.gExpandFact)*((double)nplane_x);
-    int nchareG         = ((int)temp);
-//    nchareG             = MIN(nchareG,sizex);
-    config.nchareG      = nchareG;
-    int nplane_x_rho        = 2*minx+1;
-    double temp_rho         = (config.gExpandFactRho)*((double)nplane_x_rho);
-    int nchareRhoG         = ((int)temp_rho);
-    config.nchareRhoG      = nchareRhoG;
-
-//===================================================================================
 // Consistency Checks on the input
+
 
     if(config.gExpandFact<1.0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1730,6 +1743,142 @@ void Config::rangeExit(int param, char *name, int iopt){
   }//end routine
 //===================================================================================
 
+
+//=============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//=============================================================================
+/**
+ * Guesses decent values for configuration parameters based on user
+ * set values, system size, and the number of processes available.
+ *
+ * Supported parameters: sGrainSize, gExpandFact, gExpandFactRho,
+ * fftprogresssplit, fftprogresssplitReal, numSfGrps, numSfDups,
+ * pesPerState, rhoGHelpers, numMulticastMsgs
+ */
+void Config::guesstimateParms(int natm_nl)
+{
+
+    // If the user hasn't set a value in the config, try to come up with
+    // something suitable for the system size and number of processes
+    // based on what they have set.
+  
+    // Else accept user set value
+
+    // should come up with an ifdef macro approach so we don't
+    // have the extra function call in non BG/L case
+#ifndef CMK_VERSION_BLUEGENE
+    fftprogresssplit=1000;
+    fftprogresssplitReal=1000;
+#else
+    // just use the initial value or user override
+#endif  
+    int numPes=CkNumPes();  //cache this
+    int sqrtpes=(int) sqrt((double)numPes);
+    int sqrtstates=(int) sqrt((double)nstates);
+    if(pesPerState==1)
+    {
+	// is best as even mod
+	// should grow towards nstates
+	if(numPes>nstates)
+	{
+	    pesPerState=8*numPes/nstates;
+	}
+	else if(numPes>sqrtstates)
+	{// worth consideration should grow towards sqrtstates
+	    pesPerState=numPes/sqrtstates;
+	}
+	else
+	{// makes little difference as we're in fiddly small numbers of PEs
+	    pesPerState=sqrtpes;
+	}
+    }
+  
+    if(sGrainSize==nstates)
+    {
+	if(numPes>sqrtstates)
+	{
+	    sGrainSize=nstates/2;
+	}
+	if(numPes>nstates)
+	{
+	    sGrainSize=nstates/4;
+	}
+    }
+    if(gExpandFact==1.0) 
+    { //gives us more gspace chares
+      //only worth expanding if we have enough pes
+      // suitable range is 1.0 to 2.0
+	if(numPes>low_x_size*4)
+	{
+	    gExpandFact+=fabs((double) (numPes/2-low_x_size*4)/ (double)( numPes));
+	  
+	}
+	else if(numPes>low_x_size)
+	{
+	    gExpandFact+=(double) sqrtpes/ (double)( numPes);
+	}
+    }
+
+    if(gExpandFactRho==1.0) 
+    { //gives us more gspace chares
+      //only worth expanding if we have enough pes
+      // suitable range is 1.0 to 2.0
+	if(numPes>low_x_size*4)
+	{
+	    gExpandFactRho+=fabs((double) (numPes/2-low_x_size*4)/ (double)( numPes));
+	  
+	}
+	else if(numPes>low_x_size)
+	{
+	    gExpandFactRho+=(double) sqrtpes/ (double)( numPes);
+	}
+
+    }
+    if(numSfGrps==1)
+    {// number of groups to chop atom calc into
+	// needs to grow with size and number of PEs
+	// range 1->natm_nl 
+	int atmstates=natm_nl*nstates;
+	if(numPes<atmstates)
+	{
+	    double ratio=(double)numPes/(double)atmstates;
+	    numSfGrps=(int) (ratio*(double)natm_nl);
+	}
+	else //there is only so far we can go
+	{ 
+	    numSfGrps=natm_nl-1;
+	}
+    }
+    if(numSfDups==1)
+    {
+	// numbers of duplicate caches to create needs to grow with
+	// number of atom chunks mapped to multiple PEs 
+	// which is map dependant... yikes. can't set this here.
+	// Real range is 1 -> nstates
+	int atmstates=natm_nl*nstates;
+	if(numPes<atmstates)
+	{
+	    double ratio=(double)numPes/(double)atmstates;
+	    numSfDups=(int) (ratio*(double)nstates);
+	}
+	else //there is only so far we can go
+	{ 
+	    numSfDups=nstates-1;
+	}
+    }
+
+    // ranges from 1 to numPes/numChareRhoG
+    int temp_rho         = gExpandFactRho*2*(low_x_size+1);
+    if(rhoGHelpers==1)
+    {
+	if(numPes>temp_rho)
+	{
+	    rhoGHelpers=numPes/temp_rho;
+	}
+    }
+//============================================================================
+}//end routine
+//============================================================================
 
 //============================================================================
 // ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2238,3 +2387,5 @@ void sort_kxky_old(int n,int *kx,int *ky,int *index,int *kyt){
 //============================================================================
   }//end routine
 //============================================================================
+
+

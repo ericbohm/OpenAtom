@@ -198,6 +198,7 @@ class Config {
 	void print(char *fname_in);
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
         static void rangeExit(int , char *, int );
+	void guesstimateParms(int natm_nl);
 };
 #if ! CMK_BLUEGENE_CHARM
 PUPbytes(Config);
