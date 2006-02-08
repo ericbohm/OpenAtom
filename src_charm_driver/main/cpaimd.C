@@ -893,10 +893,16 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)chareG_use);
     CkPrintf("============================\n");
     // Insert the objects into the StructureFactor array
-    int dupmax=config.nstates;
+
+    int dupmax=maxsend;  // there is no point in ever having more than that
+
+//    if (dupmax>=natm_nl) // stability issues if over 
+//      dupmax=natm_nl-1;  
+    
     if (config.numSfDups<dupmax)
 	dupmax=config.numSfDups;
     config.numSfDups=dupmax;
+    CkPrintf("real numSfdups is %d based on maxsend of %d\n",config.numSfDups, maxsend);
     for (int dup=0; dup<dupmax; dup++)
       for (x = 0; x < nchareG; x += 1)
       {
@@ -1104,19 +1110,19 @@ static CkReductionMsg *complexSum(int nMsg, CkReductionMsg **msgs)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
+void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret)
 {
 
-   int n     = (natm_nl/numSfGrps);
-   int m     = (natm_nl % numSfGrps);
+   int n     = (natm_nl/numSfDups);
+   int m     = (natm_nl % numSfDups);
 
    int istrt = n*indexSfGrp;
    if(indexSfGrp>=m){istrt += m;}
    if(indexSfGrp<m) {istrt += indexSfGrp;}
    if(indexSfGrp<m) {n++;}
    int iend  = n+istrt;
-   if(numSfGrps>natm_nl)
+   if(numSfDups>natm_nl)
      if(m>=indexSfGrp)
        {
 	 n=0;
