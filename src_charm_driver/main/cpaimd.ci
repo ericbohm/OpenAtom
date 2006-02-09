@@ -234,15 +234,15 @@ mainmodule cpaimd {
 
 
 	group GSMap : CkArrayMap {
-		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);
+		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x], int, int);
 	};
 	
 	group RSMap : CkArrayMap {
-		entry RSMap();
+		entry RSMap(int, int);
 	};
 	
 	group SCalcMap: CkArrayMap {
-		entry SCalcMap(int, int, int, int, int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x]);
+		entry SCalcMap(int, int, int, int, int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x], int, int);
 	};
 	group FFTcache {
 		entry FFTcache(size2d, int);

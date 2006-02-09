@@ -103,6 +103,7 @@
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
+#include "FindProcessor.h"
 //============================================================================
 #include "../include/CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
@@ -168,6 +169,11 @@ int Ortho_UE_step3;
 int Ortho_UE_error;
 bool Ortho_use_local_cb;
 int done_init=0;
+int planes_per_pe;
+CkHashtableT<intdual, int> *maptable;
+#if CMK_VERSION_BLUEGENE
+BGLTorusManager *bgltm;
+#endif
 //============================================================================
 
 
@@ -398,11 +404,11 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
                    sizeX,config.sGrainSize,CmiTrue,sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG) ;
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe) ;
     
     CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(config.nstates,
   	           sizeX,config.sGrainSize, CmiFalse,sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG);
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe);
     
     CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
     CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
@@ -747,9 +753,9 @@ void main::doneInit(CkReductionMsg *msg){
       if (done_init == 3){ 
  	  CkPrintf("\n======================================================\n");
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
-            ckout << "Running Open Atom CP Minimization: " << endl;
+            CkPrintf("Running Open Atom CP Minimization: \n");
 	  }else{
-            ckout << "Running Open Atom CP Dynamics: " << endl;
+            CkPrintf("Running Open Atom CP Dynamics: \n");
 	  }//endif
   	  CkPrintf("======================================================\n\n");
   	  CkPrintf("\n======================================================\n");
@@ -783,7 +789,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_DASH;printf("\n");
 
 
-    CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
+    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, config.nchareG);
 
     CkArrayOptions realSpaceOpts;
     realSpaceOpts.setMap(rsMap);
@@ -797,7 +803,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
     sfCompProxy = CProxy_StructureFactor::ckNew();
     
-    CProxy_GSMap gsMap = CProxy_GSMap::ckNew(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG);
+    CProxy_GSMap gsMap = CProxy_GSMap::ckNew(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.states_per_pe);
 
     CkArrayOptions gSpaceOpts;
     gSpaceOpts.setMap(gsMap);
@@ -848,17 +854,28 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     int **listpe = new int * [nchareG];
     int numproc  = CkNumPes();
     int *gspace_proc = new int [numproc];
-
+    
+    //CkPrintf("making local GSMAP\n");
+    //GSMap *localgsMap = new GSMap(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.states_per_pe);
+    
     for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
     for(int j=0;j<nchareG;j++){   
       listpe[j]= new int[nstates];
       nsend[j]=0;
       for(int i=0;i<nstates;i++){
 	listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
+	//CkArrayIndex2D idx2d;
+	//idx2d.index[0]=i;
+	//idx2d.index[1]=j;
+	//listpe[j][i]=localgsMap->procNum(0,(const CkArrayIndex) (const CkArrayIndex2D) idx2d);
         gspace_proc[listpe[j][i]]+=1;
       }//endfor
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
+    
+    //planes_per_pe=localgsMap->planes_per_pe;
+    //delete localgsMap;
+    
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
       fprintf(fp,"%d %d\n",i,gspace_proc[i]);
@@ -1172,7 +1189,7 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
+/*int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
 //============================================================================
 
   CkArrayIndex2D idx2d(state,plane);
@@ -1237,9 +1254,132 @@ int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
   return (idx2d.index[0]*1037+idx2d.index[1])%CkNumPes();
 
 //============================================================================
-  }//end routine
+  }//end routine*/
 //============================================================================
 
+void makemap()
+{
+	FindProcessor fp;
+	int x = CkNumPes();
+	int y = 1;
+	int z = 1;
+	
+#if CMK_VERSION_BLUEGENE
+	bgltm = BGLTorusManager::getObject();
+	x = bgltm->getXSize();
+	y = bgltm->getYSize();
+	z = bgltm->getZSize();
+#endif
+
+	int procs[x][y][z];      // get from BGLTorusManager
+	for(int i=0; i<x; i++)
+	    for(int j=0; j<y; j++)
+		for(int k=0; k<z; k++)
+		    procs[i][j][k]=0;
+		    
+	//CkPrintf("x %d, y %d, z %d no of pe's %d\n", x, y, z, CkNumPes());
+	//char fname[100];
+	//sprintf(fname, "proc%d", CkMyPe()); 
+	//FILE *f = fopen(fname, "w");
+		
+	fp.count=1;
+	fp.nopX=x;
+	fp.nopY=y;
+	fp.nopZ=z;
+	int assign[3]={0, 0, 0};
+	for(int i=0;i<3;i++)
+		fp.start[i]=fp.next[i]=0;
+	int gsobjs_per_pe;
+	
+	//CkPrintf("[%d] nstates %d, nchareG %d\n", CkMyPe(), nstates, nchareG);
+	
+	if((nstates*nchareG) % CkNumPes() == 0)
+	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes();
+	else
+	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;
+	int l=config.states_per_pe;
+	
+	while(gsobjs_per_pe%l!=0)
+		l++;
+	// l--;                     l now divides gobjs_per_pe exactly 
+	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes
+	planes_per_pe=m;
+	
+	CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
+	
+	for(int ychunk=0; ychunk<config.nchareG; ychunk=ychunk+m)
+		for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
+		{
+			if(xchunk==0 && ychunk==0) {}
+			else
+			{
+				procs[assign[2]][assign[1]][assign[0]]=1;
+				for(int i=0;i<3;i++)
+					fp.start[i]=fp.next[i];
+				if(fp.start[2]>x/2)
+					assign[2]=fp.start[2]-x;
+				else
+					assign[2]=fp.start[2];
+				if(fp.start[1]>y/2)
+					assign[1]=fp.start[1]-y;
+				else
+					assign[1]=fp.start[1];
+				if(fp.start[0]>z/2)
+					assign[0]=fp.start[0]-z;
+				else
+					assign[0]=fp.start[0];
+				fp.findNextInTorus(assign);
+				
+				while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
+				{
+					for(int i=0;i<3;i++)
+						fp.start[i]=fp.next[i];
+					if(fp.start[2]>x/2)
+						assign[2]=fp.start[2]-x;
+					else
+						assign[2]=fp.start[2];
+					if(fp.start[1]>y/2)
+						assign[1]=fp.start[1]-y;
+					else
+						assign[1]=fp.start[1];
+					if(fp.start[0]>z/2)
+						assign[0]=fp.start[0]-z;
+					else
+						assign[0]=fp.start[0];
+					fp.findNextInTorus(assign);
+				}
+				
+			}
+			for(int state=xchunk; state<xchunk+l && state<config.nstates; state++)
+			{
+				for(int plane=ychunk; plane<ychunk+m && plane<config.nchareG; plane++)
+				{
+					if(xchunk==0 && ychunk==0)
+					{
+						maptable->put(intdual(state, plane))=0;
+						//CkPrintf("%d %d on 0\n", state, plane);
+					}
+					else
+					{
+						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+						
+					}
+				}
+			}
+		}
+	CkPrintf("%d local gsmap\n", CkMyPe());
+}
+
+int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
+{
+	if(maptable==NULL)
+	{
+		maptable= new CkHashtableT<intdual, int> (config.nstates*config.nchareG);
+		makemap();
+	}
+	return maptable->get(intdual(state, plane));
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

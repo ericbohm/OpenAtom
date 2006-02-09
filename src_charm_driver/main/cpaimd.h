@@ -102,16 +102,23 @@ class intdual {
 class GSMap: public CkArrayMap {
   
   int nchareG;
+  int nstates;
+  int states_per_pe;
+  
   double *lines_per_chareG;
   double *pts_per_chareG;
   double state_load;
   CkHashtableT<intdual, int> *maptable;
  public:
+  int planes_per_pe;
   GSMap() { state_load = 0.0; }
-  GSMap(int _nchareG,double *_lines_per_chareG, double *_pts_per_chareG): 
+  GSMap(int _nchareG,double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,
+  int _states_per_pe): 
         nchareG(_nchareG)   
       { 
-	  state_load = 0.0; 
+	  state_load = 0.0;
+	  nstates = _nstates;
+	  states_per_pe = _states_per_pe;
 	  lines_per_chareG= new double[nchareG];
 	  pts_per_chareG= new double[nchareG];
 	  CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
@@ -154,10 +161,17 @@ class GSMap: public CkArrayMap {
 //============================================================================
 
 class RSMap: public CkArrayMap {
-
+ int nstates;
+ int nchareG;
  public:
-
-  RSMap() {}
+  CkHashtableT<intdual, int> *maptable;
+  RSMap(int _nstates, int _nchareG) 
+  {
+  	nstates = _nstates;
+	nchareG = _nchareG;
+  	maptable=NULL;
+  }
+    void makemap();
     int procNum(int, const CkArrayIndex &);
 };
 //============================================================================
@@ -175,6 +189,8 @@ class RSMap: public CkArrayMap {
 
 class SCalcMap : public CkArrayMap {
   int nchareG;
+  int scalc_per_plane;
+  int planes_per_pe;
   double *lines_per_chareG;
   double *pts_per_chareG;
   CkHashtableT<intdual, int> *maptable;
@@ -186,11 +202,13 @@ class SCalcMap : public CkArrayMap {
     
 
     SCalcMap(int _nstates, int _nchareG,  int gs, CmiBool _flag, int _nplanes, 
-             double *_lines_per_chareG, double *_pts_per_chareG) { 
+             double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,   int _planes_per_pe) { 
         this->gs   = gs;
         nchareG    = _nchareG;
         max_states = _nstates;
         max_planes = _nplanes;
+	scalc_per_plane = _scalc_per_plane;
+	planes_per_pe = _planes_per_pe;
         symmetric  = _flag;
 	totalload  = 0.0;
 	lines_per_chareG = new double[nchareG];
@@ -352,6 +370,7 @@ class CPcharmParaInfoGrp: public Group {
    and the S_Calculators
  */
 //============================================================================
+class size2d; //forward decl to shup the compiler
 void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, CPcharmParaInfo *sim);
 void init_ortho_chares(int, int, int *);
 
@@ -365,6 +384,7 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex);
 int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane);
+void makemap();
 void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int , double *, double *);
 
 //============================================================================
