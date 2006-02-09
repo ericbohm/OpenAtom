@@ -1848,6 +1848,8 @@ void Config::guesstimateParms(int natm_nl)
 	{ 
 	    numSfGrps=natm_nl-1;
 	}
+	if(numSfGrps==0)
+	  numSfGrps=1;
     }
     if(numSfDups==1)
     {
@@ -1865,6 +1867,9 @@ void Config::guesstimateParms(int natm_nl)
 	{ 
 	    numSfDups=nstates-1;
 	}
+	if(numSfDups==0)
+	  numSfDups=1;
+
     }
 
     // ranges from 1 to numPes/numChareRhoG
