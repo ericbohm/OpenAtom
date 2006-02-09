@@ -192,16 +192,16 @@ void Ortho::collect_results(void){
   	wallTimeArr[itime] = CkWallTimer();
 	if (numGlobalIter == iprintout && config.maxIter<30) {
           CkPrintf("----------------------------\n");
-	  ckout << "wall times from within ortho" << endl;
+	  CkPrintf("wall times from within ortho\n");
 	  for (int t = 1; t < iprintout; t++){
 	    ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
 	  }//endfor
-	  ckout << wallTimeArr[itime] - wallTimeArr[itime-1] << endl;
+	  CkPrintf("%d\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
 	  CkPrintf("------------------------------\n");
         }else{
 	  if(numGlobalIter>0){
-	    ckout <<"Iteration time (ORTHO) : " << 
-               wallTimeArr[itime] - wallTimeArr[itime-1] << endl;
+	    CkPrintf("Iteration time (ORTHO) : %d\n", 
+               wallTimeArr[itime] - wallTimeArr[itime-1]);
 	  }//endif
         }//endif
     }//endif
