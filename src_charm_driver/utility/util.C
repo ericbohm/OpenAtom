@@ -1358,6 +1358,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"psipriority: %d\n",psipriority);
      fprintf(fp,"doublePack: %d\n",doublePack);
      fprintf(fp,"conserveMemory: %d\n",conserveMemory);
+     fprintf(fp,"states_per_pe: %d\n",states_per_pe);
+     fprintf(fp,"scalc_per_plane: %d\n",scalc_per_plane);
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
@@ -1423,6 +1425,8 @@ void Config::readConfig(const char* fileName, Config &config,
     config.localAtomBarrier     = 1;
     config.localEnergyBarrier   = 1;
     config.toleranceInterval    = 1;
+    config.states_per_pe	= config.nstates;
+    config.scalc_per_plane	= 1;
     strcpy(config.dataPath,"./");
 
 //===================================================================================
@@ -1510,6 +1514,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))
             config.toleranceInterval = atoi(parameterValue);
+	else if (!strcmp(parameterName, "states_per_pe"))
+            config.states_per_pe = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
@@ -1569,7 +1575,7 @@ void Config::readConfig(const char* fileName, Config &config,
     double temp_rho         = (config.gExpandFactRho)*((double)nplane_x_rho);
     int nchareRhoG         = ((int)temp_rho);
     config.nchareRhoG      = nchareRhoG;
-
+    config.scalc_per_plane = (config.nstates/config.sGrainSize)*(config.nstates/config.sGrainSize);
 
 //===================================================================================
 // Check the parameter ranges 
@@ -1596,7 +1602,6 @@ void Config::readConfig(const char* fileName, Config &config,
 
 //===================================================================================
 // Consistency Checks on the input
-
 
     if(config.gExpandFact<1.0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1657,6 +1662,12 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
+    if(config.scalc_per_plane<1.0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Scalc per plane cannot be less then 1\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 //-----------------------------------------------------------------------------------
 // Parameter values that are broken or must be within a certain range
 
@@ -1709,6 +1720,12 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
+    if(config.states_per_pe<1 || config.states_per_pe>config.nstates){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("The number of states per pe must be >=1 < num states\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
 //----------------------------------------------------------------------------------
   }//end routine

@@ -192,6 +192,8 @@ class Config {
 	int toleranceInterval;
 	int localAtomBarrier;
 	int localEnergyBarrier;
+	int states_per_pe; // new
+	int scalc_per_plane; // new
         double gExpandFact;
         double gExpandFactRho;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];
