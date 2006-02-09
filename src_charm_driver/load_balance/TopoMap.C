@@ -3,6 +3,7 @@
  * mapping scheme for the GSpace, PairCalc and RealSpace objects.
  * 
  */
+ 
 #include "charm++.h"
 #include "FindProcessor.h"
 #include "cpaimd.h"
@@ -75,7 +76,7 @@ void GSMap::makemap()
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
-				procs[assign[2]][assign[1]][assign[0]]=1;
+				procs[fp.next[2]][fp.next[1]][fp.next[0]]=1;
 				for(int i=0;i<3;i++)
 					fp.start[i]=fp.next[i];
 				if(fp.start[2]>x/2)

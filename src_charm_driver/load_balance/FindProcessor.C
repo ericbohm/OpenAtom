@@ -227,10 +227,10 @@ int FindProcessor::findNextInTorus(int a[])
                 }
                 else
                 {
-			cout<<"-------------------------\n";
-			cout<<"Distance "<<distance<<" starting\n";
-			cout<<"-------------------------\n";
-			printing(0, 0, 1);
+			//cout<<"-------------------------\n";
+			//cout<<"Distance "<<distance<<" starting\n";
+			//cout<<"-------------------------\n";
+			//printing(0, 0, 1);
 		}
 	}	
 	else
@@ -300,9 +300,9 @@ int FindProcessor::findNextInTorus(int a[])
 					if(abs(next[0])>=posZL || abs(next[1])>=posYL || abs(next[2])>=posXL)
 					{
 						distance=distance+1;
-						cout<<"-------------------------\n";
-						cout<<"Distance "<<distance<<" starting\n";
-						cout<<"-------------------------\n";
+						//cout<<"-------------------------\n";
+						//cout<<"Distance "<<distance<<" starting\n";
+						//cout<<"-------------------------\n";
 						for(int i=0;i<3;i++)
 						{
 							start[i]=next[i];
@@ -404,7 +404,7 @@ int FindProcessor::findNextInTorus(int a[])
 				}
 			}
 		}
-	printing(next[0], next[1], next[2]);
+	//printing(next[0], next[1], next[2]);
 	}
 	count++; //add near all other prints
 	return 1;
