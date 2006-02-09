@@ -49,7 +49,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o StructFactorC
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o \
          util.o ortho.o sim_subroutines.o  \
-         groups.o map.o para_grp_parse.o
+         groups.o TopoMap.o FindProcessor.o para_grp_parse.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
 OBJS_DEF = ../main/cpaimd.decl.h
@@ -142,6 +142,7 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
 	$(TOPINC)/debug_flags.h \
 	$(TOPINC)/RunDescriptor.h \
+	$(LOADB)/FindProcessor.o \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -243,10 +244,20 @@ para_grp_parse.o: $(UTIL)/para_grp_parse.C $(UTIL)/para_grp_parse.h \
                   $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/para_grp_parse.C $(OPTS) $(FLAGS) $(OPT_FORT)
-#---------------------------------------------------------------------------
+#-------------------------------------jjjjjjjjjjjjjjj--------------------------------------
 map.o:  $(LOADB)/map.C 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/map.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+
+FindProcessor.o:  $(LOADB)/FindProcessor.C $(LOADB)/FindProcessor.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(LOADB)/FindProcessor.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/FindProcessor.o $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(LOADB)/TopoMap.C $(OPTS) $(FLAGS) $(OPT_FORT)
+
 #---------------------------------------------------------------------------
 ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
 	 $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
