@@ -103,6 +103,7 @@
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
+#include "bgltorus.h"
 #include "FindProcessor.h"
 //============================================================================
 #include "../include/CPcharmParaInfo.h"
