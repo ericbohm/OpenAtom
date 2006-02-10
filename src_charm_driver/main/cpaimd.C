@@ -856,26 +856,18 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     int numproc  = CkNumPes();
     int *gspace_proc = new int [numproc];
     
-    //CkPrintf("making local GSMAP\n");
-    //GSMap *localgsMap = new GSMap(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.states_per_pe);
-    
+   
     for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
     for(int j=0;j<nchareG;j++){   
       listpe[j]= new int[nstates];
       nsend[j]=0;
       for(int i=0;i<nstates;i++){
 	listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
-	//CkArrayIndex2D idx2d;
-	//idx2d.index[0]=i;
-	//idx2d.index[1]=j;
-	//listpe[j][i]=localgsMap->procNum(0,(const CkArrayIndex) (const CkArrayIndex2D) idx2d);
-        gspace_proc[listpe[j][i]]+=1;
+	gspace_proc[listpe[j][i]]+=1;
       }//endfor
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
     
-    //planes_per_pe=localgsMap->planes_per_pe;
-    //delete localgsMap;
     
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
@@ -1279,10 +1271,7 @@ void makemap()
 		    procs[i][j][k]=0;
 		    
 	//CkPrintf("x %d, y %d, z %d no of pe's %d\n", x, y, z, CkNumPes());
-	//char fname[100];
-	//sprintf(fname, "proc%d", CkMyPe()); 
-	//FILE *f = fopen(fname, "w");
-		
+	
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
@@ -1375,7 +1364,7 @@ void makemap()
 				}
 			}
 		}
-	CkPrintf("%d local gsmap\n", CkMyPe());
+	CkPrintf("Local gsmap created on processor %d\n", CkMyPe());
 }
 
 int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
