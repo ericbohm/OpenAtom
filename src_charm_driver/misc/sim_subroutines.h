@@ -147,6 +147,8 @@ public:
 	void zeroOutPlanes();
 	void allocate();
 	void destroy();
+	void pup(PUP::er &);
+
 };
 //==============================================================================
 
@@ -177,6 +179,7 @@ public:
    ~RhoRealSlab();
    void doFwFFTGtoR(int,double);
    void uPackAndScale(double *, double *,double );
+   void pup(PUP::er &);
 
 };
 //==============================================================================
@@ -194,6 +197,7 @@ class RhoGSlab {
 	int numLines;
 	int numFull;
 	int numPoints;
+	int nPacked;
 	RunDescriptor *runs;
 
 	complex *Rho;       // Is big enough to be expanded!
@@ -223,6 +227,7 @@ class RhoGSlab {
 	void expandRhoGSpace(complex* , complex *);
         void divRhoGdot(double *,double );
         void createWhiteByrd(double *, double );
+	void pup(PUP::er &);
 
 };
 //==============================================================================

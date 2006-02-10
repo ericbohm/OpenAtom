@@ -739,7 +739,11 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p(k_y, gSpaceNumPoints);
   p(k_z, gSpaceNumPoints);
   p(coef_mass,gSpaceNumPoints);
-    
+  if(p.isUnpacking())
+    {
+      run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_GSpacePlane,run),this);
+    }
+  RTH_Runtime_pup(run_thread,p,this);
 //-------------------------------------------------------
    }// end routine : pup
 //============================================================================

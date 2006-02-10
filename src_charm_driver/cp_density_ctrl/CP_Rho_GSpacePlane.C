@@ -98,7 +98,8 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
       rho_gs.numPoints += sortedRunDescriptors[x][r].length;
       rho_gs.runs[r]    = sortedRunDescriptors[x][r];
     }//endfor
-    rho_gs.setKVectors(&nPacked);
+    rho_gs.setKVectors(&rho_gs.nPacked);
+    nPacked=rho_gs.nPacked;
     
     rho_gs.Rho       = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
     rho_gs.divRhoX   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
@@ -161,6 +162,34 @@ CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
 }
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GSpacePlane::pup(PUP::er &p){
+  p|nPacked;
+  p|count;
+  p(countWhiteByrd,4);
+  p|doneWhiteByrd;
+  p|rhoGHelpers;
+  p|vectorIFFTCount;
+  rho_gs.pup(p);
+  if(p.isUnpacking())
+    {
+      numSplit = new int[rhoGHelpers];
+      istrtSplit= new int[rhoGHelpers];
+      iendSplit = new int[rhoGHelpers];
+    }
+  p(numSplit,rhoGHelpers);
+  p(istrtSplit,rhoGHelpers);
+  p(iendSplit,rhoGHelpers);
+  p|rhoRealProxy0_com;
+  p|rhoRealProxy1_com;
+  p|rhoRealProxy2_com;
+  p|rhoRealProxy3_com;
+  p|rhoRealProxyByrd_com;
+
+}
+//============================================================================
 
 //============================================================================
 //  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 

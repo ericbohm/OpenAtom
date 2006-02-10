@@ -227,7 +227,7 @@ void GStateSlab::pup(PUP::er &p) {
 //==============================================================================
 // Dont have to pup fftw plans - they live in the fft cache group
 
-  CkPrintf("gs pup\n:");
+//  CkPrintf("gs pup\n:");
         p|numNonZeroPlanes;
 	p|numRuns;
 	p|numLines;
@@ -303,7 +303,7 @@ void GStateSlab::pup(PUP::er &p) {
 	}//endif receiving 
         delete []vt;
         delete []ft;
-  CkPrintf("end gs pup\n:");
+	//  CkPrintf("end gs pup\n:");
 
 //==============================================================================
   }//end routine
@@ -691,6 +691,29 @@ RealStateSlab::~RealStateSlab() {
 
   if(planeArr != NULL) {fftw_free(planeArr);planeArr = NULL; }
 
+}
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void RealStateSlab::pup(PUP::er &p) {
+//==============================================================================
+  p|planeSize;
+  p|size;
+  if (p.isUnpacking()) 
+    {
+      planeArr = (complex *) fftw_malloc(size*sizeof(complex));
+    }
+  p((char *) planeArr, size*sizeof(complex));
+  p|thisState;    
+  p|thisPlane;      
+  p|numPlanesToExpect;
+  p|nsize;
+  p|rsize;
+  p|size;
+  p|e_gga; 
 }
 //==============================================================================
 
@@ -1088,6 +1111,96 @@ RhoGSlab::~RhoGSlab()
 }
 //==============================================================================
 
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void RhoGSlab::pup(PUP::er &p) {
+
+  p|sizeX;
+  p|sizeY;
+  p|sizeZ;
+  p|runsToBeSent;
+  p|numRuns;
+  p|numLines;
+  p|numFull;
+  p|numPoints;
+  p|ehart_ret;
+  p|eext_ret;
+  p|ewd_ret;
+  p|size;
+  p|xdim;
+  p|ydim;
+  p|zdim; 
+  p|nPacked;
+  if(!p.isUnpacking())
+    {// create flags for each array in pup
+      bool RhoMake= (Rho!=NULL) ? true :false;
+      bool divRhoXMake= (divRhoX!=NULL) ? true :false;
+      bool divRhoYMake= (divRhoY!=NULL) ? true :false;
+      bool divRhoZMake= (divRhoZ!=NULL) ? true :false;
+      bool packedRhoMake= (packedRho!=NULL) ? true :false;
+      bool packedVksMake= (packedVks!=NULL) ? true :false;
+      bool VksMake= (Vks!=NULL) ? true :false;
+      p|RhoMake;
+      p|divRhoXMake;
+      p|divRhoYMake;
+      p|divRhoZMake;
+      p|packedRhoMake;
+      p|packedVksMake;
+      p|VksMake;
+    }
+  if(p.isUnpacking())
+    {
+      bool RhoMake;
+      bool divRhoXMake;
+      bool divRhoYMake;
+      bool divRhoZMake;
+      bool packedRhoMake;
+      bool packedVksMake;
+      bool VksMake;
+      p|RhoMake;
+      p|divRhoXMake;
+      p|divRhoYMake;
+      p|divRhoZMake;
+      p|packedRhoMake;
+      p|packedVksMake;
+      p|VksMake;
+      runs     = new RunDescriptor[numRuns];
+      k_x = new int[numPoints];
+      k_y = new int[numPoints];
+      k_z = new int[numPoints];
+      if(RhoMake)
+	Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
+      if(divRhoXMake)
+	divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      if(divRhoYMake)
+	divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      if(divRhoZMake)
+	divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      if(packedRhoMake)
+	packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
+      if(packedVks)
+	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
+      if(VksMake)
+	Vks=(complex *)fftw_malloc(numFull*sizeof(complex));
+    }
+  PUParray(p,runs,numRuns);
+  p(k_x,numPoints);
+  p(k_y,numPoints);
+  p(k_z,numPoints);
+  // for space efficiency we should add NULL flag variables 
+  // in isPacking and test that to determine allocation and unpacking
+  // for each array.  This method is safe, but fatter than necessary.
+  p((char *) Rho,numFull * sizeof(complex));
+  p((char *) divRhoX,numFull* sizeof(complex));
+  p((char *) divRhoY,numFull* sizeof(complex));
+  p((char *) divRhoZ,numFull* sizeof(complex));
+  p((char *) packedRho,nPacked* sizeof(complex));
+  p((char *) packedVks,nPacked* sizeof(complex));
+  p((char *) Vks,numFull* sizeof(complex));
+
+ }
+
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1401,6 +1514,58 @@ void RhoGSlab::doFwFFTGtoR(int iopt, int index){
 //==============================================================================
    }//end routine
 //==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void RhoRealSlab::pup(PUP::er &p) {
+  p|sizeZ;
+  p|sizeY;
+  p|sizeZ;
+  
+  
+  p|exc_ret;
+  p|muxc_ret;
+  p|exc_gga_ret;
+
+  p|size;
+  p|trueSize;
+  p|xdim;
+  p|ydim;
+  p|zdim;
+  p|startx;
+  p|starty;
+  p|startz; 
+  if(p.isUnpacking())
+    {
+	Vks     =  new double[size];
+	bzero(Vks, size*sizeof(double));
+	density =  new double[size];
+	bzero(density, size*sizeof(double));
+        int csize    = size/2;
+        complex *dummy;
+	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
+	doFFTonThis = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRX      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRY      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRZ      = reinterpret_cast<double*> (dummy);
+	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
+	gradientCorrection = reinterpret_cast<double*> (dummy);
+    }
+  p(Vks, size);
+  p(density,size);
+  p((char *) doFFTonThis,size/2 * sizeof(complex));
+  p((char *) rhoIRX,size/2 *sizeof(complex));
+  p((char *) rhoIRY,size/2 *sizeof(complex));
+  p((char *) rhoIRZ,size/2 * sizeof(complex));
+  p((char *) gradientCorrection,size/2 *sizeof(complex));
+}
+//==============================================================================
+
 
 
 //==============================================================================

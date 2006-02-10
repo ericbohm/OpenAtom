@@ -204,6 +204,35 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 }
 //============================================================================
 
+void CP_Rho_RealSpacePlane::pup(PUP::er &p){
+     p|cp_grad_corr_on;
+     p|FFTscale;        
+     p|volumeFactor;        
+     p|probScale;             
+     p|count;
+     p|countFFTdata;
+     p|numMcastSent;
+     p|rhoGHelpers;
+     p|realSpaceSectionProxy;
+     p(countGradVks,5);
+     p|doneGradRhoVks;
+     p|countWhiteByrd;
+     p|doneWhiteByrd;
+     p|doneHartVks;
+     p|realSpaceSectionCProxy;
+     p|rhoGProxy_com;
+     p|rhoGProxyIGX_com;
+     p|rhoGProxyIGY_com;
+     p|rhoGProxyIGZ_com;
+     rho_rs.pup(p); 
+     if(p.isUnpacking())
+       {
+	 run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_Rho_RealSpacePlane,run),this);
+	 RTH_Runtime_resume(run_thread);
+       }
+     RTH_Runtime_pup(run_thread,p,this);
+
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

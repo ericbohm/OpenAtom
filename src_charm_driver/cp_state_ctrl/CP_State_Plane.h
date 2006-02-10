@@ -364,6 +364,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         void sendPartlyFFTtoRhoG(int );
         void acceptWhiteByrd(RhoRSFFTMsg *msg);
 	void doMulticast();
+	void pup(PUP::er &);
         int cp_grad_corr_on;
  private:
 	double FFTscale;        
@@ -383,8 +384,6 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGY_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
 	RhoRealSlab rho_rs; 
-	int cmid;
-	int *pes;
 	RTH_Runtime* run_thread;
 };
 //============================================================================
@@ -409,6 +408,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         void acceptWhiteByrd(RhoGSFFTMsg *);
         void acceptWhiteByrd();
         int cp_grad_corr_on;
+	void pup(PUP::er &p);
  private:
         int nPacked;
 	int count;
@@ -424,10 +424,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy3_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxyByrd_com;
 	RhoGSlab rho_gs;
-	AtomsGrp *atom;
 	int vectorIFFTCount;
-	int *k_x, *k_y, *k_z;
-	RTH_Runtime* run_thread;
 };
 //============================================================================
 
@@ -442,6 +439,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	void acceptData(RhoGHartMsg *msg);
 	void HartExtVksG();
 	void sendVks();
+	void pup(PUP::er &);
  private:
 	RhoGSlab rho_gs;
 	int iopt;

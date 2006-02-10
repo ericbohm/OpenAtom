@@ -132,6 +132,28 @@ CP_Rho_GHartExt::~CP_Rho_GHartExt(){
 }
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GHartExt::pup(PUP::er &p){
+  rho_gs.pup(p);
+  p|iopt;
+  p|iteration;
+  p|ind_x;
+  p|ind_xdiv;
+  p|ind_xrem;
+  p|rhoGHelpers; 
+  p|istrt_lines; 
+  p|iend_lines;
+  p|numLines;
+  p|rhoRealProxy_com;
+
+
+//---------------------------------------------------------------------------
+}
+//============================================================================
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
