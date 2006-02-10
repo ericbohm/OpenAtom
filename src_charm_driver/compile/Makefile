@@ -142,7 +142,7 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
 	$(TOPINC)/debug_flags.h \
 	$(TOPINC)/RunDescriptor.h \
-	$(LOADB)/FindProcessor.o \
+	$(LOADB)/FindProcessor.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -254,7 +254,7 @@ FindProcessor.o:  $(LOADB)/FindProcessor.C $(LOADB)/FindProcessor.h $(TOPINC)/de
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/FindProcessor.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/FindProcessor.o $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/FindProcessor.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/TopoMap.C $(OPTS) $(FLAGS) $(OPT_FORT)
 
