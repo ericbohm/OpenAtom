@@ -3,7 +3,7 @@
  */
 
 #include "FindProcessor.h"
-//#include <charm++.h>
+#include <charm++.h>
 
 int distance=0;
 int new_start[3]={0, 0, 0};
@@ -208,6 +208,7 @@ int FindProcessor::findNextInTorus(int a[])
 		cout<<"-------------------------\n";
 		cout<<"No more processors left\n";
 		cout<<"-------------------------\n";
+		CkAbort("inconsistent no. of chares and processors\n");
 		return 0;
 	}
 
