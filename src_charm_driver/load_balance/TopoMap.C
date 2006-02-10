@@ -48,7 +48,7 @@ void GSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	CkPrintf("fp -> %d %d %d\n", fp.nopX, fp.nopY, fp.nopZ);
+	//CkPrintf("fp -> %d %d %d\n", fp.nopX, fp.nopY, fp.nopZ);
 	int assign[3]={0, 0, 0};
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
@@ -68,7 +68,7 @@ void GSMap::makemap()
 	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes
 	planes_per_pe=m;
 	
-	CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
+	//CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
 	
 	for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
 		for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
@@ -131,7 +131,7 @@ void GSMap::makemap()
 				}
 			}
 		}
-	CkPrintf("%d gsmap\n", CkMyPe());
+	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 	//fclose(f);
 	/*for(int i=0; i<nstates; i++)
 		for(int j=0; j<nchareG; j++)
@@ -196,7 +196,7 @@ void SCalcMap::makemap()
 			scobjs_per_pe = lesser_scalc*nchareG/CkNumPes();
 		else
 			scobjs_per_pe = lesser_scalc*nchareG/CkNumPes() + 1;
-		CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
+		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
 				
 		int assign[3]={0, 0, 0};
 		for(int i=0;i<3;i++)
@@ -268,7 +268,7 @@ void SCalcMap::makemap()
 							}
 						}
 					}
-		CkPrintf("%d sym smap\n", CkMyPe());
+		CkPrintf(" Symmetric SCalcMap created on processor %d\n", CkMyPe());
 	}
 	else
 	{
@@ -276,7 +276,7 @@ void SCalcMap::makemap()
 		scobjs_per_pe = n*nchareG/CkNumPes();
 		else
 		scobjs_per_pe = n*nchareG/CkNumPes() + 1;
-		CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
+		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
 			
 		int assign[3]={0, 0, 0};
 		for(int i=0;i<3;i++)
@@ -348,7 +348,7 @@ void SCalcMap::makemap()
 							}
 						}
 					}
-		CkPrintf("%d asym smap\n", CkMyPe());
+		CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
 	}
 	
 	/*if(symmetric)
@@ -397,7 +397,6 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
  */
 void RSMap::makemap()
 {
-	CkPrintf("%d start rsmap\n", CkMyPe());
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;
@@ -498,7 +497,7 @@ void RSMap::makemap()
 				}
 			}
 		}
-	CkPrintf("%d rsmap\n", CkMyPe());
+	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 	/*for(int i=0; i<nstates; i++)
 		for(int j=0; j<nchareG; j++)
 			maptable->put(intdual(i, j))=0;*/
