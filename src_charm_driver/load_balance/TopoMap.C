@@ -3,7 +3,6 @@
  * mapping scheme for the GSpace, PairCalc and RealSpace objects.
  * 
  */
- 
 #include "charm++.h"
 #include "FindProcessor.h"
 #include "cpaimd.h"
@@ -61,11 +60,17 @@ void GSMap::makemap()
 	else
 	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes()+1;
 	int l=states_per_pe;
-	
-	while(gsobjs_per_pe%l!=0)
+	int m;
+
+	/*while(gsobjs_per_pe%l!=0)
 		l++;
 	// l--;                     l now divides gobjs_per_pe exactly 
-	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes
+	m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes*/
+	
+	if(gsobjs_per_pe%l==0)
+		m = gsobjs_per_pe/l;
+	else
+		m = gsobjs_per_pe/l + 1;
 	planes_per_pe=m;
 	
 	//CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
@@ -148,7 +153,6 @@ int GSMap::procNum(int handle, const CkArrayIndex &index)
 	if(maptable==NULL)
 	{
 	        maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-		makemap();
 		makemap();
 	}
 	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
@@ -268,7 +272,7 @@ void SCalcMap::makemap()
 							}
 						}
 					}
-		CkPrintf(" Symmetric SCalcMap created on processor %d\n", CkMyPe());
+	CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
 	}
 	else
 	{
@@ -348,7 +352,7 @@ void SCalcMap::makemap()
 							}
 						}
 					}
-		CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
+	CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
 	}
 	
 	/*if(symmetric)
@@ -397,6 +401,7 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
  */
 void RSMap::makemap()
 {
+	//CkPrintf("%d start rsmap\n", CkMyPe());
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;
@@ -497,7 +502,7 @@ void RSMap::makemap()
 				}
 			}
 		}
-	CkPrintf("GSMap created on processor %d\n", CkMyPe());
+	CkPrintf("RSMap created on processor %d\n", CkMyPe());
 	/*for(int i=0; i<nstates; i++)
 		for(int j=0; j<nchareG; j++)
 			maptable->put(intdual(i, j))=0;*/
