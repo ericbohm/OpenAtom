@@ -404,11 +404,11 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   // Create mapping classes for Paircalcular
 
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
-                   sizeX,config.sGrainSize,CmiTrue,sim->nchareG, 
+                   config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe) ;
     
     CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(config.nstates,
-  	           sizeX,config.sGrainSize, CmiFalse,sim->nchareG, 
+  	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe);
     
     CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
@@ -1299,11 +1299,17 @@ void makemap()
 	else
 	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;
 	int l=config.states_per_pe;
-	
-	while(gsobjs_per_pe%l!=0)
+	int m;
+
+	/*while(gsobjs_per_pe%l!=0)
 		l++;
 	// l--;                     l now divides gobjs_per_pe exactly 
-	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes
+	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes */
+	
+	if(gsobjs_per_pe%l==0)
+                m = gsobjs_per_pe/l;
+        else
+                m = gsobjs_per_pe/l + 1;
 	planes_per_pe=m;
 	
 	CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
