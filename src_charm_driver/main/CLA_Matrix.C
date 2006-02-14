@@ -172,8 +172,8 @@ CLA_Matrix::CLA_Matrix(int M, int K, int N, int m, int k, int n,
   K_chunks = (K + k - 1) / k;
   N_chunks = (N + n - 1) / n;
   algorithm = MM_ALG_2D;
-  usesAtSync = CmiTrue;
-
+  usesAtSync = CmiFalse;
+  setMigratable(false);
   /* figure out size of our sections */
   if(part == MULTARG_A){
     if(thisIndex.x == (M_chunks - 1) * strideM){
@@ -252,8 +252,8 @@ CLA_Matrix::CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
   got_data = got_start = false;
   res_msg = NULL;
   algorithm = MM_ALG_3D;
-  usesAtSync = CmiTrue;
-
+  usesAtSync = CmiFalse;
+  setMigratable(false);
   /* figure out size of our sections */
   if(part == MULTARG_A){
     if(thisIndex.x == (M_chunks - 1) * strideM){
@@ -341,7 +341,6 @@ void CLA_Matrix::pup(PUP::er &p){
 
   /* pup super class */
   CBase_CLA_Matrix::pup(p);
-  usesAtSync = CmiTrue;
 
   /* pup shared vars */
   p | M; p | K; p | N; p | m; p | k; p | n;  p | um; p | uk; p | un;

@@ -1112,7 +1112,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
   if(iteration==TRACE_OFF_STEP){traceEnd();}
 #endif
 
-    if(config.lbgspace || config.lbpaircalc){
+    if(config.lbgspace || config.lbpaircalc ||config.lbdensity){
 	if((iteration % (FIRST_BALANCE_STEP - PRE_BALANCE_STEP) == 0)  || 
            (iteration % (LOAD_BALANCE_STEP - PRE_BALANCE_STEP) == 0)){
 	    LBTurnInstrumentOn();

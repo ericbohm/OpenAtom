@@ -227,7 +227,7 @@ class RhoGSlab {
 	void expandRhoGSpace(complex* , complex *);
         void divRhoGdot(double *,double );
         void createWhiteByrd(double *, double );
-	void pup(PUP::er &);
+	void pup(PUP::er &p);
 
 };
 //==============================================================================

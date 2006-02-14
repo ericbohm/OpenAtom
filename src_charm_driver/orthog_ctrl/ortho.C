@@ -59,6 +59,9 @@ extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern  PairCalcID pairCalcID1;
 extern  PairCalcID pairCalcID2;
 extern CProxy_AtomsGrp atomsGrpProxy;
+extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
+extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
+extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 
 
 //============================================================================
@@ -216,12 +219,16 @@ void Ortho::collect_results(void){
 
     if (numGlobalIter <= config.maxIter+1){
 
-      if ((config.lbgspace || config.lbpaircalc) &&
+      if ((config.lbgspace || config.lbpaircalc ||config.lbdensity) &&
           (numGlobalIter== FIRST_BALANCE_STEP||(numGlobalIter % LOAD_BALANCE_STEP) == 0)){
            CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",
                thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
+	   AtSync();
    	   if(thisIndex.x==0 && thisIndex.y==0){
              gSpacePlaneProxy.isAtSync(numGlobalIter);
+	     rhoRealProxy.isAtSync(numGlobalIter);
+	     rhoGProxy.isAtSync(numGlobalIter);
+	     rhoGHartExtProxy.isAtSync(numGlobalIter);
 	   }//endif
        }else{
  	  resume();
@@ -574,9 +581,10 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
     wallTimeArr = new double[config.maxIter+2];
   }else{
     wallTimeArr = new double[30];
-    wallTimeArr[0]=0.0;
-    wallTimeArr[1]=0.0;
   }//endif
+  wallTimeArr[0]=0.0;
+  wallTimeArr[1]=0.0;
+
   numGlobalIter = 0;
 
 

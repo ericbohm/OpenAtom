@@ -125,7 +125,6 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     doneWhiteByrd  = true;
     rhoGHelpers    = config.rhoGHelpers;
     for(int i=0;i<4;i++){countGradVks[i]=0;}
-    setMigratable(false);
 
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
     FFTscale             = 1.0/((double)config.numFFTPoints);
@@ -187,7 +186,12 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
 
     }//endif
-
+    usesAtSync = CmiTrue;
+    if(config.lbdensity){
+      setMigratable(true);
+    }else{
+      setMigratable(false);
+    }//endif
 //============================================================================
 
     run();
@@ -205,6 +209,7 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 //============================================================================
 
 void CP_Rho_RealSpacePlane::pup(PUP::er &p){
+  ArrayElement2D::pup(p);
      p|cp_grad_corr_on;
      p|FFTscale;        
      p|volumeFactor;        
@@ -214,7 +219,7 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
      p|numMcastSent;
      p|rhoGHelpers;
      p|realSpaceSectionProxy;
-     p(countGradVks,5);
+     PUParray(p,countGradVks,5);
      p|doneGradRhoVks;
      p|countWhiteByrd;
      p|doneWhiteByrd;

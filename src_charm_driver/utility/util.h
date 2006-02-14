@@ -175,6 +175,7 @@ class Config {
 	int prioFFTMsg; 
 	int lbgspace;
 	int lbpaircalc;
+	int lbdensity;
         int numSfGrps;
         int numSfDups;
 	int sfpriority;

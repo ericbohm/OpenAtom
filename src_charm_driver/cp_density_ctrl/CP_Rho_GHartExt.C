@@ -101,15 +101,19 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
 
   int nPacked;
   rho_gs.setKVectors(&nPacked);
+  rho_gs.nPacked=nPacked;
+  int numFull=rho_gs.numFull;
+
   CkAssert(nPacked==rho_gs.numPoints);
 
-  int numFull=rho_gs.numFull;
+
   rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
   rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.divRhoX   = NULL;
   rho_gs.divRhoY   = NULL;
   rho_gs.divRhoZ   = NULL;
+  rho_gs.Rho       = NULL;
 
 //==================================================================================
 // Set some proxies, set the migratable flag
@@ -120,6 +124,13 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
   if(config.useCommlib){
      ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
   }//endif
+  usesAtSync = CmiTrue;
+  if(config.lbdensity){
+    setMigratable(true);
+  }else{
+    setMigratable(false);
+  }//endif
+
 
 //---------------------------------------------------------------------------
   }//end routine
@@ -137,6 +148,7 @@ CP_Rho_GHartExt::~CP_Rho_GHartExt(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GHartExt::pup(PUP::er &p){
+  ArrayElement2D::pup(p);
   rho_gs.pup(p);
   p|iopt;
   p|iteration;
@@ -148,7 +160,8 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   p|iend_lines;
   p|numLines;
   p|rhoRealProxy_com;
-
+  if(config.useCommlib)
+    ComlibResetProxy(&rhoRealProxy_com);
 
 //---------------------------------------------------------------------------
 }

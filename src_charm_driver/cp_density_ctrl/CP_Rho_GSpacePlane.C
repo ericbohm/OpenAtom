@@ -98,8 +98,8 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
       rho_gs.numPoints += sortedRunDescriptors[x][r].length;
       rho_gs.runs[r]    = sortedRunDescriptors[x][r];
     }//endfor
-    rho_gs.setKVectors(&rho_gs.nPacked);
-    nPacked=rho_gs.nPacked;
+    rho_gs.setKVectors(&nPacked);
+    rho_gs.nPacked=nPacked;
     
     rho_gs.Rho       = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
     rho_gs.divRhoX   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
@@ -108,7 +108,13 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
     rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
     rho_gs.Vks       = NULL;  // not used here
-    setMigratable(false);
+    usesAtSync = CmiTrue;
+    if(config.lbdensity){
+      setMigratable(true);
+    }else{
+      setMigratable(false);
+    }//endif
+
     rhoRealProxy0_com = rhoRealProxy;
     rhoRealProxy1_com = rhoRealProxy;
     rhoRealProxy2_com = rhoRealProxy;
@@ -166,9 +172,10 @@ CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GSpacePlane::pup(PUP::er &p){
+  ArrayElement2D::pup(p);
   p|nPacked;
   p|count;
-  p(countWhiteByrd,4);
+  PUParray(p,countWhiteByrd,4);
   p|doneWhiteByrd;
   p|rhoGHelpers;
   p|vectorIFFTCount;
@@ -179,9 +186,9 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
       istrtSplit= new int[rhoGHelpers];
       iendSplit = new int[rhoGHelpers];
     }
-  p(numSplit,rhoGHelpers);
-  p(istrtSplit,rhoGHelpers);
-  p(iendSplit,rhoGHelpers);
+  PUParray(p,numSplit,rhoGHelpers);
+  PUParray(p,istrtSplit,rhoGHelpers);
+  PUParray(p,iendSplit,rhoGHelpers);
   p|rhoRealProxy0_com;
   p|rhoRealProxy1_com;
   p|rhoRealProxy2_com;

@@ -1338,6 +1338,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"localEnergyBarrier: %d\n",localEnergyBarrier);
      fprintf(fp,"lbpaircalc: %d\n",lbpaircalc);
      fprintf(fp,"lbgspace: %d\n",lbgspace);
+     fprintf(fp,"lbdensity: %d\n",lbdensity);
      fprintf(fp,"useCommlib: %d\n",useCommlib);
      fprintf(fp,"useGMulticast: %d\n",useGMulticast);
      fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
@@ -1405,6 +1406,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useCommlib           = 1;
     config.lbpaircalc           = 0;
     config.lbgspace             = 0;
+    config.lbdensity            = 0;
     config.numSfGrps            = 1;
     config.numSfDups            = 1;
     config.prioFFTMsg           = 1; 
@@ -1480,6 +1482,8 @@ void Config::readConfig(const char* fileName, Config &config,
 	    config.lbgspace = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbpaircalc"))
 	    config.lbpaircalc = atoi(parameterValue);
+	else if (!strcmp(parameterName, "lbdensity"))
+	    config.lbdensity = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfGrps"))
             config.numSfGrps = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfDups"))
@@ -1586,6 +1590,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.localEnergyBarrier,"localEnergyBarrier",1);
     rangeExit(config.lbpaircalc,"lbpaircalc",1);
     rangeExit(config.lbgspace,"lbgspace",1);
+    rangeExit(config.lbdensity,"lbgspace",1);
     rangeExit(config.useGMulticast,"useGMulticast",1);
     rangeExit(config.useCommlibMulticast,"useCommlibMulticast",1);
     rangeExit(config.useCommlib,"useCommlib",1);

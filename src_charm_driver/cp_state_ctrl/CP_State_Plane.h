@@ -366,6 +366,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void doMulticast();
 	void pup(PUP::er &);
         int cp_grad_corr_on;
+	void isAtSync(int iter){AtSync();};
  private:
 	double FFTscale;        
 	double volumeFactor;        
@@ -407,8 +408,9 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         void RhoGSendRhoR(int );
         void acceptWhiteByrd(RhoGSFFTMsg *);
         void acceptWhiteByrd();
-        int cp_grad_corr_on;
 	void pup(PUP::er &p);
+	void isAtSync(int iter){AtSync();};
+        int cp_grad_corr_on;
  private:
         int nPacked;
 	int count;
@@ -440,6 +442,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	void HartExtVksG();
 	void sendVks();
 	void pup(PUP::er &);
+	void isAtSync(int iter){AtSync();};
  private:
 	RhoGSlab rho_gs;
 	int iopt;

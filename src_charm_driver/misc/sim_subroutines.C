@@ -1101,13 +1101,24 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 //==============================================================================
 RhoGSlab::~RhoGSlab()
 {
-  fftw_free(Rho);
-  fftw_free( divRhoX);
-  fftw_free( divRhoY);
-  fftw_free( divRhoX);
-  fftw_free( packedRho);
-  fftw_free( packedVks);
-  fftw_free( Vks);
+  if(Rho!=NULL)
+    fftw_free(Rho);
+  if(divRhoX!=NULL)
+    fftw_free( divRhoX);
+  if(divRhoY!=NULL)
+    fftw_free( divRhoY);
+  if(divRhoZ!=NULL)
+    fftw_free( divRhoZ);
+  if(packedRho!=NULL)
+    fftw_free( packedRho);
+  if(packedVks!=NULL)
+    fftw_free( packedVks);
+  if(Vks!=NULL)
+    fftw_free( Vks);
+  delete [] runs;
+  delete [] k_x;
+  delete [] k_y;
+  delete [] k_z;
 }
 //==============================================================================
 
@@ -1115,7 +1126,14 @@ RhoGSlab::~RhoGSlab()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RhoGSlab::pup(PUP::er &p) {
-
+  // local bools so we only bother with non null objects
+  bool RhoMake=false;
+  bool divRhoXMake=false;
+  bool divRhoYMake=false;
+  bool divRhoZMake=false;
+  bool packedRhoMake=false;
+  bool packedVksMake=false;
+  bool VksMake=false;
   p|sizeX;
   p|sizeY;
   p|sizeZ;
@@ -1134,70 +1152,76 @@ void RhoGSlab::pup(PUP::er &p) {
   p|nPacked;
   if(!p.isUnpacking())
     {// create flags for each array in pup
-      bool RhoMake= (Rho!=NULL) ? true :false;
-      bool divRhoXMake= (divRhoX!=NULL) ? true :false;
-      bool divRhoYMake= (divRhoY!=NULL) ? true :false;
-      bool divRhoZMake= (divRhoZ!=NULL) ? true :false;
-      bool packedRhoMake= (packedRho!=NULL) ? true :false;
-      bool packedVksMake= (packedVks!=NULL) ? true :false;
-      bool VksMake= (Vks!=NULL) ? true :false;
-      p|RhoMake;
-      p|divRhoXMake;
-      p|divRhoYMake;
-      p|divRhoZMake;
-      p|packedRhoMake;
-      p|packedVksMake;
-      p|VksMake;
+      RhoMake= (Rho!=NULL) ? true :false;
+      divRhoXMake= (divRhoX!=NULL) ? true :false;
+      divRhoYMake= (divRhoY!=NULL) ? true :false;
+      divRhoZMake= (divRhoZ!=NULL) ? true :false;
+      packedRhoMake= (packedRho!=NULL) ? true :false;
+      packedVksMake= (packedVks!=NULL) ? true :false;
+      VksMake= (Vks!=NULL) ? true :false;
     }
+  p|RhoMake;
+  p|divRhoXMake;
+  p|divRhoYMake;
+  p|divRhoZMake;
+  p|packedRhoMake;
+  p|packedVksMake;
+  p|VksMake;
   if(p.isUnpacking())
     {
-      bool RhoMake;
-      bool divRhoXMake;
-      bool divRhoYMake;
-      bool divRhoZMake;
-      bool packedRhoMake;
-      bool packedVksMake;
-      bool VksMake;
-      p|RhoMake;
-      p|divRhoXMake;
-      p|divRhoYMake;
-      p|divRhoZMake;
-      p|packedRhoMake;
-      p|packedVksMake;
-      p|VksMake;
+      if(RhoMake)
+	Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
+      else
+	Rho = NULL;
+      if(divRhoXMake)
+	divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      else
+	divRhoX   = NULL;
+      if(divRhoYMake)
+	divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      else 
+	divRhoY   = NULL;
+      if(divRhoZMake)
+	divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
+      else
+	divRhoZ   = NULL;
+      if(packedRhoMake)
+	packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
+      else
+	packedRho  = NULL;
+      if(packedVks)
+	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
+      else
+	packedVks = NULL;
+
+      if(VksMake)
+	Vks=(complex *)fftw_malloc(numFull*sizeof(complex));
+      else
+	Vks=NULL;
       runs     = new RunDescriptor[numRuns];
       k_x = new int[numPoints];
       k_y = new int[numPoints];
       k_z = new int[numPoints];
-      if(RhoMake)
-	Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
-      if(divRhoXMake)
-	divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      if(divRhoYMake)
-	divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      if(divRhoZMake)
-	divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
-      if(packedRhoMake)
-	packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
-      if(packedVks)
-	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
-      if(VksMake)
-	Vks=(complex *)fftw_malloc(numFull*sizeof(complex));
+
     }
+  if(RhoMake)
+    PUParray(p,Rho,numFull);
+  if(divRhoXMake)
+    PUParray(p,divRhoX,numFull);
+  if(divRhoYMake)
+    PUParray(p,divRhoY,numFull);
+  if(divRhoZMake)
+    PUParray(p, divRhoZ,numFull);
+  if(packedRhoMake)
+    PUParray(p, packedRho,nPacked);
+  if(packedVksMake)
+    PUParray(p, packedVks,nPacked);
+  if(VksMake)
+    PUParray(p,Vks,numFull);
+  PUParray(p,k_x,numPoints);
+  PUParray(p,k_y,numPoints);
+  PUParray(p,k_z,numPoints);
   PUParray(p,runs,numRuns);
-  p(k_x,numPoints);
-  p(k_y,numPoints);
-  p(k_z,numPoints);
-  // for space efficiency we should add NULL flag variables 
-  // in isPacking and test that to determine allocation and unpacking
-  // for each array.  This method is safe, but fatter than necessary.
-  p((char *) Rho,numFull * sizeof(complex));
-  p((char *) divRhoX,numFull* sizeof(complex));
-  p((char *) divRhoY,numFull* sizeof(complex));
-  p((char *) divRhoZ,numFull* sizeof(complex));
-  p((char *) packedRho,nPacked* sizeof(complex));
-  p((char *) packedVks,nPacked* sizeof(complex));
-  p((char *) Vks,numFull* sizeof(complex));
 
  }
 

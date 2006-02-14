@@ -868,7 +868,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
     
-    
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
       fprintf(fp,"%d %d\n",i,gspace_proc[i]);
