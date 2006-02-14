@@ -111,6 +111,45 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 }
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::pup(PUP::er &p)
+{
+  ArrayElement2D::pup(p);
+  p|numPlanes;
+  p|count;
+  p|sendFFTDataSize;
+  p|size;
+  p|initialized;
+  p|flagsRecd;
+  p|rs;
+  p|cookie;
+  p|gproxy;
+  bool makeVks=false;
+  if(!p.isUnpacking())
+    {
+      if(vks!=NULL)
+	makeVks=true;
+    }
+  if(p.isUnpacking())
+    {
+      if(makeVks)
+	vks = new double [size];
+    }
+  if(makeVks)
+    PUParray(p,vks,size);
+  /* 
+  if(p.isUnpacking())
+    {
+      run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
+      RTH_Runtime_resume(run_thread);
+    }
+  RTH_Runtime_pup(run_thread,p,this);
+  */
+
+
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

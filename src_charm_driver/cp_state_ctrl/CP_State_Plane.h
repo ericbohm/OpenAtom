@@ -324,6 +324,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void init(ProductMsg *);
 	void doReduction(double *);
 	void ResumeFromSync();	
+	void pup(PUP::er &);
  private:
 	int numPlanes;
 	int count;

@@ -187,11 +187,11 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 
     }//endif
     usesAtSync = CmiTrue;
-    if(config.lbdensity){
-      setMigratable(true);
-    }else{
+    //    if(config.lbdensity){
+    //      setMigratable(true);
+    //    }else{
       setMigratable(false);
-    }//endif
+      //    }//endif
 //============================================================================
 
     run();
@@ -208,34 +208,48 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 }
 //============================================================================
 
-void CP_Rho_RealSpacePlane::pup(PUP::er &p){
+void CP_Rho_RealSpacePlane::pup(PUP::er &p)
+{
   ArrayElement2D::pup(p);
-     p|cp_grad_corr_on;
-     p|FFTscale;        
-     p|volumeFactor;        
-     p|probScale;             
-     p|count;
-     p|countFFTdata;
-     p|numMcastSent;
-     p|rhoGHelpers;
-     p|realSpaceSectionProxy;
-     PUParray(p,countGradVks,5);
-     p|doneGradRhoVks;
-     p|countWhiteByrd;
-     p|doneWhiteByrd;
-     p|doneHartVks;
-     p|realSpaceSectionCProxy;
-     p|rhoGProxy_com;
-     p|rhoGProxyIGX_com;
-     p|rhoGProxyIGY_com;
-     p|rhoGProxyIGZ_com;
-     rho_rs.pup(p); 
-     if(p.isUnpacking())
-       {
-	 run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_Rho_RealSpacePlane,run),this);
-	 RTH_Runtime_resume(run_thread);
-       }
-     RTH_Runtime_pup(run_thread,p,this);
+  p|cp_grad_corr_on;
+  p|FFTscale;        
+  p|volumeFactor;        
+  p|probScale;             
+  p|count;
+  p|countFFTdata;
+  p|numMcastSent;
+  p|rhoGHelpers;
+  p|realSpaceSectionProxy;
+  PUParray(p,countGradVks,5);
+  p|doneGradRhoVks;
+  p|countWhiteByrd;
+  p|doneWhiteByrd;
+  p|doneHartVks;
+  rho_rs.pup(p); 
+  p|realSpaceSectionCProxy;
+  if(p.isUnpacking())
+    {
+    rhoGProxy_com = rhoGProxy;
+    rhoGProxyIGX_com = rhoGProxy;
+    rhoGProxyIGY_com = rhoGProxy;
+    rhoGProxyIGZ_com = rhoGProxy;
+    if (config.useCommlib) {
+	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+
+    }//endif
+    }
+
+  /* 
+  if(p.isUnpacking())
+    {
+      run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_Rho_RealSpacePlane,run),this);
+      RTH_Runtime_resume(run_thread);
+    }
+  RTH_Runtime_pup(run_thread,p,this);
+  */
 
 }
 

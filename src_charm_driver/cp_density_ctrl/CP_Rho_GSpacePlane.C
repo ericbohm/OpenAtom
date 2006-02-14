@@ -189,12 +189,21 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
   PUParray(p,numSplit,rhoGHelpers);
   PUParray(p,istrtSplit,rhoGHelpers);
   PUParray(p,iendSplit,rhoGHelpers);
-  p|rhoRealProxy0_com;
-  p|rhoRealProxy1_com;
-  p|rhoRealProxy2_com;
-  p|rhoRealProxy3_com;
-  p|rhoRealProxyByrd_com;
-
+  if(p.isUnpacking())
+    { //pupping of comlib proxies unreliable
+      rhoRealProxy0_com = rhoRealProxy;
+      rhoRealProxy1_com = rhoRealProxy;
+      rhoRealProxy2_com = rhoRealProxy;
+      rhoRealProxy3_com = rhoRealProxy;
+      rhoRealProxyByrd_com = rhoRealProxy;
+      if(config.useCommlib){
+	ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+	ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+	ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+	ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+	ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
+      }//endif
+    }//endif
 }
 //============================================================================
 

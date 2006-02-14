@@ -1017,8 +1017,8 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
    }else{
       rs->size = rs->nsize;
    }//endif
-
-   rs->planeArr = (complex *) fftw_malloc(rs->size * sizeof(complex));
+   int mallocsize=rs->size;
+   rs->planeArr = (complex *) fftw_malloc(mallocsize * sizeof(complex));
 
 //==============================================================================    
    }//end routine
@@ -1189,7 +1189,7 @@ void RhoGSlab::pup(PUP::er &p) {
 	packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
       else
 	packedRho  = NULL;
-      if(packedVks)
+      if(packedVksMake)
 	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
       else
 	packedVks = NULL;
@@ -1547,12 +1547,9 @@ void RhoRealSlab::pup(PUP::er &p) {
   p|sizeZ;
   p|sizeY;
   p|sizeZ;
-  
-  
   p|exc_ret;
   p|muxc_ret;
   p|exc_gga_ret;
-
   p|size;
   p|trueSize;
   p|xdim;
@@ -1561,13 +1558,13 @@ void RhoRealSlab::pup(PUP::er &p) {
   p|startx;
   p|starty;
   p|startz; 
+  int csize    = size/2;
   if(p.isUnpacking())
     {
 	Vks     =  new double[size];
 	bzero(Vks, size*sizeof(double));
 	density =  new double[size];
 	bzero(density, size*sizeof(double));
-        int csize    = size/2;
         complex *dummy;
 	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
 	doFFTonThis = reinterpret_cast<double*> (dummy);
@@ -1580,13 +1577,13 @@ void RhoRealSlab::pup(PUP::er &p) {
 	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
 	gradientCorrection = reinterpret_cast<double*> (dummy);
     }
-  p(Vks, size);
-  p(density,size);
-  p((char *) doFFTonThis,size/2 * sizeof(complex));
-  p((char *) rhoIRX,size/2 *sizeof(complex));
-  p((char *) rhoIRY,size/2 *sizeof(complex));
-  p((char *) rhoIRZ,size/2 * sizeof(complex));
-  p((char *) gradientCorrection,size/2 *sizeof(complex));
+  PUParray(p,Vks, size);
+  PUParray(p,density,size);
+  PUParray(p, doFFTonThis,size);
+  PUParray(p, rhoIRX,size);
+  PUParray(p, rhoIRY,size);
+  PUParray(p, rhoIRZ,size);
+  PUParray(p, gradientCorrection,size);
 }
 //==============================================================================
 

@@ -160,8 +160,8 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   p|iend_lines;
   p|numLines;
   p|rhoRealProxy_com;
-  if(config.useCommlib)
-    ComlibResetProxy(&rhoRealProxy_com);
+  //  if(config.useCommlib)
+  //    ComlibResetProxy(&rhoRealProxy_com);
 
 //---------------------------------------------------------------------------
 }
