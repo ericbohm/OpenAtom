@@ -6,13 +6,13 @@
 #include "charm++.h"
 #include "FindProcessor.h"
 #include "cpaimd.h"
-#include "bgltorus.h"
-#include "util.h"
 
-#if CMK_VERSION_BLUEGENE
-BGLTorusManager *bgltm;
+#ifdef CMK_VERSION_BLUEGENE
+#include "bgltorus.h"
+
 #endif
- 
+
+#include "util.h" 
 /** 
  * Function for GSpace objects
  * Makes the map for the first time and places
@@ -26,7 +26,7 @@ void GSMap::makemap()
 	int z = 1;
 	
 #if CMK_VERSION_BLUEGENE
-	bgltm = BGLTorusManager::getObject();
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
@@ -175,7 +175,7 @@ void SCalcMap::makemap()
 	int z = 1;
 	
 #if CMK_VERSION_BLUEGENE
-	bgltm = BGLTorusManager::getObject();
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
@@ -407,8 +407,8 @@ void RSMap::makemap()
 	int y = 1;
 	int z = 1;
 	
-#if CMK_VERSION_BLUEGENE
-	bgltm = BGLTorusManager::getObject();
+#ifdef CMK_VERSION_BLUEGENE
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();

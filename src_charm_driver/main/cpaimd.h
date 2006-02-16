@@ -65,6 +65,8 @@ class intdual {
  private:
     int x, y;
  public:
+    intdual(){x=y=0;}
+
     intdual(int _x,int _y){
 	if(_x <= _y){
 	    x = _x; y=_y;
@@ -72,6 +74,11 @@ class intdual {
 	    x = _y; y= _x;
 	}
     }
+  void pup(PUP::er &p)
+      {
+	  p|x;
+	  p|y;
+      }
     inline int getx(){return x;};
     inline int gety(){return y;};
     inline CkHashCode hash() const {
@@ -86,6 +93,7 @@ class intdual {
     static int staticCompare(const void *a,const void *b,size_t){
 	return ((intdual *)a)->compare((*(intdual *)b));
     }
+   
 };
 //============================================================================
 
@@ -111,7 +119,6 @@ class GSMap: public CkArrayMap {
   CkHashtableT<intdual, int> *maptable;
  public:
   int planes_per_pe;
-  GSMap() { state_load = 0.0; }
   GSMap(int _nchareG,double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,
   int _states_per_pe): 
         nchareG(_nchareG)   
@@ -123,33 +130,44 @@ class GSMap: public CkArrayMap {
 	  pts_per_chareG= new double[nchareG];
 	  CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
 	  CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
-	  maptable=NULL;
+	  maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+	  makemap();
       }
   int procNum(int, const CkArrayIndex &);
 // int slowprocNum(int, const CkArrayIndex2D &);
   void makemap();
   void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
-    void pup(PUP::er &p)
+  void pup(PUP::er &p)
 	{
 	    CkArrayMap::pup(p);
 	    p|nchareG;
 	    p|state_load;
-	    maptable=NULL;
+	    p|nstates;
+	    p|states_per_pe;
+	    p|planes_per_pe;
 	    if (p.isUnpacking()) {
 		lines_per_chareG= new double[nchareG];
 		pts_per_chareG= new double[nchareG];
+		maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
 	    }	    
-	    p(lines_per_chareG,nchareG);
-	    p(pts_per_chareG,nchareG);
+	    p|*maptable;
+	    PUParray(p,lines_per_chareG,nchareG);
+	    PUParray(p,pts_per_chareG,nchareG);
+	    CkPrintf("GS[%d] pup\n",CkMyPe());
 	}
 
   ~GSMap(){
-    delete [] lines_per_chareG;
-    delete [] pts_per_chareG;
+      if(lines_per_chareG !=NULL)
+	  delete [] lines_per_chareG;
+      if(pts_per_chareG !=NULL)
+	  delete [] pts_per_chareG;
+      if(maptable !=NULL)
+	  delete maptable;
+
   }
 };
 //============================================================================
-
+//PUPmarshall(GSMap);
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -169,13 +187,25 @@ class RSMap: public CkArrayMap {
   {
   	nstates = _nstates;
 	nchareG = _nchareG;
-  	maptable=NULL;
+	maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+	makemap();
   }
     void makemap();
+    void pup(PUP::er &p)
+	{
+	    CkArrayMap::pup(p);
+	    p|nchareG;
+	    p|nstates;
+	    if (p.isUnpacking()) {
+		maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+	    }	    
+	    p|*maptable;
+	}
+
     int procNum(int, const CkArrayIndex &);
 };
 //============================================================================
-
+//PUPmarshall(RSMap);
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -215,12 +245,17 @@ class SCalcMap : public CkArrayMap {
 	pts_per_chareG   = new double[nchareG];
 	CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
 	CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
-	maptable=NULL;
+	maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG);
+	makemap();
     }
     void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
     ~SCalcMap(){
-      delete [] lines_per_chareG;
-      delete [] pts_per_chareG;
+	if(lines_per_chareG!=NULL)
+	    delete [] lines_per_chareG;
+	if(pts_per_chareG!=NULL)
+	    delete [] pts_per_chareG;
+	if(maptable!=NULL)
+	    delete maptable;
     }
     void pup(PUP::er &p)
 	{
@@ -231,13 +266,14 @@ class SCalcMap : public CkArrayMap {
 	    p|gs;
 	    p|symmetric;
 	    p|totalload;
-	    maptable=NULL;
 	    if (p.isUnpacking()) {
 		lines_per_chareG= new double[nchareG];
 		pts_per_chareG= new double[nchareG];
+		maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG); 		
 	    }	    
-	    p(lines_per_chareG,nchareG);
-	    p(pts_per_chareG,nchareG);
+	    p|*maptable;
+	    PUParray(p,lines_per_chareG,nchareG);
+	    PUParray(p,pts_per_chareG,nchareG);
 	}
     void makemap();
     int procNum(int, const CkArrayIndex &);
@@ -246,7 +282,7 @@ class SCalcMap : public CkArrayMap {
     int slowprocNum2(int, const CkArrayIndex4D &);
 };
 //============================================================================
-
+//PUPmarshall(SCalcMap);
 /**
  * provide procnum mapping for RhoR
  */

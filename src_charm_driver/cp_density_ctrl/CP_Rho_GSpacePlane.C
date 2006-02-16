@@ -100,11 +100,11 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     }//endfor
     rho_gs.setKVectors(&nPacked);
     rho_gs.nPacked=nPacked;
-    
-    rho_gs.Rho       = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
-    rho_gs.divRhoX   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
-    rho_gs.divRhoY   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
-    rho_gs.divRhoZ   = (complex *)fftw_malloc(rho_gs.numFull*sizeof(complex));
+    int numFull=rho_gs.numFull;
+    rho_gs.Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
+    rho_gs.divRhoX   = (complex *)fftw_malloc(numFull*sizeof(complex));
+    rho_gs.divRhoY   = (complex *)fftw_malloc(numFull*sizeof(complex));
+    rho_gs.divRhoZ   = (complex *)fftw_malloc(numFull*sizeof(complex));
     rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
     rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
     rho_gs.Vks       = NULL;  // not used here
@@ -165,6 +165,13 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
+    if(numSplit!=NULL)
+	delete [] numSplit;
+    if(istrtSplit!=NULL)
+	delete [] istrtSplit;
+    if(iendSplit != NULL)
+	delete [] iendSplit;
+
 }
 //============================================================================
 

@@ -706,7 +706,7 @@ void RealStateSlab::pup(PUP::er &p) {
     {
       planeArr = (complex *) fftw_malloc(size*sizeof(complex));
     }
-  p((char *) planeArr, size*sizeof(complex));
+  PUParray(p, planeArr, size);
   p|thisState;    
   p|thisPlane;      
   p|numPlanesToExpect;
@@ -1017,8 +1017,7 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
    }else{
       rs->size = rs->nsize;
    }//endif
-   int mallocsize=rs->size;
-   rs->planeArr = (complex *) fftw_malloc(mallocsize * sizeof(complex));
+   rs->planeArr = (complex *) fftw_malloc(rs->size * sizeof(complex));
 
 //==============================================================================    
    }//end routine
@@ -1029,9 +1028,9 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
 //==============================================================================
 RhoRealSlab::~RhoRealSlab(){
 
-	//delete [] Vks;  I wonder why this isn't deleted
-	delete [] density;
-        complex *dummy;
+    delete [] Vks; //
+    delete [] density;
+    complex *dummy;
 	dummy  = reinterpret_cast<complex*> (doFFTonThis);
 	fftw_free((fftw_complex *)dummy);
 	dummy  = reinterpret_cast<complex*> (rhoIRX);
@@ -1113,12 +1112,14 @@ RhoGSlab::~RhoGSlab()
     fftw_free( packedRho);
   if(packedVks!=NULL)
     fftw_free( packedVks);
-  if(Vks!=NULL)
-    fftw_free( Vks);
-  delete [] runs;
-  delete [] k_x;
-  delete [] k_y;
-  delete [] k_z;
+  if(runs!=NULL)
+      delete [] runs;
+  if(k_x!=NULL)
+      delete [] k_x;
+  if(k_y!=NULL)
+      delete [] k_y;
+  if(k_z!=NULL)
+      delete [] k_z;
 }
 //==============================================================================
 

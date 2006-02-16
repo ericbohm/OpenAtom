@@ -2,6 +2,9 @@
  * Finds the nearest processor from a given processor in different topologies.
  *
  */
+#ifndef _FINDPROCESSOR_H
+#define _FINDPROCESSOR_H
+
 
 #include <math.h>
 #include <iostream.h>
@@ -31,3 +34,4 @@ class FindProcessor
 		int compare(int n, int a, int b);
 };
 
+#endif

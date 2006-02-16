@@ -175,7 +175,17 @@ public:
    int xdim, ydim, zdim;
    int startx, starty, startz; 
  
-   RhoRealSlab() {}
+   RhoRealSlab() {
+       sizeX= sizeY= sizeZ= size= trueSize=xdim= ydim= zdim= startx= starty= startz=0 ;
+       Vks=NULL;
+       density=NULL;
+       doFFTonThis=NULL; 
+       rhoIRX=NULL;
+       rhoIRY=NULL;
+       rhoIRZ=NULL;
+       gradientCorrection=NULL; // fft sized guys
+
+   }
    ~RhoRealSlab();
    void doFwFFTGtoR(int,double);
    void uPackAndScale(double *, double *,double );
@@ -218,7 +228,21 @@ class RhoGSlab {
 	int size;
 	int xdim, ydim, zdim; 
 	
-	RhoGSlab() {}
+	RhoGSlab() { //initialization paranoia
+	    sizeX= sizeY= sizeZ=runsToBeSent= numRuns= numLines=numFull=0;
+	    numPoints= nPacked=size=xdim=ydim= zdim=0; 
+	    k_x=NULL;
+	    k_y=NULL;
+	    k_z=NULL;
+	    Rho=NULL;       
+	    divRhoX=NULL;   
+	    divRhoY=NULL;   
+	    divRhoZ=NULL;   
+	    packedRho=NULL;
+	    packedVks=NULL;
+	    Vks=NULL;       
+	    runs=NULL;
+	}
 	~RhoGSlab();
 	void doBwFFTRtoG(int); 
 	void doFwFFTGtoR(int,int); 

@@ -211,12 +211,12 @@ CkReduction::reducerType complexVectorAdderType;
  */
 //============================================================================
 
-main::main(CkArgMsg *m) {
+main::main(CkArgMsg *msg) {
 //============================================================================
 /** Check arguments : Tell people what we are doing */
 
     done_init=0;
-    if (m->argc < 3) {
+    if (msg->argc < 3) {
       CkAbort("Usage: pgm config_file_charm config_file_piny");
     }//endif
 
@@ -224,15 +224,15 @@ main::main(CkArgMsg *m) {
     CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase \n");
     CkPrintf("---------------------------------------------------\n");
     CkPrintf("  Cpaimd-Charm-Driver running on %d processors. \n", CkNumPes());
-    CkPrintf("  Reading Physics input from %s\n",m->argv[2]);
-    CkPrintf("  Reading Driver  input from %s\n",m->argv[1]);
+    CkPrintf("  Reading Physics input from %s\n",msg->argv[2]);
+    CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
     CkPrintf("---------------------------------------------------\n\n");
 
 //============================================================================    
 /* Invoke PINY input class */
 
     CkCallback piny_callback (CkCallback::ignore);
-    Interface_ctrl piny_interface (m->argv[2],piny_callback);
+    Interface_ctrl piny_interface (msg->argv[2],piny_callback);
 
     CPcharmParaInfo *sim  = new CPcharmParaInfo();
     PhysicsParamTransfer::ParaInfoInit(sim);
@@ -246,7 +246,7 @@ main::main(CkArgMsg *m) {
     CkPrintf("Cpaimd-Charm-Driver input started \n");
     CkPrintf("---------------------------------------------------------\n\n");
 
-    Config::readConfig(m->argv[1],config,sim->nstates,
+    Config::readConfig(msg->argv[1],config,sim->nstates,
                        sim->sizeX,sim->sizeY,sim->sizeZ,
                        sim->ntime,ibinary_opt,natm_nl);
 
@@ -260,7 +260,7 @@ main::main(CkArgMsg *m) {
     nstates          = config.nstates;    // globals on all procs
     sizeX            = sim->sizeX;
 
-    config.print(m->argv[1]);
+    config.print(msg->argv[1]);
 
     CkPrintf("\n------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver input completed \n");
@@ -365,7 +365,7 @@ main::main(CkArgMsg *m) {
 //============================================================================
 // clean up
 
-    delete m;
+    delete msg;
     delete sim;
     delete [] indexZ;
 
@@ -867,7 +867,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       }//endfor
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
-    
+    if(maptable!=NULL) //clean up cheesyhack
+	delete maptable;
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
       fprintf(fp,"%d %d\n",i,gspace_proc[i]);
