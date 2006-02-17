@@ -153,7 +153,6 @@ class GSMap: public CkArrayMap {
 	    p|*maptable;
 	    PUParray(p,lines_per_chareG,nchareG);
 	    PUParray(p,pts_per_chareG,nchareG);
-	    CkPrintf("GS[%d] pup\n",CkMyPe());
 	}
 
   ~GSMap(){
@@ -167,7 +166,9 @@ class GSMap: public CkArrayMap {
   }
 };
 //============================================================================
+
 //PUPmarshall(GSMap);
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -206,6 +207,7 @@ class RSMap: public CkArrayMap {
 };
 //============================================================================
 //PUPmarshall(RSMap);
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -282,7 +284,9 @@ class SCalcMap : public CkArrayMap {
     int slowprocNum2(int, const CkArrayIndex4D &);
 };
 //============================================================================
+
 //PUPmarshall(SCalcMap);
+
 /**
  * provide procnum mapping for RhoR
  */

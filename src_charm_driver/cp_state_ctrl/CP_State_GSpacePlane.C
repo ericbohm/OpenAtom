@@ -554,7 +554,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countIFFT       = 0;
   ecount          = 0; //No energies have been received.
 
-  numRecvRedPsi   = sim->RCommPkg[thisIndex.x].num_recv_tot;
+  numRecvRedPsi   = sim->RCommPkg[thisIndex.y].num_recv_tot;
   int ourgrain    = thisIndex.x/config.sGrainSize*config.sGrainSize; 
   if(nstates == config.sGrainSize)
       AllPsiExpected=1;
@@ -1947,7 +1947,7 @@ void CP_State_GSpacePlane::integrateModForce() {
   double sendme[3];
   sendme[0] = 2.0*BOLTZ*(fictEke/degfree)/redSize;
   sendme[1] = 2.0*BOLTZ*(ekeNhc/degfreeNHC)/redSize;
-  sendme[2] = 2.0*BOLTZ*(xNHC[0]/degfreeNHC)/redSize;
+  sendme[2] = 2.0*BOLTZ*((*xNHC)/degfreeNHC)/redSize;
 //  sendme[0] = fictEke;
   contribute(3*sizeof(double),sendme,CkReduction::sum_double, 
              CkCallback(printFictEke, NULL));

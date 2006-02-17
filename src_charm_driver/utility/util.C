@@ -1895,7 +1895,7 @@ void Config::guesstimateParms(int natm_nl)
     }
 
     // ranges from 1 to numPes/numChareRhoG
-    int temp_rho         = gExpandFactRho*2*(low_x_size+1);
+    int temp_rho         = (int) (gExpandFactRho*2.0*((double) low_x_size + 1.0));
     if(rhoGHelpers==1)
     {
 	if(numPes>temp_rho)
