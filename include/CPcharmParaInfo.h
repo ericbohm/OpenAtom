@@ -71,47 +71,35 @@ class RedundantCommPkg {
   }
 
  ~RedundantCommPkg(){
-    delete [] num_send;
+   if(num_send!=NULL)
+     delete [] num_send;
+   if(num_recv!=NULL)
     delete [] num_recv;
-    for(int j=0;j<nchareG;j++){
-      delete [] lst_send[j];
-      delete [] lst_recv[j];
-    }//endfor
-    delete [] lst_send;
-    delete [] lst_recv;
+   if(lst_send!=NULL)
+     {
+       for(int j=0;j<nchareG;j++){
+	 if(lst_send[j]!=NULL)
+	   delete [] lst_send[j];
+	 if(lst_recv[j]!=NULL)
+	   delete [] lst_recv[j];
+       }//endfor
+       delete [] lst_send;
+       delete [] lst_recv;
+     }
   }
 
   void pup(PUP::er &p){
     p|nk0_max;        p|nchareG;
     p|num_recv_tot;   p|num_send_tot;
-    int *lst_send_all = new int [nk0_max*nchareG];
-    int *lst_recv_all = new int [nk0_max*nchareG];
     if(p.isUnpacking()) {
       Init(nk0_max,nchareG);
-    }else{
-      int iii=0;
-      for(int i=0;i<nchareG;i++){
-      for(int j=0;j<nk0_max;j++){
-        lst_send_all[iii]=lst_send[i][j];
-        lst_recv_all[iii]=lst_recv[i][j];
-        iii++;
-      }}
-    }//endif
-    p(num_send,nchareG);
-    p(num_recv,nchareG);
-    p(lst_send_all,nk0_max*nchareG);
-    p(lst_recv_all,nk0_max*nchareG);
-    if(p.isUnpacking()) {
-      int iii=0;
-      for(int i=0;i<nchareG;i++){
-      for(int j=0;j<nk0_max;j++){
-        lst_send[i][j] = lst_send_all[iii];
-        lst_recv[i][j] = lst_recv_all[iii];
-        iii++;
-      }}
-    }//endif unpacking
-    delete [] lst_send_all;
-    delete [] lst_recv_all;
+    }
+    PUParray(p,num_send,nchareG);
+    PUParray(p,num_recv,nchareG);
+    for(int i=0;i<nchareG;i++)
+      PUParray(p,lst_send[i],nk0_max);
+    for(int i=0;i<nchareG;i++)
+      PUParray(p,lst_recv[i],nk0_max);
   }
 
 //----------------------------------------------------------------------------
@@ -379,15 +367,15 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 2 \n");
 #endif
-      p(lines_per_chareRhoG, nchareRhoG);
-      p(nlines_per_chareRhoG, nchareRhoG);
-      p(pts_per_chareRhoG, nchareRhoG);
-      p(npts_per_chareRhoG, nchareRhoG);
+      PUParray(p,lines_per_chareRhoG, nchareRhoG);
+      PUParray(p,nlines_per_chareRhoG, nchareRhoG);
+      PUParray(p,pts_per_chareRhoG, nchareRhoG);
+      PUParray(p,npts_per_chareRhoG, nchareRhoG);
       for(int igrp=0;igrp<nchareRhoG;igrp++){
 	p|RhosortedRunDescriptors[igrp];
       }
       for(int igrp=0;igrp<nchareRhoG;igrp++){
-	p(index_tran_upack_rho[igrp],nlines_per_chareRhoG[igrp]);
+	PUParray(p,index_tran_upack_rho[igrp],nlines_per_chareRhoG[igrp]);
       }
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 3 \n");
@@ -432,9 +420,7 @@ class CPcharmParaInfo {
       if(p.isUnpacking()){
          RCommPkg = new RedundantCommPkg [nchareG]; 
       }//endif
-      for(int igrp=0;igrp<nchareG;igrp++){
-        RCommPkg[igrp].pup(p);
-      }//endfor
+      PUParray(p,RCommPkg,nchareG);
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("end CPcharmParaInfo pup\n");
 #endif
