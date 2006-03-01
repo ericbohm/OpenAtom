@@ -191,19 +191,23 @@ class RSMap: public CkArrayMap {
 	maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
 	makemap();
   }
-    void makemap();
-    void pup(PUP::er &p)
-	{
-	    CkArrayMap::pup(p);
-	    p|nchareG;
-	    p|nstates;
-	    if (p.isUnpacking()) {
-		maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-	    }	    
-	    p|*maptable;
-	}
+  void makemap();
+  void pup(PUP::er &p)
+  {
+    CkArrayMap::pup(p);
+    p|nchareG;
+    p|nstates;
+    if (p.isUnpacking()) {
+	maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+    }	    
+    p|*maptable;
+  }
 
-    int procNum(int, const CkArrayIndex &);
+  int procNum(int, const CkArrayIndex &);
+  ~RSMap() {
+	if(maptable !=NULL)
+	  delete maptable;
+  }
 };
 //============================================================================
 //PUPmarshall(RSMap);
