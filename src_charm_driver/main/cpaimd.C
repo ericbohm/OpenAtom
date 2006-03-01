@@ -934,6 +934,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     for(int j=0;j<nchareG;j++)
       delete [] listpe[j];
     delete [] listpe;
+    delete [] nsend;
     if(config.useCommlib) {
         // Set some com strategy of Sameer
         ssInstance = CkGetComlibInstance();
