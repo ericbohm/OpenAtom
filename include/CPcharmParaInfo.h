@@ -322,14 +322,9 @@ class CPcharmParaInfo {
       delete []  pts_per_chareRhoG;    pts_per_chareRhoG   = NULL;
       delete [] npts_per_chareRhoG;   npts_per_chareRhoG   = NULL;
       delete [] RCommPkg;             RCommPkg= NULL;
-      /*      for(int i=0;i<nchareG;i++)
-	delete [] index_tran_upack[i];
-      delete [] index_tran_upack;
-      for(int i=0;i<nchareRhoG;i++)
-	delete [] index_tran_upack_rho[i];
-      delete [] index_tran_upack_rho;
-      */
-
+      cfree_int_mat(index_tran_upack,0,nchareG,0,nlines_max);
+      cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
+      
   }//end destructor
 //=============================================================================
 
