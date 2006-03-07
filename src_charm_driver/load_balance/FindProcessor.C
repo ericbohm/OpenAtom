@@ -176,7 +176,7 @@ void FindProcessor::findNextInBluegene(int a[])
 
 }
 
-int FindProcessor::findNextInTorus(int a[])
+int FindProcessor::findNextIter(int a[])
 {
 	int newa[3];
 	int negXL=0, negYL=0, negZL=0;
@@ -224,7 +224,7 @@ int FindProcessor::findNextInTorus(int a[])
                                 start[i]=next[i];
 			}
 			//printing_sp(start[0], start[1], start[2]);
-                        return findNextInTorus(newa);
+                        return 2;
                 }
                 else
                 {
@@ -254,7 +254,7 @@ int FindProcessor::findNextInTorus(int a[])
 						start[i]=next[i];
 					}
 					//printing_sp(start[0], start[1], start[2]);
-					return findNextInTorus(newa);
+					return 2;
 				}
 				else
 				{
@@ -281,7 +281,7 @@ int FindProcessor::findNextInTorus(int a[])
 							newa[i]=next[i];
 						}
 						//printing_sp(start[0], start[1], start[2]);
-						return findNextInTorus(newa);
+						return 2;
 					}
 					else
 					{
@@ -310,7 +310,7 @@ int FindProcessor::findNextInTorus(int a[])
 							newa[i]=next[i];
 						}
 						//printing_sp(start[0], start[1], start[2]);
-						return findNextInTorus(newa);
+						return 2;
 					}
 					else
 					{
@@ -339,7 +339,7 @@ int FindProcessor::findNextInTorus(int a[])
 						newa[i]=next[i];
 					}
 					//printing_sp(start[0], start[1], start[2]);
-					return findNextInTorus(newa);
+					return 2;
 				}
 				else
 				{
@@ -366,7 +366,7 @@ int FindProcessor::findNextInTorus(int a[])
 							newa[i]=next[i];
 						}
 						//printing_sp(start[0], start[1], start[2]);
-						return findNextInTorus(newa);
+						return 2;
 					}
 					else
 					{
@@ -391,7 +391,7 @@ int FindProcessor::findNextInTorus(int a[])
 							newa[i]=next[i];
 						}
 						//printing_sp(start[0], start[1], start[2]);
-						return findNextInTorus(newa);
+						return 2;
 					}
 					else
 					{
@@ -409,6 +409,16 @@ int FindProcessor::findNextInTorus(int a[])
 	}
 	count++; //add near all other prints
 	return 1;
+}
+
+int FindProcessor::findNextInTorus(int a[])
+{
+    int ret = findNextIter(a);
+    while(ret==2)
+    {
+        ret=findNextIter(start);
+    }
+    return ret;
 }
 
 int FindProcessor::findNextInTorusV(int t, int a[])
