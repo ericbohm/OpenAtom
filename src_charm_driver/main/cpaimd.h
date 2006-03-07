@@ -67,13 +67,7 @@ class intdual {
  public:
     intdual(){x=y=0;}
 
-    intdual(int _x,int _y){
-	if(_x <= _y){
-	    x = _x; y=_y;
-	}else{
-	    x = _y; y= _x;
-	}
-    }
+    intdual(int _x,int _y) : x(_x), y(_y){}
   void pup(PUP::er &p)
       {
 	  p|x;
