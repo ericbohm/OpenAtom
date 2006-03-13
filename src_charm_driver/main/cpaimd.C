@@ -790,7 +790,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_DASH;printf("\n");
 
 
-    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, config.nchareG);
+    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY);
 
     CkArrayOptions realSpaceOpts;
     realSpaceOpts.setMap(rsMap);

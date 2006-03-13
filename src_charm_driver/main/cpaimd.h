@@ -175,24 +175,24 @@ class GSMap: public CkArrayMap {
 
 class RSMap: public CkArrayMap {
  int nstates;
- int nchareG;
+ int sizeY;
  public:
   CkHashtableT<intdual, int> *maptable;
-  RSMap(int _nstates, int _nchareG) 
+  RSMap(int _nstates, int _sizeY) 
   {
   	nstates = _nstates;
-	nchareG = _nchareG;
-	maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+	sizeY = _sizeY;
+	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
 	makemap();
   }
   void makemap();
   void pup(PUP::er &p)
   {
     CkArrayMap::pup(p);
-    p|nchareG;
+    p|sizeY;
     p|nstates;
     if (p.isUnpacking()) {
-	maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
+	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
     }	    
     p|*maptable;
   }
