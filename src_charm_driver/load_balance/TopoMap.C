@@ -429,17 +429,17 @@ void RSMap::makemap()
 		fp.start[i]=fp.next[i]=0;
 	
 	int rsobjs_per_pe;
-	if(nstates*nchareG % CkNumPes() == 0)
-	    rsobjs_per_pe = nstates*nchareG/CkNumPes();
+	if(nstates*sizeY % CkNumPes() == 0)
+	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
 	else
-	    rsobjs_per_pe = nstates*nchareG/CkNumPes()+1;
+	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;
 	int count=0;
 	
-	//CkPrintf("[%d] nstates %d, nchareG %d\n", CkMyPe(), nstates, nchareG);
+	//CkPrintf("[%d] nstates %d, sizeY %d\n", CkMyPe(), nstates, sizeY);
 	//CkPrintf("rsobjs_per_pe %d\n", rsobjs_per_pe);
 	
 	for(int state=0; state<nstates; state++)
-		for(int plane=0; plane<nchareG; plane++)
+		for(int plane=0; plane<sizeY; plane++)
 		{
 			if(plane==0 && state==0)
 			{
@@ -504,7 +504,7 @@ void RSMap::makemap()
 		}
 	CkPrintf("RSMap created on processor %d\n", CkMyPe());
 	/*for(int i=0; i<nstates; i++)
-		for(int j=0; j<nchareG; j++)
+		for(int j=0; j<sizeY; j++)
 			maptable->put(intdual(i, j))=0;*/
 }
 
@@ -516,7 +516,7 @@ int RSMap::procNum(int handle, const CkArrayIndex &index)
 	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
 	if(maptable==NULL)
 	{
-		maptable= new CkHashtableT<intdual, int> (nstates*nchareG); 
+		maptable= new CkHashtableT<intdual, int> (nstates*sizeY); 
 		makemap();
 	}
 	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
