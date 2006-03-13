@@ -111,6 +111,7 @@ class GSMap: public CkArrayMap {
   double *pts_per_chareG;
   double state_load;
   CkHashtableT<intdual, int> *maptable;
+
  public:
   int planes_per_pe;
   GSMap(int _nchareG,double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,
@@ -124,8 +125,12 @@ class GSMap: public CkArrayMap {
 	  pts_per_chareG= new double[nchareG];
 	  CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
 	  CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
+#ifdef USE_TOPOMAP
 	  maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
 	  makemap();
+#else
+	  maptable=NULL;
+#endif
       }
   int procNum(int, const CkArrayIndex &);
 // int slowprocNum(int, const CkArrayIndex2D &);
@@ -142,9 +147,13 @@ class GSMap: public CkArrayMap {
 	    if (p.isUnpacking()) {
 		lines_per_chareG= new double[nchareG];
 		pts_per_chareG= new double[nchareG];
+#ifdef USE_TOPOMAP
 		maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-	    }	    
+#endif
+	    }
+#ifdef USE_TOPOMAP    
 	    p|*maptable;
+#endif
 	    PUParray(p,lines_per_chareG,nchareG);
 	    PUParray(p,pts_per_chareG,nchareG);
 	}
@@ -180,10 +189,14 @@ class RSMap: public CkArrayMap {
   CkHashtableT<intdual, int> *maptable;
   RSMap(int _nstates, int _sizeY) 
   {
-  	nstates = _nstates;
+	nstates = _nstates;
 	sizeY = _sizeY;
+#ifdef USE_TOPOMAP
 	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
 	makemap();
+#else
+	maptable=NULL;
+#endif
   }
   void makemap();
   void pup(PUP::er &p)
@@ -191,10 +204,12 @@ class RSMap: public CkArrayMap {
     CkArrayMap::pup(p);
     p|sizeY;
     p|nstates;
+#ifdef USE_TOPOMAP
     if (p.isUnpacking()) {
 	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
     }	    
     p|*maptable;
+#endif
   }
 
   int procNum(int, const CkArrayIndex &);
@@ -245,8 +260,12 @@ class SCalcMap : public CkArrayMap {
 	pts_per_chareG   = new double[nchareG];
 	CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
 	CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
+#ifdef USE_TOPOMAP
 	maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG);
 	makemap();
+#else
+	maptable=NULL;
+#endif
     }
     void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
     ~SCalcMap(){
@@ -269,9 +288,8 @@ class SCalcMap : public CkArrayMap {
 	    if (p.isUnpacking()) {
 		lines_per_chareG= new double[nchareG];
 		pts_per_chareG= new double[nchareG];
-		maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG); 		
+		maptable= NULL;
 	    }	    
-	    p|*maptable;
 	    PUParray(p,lines_per_chareG,nchareG);
 	    PUParray(p,pts_per_chareG,nchareG);
 	}

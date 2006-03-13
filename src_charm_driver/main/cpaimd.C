@@ -103,8 +103,10 @@
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
+#ifdef USE_TOPOMAP
 #include "bgltorus.h"
 #include "FindProcessor.h"
+#endif
 //============================================================================
 #include "../include/CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
@@ -171,9 +173,11 @@ int Ortho_UE_error;
 bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
+#ifdef USE_TOPOMAP
 CkHashtableT<intdual, int> *maptable;
 #if CMK_VERSION_BLUEGENE
 BGLTorusManager *bgltm;
+#endif
 #endif
 //============================================================================
 
@@ -867,8 +871,12 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       }//endfor
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
+    
+#ifdef USE_TOPOMAP
     if(maptable!=NULL) //clean up cheesyhack
 	delete maptable;
+#endif
+    
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
       fprintf(fp,"%d %d\n",i,gspace_proc[i]);
@@ -1180,79 +1188,9 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/*int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
-//============================================================================
-
-  CkArrayIndex2D idx2d(state,plane);
-
-  int pe        = 0;
-  int numChareG = 0;
-  
-  if(config.doublePack) {
-     numChareG = nchareG;
-  }else{
-     CkAbort("not doublepack is broken\n");
-  }//endif
-  
-  double state_load=0.0;
-  if(state_load <= 0.0 ){
-    for(int x = 0; x  < numChareG; x++) {
-      double curload = 0.0;
-      double sload = 0.0;
-      hackGSpacePlaneLoad(sim, x, &curload, &sload);
-      state_load += curload;
-    }//endfor
-  }//endif
-
-  int pes_per_state = config.GpesPerState;
-  int np            = CkNumPes()/pes_per_state;
-  
-  if(np < 1){np = 1;}
-  
-  int partition_nstates = config.nstates / np;
-  if(config.nstates % np != 0){partition_nstates ++;}
-  
-  int start_pe    = (idx2d.index[0]/partition_nstates) * pes_per_state;
-  int start_state = (idx2d.index[0]/partition_nstates) * partition_nstates;
-  
-  double cum_load     = 0.0;
-  double average_load = state_load * config.nstates / CkNumPes();
-
-  for(int x = 0; x < numChareG; x++) {
-    for(int s = 0; s < partition_nstates; s++) {
-      double curload = 0.0;
-      double sload = 0.0;
-      
-      hackGSpacePlaneLoad(sim,x, &curload, &sload);
-
-      cum_load += curload;
-
-      if((idx2d.index[0] == s + start_state) && idx2d.index[1] == x) {
-      
-	double dpe = 0.0;
-	dpe = cum_load / average_load;
-
-	pe = (int)dpe;
-	pe = pe % pes_per_state;
-	pe += start_pe;
-
-	return pe % CkNumPes();
-      }//endif
-    }//endfor : s
-  }//endfor : x
-
-  //  CkPrintf("Warning pe not found for index [%d, %d]\n",idx2d.index[0],idx2d.index[1]);
-  return (idx2d.index[0]*1037+idx2d.index[1])%CkNumPes();
-
-//============================================================================
-  }//end routine*/
-//============================================================================
-
 void makemap()
 {
+#ifdef USE_TOPOMAP
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;
@@ -1366,8 +1304,10 @@ void makemap()
 			}
 		}
 	CkPrintf("Local gsmap created on processor %d\n", CkMyPe());
+#endif
 }
 
+#ifdef USE_TOPOMAP
 int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
 {
 	if(maptable==NULL)
@@ -1377,6 +1317,81 @@ int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
 	}
 	return maptable->get(intdual(state, plane));
 }
+
+#else
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
+//============================================================================
+
+  CkArrayIndex2D idx2d(state,plane);
+
+  int pe        = 0;
+  int numChareG = 0;
+  
+  if(config.doublePack) {
+     numChareG = nchareG;
+  }else{
+     CkAbort("not doublepack is broken\n");
+  }//endif
+  
+  double state_load=0.0;
+  if(state_load <= 0.0 ){
+    for(int x = 0; x  < numChareG; x++) {
+      double curload = 0.0;
+      double sload = 0.0;
+      hackGSpacePlaneLoad(sim, x, &curload, &sload);
+      state_load += curload;
+    }//endfor
+  }//endif
+
+  int pes_per_state = config.GpesPerState;
+  int np            = CkNumPes()/pes_per_state;
+  
+  if(np < 1){np = 1;}
+  
+  int partition_nstates = config.nstates / np;
+  if(config.nstates % np != 0){partition_nstates ++;}
+  
+  int start_pe    = (idx2d.index[0]/partition_nstates) * pes_per_state;
+  int start_state = (idx2d.index[0]/partition_nstates) * partition_nstates;
+  
+  double cum_load     = 0.0;
+  double average_load = state_load * config.nstates / CkNumPes();
+
+  for(int x = 0; x < numChareG; x++) {
+    for(int s = 0; s < partition_nstates; s++) {
+      double curload = 0.0;
+      double sload = 0.0;
+      
+      hackGSpacePlaneLoad(sim,x, &curload, &sload);
+
+      cum_load += curload;
+
+      if((idx2d.index[0] == s + start_state) && idx2d.index[1] == x) {
+      
+	double dpe = 0.0;
+	dpe = cum_load / average_load;
+
+	pe = (int)dpe;
+	pe = pe % pes_per_state;
+	pe += start_pe;
+
+	return pe % CkNumPes();
+      }//endif
+    }//endfor : s
+  }//endfor : x
+
+  //  CkPrintf("Warning pe not found for index [%d, %d]\n",idx2d.index[0],idx2d.index[1]);
+  return (idx2d.index[0]*1037+idx2d.index[1])%CkNumPes();
+
+//============================================================================
+  }//end routine
+//============================================================================
+
+#endif
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
