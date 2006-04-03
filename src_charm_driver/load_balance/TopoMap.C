@@ -39,21 +39,16 @@ void GSMap::makemap()
 		    procs[i][j][k]=0;
 		    
 	//CkPrintf("x %d, y %d, z %d no of pe's %d\n", x, y, z, CkNumPes());
-	//char fname[100];
-	//sprintf(fname, "proc%d", CkMyPe()); 
-	//FILE *f = fopen(fname, "w");
 		
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	//CkPrintf("fp -> %d %d %d\n", fp.nopX, fp.nopY, fp.nopZ);
+	
 	int assign[3]={0, 0, 0};
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
-	
-	//CkPrintf("[%d] nstates %d, nchareG %d\n", CkMyPe(), nstates, nchareG);
 	
 	if((nstates*nchareG) % CkNumPes() == 0)
 	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes();
@@ -62,11 +57,6 @@ void GSMap::makemap()
 	int l=states_per_pe;
 	int m;
 
-	/*while(gsobjs_per_pe%l!=0)
-		l++;
-	// l--;                     l now divides gobjs_per_pe exactly 
-	m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes*/
-	
 	if(gsobjs_per_pe%l==0)
 		m = gsobjs_per_pe/l;
 	else
@@ -137,10 +127,6 @@ void GSMap::makemap()
 			}
 		}
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
-	//fclose(f);
-	/*for(int i=0; i<nstates; i++)
-		for(int j=0; j<nchareG; j++)
-			maptable->put(intdual(i, j))=0;*/
 }
 
 /**
@@ -424,6 +410,7 @@ void RSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
+	
 	int assign[3]={0, 0, 0};
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
@@ -433,33 +420,41 @@ void RSMap::makemap()
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
 	else
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;
-	int count=0;
+	int l=states_per_pe;
+	int m;
+
+	if(rsobjs_per_pe%l==0)
+		m = rsobjs_per_pe/l;
+	else
+		m = rsobjs_per_pe/l + 1;
 	
-	//CkPrintf("[%d] nstates %d, sizeY %d\n", CkMyPe(), nstates, sizeY);
-	//CkPrintf("rsobjs_per_pe %d\n", rsobjs_per_pe);
+	//CkPrintf("rsobjs_per_pe %d, l %d, m %d\n", rsobjs_per_pe, l, m);
 	
-	for(int state=0; state<nstates; state++)
-		for(int plane=0; plane<sizeY; plane++)
+	for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
+		for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
-			if(plane==0 && state==0)
-			{
-			        //CkPrintf("state %d plane %d = proc 0\n", state, plane);
-				maptable->put(intdual(state, plane))=0;
-				count++;
-			}
+			if(xchunk==0 && ychunk==0) {}
 			else
 			{
-				if(count<rsobjs_per_pe)
-				{
-				        //CkPrintf("state %d plane %d = proc %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-					maptable->put(intdual(state, plane))=assign[0]*x*y+assign[1]*x+assign[2];
-					count++;
-				}
+				procs[fp.next[2]][fp.next[1]][fp.next[0]]=1;
+				for(int i=0;i<3;i++)
+					fp.start[i]=fp.next[i];
+				if(fp.start[2]>x/2)
+					assign[2]=fp.start[2]-x;
 				else
+					assign[2]=fp.start[2];
+				if(fp.start[1]>y/2)
+					assign[1]=fp.start[1]-y;
+				else
+					assign[1]=fp.start[1];
+				if(fp.start[0]>z/2)
+					assign[0]=fp.start[0]-z;
+				else
+					assign[0]=fp.start[0];
+				fp.findNextInTorus(assign);
+				
+				while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
 				{
-					count=0;
-					procs[assign[2]][assign[1]][assign[0]]=1;
-
 					for(int i=0;i<3;i++)
 						fp.start[i]=fp.next[i];
 					if(fp.start[2]>x/2)
@@ -475,37 +470,28 @@ void RSMap::makemap()
 					else
 						assign[0]=fp.start[0];
 					fp.findNextInTorus(assign);
+				}
 				
-					while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
+			}
+			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+			{
+				for(int plane=ychunk; plane<ychunk+m && plane<sizeY; plane++)
+				{
+					if(xchunk==0 && ychunk==0)
 					{
-						for(int i=0;i<3;i++)
-							fp.start[i]=fp.next[i];
-						if(fp.start[2]>x/2)
-							assign[2]=fp.start[2]-x;
-						else
-							assign[2]=fp.start[2];
-						if(fp.start[1]>y/2)
-							assign[1]=fp.start[1]-y;
-						else
-							assign[1]=fp.start[1];
-						if(fp.start[0]>z/2)
-							assign[0]=fp.start[0]-z;
-						else
-							assign[0]=fp.start[0];
-						fp.findNextInTorus(assign);
+						maptable->put(intdual(state, plane))=0;
+						//CkPrintf("%d %d on 0\n", state, plane);
 					}
-					for(int i=0;i<3;i++)
-						assign[i]=fp.next[i];
-					//CkPrintf("state %d plane %d = proc %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-					maptable->put(intdual(state, plane))=assign[0]*x*y+assign[1]*x+assign[2];
-					count++;
+					else
+					{
+						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+						
+					}
 				}
 			}
 		}
 	CkPrintf("RSMap created on processor %d\n", CkMyPe());
-	/*for(int i=0; i<nstates; i++)
-		for(int j=0; j<sizeY; j++)
-			maptable->put(intdual(i, j))=0;*/
 }
 
 /**
@@ -798,6 +784,7 @@ void SCalcMap::makemap(){
 	    int intidx[2];
 	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+	    CkPrintf("SYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
 	}//endfor
       }//endfor
     }//endfor
@@ -811,6 +798,7 @@ void SCalcMap::makemap(){
 		  int intidx[2];
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
 		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+		  CkPrintf("ASYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
 	      }//endfor
 	  }//endfor
       }//endfor
