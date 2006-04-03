@@ -794,7 +794,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_DASH;printf("\n");
 
 
-    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY);
+    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY, config.states_per_pe);
 
     CkArrayOptions realSpaceOpts;
     realSpaceOpts.setMap(rsMap);
@@ -1220,8 +1220,6 @@ void makemap()
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
 	
-	//CkPrintf("[%d] nstates %d, nchareG %d\n", CkMyPe(), nstates, nchareG);
-	
 	if((nstates*nchareG) % CkNumPes() == 0)
 	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes();
 	else
@@ -1229,18 +1227,13 @@ void makemap()
 	int l=config.states_per_pe;
 	int m;
 
-	/*while(gsobjs_per_pe%l!=0)
-		l++;
-	// l--;                     l now divides gobjs_per_pe exactly 
-	int m = gsobjs_per_pe/l;  // each chunk will be of size l states by m planes */
-	
 	if(gsobjs_per_pe%l==0)
                 m = gsobjs_per_pe/l;
         else
                 m = gsobjs_per_pe/l + 1;
 	planes_per_pe=m;
 	
-	CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
+	//CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
 	
 	for(int ychunk=0; ychunk<config.nchareG; ychunk=ychunk+m)
 		for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
