@@ -23,6 +23,7 @@
 #define PRE_BALANCE_STEP 2
 
 #define FIRST_BALANCE_STEP 10
+//#define USE_TOPOMAP
 
 #ifndef CMK_OPTIMIZE
 #define TRACE_ON_STEP 4000000
@@ -185,12 +186,14 @@ class GSMap: public CkArrayMap {
 class RSMap: public CkArrayMap {
  int nstates;
  int sizeY;
+ int states_per_pe;
  public:
   CkHashtableT<intdual, int> *maptable;
-  RSMap(int _nstates, int _sizeY) 
+  RSMap(int _nstates, int _sizeY, int _states_per_pe) 
   {
 	nstates = _nstates;
 	sizeY = _sizeY;
+        states_per_pe = _states_per_pe;
 #ifdef USE_TOPOMAP
 	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
 	makemap();
@@ -204,6 +207,7 @@ class RSMap: public CkArrayMap {
     CkArrayMap::pup(p);
     p|sizeY;
     p|nstates;
+    p|states_per_pe;
 #ifdef USE_TOPOMAP
     if (p.isUnpacking()) {
 	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);

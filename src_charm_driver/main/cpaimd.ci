@@ -241,7 +241,7 @@ mainmodule cpaimd {
 	};
 	
 	group RSMap : CkArrayMap {
-		entry RSMap(int, int);
+		entry RSMap(int, int, int);
 	};
 	
 	group SCalcMap: CkArrayMap {
