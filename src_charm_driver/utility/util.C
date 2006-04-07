@@ -1361,6 +1361,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"conserveMemory: %d\n",conserveMemory);
      fprintf(fp,"states_per_pe: %d\n",states_per_pe);
      fprintf(fp,"scalc_per_plane: %d\n",scalc_per_plane);
+     fprintf(fp,"numChunks: %d\n",numChunks);
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
@@ -1429,6 +1430,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.toleranceInterval    = 1;
     config.states_per_pe	= config.nstates;
     config.scalc_per_plane	= 1;
+    config.numChunks            = 1;
     strcpy(config.dataPath,"./");
 
 //===================================================================================
@@ -1520,6 +1522,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.toleranceInterval = atoi(parameterValue);
 	else if (!strcmp(parameterName, "states_per_pe"))
             config.states_per_pe = atoi(parameterValue);
+	else if (!strcmp(parameterName, "numChunks"))
+            config.numChunks = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
@@ -1604,6 +1608,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.GpesPerState,"GpesPerState;",0);
     rangeExit(config.RpesPerState,"RpesPerState;",0);
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
+    rangeExit(config.numChunks,"numChunks;",0);
 
 //===================================================================================
 // Consistency Checks on the input
@@ -1776,6 +1781,9 @@ void Config::rangeExit(int param, char *name, int iopt){
  * Supported parameters: sGrainSize, gExpandFact, gExpandFactRho,
  * fftprogresssplit, fftprogresssplitReal, numSfGrps, numSfDups,
  * pesPerState, rhoGHelpers, numMulticastMsgs
+
+ * TODO: set numChunks and sGrainSize to give us fairly square
+ * multiplies.
  */
 void Config::guesstimateParms(int natm_nl)
 {

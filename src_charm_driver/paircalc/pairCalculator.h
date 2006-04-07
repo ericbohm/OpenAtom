@@ -19,7 +19,7 @@ class PairCalcID {
   CkArrayID Aid;
   CkGroupID Gid;
   int GrainSize;
-  int BlkSize;
+  int numChunks;
   int S; 
   bool Symmetric;
   bool useComlib;
@@ -31,17 +31,17 @@ class PairCalcID {
   bool existsRproxy;
   CkGroupID mCastGrpId;
   int priority;
-  CProxySection_PairCalculator proxyLFrom;
-  CProxySection_PairCalculator proxyLNotFrom;
-  CProxySection_PairCalculator proxyRNotFrom;
+  CProxySection_PairCalculator *proxyLFrom;
+  CProxySection_PairCalculator *proxyLNotFrom;
+  CProxySection_PairCalculator *proxyRNotFrom;
 
   PairCalcID() {}
   ~PairCalcID() {}
 
-  void Init(CkArrayID aid, int grain, int blk, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, CkGroupID _mCastGrpId, int _priority) {
+  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, CkGroupID _mCastGrpId, int _priority) {
     Aid = aid;
     GrainSize = grain;
-    BlkSize = blk;
+    numChunks = _numChunks;
     S = s;
     Symmetric = sym;
     useComlib = _useComlib;
@@ -57,29 +57,32 @@ class PairCalcID {
   void resetProxy()
     {
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
+      for(int chunk=0;chunk<numChunks;chunk++)
+	{
 
-      if(useComlib && _PC_COMMLIB_MULTI_)
-	{
-	  if(existsLNotFromproxy)
-	    ComlibResetSectionProxy(&proxyLNotFrom);
-	  if(existsRproxy)
-	    ComlibResetSectionProxy(&proxyRNotFrom);
-	  if(existsLproxy)
-	    ComlibResetSectionProxy(&proxyLFrom);
-	}
-      else
-	{
-	  if(existsRproxy)
+	  if(useComlib && _PC_COMMLIB_MULTI_)
 	    {
-	      mcastGrp->resetSection(proxyRNotFrom);
+	      if(existsLNotFromproxy)
+		ComlibResetSectionProxy(&proxyLNotFrom[chunk]);
+	      if(existsRproxy)
+		ComlibResetSectionProxy(&proxyRNotFrom[chunk]);
+	      if(existsLproxy)
+		ComlibResetSectionProxy(&proxyLFrom[chunk]);
 	    }
-	  if(existsLproxy)
+	  else
 	    {
-	      mcastGrp->resetSection(proxyLFrom);
-	    }
-	  if(existsLNotFromproxy)
-	    {
-	      mcastGrp->resetSection(proxyLNotFrom);
+	      if(existsRproxy)
+		{
+		  mcastGrp->resetSection(proxyRNotFrom[chunk]);
+		}
+	      if(existsLproxy)
+		{
+		  mcastGrp->resetSection(proxyLFrom[chunk]);
+		}
+	      if(existsLNotFromproxy)
+		{
+		  mcastGrp->resetSection(proxyLNotFrom[chunk]);
+		}
 	    }
 	}
     }
@@ -87,7 +90,7 @@ class PairCalcID {
     Aid=pid.Aid;
     Gid=pid.Gid;    
     GrainSize=pid.GrainSize;
-    BlkSize=pid.BlkSize;
+    numChunks=pid.numChunks;
     S=pid.S;
     Symmetric=pid.Symmetric;
     useComlib=pid.useComlib;
@@ -99,9 +102,12 @@ class PairCalcID {
     existsRproxy=pid.existsRproxy;
     priority=pid.priority;
     mCastGrpId=pid.mCastGrpId;
-    proxyLFrom=pid.proxyLFrom;
-    proxyLNotFrom=pid.proxyLNotFrom;
-    proxyRNotFrom=pid.proxyRNotFrom;
+    for(int chunk;chunk<numChunks;chunk++)
+      {
+	proxyLFrom[chunk]=pid.proxyLFrom[chunk];
+	proxyLNotFrom[chunk]=pid.proxyLNotFrom[chunk];
+	proxyRNotFrom[chunk]=pid.proxyRNotFrom[chunk];
+      }
     return *this;
   }
 
@@ -109,7 +115,7 @@ class PairCalcID {
     p|Aid;
     p|Gid;
     p|GrainSize;
-    p|BlkSize;
+    p|numChunks;
     p|S;
     p|Symmetric;
     p|useComlib;
@@ -121,14 +127,17 @@ class PairCalcID {
     p|existsRproxy;
     p|mCastGrpId;
     p|priority;
-    p|proxyLFrom;
-    p|proxyLNotFrom;
-    p|proxyRNotFrom;
+    if(existsLproxy)
+      PUParray(p,proxyLFrom,numChunks);
+    if(existsLNotFromproxy)
+      PUParray(p,proxyLNotFrom,numChunks);
+    if(existsRproxy)
+      PUParray(p,proxyRNotFrom,numChunks);
   }
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
@@ -141,7 +150,7 @@ extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalcu
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int actionType);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int c);
+CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2);
 
 void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 
@@ -154,10 +163,13 @@ void startPairCalcLeftSlow(PairCalcID* aid, int n, complex* ptr, int myS, int my
 
 void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 
-CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane);
-CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane);
-CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane);
-CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane);
+CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk);
+CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk);
+CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk);
+CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk);
 void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb);
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
+
+void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
+
 #endif

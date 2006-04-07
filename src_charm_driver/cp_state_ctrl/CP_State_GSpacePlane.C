@@ -551,6 +551,15 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countPsi        = 0;
   countLambda     = 0;
   countVPsi       = 0;
+  countPsiO= new int[config.numChunks];
+  for(int i=0;i<config.numChunks;i++)
+    countPsiO[i]=0;
+  countVPsiO= new int[config.numChunks];
+  for(int i=0;i<config.numChunks;i++)
+    countVPsiO[i]=0;
+  countLambdaO= new int[config.numChunks];
+  for(int i=0;i<config.numChunks;i++)
+    countLambdaO[i]=0;
   countIFFT       = 0;
   ecount          = 0; //No energies have been received.
 
@@ -563,6 +572,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   else
     AllPsiExpected=1;
 
+  AllPsiExpected*=config.numChunks;
+
   if(cp_min_opt==0) 
     {    //expect non diagonal column results
       if(nstates == config.sGrainSize)
@@ -574,7 +585,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     {
       AllLambdaExpected=1;
     }
-
+  AllLambdaExpected*=config.numChunks;
 //============================================================================
 
   gSpaceNumPoints = 0;
@@ -682,6 +693,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|numReset_cg;
   p|countPsi;
   p|countVPsi;
+  p|countLambda;
   p|countIFFT;
   p|countFileOut;
   p|ecount;
@@ -715,10 +727,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|cpuTimeNow;
 
   p|real_proxy;   
-  p|lambdaproxy;
-  p|lambdaproxyother;
-  p|psiproxy;
-  p|psiproxyother;
   p|sfCompSectionProxy;
   p|gpairCalcID1;
   p|gpairCalcID2;
@@ -734,10 +742,24 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
     k_y       = new int[gSpaceNumPoints];
     k_z       = new int[gSpaceNumPoints];
     coef_mass = new double[gSpaceNumPoints];
+    lambdaproxy=new CProxySection_PairCalculator[config.numChunks];
+    lambdaproxyother=new CProxySection_PairCalculator[config.numChunks];
+    psiproxy=new CProxySection_PairCalculator[config.numChunks];
+    psiproxyother=new CProxySection_PairCalculator[config.numChunks];
+    countPsiO= new int[config.numChunks];
+    countVPsiO= new int[config.numChunks];
+    countLambdaO= new int[config.numChunks];
   }//endif  
   p(k_x, gSpaceNumPoints);
   p(k_y, gSpaceNumPoints);
   p(k_z, gSpaceNumPoints);
+  PUParray(p,lambdaproxy,config.numChunks);
+  PUParray(p,lambdaproxyother,config.numChunks);
+  PUParray(p,psiproxy,config.numChunks);
+  PUParray(p,psiproxyother,config.numChunks);
+  PUParray(p,countPsiO,config.numChunks);
+  PUParray(p,countVPsiO,config.numChunks);
+  PUParray(p,countLambdaO,config.numChunks);
   p(coef_mass,gSpaceNumPoints);
   if(p.isUnpacking())
     {
@@ -1050,13 +1072,20 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 void CP_State_GSpacePlane::makePCproxies(){
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = sim->cp_min_opt;
-
-  lambdaproxy=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y);
-  if(AllLambdaExpected==2)  // need additional column reduction in dynamics
-    lambdaproxyother=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y);
-  psiproxy=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y);
-  if(AllPsiExpected>1)
-    psiproxyother=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y);
+  lambdaproxy=new CProxySection_PairCalculator[config.numChunks];
+  lambdaproxyother=new CProxySection_PairCalculator[config.numChunks];
+  psiproxy=new CProxySection_PairCalculator[config.numChunks];
+  psiproxyother=new CProxySection_PairCalculator[config.numChunks];
+  //need one proxy per chunk
+  for(int chunk=0;chunk<config.numChunks;chunk++)
+    {
+      lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
+      if(AllLambdaExpected/config.numChunks==2)  // need additional column reduction in dynamics
+	lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
+      psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+      if(AllPsiExpected/config.numChunks>1)
+	psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+    }
 }
 //============================================================================
 
@@ -1517,35 +1546,54 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
 
 
-  countLambda++;//psi arrives in as many as 2 reductions
+
+  countLambda++;//psi arrives in as many as 2 * numChunks reductions
 //=============================================================================
 // (II) Add it in to our forces
 
+  int offset=msg->getUserFlag();
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunks;
+  int chunkoffset=offset*chunksize; // how far into the points this
+				  // contribution lies
+  /*
+  if(thisIndex.y==0)
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);
 
+  if(thisIndex.y==0)
+    {
+      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
+    }
+  */
+  int idest=chunkoffset;
   if(config.doublePack==1){
    if(cp_min_opt==1){
-    for(int i=0; i<N; i++){
-       double wght  = (k_x[i]==0 ? 0.5 : 1);
-       force[i].re -= wght*data[i].re;
-       force[i].im -= wght*data[i].im;
+
+     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
+       double wght  = (k_x[idest]==0 ? 0.5 : 1);
+       force[idest].re -= wght*data[i].re;
+       force[idest].im -= wght*data[i].im;
      }//endfor
    }
    else
      {
-       if(countLambda==1)
-	 for(int i=0; i<N; i++){force[i]  = data[i]*(-1.0);}
+       
+       if(countLambdaO[offset]<1)
+	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
        else
-	 for(int i=0; i<N; i++){force[i]  += data[i]*(-1.0);}
+	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
      }//endif
  
   }else{
-    for(int i=0; i<N; i++){
-       force[i].re -= 0.5*data[i].re;
-       force[i].im -= 0.5*data[i].im;
+    for(int i=0,idest=chunkoffset; i<N; i++,idest){
+       force[idest].re -= 0.5*data[i].re;
+       force[idest].im -= 0.5*data[i].im;
     }//endfor
   }//endif
   delete msg;  
 
+  countLambdaO[offset]++;//psi arrives in as many as 2 
 //=============================================================================
 // (II) If you have got it all : Rescale it and resume
 
@@ -1573,6 +1621,12 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
     acceptedLambda=true;
     countLambda=0;
+    for(int i=0;i<config.numChunks;i++)
+      countLambdaO[i]=0;
+    /*
+    if(thisIndex.y==0)
+      dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
+    */
     RTH_Runtime_resume(run_thread);
   }
 //==============================================================================
@@ -2188,14 +2242,10 @@ void CP_State_GSpacePlane::sendPsi() {
 #endif
 
 //==============================================================================
-
-  int s, c;
-  int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;
   int numPoints = gs.numPoints;
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  int toSend = numPoints;
-  startPairCalcLeft(&gpairCalcID1,toSend,data,thisIndex.x, thisIndex.y, false);
+  startPairCalcLeft(&gpairCalcID1, numPoints, data, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
@@ -2232,11 +2282,8 @@ void  CP_State_GSpacePlane::sendPsiV() {
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
   }//endif
 
-  int idx = (thisIndex.x/gs.S_grainSize) * gs.S_grainSize;
   int numPoints = gs.numPoints;
-  int toSend    = numPoints;
-
-  startPairCalcLeft(&gpairCalcID1,toSend,data,thisIndex.x,thisIndex.y,true);
+  startPairCalcLeft(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
 }// end routine
@@ -2253,23 +2300,36 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   int N         = msg->getSize()/sizeof(complex);
   complex *data = (complex *)msg->getData();
   complex *psi  = gs.packedPlaneData;
+  int offset=msg->getUserFlag();
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunks;
+  int chunkoffset=offset*chunksize; // how far into the points this
+				  // contribution lies
+  int idest=chunkoffset;
+  if(countPsiO[offset]<1)
+    for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
+  else
+    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
 
-  if(countPsi<1){
-    for(int i=0; i<N; i++){psi[i] = data[i];}
-  }else{
-    for(int i=0; i<N; i++){psi[i] += data[i];}
-  }//endif
   delete msg;
-
+  /*
+  if(thisIndex.y==0)
+    {
+      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
+    }
+  */
 //=============================================================================
 // (II) If you have got it all : Rescale it, produce some output
 
-  countPsi++;//psi arrives in as many as 2 reductions
+  countPsi++;//psi arrives in as many as 2 *numblock reductions
+  countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
     //--------------------------------------------------------------------
     // (A) Reset counters and rescale the kx=0 stuff
     acceptedPsi=true;
     countPsi=0;
+    bzero(countPsiO,config.numChunks);
     if(gs.ihave_kx0==1){
       double rad2 = sqrt(2.0);
       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
@@ -2315,25 +2375,33 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   int N         = msg->getSize()/sizeof(complex);
   complex *data = (complex *)msg->getData();
   complex *vpsi = gs.packedVelData;
-
-  if(countPsi<1){
-    for(int i=0; i<N; i++){vpsi[i] = data[i];}
-  }else{
-    for(int i=0; i<N; i++){vpsi[i] += data[i];}
-  }//endif
+  int offset=msg->getUserFlag();
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunks;
+  int chunkoffset=offset*chunksize;; // how far into the points this
+				  // contribution lies
+  int idest=chunkoffset;
+  if(countVPsiO[offset]<1) 
+    for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
+  else
+    for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
   
   delete msg;
 
 //=============================================================================
 // (II) If you have got it all : Rescale it, produce some output
 
-  countPsi++;//psi arrives in as many as 2 reductions
+  countVPsi++;//psi arrives in as many as 2 reductions
+  countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
-  if(countPsi==AllPsiExpected){ 
+  if(countVPsi==AllPsiExpected){ 
     //--------------------------------------------------------------------
     // (A) Reset counters and rescale the kx=0 stuff
     acceptedVPsi=true;
-    countPsi=0;
+    countVPsi=0;
+    for(int i=0;i<config.numChunks;i++)
+      countVPsiO[i]=0;
     if(gs.ihave_kx0==1){
       double rad2 = sqrt(2.0);
       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
@@ -2517,18 +2585,20 @@ void CP_State_GSpacePlane::ResumeFromSync() {
   // reset lambda PC proxies
   CkMulticastMgr *mcastGrp = 
         CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
-  mcastGrp->resetSection(lambdaproxy);
-  setResultProxy(&lambdaproxy, thisIndex.x, gpairCalcID2.GrainSize, 
-          gpairCalcID2.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
-          orthoProxy));
-  if(cp_min_opt==0)
+  for(int chunk;chunk<config.numChunks;chunk++)
     {
-      mcastGrp->resetSection(lambdaproxyother);
-      setResultProxy(&lambdaproxyother, thisIndex.x, gpairCalcID2.GrainSize, 
-		     gpairCalcID2.mCastGrpId, true,
-		     CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+      mcastGrp->resetSection(lambdaproxy[chunk]);
+      setResultProxy(&lambdaproxy[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
+		     gpairCalcID2.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
+							     orthoProxy));
+      if(cp_min_opt==0)
+	{
+	  mcastGrp->resetSection(lambdaproxyother[chunk]);
+	  setResultProxy(&lambdaproxyother[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
+			 gpairCalcID2.mCastGrpId, true,
+			 CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+	}
     }
-
   gpairCalcID2.resetProxy();
 
   LBTurnInstrumentOff();
@@ -2547,17 +2617,19 @@ void CP_State_GSpacePlane::syncpsi(){
 
   CkMulticastMgr *mcastGrp = 
      CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
-
-  mcastGrp->resetSection(psiproxy);
-  setResultProxy(&psiproxy,thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId, 
+  for(int chunk=0;chunk<config.numChunks;chunk++)
+    {
+      mcastGrp->resetSection(psiproxy[chunk]);
+      setResultProxy(&psiproxy[chunk],thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId, 
                   true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
 
-  if(AllPsiExpected>1){
-      mcastGrp->resetSection(psiproxyother);
-      setResultProxy(&psiproxyother, thisIndex.x, gpairCalcID1.GrainSize, 
-                   gpairCalcID1.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
-                   orthoProxy));
-  }//endif
+      if(AllPsiExpected>1){
+	mcastGrp->resetSection(psiproxyother[chunk]);
+	setResultProxy(&psiproxyother[chunk], thisIndex.x, gpairCalcID1.GrainSize, 
+		       gpairCalcID1.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
+							       orthoProxy));
+      }//endif
+    }//endfor
 
   //takes care of the paircalc result proxies which we own via the pairCalcID
   gpairCalcID1.resetProxy();

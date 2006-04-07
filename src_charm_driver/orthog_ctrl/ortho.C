@@ -490,11 +490,11 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     if(thisIndex.x <= thisIndex.y) //we get the reduction
     {
 
-	pcProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, 0);
+	pcProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2);
 	if(thisIndex.x!=thisIndex.y)
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
     }
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, 1, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, 0);
+    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2);
 
 //----------------------------------------------------------------------------
   }// end routine

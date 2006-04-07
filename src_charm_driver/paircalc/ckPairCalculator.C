@@ -1,55 +1,55 @@
 //**************************************************************************
- /** \file ckPairCalculator.C						   *
- * This is a matrix multiply library with extra frills to communicate the  *
- * results back to gspace or the calling ortho char as directed by the     *
- * callback.                                                               *
- *                                                                         *
- * The extra complications are for parallelization and the multiplication  *
- * of the forces and energies.                                             *
- *                                                                         *
- * In normal use the calculator is created.  Then forces are sent to it    *
- * and multiplied in a big dgemm.  Then this result is reduced to the      *
- * answer matrix and shipped back.  The received left and/or right data is *
- * retained for the backward pass which is triggered by the finishPairCalc *
- * call.  This carries in another set of matrices for multiplication.      *
- * The results are again reduced and cast back.  Thus terminating the life *
- * cycle of the data in the pair calculator.  As the calculator will be    *
- * reused again throughout each iteration the calculators themselves are   *
- * only created once.                                                      *
- *                                                                         *
- * The elan code is a specialized machine reduction/broadcast which runs   *
- * much faster on lemieux, and theoretically on any other elan machine     *
- * It operates by one dummy reduction which is used to indicate that all   *
- * calculators on a PE machine have reported in.  Then the machine         *
- * reduction is triggered.                                                 *
- *                                                                         *
- * The paircalculator is a 4 dimensional array.  Those dimensions are:     *
- *            w: gspace state plane (the second index of the 2D gspace)    *
- *            x: coordinate offset within plane (a factor of grainsize)    *
- *            y: coordinate offset within plane (a factor of grainsize)    *
- *            z: blocksize, unused always 0                                *
- *       So, for an example grainsize of 64 for a 128x128 problem:         *
- *        S/grainsize gives us a 2x2 decomposition.                        *
- *        1st quadrant ranges from [0,0]   to [63,63]    index [w,0,0,0]   *
- *        2nd quadrant ranges from [0,64]  to [63,127]   index [w,0,64,0]  *
- *        3rd quadrant ranges from [64,0]  to [127,63]   index [w,64,0,0]  *
- *        4th quadrant ranges from [64,64] to [127,127]  index [w,64,64,0] *
- *                                                                         *
- *       0   64   127                                                      *
- *     0 _________                                                         *
- *       |   |   |                                                         *
- *       | 1 | 2 |                                                         *
- *    64 ---------                                                         *
- *       |   |   |                                                         *
- *       | 3 | 4 |                                                         *
- *   127 ---------                                                         *
- *                                                                         *
- *                                                                         *
- *                                                                         *
- * Further complication arises from the fact that each plane is a          *
- * cross-section of a sphere.  So the actual data is sparse and is         *
- * represented by a contiguous set of the nonzero elements.  This is       * 
- * commonly referred to as N or size within the calculator.                *
+ /** \file ckPairCalculator.C						   
+ * This is a matrix multiply library with extra frills to communicate the  
+ * results back to gspace or the calling ortho char as directed by the     
+ * callback.                                                               
+ *                                                                         
+ * The extra complications are for parallelization and the multiplication  
+ * of the forces and energies.                                             
+ *                                                                         
+ * In normal use the calculator is created.  Then forces are sent to it    
+ * and multiplied in a big dgemm.  Then this result is reduced to the      
+ * answer matrix and shipped back.  The received left and/or right data is 
+ * retained for the backward pass which is triggered by the finishPairCalc 
+ * call.  This carries in another set of matrices for multiplication.      
+ * The results are again reduced and cast back.  Thus terminating the life 
+ * cycle of the data in the pair calculator.  As the calculator will be    
+ * reused again throughout each iteration the calculators themselves are   
+ * only created once.                                                      
+ *                                                                         
+ * The elan code is a specialized machine reduction/broadcast which runs   
+ * much faster on lemieux, and theoretically on any other elan machine     
+ * It operates by one dummy reduction which is used to indicate that all   
+ * calculators on a PE machine have reported in.  Then the machine         
+ * reduction is triggered.                                                 
+ *                                                                         
+ * The paircalculator is a 4 dimensional array.  Those dimensions are:     
+ *            w: gspace state plane (the second index of the 2D gspace)    
+ *            x: coordinate offset within plane (a factor of grainsize)    
+ *            y: coordinate offset within plane (a factor of grainsize)    
+ *            z: blocksize, unused always 0                                
+ *       So, for an example grainsize of 64 for a 128x128 problem:         
+ *        numStates/grainsize gives us a 2x2 decomposition.                        
+ *        1st quadrant ranges from [0,0]   to [63,63]    index [w,0,0,0]   
+ *        2nd quadrant ranges from [0,64]  to [63,127]   index [w,0,64,0]  
+ *        3rd quadrant ranges from [64,0]  to [127,63]   index [w,64,0,0]  
+ *        4th quadrant ranges from [64,64] to [127,127]  index [w,64,64,0] 
+ *                                                                         
+ *       0   64   127                                                      
+ *     0 _________                                                         
+ *       |   |   |                                                         
+ *       | 1 | 2 |                                                         
+ *    64 ---------                                                         
+ *       |   |   |                                                         
+ *       | 3 | 4 |                                                         
+ *   127 ---------                                                         
+ *                                                                         
+ *                                                                         
+ *                                                                         
+ * Further complication arises from the fact that each plane is a          
+ * cross-section of a sphere.  So the actual data is sparse and is         
+ * represented by a contiguous set of the nonzero elements.  This is        
+ * commonly referred to as numPoints or size within the calculator.                
  *
  * In the dynamics case there are two additional complications. In the
  * backward path of the asymmetric pairculator we will receive 2 input
@@ -61,11 +61,105 @@
  * If ortho falls out of tolerance then Ortho will signal the GSP that
  * a tolerance update is needed.  We then proceed with the psi
  * calculation as normal.  On receipt of newpsi, Gspace will then
- * react by sending the PC the Psi velocities (PsiV) which we will
- * multiply with the orthoT we kept from the previous invocation of
- * the backward path.  We will then ship the corrected velocities back
+ * react by sending the PC the Psi velocities (PsiV) in the same way
+ * (acceptPairData) that it sends Psi, but with the psiv flag set
+ * true.  These will be recored in the left data array.  We will then
+ * multiply with the orthoT we kept from the previous invocation (psi)
+ * of the backward path.  We then ship the corrected velocities back
  * to gspace via the acceptnewVpsi reduction.  Same procedure as for
- * acceptnewpsi, just a different entry method.  */
+ * acceptnewpsi, just a different entry method.  
+ *
+ * Fourth dimension decomposition is along the axis of the nonzero
+ * values in gspace.  Therefore it is fundamentally different from the
+ * 2nd and 3rd dimensions which divide the states up into
+ * (states/grainsize)^2 pieces.  The fourth dimension divides along
+ * the nonzeros of gspace.  A X,0,0,N division will have the entirety
+ * of a state, but only a K/Nth (where K is the number of nonzero
+ * elements) chunk of the nonzero values.  It can therefore perform
+ * the dgemm on that chunk, its multicast degree will be 1, and have a
+ * portion of the total solution.  Thereby reducing the PC inbound
+ * communication volume substantially.  This comes at the cost of an
+ * additional reduction.  The result for the nonzero chunks has to be
+ * pasted together to form the result for the entire nonzero.  Then
+ * the results are summed together across the planes to produce the
+ * complete S or L matrix.  Only the first of those reductions is new.
+ *
+ * More about this "extra" reduction.  If we consider the Multiply as
+ * C = AB.  Where A is nstates x numpoints and B is numpoints x
+ * nstates to result in C of nstates x nstates.  The 4th dim
+ * decomposition chops only the inner index numpoints.  Thereby
+ * resulting in numblocks C submatrices all of size nstates x nstates.
+ * Making C from numblock C(i) is just matrix addition.  So for the
+ * forward path there is in fact no "extra" reduction or stitching
+ * necessary for the 4th dim decomposition.  All the "stitching" is in
+ * the statewise decompostion for the forward path.  So the only
+ * change for the forward path is in adding the numblock elements to
+ * the reduction tree.
+ * 
+ *
+ * An important distinction between these methods is that in the
+ * absence of a grainsize decomposition the sections for the second
+ * reduction to ortho are essentially arbitrary with respect to the
+ * paircalculator decomposition.  
+ *
+ * 
+ * Similarly, the backward path for a chunk with grainsize==nstates
+ * needs input matrices of size nstates X nstates.  Which means that
+ * the backward path cannot proceed until all ortho sections broadcast
+ * their pieces of the input matrices.  The backward path reduction to
+ * gspace becomes richer in that now each chunk is contributing at an
+ * offset.  So the acceptnew[psi|lambda|vpsi] methods would all need
+ * to paste the input of a contribution at the correct offset.  This
+ * recalls the old contiguousreducer logic which did that pasting
+ * together in its reduction client.  A functionality that is probably
+ * worth resurrection.  Just in a form that can actually be
+ * comprehended by people not from planet brainiac.
+ *
+ * Which means we should add a distinct parameter for the number of ortho
+ * objects.  We'll also need to come up with a way for it to map its
+ * grainsize sections onto the chunketized PC chare array.  The
+ * constraints on this mapping are only that they should use as many
+ * PCs as we can.  The PCs will use the section reduction in their
+ * forward path reduction to deposit the S (or lambda) matrix in ortho.
+ * Ortho will have to broadcast its T (or lambda, or orthoT and gamma)
+ * to the paircalculator.  
+ * 
+ * Which returns us to the bad old days of broadcasting matrices
+ * around.  This can be ameliorated slightly by using [nokeep]
+ * messages so that we reduce the number of copies to 1 per PE.  But
+ * you still have to send numPE*nstates*nstates doubles around (times
+ * 2 in the dynamics symmetric case to carry ortho and gamma).
+ * Luckily broadcasts turn out to be pretty fast on BG/L.  So this may
+ * not be so bad.  The tradeoff against the much larger nonzero
+ * multicast is net positive due to the larger constant size of the
+ * nonzeros compared to nstates.
+ *  
+ * These communication patterns become more complex in the hybrid case
+ * where we have both grainsize and chunksize.  The ortho->PC section
+ * mapping could revert to using grainsize, but now has to sum across
+ * all the chunks in that grain.
+ *
+ * If we want independant control over the number of ortho objects
+ * then we need to support the overlap issues where grainsize objects
+ * do not map nicely onto ortho objects.
+ *
+ * The reduction out of the backward path of the paircalculator is the
+ * one which is made more complicated by 4th dimension decomposition.
+ * Here we are sending the transformed Psi, which is necessarily
+ * numpoints in size.  Therefore the reduction requires stitching of
+ * blocks while summing within a block to assemble the entire g-chare
+ * matrix of points.
+ *
+ * NOTE: The magic number 2 appears in 2 contexts.  Either we have
+ * twice as many inputs in the non diagonal elements of the matrix.
+ * Or in the case of transforming our arrays of complex into arrays of
+ * doubles.  This transformation is done so we can use DGEMM instead
+ * of ZGEMM.  Movated by the empirical discovery that BLAS
+ * implementors do all their work on DGEMM and leave ZGEMM out in the
+ * unoptimized cold.  The latter issue crops up everywhere we have to
+ * do allocation or manipulations of the input.  Could arguably be
+ * abstracted away by absorbing it into a size field.
+*/
 //**************************************************************************
 
 
@@ -105,7 +199,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -113,10 +207,10 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCa
   this->conserveMemory=conserveMemory;
   this->symmetric = sym;
   this->grainSize = grainSize;
-  this->S = s;
-  this->blkSize = blkSize;
+  this->numStates = s;
+  this->numChunks = numChunks;
   this->cb = cb;
-  this->N = -1;
+  this->numPoints = -1;
   this->cb_aid = cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
@@ -157,9 +251,9 @@ PairCalculator::pup(PUP::er &p)
   p|numRecd;
   p|numExpected;
   p|grainSize;
-  p|S;
-  p|blkSize;
-  p|N;
+  p|numStates;
+  p|numChunks;
+  p|numPoints;
   p|symmetric;
   p|conserveMemory;
   p|lbpaircalc;
@@ -191,11 +285,11 @@ PairCalculator::pup(PUP::er &p)
       else
 	  outData=NULL;
       if(existsLeft)
-	  inDataLeft = new double[2*numExpected*N];
+	  inDataLeft = new double[2*numExpected*numPoints];
       else
 	  inDataLeft=NULL;
       if(existsRight)
-	  inDataRight = new double[2*numExpected*N];
+	  inDataRight = new double[2*numExpected*numPoints];
       else
 	  inDataRight=NULL;
 
@@ -209,15 +303,15 @@ PairCalculator::pup(PUP::er &p)
   if(existsOut)
     p(outData, grainSize*grainSize);
   if(existsLeft)
-    p(inDataLeft, numExpected * N * 2);
+    p(inDataLeft, numExpected * numPoints * 2);
   if(existsRight)
-    p(inDataRight, numExpected* N * 2);
+    p(inDataRight, numExpected* numPoints * 2);
 
 #ifdef _PAIRCALC_DEBUG_
   if (p.isUnpacking())
     {
       CkPrintf("[%d,%d,%d,%d,%d] pup unpacking on %d resumed=%d memory %d\n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,symmetric,CkMyPe(),resumed, CmiMemoryUsage());
-      CkPrintf("[%d,%d,%d,%d,%d] pupped : %d %d %d %d %d %d %d %d %d  %d %d cb cb_aid %d %d %d cb_lb inDataLeft inDataRight outData  %d \n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected, grainSize, S, blkSize, N, symmetric, conserveMemory, lbpaircalc, cpreduce, cb_ep, existsLeft, existsRight,  resumed);
+      CkPrintf("[%d,%d,%d,%d,%d] pupped : %d %d %d %d %d %d %d %d %d  %d %d cb cb_aid %d %d %d cb_lb inDataLeft inDataRight outData  %d \n",thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected, grainSize, numStates, numChunks, numPoints, symmetric, conserveMemory, lbpaircalc, cpreduce, cb_ep, existsLeft, existsRight,  resumed);
 
     }
   else
@@ -322,7 +416,7 @@ void PairCalculator::ResumeFromSync() {
 
 /**
  * Forward path multiply.  Accumulates rows and columns when all
- * arrive it call the multiply
+ * arrive it calls the multiply
  */
 void
 PairCalculator::acceptPairData(calculatePairsMsg *msg)
@@ -334,6 +428,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     {
       ResumeFromSync();
     }
+  blkSize=msg->blkSize;
   numRecd++;   // increment the number of received counts
   int offset = -1;
   if (msg->fromRow) {   // This could be the symmetric diagonal case
@@ -342,25 +437,25 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
       { // now that we know N we can allocate contiguous space
 	CkAssert(inDataLeft==NULL);
 	existsLeft=true;
-	N = msg->size; // N is init here with the size of the data chunk.
-	inDataLeft = new double[numExpected*N*2];
-	bzero(inDataLeft,numExpected*N*2*sizeof(double));
+	numPoints = msg->size; // numPoints is init here with the size of the data chunk.
+	inDataLeft = new double[numExpected*numPoints*2];
+	bzero(inDataLeft,numExpected*numPoints*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
-	CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpected,N);
+	CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpected,numPoints);
 
 #endif
       }
-    CkAssert(N==msg->size);
+    CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
-    memcpy(&(inDataLeft[offset*N*2]), msg->points, N * 2 *sizeof(double));
+    memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*N %d * %d N *2 %d points start %g end %g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, N, N*2,msg->points[0].re, msg->points[N-1].im);
+    CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
 #endif
 #ifdef _PAIRCALC_DEBUG_STUPID_PARANOID_
     CkPrintf("copying in \n");
     double re;
     double im;
-    for(int i=0;i<N;i++)
+    for(int i=0;i<numPoints;i++)
       {
 	re=msg->points[i].re;
 	im=msg->points[i].im;
@@ -375,27 +470,27 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   else {
     offset = msg->sender - thisIndex.y;
     if (!existsRight)
-      { // now that we know N we can allocate contiguous space
+      { // now that we know numPoints we can allocate contiguous space
 	CkAssert(inDataRight==NULL);
 	existsRight=true;
-	N = msg->size; // N is init here with the size of the data chunk.
-	inDataRight = new double[numExpected*N*2];
-	bzero(inDataRight,numExpected*N*2*sizeof(double));
+	numPoints = msg->size; // numPoints is init here with the size of the data chunk.
+	inDataRight = new double[numExpected*numPoints*2];
+	bzero(inDataRight,numExpected*numPoints*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
-	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpected,N);
+	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpected,numPoints);
 #endif
       }
-    CkAssert(N==msg->size);
+    CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
-    memcpy(&(inDataRight[offset*N*2]), msg->points, N * 2 *sizeof(double));
+    memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*N %d * %d N *2 %d points start %g end %g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,offset,N, N*2,msg->points[0].re, msg->points[N-1].im);
+    CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,offset,numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
 #endif
 #ifdef _PAIRCALC_DEBUG_STUPID_PARANOID_
     CkPrintf("copying in \n");
     double re;
     double im;
-    for(int i=0;i<N;i++)
+    for(int i=0;i<numPoints;i++)
       {
 	re=msg->points[i].re;
 	im=msg->points[i].im;
@@ -421,22 +516,23 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) 
     {
     if(!msg->doPsiV)
-      {
+      {  //normal behavior
 	actionType=0;
 	multiplyForward(msg->flag_dp);	
       }
     else
       {
-
+	// tolerance correction psiV
 	multiplyPsiV();
       }
     }
+  //nokeep message not deleted
 }
 
 /**
  * Forward path multiply.  
  *
- *   * (numExpected X N) X (N X numExpected) = (numExpected X numExpected)
+ *   * (numExpected X numPoints) X (numPoints X numExpected) = (numExpected X numExpected)
  * To make this work, we transpose the first matrix (A).
  In C++ it appears to be:
  * (ydima X ydimb) = (ydima X xdima) X (xdimb X ydimb)
@@ -464,7 +560,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 #endif
   }
   char transform='N';
-  int doubleN=2*N;
+  int doubleN=2*numPoints;
   char transformT='T';
   int m_in=numExpected;
   int n_in=numExpected;
@@ -472,7 +568,6 @@ PairCalculator::multiplyForward(bool flag_dp)
   int lda=doubleN;   //leading dimension A
   int ldb=doubleN;   //leading dimension B
   int ldc=numExpected;   //leading dimension C
-
   double alpha=double(1.0);//multiplicative identity
   double beta=double(0.0); // C is unset
 #ifndef CMK_OPTIMIZE
@@ -484,20 +579,19 @@ PairCalculator::multiplyForward(bool flag_dp)
   if( numRecd == numExpected * 2)
     {
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-      dumpMatrixDouble("fwlmdata", inDataLeft, N*2, numExpected);
-      dumpMatrixDouble("fwrmdata", inDataRight, N*2, numExpected);
+      dumpMatrixDouble("fwlmdata", inDataLeft, numExpected, numPoints*2);
+      dumpMatrixDouble("fwrmdata", inDataRight, numExpected, numPoints*2);
 #endif
       CkAssert(inDataRight!=NULL);
       CkAssert(inDataLeft!=NULL);
       CkAssert(outData!=NULL);
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataRight, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-      // switching solves a transposition problem
-      //	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataRight, &ldb, &beta, outData, &ldc);
+
     }
   else if (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)
     {
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-      dumpMatrixDouble("fwlmdata",inDataLeft,N*2, numExpected);
+      dumpMatrixDouble("fwlmdata",inDataLeft,numExpected, numPoints*2);
 #endif
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
     } 
@@ -606,29 +700,29 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       // forward path won't be called again until after we're done with outData.
     }
   CkAssert(mynewData==NULL);
-  mynewData = new complex[N*grainSize];
+  mynewData = new complex[numPoints*grainSize];
   existsNew=true;
   if((symmetric || !unitcoef) && (thisIndex.x != thisIndex.y)){
-    othernewData = new complex[N*grainSize];
-    bzero(othernewData,N*grainSize* sizeof(complex));
+    othernewData = new complex[numPoints*grainSize];
+    bzero(othernewData,numPoints*grainSize* sizeof(complex));
   }
   else
       othernewData=NULL;
 
-  int offset = 0, index = thisIndex.y*S + thisIndex.x;
+  int offset = 0, index = thisIndex.y*numStates + thisIndex.x;
 
   if(!symmetric)
-    index = thisIndex.x*S + thisIndex.y;
+    index = thisIndex.x*numStates + thisIndex.y;
   int matrixSize=grainSize*grainSize;
   //ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
   register double m=0;
   bool makeLocalCopy=false;
   double *amatrix=NULL;
 
-  if(S!=grainSize && size!=matrixSize)
+  if(numStates!=grainSize && size!=matrixSize)
       CkAbort("we don't support PC striding anymore");
   
-  if(S==grainSize)// all at once no malloc
+  if(numStates==grainSize)// all at once no malloc
     {
       amatrix=matrix1+index;
     }
@@ -642,7 +736,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   double *outMatrix;
 
   int m_in=grainSize;
-  int n_in=N*2;
+  int n_in=numPoints*2;
   int k_in=grainSize;
   double *mynewDatad= reinterpret_cast <double *> (mynewData);
   double alphad(1.0);
@@ -651,9 +745,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   char transformT='T';
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-  dumpMatrixDouble("bwmlodata",inDataLeft,N*2,numExpected);
+
+  int chunksize=blkSize/numChunks;
+  int ystart=chunksize*thisIndex.z;
+
+  dumpMatrixDouble("bwmlodata",inDataLeft,numExpected,numPoints*2,0,ystart);
   if(!unitcoef){ // CG non minimization case
-      dumpMatrixDouble("bwmrodata",inDataRight,N*2,numExpected);
+      dumpMatrixDouble("bwmrodata",inDataRight,numExpected,numPoints*2,0,ystart);
   }
   dumpMatrixDouble("bwm1idata",matrix1,grainSize,grainSize);
   if(!unitcoef)
@@ -692,7 +790,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-  dumpMatrixComplex("bwgmodata",mynewData,N,grainSize);
+  dumpMatrixComplex("bwgmodata",mynewData,grainSize,numPoints,0,ystart);
 #endif
 
 
@@ -716,17 +814,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
          &n_in,  matrix2, &k_in, &betad, othernewDatad, &n_in);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-    sprintf(filename, "bwg2modata.%d_%d_%d_%d_%d", thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z, symmetric);
-    FILE *ooutfile = fopen(filename, "w");
-
-
-    fprintf(ooutfile,"[%d,%d,%d,%d,%d] outData=C\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-    for(int i=0;i<N*grainSize;i++)
-      {
-	fprintf(ooutfile," %g %g",mynewData[i].re,mynewData[i].im);
-	fprintf(ooutfile,"\n");
-      }
-    fclose(ooutfile);
+    dumpMatrixComplex("bwg2modata",othernewData,grainSize,numPoints);
 #endif
 
 #ifndef CMK_OPTIMIZE
@@ -737,7 +825,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
 #ifdef _PAIRCALC_VALID_OUT_
-  CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[N*grainSize-1].re,mynewData[N*grainSize-1].im);
+  CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
 #endif
 
   sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
@@ -772,7 +860,9 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 // entry method to allow us to delay this outbound communication
 // to minimize brain dead BG/L interference we have a signal to prioritize this
-/* Send the results via multiple reductions */
+/**
+ * Send the results via multiple reductions as triggered by a prioritized message
+ */
 void
 PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 {
@@ -800,18 +890,18 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	{
 	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
-	  CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, N,j,thisIndex.x+j,thisIndex.w);
+	  CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
 #endif
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
-
-	  mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, sumMatrixDoubleType, otherResultCookies[j], mycb);
+	  int outOffset=thisIndex.z;
+	  mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset, -1);
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
 
-	  //mcastGrp->contribute(N*sizeof(complex),othernewData+j*N, CkReduction::sum_double, otherResultCookies[j], mycb);
+	  //mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, CkReduction::sum_double, otherResultCookies[j], mycb);
 
 	}
     }
@@ -820,16 +910,17 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
     {
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
-	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,N,j,thisIndex.y+j,thisIndex.w);
+	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
-	mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, sumMatrixDoubleType, resultCookies[j], mycb);
+	  int outOffset=thisIndex.z;
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset, -1);
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
-	//mcastGrp->contribute(N*sizeof(complex), mynewData+j*N, CkReduction::sum_double, resultCookies[j], mycb);
+	//mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, CkReduction::sum_double, resultCookies[j], mycb);
     }
     delete [] mynewData;
     mynewData=NULL;
@@ -1018,7 +1109,7 @@ PairCalcReducer::broadcastEntireResult(entireResultMsg2 *imsg)
 }
 
 
-void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim)
+void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim, int xstart, int ystart)
 {
   char fmt[1000];
   char filename[1000];
@@ -1028,11 +1119,11 @@ void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, in
   FILE *loutfile = fopen(filename, "w");
   for(int i=0;i<xdim;i++)
     for(int j=0;j<ydim;j++)
-      fprintf(loutfile,"%d %d %.12g\n",i,j,matrix[i*ydim+j]);
+      fprintf(loutfile,"%d %d %.12g\n",i+xstart,j+ystart,matrix[i*ydim+j]);
   fclose(loutfile);
 }
 
-void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, int xdim, int ydim)
+void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, int xdim, int ydim, int xstart, int ystart)
 {
   char fmt[1000];
   char filename[1000];
@@ -1042,7 +1133,7 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
   FILE *loutfile = fopen(filename, "w");
   for(int i=0;i<xdim;i++)
     for(int j=0;j<ydim;j++)
-      fprintf(loutfile,"%d %d %.12g %.12g \n",i,j,matrix[i*ydim+j].re, matrix[i*ydim+j].im);
+      fprintf(loutfile,"%d %d %.12g %.12g \n",i+xstart,j+ystart,matrix[i*ydim+j].re, matrix[i*ydim+j].im);
   fclose(loutfile);
 }
 

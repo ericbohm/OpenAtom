@@ -20,17 +20,11 @@
 // Debugging flag for Verbose output
 //#define _PAIRCALC_DEBUG_
 
-// Optimize flags: 
-#define _PAIRCALC_FIRSTPHASE_STREAM_
-#define _PAIRCALC_USE_ZGEMM_
-#define _PAIRCALC_USE_DGEMM_
+//flags to control semantic for matrix contents
+#define NORMALPC   0  // standard
+#define KEEPORTHO  1  // retain orthoT
+#define PSIV       2  // multiply new psiV by retained orthoT
 
-#define NORMALPC   0
-#define KEEPORTHO  1
-#define PSIV       2
-
-
-//#define _PAIRCALC_SECONDPHASE_LOADBAL_
 enum redtypes {section=0, machine=1, sparsecontiguous=2};
 PUPbytes(redtypes);
 
@@ -46,7 +40,7 @@ PUPbytes(redtypes);
 #define ZTODO ztodo
 #endif
 extern ComlibInstanceHandle mcastInstanceCP;
-
+#define _PAIRCALC_USE_DGEMM_
 
 #ifdef _PAIRCALC_USE_BLAS_
 extern "C" complex ZTODO( const int *N,  complex *X, const int *incX, complex *Y, const int *incY);
@@ -238,17 +232,19 @@ class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsM
  public:
   int size;
   int sender;
+  complex *points;
   bool fromRow;
   bool flag_dp;
-  complex *points;
   bool doPsiV;
-  void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV)
+  int blkSize;
+  void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize)
     {
       size=_size;
       sender=_sender;
       fromRow=_fromRow;
       flag_dp=_flag_dp;
       doPsiV=_doPsiV;
+      blkSize=_blkSize;
       memcpy(points,_points,size*sizeof(complex));
     }
   friend class CMessage_calculatePairsMsg;
@@ -340,39 +336,51 @@ class PairCalculator: public CBase_PairCalculator {
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
 
-  void dumpMatrixDouble(const char *, double *,int,int);
-  void dumpMatrixComplex(const char *, complex *,int,int);
+  void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0 );
+  void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
 
  private:
-  int numRecd, numExpected, grainSize, S, blkSize, N;
-  bool symmetric;
-  bool conserveMemory;
-  bool lbpaircalc;
-  redtypes cpreduce;
-  CkCallback cb;
-  CkArrayID cb_aid;
-  int cb_ep;
-  int cb_ep_tol;
-  bool existsLeft;
-  bool existsRight;
-  bool existsOut;
-  bool existsNew;
-  bool resumed;
-  CkSectionInfo cookie; 
-  complex *mynewData, *othernewData;
-  double *inDataLeft, *inDataRight;
-  double *outData;
-  int actionType;
+  int numRecd;               //! number of messages received
+  int numExpected;           //! number of messages expected
+  int grainSize;             //! number of states per chare
+  int blkSize;               //! number points in gspace plane
+  int numStates;             //! total number of states
+  int numPoints;             //! number of points in this chunk
+  int numChunks;             //! number of blocks the stateplane is divided into
+  bool symmetric;            //! if true, one triangle is missing
+  bool conserveMemory;       //! free up matrices when not in use
+  bool lbpaircalc;           //! allow migration 
+  redtypes cpreduce;         //! which reducer we're using (defunct)
+  CkCallback cb;             //! forward path callback 
+  CkArrayID cb_aid;          //! bw path callback array ID 
+  int cb_ep;                 //! bw path callback entry point 
+  int cb_ep_tol;             //! bw path callback entry point for psiV tolerance
+  bool existsLeft;           //! inDataLeft allocated 
+  bool existsRight;          //! inDataRight allocated 
+  bool existsOut;            //! outData allocated
+  bool existsNew;            //! newData allocated
+  bool resumed;              //! have resumed from load balancing
+  CkSectionInfo cookie;      //! forward path reduction cookie 
+  complex *mynewData;        //! results of bw multiply
+  complex *othernewData;     //! results of sym off diagonal multiply,
+                             //! or the C=-1 *inRight* orthoT +c in dynamics
+  double *inDataLeft;        //! the input pair to be transformed
+  double *inDataRight;       //! the input pair to be transformed
+  double *outData;           //! results of fw multiply
+  int actionType;            //! matrix usage control [NORMAL, KEEPORTHO, PSIV]
   
   /* to support the simpler section reduction*/
-  int rck;
-  CkGroupID mCastGrpId;
+  int rck;                   //! count of received cookies
+  CkGroupID mCastGrpId;      //! group id for multicast manager
 
-  CkSectionInfo *resultCookies;
-  CkSectionInfo *otherResultCookies;
+  CkSectionInfo *resultCookies;  //! array of bw path section cookies
+  CkSectionInfo *otherResultCookies;  //! extra array of bw path
+                                      //! section cookies
+                                      //! for sym off diag, or dynamics
 };
 
 //forward declaration
 CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs);
+CkReductionMsg *sumBlockGrain(int nMsg, CkReductionMsg **msgs);
 
 #endif

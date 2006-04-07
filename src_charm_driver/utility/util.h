@@ -197,6 +197,9 @@ class Config {
 	int scalc_per_plane; // new
         double gExpandFact;
         double gExpandFactRho;
+	int numGrains;
+	int numChunks;
+	int blockSize;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];
 	void print(char *fname_in);
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);
