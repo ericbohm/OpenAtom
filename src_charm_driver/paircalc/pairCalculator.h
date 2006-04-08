@@ -102,12 +102,7 @@ class PairCalcID {
     existsRproxy=pid.existsRproxy;
     priority=pid.priority;
     mCastGrpId=pid.mCastGrpId;
-    for(int chunk;chunk<numChunks;chunk++)
-      {
-	proxyLFrom[chunk]=pid.proxyLFrom[chunk];
-	proxyLNotFrom[chunk]=pid.proxyLNotFrom[chunk];
-	proxyRNotFrom[chunk]=pid.proxyRNotFrom[chunk];
-      }
+    // everyone has to make their own proxies
     return *this;
   }
 
@@ -127,6 +122,15 @@ class PairCalcID {
     p|existsRproxy;
     p|mCastGrpId;
     p|priority;
+    if(p.isUnpacking())
+      {
+	if(existsLproxy)
+	  proxyLFrom=new CProxySection_PairCalculator[numChunks];
+	if(existsLNotFromproxy)
+	  proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
+	if(existsRproxy)
+	  proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
+      }
     if(existsLproxy)
       PUParray(p,proxyLFrom,numChunks);
     if(existsLNotFromproxy)
