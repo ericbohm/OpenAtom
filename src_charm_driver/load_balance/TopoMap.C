@@ -126,7 +126,9 @@ void GSMap::makemap()
 				}
 			}
 		}
+#ifdef MAP_DEBUG
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
+#endif
 }
 
 /**
@@ -258,7 +260,9 @@ void SCalcMap::makemap()
 							}
 						}
 					}
+#ifdef MAP_DEBUG
 	CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
+#endif
 	}
 	else
 	{
@@ -338,7 +342,9 @@ void SCalcMap::makemap()
 							}
 						}
 					}
+#ifdef MAP_DEBUG
 	CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
+#endif
 	}
 	
 	/*if(symmetric)
@@ -491,7 +497,9 @@ void RSMap::makemap()
 				}
 			}
 		}
+#ifdef MAP_DEBUG
 	CkPrintf("RSMap created on processor %d\n", CkMyPe());
+#endif
 }
 
 /**
@@ -784,7 +792,9 @@ void SCalcMap::makemap(){
 	    int intidx[2];
 	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+#ifdef MAP_DEBUG
 	    CkPrintf("SYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
+#endif
 	}//endfor
       }//endfor
     }//endfor
@@ -798,7 +808,9 @@ void SCalcMap::makemap(){
 		  int intidx[2];
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
 		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
+#ifdef MAP_DEBUG
 		  CkPrintf("ASYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
+#endif
 	      }//endfor
 	  }//endfor
       }//endfor
