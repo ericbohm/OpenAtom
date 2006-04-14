@@ -193,8 +193,9 @@ class Config {
 	int toleranceInterval;
 	int localAtomBarrier;
 	int localEnergyBarrier;
-	int states_per_pe; // new
+	int Gstates_per_pe; // new
 	int scalc_per_plane; // new
+        int Rstates_per_pe; // new
         double gExpandFact;
         double gExpandFactRho;
 	int numGrains;

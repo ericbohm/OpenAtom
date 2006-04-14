@@ -1357,10 +1357,11 @@ void Config::print(char *fname_in) {
      fprintf(fp,"rhorpriority: %d\n",rhorpriority);
      fprintf(fp,"rhogpriority: %d\n",rhogpriority);
      fprintf(fp,"psipriority: %d\n",psipriority);
-     fprintf(fp,"doublePack: %d\n",doublePack);
-     fprintf(fp,"conserveMemory: %d\n",conserveMemory);
-     fprintf(fp,"states_per_pe: %d\n",states_per_pe);
-     fprintf(fp,"scalc_per_plane: %d\n",scalc_per_plane);
+     fprintf(fp,"doublePack: %d\n", doublePack);
+     fprintf(fp, "conserveMemory: %d\n", conserveMemory);
+     fprintf(fp, "Gstates_per_pe: %d\n", Gstates_per_pe);
+     fprintf(fp, "scalc_per_plane: %d\n", scalc_per_plane);
+     fprintf(fp, "Rstates_per_pe: %d\n", Rstates_per_pe);
      fprintf(fp,"numChunks: %d\n",numChunks);
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
@@ -1428,8 +1429,9 @@ void Config::readConfig(const char* fileName, Config &config,
     config.localAtomBarrier     = 1;
     config.localEnergyBarrier   = 1;
     config.toleranceInterval    = 1;
-    config.states_per_pe	= config.nstates;
+    config.Gstates_per_pe	= config.nstates;
     config.scalc_per_plane	= 1;
+    config.Rstates_per_pe	= config.nstates;
     config.numChunks            = 1;
     strcpy(config.dataPath,"./");
 
@@ -1520,8 +1522,10 @@ void Config::readConfig(const char* fileName, Config &config,
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))
             config.toleranceInterval = atoi(parameterValue);
-	else if (!strcmp(parameterName, "states_per_pe"))
-            config.states_per_pe = atoi(parameterValue);
+	else if (!strcmp(parameterName, "Gstates_per_pe"))
+            config.Gstates_per_pe = atoi(parameterValue);
+        else if (!strcmp(parameterName, "Rstates_per_pe"))
+            config.Rstates_per_pe = atoi(parameterValue);
 	else if (!strcmp(parameterName, "numChunks"))
             config.numChunks = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact")){
@@ -1730,13 +1734,19 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
-    if(config.states_per_pe<1 || config.states_per_pe>config.nstates){
+    if(config.Gstates_per_pe<1 || config.Gstates_per_pe>config.nstates){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The number of states per pe must be >=1 < num states\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
 
+    if(config.Rstates_per_pe<1 || config.Rstates_per_pe>config.nstates){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("The number of states per pe must be >=1 < num states\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
