@@ -794,7 +794,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_DASH;printf("\n");
 
 
-    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY, config.states_per_pe);
+    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY, config.Rstates_per_pe);
 
     CkArrayOptions realSpaceOpts;
     realSpaceOpts.setMap(rsMap);
@@ -808,7 +808,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
     sfCompProxy = CProxy_StructureFactor::ckNew();
     
-    CProxy_GSMap gsMap = CProxy_GSMap::ckNew(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.states_per_pe);
+    CProxy_GSMap gsMap = CProxy_GSMap::ckNew(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
 
     CkArrayOptions gSpaceOpts;
     gSpaceOpts.setMap(gsMap);
@@ -1195,6 +1195,7 @@ void makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
+        int c=0;
 	
 #if CMK_VERSION_BLUEGENE
 	bgltm = BGLTorusManager::getObject();
@@ -1220,23 +1221,32 @@ void makemap()
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
 	
-	if((nstates*nchareG) % CkNumPes() == 0)
+	if((config.nstates*config.nchareG) % CkNumPes() == 0)
 	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes();
 	else
 	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;
-	int l=config.states_per_pe;
-	int m;
+	int l=config.Gstates_per_pe;
+	int m, pl, pm, rem;
+        
+        pl = config.nstates / l;
+        pm = CkNumPes() / pl;
+       
+	if(pm==0)
+          CkAbort("Choose a larger Rstates_per_pe\n");\
+ 
+        m = config.nchareG / pm;
+        rem = config.nchareG % pm;
 
-	if(gsobjs_per_pe%l==0)
-                m = gsobjs_per_pe/l;
-        else
-                m = gsobjs_per_pe/l + 1;
-	planes_per_pe=m;
+        planes_per_pe=m;
+        
+        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", config.nstates, config.nchareG, CkNumPes(), gsobjs_per_pe);	
+	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
 	
-	//CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
-	
-	for(int ychunk=0; ychunk<config.nchareG; ychunk=ychunk+m)
-		for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
+        for(int ychunk=0; ychunk<config.nchareG; ychunk=ychunk+m)
+        {
+                if(ychunk==(pm-rem)*m)
+                  m=m+1;
+                for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
 		{
 			if(xchunk==0 && ychunk==0) {}
 			else
@@ -1278,25 +1288,31 @@ void makemap()
 				}
 				
 			}
+                        c=0;
 			for(int state=xchunk; state<xchunk+l && state<config.nstates; state++)
 			{
 				for(int plane=ychunk; plane<ychunk+m && plane<config.nchareG; plane++)
 				{
 					if(xchunk==0 && ychunk==0)
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=0;
 						//CkPrintf("%d %d on 0\n", state, plane);
 					}
 					else
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
 				}
 			}
-		}
+                }
+        }
+#ifdef MAP_DEBUG
 	CkPrintf("Local gsmap created on processor %d\n", CkMyPe());
+#endif
 #endif
 }
 
