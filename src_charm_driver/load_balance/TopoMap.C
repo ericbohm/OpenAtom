@@ -24,14 +24,21 @@ void GSMap::makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
-	
-#if CMK_VERSION_BLUEGENE
+        int c=0;
+        
+#ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
 #endif
-	
+
+#ifdef MAP_DEBUG
+        /*char name[30];
+        sprintf(name, "proc%d", CkMyPe());
+        f=fopen(name, "w");*/
+#endif
+
 	int procs[x][y][z];      // get from BGLTorusManager
 	for(int i=0; i<x; i++)
 	    for(int j=0; j<y; j++)
@@ -54,19 +61,28 @@ void GSMap::makemap()
 	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes();
 	else
 	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes()+1;
-	int l=states_per_pe;
-	int m;
+	int l=Gstates_per_pe;
+	int m, pl, pm, rem;
+        
+        pl = nstates / l;
+        pm = CkNumPes() / pl;
+        
+	if(pm==0)
+	  CkAbort("Choose a larger Gstates_per_pe\n");
+        
+	m = nchareG / pm;
+        rem = nchareG % pm;
+        
+        planes_per_pe=m;
 
-	if(gsobjs_per_pe%l==0)
-		m = gsobjs_per_pe/l;
-	else
-		m = gsobjs_per_pe/l + 1;
-	planes_per_pe=m;
+        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
+	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
 	
-	//CkPrintf("gsobjs_per_pe %d, l %d, m %d\n", gsobjs_per_pe, l, m);
-	
-	for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
-		for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+        for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
+        {
+                if(ychunk==(pm-rem)*m)
+                  m=m+1;
+                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
 			if(xchunk==0 && ychunk==0) {}
 			else
@@ -108,25 +124,38 @@ void GSMap::makemap()
 				}
 				
 			}
+                        c=0;
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
 			{
 				for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
 				{
 					if(xchunk==0 && ychunk==0)
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=0;
 						//CkPrintf("%d %d on 0\n", state, plane);
 					}
 					else
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
 				}
 			}
-		}
 #ifdef MAP_DEBUG
+                        /*if(xchunk==0 && ychunk==0)
+                          fprintf(f, "objs %d pe %d\n", c, 0);
+                        else
+                          fprintf(f, "objs %d pe %d\n", c, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+*/
+#endif
+                }
+        }
+
+#ifdef MAP_DEBUG
+        //fclose(f);
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 #endif
 }
@@ -346,29 +375,6 @@ void SCalcMap::makemap()
 	CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
 #endif
 	}
-	
-	/*if(symmetric)
-	{
-		for(int i=0; i<nchareG; i++)
-			for(int j=0; j<max_states; j=j+grainsize)
-				for(int k=j; k<max_states; k=k+grainsize)
-				{
-					CkArrayIndex4D idx4d(i, j, k, 0);
-					CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
-					maptable->put(intdual(intidx[0], intidx[1]))=0;
-				}
-	}
-	else
-	{
-		for(int i=0; i<nchareG; i++)
-			for(int j=0; j<max_states; j=j+grainsize)
-				for(int k=0; k<max_states; k=k+grainsize)
-				{
-					CkArrayIndex4D idx4d(i, j, k, 0);
-					CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
-					maptable->put(intdual(intidx[0], intidx[1]))=0;
-				}
-	}*/
 }
 
 /**
@@ -398,6 +404,7 @@ void RSMap::makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
+        int c=0;
 	
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
@@ -426,18 +433,26 @@ void RSMap::makemap()
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
 	else
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;
-	int l=states_per_pe;
-	int m;
+	int l=Rstates_per_pe;
+	int m, pl, pm, rem;
+        
+        pl = nstates / l;
+        pm = CkNumPes() / pl;
+        
+	if(pm==0)
+	  CkAbort("Choose a larger Rstates_per_pe\n");
 
-	if(rsobjs_per_pe%l==0)
-		m = rsobjs_per_pe/l;
-	else
-		m = rsobjs_per_pe/l + 1;
+        m = sizeY / pm;
+        rem = sizeY % pm;
+
+        //CkPrintf("nstates %d sizeY %d Pes %d, rsobjs_per_pe %d\n", nstates, sizeY, CkNumPes(), rsobjs_per_pe);	
+	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
 	
-	//CkPrintf("rsobjs_per_pe %d, l %d, m %d\n", rsobjs_per_pe, l, m);
-	
-	for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
-		for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+        for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
+        {
+                if(ychunk==(pm-rem)*m)
+                  m=m+1;
+                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
 			if(xchunk==0 && ychunk==0) {}
 			else
@@ -479,24 +494,28 @@ void RSMap::makemap()
 				}
 				
 			}
+                        c=0;
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
 			{
 				for(int plane=ychunk; plane<ychunk+m && plane<sizeY; plane++)
 				{
 					if(xchunk==0 && ychunk==0)
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=0;
 						//CkPrintf("%d %d on 0\n", state, plane);
 					}
 					else
 					{
+                                                c++;
 						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
 				}
 			}
-		}
+                }
+        }
 #ifdef MAP_DEBUG
 	CkPrintf("RSMap created on processor %d\n", CkMyPe());
 #endif
@@ -515,6 +534,7 @@ int RSMap::procNum(int handle, const CkArrayIndex &index)
 	}
 	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
 }
+
 
 /**
  * End of the topology sensitive map functions.
@@ -793,7 +813,7 @@ void SCalcMap::makemap(){
 	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
 #ifdef MAP_DEBUG
-	    CkPrintf("SYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
+	    //CkPrintf("SYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
 #endif
 	}//endfor
       }//endfor
@@ -810,7 +830,7 @@ void SCalcMap::makemap(){
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
 		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
 #ifdef MAP_DEBUG
-		  CkPrintf("ASYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
+		  //CkPrintf("ASYM: plane: %d x: %d y: %d pe %d\n", numX, s1, s2, slowprocNum(0,idx4d));
 #endif
 	      }//endfor
 	  }//endfor
