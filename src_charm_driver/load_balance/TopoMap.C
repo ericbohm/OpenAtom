@@ -784,11 +784,11 @@ int SCalcMap::procNum(int hdl, const CkArrayIndex &idx){
 void SCalcMap::makemap(){
 
   if(symmetric){
-
+    for(int z= 0; z<numChunks; z++)
     for(int numX = 0; numX < nchareG; numX++){
       for (int s1 = 0; s1 < max_states; s1 += gs) {
 	for (int s2 = s1; s2 < max_states; s2 += gs) {
-	    CkArrayIndex4D idx4d(numX,s1,s2,0);
+	    CkArrayIndex4D idx4d(numX,s1,s2,z);
 	    int intidx[2];
 	    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 	    maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
@@ -801,10 +801,11 @@ void SCalcMap::makemap(){
 
   }else{
 
+    for(int z= 0; z<numChunks; z++)
       for(int numX = 0; numX < nchareG; numX++){
 	  for (int s1 = 0; s1 < max_states; s1 += gs) {
 	      for (int s2 = 0; s2 < max_states; s2 += gs) {
-		  CkArrayIndex4D idx4d(numX,s1,s2,0);
+		  CkArrayIndex4D idx4d(numX,s1,s2,z);
 		  int intidx[2];
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts now 2 ints
 		  maptable->put(intdual(intidx[0],intidx[1]))=slowprocNum(0,idx4d);
@@ -853,10 +854,11 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
     double *load = new double[CkNumPes()];
     memset(load, 0, CkNumPes() * sizeof(double));
 
-    int w=0, x=0, y = 0; 
+    int w=0, x=0, y = 0, z =0; 
 
     if(totalload <= 0.0) { 
-      for(w = 0; w < numChareG; w ++) 
+      for(w = 0; w < numChareG; w++) {
+      for(z = 0; z< numChunks; z++ )
 	for(x = 0; x < max_states; x += gs) {
 	  if (symmetric){
 	    y = x;
@@ -880,6 +882,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
     int pe = 0;
     
     for(w = 0; w < numChareG; w ++) {
+    for(z= 0; z<numChunks; z++)
       for(x = 0; x < max_states; x += gs){
 	if (symmetric){
 	  y = x;
@@ -903,7 +906,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 	  load[pe] += curload;
 	  
 	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
-	     (y == idx4d.index[2])) {
+	     (y == idx4d.index[2]) && (z == idx4d.index[3])) {
 #ifndef CMK_OPTIMIZE
              traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
 #endif

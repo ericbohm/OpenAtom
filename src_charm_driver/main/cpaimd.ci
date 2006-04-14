@@ -107,7 +107,7 @@ mainmodule cpaimd {
 
 	array [2D]  CP_State_GSpacePlane {
 		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
-                        int numG, int numR, int s_grain);
+                        int numG, int numR, int s_grain, int numChunks);
 		entry void initGSpace(int n, RunDescriptor r[n], int m, 
 			complex pts[m],int mv, complex vpts[mv], 
                         int nx,int ny,int nz,int istart_cp);
@@ -245,7 +245,7 @@ mainmodule cpaimd {
 	};
 	
 	group SCalcMap: CkArrayMap {
-		entry SCalcMap(int, int, int, int, int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x], int, int);
+		entry SCalcMap(int, int, int, int, int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x], int, int, int);
 	};
 	group FFTcache {
 		entry FFTcache(size2d, int);

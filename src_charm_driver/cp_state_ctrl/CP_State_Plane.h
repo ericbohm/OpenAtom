@@ -188,9 +188,9 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int finishedCpIntegrate;
         int isuspend_energy;
         int isuspend_atms;
-
+	int numChunks;
 	friend class CP_State_ParticlePlane;
-	CP_State_GSpacePlane(int, size2d, int, int, int);
+	CP_State_GSpacePlane(int, size2d, int, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void pup(PUP::er &);

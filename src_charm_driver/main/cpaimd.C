@@ -409,11 +409,11 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 
     CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
                    config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe) ;
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks) ;
     
     CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe);
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks);
     
     CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
     CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
@@ -814,7 +814,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     gSpaceOpts.setMap(gsMap);
 
     gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ,1, 
-                                                          1,config.sGrainSize, gSpaceOpts);
+                                                          1,config.sGrainSize, config.numChunks, gSpaceOpts);
 
     // We bind the particlePlane array to the gSpacePlane array migrate together
     CkArrayOptions particleOpts;
@@ -832,7 +832,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     for (s = 0; s < nstates; s++){
       for (x = 0; x <nchareG; x++){
              gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1, 
-                                    1,config.sGrainSize);
+                                    1,config.sGrainSize, config.numChunks);
              particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
 				      1,numSfGrps,natm_nl,natm_nl_grp_max);
       }

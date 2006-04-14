@@ -240,6 +240,7 @@ class SCalcMap : public CkArrayMap {
   int nchareG;
   int scalc_per_plane;
   int planes_per_pe;
+  int numChunks;
   double *lines_per_chareG;
   double *pts_per_chareG;
   CkHashtableT<intdual, int> *maptable;
@@ -251,11 +252,12 @@ class SCalcMap : public CkArrayMap {
     
 
     SCalcMap(int _nstates, int _nchareG,  int gs, CmiBool _flag, int _nplanes, 
-             double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,   int _planes_per_pe) { 
+             double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,   int _planes_per_pe, int _numChunks) { 
         this->gs   = gs;
         nchareG    = _nchareG;
         max_states = _nstates;
         max_planes = _nplanes;
+	numChunks  = _numChunks;
 	scalc_per_plane = _scalc_per_plane;
 	planes_per_pe = _planes_per_pe;
         symmetric  = _flag;
@@ -289,6 +291,7 @@ class SCalcMap : public CkArrayMap {
 	    p|gs;
 	    p|symmetric;
 	    p|totalload;
+	    p|numChunks;
 	    if (p.isUnpacking()) {
 		lines_per_chareG= new double[nchareG];
 		pts_per_chareG= new double[nchareG];
