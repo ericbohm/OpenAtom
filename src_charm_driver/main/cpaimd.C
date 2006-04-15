@@ -1195,7 +1195,8 @@ void makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
-        int c=0;
+	int vn = 0;
+        int c = 0;
 	
 #if CMK_VERSION_BLUEGENE
 	bgltm = BGLTorusManager::getObject();
@@ -1203,20 +1204,13 @@ void makemap()
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
 #endif
-
-	int procs[x][y][z];      // get from BGLTorusManager
-	for(int i=0; i<x; i++)
-	    for(int j=0; j<y; j++)
-		for(int k=0; k<z; k++)
-		    procs[i][j][k]=0;
-		    
-	//CkPrintf("x %d, y %d, z %d no of pe's %d\n", x, y, z, CkNumPes());
-	
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
+
 	int assign[3]={0, 0, 0};
+	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
@@ -1251,7 +1245,6 @@ void makemap()
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
-				procs[fp.next[2]][fp.next[1]][fp.next[0]]=1;
 				for(int i=0;i<3;i++)
 					fp.start[i]=fp.next[i];
 				if(fp.start[2]>x/2)
@@ -1266,27 +1259,13 @@ void makemap()
 					assign[0]=fp.start[0]-z;
 				else
 					assign[0]=fp.start[0];
-				fp.findNextInTorus(assign);
-				
-				while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
-				{
-					for(int i=0;i<3;i++)
-						fp.start[i]=fp.next[i];
-					if(fp.start[2]>x/2)
-						assign[2]=fp.start[2]-x;
-					else
-						assign[2]=fp.start[2];
-					if(fp.start[1]>y/2)
-						assign[1]=fp.start[1]-y;
-					else
-						assign[1]=fp.start[1];
-					if(fp.start[0]>z/2)
-						assign[0]=fp.start[0]-z;
-					else
-						assign[0]=fp.start[0];
+				if(vn==0)
 					fp.findNextInTorus(assign);
-				}
-				
+                                else
+                                {
+                                	fp.findNextInTorusV(w, assign);
+                                        w = fp.w;
+                                }	
 			}
                         c=0;
 			for(int state=xchunk; state<xchunk+l && state<config.nstates; state++)
@@ -1302,7 +1281,10 @@ void makemap()
 					else
 					{
                                                 c++;
-						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						if(vn==0)
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                else
+                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}

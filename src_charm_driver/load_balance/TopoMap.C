@@ -25,13 +25,15 @@ void GSMap::makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
-        int c=0;
+	int vn = 0;
+        int c = 0;
         
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
 #endif
 
 #ifdef MAP_DEBUG
@@ -40,20 +42,13 @@ void GSMap::makemap()
         f=fopen(name, "w");*/
 #endif
 
-	int procs[x][y][z];      // get from BGLTorusManager
-	for(int i=0; i<x; i++)
-	    for(int j=0; j<y; j++)
-		for(int k=0; k<z; k++)
-		    procs[i][j][k]=0;
-		    
-	//CkPrintf("x %d, y %d, z %d no of pe's %d\n", x, y, z, CkNumPes());
-		
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
 	
 	int assign[3]={0, 0, 0};
+	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
@@ -76,8 +71,8 @@ void GSMap::makemap()
         
         planes_per_pe=m;
 
-        CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
-	CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
+        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
+	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
 	
         for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
         {
@@ -88,7 +83,6 @@ void GSMap::makemap()
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
-				procs[fp.next[2]][fp.next[1]][fp.next[0]]=1;
 				for(int i=0;i<3;i++)
 					fp.start[i]=fp.next[i];
 				if(fp.start[2]>x/2)
@@ -103,27 +97,13 @@ void GSMap::makemap()
 					assign[0]=fp.start[0]-z;
 				else
 					assign[0]=fp.start[0];
-				fp.findNextInTorus(assign);
-				
-				while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
-				{
-					for(int i=0;i<3;i++)
-						fp.start[i]=fp.next[i];
-					if(fp.start[2]>x/2)
-						assign[2]=fp.start[2]-x;
-					else
-						assign[2]=fp.start[2];
-					if(fp.start[1]>y/2)
-						assign[1]=fp.start[1]-y;
-					else
-						assign[1]=fp.start[1];
-					if(fp.start[0]>z/2)
-						assign[0]=fp.start[0]-z;
-					else
-						assign[0]=fp.start[0];
+				if(vn==0)
 					fp.findNextInTorus(assign);
-				}
-				
+                                else
+                                {
+                                	fp.findNextInTorusV(w, assign);
+                                        w = fp.w;
+                                }	
 			}
                         c=0;
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
@@ -139,7 +119,10 @@ void GSMap::makemap()
 					else
 					{
                                                 c++;
-						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						if(vn==0)
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                else
+                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
@@ -191,26 +174,27 @@ void SCalcMap::makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
+	int vn = 0;
 	
 #if CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
 #endif
-
-	int procs[x][y][z];      // get from BGLTorusManager
-	for(int i=0; i<x; i++)
-		for(int j=0; j<y; j++)
-			for(int k=0; k<z; k++)
-				procs[i][j][k]=0;
-			
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
+	fp.w = 0;
+
 	if(planes_per_pe==0)
 		CkAbort("Choose a smaller Gstates_per_pe\n");
+	int assign[3]={0, 0, 0};
+	int w = 0;
+        for(int i=0;i<3;i++)
+        	fp.start[i]=fp.next[i]=0;
 		
 	if(symmetric)
 	{
@@ -221,10 +205,6 @@ void SCalcMap::makemap()
 		else
 			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes() + 1;
 		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
-				
-		int assign[3]={0, 0, 0};
-		for(int i=0;i<3;i++)
-			fp.start[i]=fp.next[i]=0;
 			
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
@@ -234,7 +214,7 @@ void SCalcMap::makemap()
 					{
 						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-						if(xchunk==0 && ychunk==0 && plane==0)
+						if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
 						{
 							//CkPrintf("plane %d x %d y %d = proc 0\n", plane, xchunk, ychunk); 
 							maptable->put(intdual(intidx[0], intidx[1]))=0;
@@ -245,13 +225,15 @@ void SCalcMap::makemap()
 							if(count<scobjs_per_pe)
 							{
 								//CkPrintf("plane %d x %d y %d = proc %d\n", plane, xchunk, ychunk, assign[0]*x*y+assign[1]*x+assign[2]);
-								maptable->put(intdual(intidx[0], intidx[1]))=assign[0]*x*y+assign[1]*x+assign[2];
+								if(vn==0)
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                		else
+                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 								count++;
 							}
 							else
 							{
 								count=0;
-								procs[assign[2]][assign[1]][assign[0]]=1;
 								for(int i=0;i<3;i++)
 									fp.start[i]=fp.next[i];
 								if(fp.start[2]>x/2)
@@ -266,29 +248,20 @@ void SCalcMap::makemap()
 									assign[0]=fp.start[0]-z;
 								else
 									assign[0]=fp.start[0];
-								fp.findNextInTorus(assign);
-								while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
-								{
-									for(int i=0;i<3;i++)
-										fp.start[i]=fp.next[i];
-									if(fp.start[2]>x/2)
-										assign[2]=fp.start[2]-x;
-									else
-										assign[2]=fp.start[2];
-									if(fp.start[1]>y/2)
-										assign[1]=fp.start[1]-y;
-									else
-										assign[1]=fp.start[1];
-									if(fp.start[0]>z/2)
-										assign[0]=fp.start[0]-z;
-									else
-										assign[0]=fp.start[0];
+								if(vn==0)
 									fp.findNextInTorus(assign);
-								}
+                                				else
+                                                                {
+                                					fp.findNextInTorusV(w, assign);
+                                                                        w = fp.w;
+                                                                }
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
 								//CkPrintf("plane %d x %d y %d = proc %d\n", plane, xchunk, ychunk, assign[0]*x*y+assign[1]*x+assign[2]);
-								maptable->put(intdual(intidx[0], intidx[1]))=assign[0]*x*y+assign[1]*x+assign[2];
+								if(vn==0)
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                		else
+                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 								count++;
 							}
 						}
@@ -304,10 +277,6 @@ void SCalcMap::makemap()
 		else
 		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes() + 1;
 		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
-			
-		int assign[3]={0, 0, 0};
-		for(int i=0;i<3;i++)
-			fp.start[i]=fp.next[i]=0;
 			
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
@@ -328,13 +297,15 @@ void SCalcMap::makemap()
 							if(count<scobjs_per_pe)
 							{
 								//CkPrintf("plane %d x %d y %d = proc %d\n", plane, xchunk, ychunk, assign[0]*x*y+assign[1]*x+assign[2]);
-								maptable->put(intdual(intidx[0], intidx[1]))=assign[0]*x*y+assign[1]*x+assign[2];
+								if(vn==0)
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                		else
+                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 								count++;
 							}
 							else
 							{
 								count=0;
-								procs[assign[2]][assign[1]][assign[0]]=1;
 								for(int i=0;i<3;i++)
 									fp.start[i]=fp.next[i];
 								if(fp.start[2]>x/2)
@@ -349,29 +320,20 @@ void SCalcMap::makemap()
 									assign[0]=fp.start[0]-z;
 								else
 									assign[0]=fp.start[0];
-								fp.findNextInTorus(assign);
-								while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
-								{
-									for(int i=0;i<3;i++)
-										fp.start[i]=fp.next[i];
-									if(fp.start[2]>x/2)
-										assign[2]=fp.start[2]-x;
-									else
-										assign[2]=fp.start[2];
-									if(fp.start[1]>y/2)
-										assign[1]=fp.start[1]-y;
-									else
-										assign[1]=fp.start[1];
-									if(fp.start[0]>z/2)
-										assign[0]=fp.start[0]-z;
-									else
-										assign[0]=fp.start[0];
+								if(vn==0)
 									fp.findNextInTorus(assign);
-								}
+                                				else
+                                                                {
+                                					fp.findNextInTorusV(w, assign);
+                                                                        w = fp.w;
+                                                                }
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
 								//CkPrintf("plane %d x %d y %d = proc %d\n", plane, xchunk, ychunk, assign[0]*x*y+assign[1]*x+assign[2]);
-								maptable->put(intdual(intidx[0], intidx[1]))=assign[0]*x*y+assign[1]*x+assign[2];
+								if(vn==0)
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                		else
+                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
 								count++;
 							}
 						}
@@ -409,20 +371,16 @@ void RSMap::makemap()
 	int x = CkNumPes();
 	int y = 1;
 	int z = 1;
-        int c=0;
+	int vn = 0;
+        int c = 0;
 	
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
 #endif
-
-	int procs[x][y][z];
-	for(int i=0; i<x; i++)
-	    for(int j=0; j<y; j++)
-		for(int k=0; k<z; k++)
-		    procs[i][j][k]=0;
 	
 	fp.count=1;
 	fp.nopX=x;
@@ -430,6 +388,7 @@ void RSMap::makemap()
 	fp.nopZ=z;
 	
 	int assign[3]={0, 0, 0};
+	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	
@@ -462,7 +421,6 @@ void RSMap::makemap()
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
-				procs[fp.next[2]][fp.next[1]][fp.next[0]]=1;
 				for(int i=0;i<3;i++)
 					fp.start[i]=fp.next[i];
 				if(fp.start[2]>x/2)
@@ -477,27 +435,13 @@ void RSMap::makemap()
 					assign[0]=fp.start[0]-z;
 				else
 					assign[0]=fp.start[0];
-				fp.findNextInTorus(assign);
-				
-				while(procs[fp.next[2]][fp.next[1]][fp.next[0]]==1)
-				{
-					for(int i=0;i<3;i++)
-						fp.start[i]=fp.next[i];
-					if(fp.start[2]>x/2)
-						assign[2]=fp.start[2]-x;
-					else
-						assign[2]=fp.start[2];
-					if(fp.start[1]>y/2)
-						assign[1]=fp.start[1]-y;
-					else
-						assign[1]=fp.start[1];
-					if(fp.start[0]>z/2)
-						assign[0]=fp.start[0]-z;
-					else
-						assign[0]=fp.start[0];
-					fp.findNextInTorus(assign);
-				}
-				
+				if(vn==0)
+                                  fp.findNextInTorus(assign);
+                                else
+                                {
+                                        fp.findNextInTorusV(w, assign);
+                                        w = fp.w;
+                                }	
 			}
                         c=0;
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
@@ -513,7 +457,13 @@ void RSMap::makemap()
 					else
 					{
                                                 c++;
-						maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						if(vn==0)
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+                                                else
+                                                {
+                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+                                                  //CkPrintf("%d %d on %d\n", state, plane, (fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w);
+                                                }
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
