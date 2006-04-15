@@ -6,6 +6,7 @@
 #include "charm++.h"
 #include "cpaimd.h"
 #include "util.h" 
+#define MAP_DEBUG
 
 #ifdef USE_TOPOMAP
 #include "FindProcessor.h"
@@ -75,8 +76,8 @@ void GSMap::makemap()
         
         planes_per_pe=m;
 
-        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
-	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
+        CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
+	CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
 	
         for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
         {
@@ -208,16 +209,18 @@ void SCalcMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
+	if(planes_per_pe==0)
+		CkAbort("Choose a smaller Gstates_per_pe\n");
 		
 	if(symmetric)
 	{
 		for(int i=1; i<=max_states/grainsize; i++)
 			lesser_scalc += i;
-		if(lesser_scalc*nchareG % CkNumPes() == 0)
-			scobjs_per_pe = lesser_scalc*nchareG/CkNumPes();
+		if(lesser_scalc*nchareG*numChunks % CkNumPes() == 0)
+			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
 		else
-			scobjs_per_pe = lesser_scalc*nchareG/CkNumPes() + 1;
-		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
+			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes() + 1;
+		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
 				
 		int assign[3]={0, 0, 0};
 		for(int i=0;i<3;i++)
@@ -226,9 +229,10 @@ void SCalcMap::makemap()
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 				for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
+				    for(int newdim=0; newdim<numChunks; newdim++)
 					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 					{
-						CkArrayIndex4D idx4d(plane, xchunk, ychunk, 0);
+						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 						if(xchunk==0 && ychunk==0 && plane==0)
 						{
@@ -295,10 +299,10 @@ void SCalcMap::makemap()
 	}
 	else
 	{
-		if(n*nchareG % CkNumPes() == 0)
-		scobjs_per_pe = n*nchareG/CkNumPes();
+		if(n*nchareG*numChunks % CkNumPes() == 0)
+		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
 		else
-		scobjs_per_pe = n*nchareG/CkNumPes() + 1;
+		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes() + 1;
 		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe);
 			
 		int assign[3]={0, 0, 0};
@@ -308,9 +312,10 @@ void SCalcMap::makemap()
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 				for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+				    for(int newdim=0; newdim<numChunks; newdim++)
 					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 					{
-						CkArrayIndex4D idx4d(plane, xchunk, ychunk, 0);
+						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 						if(xchunk==0 && ychunk==0 && plane==0)
 						{
