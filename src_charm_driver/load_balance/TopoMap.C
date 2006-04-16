@@ -5,8 +5,7 @@
  */
 #include "charm++.h"
 #include "cpaimd.h"
-#include "util.h" 
-#define MAP_DEBUG
+#include "util.h"
 
 #ifdef USE_TOPOMAP
 #include "FindProcessor.h"
@@ -51,12 +50,12 @@ void GSMap::makemap()
 	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
-	int gsobjs_per_pe;
+	/*int gsobjs_per_pe;
 	
 	if((nstates*nchareG) % CkNumPes() == 0)
 	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes();
 	else
-	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes()+1;
+	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes()+1;*/
 	int l=Gstates_per_pe;
 	int m, pl, pm, rem;
         
@@ -392,11 +391,11 @@ void RSMap::makemap()
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	
-	int rsobjs_per_pe;
+	/*int rsobjs_per_pe;
 	if(nstates*sizeY % CkNumPes() == 0)
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
 	else
-	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;
+	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;*/
 	int l=Rstates_per_pe;
 	int m, pl, pm, rem;
         
@@ -490,7 +489,413 @@ int RSMap::procNum(int handle, const CkArrayIndex &index)
 	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
 }
 
+/** 
+ * New functions beind added for the topology mapping of the
+ * density objects - RhoR, RhoG, RhoGHartExt
+ */
 
+void RhoRSMap::makemap()
+{
+	FindProcessor fp;
+	int x = CkNumPes();
+	int y = 1;
+	int z = 1;
+	int vn = 0;
+	
+#ifdef CMK_VERSION_BLUEGENE
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
+	x = bgltm->getXSize();
+	y = bgltm->getYSize();
+	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
+#endif
+	
+	fp.count=1;
+	fp.nopX=x;
+	fp.nopY=y;
+	fp.nopZ=z;
+	
+	int assign[3]={0, 0, 0};
+	int w = 0;
+	for(int i=0;i<3;i++)
+		fp.start[i]=fp.next[i]=0;
+                
+        int rrsobjs_per_pe= nchareRhoR/(CkNumPes()/2);
+        int rem;
+        
+        rem = nchareRhoR % (CkNumPes()/2);
+        if(rem!=0)
+          rrsobjs_per_pe += 1;
+          
+        for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
+        {
+          if(rem!=0)
+            if(chunk==rem*rrsobjs_per_pe)
+              rrsobjs_per_pe -= 1;
+          if(chunk==0) {}
+          else
+          {
+            for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+            if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+            else
+                  assign[2]=fp.start[2];
+            if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+            else
+                  assign[1]=fp.start[1];
+            if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+            else
+                  assign[0]=fp.start[0];
+            if(vn==0)
+            {
+              fp.findNextInTorus(assign);
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorus(assign);
+            }
+            else
+            {
+              fp.findNextInTorusV(w, assign);
+              w = fp.w;
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorusV(w, assign);
+            }
+          }
+          for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
+          {
+            if(chunk==0)
+            {
+              maptable->put(intdual(i, 0))=0;
+              //CkPrintf("%d on %d\n", i, 0);
+            }
+            else
+            {
+              if(vn==0)
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+              else
+                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+            }
+          }   
+        }
+#ifdef MAP_DEBUG
+	CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());
+#endif
+}
+
+int RhoRSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
+{
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      if(maptable==NULL)
+      {
+        maptable= new CkHashtableT<intdual, int> (nchareRhoR*1); 
+	makemap();
+      }  
+      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+}
+
+void RhoGSMap::makemap()
+{
+	FindProcessor fp;
+	int x = CkNumPes();
+	int y = 1;
+	int z = 1;
+	int vn = 0;
+	
+#ifdef CMK_VERSION_BLUEGENE
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
+	x = bgltm->getXSize();
+	y = bgltm->getYSize();
+	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
+#endif
+	
+	fp.count=1;
+	fp.nopX=x;
+	fp.nopY=y;
+	fp.nopZ=z;
+	
+        int assign[3]={0, 0, 0};
+        int w;
+        
+        if(vn==0)
+          assign[2]=1;
+        else
+          w=1;
+        
+	for(int i=0;i<3;i++)
+		fp.start[i]=fp.next[i]=assign[i];
+        
+        int rgsobjs_per_pe= nchareRhoG/(CkNumPes()/2);
+        int rem;
+        
+        rem = nchareRhoG % (CkNumPes()/2);
+        if(rem!=0)
+          rgsobjs_per_pe += 1;
+        
+        //CkPrintf("rem %d rgsobjs_per_pe %d\n", rem, rgsobjs_per_pe);
+        for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
+        {
+          if(rem!=0)
+            if(chunk==rem*rgsobjs_per_pe)
+              rgsobjs_per_pe -= 1;  
+          if(chunk==0) {}
+          else
+          {
+            for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+            if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+            else
+                  assign[2]=fp.start[2];
+            if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+            else
+                  assign[1]=fp.start[1];
+            if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+            else
+                  assign[0]=fp.start[0];
+            if(vn==0)
+            {
+              fp.findNextInTorus(assign);
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorus(assign);
+            }
+            else
+            {
+              fp.findNextInTorusV(w, assign);
+              w = fp.w;
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorusV(w, assign);
+            }
+          }
+          for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
+          {
+            if(chunk==0)
+            {
+              if(vn==0)
+                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
+              else
+              maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
+              //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
+            }
+            else
+            {
+              if(vn==0)
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+              else
+                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+            }
+          } 
+        }
+#ifdef MAP_DEBUG
+	CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
+#endif
+}
+    
+int RhoGSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
+{
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      if(maptable==NULL)
+      {
+        maptable= new CkHashtableT<intdual, int> (nchareRhoG*1); 
+	makemap();
+      }  
+      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+}
+
+void RhoGHartMap::makemap()
+{
+	FindProcessor fp;
+	int x = CkNumPes();
+	int y = 1;
+	int z = 1;
+	int vn = 0;
+	
+#ifdef CMK_VERSION_BLUEGENE
+	BGLTorusManager *bgltm = BGLTorusManager::getObject();
+	x = bgltm->getXSize();
+	y = bgltm->getYSize();
+	z = bgltm->getZSize();
+	vn = bgltm->isVnodeMode();
+#endif
+	
+	fp.count=1;
+	fp.nopX=x;
+	fp.nopY=y;
+	fp.nopZ=z;
+	
+        int assign[3]={0, 0, 0};
+        int w;
+        
+        if(vn==0)
+          assign[2]=1;
+        else
+          w=1;
+          
+	for(int i=0;i<3;i++)
+		fp.start[i]=fp.next[i]=assign[i];
+        
+        int rghobjs_per_pe= nchareRhoGHart/(CkNumPes()/2);
+        int rem;
+        
+        rem = nchareRhoGHart % (CkNumPes()/2);
+        if(rem!=0)
+          rghobjs_per_pe += 1;
+          
+        for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
+        {
+          if(rem!=0)
+            if(chunk==rem*rghobjs_per_pe)
+              rghobjs_per_pe -= 1; 
+          if(chunk==0) {}
+          else
+          {
+            for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+            if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+            else
+                  assign[2]=fp.start[2];
+            if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+            else
+                  assign[1]=fp.start[1];
+            if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+            else
+                  assign[0]=fp.start[0];
+            if(vn==0)
+            {
+              fp.findNextInTorus(assign);
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorus(assign);
+            }
+            else
+            {
+              fp.findNextInTorusV(w, assign);
+              w = fp.w;
+              for(int i=0;i<3;i++)
+                  fp.start[i]=fp.next[i];
+              if(fp.start[2]>x/2)
+                  assign[2]=fp.start[2]-x;
+              else
+                  assign[2]=fp.start[2];
+              if(fp.start[1]>y/2)
+                  assign[1]=fp.start[1]-y;
+              else
+                  assign[1]=fp.start[1];
+              if(fp.start[0]>z/2)
+                  assign[0]=fp.start[0]-z;
+              else
+                  assign[0]=fp.start[0];
+              fp.findNextInTorusV(w, assign);
+            }
+          }
+          for(int i=chunk;i<chunk+rghobjs_per_pe;i++)
+          {
+            if(chunk==0)
+            {
+              if(vn==0)
+                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
+              else
+                maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
+              //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
+            }
+            else
+            {
+              if(vn==0)
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+              else
+                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+            }
+          }  
+        }
+#ifdef MAP_DEBUG
+	CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
+#endif
+}
+
+int RhoGHartMap::procNum(int arrayHdl, const CkArrayIndex &idx)
+{
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      if(maptable==NULL)
+      {
+        maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1); 
+	makemap();
+      }  
+      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+}    
 /**
  * End of the topology sensitive map functions.
  * Below is the alternative mapping scheme which was being used earlier.
@@ -990,5 +1395,35 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
 
 }
 
+int RhoRSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
+    }
+
+int RhoGSMap::procNum(int arrayHdl, const CkArrayIndex &idx){
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+//      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
+      int pe=(((N * idx2d.index[0])  + off) % CkNumPes());
+      // avoid PEs favored by the array characterized by the avoid and avoid_off parms
+      if(avoid>1 && (pe-avoid_off)%avoid==0)
+      {
+	  pe=(pe+1) %CkNumPes();
+	  
+      }
+      return pe;
+    }
+
+int RhoGHartMap::procNum(int arrayHdl, const CkArrayIndex &idx){
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+//      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
+      int pe=(((N * idx2d.index[0])  + off) % CkNumPes());
+      // avoid PEs favored by the array characterized by the avoid and avoid_off parms
+      if(avoid>1 && (pe-avoid_off)%avoid==0)
+      {
+	  pe=(pe+1) %CkNumPes();
+	  
+      }
+      return pe;
+    }    
 #endif
 
