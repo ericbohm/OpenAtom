@@ -423,205 +423,31 @@ int FindProcessor::findNextInTorus(int a[])
 
 int FindProcessor::findNextInTorusV(int t, int a[])
 {
+	int ret;
 	if(t==0)
 	{
 		w=1;
-		printing(w, next[0], next[1], next[2]);
+		//printing(w, next[0], next[1], next[2]);
+		return 1;
 	}
 	else
 	{
 		w=0;
-		int negXL=(int)(ceil(nopX/2.0));
-		int negYL=(int)(ceil(nopY/2.0));
-		int negZL=(int)(ceil(nopZ/2.0));
-		int posXL=nopX/2 + 1;
-		int posYL=nopY/2 + 1;
-		int posZL=nopZ/2 + 1;
-		if(count==2*nopX*nopY*nopZ)
-		{
-			cout<<"-------------------------\n";
-			cout<<"No more processors left\n";
-			cout<<"-------------------------\n";
-			return 0;
-		}
-	
-		if(a[0]==0 && a[1]==0 && a[2]==0)
-		{
-			next[2]=1;
-			distance=1;
-			cout<<"-------------------------\n";
-			cout<<"Distance "<<distance<<" starting\n";
-			cout<<"-------------------------\n";
-			printing(0, 0, 0, 1);
-		}	
-		else
-		{
-			if(a[0]<=0 && a[1]<=0 && a[2]<=0)
-			{
-				for(int i=0; i<3;i++)
-					a[i]=-1*a[i];
-				
-				if(a[2]>0)
-				{
-					next[0]=a[0]; 
-					next[1]=a[1]+1;
-					next[2]=a[2]-1;
-					if(abs(next[0])>=posZL || abs(next[1])>=posYL || abs(next[2])>=posXL)
-					{
-						//cout<<"diff >>>> ";
-						//printing_sp(next[0], next[1], next[2]);
-						for(int i=0;i<3;i++)
-							start[i]=next[i];
-						return findNextInTorusV(1, start);
-					}
-					else
-					{
-						if(next[2]<0)
-							next[2]=next[2]+nopX;
-						if(next[1]<0)
-							next[1]=next[1]+nopY;
-						if(next[0]<0)
-							next[0]=next[0]+nopZ;
-						printing(w, next[0], next[1], next[2]);
-					}
-				}
-				else
-				{
-					if(a[1]>0)
-					{
-						next[0]=a[0]+1; 
-						next[1]=0;
-						next[2]=a[1]-1;
-						if(abs(next[0])>=posZL || abs(next[1])>=posYL || abs(next[2])>=posXL)
-						{
-							//cout<<"diff >>>> ";
-							//printing_sp(next[0], next[1], next[2]);
-							for(int i=0;i<3;i++)
-								start[i]=next[i];
-							return findNextInTorusV(1, start);
-						}
-						else
-						{
-							if(next[2]<0)
-								next[2]=next[2]+nopX;
-							if(next[1]<0)
-								next[1]=next[1]+nopY;
-							if(next[0]<0)
-								next[0]=next[0]+nopZ;
-							printing(w, next[0], next[1], next[2]);
-						}
-					}
-					else
-					{
-						next[0]=0;
-						next[1]=0;
-						next[2]=a[0]+1;
-						if(abs(next[0])>=posZL || abs(next[1])>=posYL || abs(next[2])>=posXL)
-						{
-							distance=distance+1;
-							cout<<"-------------------------\n";
-							cout<<"Distance "<<distance<<" starting\n";
-							cout<<"-------------------------\n";
-							//cout<<"diff >>>> ";
-							//printing_sp(next[0], next[1], next[2]);
-							for(int i=0;i<3;i++)
-								start[i]=next[i];
-							return findNextInTorusV(1, start);
-						}
-						else
-						{
-							if(next[2]<0)
-								next[2]=next[2]+nopX;
-							if(next[1]<0)
-								next[1]=next[1]+nopY;
-							if(next[0]<0)
-								next[0]=next[0]+nopZ;
-							printing(w, next[0], next[1], next[2]);
-						}
-					}	
-				}	
-			}
-			else
-			{
-				if(a[2]>0)
-				{
-					next[0]=a[0]; 
-					next[1]=a[1];
-					next[2]=a[2]*-1;
-					if(compare(next[0], posZL, negZL) || compare(next[1], posYL, negYL) || compare(next[2], posXL, negXL))
-					{
-						//cout<<"diff >>>> ";
-						//printing_sp(next[0], next[1], next[2]);
-						for(int i=0;i<3;i++)
-							start[i]=next[i];
-						return findNextInTorusV(1, start);
-					}
-					else
-					{
-						if(next[2]<0)
-							next[2]=next[2]+nopX;
-						if(next[1]<0)
-							next[1]=next[1]+nopY;
-						if(next[0]<0)
-							next[0]=next[0]+nopZ;
-						printing(w, next[0], next[1], next[2]);
-					}
-				}	
-				else 
-				{
-					if(a[1]>0)
-					{
-						next[0]=a[0]; 
-						next[1]=a[1]*-1;
-						next[2]=a[2]*-1;
-						if(compare(next[0], posZL, negZL) || compare(next[1], posYL, negYL) || compare(next[2], posXL, negXL))
-						{
-							//cout<<"diff >>>> ";
-							//printing_sp(next[0], next[1], next[2]);
-							for(int i=0;i<3;i++)
-								start[i]=next[i];
-							return findNextInTorusV(1, start);
-						}
-						else
-						{
-							if(next[2]<0)
-								next[2]=next[2]+nopX;
-							if(next[1]<0)
-								next[1]=next[1]+nopY;
-							if(next[0]<0)
-								next[0]=next[0]+nopZ;
-							printing(w, next[0], next[1], next[2]);
-						}
-					}	
-					else
-					{
-						next[0]=a[0]*-1; 
-						next[1]=a[1]*-1;
-						next[2]=a[2]*-1;
-						if(compare(next[0], posZL, negZL) || compare(next[1], posYL, negYL) || compare(next[2], posXL, negXL))
-						{
-							//cout<<"diff >>>> ";
-							//printing_sp(next[0], next[1], next[2]);
-							for(int i=0;i<3;i++)
-								start[i]=next[i];
-							return findNextInTorusV(1, start);
-						}
-						else
-						{
-							if(next[2]<0)
-								next[2]=next[2]+nopX;
-							if(next[1]<0)
-								next[1]=next[1]+nopY;
-							if(next[0]<0)
-								next[0]=next[0]+nopZ;
-							printing(w, next[0], next[1], next[2]);
-						}
-					}
-				}
-			}
-		}
+		if(count==nopX*nopY*nopZ) {
+                  cout<<"-------------------------\n";
+		  cout<<"No more processors left\n";
+		  cout<<"-------------------------\n";
+		  CkAbort("inconsistent no. of chares and processors\n");
+		  return 0;
+                }
+                
+                ret = findNextIter(a);
+                while(ret==2)
+                {
+                    ret=findNextIter(start);
+                }
+                return ret;
 	}	
-	return 1;
 }
 
 void FindProcessor::printSome(int n)
@@ -745,7 +571,7 @@ void FindProcessor::printing(int a, int b, int c)
 		cout<<" "<<c<<"\n";
 	else
 		cout<<"  "<<c<<"\n";
-	//count++; needs to be placed in other three functions!
+	//count++; needs to be placed in other two functions!
 }
 void FindProcessor::printing_sp(int a, int b, int c)
 {
@@ -787,7 +613,7 @@ void FindProcessor::printing(int w, int a, int b, int c)
 		cout<<" "<<c<<"\n";
 	else
 		cout<<"  "<<c<<"\n";
-	count++;
+	//count++; needs to be placed in other two functions!
 }
 
 int FindProcessor::compare(int n, int a, int b)
