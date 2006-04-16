@@ -228,14 +228,17 @@ mainmodule cpaimd {
 	};
 
 	group RhoGSMap : CkArrayMap {
-		entry RhoGSMap(int M, int off, int avoid, int avoid_off);
+		entry RhoGSMap(int M, int off, int avoid, int avoid_off, int);
 	};
 
 	group RhoRSMap : CkArrayMap {
-		entry RhoRSMap(int M, int off);
+		entry RhoRSMap(int M, int off, int);
 	};
 
-
+	group RhoGHartMap : CkArrayMap {
+		entry RhoGHartMap(int M, int off, int avoid, int avoid_off, int);
+	};
+        
 	group GSMap : CkArrayMap {
 		entry GSMap(int nplane_x, double lines_per_plane[nplane_x], double pts_per_plane[nplane_x], int, int);
 	};
