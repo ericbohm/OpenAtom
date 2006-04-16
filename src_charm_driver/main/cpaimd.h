@@ -17,6 +17,7 @@
 #include "StreamingStrategy.h"
 #include "pairCalculator.h"
 #include "ckhashtable.h"
+#define USE_TOPOMAP
 
 #define LOAD_BALANCE_STEP 10
 
@@ -314,21 +315,43 @@ class SCalcMap : public CkArrayMap {
  */
 class RhoRSMap : public CkArrayMap {
   public:
-    RhoRSMap(int NN,int ioff):N(NN), off(ioff) {}
-    int procNum(int arrayHdl, const CkArrayIndex &idx){
-      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
+    RhoRSMap(int NN, int ioff, int _nchareRhoR):N(NN), off(ioff) 
+    {
+      nchareRhoR = _nchareRhoR;
+#ifdef USE_TOPOMAP
+      maptable= new CkHashtableT<intdual, int> (nchareRhoR*1);
+      makemap();
+#else
+      maptable=NULL;
+#endif
     }
+    
+    ~RhoRSMap() {
+	if(maptable !=NULL)
+	  delete maptable;
+    }
+  
     void pup(PUP::er &p)
       {
 	CkArrayMap::pup(p);
 	p|N;
 	p|off;
+        p|nchareRhoR;
+#ifdef USE_TOPOMAP
+        if (p.isUnpacking()) {
+	  maptable= new CkHashtableT<intdual, int> (nchareRhoR*1);
+        }    
+        p|*maptable;
+#endif
       }
+    int procNum(int arrayHdl, const CkArrayIndex &idx);
+    void makemap();
     
   private:
     int N;
     int off;
+    int nchareRhoR;
+    CkHashtableT<intdual, int> *maptable;
 };
 
 
@@ -337,19 +360,25 @@ class RhoRSMap : public CkArrayMap {
  */
 class RhoGSMap : public CkArrayMap {
   public:
-    RhoGSMap(int NN, int ioff, int iavoid, int iavoid_off):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off) {}
-    int procNum(int arrayHdl, const CkArrayIndex &idx){
-      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-//      return (((N * idx2d.index[0]) + idx2d.index[1] + off) % CkNumPes());
-      int pe=(((N * idx2d.index[0])  + off) % CkNumPes());
-      // avoid PEs favored by the array characterized by the avoid and avoid_off parms
-      if(avoid>1 && (pe-avoid_off)%avoid==0)
-      {
-	  pe=(pe+1) %CkNumPes();
-	  
-      }
-      return pe;
+    RhoGSMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoG):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
+    {
+      nchareRhoG = _nchareRhoG;
+#ifdef USE_TOPOMAP
+      maptable= new CkHashtableT<intdual, int> (nchareRhoG*1);
+      makemap();
+#else
+      maptable=NULL;
+#endif 
     }
+    
+    ~RhoGSMap() {
+	if(maptable !=NULL)
+	  delete maptable;
+    }
+    
+    int procNum(int arrayHdl, const CkArrayIndex &idx);
+    void makemap();
+    
     void pup(PUP::er &p)
       {
 	CkArrayMap::pup(p);
@@ -357,6 +386,13 @@ class RhoGSMap : public CkArrayMap {
 	p|avoid;
 	p|off;
 	p|avoid_off;
+        p|nchareRhoG;
+#ifdef USE_TOPOMAP
+        if (p.isUnpacking()) {
+	  maptable= new CkHashtableT<intdual, int> (nchareRhoG*1);
+        }    
+        p|*maptable;
+#endif
       }
 
   private:
@@ -364,6 +400,54 @@ class RhoGSMap : public CkArrayMap {
     int off;
     int avoid;
     int avoid_off;
+    int nchareRhoG;
+    CkHashtableT<intdual, int> *maptable;
+};
+
+class RhoGHartMap : public CkArrayMap {
+  public:
+  RhoGHartMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoGHart):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
+  {
+    nchareRhoGHart = _nchareRhoGHart;
+#ifdef USE_TOPOMAP
+      maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
+      makemap();
+#else
+      maptable=NULL;
+#endif 
+  }
+  
+  ~RhoGHartMap()
+  {
+    if(maptable !=NULL)
+      delete maptable;
+  }
+  
+  int procNum(int arrayHdl, const CkArrayIndex &idx);
+  void makemap();
+    
+  void pup(PUP::er &p)
+      {
+	CkArrayMap::pup(p);
+        p|N;
+	p|avoid;
+	p|off;
+	p|avoid_off;
+        p|nchareRhoGHart;
+#ifdef USE_TOPOMAP
+        if (p.isUnpacking()) {
+	  maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
+        }    
+        p|*maptable;
+#endif
+      }        
+  private:
+    int N;
+    int off;
+    int avoid;
+    int avoid_off;
+    int nchareRhoGHart;
+    CkHashtableT<intdual, int> *maptable;
 };
 
 //============================================================================
