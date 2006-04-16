@@ -992,7 +992,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     int nchareRhoG     = sim->nchareRhoG;
     int rhoGHelpers    = config.rhoGHelpers;
     int nchareRhoGHart = rhoGHelpers*nchareRhoG;
-
+    
     int rhoRstride     = CkNumPes()/(nchareRhoR);
     int rhoGstride     = CkNumPes()/(nchareRhoG);
     int rhoGHartstride = CkNumPes()/(nchareRhoGHart);
@@ -1009,15 +1009,15 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 // Maps and options
 
-    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero);
+    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero, nchareRhoR);
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero, rhoRstride, offsetFromZero);
+    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero, rhoRstride, offsetFromZero, nchareRhoG);
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGSMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero);
+    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart);
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
