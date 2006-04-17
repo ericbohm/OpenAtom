@@ -70,9 +70,11 @@ void GSMap::makemap()
         
         planes_per_pe=m;
 
-        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", nstates, nchareG, CkNumPes(), gsobjs_per_pe);	
-	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
-	
+        /*if(CkMyPe()==0) 
+	{
+		CkPrintf("nstates %d nchareG %d Pes %d\n", nstates, nchareG, CkNumPes());
+		CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
+	}*/
         for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
         {
                 if(ychunk==(pm-rem)*m)
@@ -165,9 +167,9 @@ void SCalcMap::makemap()
 {
 	FindProcessor fp;
 	int n = scalc_per_plane;
-	int scobjs_per_pe;
+	int scobjs_per_pe, rem;
 	int grainsize = gs;
-	int count=0;
+	int count=0, procno=0;
 	int intidx[2];
 	int lesser_scalc = 0;
 	int x = CkNumPes();
@@ -199,23 +201,28 @@ void SCalcMap::makemap()
 	{
 		for(int i=1; i<=max_states/grainsize; i++)
 			lesser_scalc += i;
-		if(lesser_scalc*nchareG*numChunks % CkNumPes() == 0)
+		/*if(lesser_scalc*nchareG*numChunks % CkNumPes() == 0)
 			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
 		else
-			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes() + 1;
-		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks);
+			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes() + 1;*/
+		scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
+		rem = lesser_scalc*nchareG*numChunks % CkNumPes();
+		if(rem!=0)
+			scobjs_per_pe+=1;
+
+		//if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
 			
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 				for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
-				    for(int newdim=0; newdim<numChunks; newdim++)
+		    		    for(int newdim=0; newdim<numChunks; newdim++)
 					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 					{
 						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 						if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
 						{
-							//CkPrintf("plane %d x %d y %d newdim %d = proc 0\n", plane, xchunk, ychunk, newdim); 
+							//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc 0\n", plane, xchunk, ychunk, newdim); 
 							maptable->put(intdual(intidx[0], intidx[1]))=0;
 							count++;
 						}
@@ -223,7 +230,7 @@ void SCalcMap::makemap()
 						{
 							if(count<scobjs_per_pe)
 							{
-								//CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
@@ -233,6 +240,10 @@ void SCalcMap::makemap()
 							else
 							{
 								count=0;
+								procno++;
+								if(rem!=0)
+									if(procno==rem)
+										scobjs_per_pe-=1;
 								for(int i=0;i<3;i++)
 									fp.start[i]=fp.next[i];
 								if(fp.start[2]>x/2)
@@ -257,7 +268,7 @@ void SCalcMap::makemap()
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
 								
-								//CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
@@ -272,23 +283,28 @@ void SCalcMap::makemap()
 	}
 	else
 	{
-		if(n*nchareG*numChunks % CkNumPes() == 0)
+		/*if(n*nchareG*numChunks % CkNumPes() == 0)
 		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
 		else
-		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes() + 1;
-		//CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks);
+		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes() + 1;*/
+		scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
+		rem = n*nchareG*numChunks % CkNumPes();
+		if(rem!=0)
+			scobjs_per_pe+=1;
+
+		//if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
 			
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 				for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
-				    for(int newdim=0; newdim<numChunks; newdim++)
+		    		    for(int newdim=0; newdim<numChunks; newdim++)
 					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 					{
 						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 						if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
 						{
-							//CkPrintf("plane %d x %d y %d newdim %d= proc 0\n", plane, xchunk, ychunk, newdim); 
+							//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc 0\n", plane, xchunk, ychunk, newdim); 
 							maptable->put(intdual(intidx[0], intidx[1]))=0;
 							count++;
 						}
@@ -296,7 +312,7 @@ void SCalcMap::makemap()
 						{
 							if(count<scobjs_per_pe)
 							{
-								//CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
@@ -306,6 +322,10 @@ void SCalcMap::makemap()
 							else
 							{
 								count=0;
+								procno++;
+								if(rem!=0)
+									if(procno==rem)
+										scobjs_per_pe-=1;
 								for(int i=0;i<3;i++)
 									fp.start[i]=fp.next[i];
 								if(fp.start[2]>x/2)
@@ -329,7 +349,7 @@ void SCalcMap::makemap()
                                                                 }
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
-								//CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
@@ -415,8 +435,8 @@ void RSMap::makemap()
         for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
         {
                 if(ychunk==(pm-rem)*m)
-                  m=m+1;
-                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+              		m=m+1;
+        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
 			if(xchunk==0 && ychunk==0) {}
 			else
@@ -462,7 +482,6 @@ void RSMap::makemap()
                                                 else
                                                 {
                                                   maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-                                                  //CkPrintf("%d %d on %d\n", state, plane, (fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w);
                                                 }
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
