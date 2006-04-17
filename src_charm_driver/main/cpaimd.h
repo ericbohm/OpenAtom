@@ -17,7 +17,6 @@
 #include "StreamingStrategy.h"
 #include "pairCalculator.h"
 #include "ckhashtable.h"
-#define USE_TOPOMAP
 
 #define LOAD_BALANCE_STEP 10
 
