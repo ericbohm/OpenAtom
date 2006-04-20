@@ -1191,6 +1191,9 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 void makemap()
 {
 #ifdef USE_TOPOMAP
+	CkPrintf("\n==============================================================================\n");
+	CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+	CkPrintf("\n==============================================================================\n");
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;
