@@ -527,7 +527,6 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
       }
     else
       { //just left, no right
-	CkPrintf("initializing multicast proxy in %d %d \n",myPlane,s1);
 	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
 	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
 	  {
