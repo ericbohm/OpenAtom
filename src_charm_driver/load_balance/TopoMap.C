@@ -1349,7 +1349,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
     double *load = new double[CkNumPes()];
     memset(load, 0, CkNumPes() * sizeof(double));
 
-    int w=0, x=0, y = 0; 
+    int w=0, x=0, y = 0,z=0; 
 
     if(totalload <= 0.0) { 
       for(w = 0; w < numChareG; w ++) 
@@ -1375,7 +1375,8 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
     int pe = 0;
     
     for(w = 0; w < numChareG; w ++)  
-      for(x = 0; x < max_states; x += gs) {
+      for(z= 0; z<numChunks; z++)
+	for(x = 0; x < max_states; x += gs) {
 	if (symmetric)
 	  y = x;
 	else
@@ -1399,7 +1400,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
 	  load[pe] += curload;
 	  
 	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
-	     (y == idx4d.index[2])) {
+	     (y == idx4d.index[2]) && (z== idx4d.index[3])) {
 
               //if(CkMyPe() == 0)
               //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
