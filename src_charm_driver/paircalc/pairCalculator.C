@@ -450,10 +450,10 @@ void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim
 void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
-  int s1, s2, c;
+  int s1, s2;
   int grainSize = pcid->GrainSize;
   int numChunks =  pcid->numChunks;
-  int S = pcid->S;
+  int nstates = pcid->S;
   int symmetric = pcid->Symmetric;
   bool flag_dp = pcid->isDoublePacked;
   bool conserveMemory = pcid->conserveMemory;
@@ -462,64 +462,93 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
     //create multicast proxy array section list 
     if(symmetric)
       { // we have this column send in place of a right side
+	// 1 proxy for left and 1 for right
 	pcid->proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
-	for (c = 0; c < numChunks; c++)  // new proxy for each chunk
-	{
-	  CkArrayIndexMax *elems= new CkArrayIndexMax[numChunks*(S/grainSize)];
-	  // funky proxy for off diagonals column copy
-	  int ecount=0;
-	  CkArrayIndex4D idx(myPlane,0,s1,c);
-	  for(s2 = 0; s2 < S; s2 += grainSize){
-	    if(s1 >s2)
-	      { // swap s1 : s2 and toggle fromRow
-		idx.index[1]=s2;
-		elems[ecount++]=idx;
-	      }
-	  }
-	  if(ecount)
-	    {
-	      pcid->proxyLNotFrom[c] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount); 
-	      pcid->existsLNotFromproxy=true;	  
-#ifndef _PAIRCALC_DO_NOT_DELEGATE_
-	      if(pcid->useComlib && _PC_COMMLIB_MULTI_)
+	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
+	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
+	  {
+	    CkArrayIndexMax *elems= new CkArrayIndexMax[nstates/grainSize];
+	    CkArrayIndexMax *elemsfromrow= new CkArrayIndexMax[nstates/grainSize];
+	    int erowcount=0;
+	    int ecount=0;
+	    CkArrayIndex4D idx(myPlane,0,0,chunk);
+	    for(s2 = 0; s2 < nstates; s2 += grainSize){
+	      if(s1 <= s2)
 		{
-		  ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLNotFrom[c]);
+		  idx.index[1]=s1;
+		  idx.index[2]=s2;
+		  elemsfromrow[erowcount++]=idx;
 		}
-	      else
+	      else // swap s1 : s2 and toggle fromRow
 		{
-
-		  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
-		  pcid->proxyLNotFrom[c].ckSectionDelegate(mcastGrp);
+		  idx.index[1]=s2;
+		  idx.index[2]=s1;
+		  elems[ecount++]=idx;
 		}
-#endif
 	    }
-	  delete [] elems;
-	}
-      }
-    //need multicast from row regardless of symmetry
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("initializing multicast proxy in %d %d \n",myPlane,s1);
-#endif
-    pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
-    for (c = 0; c < numChunks; c++)  // new proxy for each chunk
-      {
-	pcid->proxyLFrom[c] = CProxySection_PairCalculator::ckNew(pcid->Aid,  
-								  myPlane, myPlane, 1,
-								  s1, s1, 1,
-								  0, S-grainSize, grainSize,
-								  c, c, 1);
-	pcid->existsLproxy=true;      
+	    if(ecount)
+	      {
+	      
+		pcid->proxyLNotFrom[chunk] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount); 
+		pcid->existsLNotFromproxy=true;	  
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
-	if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
-	  {
-	    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLFrom[c]);
-	  }
-	else
-	  {
-	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
-	    pcid->proxyLFrom[c].ckSectionDelegate(mcastGrp);
-	  }
+		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
+		  {
+		    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLNotFrom[chunk]);
+		  }
+		else
+		  {
+
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+		    pcid->proxyLNotFrom[chunk].ckSectionDelegate(mcastGrp);
+		  }
 #endif
+	      }
+	    if(erowcount)
+	      {
+		pcid->proxyLFrom[chunk]  = CProxySection_PairCalculator::ckNew(pairCalculatorID, elemsfromrow, erowcount); 
+		pcid->existsLproxy=true;	  
+#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
+		  {
+		    ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyLFrom[chunk]);
+		  }
+		else
+		  {
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
+		    pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
+
+		  }
+#endif
+	      }
+	    delete [] elemsfromrow;
+	    delete [] elems;
+	  }
+      }
+    else
+      { //just left, no right
+	CkPrintf("initializing multicast proxy in %d %d \n",myPlane,s1);
+	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
+	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
+	  {
+	    pcid->proxyLFrom[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,  
+								      myPlane, myPlane, 1,
+								      s1, s1, 1,
+								      0, nstates-grainSize, grainSize,
+								      chunk, chunk, 1);
+	    pcid->existsLproxy=true;      
+#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+	    if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
+	      {
+		ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLFrom[chunk]);
+	      }
+	    else
+	      {
+		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
+		pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
+	      }
+#endif
+	  }
       }
   }
 }
