@@ -1,7 +1,7 @@
 /** \file TopoMap.C
  * The functions in this file generate a topology sensitive
  * mapping scheme for the GSpace, PairCalc and RealSpace objects.
- * 
+ * and also for the density objects - RhoR, RhoG, RhoGHart.
  */
 #include "charm++.h"
 #include "cpaimd.h"
@@ -35,12 +35,6 @@ void GSMap::makemap()
 	vn = bgltm->isVnodeMode();
 #endif
 
-#ifdef MAP_DEBUG
-        /*char name[30];
-        sprintf(name, "proc%d", CkMyPe());
-        f=fopen(name, "w");*/
-#endif
-
 	fp.count=1;
 	fp.nopX=x;
 	fp.nopY=y;
@@ -50,12 +44,7 @@ void GSMap::makemap()
 	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
-	/*int gsobjs_per_pe;
 	
-	if((nstates*nchareG) % CkNumPes() == 0)
-	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes();
-	else
-	    gsobjs_per_pe = (nstates*nchareG)/CkNumPes()+1;*/
 	int l=Gstates_per_pe;
 	int m, pl, pm, rem;
         
@@ -129,18 +118,10 @@ void GSMap::makemap()
 					}
 				}
 			}
-#ifdef MAP_DEBUG
-                        /*if(xchunk==0 && ychunk==0)
-                          fprintf(f, "objs %d pe %d\n", c, 0);
-                        else
-                          fprintf(f, "objs %d pe %d\n", c, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-*/
-#endif
                 }
         }
 
 #ifdef MAP_DEBUG
-        //fclose(f);
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 #endif
 }
@@ -199,12 +180,11 @@ void SCalcMap::makemap()
 		
 	if(symmetric)
 	{
+		if(CkMyPe()==0)
+	  	  f=fopen("symmap", "w");
+
 		for(int i=1; i<=max_states/grainsize; i++)
 			lesser_scalc += i;
-		/*if(lesser_scalc*nchareG*numChunks % CkNumPes() == 0)
-			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
-		else
-			scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes() + 1;*/
 		scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
 		rem = lesser_scalc*nchareG*numChunks % CkNumPes();
 		if(rem!=0)
@@ -268,6 +248,7 @@ void SCalcMap::makemap()
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
 								
+								
 								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
@@ -283,10 +264,6 @@ void SCalcMap::makemap()
 	}
 	else
 	{
-		/*if(n*nchareG*numChunks % CkNumPes() == 0)
-		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
-		else
-		  scobjs_per_pe = n*nchareG*numChunks/CkNumPes() + 1;*/
 		scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
 		rem = n*nchareG*numChunks % CkNumPes();
 		if(rem!=0)
@@ -521,7 +498,7 @@ void RhoRSMap::makemap()
 	int y = 1;
 	int z = 1;
 	int vn = 0;
-	
+		
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
@@ -546,7 +523,8 @@ void RhoRSMap::makemap()
         rem = nchareRhoR % (CkNumPes()/2);
         if(rem!=0)
           rrsobjs_per_pe += 1;
-          
+        
+	//if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
         {
           if(rem!=0)
@@ -624,7 +602,7 @@ void RhoRSMap::makemap()
                 maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
               //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
             }
-          }   
+          }
         }
 #ifdef MAP_DEBUG
 	CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());
@@ -649,7 +627,7 @@ void RhoGSMap::makemap()
 	int y = 1;
 	int z = 1;
 	int vn = 0;
-	
+
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
@@ -681,7 +659,7 @@ void RhoGSMap::makemap()
         if(rem!=0)
           rgsobjs_per_pe += 1;
         
-        //CkPrintf("rem %d rgsobjs_per_pe %d\n", rem, rgsobjs_per_pe);
+	//if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
         {
           if(rem!=0)
@@ -787,7 +765,15 @@ void RhoGHartMap::makemap()
 	int y = 1;
 	int z = 1;
 	int vn = 0;
+	int npes, procno=2, normal=0;
 	
+	if(nchareRhoR>=CkNumPes()/2)
+	  normal=1;
+	if(normal==0)
+	  npes = CkNumPes()-nchareRhoR;
+	else
+	  npes = CkNumPes()/2;
+
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
 	x = bgltm->getXSize();
@@ -812,13 +798,14 @@ void RhoGHartMap::makemap()
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=assign[i];
         
-        int rghobjs_per_pe= nchareRhoGHart/(CkNumPes()/2);
+        int rghobjs_per_pe= nchareRhoGHart/npes;
         int rem;
         
-        rem = nchareRhoGHart % (CkNumPes()/2);
+        rem = nchareRhoGHart % npes;
         if(rem!=0)
           rghobjs_per_pe += 1;
           
+	//if(CkMyPe()==0) CkPrintf("nchareRhoGHart %d rghobjs_per_pe %d rem %d\n", nchareRhoGHart, rghobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
         {
           if(rem!=0)
@@ -844,41 +831,51 @@ void RhoGHartMap::makemap()
             if(vn==0)
             {
               fp.findNextInTorus(assign);
-              for(int i=0;i<3;i++)
+	      procno++;
+	      if(normal==1 || (normal==0 && procno<nchareRhoR*2))
+	      {
+                for(int i=0;i<3;i++)
                   fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
+                if(fp.start[2]>x/2)
                   assign[2]=fp.start[2]-x;
-              else
+                else
                   assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
+                if(fp.start[1]>y/2)
                   assign[1]=fp.start[1]-y;
-              else
+                else
                   assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
+                if(fp.start[0]>z/2)
                   assign[0]=fp.start[0]-z;
-              else
+                else
                   assign[0]=fp.start[0];
-              fp.findNextInTorus(assign);
+                fp.findNextInTorus(assign);
+                procno++;
+	      }
             }
             else
             {
               fp.findNextInTorusV(w, assign);
               w = fp.w;
-              for(int i=0;i<3;i++)
+	      procno++;
+	      if(normal==1 || (normal==0 && procno<nchareRhoR*2))
+              {
+                for(int i=0;i<3;i++)
                   fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
+                if(fp.start[2]>x/2)
                   assign[2]=fp.start[2]-x;
-              else
+                else
                   assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
+                if(fp.start[1]>y/2)
                   assign[1]=fp.start[1]-y;
-              else
+                else
                   assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
+                if(fp.start[0]>z/2)
                   assign[0]=fp.start[0]-z;
-              else
+                else
                   assign[0]=fp.start[0];
-              fp.findNextInTorusV(w, assign);
+                fp.findNextInTorusV(w, assign);
+		procno++;
+	      }
             }
           }
           for(int i=chunk;i<chunk+rghobjs_per_pe;i++)
@@ -899,7 +896,7 @@ void RhoGHartMap::makemap()
                 maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
               //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
             }
-          }  
+          } 
         }
 #ifdef MAP_DEBUG
 	CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
