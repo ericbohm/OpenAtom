@@ -180,9 +180,6 @@ void SCalcMap::makemap()
 		
 	if(symmetric)
 	{
-		if(CkMyPe()==0)
-	  	  f=fopen("symmap", "w");
-
 		for(int i=1; i<=max_states/grainsize; i++)
 			lesser_scalc += i;
 		scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
