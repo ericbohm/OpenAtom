@@ -262,6 +262,14 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   }//endfor
   pot_harm *= 0.5;
 #endif
+#ifdef _GLENN_CHECK_FORCES
+   FILE *fp = fopen("forces.save","w");
+   for(i=0;i<natm;i++){
+     fprintf(fp,"%.12g %.12g %.12g\n",atoms[i].fx,atoms[i].fy,atoms[i].fz);
+   }
+   fclose(fp);
+   CkExit();
+#endif
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
