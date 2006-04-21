@@ -1121,7 +1121,7 @@ void set_sim_dict_nhc(int *num_dict,DICT_WORD *dict[])
   /*  9)\atm_nhc_len{#} */
         strcpy((*dict)[9].error_mes,"a number > 0 ");
         strcpy((*dict)[9].keyword,"atm_nhc_len");
-        strcpy((*dict)[9].keyarg,"2");
+        strcpy((*dict)[9].keyarg,"4");
   /*-----------------------------------------------------------------------*/ 
   /* 10)\cp_nhc_tau_def{#} */
         strcpy((*dict)[10].error_mes,"a number > 0 ");
