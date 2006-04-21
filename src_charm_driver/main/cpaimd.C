@@ -1017,7 +1017,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart);
+    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart, nchareRhoR);
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
@@ -1193,7 +1193,8 @@ void makemap()
 #ifdef USE_TOPOMAP
 	CkPrintf("\n==============================================================================\n");
 	CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-	CkPrintf("\n==============================================================================\n");
+	CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
+	CkPrintf("\n==============================================================================\n\n");
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;

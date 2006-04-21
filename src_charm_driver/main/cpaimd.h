@@ -405,9 +405,10 @@ class RhoGSMap : public CkArrayMap {
 
 class RhoGHartMap : public CkArrayMap {
   public:
-  RhoGHartMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoGHart):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
+  RhoGHartMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoGHart, int _nchareRhoR):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
   {
     nchareRhoGHart = _nchareRhoGHart;
+    nchareRhoR = _nchareRhoR;
 #ifdef USE_TOPOMAP
       maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
       makemap();
@@ -433,6 +434,7 @@ class RhoGHartMap : public CkArrayMap {
 	p|off;
 	p|avoid_off;
         p|nchareRhoGHart;
+	p|nchareRhoR;
 #ifdef USE_TOPOMAP
         if (p.isUnpacking()) {
 	  maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
@@ -446,6 +448,7 @@ class RhoGHartMap : public CkArrayMap {
     int avoid;
     int avoid_off;
     int nchareRhoGHart;
+    int nchareRhoR;
     CkHashtableT<intdual, int> *maptable;
 };
 

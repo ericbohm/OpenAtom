@@ -236,7 +236,7 @@ mainmodule cpaimd {
 	};
 
 	group RhoGHartMap : CkArrayMap {
-		entry RhoGHartMap(int M, int off, int avoid, int avoid_off, int);
+		entry RhoGHartMap(int M, int off, int avoid, int avoid_off, int, int);
 	};
         
 	group GSMap : CkArrayMap {
