@@ -35,6 +35,6 @@ OPT_GRP  = -O2 $(DBG_FLAG) -qstrict
 TFLAGS   = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
 CFLAGS   = 
 FFLAGS   = 
-LIBS     = -lm 
+LIBS     =  
 
 
