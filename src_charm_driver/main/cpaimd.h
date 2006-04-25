@@ -266,7 +266,7 @@ class SCalcMap : public CkArrayMap {
 	CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
 	CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
 #ifdef USE_TOPOMAP
-	maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG);
+	maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG*numChunks);
 	makemap();
 #else
 	maptable=NULL;

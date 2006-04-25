@@ -840,7 +840,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
     gSpacePlaneProxy.doneInserting();
     particlePlaneProxy.doneInserting();
-    particlePlaneProxy.setReductionClient(doneCreatingPP, (void *) NULL);
+    //particlePlaneProxy.setReductionClient(doneCreatingPP, (void *) NULL);
     
     /*
      * Insert the planes in the real space plane array
@@ -1017,7 +1017,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGSMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart, nchareRhoR);
+    CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart, nchareRhoR);
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
