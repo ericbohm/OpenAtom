@@ -105,7 +105,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   // figure out a reliable way to do this
   // now expand that to spread these guys around
   reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
-  contribute(sizeof(int), &sizeX, CkReduction::sum_int);
+  //contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
 
