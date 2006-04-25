@@ -24,7 +24,8 @@ class FindProcessor
 		FindProcessor(int a[]);
 		int main(int argc, char*argv[]);
 		void findNext(int a[]);
-		void findNextInBluegene(int a[]);
+		int findNextInBluegene(int a[]);
+		int findNextInBIter(int a[]);
 		int findNextIter(int a[]);
 		int findNextInTorus(int a[]);
 		int findNextInTorusV(int t, int a[]);

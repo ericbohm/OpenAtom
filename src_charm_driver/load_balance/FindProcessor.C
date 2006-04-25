@@ -132,49 +132,93 @@ void FindProcessor::findNext(int a[])
 	}
 }
 
-void FindProcessor::findNextInBluegene(int a[])
+int FindProcessor::findNextInBluegene(int a[])
 {
-	if(a[0]==0 && a[1]==0 && a[2]==0)
+	int ret = findNextInBIter(a);
+	if(count == nopX*nopY*nopZ)
 	{
-		next[2]=1;
-		cout<<"-------------------------\n";
-		cout<<"Distance "<<next[2]<<" starting\n";
-		cout<<"-------------------------\n";
-		printing(0, 0, 1);
-	}	
+        	cout<<"-------------------------\n";
+        	cout<<"No more processors left\n";
+        	cout<<"-------------------------\n";
+        	CkAbort("inconsistent no. of chares and processors\n");
+        	return 0;
+	}
+	if(ret==1)
+		return ret;
 	else
 	{
-		if(a[2]>0)
+		ret=findNextInBIter(start);
+		while(ret==2)
 		{
-			next[0]=a[0]; 
-			next[1]=a[1]+1;
-			next[2]=a[2]-1;
-			printing(next[0], next[1], next[2]);
-		}	
-		else 
-		{
-			if(a[1]>0)
-			{
-				next[0]=a[0]+1; 
-				next[1]=0;
-				next[2]=a[1]-1;
-				printing(next[0], next[1], next[2]);
-			}	
-			else
-			{
-				next[0]=0; 
-				next[1]=0;
-				next[2]=a[0]+1;
-				cout<<"-------------------------\n";
-				cout<<"Distance "<<next[2]<<" starting\n";
-				cout<<"-------------------------\n";
-				printing(next[0], next[1], next[2]);
-			}
+			ret=findNextInBIter(start);
 		}
-		
+		return ret;
 	}
-
 }
+
+int FindProcessor::findNextInBIter(int a[])
+{
+        if(a[0]==0 && a[1]==0 && a[2]==0)
+        {
+                next[2]=1;
+                //cout<<"-------------------------\n";
+                //cout<<"Distance "<<next[2]<<" starting\n";
+                //cout<<"-------------------------\n";
+                //printing(0, 0, 1);
+        }
+        else
+        {
+                if(a[2]>0)
+                {
+                        next[0]=a[0];
+                        next[1]=a[1]+1;
+                        next[2]=a[2]-1;
+                        if(next[0]>=nopZ || next[1]>=nopY || next[2]>=nopX)
+                        {
+                          for(int i=0;i<3;i++)
+                            start[i]=next[i];
+                          return 2;
+                        }
+                        //printing(next[0], next[1], next[2]);
+                }
+		else
+                {
+                        if(a[1]>0)
+                        {
+                                next[0]=a[0]+1;
+                                next[1]=0;
+                                next[2]=a[1]-1;
+                                if(next[0]>=nopZ || next[1]>=nopY || next[2]>=nopX)
+                                {
+                                  for(int i=0;i<3;i++)
+                                    start[i]=next[i];
+                                  return 2;
+                                }
+                                //printing(next[0], next[1], next[2]);
+                        }
+                        else
+                        {
+                                next[0]=0;
+                                next[1]=0;
+                                next[2]=a[0]+1;
+                                if(next[0]>=nopZ || next[1]>=nopY || next[2]>=nopX)
+                                {
+                                  for(int i=0;i<3;i++)
+                                    start[i]=next[i];
+                                  return 2;
+                                }
+                                //cout<<"-------------------------\n";
+                                //cout<<"Distance "<<next[2]<<" starting\n";
+                                //cout<<"-------------------------\n";
+                                //printing(next[0], next[1], next[2]);
+                        }
+                }
+
+        }
+        count++;
+        return 1;
+}
+
 
 int FindProcessor::findNextIter(int a[])
 {
