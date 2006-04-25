@@ -1340,6 +1340,18 @@ void Config::print(char *fname_in) {
      fprintf(fp,"lbgspace: %d\n",lbgspace);
      fprintf(fp,"lbdensity: %d\n",lbdensity);
      fprintf(fp,"useCommlib: %d\n",useCommlib);
+     fprintf(fp,"useGHartInsRhoRP: %d\n", useGHartInsRhoRP);
+     fprintf(fp,"useGIns0RhoRP: %d\n", useGIns0RhoRP);
+     fprintf(fp,"useGIns1RhoRP: %d\n", useGIns1RhoRP);
+     fprintf(fp,"useGIns2RhoRP: %d\n", useGIns2RhoRP);
+     fprintf(fp,"useGIns3RhoRP: %d\n", useGIns3RhoRP);
+     fprintf(fp,"useGByrdInsRhoRBP: %d\n", useGByrdInsRhoRBP);
+     fprintf(fp,"useRInsRhoGP: %d\n", useRInsRhoGP);
+     fprintf(fp,"useRInsIGXRhoGP: %d\n", useRInsIGXRhoGP);
+     fprintf(fp,"useRInsIGYRhoGP: %d\n", useRInsIGYRhoGP);
+     fprintf(fp,"useRInsIGZRhoGP: %d\n", useRInsIGZRhoGP);
+     fprintf(fp,"useGssInsRealP: %d\n", useGssInsRealP);
+     fprintf(fp,"useMssInsGP: %d\n", useMssInsGP);
      fprintf(fp,"useGMulticast: %d\n",useGMulticast);
      fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
      fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
@@ -1406,6 +1418,18 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useGMulticast        = 0;
     config.useCommlibMulticast  = 1;
     config.useCommlib           = 1;
+    config.useGHartInsRhoRP	= config.useCommlib;
+    config.useGIns0RhoRP	= config.useCommlib;
+    config.useGIns1RhoRP	= config.useCommlib;
+    config.useGIns2RhoRP	= config.useCommlib;
+    config.useGIns3RhoRP	= config.useCommlib;
+    config.useGByrdInsRhoRBP	= config.useCommlib;
+    config.useRInsRhoGP		= config.useCommlib;
+    config.useRInsIGXRhoGP	= config.useCommlib;
+    config.useRInsIGYRhoGP	= config.useCommlib;
+    config.useRInsIGZRhoGP	= config.useCommlib;
+    config.useGssInsRealP	= config.useCommlib;
+    config.useMssInsGP		= config.useCommlib;
     config.lbpaircalc           = 0;
     config.lbgspace             = 0;
     config.lbdensity            = 0;
@@ -1462,6 +1486,30 @@ void Config::readConfig(const char* fileName, Config &config,
             config.sGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))
             config.useCommlib = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGHartInsRhoRP"))
+            config.useGHartInsRhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGIns0RhoRP"))
+            config.useGIns0RhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGIns1RhoRP"))
+            config.useGIns1RhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGIns2RhoRP"))
+            config.useGIns2RhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGIns3RhoRP"))
+            config.useGIns3RhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGByrdInsRhoRBP"))
+            config.useGByrdInsRhoRBP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useRInsRhoGP"))
+            config.useRInsRhoGP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useRInsIGXRhoGP"))
+            config.useRInsIGXRhoGP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useRInsIGYRhoGP"))
+            config.useRInsIGYRhoGP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useRInsIGZRhoGP"))
+            config.useRInsIGZRhoGP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGssInsRealP"))
+            config.useGssInsRealP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useMssInsGP"))
+            config.useMssInsGP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGMulticast"))
             config.useGMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "numMulticastMsgs"))

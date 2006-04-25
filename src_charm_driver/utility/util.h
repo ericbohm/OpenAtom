@@ -164,6 +164,18 @@ class Config {
 	int sGrainSize;
 	int rhoGHelpers;
 	int useCommlib;
+	int useGHartInsRhoRP;
+	int useGIns0RhoRP;
+	int useGIns1RhoRP;
+	int useGIns2RhoRP;
+	int useGIns3RhoRP;
+	int useGByrdInsRhoRBP;
+	int useRInsRhoGP;
+	int useRInsIGXRhoGP;
+	int useRInsIGYRhoGP;
+	int useRInsIGZRhoGP;
+	int useGssInsRealP;
+	int useMssInsGP;
 	int numMulticastMsgs;
 	int useGMulticast;
 	int useCommlibMulticast;
