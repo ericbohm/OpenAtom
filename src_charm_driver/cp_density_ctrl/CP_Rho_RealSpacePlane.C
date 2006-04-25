@@ -179,13 +179,15 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     rhoGProxyIGX_com = rhoGProxy;
     rhoGProxyIGY_com = rhoGProxy;
     rhoGProxyIGZ_com = rhoGProxy;
-    if (config.useCommlib) {
+    if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+    if (config.useRInsIGXRhoGP) 
 	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+    if (config.useRInsIGYRhoGP) 
 	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+    if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
 
-    }//endif
     usesAtSync = CmiTrue;
     //    if(config.lbdensity){
     //      setMigratable(true);
@@ -233,13 +235,15 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p)
     rhoGProxyIGX_com = rhoGProxy;
     rhoGProxyIGY_com = rhoGProxy;
     rhoGProxyIGZ_com = rhoGProxy;
-    if (config.useCommlib) {
+    if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+    if (config.useRInsIGXRhoGP) 
 	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+    if (config.useRInsIGYRhoGP) 
 	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+    if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
 
-    }//endif
     }
 
   /* 
@@ -442,15 +446,13 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Launch the communication
 
-    if (config.useCommlib) { //start correct for each to many instance
 	switch(iopt){
-	    case 0 : commRealInstance.beginIteration(); break;
-	    case 1 : commRealIGXInstance.beginIteration(); break;
-	    case 2 : commRealIGYInstance.beginIteration(); break;
-	    case 3 : commRealIGZInstance.beginIteration(); break;
+	    case 0 : if(config.useRInsRhoGP) commRealInstance.beginIteration(); break;
+	    case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.beginIteration(); break;
+	    case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
+	    case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
 
 	}
-    }
     for(int ic = 0; ic < nchareRhoG; ic ++) { // chare arrays to which we will send
 
       int sendFFTDataSize = nlines_per_chareRhoG[ic];
@@ -479,15 +481,12 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 
     }//end for : chare sending
 
-    if (config.useCommlib) { // end for each to many instance
 	switch(iopt){
-	    case 0 : commRealInstance.endIteration(); break;
-	    case 1 : commRealIGXInstance.endIteration(); break;
-	    case 2 : commRealIGYInstance.endIteration(); break;
-	    case 3 : commRealIGZInstance.endIteration(); break;
-
+	    case 0 : if(config.useRInsRhoGP) commRealInstance.endIteration(); break;
+	    case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.endIteration(); break;
+	    case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
+	    case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
 	}
-    }
 
 //---------------------------------------------------------------------------
   }//end routine
@@ -1004,11 +1003,10 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
 void CP_Rho_RealSpacePlane::ResumeFromSync(){
 
-    if(config.useCommlib)
-    {
+    if(config.useCommlibMulticast)
 	ComlibResetSectionProxy(&realSpaceSectionCProxy);
+    if(config.useRInsRhoGP)
 	ComlibResetProxy(&rhoGProxy_com);
-    }//endif
 }
 //============================================================================
 

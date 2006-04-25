@@ -103,7 +103,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     sendFFTDataSize = 0;
     setMigratable(false);
     gproxy = gSpacePlaneProxy;
-    if (config.useCommlib){
+    if (config.useMssInsGP){
       ComlibAssociateProxy(&mssInstance,gproxy);
     }//endif
     vks=NULL;
@@ -418,7 +418,7 @@ void CP_State_RealSpacePlane::doProduct() {
     int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
     int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 
-    if (config.useCommlib){mssInstance.beginIteration();}
+    if (config.useMssInsGP){mssInstance.beginIteration();}
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
       GSIFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
@@ -432,7 +432,7 @@ void CP_State_RealSpacePlane::doProduct() {
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
       gproxy(thisIndex.x, ic).doIFFT(msg); // send the message
     }//end for : chare sending
-    if (config.useCommlib){mssInstance.endIteration();}
+    if (config.useMssInsGP){mssInstance.endIteration();}
 
     if(config.conserveMemory){
       rs.destroy();
@@ -465,7 +465,7 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealSpacePlane::ResumeFromSync(){
-    if(config.useCommlib)
+    if(config.useMssInsGP)
 	ComlibResetProxy(&gproxy);
 }
 //============================================================================

@@ -80,7 +80,7 @@ extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_ComlibManager mgrProxy;
-extern ComlibInstanceHandle mssInstance;
+extern ComlibInstanceHandle gssInstance;
 extern CProxy_StructureFactor sfCompProxy;
 
 extern CProxy_EnergyGroup egroupProxy; //energy group proxy
@@ -615,8 +615,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif
 
   real_proxy = realSpacePlaneProxy;
-  if (config.useCommlib)
-      ComlibAssociateProxy(&mssInstance,real_proxy);
+  if (config.useGssInsRealP)
+      ComlibAssociateProxy(&gssInstance,real_proxy);
 
   // create structure factor proxy
   if(thisIndex.x==0){
@@ -1247,7 +1247,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 // Do a Comlib Dance
 
-  if (config.useCommlib){mssInstance.beginIteration();}
+  if (config.useGssInsRealP){gssInstance.beginIteration();}
 
 //============================================================================
 // Send your (x,y,z) to processors z.
@@ -1274,7 +1274,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 
   }//endfor
     
-  if (config.useCommlib){mssInstance.endIteration();}
+  if (config.useGssInsRealP){gssInstance.endIteration();}
     
   ffttempdataGrp = NULL; // its memory from the FFTgroup : don't touch it
 
@@ -2579,7 +2579,7 @@ void CP_State_GSpacePlane::ResumeFromSync() {
 //    CmiPrintf("ResumeFromSync calls resume\n");
 
   // reset commlib proxies
-  if(config.useCommlib)
+  if(config.useGssInsRealP)
       ComlibResetProxy(&real_proxy);
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = sim->cp_min_opt;

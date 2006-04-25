@@ -121,7 +121,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ)
   setMigratable(false);
 
   rhoRealProxy_com = rhoRealProxy;
-  if(config.useCommlib){
+  if(config.useGHartInsRhoRP){
      ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
   }//endif
   usesAtSync = CmiTrue;
@@ -289,7 +289,7 @@ void CP_Rho_GHartExt::sendVks() {
 //============================================================================
 // Do a Comlib Dance
 
-  if (config.useCommlib){
+  if (config.useGHartInsRhoRP){
       commGHartInstance.beginIteration();
   }
   
@@ -319,7 +319,7 @@ void CP_Rho_GHartExt::sendVks() {
 //============================================================================
 // Complete the commlib dance
     
-  if (config.useCommlib){
+  if (config.useGHartInsRhoRP){
       commGHartInstance.endIteration();
   }
 

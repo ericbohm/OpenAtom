@@ -53,7 +53,7 @@ extern ComlibInstanceHandle commGByrdInstance;
 extern CProxy_ComlibManager mgrProxy;
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_FFTcache fftCacheProxy;
-extern ComlibInstanceHandle mssInstance;
+//extern ComlibInstanceHandle mssInstance;
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -120,13 +120,16 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int xdim, size2d sizeYZ,
     rhoRealProxy2_com = rhoRealProxy;
     rhoRealProxy3_com = rhoRealProxy;
     rhoRealProxyByrd_com = rhoRealProxy;
-    if(config.useCommlib){
+    if(config.useGIns0RhoRP)
        ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+    if(config.useGIns1RhoRP)
        ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+    if(config.useGIns2RhoRP)
        ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+    if(config.useGIns3RhoRP)
        ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+    if(config.useGByrdInsRhoRBP)
        ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
-    }//endif
 
 //============================================================================
 // Decompose
@@ -203,13 +206,16 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
       rhoRealProxy2_com = rhoRealProxy;
       rhoRealProxy3_com = rhoRealProxy;
       rhoRealProxyByrd_com = rhoRealProxy;
-      if(config.useCommlib){
+      if(config.useGIns0RhoRP)
 	ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+      if(config.useGIns1RhoRP)
 	ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+      if(config.useGIns2RhoRP)
 	ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+      if(config.useGIns3RhoRP)
 	ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+      if(config.useGByrdInsRhoRBP)
 	ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
-      }//endif
     }//endif
 }
 //============================================================================
@@ -450,16 +456,14 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 
 //============================================================================
 // Do a Comlib Dance
-  if (config.useCommlib){
     switch(iopt){
 
-	case 0 : commGInstance0.beginIteration();break;
-	case 1 : commGInstance1.beginIteration();break;
-	case 2 : commGInstance2.beginIteration();break;
-	case 3 : commGInstance3.beginIteration();break;
-	case 4 : commGByrdInstance.beginIteration();break;
+	case 0 : if(config.useGIns0RhoRP) commGInstance0.beginIteration();break;
+	case 1 : if(config.useGIns1RhoRP) commGInstance1.beginIteration();break;
+	case 2 : if(config.useGIns2RhoRP) commGInstance2.beginIteration();break;
+	case 3 : if(config.useGIns3RhoRP) commGInstance3.beginIteration();break;
+	case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.beginIteration();break;
     }//end switc
-  }
 
 //============================================================================
   for(int z=0; z < sizeZ; z++) {
@@ -493,15 +497,13 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Complete the commlib dance
     
-  if (config.useCommlib){
     switch(iopt){
-	case 0 : commGInstance0.endIteration();break;
-	case 1 : commGInstance1.endIteration();break;
-	case 2 : commGInstance2.endIteration();break;
-	case 3 : commGInstance3.endIteration();break;
-	case 4 : commGByrdInstance.endIteration();break;
+	case 0 : if(config.useGIns0RhoRP) commGInstance0.endIteration();break;
+	case 1 : if(config.useGIns1RhoRP) commGInstance1.endIteration();break;
+	case 2 : if(config.useGIns2RhoRP) commGInstance2.endIteration();break;
+	case 3 : if(config.useGIns3RhoRP) commGInstance3.endIteration();break;
+	case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.endIteration();break;
     }//end switc
-  }
 
 //---------------------------------------------------------------------------
    }//end routine
@@ -637,13 +639,16 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 //============================================================================
 void CP_Rho_GSpacePlane::ResumeFromSync(){
 
-  if (config.useCommlib) {
+  if (config.useGIns0RhoRP) 
     ComlibResetProxy(&rhoRealProxy0_com);
+  if (config.useGIns1RhoRP) 
     ComlibResetProxy(&rhoRealProxy1_com);
+  if (config.useGIns2RhoRP)
     ComlibResetProxy(&rhoRealProxy2_com);
+  if (config.useGIns3RhoRP) 
     ComlibResetProxy(&rhoRealProxy3_com);
+  if (config.useGByrdInsRhoRBP) 
     ComlibResetProxy(&rhoRealProxyByrd_com);
-  }//endif
 
 }
 //============================================================================
