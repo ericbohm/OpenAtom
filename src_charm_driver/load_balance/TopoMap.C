@@ -349,7 +349,7 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
 
 	if(maptable==NULL)
 	{
-		maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG); 
+		maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG*numChunks); 
 		makemap();
 	}
 	return maptable->get(intdual(intidx[0], intidx[1]));
@@ -513,14 +513,23 @@ void RhoRSMap::makemap()
 	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
-                
-        int rrsobjs_per_pe= nchareRhoR/(CkNumPes()/2);
-        int rem;
+        fp.w = 0;
+
+        int rrsobjs_per_pe, rem;
         
-        rem = nchareRhoR % (CkNumPes()/2);
-        if(rem!=0)
-          rrsobjs_per_pe += 1;
-        
+        if(CkNumPes()==1)
+        {
+                rrsobjs_per_pe= nchareRhoR;
+                rem=0;
+        }
+        else
+        {
+                rrsobjs_per_pe= nchareRhoR/(CkNumPes()/2);
+                rem = nchareRhoR % (CkNumPes()/2);
+                if(rem!=0)
+                        rrsobjs_per_pe += 1;
+        }
+ 
 	//if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
         {
@@ -649,13 +658,23 @@ void RhoGSMap::makemap()
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=assign[i];
         
-        int rgsobjs_per_pe= nchareRhoG/(CkNumPes()/2);
-        int rem;
-        
-        rem = nchareRhoG % (CkNumPes()/2);
-        if(rem!=0)
-          rgsobjs_per_pe += 1;
-        
+        int rgsobjs_per_pe, rem;
+
+        if(CkNumPes()==1)
+        {
+                rgsobjs_per_pe= nchareRhoG;
+                rem=0;
+                fp.start[2]=fp.next[2]=assign[2]=0;
+                w=fp.w=0;
+        }
+        else
+        {
+                rgsobjs_per_pe= nchareRhoG/(CkNumPes()/2);
+                rem = nchareRhoG % (CkNumPes()/2);
+                if(rem!=0)
+                        rgsobjs_per_pe += 1;
+        }
+ 
 	//if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
         {
@@ -795,13 +814,23 @@ void RhoGHartMap::makemap()
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=assign[i];
         
-        int rghobjs_per_pe= nchareRhoGHart/npes;
-        int rem;
-        
-        rem = nchareRhoGHart % npes;
-        if(rem!=0)
-          rghobjs_per_pe += 1;
-          
+        int rghobjs_per_pe, rem;
+
+        if(CkNumPes()==1)
+        {
+                rghobjs_per_pe= nchareRhoGHart;
+                rem=0;
+                fp.start[2]=fp.next[2]=assign[2]=0;
+                w=fp.w=0;
+        }
+        else
+        {
+                rghobjs_per_pe= nchareRhoGHart/npes;
+                rem = nchareRhoGHart % npes;
+                if(rem!=0)
+                        rghobjs_per_pe += 1;
+        }
+ 
 	//if(CkMyPe()==0) CkPrintf("nchareRhoGHart %d rghobjs_per_pe %d rem %d\n", nchareRhoGHart, rghobjs_per_pe, rem);   
         for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
         {
