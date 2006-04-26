@@ -181,6 +181,8 @@ class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
   CkGroupID mCastGrpId;
   CkCallback synccb;
   bool lbsync;
+  int orthoX;
+  int orthoY;
   friend class CMessage_initGRedMsg;
 };
 
@@ -257,19 +259,25 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
   double *matrix2;
   int size;
   int size2;
+  int orthoX;
+  int orthoY;
   int actionType;
-  void init(int _size, int _size2, double *_points1, double *_points2, bool _actionType)
+  void init(int _size, int _size2, double *_points1, double *_points2, int _orthoX, int _orthoY, bool _actionType)
     {
       size=_size;
       size2=_size2;
+      orthoX=_orthoX;
+      orthoY=_orthoY;
       memcpy(matrix1,_points1,size*sizeof(double));
       memcpy(matrix2,_points2,size2*sizeof(double));
       actionType=_actionType;
     }
-  void init1(int _size, double *_points1, int _actionType)
+  void init1(int _size, double *_points1, int _orthoX, int _orthoY,int _actionType)
     {
       size=_size;
       size2=0;
+      orthoX=_orthoX;
+      orthoY=_orthoY;
       memcpy(matrix1,_points1,size*sizeof(double));
       actionType=_actionType;
       // this field does nothing in minimization
@@ -313,7 +321,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -326,6 +334,7 @@ class PairCalculator: public CBase_PairCalculator {
     AtSync();
   };
   void multiplyForward(bool);
+  void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
@@ -343,6 +352,7 @@ class PairCalculator: public CBase_PairCalculator {
   int numRecd;               //! number of messages received
   int numExpected;           //! number of messages expected
   int grainSize;             //! number of states per chare
+  int orthoGrainSize;        //! number of states per ortho tile
   int blkSize;               //! number points in gspace plane
   int numStates;             //! total number of states
   int numPoints;             //! number of points in this chunk
@@ -351,7 +361,6 @@ class PairCalculator: public CBase_PairCalculator {
   bool conserveMemory;       //! free up matrices when not in use
   bool lbpaircalc;           //! allow migration 
   redtypes cpreduce;         //! which reducer we're using (defunct)
-  CkCallback cb;             //! forward path callback 
   CkArrayID cb_aid;          //! bw path callback array ID 
   int cb_ep;                 //! bw path callback entry point 
   int cb_ep_tol;             //! bw path callback entry point for psiV tolerance
@@ -360,7 +369,7 @@ class PairCalculator: public CBase_PairCalculator {
   bool existsOut;            //! outData allocated
   bool existsNew;            //! newData allocated
   bool resumed;              //! have resumed from load balancing
-  CkSectionInfo cookie;      //! forward path reduction cookie 
+
   complex *mynewData;        //! results of bw multiply
   complex *othernewData;     //! results of sym off diagonal multiply,
                              //! or the C=-1 *inRight* orthoT +c in dynamics
@@ -368,7 +377,10 @@ class PairCalculator: public CBase_PairCalculator {
   double *inDataRight;       //! the input pair to be transformed
   double *outData;           //! results of fw multiply
   int actionType;            //! matrix usage control [NORMAL, KEEPORTHO, PSIV]
-  
+
+  double *inResult1;         //! accumulate ortho or lambda
+  double *inResult2;         //! used in gamma calc (non minization)
+
   /* to support the simpler section reduction*/
   int rck;                   //! count of received cookies
   CkGroupID mCastGrpId;      //! group id for multicast manager
@@ -377,6 +389,9 @@ class PairCalculator: public CBase_PairCalculator {
   CkSectionInfo *otherResultCookies;  //! extra array of bw path
                                       //! section cookies
                                       //! for sym off diag, or dynamics
+
+  CkCallback *orthoCB;             //! forward path callbacks
+  CkSectionInfo *orthoCookies;      //! forward path reduction cookie 
 };
 
 //forward declaration

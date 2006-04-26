@@ -1,3 +1,67 @@
+
+/********************************************************************************/
+/* Ortho is currently decomposed by sGrainSize.  Which makes sense for
+ * the old statewise only decomposition of the paircalculator.  For
+ * the new 4d decomposition it may make sense to decompose the
+ * paircalculator more along the numPoints axis than the states axis.
+ * Which may result in comparitively fewer Ortho objects.  Thereby
+ * further motivating the need to chop up Ortho by some unit smaller
+ * than grainsize.  So as to avoid Amdaling on the orthonormalization
+ * process.
+ *
+ * If we allow orthograin to be entirely distinct from sGrainSize we
+ * have arbitrary overlap situations between orthograins and
+ * scalcgrains.  Supporting that requires a rather complicated (and
+ * therefore bug prone) contiguousReducer reduction/multicast
+ * stitcher/splitter implementation to reduce data from scalc->ortho
+ * and multicast data from ortho->scalc.  
+ * 
+ * We don't want to do that if we don't have to.  If we restrict
+ * orthograin to be a factor of sGrainsize then we have no section
+ * overlap issues.  Thereby leaving us with ortho sections that need a
+ * simple tiling split of the sgrain sections.  Mirrored by a
+ * stitching of the submatrix inputs for the backward path.  
+ *
+ * This can be accomplished manually within the current codebase with
+ * some waste in data replication and computation replication to
+ * handle the splitting/stiching operations.  
+ *
+ * A more efficient implementation would adopt the multicast manager
+ * group model of building a tree of participants for these
+ * operations.  The reduction side from the PC would be broken up into
+ * multiple reductions, one for each orthograin within the sgrain.
+ * With a separate contribution for each orthograin.  The multicast
+ * requires us to stitch together the input matrices into one per
+ * sgrain section.  This might be accomplished in two stages, one in
+ * which the stitching is done, and a second in which the stitched
+ * sgrainsize matrices are multicast.  The alternative is to just
+ * multicast the orthograin submatrices where needed and have each
+ * scalc do its strided copying stitching.  As stitching is not
+ * computationally intensive, this may be the simplest and fastest
+ * solution.  The second approach allows you to simply use the
+ * reductions and multicasts as mirror uses of the tree.  Where each
+ * little ortho can run once it gets its input, while the scalcs would
+ * have to assemble their inputs from multiple multicasts.  
+ *
+ * The assembling approach allows for the later introduction of
+ * streaming computations, where the scalc does its multiply using
+ * each orthograin submatrix as it arrives.  Considering how messy the
+ * backward path is already, introducing that streaming will require
+ * significant correctness testing.
+ *
+ * Implementation details for this require that each ortho object
+ * participate in a section which has a section multicast client
+ * directed to the sGrainSize PC section.  The converse PC sGrainSize
+ * elements will have an array of section cookies, one for each of the
+ * subsections for all orthograin elements within the sGrain.  The
+ * forward path of the PC will contribute its orthograin tile (via a
+ * strided contribute) which will end up at the correct ortho object.
+ * 
+ * Note: these PC sections must include all 4th dim blocks.  
+ *
+ * 
+/********************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -97,7 +161,7 @@ class Ortho : public CBase_Ortho{
 
   virtual void pup(PUP::er &p){
 //    CBase_Ortho::pup(p);
-      ArrayElement2D::pup(p);
+    ArrayElement2D::pup(p);
     p | m;
     p | n;
     p | step;
@@ -157,14 +221,14 @@ class Ortho : public CBase_Ortho{
   inline double array_diag_max(int sizem, int sizen, double *array){
       int offset;
       double absval, max_ret;
-      if(thisIndex.x!=thisIndex.y){ 
+      if(thisIndex.x!=thisIndex.y){ //not diagonal
           max_ret=fabs(array[0]);          
 	  for(int i=0;i<sizem;i++){
           for(int j=0;j<sizen;j++){
  	    absval=fabs(array[i*sizen+j]);
 	    max_ret = (max_ret>absval) ? max_ret : absval;
 	  }}//endfor
-      }else{
+      }else{ //on diagonal 
           absval=fabs(fabs(array[0]-2.0));
           max_ret = absval;
 	  for(int i=0;i<sizem;i++){

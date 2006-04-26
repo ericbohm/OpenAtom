@@ -162,6 +162,7 @@ class Config {
         int nchareG;     //determined by piny  
         int nchareRhoG;  //determined by piny 
 	int sGrainSize;
+	int orthoGrainSize;
 	int rhoGHelpers;
 	int useCommlib;
 	int useGHartInsRhoRP;

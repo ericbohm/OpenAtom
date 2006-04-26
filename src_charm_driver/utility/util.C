@@ -1327,6 +1327,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"dataPath: %s\n",dataPath);
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
+     fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
      fprintf(fp,"pesPerState: %d\n",pesPerState);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
      fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
@@ -1408,6 +1409,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.maxIter         = maxIter_in;
 
     config.sGrainSize           = nstates_in;
+    config.orthoGrainSize           =     config.sGrainSize;
     config.rhoGHelpers          = 1;
     config.pesPerState          = 1;
     config.RpesPerState         = 0; 
@@ -1484,6 +1486,8 @@ void Config::readConfig(const char* fileName, Config &config,
             strcpy(config.dataPath, parameterValue);
         else if (!strcmp(parameterName, "sGrainSize"))
             config.sGrainSize = atoi(parameterValue);
+        else if (!strcmp(parameterName, "orthoGrainSize"))
+            config.orthoGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))
             config.useCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGHartInsRhoRP"))
@@ -1740,6 +1744,13 @@ void Config::readConfig(const char* fileName, Config &config,
       CkExit();
     }//endif
 
+    if (config.sGrainSize %config.orthoGrainSize != 0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("S matrix grain-size should be divisible by orthoGrainSize\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
     if (nstates_in / config.numMulticastMsgs <= 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Problem in the configuration of number of mcast msgs");
@@ -1892,6 +1903,13 @@ void Config::guesstimateParms(int natm_nl)
 	    sGrainSize=nstates/4;
 	}
     }
+    if(sGrainSize%orthoGrainSize !=0)
+    {
+      // this is lame and should be replace with something which finds
+      // an even mod of any sGrainSize
+      orthoGrainSize=sGrainSize/4;
+    }
+
     if(gExpandFact==1.0) 
     { //gives us more gspace chares
       //only worth expanding if we have enough pes

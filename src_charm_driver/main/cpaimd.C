@@ -426,7 +426,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
 
    //symmetric AKA Psi
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId, config.numChunks );
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpId, config.numChunks, config.orthoGrainSize );
 
     CkArrayIndex2D myindex(0, 0);
 
@@ -434,7 +434,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int myPack=0;
 
     //asymmetric AKA Lambda AKA Gamma
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, config.numChunks);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpId, config.numChunks, config.orthoGrainSize);
 
 //============================================================================ 
    }//end routine
@@ -677,7 +677,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
   PRINTF("Building Ortho Chares\n");
   PRINT_LINE_DASH;printf("\n");
 
-    int chunks = (nstates + config.sGrainSize - 1) / config.sGrainSize;
+    int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
     CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
@@ -703,24 +703,24 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
     CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
      orthoProxy(0, 0));
     make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
      mCastGrpId, MM_ALG_2D);
     make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
      mCastGrpId, MM_ALG_2D);
     make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.sGrainSize, config.sGrainSize,
-     config.sGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
      mCastGrpId, MM_ALG_2D);
 
 
-    for (int s1 = 0; s1 < nstates; s1 += config.sGrainSize)
-      for (int s2 = 0; s2 < nstates; s2 += config.sGrainSize) {
-	int indX = s1 / config.sGrainSize;
-	int indY = s2 / config.sGrainSize;
-	orthoProxy(indX, indY).insert(config.sGrainSize, config.sGrainSize,
+    for (int s1 = 0; s1 < nstates; s1 += config.orthoGrainSize)
+      for (int s2 = 0; s2 < nstates; s2 += config.orthoGrainSize) {
+	int indX = s1 / config.orthoGrainSize;
+	int indY = s2 / config.orthoGrainSize;
+	orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
          matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
       }
     orthoProxy.doneInserting();

@@ -45,7 +45,7 @@ module ckPairCalculator {
 
 
 	array [4D] PairCalculator {
- 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce );
+ 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize );
    		entry void lbsync();
 		entry void sendBWResult(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);

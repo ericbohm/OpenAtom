@@ -199,7 +199,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -209,11 +209,11 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   this->grainSize = grainSize;
   this->numStates = s;
   this->numChunks = numChunks;
-  this->cb = cb;
   this->numPoints = -1;
   this->cb_aid = cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
+  orthoGrainSize=_orthoGrainSize;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -229,6 +229,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   outData = NULL;
   mynewData= NULL;
   othernewData= NULL;
+  inResult1=NULL;
+  inResult2=NULL;
   usesAtSync=true;
   if(lbpaircalc)
       setMigratable(true);
@@ -237,7 +239,10 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   resultCookies=NULL;
   otherResultCookies=NULL;
   resultCookies=new CkSectionInfo[grainSize];
-
+  int numOrtho=grainSize/orthoGrainSize;
+  numOrtho=numOrtho*numOrtho;
+  orthoCookies=new CkSectionInfo[numOrtho];
+  orthoCB=new CkCallback[numOrtho];
   if(thisIndex.x != thisIndex.y)  
     // we don't actually use these in the asymmetric minimization case
     otherResultCookies=new CkSectionInfo[grainSize];
@@ -258,7 +263,6 @@ PairCalculator::pup(PUP::er &p)
   p|conserveMemory;
   p|lbpaircalc;
   p|cpreduce;
-  p|cb;
   p|cb_aid;
   p|cb_ep;
   p|cb_ep_tol;
@@ -267,10 +271,12 @@ PairCalculator::pup(PUP::er &p)
   p|existsOut;
   p|existsNew;
   p|mCastGrpId;
-  p|cookie;
   p|resumed;
   p|rck;
   p|actionType;
+  p|orthoGrainSize;
+  int numOrtho=grainSize/orthoGrainSize;
+  numOrtho=numOrtho*numOrtho;
   if (p.isUnpacking()) 
   {
       mynewData=NULL;
@@ -292,6 +298,8 @@ PairCalculator::pup(PUP::er &p)
 	  inDataRight = new double[2*numExpected*numPoints];
       else
 	  inDataRight=NULL;
+      orthoCookies= new CkSectionInfo[numOrtho];
+      orthoCB= new CkCallback[numOrtho];
 
   }
   int i;
@@ -306,7 +314,8 @@ PairCalculator::pup(PUP::er &p)
     p(inDataLeft, numExpected * numPoints * 2);
   if(existsRight)
     p(inDataRight, numExpected* numPoints * 2);
-
+  PUParray(p,orthoCookies,numOrtho);
+  PUParray(p,orthoCB,numOrtho);
 #ifdef _PAIRCALC_DEBUG_
   if (p.isUnpacking())
     {
@@ -345,6 +354,10 @@ PairCalculator::~PairCalculator()
   existsRight=false;
   existsNew=false;
   existsOut=false;
+  if(orthoCookies!=NULL)
+    delete [] orthoCookies;
+  if(orthoCB!=NULL)
+    delete [] orthoCB;
   if(resultCookies!=NULL)
     delete [] resultCookies;
   if(thisIndex.x != thisIndex.y && otherResultCookies !=NULL)
@@ -355,18 +368,26 @@ PairCalculator::~PairCalculator()
 // initialize the section cookie and the reduction client
 void PairCalculator::initGRed(initGRedMsg *msg)
 {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] initGRed\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric);
+  int numOrtho=grainSize/orthoGrainSize;
+  int orthoIndexX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
+  int orthoIndexY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
+  int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
+  //int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
+ #ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY);
 #endif
-  CkGetSectionInfo(cookie,msg);
-  cb=msg->cb;
+
+  CkAssert(orthoIndex<numOrtho*numOrtho);
+  CkGetSectionInfo(orthoCookies[orthoIndex],msg);
+  orthoCB[orthoIndex]=msg->cb;
   mCastGrpId=msg->mCastGrpId; //redundant
-  cpreduce=section;
+  /*  cpreduce=section;
   if(msg->lbsync)
   {
       int foo=1;
       contribute(sizeof(int), &foo , CkReduction::sum_int, msg->synccb);
   }
+  */
   //    delete msg; do not delete nokeep method
 }
 
@@ -594,7 +615,7 @@ PairCalculator::multiplyForward(bool flag_dp)
       dumpMatrixDouble("fwlmdata",inDataLeft,numExpected, numPoints*2);
 #endif
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-    } 
+    }
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -615,14 +636,71 @@ PairCalculator::multiplyForward(bool flag_dp)
   StartTime=CmiWallTimer();
 #endif
 
-  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-  mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
+  // do the slicing and dicing to send bits to Ortho
+  contributeSubTiles(outData);
+  //  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  // mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
   //mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, CkReduction::sum_double, cookie, cb);
 
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
+}
+
+void
+PairCalculator::contributeSubTiles(double *fullOutput)
+{
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d %d %d %d %d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric);
+#endif
+
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  double *outTile=new double[orthoGrainSize*orthoGrainSize];
+  //reuse the same tile each time as contribute makes its own copy
+  int numOrtho=grainSize/orthoGrainSize;
+#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+  dumpMatrixDouble("fullOutput", fullOutput, grainSize, grainSize);
+#endif
+  //tranpose the output first
+  
+  for(int orthoX=0; orthoX<numOrtho; orthoX++)
+    for(int orthoY=0; orthoY<numOrtho; orthoY++)
+      {
+	// copy into submatrix, contribute
+	// we need to stride by sGrainSize and copy by orthoGrainSize
+	int orthoIndex=orthoX*numOrtho+orthoY;
+	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
+	CkAssert(orthoIndex<numOrtho*numOrtho);
+	for(int ystart=0; ystart<orthoGrainSize*orthoGrainSize; ystart+=orthoGrainSize, tileStart+=grainSize)
+	  for(int x=0;x<orthoGrainSize;x++)
+	    {
+	      outTile[ystart+x]=fullOutput[tileStart+x];
+	    }
+	
+#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+	char filename[80];
+	snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
+	dumpMatrixDouble(filename, outTile, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
+#endif
+	/* cheap dirty transpose
+	  double *dest= outTile;
+	int chunksize=orthoGrainSize;
+	double tmp;
+	for(int i = 0; i < chunksize; i++)
+	  for(int j = i + 1; j < chunksize; j++){
+	    tmp = dest[i * chunksize + j];
+	    dest[i * chunksize + j] = dest[j*chunksize + i];
+	    dest[j * chunksize + i] = tmp;
+	  }
+	*/
+
+	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+
+
+
+      }
+  delete [] outTile;
 }
 
 //PairCalculator::multiplyResult(int size, double *matrix1, double *matrix2)
@@ -657,7 +735,7 @@ PairCalculator::multiplyPsiV()
   CkAssert(outData!=NULL);
   // this is slightly silly but we'll live with some memory inefficiency
   // in the infrequently called tolerance check
-  psiV->init1(grainSize*grainSize, outData,PSIV);
+  psiV->init1(grainSize*grainSize, outData,0,0,PSIV);
   // convert this to an inline call once this all works
   thisProxy(thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z).multiplyResult(psiV);
 
@@ -670,44 +748,23 @@ void
 PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, msg->actionType);
+  CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecd, msg->actionType);
 #endif
+  numRecd++; 
   int size=msg->size;
   int size2=msg->size2;
   double *matrix1=msg->matrix1;
   double *matrix2=msg->matrix2;
   actionType=msg->actionType;
   bool unitcoef = false;
-  if(cpreduce==section) //update cookie from multicast
-      CkGetSectionInfo(cookie,msg);
+  int numOrtho=grainSize/orthoGrainSize;
+  int orthoX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
+  int orthoY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
+  int orthoIndex=orthoY*numOrtho+orthoX;
   if(matrix2==NULL||size2<1) 
     {
       unitcoef = true;
     }
-  if(symmetric && actionType==KEEPORTHO) // there will be a psiV step following
-    {
-      if(outData==NULL)
-	{
-	  CkAssert(!existsOut);
-	  outData=new double[grainSize*grainSize];
-	  existsOut=true;
-	}
-      CkAssert(size==grainSize*grainSize);
-      //keep the orthoT we just received in matrix1
-      memcpy(outData, matrix1, size*sizeof(double));
-      // it is safe to reuse this memory 
-      // normal backward path has no use for outData
-      // forward path won't be called again until after we're done with outData.
-    }
-  CkAssert(mynewData==NULL);
-  mynewData = new complex[numPoints*grainSize];
-  existsNew=true;
-  if((symmetric || !unitcoef) && (thisIndex.x != thisIndex.y)){
-    othernewData = new complex[numPoints*grainSize];
-    bzero(othernewData,numPoints*grainSize* sizeof(complex));
-  }
-  else
-      othernewData=NULL;
 
   int offset = 0, index = thisIndex.y*numStates + thisIndex.x;
 
@@ -718,143 +775,228 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   register double m=0;
   bool makeLocalCopy=false;
   double *amatrix=NULL;
-
-  if(numStates!=grainSize && size!=matrixSize)
-      CkAbort("we don't support PC striding anymore");
+  double *amatrix2=matrix2;  // may be overridden later
   
   if(numStates==grainSize)// all at once no malloc
     {
-      amatrix=matrix1+index;
+      amatrix=matrix1+index;  // index is 0 in this case, so this is silly
     }
-  else
+  else if (orthoGrainSize==grainSize||actionType==PSIV)
     { // you were sent the correct section only
       amatrix=matrix1;
     }
-
-
-  double *localMatrix;
-  double *outMatrix;
-
-  int m_in=grainSize;
-  int n_in=numPoints*2;
-  int k_in=grainSize;
-  double *mynewDatad= reinterpret_cast <double *> (mynewData);
-  double alphad(1.0);
-  double betad(0.0);
-  char transform='N';
-  char transformT='T';
-
-#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-
-  int chunksize=blkSize/numChunks;
-  int ystart=chunksize*thisIndex.z;
-
-  dumpMatrixDouble("bwmlodata",inDataLeft,numExpected,numPoints*2,0,ystart);
-  if(!unitcoef){ // CG non minimization case
-      dumpMatrixDouble("bwmrodata",inDataRight,numExpected,numPoints*2,0,ystart);
-  }
-  dumpMatrixDouble("bwm1idata",matrix1,grainSize,grainSize);
-  if(!unitcoef)
-    { // CG non minimization case
-      dumpMatrixDouble("bwm2idata",matrix2,grainSize,grainSize);
-    }
-#endif
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
-
-  if(symmetric)
-    DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
   else
-    DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
-
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(230, StartTime, CmiWallTimer());
-#endif
-  if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
     {
-//#ifdef CMK_VERSION_BLUEGENE
-  CmiNetworkProgressAfter(1);
-//#endif
+#ifdef _PAIRCALC_DEBUG_
+      CkPrintf("[%d %d %d %d %d]: MultiplyResult aggregating numRecd %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecd);
+#endif      
+      //do strided copy 
+      // stride amatrix by grainSize,
+      // stride matrix1 by orthoGrainSize
+      // copy out the orthograinSize section
+      // goffset=orthoX*orthoGrainSize+orthoY
+      // into amatrix[goffset]
+      // goffset+=grainSize
+      if(numRecd==1) //alloc on first receipt
+	{
+	  CkAssert(inResult1==NULL);
+	  inResult1 = new double[matrixSize];
+	}
+      if(!unitcoef){ // CG non minimization case have GAMMA      
+	if(numRecd==1) //alloc on first receipt
+	  inResult2 = new double[matrixSize];
+	amatrix2 = inResult2;
+	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
+	for(int i=0; i<orthoGrainSize*orthoGrainSize; i+=orthoGrainSize,tileStart+=grainSize)
+	  for(int j=0; j<orthoGrainSize; j++)
+	    inResult2[tileStart+j] = matrix2[i+j];
+	//slightly evil, but safe
+      }
+      amatrix = inResult1;
+      
+      int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
+      if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
+	tileStart=orthoY*orthoGrainSize*grainSize+orthoX*orthoGrainSize;
+      for(int i=0; i<orthoGrainSize*orthoGrainSize; i+=orthoGrainSize,tileStart+=grainSize)
+	for(int j=0; j<orthoGrainSize; j++)
+	  inResult1[tileStart+j] = matrix1[i+j];
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+      char filename[80];
+      snprintf(filename,80,"bwinResult1_%d_%d:",orthoX,orthoY);
+      dumpMatrixDouble(filename, matrix1, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
+#endif
+    } //else
+
+  numOrtho=numOrtho*numOrtho;
+  if(orthoGrainSize==grainSize || numRecd==numOrtho)
+    { // we have all the result matrices we need
+      // if(cpreduce==section) //could update cookie from multicast
+      // we rely on manual resets for this in migration case
+      //      CkGetSectionInfo(cookie,msg);
+      if(symmetric && actionType==KEEPORTHO) // there will be a psiV step following
+	{
+	  if(outData==NULL)
+	    {
+	      CkAssert(!existsOut);
+	      outData=new double[grainSize*grainSize];
+	      existsOut=true;
+	    }
+	  CkAssert(size==grainSize*grainSize);
+	  //keep the orthoT we just received in matrix1
+	  memcpy(outData, amatrix, size*sizeof(double));
+	  // it is safe to reuse this memory 
+	  // normal backward path has no use for outData
+	  // forward path won't be called again until after we're done with outData.
+	}
+      CkAssert(mynewData==NULL);
+      mynewData = new complex[numPoints*grainSize];
+      existsNew=true;
+      bzero(mynewData,numPoints*grainSize* sizeof(complex));
+      if((symmetric || !unitcoef) && (thisIndex.x != thisIndex.y)){
+	if(othernewData==NULL)
+	  othernewData = new complex[numPoints*grainSize];
+	bzero(othernewData,numPoints*grainSize* sizeof(complex));
+      }
+      else
+	othernewData=NULL;
+
+      double *localMatrix;
+      double *outMatrix;
+
+      int m_in=grainSize;
+      int n_in=numPoints*2;
+      int k_in=grainSize;
+      double *mynewDatad= reinterpret_cast <double *> (mynewData);
+      double alphad(1.0);
+      double betad(0.0);
+      char transform='N';
+      char transformT='T';
+
+#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+
+      int chunksize=blkSize/numChunks;
+      int ystart=chunksize*thisIndex.z;
+
+      dumpMatrixDouble("bwmlodata",inDataLeft,numExpected,numPoints*2,0,ystart);
+      if(!unitcoef){ // CG non minimization case
+	dumpMatrixDouble("bwmrodata",inDataRight,numExpected,numPoints*2,0,ystart);
+      }
+      if(grainSize==orthoGrainSize)
+	{
+	  dumpMatrixDouble("bwm1idata",matrix1,grainSize,grainSize);
+	  if(!unitcoef)
+	    { // CG non minimization case
+	      dumpMatrixDouble("bwm2idata",matrix2,grainSize,grainSize);
+	    }
+	}
+      else
+	{
+	  dumpMatrixDouble("bwm1idata",inResult1,grainSize,grainSize);
+	  if(!unitcoef)
+	    { // CG non minimization case
+	      dumpMatrixDouble("bwm2idata",inResult2,grainSize,grainSize);
+	    }
+	}
+#endif
+#ifndef CMK_OPTIMIZE
+      double StartTime=CmiWallTimer();
+#endif
+      if(symmetric)
+	DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
+      else
+	DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
 
 #ifndef CMK_OPTIMIZE
-      StartTime=CmiWallTimer();
+      traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
-      double *othernewDatad= reinterpret_cast <double *> (othernewData);
-      //this isn't right
-      DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  amatrix, &k_in, &betad, othernewDatad, &n_in);
+      if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
+	{
+	  //#ifdef CMK_VERSION_BLUEGENE
+	  CmiNetworkProgressAfter(1);
+	  //#endif
+
 #ifndef CMK_OPTIMIZE
-      traceUserBracketEvent(250, StartTime, CmiWallTimer());
+	  StartTime=CmiWallTimer();
 #endif
-    }
+	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
+	  DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  amatrix, &k_in, &betad, othernewDatad, &n_in);
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(250, StartTime, CmiWallTimer());
+#endif
+	}
 
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-  dumpMatrixComplex("bwgmodata",mynewData,grainSize,numPoints,0,ystart);
+      dumpMatrixComplex("bwgmodata",mynewData,grainSize,numPoints,0,ystart);
 #endif
 
 
-  if(!unitcoef){ // CG non minimization case  GAMMA
-    // C = alpha*A*B + beta*C
-    // C= -1 * inRight * orthoT + C
-    double *othernewDatad;
+      if(!unitcoef){ // CG non minimization case  GAMMA
+	// C = alpha*A*B + beta*C
+	// C= -1 * inRight * orthoT + C
+	double *othernewDatad;
 #ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
+	StartTime=CmiWallTimer();
 #endif
-    alphad=-1.0;  //comes in with a minus sign
-    if(thisIndex.x!=thisIndex.y){
-      betad=0.0; // new contribution off-diagonal
-      othernewDatad= reinterpret_cast <double *> (othernewData);    
-    }else{
-       betad=1.0; //subtract contribution from existing on diagonal
-       othernewDatad=mynewDatad;
-    }//endif
+	alphad=-1.0;  //comes in with a minus sign
+	if(thisIndex.x!=thisIndex.y){
+	  betad=0.0; // new contribution off-diagonal
+	  othernewDatad= reinterpret_cast <double *> (othernewData);    
+	}else{
+	  betad=1.0; //subtract contribution from existing on diagonal
+	  othernewDatad=mynewDatad;
+	}//endif
 
-    DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataRight, 
-         &n_in,  matrix2, &k_in, &betad, othernewDatad, &n_in);
+	DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataRight, 
+	      &n_in,  amatrix2, &k_in, &betad, othernewDatad, &n_in);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-    dumpMatrixComplex("bwg2modata",othernewData,grainSize,numPoints);
+	dumpMatrixComplex("bwg2modata",othernewData,grainSize,numPoints);
 #endif
 
 #ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(240, StartTime, CmiWallTimer());
+	traceUserBracketEvent(240, StartTime, CmiWallTimer());
 #endif
-  } // end  CG case
-
-
+      } // end  CG case
 
 #ifdef _PAIRCALC_VALID_OUT_
-  CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
+      CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
 #endif
 
-  sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-  //collapse this into 1 flag
-  sigmsg->otherdata= 
-    ((!unitcoef || symmetric) &&(thisIndex.x !=thisIndex.y)) ? true : false;
+      sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
+      //collapse this into 1 flag
+      sigmsg->otherdata= 
+	((!unitcoef || symmetric) &&(thisIndex.x !=thisIndex.y)) ? true : false;
 
-  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower than non prioritized
-  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-  //sendBWResult(sigmsg);
-
-  if(conserveMemory)
-    {
-      // clear the right and left they'll get reallocated on the next pass
-      delete [] inDataLeft;
-      inDataLeft=NULL;
-      if(!symmetric || (symmetric&&thisIndex.x!=thisIndex.y)) {
-	delete [] inDataRight;
-	inDataRight = NULL;
-      }
-      existsLeft=false;
-      existsRight=false;
-      if(outData!=NULL && actionType!=KEEPORTHO)
+      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower than non prioritized
+      thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+      //sendBWResult(sigmsg);
+      if(conserveMemory)
 	{
-	  delete [] outData;
-	  outData = NULL;
-	  existsOut=false;
+	  // clear the right and left they'll get reallocated on the next pass
+	  delete [] inDataLeft;
+	  inDataLeft=NULL;
+	  if(!symmetric || (symmetric && thisIndex.x!=thisIndex.y )) {
+	    delete [] inDataRight;
+	    inDataRight = NULL;
+	  }
+	  existsLeft=false;
+	  existsRight=false;
+	  if(outData!=NULL && actionType!=KEEPORTHO)
+	    {
+	      delete [] outData;
+	      outData = NULL;
+	      existsOut=false;
+	    }
 	}
+      if(inResult2!=NULL)
+	delete [] inResult2;
+      if(inResult1!=NULL)
+	delete [] inResult1;
+      inResult1=NULL;
+      inResult2=NULL;
+      numRecd=0;
     }
 }
 
@@ -868,67 +1010,68 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 {
 
 #ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d %d %d %d %d]: sendBWResult with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
+  CkPrintf("[%d %d %d %d %d]: sendBWResult with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
 #endif
-    bool otherdata=msg->otherdata;
-    delete msg;  
-    // Now we have results in mynewData and if(symmetric) othernewData
-    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-    int cp_entry=cb_ep;
-    if(actionType==PSIV)
-      {
-	cp_entry= cb_ep_tol;
-      }
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
-#endif
-    if(otherdata){  // we have this othernewdata issue for the symmetric case
-                    // and the asymmetric dynamic case
-                    // for the off diagonal elements
-      CkAssert(othernewData!=NULL);
-      for(int j=0;j<grainSize;j++)
-	{
-	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-	  CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
-#endif
-#ifndef CMK_OPTIMIZE
-	  StartTime=CmiWallTimer();
-#endif
-	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset, -1);
-#ifndef CMK_OPTIMIZE
-	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
-#endif
-
-	  //mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, CkReduction::sum_double, otherResultCookies[j], mycb);
-
-	}
-    }
-    CkAssert(mynewData!=NULL);
-    for(int j=0;j<grainSize;j++) //mynewdata
+  bool otherdata=msg->otherdata;
+  delete msg;  
+  // Now we have results in mynewData and if(symmetric) othernewData
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  int cp_entry=cb_ep;
+  if(actionType==PSIV)
     {
-	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-	CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
-#endif
-#ifndef CMK_OPTIMIZE
-	  StartTime=CmiWallTimer();
-#endif
-	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset, -1);
-#ifndef CMK_OPTIMIZE
-	  traceUserBracketEvent(220, StartTime, CmiWallTimer());
-#endif
-	//mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, CkReduction::sum_double, resultCookies[j], mycb);
+      cp_entry= cb_ep_tol;
     }
-    delete [] mynewData;
-    mynewData=NULL;
-    existsNew=false;
-    if(otherdata)
-	delete [] othernewData;
-    othernewData=NULL;
-    
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+  if(otherdata){  // we have this othernewdata issue for the symmetric case
+    // and the asymmetric dynamic case
+    // for the off diagonal elements
+    CkAssert(othernewData!=NULL);
+    for(int j=0;j<grainSize;j++)
+      {
+	//this callback creation could be obviated by keeping an
+	//array of callbacks, not clearly worth doing
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
+#endif
+#ifndef CMK_OPTIMIZE
+	StartTime=CmiWallTimer();
+#endif
+	int outOffset=thisIndex.z;
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+
+	//mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, CkReduction::sum_double, otherResultCookies[j], mycb);
+
+      }
+  }
+  CkAssert(mynewData!=NULL);
+  for(int j=0;j<grainSize;j++) //mynewdata
+    {
+      CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+      CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+#ifndef CMK_OPTIMIZE
+      StartTime=CmiWallTimer();
+#endif
+      int outOffset=thisIndex.z;
+      mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+      //mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, CkReduction::sum_double, resultCookies[j], mycb);
+    }
+  delete [] mynewData;
+  mynewData=NULL;
+  existsNew=false;
+  if(otherdata)
+    delete [] othernewData;
+  othernewData=NULL;
 }
 
 

@@ -20,7 +20,7 @@ class PairCalcID {
   CkGroupID Gid;
   int GrainSize;
   int numChunks;
-  int S; 
+  int nstates; 
   bool Symmetric;
   bool useComlib;
   bool isDoublePacked;
@@ -42,7 +42,7 @@ class PairCalcID {
     Aid = aid;
     GrainSize = grain;
     numChunks = _numChunks;
-    S = s;
+    nstates = s;
     Symmetric = sym;
     useComlib = _useComlib;
     conserveMemory = _conserveMemory;
@@ -91,7 +91,7 @@ class PairCalcID {
     Gid=pid.Gid;    
     GrainSize=pid.GrainSize;
     numChunks=pid.numChunks;
-    S=pid.S;
+    nstates=pid.nstates;
     Symmetric=pid.Symmetric;
     useComlib=pid.useComlib;
     isDoublePacked=pid.isDoublePacked;
@@ -111,7 +111,7 @@ class PairCalcID {
     p|Gid;
     p|GrainSize;
     p|numChunks;
-    p|S;
+    p|nstates;
     p|Symmetric;
     p|useComlib;
     p|isDoublePacked;
@@ -141,7 +141,7 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
@@ -150,11 +150,11 @@ void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
-extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int actionType);
+extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType);
 
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int actionType);
+extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2);
+CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2);
 
 void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 
@@ -171,7 +171,7 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
 CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk);
-void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb);
+void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY);
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);

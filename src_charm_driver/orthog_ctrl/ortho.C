@@ -35,6 +35,9 @@
  * We will perform that tolerance check every config.toleranceInterval
  * steps.
  *
+ * This complicates interaction with PC a bit since we can no longer
+ * just multiply our index by the sGrainSize to determine it.
+ *
  */
 //============================================================================
 
@@ -92,88 +95,101 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
-    int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    if(thisIndex.x==0 && thisIndex.y==0)
-      {
-        if(cp_min_opt==1){
-  	  CkPrintf("------------------------------------------------------\n");
-	  CkPrintf("Iteration %d done\n", numGlobalIter+1);
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  if(thisIndex.x==0 && thisIndex.y==0)
+    {
+      if(cp_min_opt==1){
+	CkPrintf("------------------------------------------------------\n");
+	CkPrintf("Iteration %d done\n", numGlobalIter+1);
+	CkPrintf("======================================================\n\n");
+	CkPrintf("======================================================\n");
+      }else{
+	if(numGlobalIter>0){
 	  CkPrintf("======================================================\n\n");
 	  CkPrintf("======================================================\n");
-	}else{
-          if(numGlobalIter>0){
- 	   CkPrintf("======================================================\n\n");
-	   CkPrintf("======================================================\n");
-	  }//endif
-	  CkPrintf("Beginning Iteration %d \n", numGlobalIter);
-  	  CkPrintf("------------------------------------------------------\n");
 	}//endif
-      }
-    got_start = true;
-    int chunksize = m;
-    double *S = (double*) msg->getData();
-    step = 0;
-    iterations = 0;
-    if(thisIndex.x < thisIndex.y)
-      { //we have a spare to copy to  
-	//make a copy
-	CkReductionMsg *omsg=CkReductionMsg::buildNew(msg->getSize(),msg->getData());
-	// transpose it
-	double *dest= (double*) omsg->getData();;
-	double tmp;
-	for(int i = 0; i < chunksize; i++)
-	  for(int j = i + 1; j < chunksize; j++){
-	    tmp = dest[i * chunksize + j];
-	    dest[i * chunksize + j] = dest[j*chunksize + i];
-	    dest[j * chunksize + i] = tmp;
-	  }
-	thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
+	CkPrintf("Beginning Iteration %d \n", numGlobalIter);
+	CkPrintf("------------------------------------------------------\n");
+      }//endif
+    }
+  got_start = true;
+  int chunksize = m;
+  double *S = (double*) msg->getData();
+  step = 0;
+  iterations = 0;
+  int s1=thisIndex.x*m;
+  int s2=thisIndex.y*n;
+  if(m!=config.sGrainSize)
+    {
+      // do something clever
+      s1=s1/config.sGrainSize*config.sGrainSize;
+      s2=s2/config.sGrainSize*config.sGrainSize;
+    }
+  if(s1 < s2)   
+    {
+      //we get the reduction and //we have a spare to copy to  
+      //make a copy
+      CkReductionMsg *omsg=CkReductionMsg::buildNew(msg->getSize(),msg->getData());
+      // transpose it
+      double *dest= (double*) omsg->getData();;
+      double tmp;
+      for(int i = 0; i < chunksize; i++)
+	for(int j = i + 1; j < chunksize; j++){
+	  tmp = dest[i * chunksize + j];
+	  dest[i * chunksize + j] = dest[j*chunksize + i];
+	  dest[j * chunksize + i] = tmp;
+	}
+      thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
 
-      }
-    else if(thisIndex.x > thisIndex.y)
-      { //we are a spare 
-	//	CkPrintf("[%d,%d] has its copy of S\n",thisIndex.x, thisIndex.y);
-      }
+    }
+  else if(s2 < s1)
+    { //we get a transposed copy be happy
+      
+    }
+  else if((s1==s2) && (thisIndex.x > thisIndex.y))
+    { //we are a spare, got our matrix direct from Scalc 
+
+    }
 
 #ifdef _CP_DEBUG_SMAT_
-    char fname[80];
-    snprintf(fname,80,"smatrix.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
-    FILE *outfile = fopen(fname, "w");
-    for(int i=0; i<chunksize; i++){
-      for(int j=0; j<chunksize; j++){
-	fprintf(outfile, "[%d %d] %.12g \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
-      }
+  char fname[80];
+  snprintf(fname,80,"smatrix.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
+  FILE *outfile = fopen(fname, "w");
+  for(int i=0; i<chunksize; i++){
+    for(int j=0; j<chunksize; j++){
+      fprintf(outfile, "[%d %d] %.12g \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
     }
-    fclose(outfile);
+  }
+  fclose(outfile);
 #endif
-    for(int i = 0; i < m * n; i++){
-      B[i] = S[i] / 2.0;
-    }
-    memset(A, 0, sizeof(double) * m * n);
-    step = 0;
-    iterations = 0;
-    /* see if we have a non-zero part of I or T (=3I) */
-    if(thisIndex.x == thisIndex.y){
-      for(int i = 0; i < m; i++){
-	A[i * m + i] = 1;
-      }//endfor
+  for(int i = 0; i < m * n; i++){
+    B[i] = S[i] / 2.0;
+  }
+  memset(A, 0, sizeof(double) * m * n);
+  step = 0;
+  iterations = 0;
+  /* see if we have a non-zero part of I or T (=3I) */
+  if(thisIndex.x == thisIndex.y){
+    for(int i = 0; i < m; i++){
+      A[i * m + i] = 1;
+    }//endfor
+  }//endif
+  // do tolerance check on smat, do_iteration will be called by reduction root
+  if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter!=0){
+    if(thisIndex.x==0 && thisIndex.y==0){
+      CkPrintf("doing tolerance check on SMAT \n");
     }//endif
-    // do tolerance check on smat, do_iteration will be called by reduction root
-    if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter!=0){
-       if(thisIndex.x==0 && thisIndex.y==0){
-         CkPrintf("doing tolerance check on SMAT \n");
-       }//endif
-       double max =array_diag_max(m,n,S);
-       contribute(sizeof(double),&max, CkReduction::max_double, 
-                  CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),
-                  thisProxy.ckGetArrayID()));
-    }else{
-      if(num_ready == 1){do_iteration();}
-    }//endif
-    delete msg;
+    double max =array_diag_max(m,n,S);
+    contribute(sizeof(double),&max, CkReduction::max_double, 
+	       CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),
+			  thisProxy.ckGetArrayID()));
+  }else{
+    if(num_ready == 1){do_iteration();}
+  }//endif
+  delete msg;
 
-//============================================================================
-  }//end routine
+  //============================================================================
+}//end routine
 //============================================================================
 
 
@@ -265,8 +281,20 @@ void Ortho::resume(){
 	  { orthoT = new double[m * n];}
 	memcpy(orthoT,A,m*n*sizeof(double));
       }
-      if(thisIndex.y<=thisIndex.x)
-	finishPairCalcSection(m * n, A, pcProxy, actionType);
+    int s1=thisIndex.x*m;
+    int s2=thisIndex.y*n;
+    if(m!=config.sGrainSize)
+      {
+	// do something clever
+	s1=s1/config.sGrainSize*config.sGrainSize;
+	s2=s2/config.sGrainSize*config.sGrainSize;
+      }
+    //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
+    //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
+    if(s1 == s2)   //we have the answer scalc wants
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType);
+    else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -342,14 +370,18 @@ void Ortho::lbresume(CkReductionMsg *msg) {
     if(lbcaught==lambdas) //gspace is all done lambda reduction reset
 	gSpacePlaneProxy.syncpsi();
     if(lbcaught==lambdas+1) //gspace is all done lambda and psi reduction resets
-      setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId,  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));      
+      {
+	CkAbort("must fix ortho proxy reset!\n");
+	setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId,  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy),thisIndex.x, thisIndex.y); 
+      }
     if(lbcaught==lambdas+2)
       {
+	CkAbort("must fix ortho proxy reset!\n");
 	if(thisIndex.x <= thisIndex.y) //lambda is done
 	  {
 	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
 	    mcastGrp->resetSection(pcProxy);
-	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));
+	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
 	    if(thisIndex.x!=thisIndex.y)
 	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
 	  }
@@ -468,7 +500,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   else
     {
       // finish pair calc
-      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy,0);
+      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy, thisIndex.x, thisIndex.y, 0);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -485,16 +517,26 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ){
-    int s1=thisIndex.x*m;
-    int s2=thisIndex.y*n;
-    if(thisIndex.x <= thisIndex.y) //we get the reduction
-    {
 
-	pcProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2);
-	if(thisIndex.x!=thisIndex.y)
+  int s1=thisIndex.x*m;
+  int s2=thisIndex.y*n;
+  if(m!=config.sGrainSize)
+    {
+      // do something clever
+      s1=s1/config.sGrainSize*config.sGrainSize;
+      s2=s2/config.sGrainSize*config.sGrainSize;
+    }
+  
+  // m and n are orthograinsize which must be <=config.sGrainSize
+  // thisIndex.x and thisIndex.y range from 0 to nstates/config.orthoGrainSize
+
+  if(s1 <= s2)   //we get the reduction
+    {
+      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y);
+	if(s1!=s2)
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
     }
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2);
+    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunks, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y);
 
 //----------------------------------------------------------------------------
   }// end routine
@@ -519,8 +561,7 @@ void Ortho::gamma_done(){
     fclose(outfile);
 #endif
 
-    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,0);
-  
+    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,thisIndex.x, thisIndex.y, 0);
 
 //----------------------------------------------------------------------------
   }// end routine
