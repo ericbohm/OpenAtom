@@ -469,7 +469,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
  public:
 	CP_State_ParticlePlane(CkMigrateMessage *m) {}
-	CP_State_ParticlePlane(int, int, int, int,int ,int,int);
+	CP_State_ParticlePlane(int, int, int, int, int, int, int, int, int, int);
 	~CP_State_ParticlePlane();
 	void computeZ(PPDummyMsg *m);
 	void setEnlCookie(EnlCookieMsg *m);
@@ -484,6 +484,9 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         int natm_nl;
         int natm_nl_grp_max;
         int numSfGrps;
+	int nstates;
+	int nchareG;
+	int Gstates_per_pe;
  private:
 	int calcReductionPlaneNum(int);
 	void initKVectors(GStateSlab *);
