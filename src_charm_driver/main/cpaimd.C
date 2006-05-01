@@ -821,7 +821,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     particleOpts.setMap(gsMap); // the maps for both the arrays are the same
     particleOpts.bindTo(gSpacePlaneProxy);
     particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
-		      1,numSfGrps,natm_nl,natm_nl_grp_max,particleOpts);
+		      1, numSfGrps, natm_nl, natm_nl_grp_max, config.nstates, 
+		      config.nchareG, config.Gstates_per_pe, particleOpts);
 
     /*
      * Insert the planes in the particle plane array, gSpacePlane array
@@ -834,7 +835,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
              gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1, 
                                     1,config.sGrainSize, config.numChunks);
              particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
-				      1,numSfGrps,natm_nl,natm_nl_grp_max);
+				      1, numSfGrps, natm_nl, natm_nl_grp_max,
+				      config.nstates, config.nchareG, config.Gstates_per_pe);
       }
     }
 
