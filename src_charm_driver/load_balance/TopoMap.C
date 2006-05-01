@@ -190,9 +190,10 @@ void SCalcMap::makemap()
 		//if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
 			
 		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
+		    for(int newdim=0; newdim<numChunks; newdim++)
 			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 				for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
-		    		    for(int newdim=0; newdim<numChunks; newdim++)
+		    		    //for(int newdim=0; newdim<numChunks; newdim++)
 					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 					{
 						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
