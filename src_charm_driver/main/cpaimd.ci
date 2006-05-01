@@ -144,7 +144,8 @@ mainmodule cpaimd {
 	
 	array [2D] CP_State_ParticlePlane {
 		entry CP_State_ParticlePlane(int x, int y, int z, 
-                       int numPlanes,int numSfGrps,int natm_nl,int natm_nl_grp_max);
+                       int numPlanes,int numSfGrps,int natm_nl,int natm_nl_grp_max,
+		       int nstates, int nchareG, int Gstates_per_pe);
 		entry void computeZ(PPDummyMsg *dmsg);
 		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],
 			complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
