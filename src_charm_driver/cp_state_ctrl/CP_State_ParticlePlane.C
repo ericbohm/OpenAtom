@@ -79,7 +79,8 @@ void printEnl(void *param, void *msg){
 //============================================================================
 CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z, 
                                                int _gSpacePPC, int numSfGrps_in,
-                                               int natm_nl_in, int natm_nl_grp_max_in)
+                                               int natm_nl_in, int natm_nl_grp_max_in,
+					       int _nstates, int _nchareG, int _Gstates_per_pe)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -100,11 +101,35 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   enl                  = 0.0;
   energy_count         = 0;
   totalEnergy          = 0.0;
-  reductionPlaneNum    = 0;
+  nstates	       = _nstates;
+  nchareG	       = _nchareG;
+  Gstates_per_pe       = _Gstates_per_pe;
+#ifdef USE_TOPOMAP
+  int red_pl[nstates];
+  int l=Gstates_per_pe;
+  int m, pl, pm, rem;
+
+  pl = nstates / l;
+  pm = CkNumPes() / pl;
+
+  if(pm==0)
+    CkAbort("Choose a larger Gstates_per_pe\n");\
+
+  m = nchareG / pm;
+  rem = nchareG % pm;
+
+  int planes_per_pe=m;
+
+  for(int i=0; i<nstates;i++)
+    red_pl[i]=((i % Gstates_per_pe)*planes_per_pe)%nchareG;
+
+  reductionPlaneNum    = red_pl[thisIndex.x];
+#else
+  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
+#endif
 //  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
   // figure out a reliable way to do this
   // now expand that to spread these guys around
-  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
   //contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
@@ -135,7 +160,11 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
       CkArrayIndex2D idx(0, reductionPlaneNum);  // plane# = this plane#
       for (int j = 0; j < nstates; j++) {
 	idx.index[0] = j;
+#ifdef USE_TOPOMAP
+	idx.index[1] = red_pl[j];
+#else
 	idx.index[1] = calcReductionPlaneNum(j);
+#endif
 	elems[j] = idx;
       }//endfor
 
