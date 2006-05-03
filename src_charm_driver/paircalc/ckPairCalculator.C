@@ -1036,16 +1036,18 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
 #endif
+	/*
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif
+	*/
 	int outOffset=thisIndex.z;
 	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	/*
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
-
-	//mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, CkReduction::sum_double, otherResultCookies[j], mycb);
+	*/
 
       }
   }
@@ -1056,15 +1058,18 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
       CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
+      /*
 #ifndef CMK_OPTIMIZE
       StartTime=CmiWallTimer();
 #endif
+      */
       int outOffset=thisIndex.z;
       mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+      /*
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
-      //mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, CkReduction::sum_double, resultCookies[j], mycb);
+      */
     }
   delete [] mynewData;
   mynewData=NULL;
@@ -1075,181 +1080,6 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 }
 
 
-#if CONVERSE_VERSION_ELAN
-
-typedef void (* ELAN_REDUCER)(void *in, void *inout, int *count, void *handle);
-
-extern "C" void elan_machine_reduce(int nelem, int size, void * data,
-                                    void *dest, ELAN_REDUCER fn, int root);
-extern "C" void elan_machine_allreduce(int nelem, int size, void * data,
-                                       void *dest, ELAN_REDUCER fn);
-#endif
-
-void PairCalcReducer::acceptContribute(int size, double* matrix, CkCallback cb,
-                                       bool isAllReduce, bool symmtype, int offx, int offy, int grainSize)
-{
-    this->isAllReduce = isAllReduce;
-    this->size = size;
-    this->symmtype = symmtype;
-    this->cb = cb;
-
-#if CONVERSE_VERSION_ELAN
-    reduction_elementCount ++;
-#ifdef _ELAN_PAIRCALC_DEBUG_
-    CkPrintf("Accept contribute called on %d count is %d out of %d\n",CkMyPe(),reduction_elementCount, localElements[symmtype].length());
-#endif
-    int red_size = size *sizeof(double);
-    if(tmp_matrix == NULL) {
-        tmp_matrix = new double[size];
-	bzero(tmp_matrix,red_size);
-    }
-    int off=offx*grainSize+offy;
-    for(int i = 0; i < grainSize*grainSize ; i ++){
-        tmp_matrix[i+off] += matrix[i];
-    }
-
-    if(reduction_elementCount == localElements[symmtype].length()) {
-
-#ifdef _ELAN_PAIRCALC_DEBUG_
-    CkPrintf("[%d] Contributing %d \n",CkMyPe(),reduction_elementCount);
-
-#endif
-        reduction_elementCount = 0;
-        contribute(sizeof(int),&reduction_elementCount,CkReduction::sum_int);
-
-    }
-#else
-    CkAbort("Converse Version Is not ELAN, h/w reduction is not supported");
-#endif
-}
-
-
-void PairCalcReducer::startMachineReduction() {
-#if CONVERSE_VERSION_ELAN
-    double * dst_matrix =  NULL;
-#ifdef _ELAN_PAIRCALC_DEBUG_
-    CkPrintf("Starting machine reduction %d\n",CkMyPe());
-#endif
-    if(isAllReduce) {
-        dst_matrix = new double[size];
-        bzero(dst_matrix, size * sizeof(double));
-        elan_machine_allreduce(size, sizeof(double), tmp_matrix, dst_matrix, add_double);
-    }
-    else {
-        int pe = CkNumPes()/2; //HACK FOO BAR, GET IT FROM CALLBACK cb
-
-        if(pe == CkMyPe()) {
-            dst_matrix = new double[size];
-            bzero(dst_matrix, size * sizeof(double));
-        }
-
-        elan_machine_reduce(size, sizeof(double), tmp_matrix, dst_matrix, add_double, pe);
-    }
-
-    if(isAllReduce) {
-         broadcastEntireResult(size, dst_matrix,  symmtype);
-        delete [] dst_matrix;
-    }
-    else {
-        if(dst_matrix != NULL) {
-            cb.send(size *sizeof(double), dst_matrix);
-            delete [] dst_matrix;
-        }
-    }
-    delete [] tmp_matrix;
-    tmp_matrix = NULL;
-#ifdef _ELAN_PAIRCALC_DEBUG_
-    CkPrintf("Leaving machine reduction %d\n",CkMyPe());
-#endif
-#else
-    CkAbort("Converse Version Is not ELAN, h/w reduction is not supported");
-#endif
-
-
-}
-
-void
-PairCalcReducer::broadcastEntireResult(entireResultMsg *imsg)
-{
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("bcasteres:On Pe %d -- %d objects\n", CkMyPe(), localElements[imsg->symmetric].length());
-#endif
-  CkAbort("you should not be in this code!\n");
-  /*  multiplyResultMsg *msg= new (size, 0, 0) multiplyResultMsg;
-  msg->init1(imsg->size,imsg->matrix);
-  for (int i = 0; i < localElements[imsg->symmetric].length(); i++)
-    {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("call accept on :");
-      (localElements[imsg->symmetric])[i].dump();
-#endif
-      CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[imsg->symmetric])[i].id, (localElements[imsg->symmetric])[i].idx, CK_MSG_KEEP);
-
-    }
-  delete imsg;
-  */
-}
-
-
-void
-PairCalcReducer::broadcastEntireResult(int size, double* matrix, bool symmtype)
-{
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("bcasteres:On Pe %d -- %d objects\n", CkMyPe(), localElements[symmtype].length());
-#endif
-  CkAbort("you should not be in this code\n");
-  /*
-  multiplyResultMsg *msg= new (size,0,0) multiplyResultMsg;
-  msg->init1(size,matrix);
-  for (int i = 0; i < localElements[symmtype].length(); i++)
-    {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("call accept on :");
-      (localElements[symmtype])[i].dump();
-#endif
-      CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[symmtype])[i].id, (localElements[symmtype])[i].idx, CK_MSG_KEEP);
-
-    }
-  
-  //  delete msg;
-  */
-
-}
-
-void
-PairCalcReducer::broadcastEntireResult(int size, double* matrix1, double* matrix2, bool symmtype){
-    CkPrintf("On Pe %d -- %d objects\n", CkMyPe(), localElements[symmtype].length());
-    CkAbort("you should not be i nthis code \n");
-    /*
-    multiplyResultMsg *msg= new (size,size,0) multiplyResultMsg;
-    msg->init(size,size,matrix1,matrix2);
-    for (int i = 0; i < localElements[symmtype].length(); i++)
-      {
-	CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[symmtype])[0].id, (localElements[symmtype])[i].idx,CK_MSG_KEEP);
-      }
-    //    delete msg;
-    */
-}
-
-
-void
-PairCalcReducer::broadcastEntireResult(entireResultMsg2 *imsg)
-{
-    CkPrintf("On Pe %d -- %d objects\n", CkMyPe(), localElements[imsg->symmetric].length());
-    CkAbort(" you should not be in this code \n");
-    /*
-    multiplyResultMsg *msg= new (imsg->size,imsg->size,0) multiplyResultMsg;
-    msg->size=imsg->size;
-    msg->size2=imsg->size;
-    memcpy(msg->matrix1,imsg->matrix1,imsg->size* sizeof(double));
-    memcpy(msg->matrix2,imsg->matrix2,msg->size2* sizeof(double));
-    for (int i = 0; i < localElements[imsg->symmetric].length(); i++)
-      {
-	CkSendMsgArrayInline(CkIndex_PairCalculator::__idx_multiplyResultI_multiplyResultMsg, msg, (localElements[imsg->symmetric])[0].id, (localElements[imsg->symmetric])[i].idx,CK_MSG_KEEP);
-      }
-    delete imsg;
-    */
-}
 
 
 void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim, int xstart, int ystart)

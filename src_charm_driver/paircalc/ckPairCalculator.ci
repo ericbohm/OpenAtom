@@ -55,16 +55,4 @@ module ckPairCalculator {
 		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
 
 	};
-
-	group PairCalcReducer {
-		entry PairCalcReducer();
-		entry void clearRegister();
-		entry void broadcastEntireResult(entireResultMsg *msg);
-		entry void broadcastEntireResult(entireResultMsg2 *msg);
-		entry void broadcastEntireResult(int size, double matrix[size], bool symmtype);	
-		entry void broadcastEntireResult(int size, double matrix1[size], double matrix2[size], bool symmtype);			
-		entry void startMachineReduction(void);
-	};
-
-
 }
