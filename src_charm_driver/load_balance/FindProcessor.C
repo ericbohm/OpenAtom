@@ -1,12 +1,13 @@
 /** \file FindProcessor.C
- *
+ *  Author: Abhinav S Bhatele
+ *  Date Created: November 30th, 2005
+ *  
  */
 
 #include "FindProcessor.h"
 #include <charm++.h>
 
 int distance=0;
-int new_start[3]={0, 0, 0};
 
 FindProcessor::FindProcessor()
 {
@@ -23,39 +24,6 @@ FindProcessor::FindProcessor(int a[])
 		start[i]=a[i];
 }
 
-/*int main(int argc, char*argv[])
-{
-	FindProcessor fp=FindProcessor();
-	if(strcmp(argv[1],"-3Dmesh")==0)
-		fp.option=1;
-	if(strcmp(argv[1],"-Bluegene")==0)
-		fp.option=2;
-	for(int i=2;i<5;i++)
-		fp.start[i-2]=atoi(argv[i]);
-	if(strcmp(argv[1],"-Torus")==0)
-	{
-		fp.option=3;
-		fp.nopX=atoi(argv[2]);
-		fp.nopY=atoi(argv[3]);
-		fp.nopZ=atoi(argv[4]);
-		for(int i=5;i<8;i++)
-			fp.start[i-5]=atoi(argv[i]);
-	}
-	if(strcmp(argv[1],"-TorusV")==0)
-	{
-		fp.option=4;
-		fp.nopX=atoi(argv[2]);
-		fp.nopY=atoi(argv[3]);
-		fp.nopZ=atoi(argv[4]);
-		fp.w=atoi(argv[5]);
-		for(int i=6;i<9;i++)
-			fp.start[i-6]=atoi(argv[i]);
-	}
-	fp.printSome(250);
-	//fp.findNext(fp.start);
-	//fp.findNextInBluegene(fp.start);
-	//sfp.findNextInTorus(fp.start);	
-}*/
 
 void FindProcessor::findNext(int a[])
 {
@@ -132,31 +100,7 @@ void FindProcessor::findNext(int a[])
 	}
 }
 
-int FindProcessor::findNextInBluegene(int a[])
-{
-	int ret = findNextInBIter(a);
-	if(count == nopX*nopY*nopZ)
-	{
-        	cout<<"-------------------------\n";
-        	cout<<"No more processors left\n";
-        	cout<<"-------------------------\n";
-        	CkAbort("inconsistent no. of chares and processors\n");
-        	return 0;
-	}
-	if(ret==1)
-		return ret;
-	else
-	{
-		ret=findNextInBIter(start);
-		while(ret==2)
-		{
-			ret=findNextInBIter(start);
-		}
-		return ret;
-	}
-}
-
-int FindProcessor::findNextInBIter(int a[])
+int FindProcessor::findNextInMIter(int a[])
 {
         if(a[0]==0 && a[1]==0 && a[2]==0)
         {
@@ -219,6 +163,29 @@ int FindProcessor::findNextInBIter(int a[])
         return 1;
 }
 
+int FindProcessor::findNextInMesh(int a[])
+{
+	int ret = findNextInMIter(a);
+	if(count == nopX*nopY*nopZ)
+	{
+        	cout<<"-------------------------\n";
+        	cout<<"No more processors left\n";
+        	cout<<"-------------------------\n";
+        	CkAbort("inconsistent no. of chares and processors\n");
+        	return 0;
+	}
+	if(ret==1)
+		return ret;
+	else
+	{
+		ret=findNextInMIter(start);
+		while(ret==2)
+		{
+			ret=findNextInMIter(start);
+		}
+		return ret;
+	}
+}
 
 int FindProcessor::findNextIter(int a[])
 {
@@ -494,6 +461,27 @@ int FindProcessor::findNextInTorusV(int t, int a[])
 	}	
 }
 
+int FindProcessor::compare(int n, int a, int b)
+{
+	if(n>=0)
+		if(n>=a)
+			return 1;
+		else
+			return 0;
+	else
+		if(abs(n)>=b)
+			return 1;
+		else
+			return 0;
+}
+
+/* Various functions which can be used for printing the processor coordinates
+ * printSome(int) - print the no. of processors the user wishes
+ * printing(int, int, int) - print for bluegene CO mode 
+ * printing_sp(int, int, int) - for debugging purposes
+ * printing(int, int, int, int) - print for bluegene VN mode 
+ */
+
 void FindProcessor::printSome(int n)
 {
 	int val;
@@ -501,7 +489,7 @@ void FindProcessor::printSome(int n)
 	if(option==1)
 		findNext(start);
 	if(option==2)
-		findNextInBluegene(start);
+		findNextInMesh(start);
 	if(option==3)
 	{
 		//count=1;
@@ -546,7 +534,7 @@ void FindProcessor::printSome(int n)
 		if(option==1)
 			findNext(start);
 		if(option==2)
-			findNextInBluegene(start);
+			findNextInMesh(start);
 		if(option==3)
 		{
 			if(val!=0)
@@ -594,7 +582,7 @@ void FindProcessor::printSome(int n)
 		n--;
 	}
 }
- 
+
 void FindProcessor::printing(int a, int b, int c)
 {
 	if(count<10)
@@ -617,6 +605,7 @@ void FindProcessor::printing(int a, int b, int c)
 		cout<<"  "<<c<<"\n";
 	//count++; needs to be placed in other two functions!
 }
+
 void FindProcessor::printing_sp(int a, int b, int c)
 {
 	if(a<0)
@@ -660,17 +649,44 @@ void FindProcessor::printing(int w, int a, int b, int c)
 	//count++; needs to be placed in other two functions!
 }
 
-int FindProcessor::compare(int n, int a, int b)
+/* int main which can be used for debugging
+ * functions in this file
+
+int main(int argc, char*argv[])
 {
-	if(n>=0)
-		if(n>=a)
-			return 1;
-		else
-			return 0;
-	else
-		if(abs(n)>=b)
-			return 1;
-		else
-			return 0;
-}
+	FindProcessor fp=FindProcessor();
+	if(strcmp(argv[1],"-3Dmesh")==0)
+		fp.option=1;
+	if(strcmp(argv[1],"-Bluegene")==0)
+		fp.option=2;
+	for(int i=2;i<5;i++)
+		fp.start[i-2]=atoi(argv[i]);
+	if(strcmp(argv[1],"-Torus")==0)
+	{
+		fp.option=3;
+		fp.nopX=atoi(argv[2]);
+		fp.nopY=atoi(argv[3]);
+		fp.nopZ=atoi(argv[4]);
+		for(int i=5;i<8;i++)
+			fp.start[i-5]=atoi(argv[i]);
+	}
+	if(strcmp(argv[1],"-TorusV")==0)
+	{
+		fp.option=4;
+		fp.nopX=atoi(argv[2]);
+		fp.nopY=atoi(argv[3]);
+		fp.nopZ=atoi(argv[4]);
+		fp.w=atoi(argv[5]);
+		for(int i=6;i<9;i++)
+			fp.start[i-6]=atoi(argv[i]);
+	}
+	fp.printSome(250);
+	//fp.findNext(fp.start);
+	//fp.findNextInMesh(fp.start);
+	//sfp.findNextInTorus(fp.start);	
+} //end main
+
+ *
+ */
+
 
