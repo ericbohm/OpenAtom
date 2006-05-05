@@ -1,7 +1,9 @@
 /** \file FindProcessor.C
  *  Author: Abhinav S Bhatele
  *  Date Created: November 30th, 2005
- *  
+ *  Topologies supported: 3D Mesh  (on BlueGene/L)
+ * 			  3D Torus (on Bluegene/L): Co-processor mode
+ * 			  3D Torus (on Bluegene/L): Virtual NOde mode
  */
 
 #include "FindProcessor.h"
