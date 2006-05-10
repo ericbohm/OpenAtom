@@ -1,41 +1,49 @@
 /** \file TopoMap.C
- * The functions in this file generate a topology sensitive
- * mapping scheme for the GSpace, PairCalc and RealSpace objects.
- * and also for the density objects - RhoR, RhoG, RhoGHart.
+ *  Author: Abhinav S Bhatele
+ *  Date Created: January 04th, 2006 
+ *  The functions in this file generate a topology sensitive
+ *  mapping scheme for the GSpace, PairCalc and RealSpace objects.
+ *  and also for the density objects - RhoR, RhoG, RhoGHart.
  */
+
 #include "charm++.h"
 #include "cpaimd.h"
 #include "util.h"
 
 #ifdef USE_TOPOMAP
+
 #include "FindProcessor.h"
+
 #ifdef CMK_VERSION_BLUEGENE
 #include "bgltorus.h"
 #endif
 
 /** 
  * Function for GSpace objects
- * Makes the map for the first time and places
- * all the objects.
+ * Does a hybrid chunking of the GSpace grid. Depending on the 
+ * no. of processors and the input parameter, Gstates_per_pe (l),
+ * the other dimension 'm' is decided. And then this chunk of
+ * size l by m is placed on a processor.   
  */
+
 void GSMap::makemap()
 {
 	FindProcessor fp;
-	int x = CkNumPes();
+	int x = CkNumPes();		// for the case when we are oblivious of the topology 
 	int y = 1;
 	int z = 1;
-	int vn = 0;
+	int vn = 0;		
         int c = 0;
         
 #ifdef CMK_VERSION_BLUEGENE
 	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
+	x = bgltm->getXSize();		// size of torus in X direction
+	y = bgltm->getYSize();		// size of torus in Y direction
+	z = bgltm->getZSize();		// size of torus in Z direction
+	vn = bgltm->isVnodeMode();	// vitual node mode
 #endif
 
-	fp.count=1;
+	fp.count=1;			// no. of processors output by the findNext function
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
@@ -45,24 +53,33 @@ void GSMap::makemap()
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
 	
-	int l=Gstates_per_pe;
-	int m, pl, pm, rem;
-        
-        pl = nstates / l;
-        pm = CkNumPes() / pl;
+	int l, m, pl, pm, srem, rem, i=0;
+
+	l=Gstates_per_pe;		// no of states in one chunk
+        pl = nstates / l;		// no of procs on y axis
+        if(nstates % l == 0)
+		srem = 0;
+	else
+	{
+                while(pow(2.0, (double)i) < pl)
+                        i++;
+                pl = pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
+		srem = nstates % pl;
+	}
+	pm = CkNumPes() / pl;		// no of procs on x axis
         
 	if(pm==0)
-	  CkAbort("Choose a larger Gstates_per_pe\n");
+		CkAbort("Choose a larger Gstates_per_pe\n");
         
-	m = nchareG / pm;
-        rem = nchareG % pm;
+	m = nchareG / pm;		// no of planes in one chunk
+        rem = nchareG % pm;		// remainder of planes left to be mapped
         
         planes_per_pe=m;
 
         /*if(CkMyPe()==0) 
 	{
 		CkPrintf("nstates %d nchareG %d Pes %d\n", nstates, nchareG, CkNumPes());
-		CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
+		CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
 	}*/
         for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
         {
@@ -70,6 +87,8 @@ void GSMap::makemap()
                   m=m+1;
                 for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
+			if(xchunk==(pl-srem)*l)
+				l=l+1;
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
@@ -91,8 +110,12 @@ void GSMap::makemap()
 					fp.findNextInTorus(assign);
                                 else
                                 {
-                                	fp.findNextInTorusV(w, assign);
+#ifdef WACKY_VN
+                                	fp.findNextInTorus(assign);
+#else
+					fp.findNextInTorusV(w, assign);
                                         w = fp.w;
+#endif
                                 }	
 			}
                         c=0;
@@ -104,7 +127,7 @@ void GSMap::makemap()
 					{
                                                 c++;
 						maptable->put(intdual(state, plane))=0;
-						//CkPrintf("%d %d on 0\n", state, plane);
+						//if(CkMyPe()==0) CkPrintf("%d %d on 0\n", state, plane);
 					}
 					else
 					{
@@ -112,8 +135,14 @@ void GSMap::makemap()
 						if(vn==0)
 						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 else
+                                                {
+#ifdef WACKY_VN
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+						  //if(CkMyPe()==0) CkPrintf("%d %d on %d (%d %d %d)\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2], fp.next[0], fp.next[1], fp.next[2]);
+#else
                                                   maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+#endif
+						}
 						
 					}
 				}
@@ -212,7 +241,13 @@ void SCalcMap::makemap()
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
+								{
+#ifdef WACKY_VN
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                 		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+								}
 								count++;
 							}
 							else
@@ -240,8 +275,12 @@ void SCalcMap::makemap()
 									fp.findNextInTorus(assign);
                                 				else
                                                                 {
+#ifdef WACKY_VN
+									fp.findNextInTorus(assign);
+#else
                                 					fp.findNextInTorusV(w, assign);
                                                                         w = fp.w;
+#endif
                                                                 }
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
@@ -251,7 +290,13 @@ void SCalcMap::makemap()
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
+								{
+#ifdef WACKY_VN
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                 		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+								}
 								count++;
 							}
 						}
@@ -291,7 +336,13 @@ void SCalcMap::makemap()
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
+								{
+#ifdef WACKY_VN
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                 		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+								}
 								count++;
 							}
 							else
@@ -319,8 +370,12 @@ void SCalcMap::makemap()
 									fp.findNextInTorus(assign);
                                 				else
                                                                 {
+#ifdef WACKY_VN
+									fp.findNextInTorus(assign);
+#else
                                 					fp.findNextInTorusV(w, assign);
                                                                         w = fp.w;
+#endif
                                                                 }
 								for(int i=0;i<3;i++)
 									assign[i]=fp.next[i];
@@ -328,7 +383,13 @@ void SCalcMap::makemap()
 								if(vn==0)
 								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 		else
+								{
+#ifdef WACKY_VN
+								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                 		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+								}
 								count++;
 							}
 						}
@@ -361,7 +422,6 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
  */
 void RSMap::makemap()
 {
-	//CkPrintf("%d start rsmap\n", CkMyPe());
 	FindProcessor fp;
 	int x = CkNumPes();
 	int y = 1;
@@ -392,10 +452,19 @@ void RSMap::makemap()
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
 	else
 	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;*/
-	int l=Rstates_per_pe;
-	int m, pl, pm, rem;
+	int l, m, pl, pm, srem, rem, i=0;
         
+        l=Rstates_per_pe;		// no of states in one chunk
         pl = nstates / l;
+        if(nstates % l == 0)
+		srem = 0;
+	else
+	{
+		while(pow(2.0, (double)i) < pl)
+			i++;
+		pl = pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
+		srem = nstates % pl;
+	}
         pm = CkNumPes() / pl;
         
 	if(pm==0)
@@ -404,8 +473,8 @@ void RSMap::makemap()
         m = sizeY / pm;
         rem = sizeY % pm;
 
-        //CkPrintf("nstates %d sizeY %d Pes %d, rsobjs_per_pe %d\n", nstates, sizeY, CkNumPes(), rsobjs_per_pe);	
-	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
+        //CkPrintf("nstates %d sizeY %d Pes %d\n", nstates, sizeY, CkNumPes());	
+	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
 	
         for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
         {
@@ -413,6 +482,8 @@ void RSMap::makemap()
               		m=m+1;
         	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		{
+                	if(xchunk==(pl-srem)*l)
+				l=l+1;
 			if(xchunk==0 && ychunk==0) {}
 			else
 			{
@@ -434,8 +505,12 @@ void RSMap::makemap()
                                   fp.findNextInTorus(assign);
                                 else
                                 {
+#ifdef WACKY_VN
+                                  	fp.findNextInTorus(assign);
+#else
                                         fp.findNextInTorusV(w, assign);
                                         w = fp.w;
+#endif
                                 }	
 			}
                         c=0;
@@ -456,7 +531,11 @@ void RSMap::makemap()
 						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 else
                                                 {
+#ifdef WACKY_VN
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                   maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
                                                 }
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
@@ -575,8 +654,12 @@ void RhoRSMap::makemap()
             }
             else
             {
+#ifdef WACKY_VN
+              fp.findNextInTorus(assign);
+#else
               fp.findNextInTorusV(w, assign);
               w = fp.w;
+#endif
               for(int i=0;i<3;i++)
                   fp.start[i]=fp.next[i];
               if(fp.start[2]>x/2)
@@ -591,7 +674,11 @@ void RhoRSMap::makemap()
                   assign[0]=fp.start[0]-z;
               else
                   assign[0]=fp.start[0];
+#ifdef WACKY_VN
+              fp.findNextInTorus(assign);
+#else
               fp.findNextInTorusV(w, assign);
+#endif
             }
           }
           for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
@@ -606,7 +693,13 @@ void RhoRSMap::makemap()
               if(vn==0)
 		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
               else
+	      {
+#ifdef WACKY_VN
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                 maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+	      }
               //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
             }
           }
@@ -654,8 +747,14 @@ void RhoGSMap::makemap()
         if(vn==0)
           assign[2]=1;
         else
+	{
+#ifdef WACKY_VN
+          assign[2]=1;
+#else
           w=1;
-        
+#endif
+        }
+
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=assign[i];
         
@@ -720,8 +819,12 @@ void RhoGSMap::makemap()
             }
             else
             {
+#ifdef WACKY_VN
+              fp.findNextInTorus(assign);
+#else
               fp.findNextInTorusV(w, assign);
               w = fp.w;
+#endif
               for(int i=0;i<3;i++)
                   fp.start[i]=fp.next[i];
               if(fp.start[2]>x/2)
@@ -736,7 +839,11 @@ void RhoGSMap::makemap()
                   assign[0]=fp.start[0]-z;
               else
                   assign[0]=fp.start[0];
+#ifdef WACKY_VN
+              fp.findNextInTorus(assign);
+#else
               fp.findNextInTorusV(w, assign);
+#endif
             }
           }
           for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
@@ -746,7 +853,13 @@ void RhoGSMap::makemap()
               if(vn==0)
                 maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
               else
+	      {
+#ifdef WACKY_VN
+                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
+#else
               maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
+#endif
+	      }
               //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
             }
             else
@@ -754,7 +867,13 @@ void RhoGSMap::makemap()
               if(vn==0)
 		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
               else
+	      {
+#ifdef WACKY_VN
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                 maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+	      }
               //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
             }
           } 
@@ -810,7 +929,13 @@ void RhoGHartMap::makemap()
         if(vn==0)
           assign[2]=1;
         else
+	{
+#ifdef WACKY_VN
+          assign[2]=1;
+#else
           w=1;
+#endif
+	}
           
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=assign[i];
@@ -881,8 +1006,12 @@ void RhoGHartMap::makemap()
             }
             else
             {
+#ifdef WACKY_VN
+              fp.findNextInTorus(assign);
+#else
               fp.findNextInTorusV(w, assign);
               w = fp.w;
+#endif
 	      procno++;
 	      if(normal==1 || (normal==0 && procno<nchareRhoR*2))
               {
@@ -900,7 +1029,11 @@ void RhoGHartMap::makemap()
                   assign[0]=fp.start[0]-z;
                 else
                   assign[0]=fp.start[0];
+#ifdef WACKY_VN
+                fp.findNextInTorus(assign);
+#else
                 fp.findNextInTorusV(w, assign);
+#endif
 		procno++;
 	      }
             }
@@ -912,7 +1045,13 @@ void RhoGHartMap::makemap()
               if(vn==0)
                 maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
               else
+	      {
+#ifdef WACKY_VN
+                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
+#else
                 maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
+#endif
+	      }
               //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
             }
             else
@@ -920,7 +1059,13 @@ void RhoGHartMap::makemap()
               if(vn==0)
 		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
               else
+	      {
+#ifdef WACKY_VN
+		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                 maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+	      }
               //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
             }
           } 

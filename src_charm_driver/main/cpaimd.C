@@ -1221,22 +1221,32 @@ void makemap()
 		fp.start[i]=fp.next[i]=0;
 	int gsobjs_per_pe;
 	
-	if((config.nstates*config.nchareG) % CkNumPes() == 0)
+	/*if((config.nstates*config.nchareG) % CkNumPes() == 0)
 	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes();
 	else
-	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;
-	int l=config.Gstates_per_pe;
-	int m, pl, pm, rem;
-        
-        pl = config.nstates / l;
-        pm = CkNumPes() / pl;
-       
-	if(pm==0)
-          CkAbort("Choose a larger Rstates_per_pe\n");\
- 
-        m = config.nchareG / pm;
-        rem = config.nchareG % pm;
+	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;*/
+	
+        int l, m, pl, pm, srem, rem, i=0;
 
+	l = config.Gstates_per_pe;		// no of states in one chunk
+        pl = config.nstates / l;		// no of procs on y axis
+        if(config.nstates % l == 0)
+		srem = 0;
+	else
+	{
+                while(pow(2.0, (double)i) < pl)
+                        i++;
+                pl = pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
+		srem = config.nstates % pl;
+	}
+	pm = CkNumPes() / pl;		// no of procs on x axis
+        
+	if(pm==0)
+		CkAbort("Choose a larger Gstates_per_pe\n");
+        
+	m = config.nchareG / pm;		// no of planes in one chunk
+        rem = config.nchareG % pm;		// remainder of planes left to be mapped
+        
         planes_per_pe=m;
         
         //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", config.nstates, config.nchareG, CkNumPes(), gsobjs_per_pe);	
@@ -1248,7 +1258,9 @@ void makemap()
                   m=m+1;
                 for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
 		{
-			if(xchunk==0 && ychunk==0) {}
+			if(xchunk==(pl-srem)*l)
+				l=l+1;
+                        if(xchunk==0 && ychunk==0) {}
 			else
 			{
 				for(int i=0;i<3;i++)
@@ -1269,8 +1281,12 @@ void makemap()
 					fp.findNextInTorus(assign);
                                 else
                                 {
+#ifdef WACKY_VN
+					fp.findNextInTorus(assign);
+#else
                                 	fp.findNextInTorusV(w, assign);
                                         w = fp.w;
+#endif
                                 }	
 			}
                         c=0;
@@ -1290,7 +1306,13 @@ void makemap()
 						if(vn==0)
 						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
                                                 else
+						{
+#ifdef WACKY_VN
+						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
+#else
                                                   maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
+#endif
+						}
 						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 						
 					}
