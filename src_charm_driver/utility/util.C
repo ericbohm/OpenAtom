@@ -1891,7 +1891,31 @@ void Config::guesstimateParms(int natm_nl)
 	    pesPerState=sqrtpes;
 	}
     }
-  
+    
+    if(numPes!=1 && Gstates_per_pe==nstates)
+    {
+      if(numPes<=128)
+	Gstates_per_pe=nstates/4;
+      if(numPes>128 && numPes<=512)
+	Gstates_per_pe=nstates/16;
+      if(numPes>512 && numPes<=2048)
+	Gstates_per_pe=nstates/64;
+      if(numPes>2048 && numPes<=8192)
+	Gstates_per_pe=nstates/256;
+    }
+
+    if(numPes!=1 && Rstates_per_pe==nstates)
+    {
+      if(numPes<=128)
+	Rstates_per_pe=nstates/4;
+      if(numPes>128 && numPes<=512)
+	Rstates_per_pe=nstates/16;
+      if(numPes>512 && numPes<=2048)
+	Rstates_per_pe=nstates/64;
+      if(numPes>2048 && numPes<=8192)
+	Rstates_per_pe=nstates/256;
+    }
+
     if(sGrainSize==nstates)
     {
 	if(numPes>sqrtstates)
