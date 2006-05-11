@@ -46,7 +46,7 @@ full_code: physics cpaimd_driver mymathlib
 #======================================================================
 proj_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o ../binary/cpaimd.x \
+	$(CHARMC) -o ../binary/cpaimd.prj.x \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
 	          -tracemode projections -tracemode summary \
