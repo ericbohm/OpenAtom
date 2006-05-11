@@ -1214,7 +1214,7 @@ void makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-
+	fp.init();
 	int assign[3]={0, 0, 0};
 	int w = 0;
 	for(int i=0;i<3;i++)

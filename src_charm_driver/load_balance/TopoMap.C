@@ -47,7 +47,7 @@ void GSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	
+	fp.init();	
 	int assign[3]={0, 0, 0};
 	int w = 0;
 	for(int i=0;i<3;i++)
@@ -198,6 +198,7 @@ void SCalcMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
+	fp.init();
 	fp.w = 0;
 
 	if(planes_per_pe==0)
@@ -441,7 +442,7 @@ void RSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	
+	fp.init();
 	int assign[3]={0, 0, 0};
 	int w = 0;
 	for(int i=0;i<3;i++)
@@ -588,7 +589,7 @@ void RhoRSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	
+	fp.init();	
 	int assign[3]={0, 0, 0};
 	int w = 0;
 	for(int i=0;i<3;i++)
@@ -740,7 +741,7 @@ void RhoGSMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	
+	fp.init();	
         int assign[3]={0, 0, 0};
         int w;
         
@@ -922,7 +923,7 @@ void RhoGHartMap::makemap()
 	fp.nopX=x;
 	fp.nopY=y;
 	fp.nopZ=z;
-	
+	fp.init();	
         int assign[3]={0, 0, 0};
         int w;
         

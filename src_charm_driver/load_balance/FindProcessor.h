@@ -20,9 +20,13 @@ class FindProcessor
 		int next[3];		// next processor w.r.t start
 		int w;			// the fourth dimension for bluegene in virtual node mode
 		int count;		// no. of processors output till now 
+		int negXL, negYL, negZL; //necessary for FindNextInIter
+		int posXL, posYL, posZL;
+
 	public:
 		FindProcessor();			// default constructor
 		FindProcessor(int a[]);			// set start[] to a[] 
+		void init();  // setup torus constants
 		void findNext(int a[]);			// for infinite no. of processors in 3D
 		int findNextInMIter(int a[]);		// helper function for 3D mesh
 		int findNextInMesh(int a[]);		// for 3D mesh

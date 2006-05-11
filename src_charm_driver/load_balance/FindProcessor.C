@@ -13,6 +13,7 @@ int distance=0;
 
 FindProcessor::FindProcessor()
 {
+  negXL=negYL=negZL=posXL=posYL=posZL=0;
 	for(int i=0; i<3;i++)
 	{	
 		start[i]=0;
@@ -20,12 +21,38 @@ FindProcessor::FindProcessor()
 	}
 }
 
+
 FindProcessor::FindProcessor(int a[])
 {
+  negXL=negYL=negZL=posXL=posYL=posZL=0;
 	for(int i=0; i<3;i++)
 		start[i]=a[i];
 }
 
+void FindProcessor::init()
+{
+  negXL=negYL=negZL=posXL=posYL=posZL=0;
+  if(nopX%2==0)
+    negXL = nopX/2;
+  else
+    negXL = nopX/2 + 1;
+  if(nopY%2==0)
+    negYL = nopY/2;
+  else
+    negYL = nopY/2 + 1;
+  if(nopZ%2==0)
+    negZL = nopZ/2;
+  else
+    negZL = nopZ/2 + 1;
+  //cout<<"actual -> "<<negXL<<" "<<negYL<<" "<<negZL<<"\n";
+  /*int negXL=(int)(ceil(nopX/2.0));
+    int negYL=(int)(ceil(nopY/2.0));
+    int negZL=(int)(ceil(nopZ/2.0));*/
+	
+  posXL=nopX/2 + 1;
+  posYL=nopY/2 + 1;
+  posZL=nopZ/2 + 1;
+}
 
 void FindProcessor::findNext(int a[])
 {
@@ -192,30 +219,7 @@ int FindProcessor::findNextInMesh(int a[])
 int FindProcessor::findNextIter(int a[])
 {
 	int newa[3];
-	int negXL=0, negYL=0, negZL=0;
-	int posXL=0, posYL=0, posZL=0;
-	
-	if(nopX%2==0)
-		negXL = nopX/2;
-	else
-		negXL = nopX/2 + 1;
-	if(nopY%2==0)
-		negYL = nopY/2;
-	else
-		negYL = nopY/2 + 1;
-	if(nopZ%2==0)
-		negZL = nopZ/2;
-	else
-		negZL = nopZ/2 + 1;
-	//cout<<"actual -> "<<negXL<<" "<<negYL<<" "<<negZL<<"\n";
-	/*int negXL=(int)(ceil(nopX/2.0));
-	int negYL=(int)(ceil(nopY/2.0));
-	int negZL=(int)(ceil(nopZ/2.0));*/
-	
-	posXL=nopX/2 + 1;
-	posYL=nopY/2 + 1;
-	posZL=nopZ/2 + 1;
-	
+	CkAssert(posXL>0);
 	if(count==nopX*nopY*nopZ)
 	{
 		cout<<"-------------------------\n";
