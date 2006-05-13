@@ -2587,7 +2587,7 @@ void CP_State_GSpacePlane::ResumeFromSync() {
   // reset lambda PC proxies
   CkMulticastMgr *mcastGrp = 
         CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
-  for(int chunk;chunk<numChunks;chunk++)
+  for(int chunk=0;chunk<numChunks;chunk++)
     {
       mcastGrp->resetSection(lambdaproxy[chunk]);
       setResultProxy(&lambdaproxy[chunk], thisIndex.x, gpairCalcID2.GrainSize, 

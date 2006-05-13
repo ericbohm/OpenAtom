@@ -360,7 +360,7 @@ void CP_State_RealSpacePlane::doProduct(int Size, const double *Vks)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-/* doing the product 
+* doing the product 
 */
 //============================================================================
 void CP_State_RealSpacePlane::doProduct() {
@@ -449,7 +449,7 @@ void CP_State_RealSpacePlane::doProduct() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-/* Setting up the multicast trees for Gengbin's library 
+* Setting up the multicast trees for Gengbin's library 
 */
 //============================================================================
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
