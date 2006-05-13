@@ -179,8 +179,6 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
-  int ecount=0;
-  int offset=state%pcid->GrainSize;
   int s2=state/pcid->GrainSize*pcid->GrainSize;
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
@@ -202,7 +200,6 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
   int GrainSize=pcid->GrainSize;
-  int offset=state % GrainSize;
   int s1=state / GrainSize * GrainSize; //column
   int nstates=pcid->nstates;
   // all nondiagonal elements 
@@ -232,9 +229,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
-  int offset=state%pcid->GrainSize;
   int s2=state/pcid->GrainSize*pcid->GrainSize; //row
-  int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
 									       plane, plane, 1,
@@ -253,7 +248,6 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
-  int offset=state%pcid->GrainSize;
   int s1=state/pcid->GrainSize*pcid->GrainSize; //column
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
@@ -340,25 +334,11 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _PAIRCALC_NO_MULTI_
   startPairCalcLeftSlow(pcid, n, ptr, myS, myPlane);
 #else
-  int symmetric = pcid->Symmetric;
   bool flag_dp = pcid->isDoublePacked;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
     makeLeftTree(pcid,myS,myPlane);
   }
   //use proxy to send
-#ifdef _PAIRCALC_DEBUG_PARANOID_
-  double re;
-  double im;
-  for(int i=0;i<n;i++)
-    {
-      re=ptr[i].re;
-      im=ptr[i].im;
-      if(fabs(re)>0.0)
-	CkAssert(fabs(re)>1.0e-300);
-      if(fabs(im)>0.0)
-	CkAssert(fabs(im)>1.0e-300);
-    }
-#endif
 
   if(pcid->existsLproxy)
     {
@@ -383,15 +363,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
 	  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
 	  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
-	  /* equivalent to init call
-	  msgfromrow->size=outsize;
-	  msgfromrow->sender=myS;
-	  msgfromrow->fromRow=true;
-	  msgfromrow->flag_dp=flag_dp;
-	  msgfromrow->doPsiV=psiV;
-	  memcpy((char *)msgfromrow->points,(char *)ptr+(chunk*chunksize*sizeof(complex)),outsize*sizeof(complex));
-	  */
-	  //msgfromrow->init(outsize, myS, true, flag_dp, ptr+(chunk * chunksize), psiV);
+
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	  if(symmetric && myPlane==0)
 	    dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,symmetric);
@@ -450,7 +422,6 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   int numChunks =  pcid->numChunks;
   int nstates = pcid->nstates;
   int symmetric = pcid->Symmetric;
-  bool flag_dp = pcid->isDoublePacked;
   bool conserveMemory = pcid->conserveMemory;
   s1 = (myS/grainSize) * grainSize;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
@@ -614,15 +585,13 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
   CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
 
-  int s1, s2, c;
+  int s2, c;
   int grainSize = pcid->GrainSize;
   int numChunks =  pcid->numChunks;
   int nstates = pcid->nstates;
   bool symmetric = pcid->Symmetric;
-  bool flag_dp = pcid->isDoublePacked;
 
   CkAssert(symmetric == false);
-  
   s2 = (myS/grainSize) * grainSize;
   //create multicast proxy list 
   if(!pcid->existsRproxy)

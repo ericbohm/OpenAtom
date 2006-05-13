@@ -760,20 +760,18 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   int numOrtho=grainSize/orthoGrainSize;
   int orthoX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
   int orthoY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
-  int orthoIndex=orthoY*numOrtho+orthoX;
   if(matrix2==NULL||size2<1) 
     {
       unitcoef = true;
     }
 
-  int offset = 0, index = thisIndex.y*numStates + thisIndex.x;
+  int  index = thisIndex.y*numStates + thisIndex.x;
 
   if(!symmetric)
     index = thisIndex.x*numStates + thisIndex.y;
   int matrixSize=grainSize*grainSize;
   //ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
-  register double m=0;
-  bool makeLocalCopy=false;
+
   double *amatrix=NULL;
   double *amatrix2=matrix2;  // may be overridden later
   
@@ -810,7 +808,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	for(int i=0; i<orthoGrainSize*orthoGrainSize; i+=orthoGrainSize,tileStart+=grainSize)
 	  for(int j=0; j<orthoGrainSize; j++)
 	    inResult2[tileStart+j] = matrix2[i+j];
-	//slightly evil, but safe
       }
       amatrix = inResult1;
       
@@ -859,9 +856,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       }
       else
 	othernewData=NULL;
-
-      double *localMatrix;
-      double *outMatrix;
 
       int m_in=grainSize;
       int n_in=numPoints*2;
@@ -1021,9 +1015,11 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
     {
       cp_entry= cb_ep_tol;
     }
+  /*
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
+  */
   if(otherdata){  // we have this othernewdata issue for the symmetric case
     // and the asymmetric dynamic case
     // for the off diagonal elements
