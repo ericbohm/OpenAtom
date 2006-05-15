@@ -168,6 +168,7 @@ class Ortho : public CBase_Ortho{
     p | iterations;
     p | num_ready;
     p | got_start;
+    p | multiproxy;
     p | pcProxy;
     p | pcLambdaProxy;
     p | numGlobalIter;
@@ -280,6 +281,7 @@ class Ortho : public CBase_Ortho{
 
   // used in each element
   int iterations; //local inv_sq iterations
+  CProxySection_Ortho multiproxy;
   CProxySection_PairCalculator pcProxy;
   CProxySection_PairCalculator pcLambdaProxy;
   int num_ready;

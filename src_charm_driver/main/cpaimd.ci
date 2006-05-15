@@ -49,6 +49,8 @@ mainmodule cpaimd {
 	readonly ComlibInstanceHandle mssInstance;
 	readonly ComlibInstanceHandle gssInstance;
 	readonly ComlibInstanceHandle mcastInstancePP;
+	readonly ComlibInstanceHandle gAsymInstance;
+	readonly ComlibInstanceHandle gSymInstance;
 
         readonly MDINTEGRATE  readonly_mdintegrate;
         readonly MDATOMS      readonly_mdatoms;

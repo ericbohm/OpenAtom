@@ -805,12 +805,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  inResult2 = new double[matrixSize];
 	amatrix2 = inResult2;
 	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
+	if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
+	  tileStart=orthoY*orthoGrainSize*grainSize+orthoX*orthoGrainSize;
 	for(int i=0; i<orthoGrainSize*orthoGrainSize; i+=orthoGrainSize,tileStart+=grainSize)
 	  for(int j=0; j<orthoGrainSize; j++)
 	    inResult2[tileStart+j] = matrix2[i+j];
       }
       amatrix = inResult1;
-      
       int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
       if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
 	tileStart=orthoY*orthoGrainSize*grainSize+orthoX*orthoGrainSize;

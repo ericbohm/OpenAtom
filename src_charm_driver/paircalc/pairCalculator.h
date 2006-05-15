@@ -23,6 +23,7 @@ class PairCalcID {
   int nstates; 
   bool Symmetric;
   bool useComlib;
+  bool useEtoM;
   bool isDoublePacked;
   bool conserveMemory;
   bool lbpaircalc;
@@ -34,17 +35,21 @@ class PairCalcID {
   CProxySection_PairCalculator *proxyLFrom;
   CProxySection_PairCalculator *proxyLNotFrom;
   CProxySection_PairCalculator *proxyRNotFrom;
-
+  CProxy_PairCalculator cproxy;
+  CkVec <CkArrayIndex4D> listLFrom;
+  CkVec <CkArrayIndex4D> listLNotFrom;
+  CkVec <CkArrayIndex4D> listRNotFrom;
   PairCalcID() {}
   ~PairCalcID() {}
 
-  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, CkGroupID _mCastGrpId, int _priority) {
+  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, CkGroupID _mCastGrpId, int _priority, bool _useEtoM) {
     Aid = aid;
     GrainSize = grain;
     numChunks = _numChunks;
     nstates = s;
     Symmetric = sym;
     useComlib = _useComlib;
+    useEtoM = _useEtoM;
     conserveMemory = _conserveMemory;
     existsRproxy=false;
     existsLproxy=false;
@@ -94,6 +99,7 @@ class PairCalcID {
     nstates=pid.nstates;
     Symmetric=pid.Symmetric;
     useComlib=pid.useComlib;
+    useEtoM=pid.useEtoM;
     isDoublePacked=pid.isDoublePacked;
     conserveMemory=pid.conserveMemory;
     lbpaircalc=pid.lbpaircalc;
@@ -102,6 +108,7 @@ class PairCalcID {
     existsRproxy=pid.existsRproxy;
     priority=pid.priority;
     mCastGrpId=pid.mCastGrpId;
+    cproxy=pid.cproxy;
     // everyone has to make their own proxies
     return *this;
   }
@@ -114,6 +121,7 @@ class PairCalcID {
     p|nstates;
     p|Symmetric;
     p|useComlib;
+    p|useEtoM;
     p|isDoublePacked;
     p|conserveMemory;
     p|lbpaircalc;
@@ -125,23 +133,43 @@ class PairCalcID {
     if(p.isUnpacking())
       {
 	if(existsLproxy)
-	  proxyLFrom=new CProxySection_PairCalculator[numChunks];
+	  {
+	    proxyLFrom=new CProxySection_PairCalculator[numChunks];
+	  }
 	if(existsLNotFromproxy)
-	  proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
+	  {
+	    proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
+	  }
 	if(existsRproxy)
-	  proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
+	  {
+	    proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
+	  }
       }
     if(existsLproxy)
-      PUParray(p,proxyLFrom,numChunks);
+      {
+	if(useEtoM)
+	  p|cproxy;
+	PUParray(p,proxyLFrom,numChunks);
+	if(useEtoM)
+	  p|listLFrom;
+      }
     if(existsLNotFromproxy)
-      PUParray(p,proxyLNotFrom,numChunks);
+      {
+	PUParray(p,proxyLNotFrom,numChunks);
+	if(useEtoM)
+	  p|listLNotFrom;
+      }
     if(existsRproxy)
-      PUParray(p,proxyRNotFrom,numChunks);
+      {
+	PUParray(p,proxyRNotFrom,numChunks);
+	if(useEtoM)
+	  p|listRNotFrom;
+      }
   }
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize, int usePairEtoM);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 

@@ -57,6 +57,8 @@
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
 extern ComlibInstanceHandle mcastInstanceCP;
+extern ComlibInstanceHandle gAsymInstance;
+extern ComlibInstanceHandle gSymInstance;
 
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z, 
@@ -64,7 +66,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize) {
+			  int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -94,8 +96,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   int proc = 0;
 
-  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc, mCastGrpId, priority);
-
+  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc, mCastGrpId, priority, useEtoM);
+  pcid->cproxy=pairCalculatorProxy;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   if(sym)// cheap hack to only do this once 
     mcastInstanceCP=ComlibRegister(multistrat);
@@ -337,14 +339,27 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
   bool flag_dp = pcid->isDoublePacked;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
     makeLeftTree(pcid,myS,myPlane);
+    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+    pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
+    if(pcid->useEtoM)
+      if(pcid->Symmetric)
+	ComlibAssociateProxy(&gSymInstance,pcid->cproxy);
+      else
+	ComlibAssociateProxy(&gAsymInstance,pcid->cproxy);
   }
   //use proxy to send
+  if(pcid->useEtoM)
+    if(pcid->Symmetric)
+      gSymInstance.beginIteration();
+    else
+      gAsymInstance.beginIteration();
 
   if(pcid->existsLproxy)
     {
       int numChunks=pcid->numChunks;
       int chunksize =  n / numChunks;
       int outsize = chunksize;
+
       for(int chunk=0; chunk < numChunks ; chunk++)
 	{
 	  if((numChunks > 1) && (chunk == (numChunks - 1)))
@@ -359,17 +374,37 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	  CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
 #endif
-	  calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
-	  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
-	  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
-	  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+
+	  if(pcid->useEtoM)
+	    { // use the ckvec to send
+	      CkArrayIndex4D idx;
+	      for(int elem=0; elem < pcid->listLFrom.size() ; elem++)
+		{ 
+		  calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
+		  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
+		  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
+		  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+		  idx=pcid->listLFrom[elem];
+		  idx.index[3]=chunk;
+		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msgfromrow);
+		}
+	    }
+	  else
+	    {
+	      calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
+	      *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
+	      CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
+	      msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  if(symmetric && myPlane==0)
-	    dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,symmetric);
+	      if(symmetric && myPlane==0)
+		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,symmetric);
 #endif
-	  pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);
+
+	      pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);
+	    }
 	}
+      
     }
   else
     {
@@ -385,11 +420,28 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    {// last chunk  gets remainder
 	      outsize += n % pcid->numChunks;
 	    }
-	  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = pcid->priority;    
-	  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
-	  pcid->proxyLNotFrom[chunk].acceptPairData(msg);
+	  if(pcid->useEtoM)
+	    { // use the ckvec to send
+	      CkArrayIndex4D idx;
+	      for(int elem=0; elem<pcid->listLNotFrom.size();elem++)
+		{ idx=pcid->listLNotFrom[elem];
+		  idx.index[3]=chunk;
+		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
+		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+
+		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
+		}
+	    }
+	  else
+	    {
+	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
+	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+	      pcid->proxyLNotFrom[chunk].acceptPairData(msg);
+	    }
 	}
     }
 
@@ -397,6 +449,14 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
   if(pcid->useComlib && _PC_COMMLIB_MULTI_) {
   }  
 #endif
+
+  if(pcid->useEtoM)
+    if(pcid->Symmetric)
+      gSymInstance.endIteration();
+  //    else
+  //      gAsymInstance.endIteration(); in startRight
+
+
 }
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric)
@@ -423,6 +483,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   int nstates = pcid->nstates;
   int symmetric = pcid->Symmetric;
   bool conserveMemory = pcid->conserveMemory;
+
   s1 = (myS/grainSize) * grainSize;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
     //create multicast proxy array section list 
@@ -444,12 +505,22 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		  idx.index[1]=s1;
 		  idx.index[2]=s2;
 		  elemsfromrow[erowcount++]=idx;
+		  if(pcid->useEtoM && chunk==0)
+		    {
+		      pcid->listLFrom.push_back(idx);
+		    }
+
 		}
 	      else // swap s1 : s2 and toggle fromRow
 		{
 		  idx.index[1]=s2;
 		  idx.index[2]=s1;
 		  elems[ecount++]=idx;
+		  if(pcid->useEtoM && chunk==0)
+		    {
+		      pcid->listLNotFrom.push_back(idx);
+		    }
+
 		}
 	    }
 	    if(ecount)
@@ -502,6 +573,12 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 								      0, nstates-grainSize, grainSize,
 								      chunk, chunk, 1);
 	    pcid->existsLproxy=true;      
+	    if(pcid->useEtoM && chunk==0)
+	      {
+		for(s2 = 0; s2 < nstates; s2 += grainSize){
+		  pcid->listLFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,chunk));
+		}
+	      }
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
 	    if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
 	      {
@@ -538,7 +615,22 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
   if(!pcid->existsRproxy)
     {
       makeRightTree(pcid,myS,myPlane);
+      /*    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+    pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
+    if(pcid->useEtoM)
+      if(pcid->Symmetric)
+	ComlibAssociateProxy(&gSymInstance,pcid->cproxy);
+      else
+	ComlibAssociateProxy(&gAsymInstance,pcid->cproxy);
+      */
+
     }
+  /*  if(pcid->useEtoM)
+    if(pcid->Symmetric)
+      gSymInstance.beginIteration();
+    else
+      gAsymInstance.beginIteration();
+  */
   if(pcid->existsRproxy)
     {
 #ifdef _DEBUG_PAIRCALC_PARANOID_
@@ -562,11 +654,29 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	    {// last chunk gets remainder
 	      outsize+=n % pcid->numChunks;
 	    }
-	  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = pcid->priority;    
-	  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
-	  pcid->proxyRNotFrom[chunk].acceptPairData(msg);
+	  if(pcid->useEtoM)
+	    {
+	      CkArrayIndex4D idx;
+	      for(int elem=0; elem<pcid->listRNotFrom.size();elem++)
+		{ idx=pcid->listRNotFrom[elem];
+		  idx.index[3]=chunk;
+		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
+		  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
+
+		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
+		}
+	    }
+	  else
+	    {
+	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
+	      msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
+
+	      pcid->proxyRNotFrom[chunk].acceptPairData(msg);
+	    }
 	}
     }
   else
@@ -576,6 +686,9 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 #endif
     }
 #endif //_NO_MULTI
+  if(pcid->useEtoM)
+      gAsymInstance.endIteration();
+
 }
 
 void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
@@ -600,7 +713,6 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
       CkPrintf("initializing R multicast proxy in %d %d \n",myPlane,s2);
 #endif
       pcid->proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
-
       for (c = 0; c < numChunks; c++)  // new proxy for each chunk
 	{
 	  pcid->proxyRNotFrom[c] = 
@@ -609,11 +721,18 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 						0, nstates-grainSize, grainSize,
 						s2, s2, 1,
 						c, c, 1);
+	  if(pcid->useEtoM && c==0)
+	    {
+
+	      for(int s1 = 0; s1 < nstates; s1 += grainSize){
+		pcid->listRNotFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,c));
+	      }
+	    }
 	  pcid->existsRproxy=true;      
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
 	  if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 	    {
-	      ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyRNotFrom[c]);
+	      ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyRNotFrom[c]);
 	    }
 	  else
 	    {
