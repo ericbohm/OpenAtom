@@ -4,8 +4,8 @@
 
 #-----------------------------------------------------------------
 # Compile options : Fortran underscore convention
-DBG_OPT          = -O
-OPTS             = $(DBG_OPT)
+DBG_OPT          = -g
+OPTS             = $(DBG_OPT) -O0
 F_COMPILER       = ftn $(OPTS) 
 F_COMPILER_NOPT  = ftn $(DBG_OPT)
 OPT_FORT         = -DFORTRANUNDERSCORE -DDUAL_FFTW
@@ -40,13 +40,16 @@ EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
 #MATH_LIB    = -L${MKL_HOME}/lib/32 -lmkl_ia32 -lguide -lpthread
 
 #
-BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h  
+#BLAS_FORT   = $(MYMATH_HOME)/xerbla_routine.h  
 
+
+#MATH_LIB     = 	-L/opt/pgi/6.1.1/linux86-64/6.1/lib -lacml  \
+#	-lgmalloc $(MYMATH_HOME)/xerbla.o  -lpgf90 -lpgf90_rpm1 -lpgf902 \
+#	  -lpgf90rtl -lpgftnrtl -lz
 MATH_LIB     = 	-L/opt/pgi/6.1.1/linux86-64/6.1/lib -lacml  \
-	-lgmalloc -lpgftnrtl $(MYMATH_HOME)/xerbla.o
-MATH_LIB     = 	-L/opt/pgi/6.1.1/linux86-64/6.1/lib -lacml  \
-	-lgmalloc $(MYMATH_HOME)/xerbla.o  -lpgf90 -lpgf90_rpm1 -lpgf902 \
-	  -lpgf90rtl -lpgftnrtl
+	-lgmalloc   -lpgf90 -lpgf90_rpm1 -lpgf902 \
+	  -lpgf90rtl -lpgftnrtl -lz
+
 #MATH_LIB    = -lgoto  
 #MATH_LIB     = -lgoto  $(MYMATH_HOME)/xerbla.o -llapack
 #-----------------------------------------------------------------
