@@ -4,7 +4,8 @@
 # Compile options and Fortran underscore convention
 #-----------------------------------------------------------------
 DBG_FLAG         =
-OPTS             = -O3 -qstrict -qarch=440 -qtune=440 -qinitauto=FF 
+OPTS             = -O3 -qstrict -qarch=440 -qtune=440 
+# 			-qcheck=all -qformat=all  -DUSE_TOPOMAP
 LNK_OPTS         = -memory gnu -lz
 F_COMPILER       = xlf $(OPTS) 
 F_COMPILER_NOPT  = xlf $(DBG_FLAG)
