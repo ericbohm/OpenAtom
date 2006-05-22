@@ -343,7 +343,6 @@ void CP_Rho_RealSpacePlane::energyComputation(){
    double *density  = rho_rs.density;
    double *Vks      = rho_rs.Vks;
    int npts         = rho_rs.trueSize;
-   int size         = rho_rs.size;
    int nf1          = rho_rs.sizeX;
    int nf2          = rho_rs.sizeY;
    int nf3          = rho_rs.sizeZ;
@@ -431,8 +430,6 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
     int nchareRhoG            = sim->nchareRhoG;
     int **tranpack_rho        = sim->index_tran_upack_rho;
     int *nlines_per_chareRhoG = sim->nlines_per_chareRhoG;
-    int sizeX                 = rho_rs.sizeX;
-    int sizeZ                 = rho_rs.sizeZ;
 
     double *FFTresultR;
     switch(iopt){   

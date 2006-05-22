@@ -22,6 +22,7 @@ class FindProcessor
 		int count;		// no. of processors output till now 
 		int negXL, negYL, negZL; //necessary for FindNextInIter
 		int posXL, posYL, posZL;
+		int distance;
 
 	public:
 		FindProcessor();			// default constructor

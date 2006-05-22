@@ -173,8 +173,6 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
     int Index              = msg->senderIndex;
     complex *partiallyFFTd = msg->data;
     int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-    int sizeY              = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY;
-    int sizeZ              = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ;
     int **tranUnpack       = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
     int *nline_per_chareG  = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 
@@ -412,9 +410,6 @@ void CP_State_RealSpacePlane::doProduct() {
 // Perform the transpose and then the blast off the final 1D-FFT
 
     int nchareG    = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-    int sizeY      = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY;
-    int sizeZ      = scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ;
-    int planeSize  = sizeY*sizeX;
     int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
     int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
 

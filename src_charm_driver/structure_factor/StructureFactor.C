@@ -76,7 +76,6 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
   //----------------------------------------------------------------------------
   // Communicate the results
       int totalsize=gsSize*natm_nl_grp_max;
-      int totalbytesize=gsSize*natm_nl_grp_max*sizeof(complex);
       for(int i=0;i<numdest;i++){
 	  // create message 
 #ifdef _CP_DEBUG_SF_CALC_

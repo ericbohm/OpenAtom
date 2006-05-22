@@ -9,11 +9,12 @@
 #include "FindProcessor.h"
 #include <charm++.h>
 
-int distance=0;
+
 
 FindProcessor::FindProcessor()
 {
   negXL=negYL=negZL=posXL=posYL=posZL=0;
+  distance=0;
 	for(int i=0; i<3;i++)
 	{	
 		start[i]=0;
@@ -25,6 +26,7 @@ FindProcessor::FindProcessor()
 FindProcessor::FindProcessor(int a[])
 {
   negXL=negYL=negZL=posXL=posYL=posZL=0;
+  distance=0;
 	for(int i=0; i<3;i++)
 		start[i]=a[i];
 }
@@ -32,6 +34,7 @@ FindProcessor::FindProcessor(int a[])
 void FindProcessor::init()
 {
   negXL=negYL=negZL=posXL=posYL=posZL=0;
+  distance=0;
   if(nopX%2==0)
     negXL = nopX/2;
   else

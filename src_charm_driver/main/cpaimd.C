@@ -709,11 +709,11 @@ void init_commlib_strategies(int numRhoG, int numReal){
         RingMulticastStrategy *rstrat = new RingMulticastStrategy
             (realSpacePlaneProxy.ckGetArrayID(),1);
         
-        MultiRingMulticast *mrstrat = new MultiRingMulticast
-            (realSpacePlaneProxy.ckGetArrayID(),1);
+	//        MultiRingMulticast *mrstrat = new MultiRingMulticast
+        //    (realSpacePlaneProxy.ckGetArrayID(),1);
         
-        DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
-            (particlePlaneProxy.ckGetArrayID(),1);
+	//        DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
+	//            (particlePlaneProxy.ckGetArrayID(),1);
 
         RingMulticastStrategy *r1strat = new RingMulticastStrategy
             (particlePlaneProxy.ckGetArrayID(),1);
@@ -1293,12 +1293,6 @@ void makemap()
 	int w = 0;
 	for(int i=0;i<3;i++)
 		fp.start[i]=fp.next[i]=0;
-	int gsobjs_per_pe;
-	
-	/*if((config.nstates*config.nchareG) % CkNumPes() == 0)
-	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes();
-	else
-	    gsobjs_per_pe = (config.nstates*config.nchareG)/CkNumPes()+1;*/
 	
         int l, m, pl, pm, srem, rem, i=0;
 
@@ -1519,9 +1513,6 @@ void mapOutput()
 //============================================================================
     {//begin routine
 //============================================================================
-
-	int i;
-        i = 1;
 
 //============================================================================
   }//end routine

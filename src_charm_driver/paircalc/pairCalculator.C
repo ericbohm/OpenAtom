@@ -482,7 +482,6 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   int numChunks =  pcid->numChunks;
   int nstates = pcid->nstates;
   int symmetric = pcid->Symmetric;
-  bool conserveMemory = pcid->conserveMemory;
 
   s1 = (myS/grainSize) * grainSize;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){

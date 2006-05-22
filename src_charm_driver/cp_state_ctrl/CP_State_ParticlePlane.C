@@ -105,9 +105,9 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   nchareG	       = _nchareG;
   Gstates_per_pe       = _Gstates_per_pe;
 #ifdef USE_TOPOMAP
-  int red_pl[nstates];
+  int *red_pl = new int[nstates];
   int l=Gstates_per_pe;
-  int m, pl, pm, rem;
+  int m, pl, pm;
 
   pl = nstates / l;
   pm = CkNumPes() / pl;
@@ -116,7 +116,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
     CkAbort("Choose a larger Gstates_per_pe\n");\
 
   m = nchareG / pm;
-  rem = nchareG % pm;
 
   int planes_per_pe=m;
 
@@ -181,7 +180,9 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
   int constructed=1;
   contribute(sizeof(int), &constructed, CkReduction::sum_int, 
 	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
-
+#ifdef USE_TOPOMAP
+  delete [] red_pl;
+#endif
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -316,7 +317,6 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, 
 			     &structureFactor_fx, &structureFactor_fy, &structureFactor_fz);
       zsize = 0;
-      AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
       zsize = natm_nl_grp_max*numSfGrps;
 
       if(zmatrix==NULL){
@@ -486,7 +486,6 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
   CP_State_GSpacePlane *gsp = 
        gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss = &(gsp->gs);
-  AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
   int state_ind = gss->istate_ind;                
 
   // compute the non-local forces using the qc_subroutine

@@ -220,7 +220,6 @@ class Ortho : public CBase_Ortho{
  * OrthoT tolerance check util return max value
  */
   inline double array_diag_max(int sizem, int sizen, double *array){
-      int offset;
       double absval, max_ret;
       if(thisIndex.x!=thisIndex.y){ //not diagonal
           max_ret=fabs(array[0]);          

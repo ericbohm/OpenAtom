@@ -1000,16 +1000,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 
   fovlap      = 0.0; 
 
-  complex *psi_g  = gs.packedPlaneData;
-  complex *forces = gs.packedForceData;
-  double *eke_ret = &(gs.eke_ret);
   int ncoef       = gSpaceNumPoints;
-
-//  Use the kinetic energy to test the input
-//  CPNONLOCAL::CP_eke_calc(ncoef,gs.istate_ind,forces,psi_g,k_x,k_y,k_z,eke_ret,
-//			    config.doublePack);
-//  CkPrintf("eke %g : %d %d \n",gs.eke_ret,gs.istate_ind,gs.iplane_ind);
-//  gs.eke_ret = 0;
 
 //============================================================================
 // Init NHC, Sample velocities 
@@ -1072,8 +1063,6 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::makePCproxies(){
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
-  int cp_min_opt = sim->cp_min_opt;
   lambdaproxy=new CProxySection_PairCalculator[numChunks];
   lambdaproxyother=new CProxySection_PairCalculator[numChunks];
   psiproxy=new CProxySection_PairCalculator[numChunks];
@@ -1568,7 +1557,6 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
       CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
     }
   */
-  int idest=chunkoffset;
   if(config.doublePack==1){
    if(cp_min_opt==1){
 
@@ -1615,7 +1603,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
       int ncoef          = gs.numPoints;
       complex *psi_g     = gs.packedPlaneData;
       complex *psi_g_scr = gs.packedPlaneDataScr;
-      memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+      CmiMemcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
     }//endif
     
 //==============================================================================
@@ -1657,7 +1645,6 @@ void CP_State_GSpacePlane::computeCgOverlap() {
 
    int istate      = gs.istate_ind;
    int ncoef       = gs.numPoints;
-   complex *psi_g  = gs.packedPlaneData;
    complex *forces = gs.packedForceData;
    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
    int cp_min_cg   = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg;
@@ -1741,7 +1728,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
     //------------------------------------------------------------------
     // Update the velocities into scratch as we are between steps
       if(cp_min_opt==0){
-        memcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
+        CmiMemcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
         gs.copyVNHC();
         if(iteration>1){
           CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
@@ -1895,7 +1882,6 @@ void CP_State_GSpacePlane::integrateModForce() {
   int num_nhc        = gs.num_nhc_cp;
   complex *psi_g     = gs.packedPlaneData; 
   complex *forces    = gs.packedForceData; 
-  complex *vpsi_g    = gs.packedVelData; // for cp not minimization
   complex *forcesold = gs.packedVelData; // for miniziation not cp
   double **fNHC      = gs.fNHC;
   double **vNHC      = gs.vNHC;
@@ -2223,7 +2209,7 @@ void CP_State_GSpacePlane::sendPsi() {
 
   /*  if(tpsi==NULL)
     tpsi  = new complex[gs.numPoints];
-  memcpy(tpsi,data,sizeof(complex)*gs.numPoints);
+  CmiMemcpy(tpsi,data,sizeof(complex)*gs.numPoints);
   */
   if(cp_min_opt==0){
     //#ifdef  _CP_DEBUG_UPDATE_OFF_
@@ -2233,7 +2219,7 @@ void CP_State_GSpacePlane::sendPsi() {
     //#endif      
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
-     memcpy(scr,data,sizeof(complex)*ncoef);
+     CmiMemcpy(scr,data,sizeof(complex)*ncoef);
   }//endif
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
@@ -2276,7 +2262,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
      complex *psi  = gs.packedPlaneData;     // by orthonormal psi
-     memcpy(scr,psi,sizeof(complex)*ncoef);
+     CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
   }//endif
 
   if(gs.ihave_kx0==1){
@@ -2310,6 +2296,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 				  // contribution lies
   int idest=chunkoffset;
   if(countPsiO[offset]<1)
+    //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
@@ -2385,6 +2372,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 				  // contribution lies
   int idest=chunkoffset;
   if(countVPsiO[offset]<1) 
+    // memcpy(&(vpsi[idest]), &(data[0]), N*sizeof(complex));//slower?
     for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
   else
     for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
@@ -2438,7 +2426,6 @@ void CP_State_GSpacePlane::screenOutputPsi(){
   int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
   complex *vpsi = gs.packedVelData;
-  complex *fpsi = gs.packedForceData;
   complex *psi  = gs.packedPlaneData; //orthogonal psi
   if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} //non-orthogonal psi
 
