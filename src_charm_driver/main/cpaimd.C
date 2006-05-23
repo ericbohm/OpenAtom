@@ -163,6 +163,8 @@ CProxy_StructureFactor sfCompProxy;
 
 //============================================================================
 
+double Timer;
+
 //============================================================================
 int nstates;              // readonly globals
 int sizeX;
@@ -252,6 +254,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("\n======================================================\n");
     CkPrintf("Cpaimd-Charm-Driver input started \n");
     CkPrintf("---------------------------------------------------------\n\n");
+    Timer=CmiWallTimer();
 
     Config::readConfig(msg->argv[1],config,sim->nstates,
                        sim->sizeX,sim->sizeY,sim->sizeZ,
@@ -268,11 +271,13 @@ main::main(CkArgMsg *msg) {
     sizeX            = sim->sizeX;
 
     config.print(msg->argv[1]);
+    double newtime= CmiWallTimer();
+
 
     CkPrintf("\n------------------------------------------------\n");
-    CkPrintf("Cpaimd-Charm-Driver input completed \n");
+    CkPrintf("Cpaimd-Charm-Driver input completed in %g\n",newtime-Timer);
     CkPrintf("================================================\n\n");
-
+    Timer=newtime;
 //============================================================================
 // Set user trace events for projections optimizations
 
@@ -377,15 +382,15 @@ main::main(CkArgMsg *msg) {
     delete [] indexZ;
 
 //============================================================================
-
+    newtime=CmiWallTimer();
     CkPrintf("\n-----------------------------------------------------\n");
-    CkPrintf("Cpaimd-Charm-Driver setup phase complete\n");
+    CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-Timer);
     CkPrintf("======================================================\n\n");
 
     CkPrintf("======================================================\n");
     CkPrintf("Launching chare arrays and obtaining data sets  \n");
     CkPrintf("------------------------------------------------------\n\n");
-
+    Timer=newtime;
 //============================================================================
    }// end Main
 //============================================================================
@@ -811,22 +816,47 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 void main::doneInit(CkReductionMsg *msg){
 //============================================================================
     delete msg;
-
+    double newtime=CmiWallTimer();
     if(done_init<3){
-      CkPrintf("Completed chare instantiation phase %d\n",done_init+1);
+      CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
+      Timer=newtime;
     }else{
-      CkPrintf("Completed chare data acquisition phase %d\n",done_init+1);
+      CkPrintf("Completed chare data acquisition phase %d in %g\n",done_init+1,newtime-Timer);
       CkPrintf("\n-----------------------------------------------------\n");
       CkPrintf("Chare array launch and initialization complete       \n");
       CkPrintf("======================================================\n\n");
+      Timer=newtime;
     }//endif
 
     if (done_init == 2){
 	// kick off file reading in gspace
 	CkPrintf("Initiating import of states\n");
+#ifdef USE_TOPOMAP
+  int *red_pl = new int[nstates];
+  int l=config.Gstates_per_pe;
+  int m, pl, pm;
+
+  pl = nstates / l;
+  pm = CkNumPes() / pl;
+
+  if(pm==0)
+    CkAbort("Choose a larger Gstates_per_pe\n");\
+
+  m = config.nchareG / pm;
+
+  int planes_per_pe=m;
+
+  for(int i=0; i<nstates;i++)
+    red_pl[i]=((i % config.Gstates_per_pe)*planes_per_pe)%nchareG;
+  for(int s=0;s<nstates;s++){
+    gSpacePlaneProxy(s,red_pl[s]).readFile();
+  }//endfor
+
+#else
 	for(int s=0;s<nstates;s++){
 	    gSpacePlaneProxy(s,0).readFile();
 	}//endfor
+#endif
     }//endif
     if (done_init >= 3) {
       if (done_init == 3){ 
@@ -1283,6 +1313,8 @@ void makemap()
 	x = bgltm->getXSize();
 	y = bgltm->getYSize();
 	z = bgltm->getZSize();
+	CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
+
 #endif
 	fp.count=1;
 	fp.nopX=x;

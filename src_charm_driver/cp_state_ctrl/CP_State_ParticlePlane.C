@@ -126,10 +126,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 #else
   reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
 #endif
-//  CkAssert(reductionPlaneNum % config.gSpacePPC == 0);
-  // figure out a reliable way to do this
-  // now expand that to spread these guys around
-  //contribute(sizeof(int), &sizeX, CkReduction::sum_int);
   setMigratable(false);
   usesAtSync           = CmiFalse;
 
