@@ -1,5 +1,4 @@
 
-class complex;
 class AtomsGrp;
 class CPATOM_MAPS;
 class CPCOEFFS_INFO;
