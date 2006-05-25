@@ -1057,10 +1057,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
         ssInstance.setStrategy(strat);
         
         // Set some com strategy of Sameer
-        StreamingStrategy *mstrat = new StreamingStrategy(0.2,5);
+        StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,config.rBucketSize);
         //mstrat->enableShortArrayMessagePacking();
         mssInstance= ComlibRegister(mstrat);    
-        StreamingStrategy *gmstrat = new StreamingStrategy(0.2,5);
+        StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,config.gBucketSize);
         //mstrat->enableShortArrayMessagePacking();
         gssInstance= ComlibRegister(gmstrat);    
 

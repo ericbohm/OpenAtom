@@ -1377,6 +1377,10 @@ void Config::print(char *fname_in) {
      fprintf(fp, "scalc_per_plane: %d\n", scalc_per_plane);
      fprintf(fp, "Rstates_per_pe: %d\n", Rstates_per_pe);
      fprintf(fp,"numChunks: %d\n",numChunks);
+     fprintf(fp,"gStreamPeriod: %g\n",gStreamPeriod);
+     fprintf(fp,"rStreamPeriod: %g\n",rStreamPeriod);
+     fprintf(fp,"gBucketSize: %g\n",gBucketSize);
+     fprintf(fp,"rBucketSize: %g\n",rBucketSize);
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
@@ -1460,6 +1464,10 @@ void Config::readConfig(const char* fileName, Config &config,
     config.Gstates_per_pe	= config.nstates;
     config.scalc_per_plane	= 1;
     config.Rstates_per_pe	= config.nstates;
+    config.gStreamPeriod         = 2.0;
+    config.rStreamPeriod         = 2.0;
+    config.gBucketSize         = 5;
+    config.rBucketSize         = 5;
     config.numChunks            = 1;
     strcpy(config.dataPath,"./");
 
@@ -1590,6 +1598,16 @@ void Config::readConfig(const char* fileName, Config &config,
         else if (!strcmp(parameterName, "gExpandFactRho")){
                sscanf(parameterValue,"%lg",&(config.gExpandFactRho));
                }
+        else if (!strcmp(parameterName, "gStreamPeriod")){
+               sscanf(parameterValue,"%lg",&(config.gStreamPeriod));
+               }
+        else if (!strcmp(parameterName, "rStreamPeriod")){
+               sscanf(parameterValue,"%lg",&(config.rStreamPeriod));
+               }
+	else if (!strcmp(parameterName, "gBucketSize"))
+            config.gBucketSize = atoi(parameterValue);
+	else if (!strcmp(parameterName, "rBucketSize"))
+            config.rBucketSize = atoi(parameterValue);
         else {
             config.numSet --;
             CkPrintf("@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@\n");

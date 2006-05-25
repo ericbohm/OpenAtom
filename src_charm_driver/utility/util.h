@@ -212,6 +212,10 @@ class Config {
         int Rstates_per_pe; // new
         double gExpandFact;
         double gExpandFactRho;
+	double gStreamPeriod;
+	double rStreamPeriod;
+	int rBucketSize;
+	int gBucketSize;
 	int numGrains;
 	int numChunks;
 	int blockSize;
