@@ -169,9 +169,9 @@ class GSMap: public CkArrayMap {
   }
 };
 //============================================================================
-
-//PUPmarshall(GSMap);
-
+#ifdef USE_TOPOMAP
+PUPmarshall(GSMap);
+#endif
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -222,8 +222,9 @@ class RSMap: public CkArrayMap {
   }
 };
 //============================================================================
-//PUPmarshall(RSMap);
-
+#ifdef USE_TOPOMAP
+PUPmarshall(RSMap);
+#endif
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -306,9 +307,9 @@ class SCalcMap : public CkArrayMap {
     int slowprocNum2(int, const CkArrayIndex4D &);
 };
 //============================================================================
-
-//PUPmarshall(SCalcMap);
-
+#ifdef USE_TOPOMAP
+PUPmarshall(SCalcMap);
+#endif
 /**
  * provide procnum mapping for RhoR
  */
@@ -352,7 +353,9 @@ class RhoRSMap : public CkArrayMap {
     int nchareRhoR;
     CkHashtableT<intdual, int> *maptable;
 };
-
+#ifdef USE_TOPOMAP
+PUPmarshall(RhoRSMap);
+#endif
 
 /**
  * provide procnum mapping for RhoG
@@ -402,6 +405,9 @@ class RhoGSMap : public CkArrayMap {
     int nchareRhoG;
     CkHashtableT<intdual, int> *maptable;
 };
+#ifdef USE_TOPOMAP
+PUPmarshall(RhoGSMap);
+#endif
 
 class RhoGHartMap : public CkArrayMap {
   public:
@@ -451,6 +457,9 @@ class RhoGHartMap : public CkArrayMap {
     int nchareRhoR;
     CkHashtableT<intdual, int> *maptable;
 };
+#ifdef USE_TOPOMAP
+PUPmarshall(RhoGHartMap);
+#endif
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
