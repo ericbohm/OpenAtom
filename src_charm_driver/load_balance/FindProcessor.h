@@ -9,7 +9,37 @@
 
 #include <math.h>
 #include <iostream.h>
+/*class inttriple {
+ private:
+  int x, y,z;
+ public:
+    inttriple(){x=y=z=0;}
 
+    inttriple(int _x,int _y, int _z) : x(_x), y(_y), z(_z){}
+  void pup(PUP::er &p)
+      {
+	  p|x;
+	  p|y;
+	  p|z;
+      }
+    inline int getx(){return x;};
+    inline int gety(){return y;};
+    inline int getz(){return z;};
+    inline CkHashCode hash() const {
+	return (CkHashCode)(x+y+z);
+    }
+    static CkHashCode staticHash(const void *k,size_t){
+	return ((inttriple *)k)->hash();
+    }
+    inline int compare(inttriple &t) const{
+	return (t.getx() == x && t.gety() == y && t.getz() ==z);
+    }
+    static int staticCompare(const void *a,const void *b,size_t){
+	return ((inttriple *)a)->compare((*(inttriple *)b));
+    }
+   
+};
+*/
 class FindProcessor 
 {
 	public:
@@ -23,6 +53,8 @@ class FindProcessor
 		int negXL, negYL, negZL; //necessary for FindNextInIter
 		int posXL, posYL, posZL;
 		int distance;
+		//		CkVec <inttriple> *avoidList; // list of processors <x,y,z> to avoid
+		
 
 	public:
 		FindProcessor();			// default constructor

@@ -4,11 +4,14 @@
  *  The functions in this file generate a topology sensitive
  *  mapping scheme for the GSpace, PairCalc and RealSpace objects.
  *  and also for the density objects - RhoR, RhoG, RhoGHart.
+ *
+ *  Heavily refactored by EJB 2006/5/31 to accelerate map creation
  */
 
 #include "charm++.h"
 #include "cpaimd.h"
 #include "util.h"
+#include "PeList.h"
 
 #ifdef USE_TOPOMAP
 
@@ -26,380 +29,23 @@
  * size l by m is placed on a processor.   
  */
 
-void GSMap::makemap()
-{
-	FindProcessor fp;
-	int x = CkNumPes();		// for the case when we are oblivious of the topology 
-	int y = 1;
-	int z = 1;
-	int vn = 0;		
-        int c = 0;
-        
-#ifdef CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();		// size of torus in X direction
-	y = bgltm->getYSize();		// size of torus in Y direction
-	z = bgltm->getZSize();		// size of torus in Z direction
-	vn = bgltm->isVnodeMode();	// vitual node mode
-#endif
-
-	fp.count=1;			// no. of processors output by the findNext function
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();	
-	int assign[3]={0, 0, 0};
-	int w = 0;
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=0;
-	
-	int l, m, pl, pm, srem, rem, i=0;
-
-	l=Gstates_per_pe;		// no of states in one chunk
-        pl = nstates / l;		// no of procs on y axis
-        if(nstates % l == 0)
-		srem = 0;
-	else
-	{
-                while(pow(2.0, (double)i) < pl)
-                        i++;
-                pl = pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
-		srem = nstates % pl;
-	}
-	pm = CkNumPes() / pl;		// no of procs on x axis
-        
-	if(pm==0)
-		CkAbort("Choose a larger Gstates_per_pe\n");
-        
-	m = nchareG / pm;		// no of planes in one chunk
-        rem = nchareG % pm;		// remainder of planes left to be mapped
-        
-        planes_per_pe=m;
-
-        /*if(CkMyPe()==0) 
-	{
-		CkPrintf("nstates %d nchareG %d Pes %d\n", nstates, nchareG, CkNumPes());
-		CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
-	}*/
-        for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
-        {
-                if(ychunk==(pm-rem)*m)
-                  m=m+1;
-                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		{
-			if(xchunk==(pl-srem)*l)
-				l=l+1;
-			if(xchunk==0 && ychunk==0) {}
-			else
-			{
-				for(int i=0;i<3;i++)
-					fp.start[i]=fp.next[i];
-				if(fp.start[2]>x/2)
-					assign[2]=fp.start[2]-x;
-				else
-					assign[2]=fp.start[2];
-				if(fp.start[1]>y/2)
-					assign[1]=fp.start[1]-y;
-				else
-					assign[1]=fp.start[1];
-				if(fp.start[0]>z/2)
-					assign[0]=fp.start[0]-z;
-				else
-					assign[0]=fp.start[0];
-				if(vn==0)
-					fp.findNextInTorus(assign);
-                                else
-                                {
-#ifdef WACKY_VN
-                                	fp.findNextInTorus(assign);
-#else
-					fp.findNextInTorusV(w, assign);
-                                        w = fp.w;
-#endif
-                                }	
-			}
-                        c=0;
-			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
-				{
-					if(xchunk==0 && ychunk==0)
-					{
-                                                c++;
-						maptable->put(intdual(state, plane))=0;
-						//if(CkMyPe()==0) CkPrintf("%d %d on 0\n", state, plane);
-					}
-					else
-					{
-                                                c++;
-						if(vn==0)
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                else
-                                                {
-#ifdef WACKY_VN
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-						  //if(CkMyPe()==0) CkPrintf("%d %d on %d (%d %d %d)\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2], fp.next[0], fp.next[1], fp.next[2]);
-#else
-                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-						}
-						
-					}
-				}
-			}
-                }
-        }
-
-#ifdef MAP_DEBUG
-	CkPrintf("GSMap created on processor %d\n", CkMyPe());
-#endif
-}
-
-/**
- * Function which returns the processor no. for a GSPace object.
- * Uses the hash table built by makemap
- */
 int GSMap::procNum(int handle, const CkArrayIndex &index)
 {
 	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
 	if(maptable==NULL)
 	{
-	        maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-		makemap();
+	  CkPrintf("Warning! GSMap::procnum had to assign maptable on pe %d!\n",CkMyPe());
+	  maptable= &GSmaptable;
 	}
-	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	CkAssert(retval>=0);
+	CkAssert(retval<CkNumPes());
+	return retval;
 }
-   
+
 /** Function for PairCalc objects
  *
  */
-void SCalcMap::makemap()
-{
-	FindProcessor fp;
-	int n = scalc_per_plane;
-	int scobjs_per_pe, rem;
-	int grainsize = gs;
-	int count=0, procno=0;
-	int intidx[2];
-	int lesser_scalc = 0;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-	
-#if CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
-#endif
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();
-	fp.w = 0;
-
-	if(planes_per_pe==0)
-		CkAbort("Choose a smaller Gstates_per_pe\n");
-	int assign[3]={0, 0, 0};
-	int w = 0;
-        for(int i=0;i<3;i++)
-        	fp.start[i]=fp.next[i]=0;
-		
-	if(symmetric)
-	{
-		for(int i=1; i<=max_states/grainsize; i++)
-			lesser_scalc += i;
-		scobjs_per_pe = lesser_scalc*nchareG*numChunks/CkNumPes();
-		rem = lesser_scalc*nchareG*numChunks % CkNumPes();
-		if(rem!=0)
-			scobjs_per_pe+=1;
-
-		//if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
-			
-		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-		    for(int newdim=0; newdim<numChunks; newdim++)
-			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-				for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
-		    		    //for(int newdim=0; newdim<numChunks; newdim++)
-					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
-					{
-						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-						if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
-						{
-							//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc 0\n", plane, xchunk, ychunk, newdim); 
-							maptable->put(intdual(intidx[0], intidx[1]))=0;
-							count++;
-						}
-						else
-						{
-							if(count<scobjs_per_pe)
-							{
-								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-								if(vn==0)
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                		else
-								{
-#ifdef WACKY_VN
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-								}
-								count++;
-							}
-							else
-							{
-								count=0;
-								procno++;
-								if(rem!=0)
-									if(procno==rem)
-										scobjs_per_pe-=1;
-								for(int i=0;i<3;i++)
-									fp.start[i]=fp.next[i];
-								if(fp.start[2]>x/2)
-									assign[2]=fp.start[2]-x;
-								else
-									assign[2]=fp.start[2];
-								if(fp.start[1]>y/2)
-									assign[1]=fp.start[1]-y;
-								else
-									assign[1]=fp.start[1];
-								if(fp.start[0]>z/2)
-									assign[0]=fp.start[0]-z;
-								else
-									assign[0]=fp.start[0];
-								if(vn==0)
-									fp.findNextInTorus(assign);
-                                				else
-                                                                {
-#ifdef WACKY_VN
-									fp.findNextInTorus(assign);
-#else
-                                					fp.findNextInTorusV(w, assign);
-                                                                        w = fp.w;
-#endif
-                                                                }
-								for(int i=0;i<3;i++)
-									assign[i]=fp.next[i];
-								
-								
-								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-								if(vn==0)
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                		else
-								{
-#ifdef WACKY_VN
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-								}
-								count++;
-							}
-						}
-					}
-#ifdef MAP_DEBUG
-	CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
-#endif
-	}
-	else
-	{
-		scobjs_per_pe = n*nchareG*numChunks/CkNumPes();
-		rem = n*nchareG*numChunks % CkNumPes();
-		if(rem!=0)
-			scobjs_per_pe+=1;
-
-		//if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
-			
-		for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-		  for(int newdim=0; newdim<numChunks; newdim++)
-			for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-				for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
-					for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
-					{
-						CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-						CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-						if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
-						{
-							//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc 0\n", plane, xchunk, ychunk, newdim); 
-							maptable->put(intdual(intidx[0], intidx[1]))=0;
-							count++;
-						}
-						else
-						{
-							if(count<scobjs_per_pe)
-							{
-								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
-								if(vn==0)
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                		else
-								{
-#ifdef WACKY_VN
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-								}
-								count++;
-							}
-							else
-							{
-								count=0;
-								procno++;
-								if(rem!=0)
-									if(procno==rem)
-										scobjs_per_pe-=1;
-								for(int i=0;i<3;i++)
-									fp.start[i]=fp.next[i];
-								if(fp.start[2]>x/2)
-									assign[2]=fp.start[2]-x;
-								else
-									assign[2]=fp.start[2];
-								if(fp.start[1]>y/2)
-									assign[1]=fp.start[1]-y;
-								else
-									assign[1]=fp.start[1];
-								if(fp.start[0]>z/2)
-									assign[0]=fp.start[0]-z;
-								else
-									assign[0]=fp.start[0];
-								if(vn==0)
-									fp.findNextInTorus(assign);
-                                				else
-                                                                {
-#ifdef WACKY_VN
-									fp.findNextInTorus(assign);
-#else
-                                					fp.findNextInTorusV(w, assign);
-                                                                        w = fp.w;
-#endif
-                                                                }
-								for(int i=0;i<3;i++)
-									assign[i]=fp.next[i];
-								//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
-								if(vn==0)
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                		else
-								{
-#ifdef WACKY_VN
-								  maptable->put(intdual(intidx[0], intidx[1]))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                		  maptable->put(intdual(intidx[0], intidx[1]))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-								}
-								count++;
-							}
-						}
-					}
-#ifdef MAP_DEBUG
-	CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
-#endif
-	}
-}
 
 /**
  *
@@ -412,156 +58,35 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
 
 	if(maptable==NULL)
 	{
-		maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG*numChunks); 
-		makemap();
+	  CkPrintf("Warning! SCalc::Procnum had to assign maptable on %d !\n",CkMyPe());
+	  if(symmetric)
+	    maptable= &SymScalcmaptable;
+	  else
+	    maptable= &AsymScalcmaptable;
 	}
-	return maptable->get(intdual(intidx[0], intidx[1]));
+	int retval=maptable->get(intdual(intidx[0], intidx[1]));
+	CkAssert(retval>=0);
+	CkAssert(retval<CkNumPes());
+	return retval;
 }
 
 /** Function for RealSpace objects
  *
  */
-void RSMap::makemap()
-{
-	FindProcessor fp;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-        int c = 0;
-	
-#ifdef CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
-#endif
-	
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();
-	int assign[3]={0, 0, 0};
-	int w = 0;
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=0;
-	
-	/*int rsobjs_per_pe;
-	if(nstates*sizeY % CkNumPes() == 0)
-	    rsobjs_per_pe = nstates*sizeY/CkNumPes();
-	else
-	    rsobjs_per_pe = nstates*sizeY/CkNumPes()+1;*/
-	int l, m, pl, pm, srem, rem, i=0;
-        
-        l=Rstates_per_pe;		// no of states in one chunk
-        pl = nstates / l;
-        if(nstates % l == 0)
-		srem = 0;
-	else
-	{
-		while(pow(2.0, (double)i) < pl)
-			i++;
-		pl = pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
-		srem = nstates % pl;
-	}
-        pm = CkNumPes() / pl;
-        
-	if(pm==0)
-	  CkAbort("Choose a larger Rstates_per_pe\n");
 
-        m = sizeY / pm;
-        rem = sizeY % pm;
-
-        //CkPrintf("nstates %d sizeY %d Pes %d\n", nstates, sizeY, CkNumPes());	
-	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
-	
-        for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
-        {
-                if(ychunk==(pm-rem)*m)
-              		m=m+1;
-        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		{
-                	if(xchunk==(pl-srem)*l)
-				l=l+1;
-			if(xchunk==0 && ychunk==0) {}
-			else
-			{
-				for(int i=0;i<3;i++)
-					fp.start[i]=fp.next[i];
-				if(fp.start[2]>x/2)
-					assign[2]=fp.start[2]-x;
-				else
-					assign[2]=fp.start[2];
-				if(fp.start[1]>y/2)
-					assign[1]=fp.start[1]-y;
-				else
-					assign[1]=fp.start[1];
-				if(fp.start[0]>z/2)
-					assign[0]=fp.start[0]-z;
-				else
-					assign[0]=fp.start[0];
-				if(vn==0)
-                                  fp.findNextInTorus(assign);
-                                else
-                                {
-#ifdef WACKY_VN
-                                  	fp.findNextInTorus(assign);
-#else
-                                        fp.findNextInTorusV(w, assign);
-                                        w = fp.w;
-#endif
-                                }	
-			}
-                        c=0;
-			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<sizeY; plane++)
-				{
-					if(xchunk==0 && ychunk==0)
-					{
-                                                c++;
-						maptable->put(intdual(state, plane))=0;
-						//CkPrintf("%d %d on 0\n", state, plane);
-					}
-					else
-					{
-                                                c++;
-						if(vn==0)
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                else
-                                                {
-#ifdef WACKY_VN
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-                                                }
-						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-						
-					}
-				}
-			}
-                }
-        }
-#ifdef MAP_DEBUG
-	CkPrintf("RSMap created on processor %d\n", CkMyPe());
-#endif
-}
-
-/**
- *
- */
 int RSMap::procNum(int handle, const CkArrayIndex &index)
 {
 	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
 	if(maptable==NULL)
 	{
-		maptable= new CkHashtableT<intdual, int> (nstates*sizeY); 
-		makemap();
+	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
+	  maptable= &RSmaptable;
 	}
-	return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	CkAssert(retval>=0);
+	CkAssert(retval<CkNumPes());
+	return retval;
+
 }
 
 /** 
@@ -569,522 +94,53 @@ int RSMap::procNum(int handle, const CkArrayIndex &index)
  * density objects - RhoR, RhoG, RhoGHartExt
  */
 
-void RhoRSMap::makemap()
-{
-	FindProcessor fp;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-		
-#ifdef CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
-#endif
-	
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();	
-	int assign[3]={0, 0, 0};
-	int w = 0;
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=0;
-        fp.w = 0;
-
-        int rrsobjs_per_pe, rem;
-        
-        if(CkNumPes()==1)
-        {
-                rrsobjs_per_pe= nchareRhoR;
-                rem=0;
-        }
-        else
-        {
-                rrsobjs_per_pe= nchareRhoR/(CkNumPes()/2);
-                rem = nchareRhoR % (CkNumPes()/2);
-                if(rem!=0)
-                        rrsobjs_per_pe += 1;
-        }
- 
-	//if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
-        for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
-        {
-          if(rem!=0)
-            if(chunk==rem*rrsobjs_per_pe)
-              rrsobjs_per_pe -= 1;
-          if(chunk==0) {}
-          else
-          {
-            for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-            if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-            else
-                  assign[2]=fp.start[2];
-            if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-            else
-                  assign[1]=fp.start[1];
-            if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-            else
-                  assign[0]=fp.start[0];
-            if(vn==0)
-            {
-              fp.findNextInTorus(assign);
-              for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-              else
-                  assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-              else
-                  assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-              else
-                  assign[0]=fp.start[0];
-              fp.findNextInTorus(assign);
-            }
-            else
-            {
-#ifdef WACKY_VN
-              fp.findNextInTorus(assign);
-#else
-              fp.findNextInTorusV(w, assign);
-              w = fp.w;
-#endif
-              for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-              else
-                  assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-              else
-                  assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-              else
-                  assign[0]=fp.start[0];
-#ifdef WACKY_VN
-              fp.findNextInTorus(assign);
-#else
-              fp.findNextInTorusV(w, assign);
-#endif
-            }
-          }
-          for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
-          {
-            if(chunk==0)
-            {
-              maptable->put(intdual(i, 0))=0;
-              //CkPrintf("%d on %d\n", i, 0);
-            }
-            else
-            {
-              if(vn==0)
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-              else
-	      {
-#ifdef WACKY_VN
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-	      }
-              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-            }
-          }
-        }
-#ifdef MAP_DEBUG
-	CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());
-#endif
-}
-
 int RhoRSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
 {
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
       if(maptable==NULL)
       {
-        maptable= new CkHashtableT<intdual, int> (nchareRhoR*1); 
-	makemap();
+	CkPrintf("Warning! RhoRSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+        maptable= &RhoRSmaptable;
+
       }  
-      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	int retval=maptable->get(intdual(idx2d.index[0], 0));
+	CkAssert(retval>=0);
+	CkAssert(retval<CkNumPes());
+	return retval;
+
 }
 
-void RhoGSMap::makemap()
-{
-	FindProcessor fp;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-
-#ifdef CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
-#endif
-	
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();	
-        int assign[3]={0, 0, 0};
-        int w;
-        
-        if(vn==0)
-          assign[2]=1;
-        else
-	{
-#ifdef WACKY_VN
-          assign[2]=1;
-#else
-          w=1;
-#endif
-        }
-
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=assign[i];
-        
-        int rgsobjs_per_pe, rem;
-
-        if(CkNumPes()==1)
-        {
-                rgsobjs_per_pe= nchareRhoG;
-                rem=0;
-                fp.start[2]=fp.next[2]=assign[2]=0;
-                w=fp.w=0;
-        }
-        else
-        {
-                rgsobjs_per_pe= nchareRhoG/(CkNumPes()/2);
-                rem = nchareRhoG % (CkNumPes()/2);
-                if(rem!=0)
-                        rgsobjs_per_pe += 1;
-        }
- 
-	//if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
-        for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
-        {
-          if(rem!=0)
-            if(chunk==rem*rgsobjs_per_pe)
-              rgsobjs_per_pe -= 1;  
-          if(chunk==0) {}
-          else
-          {
-            for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-            if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-            else
-                  assign[2]=fp.start[2];
-            if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-            else
-                  assign[1]=fp.start[1];
-            if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-            else
-                  assign[0]=fp.start[0];
-            if(vn==0)
-            {
-              fp.findNextInTorus(assign);
-              for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-              else
-                  assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-              else
-                  assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-              else
-                  assign[0]=fp.start[0];
-              fp.findNextInTorus(assign);
-            }
-            else
-            {
-#ifdef WACKY_VN
-              fp.findNextInTorus(assign);
-#else
-              fp.findNextInTorusV(w, assign);
-              w = fp.w;
-#endif
-              for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-              if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-              else
-                  assign[2]=fp.start[2];
-              if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-              else
-                  assign[1]=fp.start[1];
-              if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-              else
-                  assign[0]=fp.start[0];
-#ifdef WACKY_VN
-              fp.findNextInTorus(assign);
-#else
-              fp.findNextInTorusV(w, assign);
-#endif
-            }
-          }
-          for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
-          {
-            if(chunk==0)
-            {
-              if(vn==0)
-                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
-              else
-	      {
-#ifdef WACKY_VN
-                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
-#else
-              maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
-#endif
-	      }
-              //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
-            }
-            else
-            {
-              if(vn==0)
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-              else
-	      {
-#ifdef WACKY_VN
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-	      }
-              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-            }
-          } 
-        }
-#ifdef MAP_DEBUG
-	CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
-#endif
-}
     
 int RhoGSMap::procNum(int arrayHdl, const CkArrayIndex &idx)
 {
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
       if(maptable==NULL)
       {
-        maptable= new CkHashtableT<intdual, int> (nchareRhoG*1); 
-	makemap();
+	CkPrintf("Warning! RhoGSMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+        maptable= &RhoGSmaptable;
       }  
-      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+      int retval=maptable->get(intdual(idx2d.index[0], 0));
+      CkAssert(retval>=0);
+      CkAssert(retval<CkNumPes());
+      return retval;
+
 }
 
-void RhoGHartMap::makemap()
-{
-	FindProcessor fp;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-	int npes, procno=2, normal=0;
-	
-	if(nchareRhoR>=CkNumPes()/2)
-	  normal=1;
-	if(normal==0)
-	  npes = CkNumPes()-nchareRhoR;
-	else
-	  npes = CkNumPes()/2;
-
-#ifdef CMK_VERSION_BLUEGENE
-	BGLTorusManager *bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	vn = bgltm->isVnodeMode();
-#endif
-	
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();	
-        int assign[3]={0, 0, 0};
-        int w;
-        
-        if(vn==0)
-          assign[2]=1;
-        else
-	{
-#ifdef WACKY_VN
-          assign[2]=1;
-#else
-          w=1;
-#endif
-	}
-          
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=assign[i];
-        
-        int rghobjs_per_pe, rem;
-
-        if(CkNumPes()==1)
-        {
-                rghobjs_per_pe= nchareRhoGHart;
-                rem=0;
-                fp.start[2]=fp.next[2]=assign[2]=0;
-                w=fp.w=0;
-        }
-        else
-        {
-                rghobjs_per_pe= nchareRhoGHart/npes;
-                rem = nchareRhoGHart % npes;
-                if(rem!=0)
-                        rghobjs_per_pe += 1;
-        }
- 
-	//if(CkMyPe()==0) CkPrintf("nchareRhoGHart %d rghobjs_per_pe %d rem %d\n", nchareRhoGHart, rghobjs_per_pe, rem);   
-        for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
-        {
-          if(rem!=0)
-            if(chunk==rem*rghobjs_per_pe)
-              rghobjs_per_pe -= 1; 
-          if(chunk==0) {}
-          else
-          {
-            for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-            if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-            else
-                  assign[2]=fp.start[2];
-            if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-            else
-                  assign[1]=fp.start[1];
-            if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-            else
-                  assign[0]=fp.start[0];
-            if(vn==0)
-            {
-              fp.findNextInTorus(assign);
-	      procno++;
-	      if(normal==1 || (normal==0 && procno<nchareRhoR*2))
-	      {
-                for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-                if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-                else
-                  assign[2]=fp.start[2];
-                if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-                else
-                  assign[1]=fp.start[1];
-                if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-                else
-                  assign[0]=fp.start[0];
-                fp.findNextInTorus(assign);
-                procno++;
-	      }
-            }
-            else
-            {
-#ifdef WACKY_VN
-              fp.findNextInTorus(assign);
-#else
-              fp.findNextInTorusV(w, assign);
-              w = fp.w;
-#endif
-	      procno++;
-	      if(normal==1 || (normal==0 && procno<nchareRhoR*2))
-              {
-                for(int i=0;i<3;i++)
-                  fp.start[i]=fp.next[i];
-                if(fp.start[2]>x/2)
-                  assign[2]=fp.start[2]-x;
-                else
-                  assign[2]=fp.start[2];
-                if(fp.start[1]>y/2)
-                  assign[1]=fp.start[1]-y;
-                else
-                  assign[1]=fp.start[1];
-                if(fp.start[0]>z/2)
-                  assign[0]=fp.start[0]-z;
-                else
-                  assign[0]=fp.start[0];
-#ifdef WACKY_VN
-                fp.findNextInTorus(assign);
-#else
-                fp.findNextInTorusV(w, assign);
-#endif
-		procno++;
-	      }
-            }
-          }
-          for(int i=chunk;i<chunk+rghobjs_per_pe;i++)
-          {
-            if(chunk==0)
-            {
-              if(vn==0)
-                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
-              else
-	      {
-#ifdef WACKY_VN
-                maptable->put(intdual(i, 0))=assign[0]*x*y+assign[1]*x+assign[2];
-#else
-                maptable->put(intdual(i, 0))=(assign[0]*x*y+assign[1]*x+assign[2])*2+w;
-#endif
-	      }
-              //CkPrintf("%d on %d\n", i, assign[0]*x*y+assign[1]*x+assign[2]);
-            }
-            else
-            {
-              if(vn==0)
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-              else
-	      {
-#ifdef WACKY_VN
-		maptable->put(intdual(i, 0))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                maptable->put(intdual(i, 0))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-	      }
-              //CkPrintf("%d on %d\n", i, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-            }
-          } 
-        }
-#ifdef MAP_DEBUG
-	CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
-#endif
-}
 
 int RhoGHartMap::procNum(int arrayHdl, const CkArrayIndex &idx)
 {
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
       if(maptable==NULL)
       {
-        maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1); 
-	makemap();
+	CkPrintf("Warning! RhoGHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+        maptable= &RhoGHartmaptable;
+
       }  
-      return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+      int retval=maptable->get(intdual(idx2d.index[0], 0));
+      CkAssert(retval>=0);
+      CkAssert(retval<CkNumPes());
+      return retval;
+
 }    
 /**
  * End of the topology sensitive map functions.
