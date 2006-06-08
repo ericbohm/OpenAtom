@@ -9,10 +9,11 @@ extern 	BGLTorusManager *bgltm;
 PeList::PeList() // default constructor
     {
       current=0;
-      TheList=CkVec<int>(CkNumPes());
       for(int i=0;i<CkNumPes();i++)
-	TheList[i]=i;
-      sortIdx=CkVec<int>(CkNumPes());
+	{
+	  TheList.push_back(i);
+	  sortIdx.push_back(i);
+	}
       sortSource(0);
     }
 

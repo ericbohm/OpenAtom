@@ -361,10 +361,11 @@ main::main(CkArgMsg *msg) {
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
     CkPrintf("Initializing PeList, this may take a while\n");
 
-    CkVec<int> OurPes(CkNumPes());
-    for(int i=0;i<CkNumPes();i++)
-      OurPes[i]=i;
-    availGlob=  new PeList(OurPes);  // heap it
+    //    CkVec<int> OurPes(CkNumPes());
+    //    for(int i=0;i<CkNumPes();i++)
+    //      OurPes[i]=i;
+    PeList *foo=  new PeList [1];  // heap it
+    availGlob=&(foo[0]);
     CkPrintf("Calling init_state_chares\n");
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 

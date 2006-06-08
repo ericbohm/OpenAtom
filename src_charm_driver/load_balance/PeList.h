@@ -35,7 +35,7 @@ class PeList
       current=0;
       for(int i=0;i<inlist.size();i++)
 	{
-	  TheList.push_back((inlist[i]));
+	  TheList.push_back(inlist[i]);
 	  sortIdx.push_back(i);
 	}
       sortSource(TheList[0]);
