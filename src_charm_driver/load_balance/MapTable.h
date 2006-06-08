@@ -13,7 +13,7 @@
  *  CkHashtable <intdual, int> maps for use by CkArrayMap::procnum
  *  functions.
  */
-#define MAP_DEBUG 1
+
 class intdual {
  private:
     int x, y;
