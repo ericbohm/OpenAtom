@@ -141,7 +141,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			  srcpe=destpe;
 			  if(availprocs->noPes())
 			    availprocs->rebuild();
-			  availprocs->sortSource(srcpe);
+			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
 			  if(rem!=0)
 			    if(procno==rem)
@@ -194,7 +194,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			  srcpe=destpe;
 			  if(availprocs->noPes())
 			      availprocs->rebuild();
-			  availprocs->sortSource(srcpe);
+			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
 			  if(rem!=0)
 			    if(procno==rem)
@@ -261,7 +261,7 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 			else
 			{
 			    srcpe=destpe;
-			    availprocs->sortSource(srcpe);
+			    //			    availprocs->sortSource(srcpe);
 			    destpe=availprocs->findNext();
 			}
                         c=0;
@@ -320,7 +320,7 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       else
 	{
 	  srcpe=destpe;
-	  availprocs->sortSource(srcpe);
+	  //	  availprocs->sortSource(srcpe);
 	  destpe=availprocs->findNext();
 	}
       for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
@@ -374,7 +374,7 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       else
 	{
 	  srcpe=destpe;
-	  availprocs->sortSource(srcpe);
+	  //	  availprocs->sortSource(srcpe);
 	  destpe=availprocs->findNext();
 	}
       for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
@@ -422,7 +422,7 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
       else
 	{
 	  srcpe=destpe;
-	  availprocs->sortSource(srcpe);
+	  //	  availprocs->sortSource(srcpe);
 	  destpe=availprocs->findNext();
 	}
       for(int i=chunk;i<chunk+rghobjs_per_pe;i++)

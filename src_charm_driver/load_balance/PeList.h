@@ -28,10 +28,11 @@ class PeList
  public:
   CkVec <int> TheList;
   CkVec <int> sortIdx;
-
+  int current;
   PeList();  //default constructor
   PeList(CkVec <int> inlist)
     {
+      current=0;
       TheList=inlist;
       sortIdx=CkVec<int>(TheList.size());
       sortSource(TheList[0]);
@@ -39,6 +40,7 @@ class PeList
 
   PeList(int size, int *a)
     {
+      current=0;
       TheList=CkVec<int>(size);
       sortIdx=CkVec<int>(size);
       memcpy(TheList.getVec(),a,size*sizeof(int));
@@ -46,10 +48,10 @@ class PeList
     };	 // use an array to construct
   inline bool noPes() 
     {
-      return(TheList.size()<1);
+      return(TheList.size()-current<1);
     }
   
-  inline int count() { return(TheList.size());  }
+  inline int count() { return(TheList.size()-current);  }
   
 
   void rebuild(); 
@@ -58,14 +60,15 @@ class PeList
   {
     
 #ifdef CMK_VERSION_BLUEGENE
-    int value=TheList[sortIdx[0]]; 
-    TheList.remove(sortIdx[0]);
-    sortIdx.remove(0);
+    int value=TheList[sortIdx[current]]; 
+    current++;
+    //    TheList.remove(sortIdx[0]);
+    //    sortIdx.remove(0);
 #else
-    int value=TheList[0]; 
-    TheList.remove(0);
+    int value=TheList[current]; 
+    //    TheList.remove(0);
 #endif
-
+    current++;
     return(value); 
   };						
 

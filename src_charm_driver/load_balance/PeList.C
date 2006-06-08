@@ -8,6 +8,7 @@ extern 	BGLTorusManager *bgltm;
 
 PeList::PeList() // default constructor
     {
+      current=0;
       TheList=CkVec<int>(CkNumPes());
       for(int i=0;i<CkNumPes();i++)
 	TheList[i]=i;
@@ -23,6 +24,7 @@ void PeList::rebuild() // default constructor
       for(int i=0;i<CkNumPes();i++)
 	TheList[i]=i;
       sortIdx=CkVec<int>(CkNumPes());
+      current=0;
     }
 
 #ifdef CMK_VERSION_BLUEGENE

@@ -85,11 +85,7 @@ class CkArrayMapTable : public CkArrayMap
 
 
   CkArrayMapTable() {}
-  int procNum(int, const CkArrayIndex &) {
-    CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
-    return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
-    
-  }
+  int procNum(int, const CkArrayIndex &){}
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
