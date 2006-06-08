@@ -44,8 +44,7 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 
 	// Initialize pelist
 	int srcpe=0;
-	int destpe=0;
-	availprocs->sortSource(srcpe);
+	int destpe=availprocs->findNext();
         for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
         {
                 if(ychunk==(pm-rem)*m)
@@ -58,7 +57,6 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 			else
 			  { // shift to next proc
 			    srcpe=destpe;
-			    availprocs->sortSource(srcpe);
 			    destpe=availprocs->findNext();
 
 			  }
@@ -66,9 +64,6 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 			{
 				for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
 				{
-				  if(xchunk==0 && ychunk==0)
-				    maptable->put(intdual(state, plane))=0;
-				  else
 				    maptable->put(intdual(state, plane))=destpe;
 				}
 			}
@@ -96,9 +91,10 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   int count=0, procno=0;
   int intidx[2];
   int lesser_scalc = 0;
-  int srcpe=0,destpe=0;
   maptable=_map;
   availprocs=_availprocs;
+  int srcpe=0,destpe=availprocs->findNext();
+
   if(planes_per_pe==0)
     CkAbort("Choose a smaller Gstates_per_pe\n");
   if(symmetric)
@@ -122,8 +118,8 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 		  if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
 		    {
-		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc 0\n", plane, xchunk, ychunk, newdim); 
-		      maptable->put(intdual(intidx[0], intidx[1]))=0;
+
+		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 		      count++;
 		    }
 		  else
@@ -247,7 +243,7 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
 	//pl, pm, srem, rem);
 	int srcpe=0;
-	int destpe=0;
+	int destpe=availprocs->findNext();
 	
         for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
         {
@@ -296,7 +292,7 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   availprocs=_availprocs;
   int rrsobjs_per_pe, rem;
   int srcpe=0;
-  int destpe=0;
+
   if(availprocs->count()==1)
     {
       rrsobjs_per_pe= nchareRhoR;
@@ -309,7 +305,7 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
- 
+  int destpe=availprocs->findNext(); 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
     {
@@ -350,7 +346,7 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   availprocs=_availprocs;
   int rgsobjs_per_pe, rem;
   int srcpe=0;
-  int destpe=0;
+
   if(availprocs->count()==1)
     {
       rgsobjs_per_pe= nchareRhoG;
@@ -363,7 +359,7 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       if(rem!=0)
 	rgsobjs_per_pe += 1;
     }
- 
+  int destpe=availprocs->findNext();
   //if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
@@ -393,7 +389,7 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
 {
   int npes, procno=2, normal=0;
   int srcpe=0;
-  int destpe=0;
+
   maptable=_map;
   availprocs=_availprocs;
   npes=availprocs->count();
@@ -412,7 +408,7 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
       if(rem!=0)
 	rghobjs_per_pe += 1;
     }
-
+  int destpe=availprocs->findNext();
   for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
     {
       if(rem!=0)
