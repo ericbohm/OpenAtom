@@ -56,6 +56,10 @@ class PeList
 
   void rebuild(); 
 
+  void reset(){current=0;} 
+
+  void resort(){   sortSource(TheList[0]);   }; 
+
   inline int findNext()        // return next available, increment liststart
   {
     
@@ -79,7 +83,6 @@ class PeList
   PeList &operator+(PeList &inlist) {
     for(int i=0; i< inlist.TheList.size();i++)
 	TheList.push_back(inlist.TheList[i]);
-    sortSource(TheList[0]);
     return *this;
   }
 
@@ -89,7 +92,6 @@ class PeList
       for(int j=0; j< TheList.size();j++)
 	if(TheList[j]==inlist.TheList[i])
 	  TheList.remove(j);
-    sortSource(TheList[0]);
     return *this;
   }
   
