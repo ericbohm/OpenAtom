@@ -673,7 +673,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
    gs->xdim = 1;                // may need some love
    gs->ydim = gs->planeSize[0];
    gs->zdim = gs->planeSize[1];
-
+   gs->xNHC=0.0;   //to satisfy valgrind
    gs->iplane_ind   = iplane_ind;
    gs->istate_ind   = istate_ind; 
    gs->initNHC();

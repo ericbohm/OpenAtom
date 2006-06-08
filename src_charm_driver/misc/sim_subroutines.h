@@ -76,7 +76,7 @@ public:
 
    GStateSlab() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
                  packedForceData=NULL; packedPlaneDataScr=NULL; 
-
+		 xNHC=0.0;
                  packedVelData=NULL;}
    ~GStateSlab();
 
