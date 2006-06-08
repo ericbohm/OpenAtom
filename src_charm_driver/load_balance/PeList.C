@@ -9,24 +9,28 @@ extern 	BGLTorusManager *bgltm;
 PeList::PeList() // default constructor
     {
       current=0;
-      for(int i=0;i<CkNumPes();i++)
+      size=CkNumPes();
+      TheList= new int[size];
+      sortIdx= new int[size];
+      for(int i=0;i<size;i++)
 	{
-	  TheList.push_back(i);
-	  sortIdx.push_back(i);
+	  TheList[i]=i;
+	  sortIdx[i]=i;
 	}
       sortSource(0);
     }
 
 void PeList::rebuild() // default constructor
+{
+  current=0;
+  size=CkNumPes();
+  for(int i=0;i<size;i++)
     {
-
-      TheList.reserve(CkNumPes());
-      TheList.resize(CkNumPes());
-      for(int i=0;i<CkNumPes();i++)
-	TheList[i]=i;
-      sortIdx=CkVec<int>(CkNumPes());
-      current=0;
+      TheList[i]=i;
+      sortIdx[i]=i;
     }
+
+}
 
 #ifdef CMK_VERSION_BLUEGENE
 // BG/L specific PeList implementations
@@ -35,7 +39,7 @@ void PeList::sortSource(int srcPe)
 {
   // sort it using bgltm
   //  CkPrintf("PRE: sortIndexByHops\n");
-  bgltm->sortIndexByHops(srcPe,TheList.getVec(),sortIdx.getVec(),TheList.size());
+  bgltm->sortIndexByHops(srcPe,TheList,sortIdx,size);
   //  CkPrintf("POST sortIndexByHops\n");
 
 }
@@ -44,6 +48,9 @@ void PeList::sortSource(int srcPe)
 void PeList::sortSource(int srcPe)
 {
   // sort it using CkVec quicksort
-  TheList.quickSort();
+  CkVec <int> sortme(size);
+  memcpy(sortme.getVec(), TheList,size*sizeof(int));
+  sortme.quickSort();
+  memcpy(TheList, sortme.getVec(), size*sizeof(int));
 }
 #endif

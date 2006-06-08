@@ -364,6 +364,9 @@ main::main(CkArgMsg *msg) {
     //    CkVec<int> OurPes(CkNumPes());
     //    for(int i=0;i<CkNumPes();i++)
     //      OurPes[i]=i;
+#ifdef CMK_VERSION_BLUEGENE
+  bgltm = BGLTorusManager::getObject();
+#endif
     PeList *foo=  new PeList [1];  // heap it
     availGlob=&(foo[0]);
     CkPrintf("Calling init_state_chares\n");
@@ -927,7 +930,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
   CkPrintf("\n==============================================================================\n\n");
 #ifdef CMK_VERSION_BLUEGENE
-  bgltm = BGLTorusManager::getObject();
+  //  bgltm = BGLTorusManager::getObject();
   CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
 #endif
 

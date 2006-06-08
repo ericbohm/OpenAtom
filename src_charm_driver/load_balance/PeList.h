@@ -26,35 +26,40 @@
 class PeList 
 {
  public:
-  CkVec <int> TheList;
-  CkVec <int> sortIdx;
+  int *TheList;
+  int *sortIdx;
   int current;
+  int size;
   PeList();  //default constructor
   PeList(CkVec <int> inlist)
     {
       current=0;
+      size=inlist.size();
+      TheList = new int [size];
+      sortIdx = new int [size];
       for(int i=0;i<inlist.size();i++)
 	{
-	  TheList.push_back(inlist[i]);
-	  sortIdx.push_back(i);
+	  TheList[i]=inlist[i];
+	  sortIdx[i]=i;
 	}
       sortSource(TheList[0]);
     }
 
-  PeList(int size, int *a)
+  PeList(int _size, int *a)
     {
       current=0;
-      TheList=CkVec<int>(size);
-      sortIdx=CkVec<int>(size);
-      memcpy(TheList.getVec(),a,size*sizeof(int));
+      size=_size;
+      TheList=new int [size];
+      sortIdx=new int [size];
+      memcpy(TheList,a,size*sizeof(int));
       sortSource(TheList[0]);
     };	 // use an array to construct
   inline bool noPes() 
     {
-      return(TheList.size()-current<1);
+      return(size-current<1);
     }
   
-  inline int count() { return(TheList.size()-current);  }
+  inline int count() { return(size-current);  }
   
 
   void rebuild(); 
@@ -83,27 +88,44 @@ class PeList
 
   // need to rebuild your sortIdx
   PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}
-  PeList &operator+(PeList &inlist) {
-    for(int i=0; i< inlist.TheList.size();i++)
+  //  PeList &operator+(PeList &inlist) { CkAbort("not implemented");}
+  /*    for(int i=0; i< inlist.TheList.size();i++)
 	TheList.push_back(inlist.TheList[i]);
-    return *this;
-  }
+	return *this; }*/
+
 
   // need to rebuild your sortIdx
   PeList &operator-(PeList &inlist) {
-    for(int i=0; i< inlist.TheList.size();i++)
-      for(int j=0; j< TheList.size();j++)
+    for(int i=0; i< inlist.size;i++)
+      for(int j=0; j< size;j++)
 	if(TheList[j]==inlist.TheList[i])
-	  TheList.remove(j);
+	  {
+	    remove(j);
+	    j--; //j is moving target
+	  }
     return *this;
   }
-  
+
+  void remove(int pos)
+    {
+      if(pos < size)
+	{
+	  for (int i=pos; i<size-1; i++)
+	    TheList[i] = TheList[i+1];
+	  size--;
+	}
+    }
   void dump()
     {
       CkPrintf("PeList\n");
-      for(int j=0; j< TheList.size();j++)
+      for(int j=0; j< size;j++)
 	CkPrintf("%d list %d sortidx %d \n",j,TheList[j], sortIdx[j]);
     }
+  ~PeList(){
+    delete [] TheList;
+    delete [] sortIdx;
+
+  }
 };
 
 #endif
