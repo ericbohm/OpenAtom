@@ -61,7 +61,6 @@ class PeList
     
 #ifdef CMK_VERSION_BLUEGENE
     int value=TheList[sortIdx[current]]; 
-    current++;
     //    TheList.remove(sortIdx[0]);
     //    sortIdx.remove(0);
 #else
