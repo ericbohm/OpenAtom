@@ -29,7 +29,7 @@ class intdual {
     inline int getx(){return x;};
     inline int gety(){return y;};
     inline CkHashCode hash() const {
-	return (CkHashCode)(x+y);
+	return (CkHashCode)(x*y);
     }
     static CkHashCode staticHash(const void *k,size_t){
 	return ((intdual *)k)->hash();
