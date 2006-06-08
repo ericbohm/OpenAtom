@@ -359,7 +359,8 @@ main::main(CkArgMsg *msg) {
     CkAbort("Choose a larger Gstates_per_pe\n");
     for(int i=0; i<nstates;i++)
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
-    avail= new PeList();
+    CkPrintf("Initializing PeList, this may take a while\n");
+    avail= new PeList;
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
