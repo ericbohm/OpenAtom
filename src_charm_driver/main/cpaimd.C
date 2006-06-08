@@ -189,7 +189,7 @@ int planes_per_pe;
 CkVec <int> peUsedBySF;
 CkVec <int> peUsedByNLZ;
 
-PeList *avail;
+PeList *availGlob;
 
 #ifdef USE_TOPOMAP
 #if CMK_VERSION_BLUEGENE
@@ -360,8 +360,12 @@ main::main(CkArgMsg *msg) {
     for(int i=0; i<nstates;i++)
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
     CkPrintf("Initializing PeList, this may take a while\n");
-    PeList OurPeList;
-    avail= &OurPeList;
+
+    CkVec<int> OurPes(CkNumPes());
+    for(int i=0;i<CkNumPes();i++)
+      OurPes[i]=i;
+    availGlob=  new PeList(OurPes);  // heap it
+    CkPrintf("Calling init_state_chares\n");
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
@@ -445,16 +449,16 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   //-------------------------------------------------------------
   // Populate maptables for Paircalculators
 
-  avail->reset();
+  availGlob->reset();
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
-					 avail, config.nstates,
+					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
 		 config.scalc_per_plane, planes_per_pe, config.numChunks);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
 
-  avail->reset();
-  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, avail,config.nstates,
+  availGlob->reset();
+  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks);
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
@@ -925,9 +929,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   bgltm = BGLTorusManager::getObject();
   CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
 #endif
+
 #endif
-  avail->reset();
-  RSMapTable RStable= RSMapTable(&RSmaptable, avail, config.nstates, sim->sizeY, config.Rstates_per_pe);
+  availGlob->reset();
+  RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, config.nstates, sim->sizeY, config.Rstates_per_pe);
 
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   CkArrayOptions realSpaceOpts;
@@ -940,8 +945,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
     sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
     sfCompProxy = CProxy_StructureFactor::ckNew();
-    avail->reset();
-    GSMapTable gsTable = GSMapTable( &GSmaptable, avail, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
+    availGlob->reset();
+    GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
     CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
 
     CkArrayOptions gSpaceOpts;
@@ -1126,48 +1131,48 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     int rhoGHelpers    = config.rhoGHelpers;
     int nchareRhoGHart = rhoGHelpers*nchareRhoG;
     
-    avail->reset();
+    availGlob->reset();
 
     // subtract processors used by other nonscaling chares (non local reduceZ)
 
-    if(nchareRhoR+peUsedByNLZ.size()<avail->count())
+    if(nchareRhoR+peUsedByNLZ.size()<availGlob->count())
       {
 	PeList nlz(peUsedByNLZ);
-	*avail-nlz; //unary minus
+	*availGlob-nlz; //unary minus
       }
 
     // subtract processors used by other nonscaling chares (Structure Factor)
-    if(nchareRhoR+peUsedBySF.size()<avail->count())
+    if(nchareRhoR+peUsedBySF.size()<availGlob->count())
       {
 	PeList sf(peUsedBySF);
-	*avail-sf;
+	*availGlob-sf;
       }
-    avail->resort();
+    availGlob->resort();
 //============================================================================
 // Maps and options
-    RhoRSMapTable RhoRStable(&RhoRSmaptable, avail, nchareRhoR);
+    RhoRSMapTable RhoRStable(&RhoRSmaptable, availGlob, nchareRhoR);
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoG>avail->count())
+    // if there aren't enough free procs refresh the availGlob list;
+    if(nchareRhoG>availGlob->count())
       {
-	avail->rebuild();
+	availGlob->rebuild();
       }
 
-    RhoGSMapTable RhoGStable(&RhoGSmaptable, avail,nchareRhoG);
+    RhoGSMapTable RhoGStable(&RhoGSmaptable, availGlob,nchareRhoG);
     CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
     // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoGHart>avail->count())
+    if(nchareRhoGHart>availGlob->count())
       {
-	avail->rebuild();
+	availGlob->rebuild();
       }
 
-    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, avail, nchareRhoGHart);
+    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, availGlob, nchareRhoGHart);
     CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
