@@ -33,8 +33,11 @@ class PeList
   PeList(CkVec <int> inlist)
     {
       current=0;
-      TheList=inlist;
-      sortIdx=CkVec<int>(TheList.size());
+      for(int i=0;i<inlist.size();i++)
+	{
+	  TheList.push_back((inlist[i]));
+	  sortIdx.push_back(i);
+	}
       sortSource(TheList[0]);
     }
 

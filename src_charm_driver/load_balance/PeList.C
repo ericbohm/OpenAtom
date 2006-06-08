@@ -13,7 +13,7 @@ PeList::PeList() // default constructor
       for(int i=0;i<CkNumPes();i++)
 	TheList[i]=i;
       sortIdx=CkVec<int>(CkNumPes());
-      sortSource(TheList[0]);
+      sortSource(0);
     }
 
 void PeList::rebuild() // default constructor
