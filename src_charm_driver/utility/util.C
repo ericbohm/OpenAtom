@@ -1379,8 +1379,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"numChunks: %d\n",numChunks);
      fprintf(fp,"gStreamPeriod: %g\n",gStreamPeriod);
      fprintf(fp,"rStreamPeriod: %g\n",rStreamPeriod);
-     fprintf(fp,"gBucketSize: %g\n",gBucketSize);
-     fprintf(fp,"rBucketSize: %g\n",rBucketSize);
+     fprintf(fp,"gBucketSize: %d\n",gBucketSize);
+     fprintf(fp,"rBucketSize: %d\n",rBucketSize);
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
