@@ -360,7 +360,8 @@ main::main(CkArgMsg *msg) {
     for(int i=0; i<nstates;i++)
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
     CkPrintf("Initializing PeList, this may take a while\n");
-    avail= new PeList;
+    PeList OurPeList;
+    avail= &OurPeList;
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
