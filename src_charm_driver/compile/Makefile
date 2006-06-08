@@ -49,7 +49,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o StructFactorC
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o \
          util.o ortho.o sim_subroutines.o  \
-         groups.o TopoMap.o FindProcessor.o para_grp_parse.o
+         groups.o TopoMap.o FindProcessor.o MapTable.o PeList.o para_grp_parse.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
 OBJS_DEF = ../main/cpaimd.decl.h
@@ -143,6 +143,8 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(TOPINC)/debug_flags.h \
 	$(TOPINC)/RunDescriptor.h \
 	$(LOADB)/FindProcessor.h \
+	$(LOADB)/PeList.h \
+	$(LOADB)/MapTable.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -250,11 +252,23 @@ map.o:  $(LOADB)/map.C 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h
 	$(CHARMC) -c $(LOADB)/map.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 
+
+PeList.o:  $(LOADB)/PeList.C $(LOADB)/PeList.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(LOADB)/PeList.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+
+
+MapTable.o:  $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(LOADB)/MapTable.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+
 FindProcessor.o:  $(LOADB)/FindProcessor.C $(LOADB)/FindProcessor.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/FindProcessor.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/FindProcessor.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h 
+TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/FindProcessor.h $(LOADB)/PeList.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h $(LOADB)/MapTable.h
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/TopoMap.C $(OPTS) $(FLAGS) $(OPT_FORT)
 
