@@ -103,6 +103,7 @@
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
+#include "PeList.h"
 #ifdef USE_TOPOMAP
 #include "bgltorus.h"
 #include "FindProcessor.h"
@@ -142,6 +143,13 @@ extern CP           readonly_cp;
  * handles.
  */
 //============================================================================
+CkHashtableT<intdual, int> GSmaptable;
+CkHashtableT<intdual, int> RSmaptable;
+CkHashtableT<intdual, int> RhoGSmaptable;
+CkHashtableT<intdual, int> RhoRSmaptable;
+CkHashtableT<intdual, int> RhoGHartmaptable;
+CkHashtableT<intdual, int> AsymScalcmaptable;
+CkHashtableT<intdual, int> SymScalcmaptable;
 
 Config config;
 PairCalcID pairCalcID1;
@@ -175,8 +183,13 @@ int Ortho_UE_error;
 bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
+
+
+
+CkVec <int> peUsedBySF;
+CkVec <int> peUsedByNLZ;
+
 #ifdef USE_TOPOMAP
-CkHashtableT<intdual, int> *maptable;
 #if CMK_VERSION_BLUEGENE
 BGLTorusManager *bgltm;
 #endif
@@ -226,7 +239,7 @@ main::main(CkArgMsg *msg) {
 
     done_init=0;
     if (msg->argc < 3) {
-      CkAbort("Usage: pgm config_file_charm config_file_piny");
+      CkAbort("Usage: cpaimd.x cpaimd_config pinysystem.input");
     }//endif
 
     CkPrintf("\n================================================\n");
@@ -330,8 +343,20 @@ main::main(CkArgMsg *msg) {
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
 // Initialize chare arrays for real and g-space of states 
+    int l=config.Gstates_per_pe;
+    int m, pl, pm;
+    pl = nstates / l;
+    pm = CkNumPes() / pl;
+    if(pm==0)
+      CkAbort("Choose a larger Gstates_per_pe\n");
+    m = config.nchareG / pm;
 
+    planes_per_pe=m;
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
+    if(pm==0)
+    CkAbort("Choose a larger Gstates_per_pe\n");
+    for(int i=0; i<nstates;i++)
+      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
 
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
@@ -413,18 +438,24 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   PRINTF("Building Psi and Lambda Pair Calculators\n");
   PRINT_LINE_DASH;printf("\n");
   //-------------------------------------------------------------
-  // Create mapping classes for Paircalcular
+  // Populate maptables for Paircalculators
 
-    CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(config.nstates,
+  PeList avail;
+  SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
+					 &avail, config.nstates,
                    config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks) ;
-    
-    CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(config.nstates,
+                   sim->lines_per_chareG, sim->pts_per_chareG, 
+		 config.scalc_per_plane, planes_per_pe, config.numChunks);
+  CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
+
+  PeList availAsym;
+  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, &availAsym,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks);
-    
-    CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
-    CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
+  CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
+  
+  CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
+  CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
 
 
   //-------------------------------------------------------------
@@ -832,24 +863,8 @@ void main::doneInit(CkReductionMsg *msg){
 	// kick off file reading in gspace
 	CkPrintf("Initiating import of states\n");
 #ifdef USE_TOPOMAP
-  int *red_pl = new int[nstates];
-  int l=config.Gstates_per_pe;
-  int m, pl, pm;
-
-  pl = nstates / l;
-  pm = CkNumPes() / pl;
-
-  if(pm==0)
-    CkAbort("Choose a larger Gstates_per_pe\n");\
-
-  m = config.nchareG / pm;
-
-  int planes_per_pe=m;
-
-  for(int i=0; i<nstates;i++)
-    red_pl[i]=((i % config.Gstates_per_pe)*planes_per_pe)%nchareG;
   for(int s=0;s<nstates;s++){
-    gSpacePlaneProxy(s,red_pl[s]).readFile();
+    gSpacePlaneProxy(s,peUsedByNLZ[s]).readFile();
   }//endfor
 
 #else
@@ -896,23 +911,33 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_STAR;
   PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",nstates,sizeYZ[0],sizeYZ[1]);
   PRINT_LINE_DASH;printf("\n");
+#ifdef USE_TOPOMAP
+  CkPrintf("\n==============================================================================\n");
+  CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
+  CkPrintf("\n==============================================================================\n\n");
+#ifdef CMK_VERSION_BLUEGENE
+  bgltm = BGLTorusManager::getObject();
+  CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
+#endif
+#endif
+  PeList rsavail;
+  RSMapTable RStable= RSMapTable(&RSmaptable, &rsavail, config.nstates, sim->sizeY, config.Rstates_per_pe);
 
-
-    CProxy_RSMap rsMap= CProxy_RSMap::ckNew(config.nstates, sim->sizeY, config.Rstates_per_pe);
-
-    CkArrayOptions realSpaceOpts;
-    realSpaceOpts.setMap(rsMap);
-    size2d sizeRealPlane(sizeYZ[1], sizeX);
-
-    realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
+  CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
+  CkArrayOptions realSpaceOpts;
+  realSpaceOpts.setMap(rsMap);
+  size2d sizeRealPlane(sizeYZ[1], sizeX);
+  realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
                                                                 realSpaceOpts);
 
 								
     fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
     sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
     sfCompProxy = CProxy_StructureFactor::ckNew();
-    
-    CProxy_GSMap gsMap = CProxy_GSMap::ckNew(sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
+    PeList availpes;
+    GSMapTable gsTable = GSMapTable( &GSmaptable, &availpes, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
+    CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
 
     CkArrayOptions gSpaceOpts;
     gSpaceOpts.setMap(gsMap);
@@ -972,16 +997,12 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       listpe[j]= new int[nstates];
       nsend[j]=0;
       for(int i=0;i<nstates;i++){
-	listpe[j][i]=cheesyhackgsprocNum(sim, i,j);
+	listpe[j][i]=gsprocNum(sim, i,j);
 	gspace_proc[listpe[j][i]]+=1;
       }//endfor
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
     
-#ifdef USE_TOPOMAP
-    if(maptable!=NULL) //clean up cheesyhack
-	delete maptable;
-#endif
     
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
@@ -1038,6 +1059,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++)
 	  {
 	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps, config.numSfDups, natm_nl_grp_max,  num_dup, &(listpe[x][istart]),atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
+	      peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
 	      pe_ind++;
 	      if(pe_ind>nsend[x])
 		  pe_ind=0;
@@ -1099,31 +1121,49 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     int rhoGHelpers    = config.rhoGHelpers;
     int nchareRhoGHart = rhoGHelpers*nchareRhoG;
     
-    int rhoRstride     = CkNumPes()/(nchareRhoR);
-    int rhoGstride     = CkNumPes()/(nchareRhoG);
-    int rhoGHartstride = CkNumPes()/(nchareRhoGHart);
-    if(rhoRstride<1)    {rhoRstride=1;}
-    if(rhoGstride<1)    {rhoGstride=1;}
-    if(rhoGHartstride<1){rhoGHartstride=1;}
-    if(rhoRstride==rhoGstride && rhoGstride!=1){rhoRstride--;}
+    PeList avail;
 
-    int rhoGHartoff   =0;
-    int offsetFromZero=1;  // proc0 has reduction root issues. Avoid it if possible
-    if(rhoGstride==1)   {offsetFromZero=0;}
-    if(offsetFromZero>0){rhoGHartoff=2;}
+    // subtract processors used by other nonscaling chares (non local reduceZ)
+
+    if(nchareRhoR+peUsedByNLZ.size()<avail.count())
+      {
+	PeList nlz(peUsedByNLZ);
+	avail-nlz; //unary minus
+      }
+
+    // subtract processors used by other nonscaling chares (Structure Factor)
+    if(nchareRhoR+peUsedBySF.size()<avail.count())
+      {
+	PeList sf(peUsedBySF);
+	avail-sf;
+      }
 
 //============================================================================
 // Maps and options
-
-    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(rhoRstride,offsetFromZero, nchareRhoR);
+    RhoRSMapTable RhoRStable(&RhoRSmaptable, &avail, nchareRhoR);
+    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(rhoGstride,offsetFromZero, rhoRstride, offsetFromZero, nchareRhoG);
+    // if there aren't enough free procs refresh the avail list;
+    if(nchareRhoG>avail.count())
+      {
+	avail.rebuild();
+      }
+
+    RhoGSMapTable RhoGStable(&RhoGSmaptable, &avail,nchareRhoG);
+    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
-    CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(rhoGHartstride, rhoGHartoff, rhoRstride, offsetFromZero, nchareRhoGHart, nchareRhoR);
+    // if there aren't enough free procs refresh the avail list;
+    if(nchareRhoGHart>avail.count())
+      {
+	avail.rebuild();
+      }
+
+    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, &avail, nchareRhoGHart);
+    CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
@@ -1294,248 +1334,10 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //============================================================================
 
 
-void makemap()
+int gsprocNum(CPcharmParaInfo *sim,int state, int plane)
 {
-#ifdef USE_TOPOMAP
-	CkPrintf("\n==============================================================================\n");
-	CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-	CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
-	CkPrintf("\n==============================================================================\n\n");
-	FindProcessor fp;
-	int x = CkNumPes();
-	int y = 1;
-	int z = 1;
-	int vn = 0;
-        int c = 0;
-	
-#if CMK_VERSION_BLUEGENE
-	bgltm = BGLTorusManager::getObject();
-	x = bgltm->getXSize();
-	y = bgltm->getYSize();
-	z = bgltm->getZSize();
-	CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
-
-#endif
-	fp.count=1;
-	fp.nopX=x;
-	fp.nopY=y;
-	fp.nopZ=z;
-	fp.init();
-	int assign[3]={0, 0, 0};
-	int w = 0;
-	for(int i=0;i<3;i++)
-		fp.start[i]=fp.next[i]=0;
-	
-        int l, m, pl, pm, srem, rem, i=0;
-
-	l = config.Gstates_per_pe;		// no of states in one chunk
-        pl = config.nstates / l;		// no of procs on y axis
-        if(config.nstates % l == 0)
-		srem = 0;
-	else
-	{
-                while(pow(2.0, (double)i) < pl)
-                        i++;
-                pl = pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
-		srem = config.nstates % pl;
-	}
-	pm = CkNumPes() / pl;		// no of procs on x axis
-        
-	if(pm==0)
-		CkAbort("Choose a larger Gstates_per_pe\n");
-        
-	m = config.nchareG / pm;		// no of planes in one chunk
-        rem = config.nchareG % pm;		// remainder of planes left to be mapped
-        
-        planes_per_pe=m;
-        
-        //CkPrintf("nstates %d nchareG %d Pes %d, gsobjs_per_pe %d\n", config.nstates, config.nchareG, CkNumPes(), gsobjs_per_pe);	
-	//CkPrintf("l %d, m %d pl %d pm %d rem %d\n", l, m, pl, pm, rem);
-	
-        for(int ychunk=0; ychunk<config.nchareG; ychunk=ychunk+m)
-        {
-                if(ychunk==(pm-rem)*m)
-                  m=m+1;
-                for(int xchunk=0; xchunk<config.nstates; xchunk=xchunk+l)
-		{
-			if(xchunk==(pl-srem)*l)
-				l=l+1;
-                        if(xchunk==0 && ychunk==0) {}
-			else
-			{
-				for(int i=0;i<3;i++)
-					fp.start[i]=fp.next[i];
-				if(fp.start[2]>x/2)
-					assign[2]=fp.start[2]-x;
-				else
-					assign[2]=fp.start[2];
-				if(fp.start[1]>y/2)
-					assign[1]=fp.start[1]-y;
-				else
-					assign[1]=fp.start[1];
-				if(fp.start[0]>z/2)
-					assign[0]=fp.start[0]-z;
-				else
-					assign[0]=fp.start[0];
-				if(vn==0)
-					fp.findNextInTorus(assign);
-                                else
-                                {
-#ifdef WACKY_VN
-					fp.findNextInTorus(assign);
-#else
-                                	fp.findNextInTorusV(w, assign);
-                                        w = fp.w;
-#endif
-                                }	
-			}
-                        c=0;
-			for(int state=xchunk; state<xchunk+l && state<config.nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<config.nchareG; plane++)
-				{
-					if(xchunk==0 && ychunk==0)
-					{
-                                                c++;
-						maptable->put(intdual(state, plane))=0;
-						//CkPrintf("%d %d on 0\n", state, plane);
-					}
-					else
-					{
-                                                c++;
-						if(vn==0)
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-                                                else
-						{
-#ifdef WACKY_VN
-						  maptable->put(intdual(state, plane))=fp.next[0]*x*y+fp.next[1]*x+fp.next[2];
-#else
-                                                  maptable->put(intdual(state, plane))=(fp.next[0]*x*y+fp.next[1]*x+fp.next[2])*2+fp.w;
-#endif
-						}
-						//CkPrintf("%d %d on %d\n", state, plane, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-						
-					}
-				}
-			}
-                }
-        }
-#ifdef MAP_DEBUG
-	CkPrintf("Local gsmap created on processor %d\n", CkMyPe());
-#endif
-#endif
+	return GSmaptable.get(intdual(state, plane));
 }
-
-#ifdef USE_TOPOMAP
-int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane)
-{
-	if(maptable==NULL)
-	{
-		maptable= new CkHashtableT<intdual, int> (config.nstates*config.nchareG);
-		makemap();
-	}
-	return maptable->get(intdual(state, plane));
-}
-
-#else
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane) {
-//============================================================================
-
-  CkArrayIndex2D idx2d(state,plane);
-
-  int pe        = 0;
-  int numChareG = 0;
-  
-  if(config.doublePack) {
-     numChareG = nchareG;
-  }else{
-     CkAbort("not doublepack is broken\n");
-  }//endif
-  
-  double state_load=0.0;
-  if(state_load <= 0.0 ){
-    for(int x = 0; x  < numChareG; x++) {
-      double curload = 0.0;
-      double sload = 0.0;
-      hackGSpacePlaneLoad(sim, x, &curload, &sload);
-      state_load += curload;
-    }//endfor
-  }//endif
-
-  int pes_per_state = config.GpesPerState;
-  int np            = CkNumPes()/pes_per_state;
-  
-  if(np < 1){np = 1;}
-  
-  int partition_nstates = config.nstates / np;
-  if(config.nstates % np != 0){partition_nstates ++;}
-  
-  int start_pe    = (idx2d.index[0]/partition_nstates) * pes_per_state;
-  int start_state = (idx2d.index[0]/partition_nstates) * partition_nstates;
-  
-  double cum_load     = 0.0;
-  double average_load = state_load * config.nstates / CkNumPes();
-
-  for(int x = 0; x < numChareG; x++) {
-    for(int s = 0; s < partition_nstates; s++) {
-      double curload = 0.0;
-      double sload = 0.0;
-      
-      hackGSpacePlaneLoad(sim,x, &curload, &sload);
-
-      cum_load += curload;
-
-      if((idx2d.index[0] == s + start_state) && idx2d.index[1] == x) {
-      
-	double dpe = 0.0;
-	dpe = cum_load / average_load;
-
-	pe = (int)dpe;
-	pe = pe % pes_per_state;
-	pe += start_pe;
-
-	return pe % CkNumPes();
-      }//endif
-    }//endfor : s
-  }//endfor : x
-
-  //  CkPrintf("Warning pe not found for index [%d, %d]\n",idx2d.index[0],idx2d.index[1]);
-  return (idx2d.index[0]*1037+idx2d.index[1])%CkNumPes();
-
-//============================================================================
-  }//end routine
-//============================================================================
-
-#endif
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int idx, double *line_load, 
-                         double *pt_load){
-//============================================================================
-
-  int nchareG             = sim->nchareG;
-  double *lines_per_chareG = sim->lines_per_chareG;
-  double *pts_per_chareG   = sim->pts_per_chareG;
-
-  if( (idx < 0) || (idx >= nchareG) ){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("GSpace plane index %d out of range: 0 < idx > %d\n",idx,nchareG);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
-  line_load[0] = lines_per_chareG[idx];
-  pt_load[0]   =   pts_per_chareG[idx];
-
-//============================================================================
-  }//end routine
-//============================================================================
 
 
 //============================================================================

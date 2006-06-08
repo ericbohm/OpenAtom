@@ -17,7 +17,10 @@
 #include "StreamingStrategy.h"
 #include "pairCalculator.h"
 #include "ckhashtable.h"
+#include "PeList.h"
+#include "MapTable.h"
 #define USE_TOPOMAP 1
+
 #define LOAD_BALANCE_STEP 10
 
 #define PRE_BALANCE_STEP 2
@@ -32,6 +35,15 @@
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
+
+extern CkHashtableT <intdual, int> GSmaptable;
+extern CkHashtableT <intdual, int> RSmaptable;
+extern CkHashtableT <intdual, int> RhoGSmaptable;
+extern CkHashtableT <intdual, int> RhoRSmaptable;
+extern CkHashtableT <intdual, int> RhoGHartmaptable;
+extern CkHashtableT <intdual, int> AsymScalcmaptable;
+extern CkHashtableT <intdual, int> SymScalcmaptable;
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -61,36 +73,30 @@ class main : public Chare {
  */
 //============================================================================
  
-class intdual {
- private:
-    int x, y;
- public:
-    intdual(){x=y=0;}
-
-    intdual(int _x,int _y) : x(_x), y(_y){}
-  void pup(PUP::er &p)
-      {
-	  p|x;
-	  p|y;
-      }
-    inline int getx(){return x;};
-    inline int gety(){return y;};
-    inline CkHashCode hash() const {
-	return (CkHashCode)(x+y);
-    }
-    static CkHashCode staticHash(const void *k,size_t){
-	return ((intdual *)k)->hash();
-    }
-    inline int compare(intdual &t) const{
-	return (t.getx() == x && t.gety() == y);
-    }
-    static int staticCompare(const void *a,const void *b,size_t){
-	return ((intdual *)a)->compare((*(intdual *)b));
-    }
-   
-};
 //============================================================================
+/** \brief Base Class used for maptable based proc maps
+ *
+ *
+ */
+class CkArrayMapTable : public CkArrayMap
+{
+ public:
+  CkHashtableT<intdual, int> *maptable;
 
+
+  CkArrayMapTable() {}
+  int procNum(int, const CkArrayIndex &) {
+    CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
+    return maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+    
+  }
+  void pup(PUP::er &p)
+    {
+      CkArrayMap::pup(p);
+    }
+  ~CkArrayMapTable(){}
+  
+};
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -100,78 +106,26 @@ class intdual {
  *
  */
 //============================================================================
+
+
  
-class GSMap: public CkArrayMap {
-  
-  int nchareG;
-  int nstates;
-  int Gstates_per_pe;
-  
-  double *lines_per_chareG;
-  double *pts_per_chareG;
-  double state_load;
-  CkHashtableT<intdual, int> *maptable;
+class GSMap: public CkArrayMapTable {
 
  public:
-  int planes_per_pe;
-  GSMap(int _nchareG,double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,
-  int _Gstates_per_pe): 
-        nchareG(_nchareG)   
+  GSMap()
       { 
-	  state_load = 0.0;
-	  nstates = _nstates;
-	  Gstates_per_pe = _Gstates_per_pe;
-	  lines_per_chareG= new double[nchareG];
-	  pts_per_chareG= new double[nchareG];
-	  CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
-	  CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
-#ifdef USE_TOPOMAP
-	  maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-	  makemap();
-#else
-	  maptable=NULL;
-#endif
+	maptable= &GSmaptable;
       }
-  int procNum(int, const CkArrayIndex &);
-// int slowprocNum(int, const CkArrayIndex2D &);
-  void makemap();
-  void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
   void pup(PUP::er &p)
 	{
-	    CkArrayMap::pup(p);
-	    p|nchareG;
-	    p|state_load;
-	    p|nstates;
-	    p|Gstates_per_pe;
-	    p|planes_per_pe;
-	    if (p.isUnpacking()) {
-		lines_per_chareG= new double[nchareG];
-		pts_per_chareG= new double[nchareG];
-#ifdef USE_TOPOMAP
-		maptable= new CkHashtableT<intdual, int> (nstates*nchareG);
-#endif
-	    }
-#ifdef USE_TOPOMAP    
-	    p|*maptable;
-#endif
-	    PUParray(p,lines_per_chareG,nchareG);
-	    PUParray(p,pts_per_chareG,nchareG);
+	    CkArrayMapTable::pup(p);
+	    maptable= &GSmaptable;
 	}
-
+  int procNum(int, const CkArrayIndex &);
   ~GSMap(){
-      if(lines_per_chareG !=NULL)
-	  delete [] lines_per_chareG;
-      if(pts_per_chareG !=NULL)
-	  delete [] pts_per_chareG;
-      if(maptable !=NULL)
-	  delete maptable;
-
   }
 };
 //============================================================================
-#ifdef USE_TOPOMAP
-PUPmarshall(GSMap);
-#endif
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -182,49 +136,24 @@ PUPmarshall(GSMap);
  */
 //============================================================================
 
-class RSMap: public CkArrayMap {
- int nstates;
- int sizeY;
- int Rstates_per_pe;
- public:
-  CkHashtableT<intdual, int> *maptable;
-  RSMap(int _nstates, int _sizeY, int _Rstates_per_pe) 
-  {
-	nstates = _nstates;
-	sizeY = _sizeY;
-        Rstates_per_pe = _Rstates_per_pe;
-#ifdef USE_TOPOMAP
-	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
-	makemap();
-#else
-	maptable=NULL;
-#endif
-  }
-  void makemap();
-  void pup(PUP::er &p)
-  {
-    CkArrayMap::pup(p);
-    p|sizeY;
-    p|nstates;
-    p|Rstates_per_pe;
-#ifdef USE_TOPOMAP
-    if (p.isUnpacking()) {
-	maptable= new CkHashtableT<intdual, int> (nstates*sizeY);
-    }	    
-    p|*maptable;
-#endif
-  }
+class RSMap: public CkArrayMapTable {
 
+ public:
+  RSMap()
+      { 
+	maptable= &RSmaptable;
+      }
+  void pup(PUP::er &p)
+	{
+	    CkArrayMapTable::pup(p);
+	    maptable= &RSmaptable;
+	}
   int procNum(int, const CkArrayIndex &);
-  ~RSMap() {
-	if(maptable !=NULL)
-	  delete maptable;
+  ~RSMap(){
   }
 };
 //============================================================================
-#ifdef USE_TOPOMAP
-PUPmarshall(RSMap);
-#endif
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -236,230 +165,95 @@ PUPmarshall(RSMap);
  */
 //============================================================================
 
-class SCalcMap : public CkArrayMap {
-  int nchareG;
-  int scalc_per_plane;
-  int planes_per_pe;
-  int numChunks;
-  double *lines_per_chareG;
-  double *pts_per_chareG;
-  CkHashtableT<intdual, int> *maptable;
-  int max_states, max_planes, gs;
-  CmiBool symmetric;
-  double totalload;
-    
+class SCalcMap : public CkArrayMapTable {
+  bool symmetric;
  public:
-    
-
-    SCalcMap(int _nstates, int _nchareG,  int gs, CmiBool _flag, int _nplanes, 
-             double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,   int _planes_per_pe, int _numChunks) { 
-        this->gs   = gs;
-        nchareG    = _nchareG;
-        max_states = _nstates;
-        max_planes = _nplanes;
-	numChunks  = _numChunks;
-	scalc_per_plane = _scalc_per_plane;
-	planes_per_pe = _planes_per_pe;
-        symmetric  = _flag;
-	totalload  = 0.0;
-	lines_per_chareG = new double[nchareG];
-	pts_per_chareG   = new double[nchareG];
-	CmiMemcpy(lines_per_chareG,_lines_per_chareG,nchareG*sizeof(double));
-	CmiMemcpy(pts_per_chareG,_pts_per_chareG,nchareG*sizeof(double));
-#ifdef USE_TOPOMAP
-	maptable= new CkHashtableT<intdual, int> (scalc_per_plane*nchareG*numChunks);
-	makemap();
-#else
-	maptable=NULL;
-#endif
-    }
-    void GSpacePlaneLoad(int idx, double *line_load, double *pt_load);
-    ~SCalcMap(){
-	if(lines_per_chareG!=NULL)
-	    delete [] lines_per_chareG;
-	if(pts_per_chareG!=NULL)
-	    delete [] pts_per_chareG;
-	if(maptable!=NULL)
-	    delete maptable;
+    SCalcMap(bool _symmetric): symmetric(_symmetric){
+	if(symmetric)
+	  maptable= &SymScalcmaptable;
+	else
+	  maptable= &AsymScalcmaptable;
     }
     void pup(PUP::er &p)
 	{
-	    CkArrayMap::pup(p);
-	    p|nchareG;
-	    p|max_states;
-	    p|max_planes;
-	    p|gs;
+	    CkArrayMapTable::pup(p);
 	    p|symmetric;
-	    p|totalload;
-	    p|numChunks;
-	    if (p.isUnpacking()) {
-		lines_per_chareG= new double[nchareG];
-		pts_per_chareG= new double[nchareG];
-		maptable= NULL;
-	    }	    
-	    PUParray(p,lines_per_chareG,nchareG);
-	    PUParray(p,pts_per_chareG,nchareG);
+	    if(symmetric)
+	      maptable= &SymScalcmaptable;
+	    else
+	      maptable= &AsymScalcmaptable;
 	}
-    void makemap();
-    int procNum(int, const CkArrayIndex &);
-//    int slowprocNum(int, const CkArrayIndex &);
-    int slowprocNum(int, const CkArrayIndex4D &);
-    int slowprocNum2(int, const CkArrayIndex4D &);
+  int procNum(int, const CkArrayIndex &);
 };
 //============================================================================
-#ifdef USE_TOPOMAP
-PUPmarshall(SCalcMap);
-#endif
 /**
  * provide procnum mapping for RhoR
  */
-class RhoRSMap : public CkArrayMap {
+class RhoRSMap : public CkArrayMapTable {
   public:
-    RhoRSMap(int NN, int ioff, int _nchareRhoR):N(NN), off(ioff) 
+    int nchareRhoR;
+    RhoRSMap()
     {
-      nchareRhoR = _nchareRhoR;
-#ifdef USE_TOPOMAP
-      maptable= new CkHashtableT<intdual, int> (nchareRhoR*1);
-      makemap();
-#else
-      maptable=NULL;
-#endif
+      maptable= &RhoRSmaptable;
     }
     
     ~RhoRSMap() {
-	if(maptable !=NULL)
-	  delete maptable;
     }
   
     void pup(PUP::er &p)
       {
-	CkArrayMap::pup(p);
-	p|N;
-	p|off;
-        p|nchareRhoR;
-#ifdef USE_TOPOMAP
-        if (p.isUnpacking()) {
-	  maptable= new CkHashtableT<intdual, int> (nchareRhoR*1);
-        }    
-        p|*maptable;
-#endif
+	CkArrayMapTable::pup(p);
+	maptable= &RhoRSmaptable;
       }
-    int procNum(int arrayHdl, const CkArrayIndex &idx);
-    void makemap();
     
-  private:
-    int N;
-    int off;
-    int nchareRhoR;
-    CkHashtableT<intdual, int> *maptable;
+    int procNum(int arrayHdl, const CkArrayIndex &idx);
+
 };
-#ifdef USE_TOPOMAP
-PUPmarshall(RhoRSMap);
-#endif
+
 
 /**
  * provide procnum mapping for RhoG
  */
-class RhoGSMap : public CkArrayMap {
+class RhoGSMap : public CkArrayMapTable {
   public:
-    RhoGSMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoG):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
+    RhoGSMap()
     {
-      nchareRhoG = _nchareRhoG;
-#ifdef USE_TOPOMAP
-      maptable= new CkHashtableT<intdual, int> (nchareRhoG*1);
-      makemap();
-#else
-      maptable=NULL;
-#endif 
+      maptable= &RhoGSmaptable;
     }
     
     ~RhoGSMap() {
-	if(maptable !=NULL)
-	  delete maptable;
     }
     
     int procNum(int arrayHdl, const CkArrayIndex &idx);
-    void makemap();
     
     void pup(PUP::er &p)
       {
-	CkArrayMap::pup(p);
-	p|N;
-	p|avoid;
-	p|off;
-	p|avoid_off;
-        p|nchareRhoG;
-#ifdef USE_TOPOMAP
-        if (p.isUnpacking()) {
-	  maptable= new CkHashtableT<intdual, int> (nchareRhoG*1);
-        }    
-        p|*maptable;
-#endif
+	CkArrayMapTable::pup(p);
       }
-
-  private:
-    int N;
-    int off;
-    int avoid;
-    int avoid_off;
-    int nchareRhoG;
-    CkHashtableT<intdual, int> *maptable;
 };
-#ifdef USE_TOPOMAP
-PUPmarshall(RhoGSMap);
-#endif
 
-class RhoGHartMap : public CkArrayMap {
+
+class RhoGHartMap : public CkArrayMapTable {
   public:
-  RhoGHartMap(int NN, int ioff, int iavoid, int iavoid_off, int _nchareRhoGHart, int _nchareRhoR):N(NN), off(ioff), avoid(iavoid), avoid_off(iavoid_off)
+  RhoGHartMap()
   {
-    nchareRhoGHart = _nchareRhoGHart;
-    nchareRhoR = _nchareRhoR;
-#ifdef USE_TOPOMAP
-      maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
-      makemap();
-#else
-      maptable=NULL;
-#endif 
+    maptable= &RhoGHartmaptable;
   }
   
   ~RhoGHartMap()
   {
-    if(maptable !=NULL)
-      delete maptable;
   }
   
   int procNum(int arrayHdl, const CkArrayIndex &idx);
-  void makemap();
     
   void pup(PUP::er &p)
       {
-	CkArrayMap::pup(p);
-        p|N;
-	p|avoid;
-	p|off;
-	p|avoid_off;
-        p|nchareRhoGHart;
-	p|nchareRhoR;
-#ifdef USE_TOPOMAP
-        if (p.isUnpacking()) {
-	  maptable= new CkHashtableT<intdual, int> (nchareRhoGHart*1);
-        }    
-        p|*maptable;
-#endif
-      }        
-  private:
-    int N;
-    int off;
-    int avoid;
-    int avoid_off;
-    int nchareRhoGHart;
-    int nchareRhoR;
-    CkHashtableT<intdual, int> *maptable;
+	CkArrayMapTable::pup(p);
+	maptable= &RhoGHartmaptable;
+      }
+
 };
-#ifdef USE_TOPOMAP
-PUPmarshall(RhoGHartMap);
-#endif
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -540,9 +334,7 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret);
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex);
-int cheesyhackgsprocNum(CPcharmParaInfo *sim,int state, int plane);
-void makemap();
-void hackGSpacePlaneLoad(CPcharmParaInfo *sim,int , double *, double *);
+int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
 
 //============================================================================
 
