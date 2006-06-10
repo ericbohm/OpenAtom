@@ -143,8 +143,8 @@ extern CP           readonly_cp;
  * handles.
  */
 //============================================================================
-CkHashtableT<intdual, int> GSmaptable;
-CkHashtableT<intdual, int> RSmaptable;
+CkHashtableT<intdual, int> GSmaptable(10000,0.25);
+CkHashtableT<intdual, int> RSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
