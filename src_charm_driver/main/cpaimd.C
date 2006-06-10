@@ -359,17 +359,29 @@ main::main(CkArgMsg *msg) {
     CkAbort("Choose a larger Gstates_per_pe\n");
     for(int i=0; i<nstates;i++)
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
-    CkPrintf("Initializing PeList, this may take a while\n");
+
 
     //    CkVec<int> OurPes(CkNumPes());
     //    for(int i=0;i<CkNumPes();i++)
     //      OurPes[i]=i;
-#ifdef CMK_VERSION_BLUEGENE
-  bgltm = BGLTorusManager::getObject();
+
+#ifdef USE_TOPOMAP
+  CkPrintf("\n==============================================================================\n");
+  CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
+  CkPrintf("\n==============================================================================\n\n");
 #endif
+#ifdef CMK_VERSION_BLUEGENE
+    CkPrintf("Initializing BGLTorusManager\n");
+    bgltm = BGLTorusManager::getObject();
+    CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
+#endif
+    CkPrintf("Initializing PeList\n");
     PeList *foo=  new PeList [1];  // heap it
     availGlob=&(foo[0]);
-    CkPrintf("Calling init_state_chares\n");
+    newtime=CmiWallTimer();
+    CkPrintf("Pelist initialized in %g\n",newtime-Timer);
+    Timer=newtime;
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
@@ -452,7 +464,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   PRINT_LINE_DASH;printf("\n");
   //-------------------------------------------------------------
   // Populate maptables for Paircalculators
-
+  Timer =CmiWallTimer();
   availGlob->reset();
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
 					 availGlob, config.nstates,
@@ -460,12 +472,17 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
                    sim->lines_per_chareG, sim->pts_per_chareG, 
 		 config.scalc_per_plane, planes_per_pe, config.numChunks);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
-
+  double newtime=CmiWallTimer();
+  CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
+  Timer=newtime;
   availGlob->reset();
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks);
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
+  newtime=CmiWallTimer();
+  CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
+  Timer=newtime;
   
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
@@ -926,55 +943,46 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   PRINT_LINE_STAR;
   PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",nstates,sizeYZ[0],sizeYZ[1]);
   PRINT_LINE_DASH;printf("\n");
-#ifdef USE_TOPOMAP
-  CkPrintf("\n==============================================================================\n");
-  CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
-  CkPrintf("\n==============================================================================\n\n");
-#ifdef CMK_VERSION_BLUEGENE
-  //  bgltm = BGLTorusManager::getObject();
-  CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
-#endif
-
-#endif
   availGlob->reset();
   RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, config.nstates, sim->sizeY, config.Rstates_per_pe);
 
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
+  double newtime=CmiWallTimer();
+  CkPrintf("RSMap created in %g\n",newtime-Timer);
+  Timer=newtime;
   CkArrayOptions realSpaceOpts;
   realSpaceOpts.setMap(rsMap);
   size2d sizeRealPlane(sizeYZ[1], sizeX);
   realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
-                                                                realSpaceOpts);
+							      realSpaceOpts);
 
 								
-    fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
-    sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
-    sfCompProxy = CProxy_StructureFactor::ckNew();
-    availGlob->reset();
-    GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
-    CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
+  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
+  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
+  sfCompProxy = CProxy_StructureFactor::ckNew();
+  availGlob->reset();
+  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
+  CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
+  newtime=CmiWallTimer();
+  CkPrintf("GSMap created in %g\n",newtime-Timer);
+  Timer=newtime;
+  CkArrayOptions gSpaceOpts;
+  gSpaceOpts.setMap(gsMap);
+  gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ,1, 
+							1,config.sGrainSize, config.numChunks, gSpaceOpts);
 
-    CkArrayOptions gSpaceOpts;
-    gSpaceOpts.setMap(gsMap);
-
-    gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ,1, 
-                                                          1,config.sGrainSize, config.numChunks, gSpaceOpts);
-
-    // We bind the particlePlane array to the gSpacePlane array migrate together
-    CkArrayOptions particleOpts;
-    particleOpts.setMap(gsMap); // the maps for both the arrays are the same
-    particleOpts.bindTo(gSpacePlaneProxy);
-    particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
-		      1, numSfGrps, natm_nl, natm_nl_grp_max, config.nstates, 
-		      config.nchareG, config.Gstates_per_pe, particleOpts);
-
+  // We bind the particlePlane array to the gSpacePlane array migrate together
+  CkArrayOptions particleOpts;
+  particleOpts.setMap(gsMap); // the maps for both the arrays are the same
+  particleOpts.bindTo(gSpacePlaneProxy);
+  particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
+							    1, numSfGrps, natm_nl, natm_nl_grp_max, config.nstates, 
+							    config.nchareG, config.Gstates_per_pe, particleOpts);
     /*
      * Insert the planes in the particle plane array, gSpacePlane array
      */
-
-    int s,x;
-    CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
+  int s,x;
+  CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
     for (s = 0; s < nstates; s++){
       for (x = 0; x <nchareG; x++){
              gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1, 
