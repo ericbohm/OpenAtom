@@ -239,7 +239,7 @@ mainmodule cpaimd {
       };
 
 	group OrthoMap : CkArrayMap {
-		entry OrthoMap(int M);
+		entry OrthoMap(int M,int nOrtho);
 	};
 
 	group RhoGSMap : CkArrayMap {

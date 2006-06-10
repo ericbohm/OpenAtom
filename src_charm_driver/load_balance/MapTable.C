@@ -304,8 +304,8 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
     }
   else
     {
-      rrsobjs_per_pe= nchareRhoR/(availprocs->count()/2);
-      rem = nchareRhoR % (availprocs->count()/2);
+      rrsobjs_per_pe= nchareRhoR/(availprocs->count());
+      rem = nchareRhoR % (availprocs->count());
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
@@ -358,8 +358,8 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
     }
   else
     {
-      rgsobjs_per_pe= nchareRhoG/(availprocs->count()/2);
-      rem = nchareRhoG % (availprocs->count()/2);
+      rgsobjs_per_pe= nchareRhoG/(availprocs->count());
+      rem = nchareRhoG % (availprocs->count());
       if(rem!=0)
 	rgsobjs_per_pe += 1;
     }

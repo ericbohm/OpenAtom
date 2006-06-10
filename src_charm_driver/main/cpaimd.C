@@ -801,7 +801,9 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
   PRINT_LINE_DASH;printf("\n");
 
     int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks);
+    int nOrtho= (nstates/config.orthoGrainSize);
+    nOrtho*=nOrtho;
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks,nOrtho);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
@@ -1141,6 +1143,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
     if(nchareRhoR+peUsedByNLZ.size()<availGlob->count())
       {
+	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",peUsedByNLZ.size(),availGlob->count());
 	PeList nlz(peUsedByNLZ);
 	*availGlob-nlz; //unary minus
       }
@@ -1148,6 +1151,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     // subtract processors used by other nonscaling chares (Structure Factor)
     if(nchareRhoR+peUsedBySF.size()<availGlob->count())
       {
+	CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",peUsedBySF.size(),availGlob->count());
 	PeList sf(peUsedBySF);
 	*availGlob-sf;
       }
@@ -1162,6 +1166,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     // if there aren't enough free procs refresh the availGlob list;
     if(nchareRhoG>availGlob->count())
       {
+	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoG);
 	availGlob->rebuild();
       }
 
@@ -1173,6 +1178,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     // if there aren't enough free procs refresh the avail list;
     if(nchareRhoGHart>availGlob->count())
       {
+	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoGHart);
 	availGlob->rebuild();
       }
 

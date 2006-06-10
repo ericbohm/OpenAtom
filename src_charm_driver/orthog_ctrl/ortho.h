@@ -307,13 +307,20 @@ class Ortho : public CBase_Ortho{
  */
 class OrthoMap : public CkArrayMap {
   public:
-    OrthoMap(int NN):N(NN){}
+    OrthoMap(int NN,int _nOrtho):N(NN), nOrtho(_nOrtho)
+      {
+	offset=0;
+	if(nOrtho<CkNumPes())
+	  offset=1;  //skip proc 0
+      }
     virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1]) % CkNumPes();
+      return (N * idx2d.index[0] + idx2d.index[1] + offset) % CkNumPes();
     }
   private:
     int N;
+    int nOrtho;
+    int offset;
 };
 
 #endif // #ifndef _ortho_h_
