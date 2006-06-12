@@ -1794,14 +1794,14 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }
-
+    /*
     if(config.useCommlibMulticast!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("No commlibMulticast no work. Sameer is happy!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-
+    */
     if(config.useCommlibMulticast+config.useGMulticast!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("You can't use both the g and commlib multicast\n");

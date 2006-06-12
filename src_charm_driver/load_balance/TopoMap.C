@@ -38,8 +38,6 @@ int GSMap::procNum(int handle, const CkArrayIndex &index)
 	  maptable= &GSmaptable;
 	}
 	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
-	CkAssert(retval>=0);
-	CkAssert(retval<CkNumPes());
 	return retval;
 }
 
@@ -52,9 +50,8 @@ int GSMap::procNum(int handle, const CkArrayIndex &index)
  */
 int SCalcMap::procNum(int handle, const CkArrayIndex &index)
 {
-	CkArrayIndex4D &idx4d = *(CkArrayIndex4D *)&index;
-	int intidx[2];
-	CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
+	/* this works due to 4D being stored as 2 ints */
 
 	if(maptable==NULL)
 	{
@@ -64,9 +61,7 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &index)
 	  else
 	    maptable= &AsymScalcmaptable;
 	}
-	int retval=maptable->get(intdual(intidx[0], intidx[1]));
-	CkAssert(retval>=0);
-	CkAssert(retval<CkNumPes());
+	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
 	return retval;
 }
 
@@ -83,8 +78,6 @@ int RSMap::procNum(int handle, const CkArrayIndex &index)
 	  maptable= &RSmaptable;
 	}
 	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
-	CkAssert(retval>=0);
-	CkAssert(retval<CkNumPes());
 	return retval;
 
 }

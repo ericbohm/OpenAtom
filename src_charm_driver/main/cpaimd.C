@@ -148,8 +148,8 @@ CkHashtableT<intdual, int> RSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
-CkHashtableT<intdual, int> AsymScalcmaptable;
-CkHashtableT<intdual, int> SymScalcmaptable;
+CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
+CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
 
 Config config;
 PairCalcID pairCalcID1;
@@ -270,7 +270,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Cpaimd-Charm-Driver input started \n");
     CkPrintf("---------------------------------------------------------\n\n");
     Timer=CmiWallTimer();
-
+    double phase1start=Timer;
     Config::readConfig(msg->argv[1],config,sim->nstates,
                        sim->sizeX,sim->sizeY,sim->sizeZ,
                        sim->ntime,ibinary_opt,natm_nl);
@@ -434,7 +434,7 @@ main::main(CkArgMsg *msg) {
 //============================================================================
     newtime=CmiWallTimer();
     CkPrintf("\n-----------------------------------------------------\n");
-    CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-Timer);
+    CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-phase1start);
     CkPrintf("======================================================\n\n");
 
     CkPrintf("======================================================\n");
