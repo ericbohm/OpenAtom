@@ -51,9 +51,21 @@ class MapTable
  public:
   CkHashtableT <intdual, int > *maptable;
   PeList *availprocs;
+ protected:
+   CkVec <intdual> *reverseMap;
+
   MapTable()
     {
+      availprocs==NULL;
+      maptable==NULL;
+      reverseMap==NULL;
     }
+  ~MapTable()
+    {
+      if(reverseMap!=NULL)
+	delete [] reverseMap;
+    }
+  void makeReverseMap();
   void dump()
     {
       CkHashtableIterator *it=maptable->iterator();
@@ -72,12 +84,15 @@ class MapTable
   /**
    * return ckvec containing the  reverse map of  all elements on
    *  given proc 
-      */
-  /*  inline CkVec <intdual> & ProcByArrIndex(int proc) { return(reverseMap.get(proc)); }
+   */
+  inline CkVec <intdual>  ProcByArrIndex(int proc) 
+    { 
+      if(reverseMap==NULL)
+	makeReverseMap();
+      return(reverseMap[proc]); 
+    }
 
- private:
-  CkHashtable < int, CkVec <intdual> >  reverseMap;
-  */
+
 };
 
 class GSMapTable : public MapTable

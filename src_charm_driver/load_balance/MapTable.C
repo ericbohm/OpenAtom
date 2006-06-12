@@ -10,6 +10,7 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
     lines_per_chareG(_lines_per_chareG),  pts_per_chareG(_pts_per_chareG), 
     nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
       { 
+	reverseMap=NULL;
 	maptable=_map;
 	availprocs=_availprocs;
 	  state_load = 0.0;
@@ -90,11 +91,12 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
   scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), numChunks(_numChunks)
 { 
-  
+
   int scobjs_per_pe, rem;
   int count=0, procno=0;
   int intidx[2];
   int lesser_scalc = 0;
+  reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   int srcpe=0,destpe=availprocs->findNext();
@@ -221,6 +223,7 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
         int c = 0;
 	
 	int l, m, pl, pm, srem, rem, i=0;
+	reverseMap=NULL;
 	maptable=_map;
 	availprocs=_availprocs;
         
@@ -292,6 +295,7 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 
 RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareRhoR): nchareRhoR(_nchareRhoR)
 {
+  reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   int rrsobjs_per_pe, rem;
@@ -346,6 +350,7 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 
 RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareRhoG): nchareRhoG(_nchareRhoG)
 {
+  reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   int rgsobjs_per_pe, rem;
@@ -393,7 +398,7 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
 {
   int npes, procno=2, normal=0;
   int srcpe=0;
-
+  reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   npes=availprocs->count();
@@ -436,3 +441,18 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
 #endif
 
 }
+
+void MapTable::makeReverseMap()
+{
+    CkHashtableIterator *it=maptable->iterator();
+    it->seekStart();
+    intdual *key;
+    reverseMap= new CkVec <intdual> [CkNumPes()];
+    while(it->hasNext())
+      {
+	it->next((void **) &key);
+	int proc =maptable->get(key[0]);
+	reverseMap[proc].push_back(key[0]);
+      }
+    delete it;
+  }
