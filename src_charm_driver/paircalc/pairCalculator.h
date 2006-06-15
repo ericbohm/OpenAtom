@@ -30,7 +30,7 @@ class PairCalcID {
   bool existsLproxy;
   bool existsLNotFromproxy;
   bool existsRproxy;
-  CkGroupID mCastGrpId;
+  CkVec <CkGroupID> mCastGrpId;
   int priority;
   CProxySection_PairCalculator *proxyLFrom;
   CProxySection_PairCalculator *proxyLNotFrom;
@@ -42,7 +42,7 @@ class PairCalcID {
   PairCalcID() {}
   ~PairCalcID() {}
 
-  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, CkGroupID _mCastGrpId, int _priority, bool _useEtoM) {
+  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority, bool _useEtoM) {
     Aid = aid;
     GrainSize = grain;
     numChunks = _numChunks;
@@ -56,12 +56,12 @@ class PairCalcID {
     existsLNotFromproxy=false;
     isDoublePacked = _dp;
     lbpaircalc=_lbpaircalc;
-    mCastGrpId=_mCastGrpId;
     priority=_priority;
   }
   void resetProxy()
     {
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
+      CkAbort("need to adjust for having plane instance of multicastmgr");
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId[0]).ckLocalBranch();       
       for(int chunk=0;chunk<numChunks;chunk++)
 	{
 
@@ -169,7 +169,7 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 

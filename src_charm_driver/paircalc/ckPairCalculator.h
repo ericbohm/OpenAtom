@@ -280,7 +280,8 @@ class PairCalculator: public CBase_PairCalculator {
 
   /* to support the simpler section reduction*/
   int rck;                   //! count of received cookies
-  CkGroupID mCastGrpId;      //! group id for multicast manager
+  CkGroupID mCastGrpIdOrtho;  //! group id for multicast manager ortho
+  CkGroupID mCastGrpId;      //! group id for multicast manager bw
 
   CkSectionInfo *resultCookies;  //! array of bw path section cookies
   CkSectionInfo *otherResultCookies;  //! extra array of bw path

@@ -274,6 +274,7 @@ PairCalculator::pup(PUP::er &p)
   p|existsOut;
   p|existsNew;
   p|mCastGrpId;
+  p|mCastGrpIdOrtho;
   p|resumed;
   p|rck;
   p|actionType;
@@ -376,14 +377,14 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   int orthoIndexY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
   int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
   //int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
- #ifdef _PAIRCALC_DEBUG_
+#ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY);
 #endif
 
   CkAssert(orthoIndex<numOrtho*numOrtho);
   CkGetSectionInfo(orthoCookies[orthoIndex],msg);
   orthoCB[orthoIndex]=msg->cb;
-  mCastGrpId=msg->mCastGrpId; //redundant
+  mCastGrpIdOrtho=msg->mCastGrpId; 
   /*  cpreduce=section;
   if(msg->lbsync)
   {
@@ -417,7 +418,7 @@ void PairCalculator::initResultSection(initResultMsg *msg)
   }
   rck++;
 
-  mCastGrpId=msg->mCastGrpId;  //arguably redundant
+  mCastGrpId=msg->mCastGrpId;  
   //to force synchronize in lb resumption
   if(msg->lbsync && rck==grainSize)
   {
@@ -654,7 +655,7 @@ PairCalculator::contributeSubTiles(double *fullOutput)
   CkPrintf("[%d %d %d %d %d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric);
 #endif
 
-  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
   double *outTile=new double[orthoGrainSize*orthoGrainSize];
   //reuse the same tile each time as contribute makes its own copy
   int numOrtho=grainSize/orthoGrainSize;

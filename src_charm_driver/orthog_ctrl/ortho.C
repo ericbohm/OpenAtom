@@ -372,16 +372,16 @@ void Ortho::lbresume(CkReductionMsg *msg) {
     if(lbcaught==lambdas+1) //gspace is all done lambda and psi reduction resets
       {
 	CkAbort("must fix ortho proxy reset!\n");
-	setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId,  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy),thisIndex.x, thisIndex.y); 
+	setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId[0],  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy),thisIndex.x, thisIndex.y); 
       }
     if(lbcaught==lambdas+2)
       {
 	CkAbort("must fix ortho proxy reset!\n");
 	if(thisIndex.x <= thisIndex.y) //lambda is done
 	  {
-	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
+	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId[0]).ckLocalBranch();               
 	    mcastGrp->resetSection(pcProxy);
-	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
+	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId[0],  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
 	    if(thisIndex.x!=thisIndex.y)
 	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
 	  }

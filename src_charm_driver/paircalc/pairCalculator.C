@@ -53,7 +53,6 @@
  *
  */
 //*************************************************************************
- 
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
 extern ComlibInstanceHandle mcastInstanceCP;
@@ -66,7 +65,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkGroupID mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -77,7 +76,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   CkArrayOptions options;
   CProxy_PairCalculator pairCalculatorProxy;
   redtypes cpreduce=section;
-
+  
 #ifdef CONVERSE_VERSION_ELAN
   bool machreduce=(s/grainSize * numZ* numChunks>=CkNumNodes()) ? true: false;
 #else
@@ -96,8 +95,9 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   int proc = 0;
 
-  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc, mCastGrpId, priority, useEtoM);
+  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useEtoM);
   pcid->cproxy=pairCalculatorProxy;
+  pcid->mCastGrpId=mCastGrpId;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   if(sym)// cheap hack to only do this once 
     mcastInstanceCP=ComlibRegister(multistrat);
@@ -180,7 +180,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
  */
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
   int s2=state/pcid->GrainSize*pcid->GrainSize;
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
@@ -191,7 +191,7 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
 									       chunk, chunk,1);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -200,7 +200,7 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
  */
 CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
   int GrainSize=pcid->GrainSize;
   int s1=state / GrainSize * GrainSize; //column
   int nstates=pcid->nstates;
@@ -219,7 +219,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -230,7 +230,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
  */
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
   int s2=state/pcid->GrainSize*pcid->GrainSize; //row
   int GrainSize=pcid->GrainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
@@ -239,7 +239,7 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 									       s2, s2, 1,
 									       chunk, chunk, 1);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -249,7 +249,7 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
  */
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
   int s1=state/pcid->GrainSize*pcid->GrainSize; //column
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
@@ -261,7 +261,7 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
 					  s1+GrainSize, nstates-GrainSize, GrainSize,
 					  chunk, chunk, 1);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -289,11 +289,11 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
 
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[0]).ckLocalBranch();       
   sectProxy.ckSectionDelegate(mcastGrp);
 
   // send the message to initialize it with the callback and groupid
-  setGredProxy(&sectProxy, pcid->mCastGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+  setGredProxy(&sectProxy, pcid->mCastGrpId[0], cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
   return sectProxy;
 }
 
@@ -535,7 +535,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		else
 		  {
 
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();       
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();       
 		    pcid->proxyLNotFrom[chunk].ckSectionDelegate(mcastGrp);
 		  }
 #endif
@@ -551,7 +551,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		  }
 		else
 		  {
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 		    pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
 
 		  }
@@ -585,7 +585,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	      }
 	    else
 	      {
-		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
+		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 		pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
 	      }
 #endif
@@ -735,7 +735,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 	    }
 	  else
 	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch(); 
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 	      pcid->proxyRNotFrom[c].ckSectionDelegate(mcastGrp);
 	    }
 #endif

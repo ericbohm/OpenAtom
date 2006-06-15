@@ -56,9 +56,9 @@ class MapTable
 
   MapTable()
     {
-      availprocs==NULL;
-      maptable==NULL;
-      reverseMap==NULL;
+      availprocs=NULL;
+      maptable=NULL;
+      reverseMap=NULL;
     }
   ~MapTable()
     {

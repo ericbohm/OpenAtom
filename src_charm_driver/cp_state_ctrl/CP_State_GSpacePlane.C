@@ -2573,18 +2573,18 @@ void CP_State_GSpacePlane::ResumeFromSync() {
 
   // reset lambda PC proxies
   CkMulticastMgr *mcastGrp = 
-        CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
+        CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId[thisIndex.y]).ckLocalBranch();         
   for(int chunk=0;chunk<numChunks;chunk++)
     {
       mcastGrp->resetSection(lambdaproxy[chunk]);
       setResultProxy(&lambdaproxy[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
-		     gpairCalcID2.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
+		     gpairCalcID2.mCastGrpId[thisIndex.y],true,CkCallback(CkIndex_Ortho::lbresume(NULL),
 							     orthoProxy));
       if(cp_min_opt==0)
 	{
 	  mcastGrp->resetSection(lambdaproxyother[chunk]);
 	  setResultProxy(&lambdaproxyother[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
-			 gpairCalcID2.mCastGrpId, true,
+			 gpairCalcID2.mCastGrpId[thisIndex.y], true,
 			 CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
 	}
     }
@@ -2605,17 +2605,17 @@ void CP_State_GSpacePlane::syncpsi(){
 //==============================================================================
 
   CkMulticastMgr *mcastGrp = 
-     CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId).ckLocalBranch();         
+     CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId[thisIndex.y]).ckLocalBranch();         
   for(int chunk=0;chunk<numChunks;chunk++)
     {
       mcastGrp->resetSection(psiproxy[chunk]);
-      setResultProxy(&psiproxy[chunk],thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId, 
+      setResultProxy(&psiproxy[chunk],thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId[thisIndex.y], 
                   true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
 
       if(AllPsiExpected>1){
 	mcastGrp->resetSection(psiproxyother[chunk]);
 	setResultProxy(&psiproxyother[chunk], thisIndex.x, gpairCalcID1.GrainSize, 
-		       gpairCalcID1.mCastGrpId,true,CkCallback(CkIndex_Ortho::lbresume(NULL),
+		       gpairCalcID1.mCastGrpId[thisIndex.y],true,CkCallback(CkIndex_Ortho::lbresume(NULL),
 							       orthoProxy));
       }//endif
     }//endfor
