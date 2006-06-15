@@ -85,11 +85,11 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			     int _nstates, int _nchareG,  int _grainsize, CmiBool _flag, 
 			     int _nplanes,  double *_lines_per_chareG, 
 			     double *_pts_per_chareG, int _scalc_per_plane,  
-			     int _planes_per_pe, int _numChunks) : 
+			     int _planes_per_pe, int _numChunksA, int _numChunksS) : 
   max_states(_nstates), nchareG(_nchareG),  
   grainsize(_grainsize), symmetric(_flag), max_planes(_nplanes), 
   lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
-  scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), numChunks(_numChunks)
+  scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), numChunksAsym(_numChunksA), numChunksSym(_numChunksS)
 { 
 
   int scobjs_per_pe, rem;
@@ -107,17 +107,17 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
     {
       for(int i=1; i<=max_states/grainsize; i++)
 	lesser_scalc += i;
-      scobjs_per_pe = lesser_scalc*nchareG*numChunks/availprocs->count();
-      rem = lesser_scalc*nchareG*numChunks % availprocs->count();
+      scobjs_per_pe = lesser_scalc*nchareG*numChunksSym/availprocs->count();
+      rem = lesser_scalc*nchareG*numChunksSym % availprocs->count();
       if(rem!=0)
 	scobjs_per_pe+=1;
-      //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
+      //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksSym, rem);
 			
       for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-	for(int newdim=0; newdim<numChunks; newdim++)
+	for(int newdim=0; newdim<numChunksSym; newdim++)
 	  for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 	    for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
-	      //for(int newdim=0; newdim<numChunks; newdim++)
+	      //for(int newdim=0; newdim<numChunksSym; newdim++)
 	      for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 		{
 		  CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
@@ -161,15 +161,15 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
     }
   else
     {
-      scobjs_per_pe = scalc_per_plane*nchareG*numChunks/availprocs->count();
-      rem = scalc_per_plane*nchareG*numChunks % availprocs->count();
+      scobjs_per_pe = scalc_per_plane*nchareG*numChunksAsym/availprocs->count();
+      rem = scalc_per_plane*nchareG*numChunksAsym % availprocs->count();
       if(rem!=0)
 	scobjs_per_pe+=1;
 
-      //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunks, rem);
+      //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
 			
       for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-	for(int newdim=0; newdim<numChunks; newdim++)
+	for(int newdim=0; newdim<numChunksAsym; newdim++)
 	  for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 	    for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
 	      for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)

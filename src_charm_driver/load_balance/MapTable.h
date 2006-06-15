@@ -128,14 +128,15 @@ class SCalcMapTable : public MapTable
   double *pts_per_chareG;
   int scalc_per_plane;
   int planes_per_pe;
-  int numChunks;
+  int numChunksAsym;
+  int numChunksSym;
   double totalload;
     
  public:
     SCalcMapTable(CkHashtableT <intdual, int> *_map, PeList *_availprocs, int _nstates, 
 	     int _nchareG,  int gs, CmiBool _flag, int _nplanes,
 	     double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,
-	     int _planes_per_pe, int _numChunks);
+	     int _planes_per_pe, int _numChunksA, int _numChunksS);
 
   void dump()
     {

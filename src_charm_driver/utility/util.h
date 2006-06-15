@@ -219,7 +219,10 @@ class Config {
 	int gBucketSize;
 	int numGrains;
 	int numChunks;
+	int numChunksSym;
+	int numChunksAsym;
 	int blockSize;
+	int prioBW;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];
 	void print(char *fname_in);
 	static void readConfig(const char *, Config &,int,int,int,int,int,int,int);

@@ -1378,6 +1378,9 @@ void Config::print(char *fname_in) {
      fprintf(fp, "scalc_per_plane: %d\n", scalc_per_plane);
      fprintf(fp, "Rstates_per_pe: %d\n", Rstates_per_pe);
      fprintf(fp,"numChunks: %d\n",numChunks);
+     fprintf(fp,"prioBW: %d\n",prioBW);
+     fprintf(fp,"numChunksSym: %d\n",numChunksSym);
+     fprintf(fp,"numChunksAsym: %d\n",numChunksAsym);
      fprintf(fp,"gStreamPeriod: %g\n",gStreamPeriod);
      fprintf(fp,"rStreamPeriod: %g\n",rStreamPeriod);
      fprintf(fp,"gBucketSize: %d\n",gBucketSize);
@@ -1471,6 +1474,8 @@ void Config::readConfig(const char* fileName, Config &config,
     config.gBucketSize         = 5;
     config.rBucketSize         = 5;
     config.numChunks            = 1;
+    config.numChunksSym            = 1;
+    config.numChunksAsym            = 1;
     strcpy(config.dataPath,"./");
 
 //===================================================================================
@@ -1596,6 +1601,12 @@ void Config::readConfig(const char* fileName, Config &config,
             config.Rstates_per_pe = atoi(parameterValue);
 	else if (!strcmp(parameterName, "numChunks"))
             config.numChunks = atoi(parameterValue);
+	else if (!strcmp(parameterName, "numChunksSym"))
+            config.numChunksSym = atoi(parameterValue);
+	else if (!strcmp(parameterName, "numChunksAsym"))
+            config.numChunksAsym = atoi(parameterValue);
+	else if (!strcmp(parameterName, "prioBW"))
+            config.prioBW = atoi(parameterValue);
         else if (!strcmp(parameterName, "gExpandFact")){
                sscanf(parameterValue,"%lg",&(config.gExpandFact));
                }
@@ -1645,6 +1656,12 @@ void Config::readConfig(const char* fileName, Config &config,
 
 //===================================================================================
 //come up with sane values if the user didn't bother to try
+    if(config.numChunks>config.numChunksSym)
+      config.numChunksSym=config.numChunks;
+
+    if(config.numChunks>config.numChunksAsym)
+      config.numChunksAsym=config.numChunks;
+
     config.guesstimateParms(natm_nl);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
@@ -1693,6 +1710,8 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.RpesPerState,"RpesPerState;",0);
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
     rangeExit(config.numChunks,"numChunks;",0);
+    rangeExit(config.numChunksAsym,"numChunksAsym;",0);
+    rangeExit(config.numChunksSym,"numChunksSym;",0);
 
 //===================================================================================
 // Consistency Checks on the input

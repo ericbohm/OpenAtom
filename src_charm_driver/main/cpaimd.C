@@ -470,7 +470,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
-		 config.scalc_per_plane, planes_per_pe, config.numChunks);
+		 config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
   double newtime=CmiWallTimer();
   CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
@@ -478,7 +478,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   availGlob->reset();
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunks);
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
   CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
@@ -497,7 +497,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     for(int i=0; i< nchareG ;i++)
       mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs));
    //symmetric AKA Psi
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunks, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles);
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles);
 
     CkArrayIndex2D myindex(0, 0);
 
@@ -508,7 +508,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs));
 
     //asymmetric AKA Lambda AKA Gamma
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, config.numChunks, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, config.numChunksAsym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles);
 
 //============================================================================ 
    }//end routine
@@ -544,7 +544,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	{
 
 	  int numG=config.nchareG *  config.nstates;
-	  int numCalc=config.nchareG  * config.scalc_per_plane * config.numChunks;
+	  int numCalc=config.nchareG  * config.scalc_per_plane * config.numChunksAsym;
 	  CkArrayIndexMax *gchares = new CkArrayIndexMax[numG];
 	  int index=0;
 	  for (i = 0; i < config.nstates; i++) 
@@ -558,7 +558,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	  for (i = 0; i < config.nchareG; i++) 
 	    for (j = 0; j < calcs; j++) 
 	      for (k = 0; k < calcs; k++) 
-		for (l = 0; l < config.numChunks; l++) {
+		for (l = 0; l < config.numChunksAsym; l++) {
 		  CkArrayIndex4D idx4d(i,j,k,l);
 		  asymcalcchares[index++] = idx4d;
 		}//endfor
@@ -577,12 +577,12 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	    }//endfor
 	  index=0;
 	  int numSymCalc= calcs*(calcs+1)/2;       // N(N+1)/2
-	  numCalc=config.nchareG  * numSymCalc * config.numChunks;
+	  numCalc=config.nchareG  * numSymCalc * config.numChunksSym;
 	  CkArrayIndexMax *symcalcchares =  new CkArrayIndexMax[numCalc];
 	  for (i = 0; i < config.nchareG; i++) 
 	    for (j = 0; j < calcs; j++) 
 	      for (k = j; k < calcs; k++) 
-		for (l = 0; l < config.numChunks; l++) {
+		for (l = 0; l < config.numChunksSym; l++) {
 		  CkArrayIndex4D idx4d(i,j,k,l);
 		  symcalcchares[index++] = idx4d;
 		}//endfor

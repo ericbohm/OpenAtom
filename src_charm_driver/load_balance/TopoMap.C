@@ -403,7 +403,7 @@ int SCalcMap::procNum(int hdl, const CkArrayIndex &idx){
 void SCalcMap::makemap(){
 
   if(symmetric){
-    for(int z= 0; z<numChunks; z++)
+    for(int z= 0; z<config.numChunksSym; z++)
     for(int numX = 0; numX < nchareG; numX++){
       for (int s1 = 0; s1 < max_states; s1 += gs) {
 	for (int s2 = s1; s2 < max_states; s2 += gs) {
@@ -420,7 +420,7 @@ void SCalcMap::makemap(){
 
   }else{
 
-    for(int z= 0; z<numChunks; z++)
+    for(int z= 0; z<config.numChunksAsym; z++)
       for(int numX = 0; numX < nchareG; numX++){
 	  for (int s1 = 0; s1 < max_states; s1 += gs) {
 	      for (int s2 = 0; s2 < max_states; s2 += gs) {
@@ -477,7 +477,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 
     if(totalload <= 0.0) { 
       for(w = 0; w < numChareG; w++) {
-      for(z = 0; z< numChunks; z++ )
+      for(z = 0; z< config.numChunksAsym; z++ )
 	for(x = 0; x < max_states; x += gs) {
 	  if (symmetric){
 	    y = x;
@@ -501,7 +501,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
     int pe = 0;
     
     for(w = 0; w < numChareG; w ++) {
-    for(z= 0; z<numChunks; z++)
+    for(z= 0; z<config.numChunksSym; z++)
       for(x = 0; x < max_states; x += gs){
 	if (symmetric){
 	  y = x;
@@ -594,7 +594,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
     int pe = 0;
     
     for(w = 0; w < numChareG; w ++)  
-      for(z= 0; z<numChunks; z++)
+      for(z= 0; z<config.numChunksSym; z++)
 	for(x = 0; x < max_states; x += gs) {
 	if (symmetric)
 	  y = x;
