@@ -161,6 +161,7 @@ class Config {
         int numData;     //determined by piny : nPacked = # of non-zero g-space pts
         int nchareG;     //determined by piny  
         int nchareRhoG;  //determined by piny 
+	int PCCollectTiles;
 	int sGrainSize;
 	int orthoGrainSize;
 	int rhoGHelpers;

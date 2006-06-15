@@ -148,7 +148,9 @@
  * Here we are sending the transformed Psi, which is necessarily
  * numpoints in size.  Therefore the reduction requires stitching of
  * blocks while summing within a block to assemble the entire g-chare
- * matrix of points.
+ * matrix of points.  In practice this is just one big reduction with
+ * the userfield used to indicate the chunk number so gspace can lay
+ * the results out where they belong.
  *
  * NOTE: The magic number 2 appears in 2 contexts.  Either we have
  * twice as many inputs in the non diagonal elements of the matrix.
@@ -199,7 +201,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -214,6 +216,7 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
   orthoGrainSize=_orthoGrainSize;
+  collectAllTiles=_collectTiles;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -638,10 +641,6 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   // do the slicing and dicing to send bits to Ortho
   contributeSubTiles(outData);
-  //  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-  // mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, sumMatrixDoubleType, cookie, cb);
-  //mcastGrp->contribute(grainSize*grainSize*sizeof(double), outData, CkReduction::sum_double, cookie, cb);
-
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -758,36 +757,53 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   actionType=msg->actionType;
   bool unitcoef = false;
   int numOrtho=grainSize/orthoGrainSize;
+
+  // find our tile indices within this sGrain
   int orthoX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
   int orthoY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
+
   if(matrix2==NULL||size2<1) 
     {
       unitcoef = true;
     }
 
-  int  index = thisIndex.y*numStates + thisIndex.x;
 
-  if(!symmetric)
-    index = thisIndex.x*numStates + thisIndex.y;
   int matrixSize=grainSize*grainSize;
+
   //ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
 
   double *amatrix=NULL;
   double *amatrix2=matrix2;  // may be overridden later
-  
+
+  // default DGEMM for non streaming comp case
+  int m_in=numPoints*2;   // rows of op(A)==rows C
+  int n_in=grainSize;     // columns of op(B)==columns C
+  int k_in=grainSize;     // columns op(A) == rows op(B)
+  double betad(0.0);
+
+  // default these to 0, will be set for streaming comp if !collectAllTiles
+  //BTransform=T offsets for C and A matrices
+  int BTCoffset=0;
+  int BTAoffset=0;
+  //BTransform=N offsets for C and A matrices
+  int BNCoffset=0;
+  int BNAoffset=0;
+  //  if(symmetric)
+  //    collectAllTiles=true;
   if(numStates==grainSize)// all at once no malloc
     {
-      amatrix=matrix1+index;  // index is 0 in this case, so this is silly
+      amatrix=matrix1;  // index is 0 in this case, so this is silly
     }
   else if (orthoGrainSize==grainSize||actionType==PSIV)
     { // you were sent the correct section only
       amatrix=matrix1;
     }
-  else
+  else if (collectAllTiles)
     {
 #ifdef _PAIRCALC_DEBUG_
       CkPrintf("[%d %d %d %d %d]: MultiplyResult aggregating numRecd %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecd);
 #endif      
+      
       //do strided copy 
       // stride amatrix by grainSize,
       // stride matrix1 by orthoGrainSize
@@ -823,10 +839,32 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       snprintf(filename,80,"bwinResult1_%d_%d:",orthoX,orthoY);
       dumpMatrixDouble(filename, matrix1, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
-    } //else
+    } //else if collectAllTiles
+  else
+    {  // settings for streaming computation on each tile
+      amatrix=matrix1;
+      if(!unitcoef)
+	amatrix2=matrix2;
+      // fix n_in and k_in 
+      n_in=orthoGrainSize;
+      k_in=orthoGrainSize;
+      if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
+	{
+	  int swap=orthoX;
+	  orthoX=orthoY;
+	  orthoY=swap;
+	}
+      BTCoffset=orthoY * m_in * orthoGrainSize;
+      BTAoffset=orthoX * m_in * orthoGrainSize;
+
+      BNCoffset=orthoX * m_in * orthoGrainSize;
+      BNAoffset=orthoY * m_in * orthoGrainSize;
+
+      betad=1.0;  // need to sum over tiles within orthoY columns
+    }
 
   numOrtho=numOrtho*numOrtho;
-  if(orthoGrainSize==grainSize || numRecd==numOrtho)
+  if(orthoGrainSize==grainSize || numRecd==numOrtho || !collectAllTiles)
     { // we have all the result matrices we need
       // if(cpreduce==section) //could update cookie from multicast
       // we rely on manual resets for this in migration case
@@ -841,29 +879,41 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    }
 	  CkAssert(size==grainSize*grainSize);
 	  //keep the orthoT we just received in matrix1
-	  memcpy(outData, amatrix, size*sizeof(double));
+	  if(!collectAllTiles && orthoGrainSize!=grainSize)
+	    { // copy this tile
+	      int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
+	      if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
+		tileStart=orthoY*orthoGrainSize*grainSize+orthoX*orthoGrainSize;
+	      for(int i=0; i<orthoGrainSize*orthoGrainSize; i+=orthoGrainSize,tileStart+=grainSize)
+		for(int j=0; j<orthoGrainSize; j++)
+		  outData[tileStart+j] = matrix1[i+j];
+	    }
+	  else
+	    {
+	      memcpy(outData, amatrix, size*sizeof(double));
+	    }
 	  // it is safe to reuse this memory 
 	  // normal backward path has no use for outData
 	  // forward path won't be called again until after we're done with outData.
 	}
-      CkAssert(mynewData==NULL);
-      mynewData = new complex[numPoints*grainSize];
-      existsNew=true;
-      bzero(mynewData,numPoints*grainSize* sizeof(complex));
+      if(mynewData==NULL)
+	{
+	  mynewData = new complex[numPoints*grainSize];
+	  existsNew=true;
+	  bzero(mynewData,numPoints*grainSize* sizeof(complex));
+	}
       if((symmetric || !unitcoef) && (thisIndex.x != thisIndex.y)){
 	if(othernewData==NULL)
-	  othernewData = new complex[numPoints*grainSize];
-	bzero(othernewData,numPoints*grainSize* sizeof(complex));
+	  {
+	    othernewData = new complex[numPoints*grainSize];
+	    bzero(othernewData,numPoints*grainSize* sizeof(complex));
+	  }
       }
       else
 	othernewData=NULL;
 
-      int m_in=grainSize;
-      int n_in=numPoints*2;
-      int k_in=grainSize;
       double *mynewDatad= reinterpret_cast <double *> (mynewData);
       double alphad(1.0);
-      double betad(0.0);
       char transform='N';
       char transformT='T';
 
@@ -893,13 +943,17 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    }
 	}
 #endif
+
 #ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
+
+      //first multiply to apply the T or L matrix
+      
       if(symmetric)
-	DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
+	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alphad, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &betad, &(mynewDatad[BNCoffset]), &m_in);
       else
-	DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataLeft, &n_in,  amatrix, &k_in, &betad, mynewDatad, &n_in);
+	DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alphad, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &betad, &(mynewDatad[BTCoffset]), &m_in);
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
@@ -913,8 +967,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
+	  //for off diagonal need to handle the offrow with this multiply
+	  
 	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
-	  DGEMM(&transform, &transformT, &n_in, &m_in, &k_in, &alphad, inDataRight, &n_in,  amatrix, &k_in, &betad, othernewDatad, &n_in);
+	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alphad, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &betad, &(BTCoffset[othernewDatad]), &m_in);
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(250, StartTime, CmiWallTimer());
 #endif
@@ -927,6 +983,14 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
       if(!unitcoef){ // CG non minimization case  GAMMA
+
+	// output modified by subtracting an application of orthoT
+
+	// TODO: figure out if this can be streamed, the beta=0 on off
+	// diagonal looks like a sticky correctness killer
+
+	// for now, force no streaming "all matrixes arrived" condition
+	CkAssert(collectAllTiles);
 	// C = alpha*A*B + beta*C
 	// C= -1 * inRight * orthoT + C
 	double *othernewDatad;
@@ -942,8 +1006,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  othernewDatad=mynewDatad;
 	}//endif
 
-	DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alphad, inDataRight, 
-	      &n_in,  amatrix2, &k_in, &betad, othernewDatad, &n_in);
+
+
+	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alphad, &(inDataRight[BNAoffset]), 
+	      &m_in,  amatrix2, &k_in, &betad, &(othernewDatad[BNCoffset]), &m_in);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
 	dumpMatrixComplex("bwg2modata",othernewData,grainSize,numPoints);
@@ -957,7 +1023,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifdef _PAIRCALC_VALID_OUT_
       CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
 #endif
+    }
 
+  if(orthoGrainSize==grainSize || numRecd==numOrtho) // we have all the results
+    {
       sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
       //collapse this into 1 flag
       sigmsg->otherdata= 

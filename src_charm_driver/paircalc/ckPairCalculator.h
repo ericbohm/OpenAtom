@@ -216,7 +216,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -255,6 +255,8 @@ class PairCalculator: public CBase_PairCalculator {
   bool symmetric;            //! if true, one triangle is missing
   bool conserveMemory;       //! free up matrices when not in use
   bool lbpaircalc;           //! allow migration 
+  bool collectAllTiles;      //! If true, don't stream compute on tiles in the backward path.
+   
   redtypes cpreduce;         //! which reducer we're using (defunct)
   CkArrayID cb_aid;          //! bw path callback array ID 
   int cb_ep;                 //! bw path callback entry point 
@@ -287,6 +289,7 @@ class PairCalculator: public CBase_PairCalculator {
 
   CkCallback *orthoCB;             //! forward path callbacks
   CkSectionInfo *orthoCookies;      //! forward path reduction cookie 
+
 };
 
 //forward declaration
