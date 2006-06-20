@@ -1343,6 +1343,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useCommlib: %d\n",useCommlib);
      fprintf(fp,"usePairEtoM: %d\n",usePairEtoM);
      fprintf(fp,"PCCollectTiles: %d\n",PCCollectTiles);
+     fprintf(fp,"PCdelayBWSend: %d\n",PCdelayBWSend);
+     fprintf(fp,"PCstreamBWout: %d\n",PCstreamBWout);
      fprintf(fp,"useGHartInsRhoRP: %d\n", useGHartInsRhoRP);
      fprintf(fp,"useGIns0RhoRP: %d\n", useGIns0RhoRP);
      fprintf(fp,"useGIns1RhoRP: %d\n", useGIns1RhoRP);
@@ -1430,7 +1432,10 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useCommlibMulticast  = 1;
     config.useCommlib           = 1;
     config.usePairEtoM           = 0;
+
     config.PCCollectTiles       = 1;
+    config.PCstreamBWout       = 0;
+    config.PCdelayBWSend       = 1;
     config.useGHartInsRhoRP	= config.useCommlib;
     config.useGIns0RhoRP	= config.useCommlib;
     config.useGIns1RhoRP	= config.useCommlib;
@@ -1511,6 +1516,10 @@ void Config::readConfig(const char* fileName, Config &config,
             config.usePairEtoM = atoi(parameterValue);
         else if (!strcmp(parameterName, "PCCollectTiles"))
             config.PCCollectTiles = atoi(parameterValue);
+        else if (!strcmp(parameterName, "PCdelayBWSend"))
+            config.PCdelayBWSend = atoi(parameterValue);
+        else if (!strcmp(parameterName, "PCstreamBWout"))
+            config.PCstreamBWout = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGHartInsRhoRP"))
             config.useGHartInsRhoRP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGIns0RhoRP"))
@@ -1699,6 +1708,8 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.useCommlib,"useCommlib",1);
     rangeExit(config.usePairEtoM,"usePairEtoM",1);
     rangeExit(config.PCCollectTiles,"PCCollectTiles",1);
+    rangeExit(config.PCdelayBWSend,"PCdelayBWSend",1);    
+    rangeExit(config.PCstreamBWout,"PCstreamBWout",1);
     rangeExit(config.doublePack,"doublePack",1);
     rangeExit(config.conserveMemory,"conserveMemory",1);
     rangeExit(config.fftprogresssplit,"fftprogresssplit",0);

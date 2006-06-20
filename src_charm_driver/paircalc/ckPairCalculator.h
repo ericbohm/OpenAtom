@@ -216,7 +216,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -234,6 +234,7 @@ class PairCalculator: public CBase_PairCalculator {
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
   void sendBWResult(sendBWsignalMsg *msg);
+  void sendBWResultColumn(bool other, int startGrain, int endGrain);
   void multiplyResult(multiplyResultMsg *msg);
   void multiplyPsiV();
   void multiplyResultI(multiplyResultMsg *msg);
@@ -267,6 +268,9 @@ class PairCalculator: public CBase_PairCalculator {
   bool existsNew;            //! newData allocated
   bool resumed;              //! have resumed from load balancing
 
+  bool PCstreamBWout;        //! stream output from BW path       
+  bool PCdelayBWSend;        //! use priority to delay BW output 
+
   complex *mynewData;        //! results of bw multiply
   complex *othernewData;     //! results of sym off diagonal multiply,
                              //! or the C=-1 *inRight* orthoT +c in dynamics
@@ -290,6 +294,10 @@ class PairCalculator: public CBase_PairCalculator {
 
   CkCallback *orthoCB;             //! forward path callbacks
   CkSectionInfo *orthoCookies;      //! forward path reduction cookie 
+  int *columnCount;                  //! count of processed rows in BW
+				    // by column 
+  int *columnCountOther;             //! count of processed rows in BW
+				    //by column
 
 };
 

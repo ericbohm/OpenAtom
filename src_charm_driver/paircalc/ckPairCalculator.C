@@ -201,7 +201,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -215,6 +215,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   this->cb_aid = cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
+  PCstreamBWout=_PCstreamBWout;
+  PCdelayBWSend=_PCdelayBWSend;
   orthoGrainSize=_orthoGrainSize;
   collectAllTiles=_collectTiles;
   existsLeft=false;
@@ -242,10 +244,23 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   resultCookies=NULL;
   otherResultCookies=NULL;
   resultCookies=new CkSectionInfo[grainSize];
-  int numOrtho=grainSize/orthoGrainSize;
-  numOrtho=numOrtho*numOrtho;
+  int numOrthoCol=grainSize/orthoGrainSize;
+  int numOrtho=numOrthoCol*numOrthoCol;
   orthoCookies=new CkSectionInfo[numOrtho];
   orthoCB=new CkCallback[numOrtho];
+  if(PCstreamBWout && !collectAllTiles) 
+    {
+      columnCount= new int[numOrthoCol];
+      columnCountOther= new int[numOrthoCol];
+      bzero(columnCount, sizeof(int) * numOrthoCol);
+      bzero(columnCountOther, sizeof(int) * numOrthoCol);
+    }
+  else
+    {
+      columnCountOther=NULL;
+      columnCount=NULL;
+    }
+    
   if(thisIndex.x != thisIndex.y)  
     // we don't actually use these in the asymmetric minimization case
     otherResultCookies=new CkSectionInfo[grainSize];
@@ -279,8 +294,10 @@ PairCalculator::pup(PUP::er &p)
   p|rck;
   p|actionType;
   p|orthoGrainSize;
-  int numOrtho=grainSize/orthoGrainSize;
-  numOrtho=numOrtho*numOrtho;
+  p|PCstreamBWout;
+  p|PCdelayBWSend;
+  int numOrthoCol=grainSize/orthoGrainSize;
+  int numOrtho=numOrthoCol*numOrthoCol;
   if (p.isUnpacking()) 
   {
       mynewData=NULL;
@@ -304,6 +321,12 @@ PairCalculator::pup(PUP::er &p)
 	  inDataRight=NULL;
       orthoCookies= new CkSectionInfo[numOrtho];
       orthoCB= new CkCallback[numOrtho];
+      if(PCstreamBWout && !collectAllTiles) 
+	{
+	  columnCount= new int[numOrthoCol];
+	  columnCountOther= new int[numOrthoCol];
+
+	}
 
   }
   int i;
@@ -320,6 +343,11 @@ PairCalculator::pup(PUP::er &p)
     p(inDataRight, numExpected* numPoints * 2);
   PUParray(p,orthoCookies,numOrtho);
   PUParray(p,orthoCB,numOrtho);
+  if(PCstreamBWout && !collectAllTiles) 
+    {
+      PUParray(p,columnCount,numOrthoCol);
+      PUParray(p,columnCountOther,numOrthoCol);
+    }
 #ifdef _PAIRCALC_DEBUG_
   if (p.isUnpacking())
     {
@@ -758,6 +786,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   actionType=msg->actionType;
   bool unitcoef = false;
   int numOrtho=grainSize/orthoGrainSize;
+  int numOrthoCol=numOrtho;
 
   // find our tile indices within this sGrain
   int orthoX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
@@ -961,9 +990,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
       if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
 	{
-	  //#ifdef CMK_VERSION_BLUEGENE
-	  CmiNetworkProgressAfter(1);
-	  //#endif
+	  CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
@@ -1007,8 +1034,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  othernewDatad=mynewDatad;
 	}//endif
 
-
-
+	CmiNetworkProgress();
 	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alphad, &(inDataRight[BNAoffset]), 
 	      &m_in,  amatrix2, &k_in, &betad, &(othernewDatad[BNCoffset]), &m_in);
 
@@ -1026,15 +1052,84 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
     }
 
-  if(orthoGrainSize==grainSize || numRecd==numOrtho) // we have all the results
+
+  if(PCstreamBWout && !collectAllTiles)  // send results which are
+					// complete and not yet sent
+    
     {
-      sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
+      // not supported in dynamics until we figure out to stream that
+      // computation.
+      
+      // Check to see if this column is  complete, if so send it.
+      
+      
+      // symmetric uses BNCoffset on newData for diagonal.      
+      // symmetric also BTCoffset on otherNewData for off diagonal.
+      
+      // asymmetric uses BTC offset on newData
+      int orthoXgrain=orthoX*orthoGrainSize;
+      int orthoYgrain=orthoY*orthoGrainSize;
+      if(symmetric)
+	{
+	  if(++columnCount[orthoX]==numOrthoCol) // BNC
+	    {
+	      // send orthoX in newData
+	      sendBWResultColumn(false, orthoXgrain, orthoXgrain+orthoGrainSize);
+	    }
+
+	}
+      else //asymm
+	{
+	  if(++columnCount[orthoY]==numOrthoCol) // BTC 
+	    {
+	      //send orthoY in newdata
+	      sendBWResultColumn(false, orthoYgrain, orthoYgrain+orthoGrainSize);
+	    }
+	}
+      if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
+	if(++columnCountOther[orthoY]==numOrthoCol) // BTC
+	  {
+	    //send orthoY in otherNewData
+	      sendBWResultColumn(true, orthoYgrain, orthoYgrain+orthoGrainSize);
+	  }
+
+
+      // this could be refined to track an array of completed columns
+      // and send them in some grouping scheme
+
+      if(numRecd==numOrtho)
+	{ //all done clean up after ourselves
+	  delete [] mynewData;
+	  mynewData=NULL;
+	  existsNew=false;
+	  if(othernewData!=NULL)
+	    delete [] othernewData;
+	  othernewData=NULL;
+	  bzero(columnCount, sizeof(int) * numOrthoCol);
+	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
+	  numRecd=0;
+	}
+      
+      
+    }
+  else if(orthoGrainSize==grainSize || numRecd==numOrtho) // we have all the results
+    {
+      
+      sendBWsignalMsg *sigmsg;
+      if(PCdelayBWSend)
+	sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+      else
+	sigmsg= new  sendBWsignalMsg;
       //collapse this into 1 flag
       sigmsg->otherdata= 
 	((!unitcoef || symmetric) &&(thisIndex.x !=thisIndex.y)) ? true : false;
 
-      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower than non prioritized
+      if(PCdelayBWSend)
+	{
+	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+					    // than non prioritized
+	}
       thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
       //sendBWResult(sigmsg);
       if(conserveMemory)
@@ -1064,6 +1159,63 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       numRecd=0;
     }
 }
+
+/**
+ * Send the result for this column
+ */
+
+void
+PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain  )
+{
+
+
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+  CkPrintf("[%d %d %d %d %d]: sendBWResultColumn with actionType %d startGrain %d sendGrain %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType, startGrain, endGrain);
+#endif
+
+  // Now we have results in mynewData and if(otherData) othernewData
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  int cp_entry=cb_ep;
+  if(actionType==PSIV)
+    {
+      cp_entry= cb_ep_tol;
+    }
+  if(otherdata){  // we have this othernewdata issue for the symmetric case
+    // and the asymmetric dynamic case
+    // for the off diagonal elements
+    CkAssert(othernewData!=NULL);
+    for(int j=startGrain;j<endGrain;j++)
+      {
+	//this callback creation could be obviated by keeping an
+	//array of callbacks, not clearly worth doing
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
+#endif
+
+	int outOffset=thisIndex.z;
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+
+
+      }
+  }
+  else
+    {
+      CkAssert(mynewData!=NULL);
+      for(int j=startGrain;j<endGrain;j++) //mynewdata
+	{
+	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	  CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+	  int outOffset=thisIndex.z;
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  
+	}
+    }
+}
+
+
 
 // entry method to allow us to delay this outbound communication
 // to minimize brain dead BG/L interference we have a signal to prioritize this
