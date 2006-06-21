@@ -90,6 +90,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================ 
 #include <math.h>
+#include <unistd.h>
 #include "charm++.h"
 #include "ckarray.h"
 #include "util.h"
@@ -245,12 +246,41 @@ main::main(CkArgMsg *msg) {
     }//endif
     if(msg->argc >3 && msg->argv[3][0] == 't')
       {
-	CkPrintf("  Tidy mode, running tidy\n");
+
 	//get system name
 	char tidyphysfname[80];
-	strncpy(tidyphysfname,"./tidy ",7);
-	strncat(tidyphysfname,msg->argv[2],strchr(msg->argv[2],'.') - msg->argv[2]);
+	bzero(tidyphysfname,80);
+	char simfname[80];
+	bzero(simfname,80);
+	char *lastslash=strrchr(msg->argv[2],'/');
+
+	if(lastslash==NULL)
+	  {
+	    lastslash=msg->argv[2];
+	    strncat(tidyphysfname,"./tidy ",8);
+	  }
+	else
+	  {
+	    strncat(tidyphysfname,msg->argv[2],lastslash-msg->argv[2]);
+	    strncpy(simfname,tidyphysfname,80);
+	    strncat(tidyphysfname,"/tidy ",8);
+	    strncat(simfname,"/",2);
+	    lastslash++;
+	  }
+	strncat(tidyphysfname,lastslash,strchr(msg->argv[2],'.') - lastslash);
+	strncat(simfname,lastslash,strchr(msg->argv[2],'.') - lastslash);
+	CkPrintf("  Tidy mode, running %s\n",tidyphysfname);
+	unlink(simfname);
 	system(tidyphysfname);
+	strncpy(tidyphysfname,simfname,80);
+	strncat(tidyphysfname,".coords_out",20);
+	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
+	unlink(tidyphysfname);
+	strncpy(tidyphysfname,simfname,80);
+	strncat(tidyphysfname,".confp",20);
+	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
+	unlink(tidyphysfname);
+	sleep(1);
       }
     CkPrintf("\n================================================\n");
     CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase \n");

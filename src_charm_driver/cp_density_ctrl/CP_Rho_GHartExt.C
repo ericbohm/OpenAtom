@@ -340,6 +340,7 @@ void getSplitDecomp(int *istrt_ret,int *iend_ret,int *n_ret,
    if(idiv>=ndiv || ntot< ndiv){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Incorrect input to RhoGHart collection creator.\n");
+     CkPrintf("idiv %d ndiv %d, ntot %d.\n");
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
    }//endif
