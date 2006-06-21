@@ -243,13 +243,22 @@ main::main(CkArgMsg *msg) {
     if (msg->argc < 3) {
       CkAbort("Usage: cpaimd.x cpaimd_config pinysystem.input");
     }//endif
-
+    if(msg->argc >3 && msg->argv[3][0] == 't')
+      {
+	CkPrintf("  Tidy mode, running tidy\n");
+	//get system name
+	char tidyphysfname[80];
+	strncpy(tidyphysfname,"./tidy ",7);
+	strncat(tidyphysfname,msg->argv[2],strchr(msg->argv[2],'.') - msg->argv[2]);
+	system(tidyphysfname);
+      }
     CkPrintf("\n================================================\n");
     CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase \n");
     CkPrintf("---------------------------------------------------\n");
     CkPrintf("  Cpaimd-Charm-Driver running on %d processors. \n", CkNumPes());
     CkPrintf("  Reading Physics input from %s\n",msg->argv[2]);
     CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
+
     CkPrintf("---------------------------------------------------\n\n");
 
 //============================================================================    
