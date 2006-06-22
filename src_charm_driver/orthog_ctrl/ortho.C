@@ -292,9 +292,9 @@ void Ortho::resume(){
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
     if(s1 == s2)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType);
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType,  pairCalcID1.priority+1);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType);
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType, pairCalcID1.priority+1);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -500,7 +500,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   else
     {
       // finish pair calc
-      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy, thisIndex.x, thisIndex.y, 0);
+      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy, thisIndex.x, thisIndex.y, 0, pairCalcID2.priority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -561,7 +561,7 @@ void Ortho::gamma_done(){
     fclose(outfile);
 #endif
 
-    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,thisIndex.x, thisIndex.y, 0);
+    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,thisIndex.x, thisIndex.y, 0,  pairCalcID2.priority+1);
 
 //----------------------------------------------------------------------------
   }// end routine

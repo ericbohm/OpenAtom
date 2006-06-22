@@ -746,24 +746,28 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 
 
 
-void finishPairCalcSection(int n, double *ptr, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType) {
-  finishPairCalcSection2(n, ptr, NULL, sectionProxy, orthoX, orthoY, actionType);
+void finishPairCalcSection(int n, double *ptr, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority) {
+  finishPairCalcSection2(n, ptr, NULL, sectionProxy, orthoX, orthoY, actionType, priority);
 }
 
 
 /* This version uses a section multicast to only send the part of the matrix needed by each section */
-void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType) {
+void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority) {
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("     Calc Finish Mcast 2\n");
 #endif
 
   if(ptr2==NULL){
-    multiplyResultMsg *omsg=new ( n,0,0 ) multiplyResultMsg;
+    multiplyResultMsg *omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
+    *(int*)CkPriorityPtr(omsg) = priority;    
+    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
     omsg->init1(n, ptr1, orthoX, orthoY, actionType);
     sectionProxy.multiplyResult(omsg);
   }
   else {
-    multiplyResultMsg *omsg=new ( n,n,0 ) multiplyResultMsg;
+    multiplyResultMsg *omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
+    *(int*)CkPriorityPtr(omsg) = priority;    
+    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
     sectionProxy.multiplyResult(omsg);
   }

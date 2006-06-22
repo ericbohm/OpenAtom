@@ -178,9 +178,9 @@ void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
-extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType);
+extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
 
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType);
+extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
 
 CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2);
 
