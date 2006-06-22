@@ -292,9 +292,9 @@ void Ortho::resume(){
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
     if(s1 == s2)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType,  pairCalcID1.priority+1);
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType,  0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType, pairCalcID1.priority+1);
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType, 0);
 
 //----------------------------------------------------------------------------
    }//end routine

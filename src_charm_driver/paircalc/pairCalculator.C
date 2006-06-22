@@ -758,16 +758,32 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
 #endif
 
   if(ptr2==NULL){
-    multiplyResultMsg *omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-    *(int*)CkPriorityPtr(omsg) = priority;    
-    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+    multiplyResultMsg *omsg;
+    if(priority>0)
+      {
+	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
+	*(int*)CkPriorityPtr(omsg) = priority;    
+	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+      }
+    else
+      {
+	omsg=new ( n,0,0 ) multiplyResultMsg;
+      }
     omsg->init1(n, ptr1, orthoX, orthoY, actionType);
     sectionProxy.multiplyResult(omsg);
   }
   else {
-    multiplyResultMsg *omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
-    *(int*)CkPriorityPtr(omsg) = priority;    
-    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+    multiplyResultMsg *omsg;
+    if(priority>0)
+      {
+	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
+	*(int*)CkPriorityPtr(omsg) = priority;    
+	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+      }
+    else
+      {
+	omsg=new ( n,n, 0 ) multiplyResultMsg;
+      }
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
     sectionProxy.multiplyResult(omsg);
   }
