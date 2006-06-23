@@ -164,6 +164,7 @@ class Config {
 	int PCdelayBWSend;
 	int PCCollectTiles;
 	int PCstreamBWout;
+	int PCstreamFWblock;
 	int sGrainSize;
 	int orthoGrainSize;
 	int rhoGHelpers;

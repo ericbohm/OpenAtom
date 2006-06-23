@@ -566,10 +566,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   ecount          = 0; //No energies have been received.
 
   numRecvRedPsi   = sim->RCommPkg[thisIndex.y].num_recv_tot;
-  int ourgrain    = thisIndex.x/config.sGrainSize*config.sGrainSize; 
-  if(nstates == config.sGrainSize)
+  int ourgrain    = thisIndex.x/s_grain*s_grain; 
+  if(nstates == s_grain)
       AllPsiExpected=1;
-  else if(ourgrain<(nstates-config.sGrainSize)) // corner has no extras
+  else if(ourgrain<(nstates-s_grain)) // corner has no extras
     AllPsiExpected=2;
   else
     AllPsiExpected=1;
@@ -578,7 +578,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   if(cp_min_opt==0) 
     {    //expect non diagonal column results
-      if(nstates == config.sGrainSize)
+      if(nstates == s_grain)
 	AllLambdaExpected=1;
       else 
 	AllLambdaExpected=2;

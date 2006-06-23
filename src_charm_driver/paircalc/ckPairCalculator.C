@@ -17,17 +17,12 @@
  * reused again throughout each iteration the calculators themselves are   
  * only created once.                                                      
  *                                                                         
- * The elan code is a specialized machine reduction/broadcast which runs   
- * much faster on lemieux, and theoretically on any other elan machine     
- * It operates by one dummy reduction which is used to indicate that all   
- * calculators on a PE machine have reported in.  Then the machine         
- * reduction is triggered.                                                 
  *                                                                         
  * The paircalculator is a 4 dimensional array.  Those dimensions are:     
  *            w: gspace state plane (the second index of the 2D gspace)    
  *            x: coordinate offset within plane (a factor of grainsize)    
  *            y: coordinate offset within plane (a factor of grainsize)    
- *            z: blocksize, unused always 0                                
+ *            z: chunk offset within array of nonzero points
  *       So, for an example grainsize of 64 for a 128x128 problem:         
  *        numStates/grainsize gives us a 2x2 decomposition.                        
  *        1st quadrant ranges from [0,0]   to [63,63]    index [w,0,0,0]   
@@ -111,7 +106,7 @@
  * offset.  So the acceptnew[psi|lambda|vpsi] methods would all need
  * to paste the input of a contribution at the correct offset.  This
  * recalls the old contiguousreducer logic which did that pasting
- * together in its reduction client.  A functionality that is probably
+ * together in its reduction client.  A functionality that is arguably
  * worth resurrection.  Just in a form that can actually be
  * comprehended by people not from planet brainiac.
  *
@@ -151,6 +146,20 @@
  * matrix of points.  In practice this is just one big reduction with
  * the userfield used to indicate the chunk number so gspace can lay
  * the results out where they belong.
+ *
+ * In its current form orthoGrainSize must be an even mod of
+ * sGrainSize. sGrainSize must be an even mod of the number of states.
+ * The former restriction avoids overlap and boundary issues for tiles
+ * between ortho and the calculator.  The former avoids some rather
+ * gnarly issues in the setup of multicasts and reductions. The latter
+ * avoids the necessity of remainder logic and irregularity in the
+ * state decomposition.  Strictly speaking the latter restriction
+ * rules out problems with an prime number of states and diminishes
+ * decomposition flexibility for problems with poorly factorized
+ * numbers of states.  In practice this isn't a problem because their
+ * is enough flexibility in creating the simulation system such that
+ * users can be taught to avoid creating such systems.
+ *
  *
  * NOTE: The magic number 2 appears in 2 contexts.  Either we have
  * twice as many inputs in the non diagonal elements of the matrix.
@@ -201,7 +210,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -219,15 +228,21 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   PCdelayBWSend=_PCdelayBWSend;
   orthoGrainSize=_orthoGrainSize;
   collectAllTiles=_collectTiles;
+  streamFW=_streamFW;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
   existsNew=false;
   numRecd = 0;
+  numRecRight = 0;
+  numRecLeft = 0;
+  streamCaughtR=0;
+  streamCaughtL=0;
   numExpected = grainSize;
   cpreduce=_cpreduce;
   resumed=true;
 
+  touchedTiles=NULL;
   inDataLeft = NULL;
   inDataRight = NULL;
 
@@ -260,7 +275,16 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
       columnCountOther=NULL;
       columnCount=NULL;
     }
-    
+  if(streamFW>0)
+    {
+      LeftOffsets= new int[numExpected];
+      RightOffsets= new int[numExpected];
+      touchedTiles= new int[numOrtho];
+      bzero(touchedTiles,numOrtho*sizeof(int));
+      outTiles = new double *[numOrtho];
+      for(int i=0;i<numOrtho;i++)
+	outTiles[i]= new double[orthoGrainSize*orthoGrainSize];
+    }
   if(thisIndex.x != thisIndex.y)  
     // we don't actually use these in the asymmetric minimization case
     otherResultCookies=new CkSectionInfo[grainSize];
@@ -386,6 +410,7 @@ PairCalculator::~PairCalculator()
   existsRight=false;
   existsNew=false;
   existsOut=false;
+  CkAbort("paircalc pup needs fw streaming work");
   if(orthoCookies!=NULL)
     delete [] orthoCookies;
   if(orthoCB!=NULL)
@@ -495,29 +520,25 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 	bzero(inDataLeft,numExpected*numPoints*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpected,numPoints);
-
 #endif
+	if(streamFW>0)
+	  {
+	    numRecLeft=0;
+	    streamCaughtL=0;
+	    allCaughtLeft=new double[numExpected*numPoints*2];
+	  }
+
       }
     CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
     memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+    if(streamFW>0)
+      { //record offset, copy data
+	memcpy(&(allCaughtLeft[numRecLeft *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	LeftOffsets[numRecLeft++]=offset;
+      }
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
-#endif
-#ifdef _PAIRCALC_DEBUG_STUPID_PARANOID_
-    CkPrintf("copying in \n");
-    double re;
-    double im;
-    for(int i=0;i<numPoints;i++)
-      {
-	re=msg->points[i].re;
-	im=msg->points[i].im;
-	CkPrintf("CL %d %g %g\n",i,re,im);
-	if(fabs(re)>0.0)
-	  CkAssert(fabs(re)>1.0e-300);
-	if(fabs(im)>0.0)
-	  CkAssert(fabs(im)>1.0e-300);
-      }
 #endif
   }
   else {
@@ -532,10 +553,23 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpected,numPoints);
 #endif
+	if(streamFW>0)
+	  {
+	    numRecRight=0;
+	    streamCaughtR=0;
+	    allCaughtRight=new double[numExpected*numPoints*2];
+	  }
       }
     CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
     memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+    if(streamFW>0)
+      { //record offset, copy data
+	memcpy(&(allCaughtRight[numRecRight *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	RightOffsets[numRecRight++]=offset;
+	streamCaughtR++;
+      }
+
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,offset,numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
 #endif
@@ -565,8 +599,13 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   /*
    * Once we have accumulated all rows  we gemm it.
    */
-
-  if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) 
+  if((streamFW>0) && (((streamCaughtL >= streamFW) && (symmetric || (streamCaughtR >= streamFW))) || (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))))
+    {
+	multiplyForwardStream(msg->flag_dp);	
+	CkAssert(!msg->doPsiV);
+	// not yet supported for dynamics
+    }
+  else if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) 
     {
     if(!msg->doPsiV)
       {  //normal behavior
@@ -579,8 +618,165 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 	multiplyPsiV();
       }
     }
+  
   //nokeep message not deleted
 }
+
+/**
+ * Forward path multiply.  Streaming the computation by computing on
+ * chunks as they arrive.
+ *
+ * One could naively capture the idea as:
+
+ * (streamCaughtR X numPoints) * (numPoints X streamCaughtL) = (streamCaughtR X streamCaughtL)
+ * 
+ *
+ * But we actually need to multiply previous R by new L, previous L by
+ * new R new R by new L to generate all values in the solution matrix.
+ * This can be accomplished in exactly 2 multiplies.
+ *
+ * New is appended to old to create AllCaught.
+ *
+ * In the 2 multiplies the new * new must only happen once.  So we use
+ * allcaught in first multiply and oldcaught in second.
+ *
+ * Asymmetric is: 
+ *
+ * (allCaughtR X numPoints) * (numPoints X streamCaughtL) =
+ * (allCaughtR X streamCaughtL)
+ * AND
+ * (streamCaughtR X numPoints) * (numPoints X oldCaughtL) =
+ * (streamCaughtR X oldCaughtL) 
+ *
+ * vs the symmetric case which is:
+ * 
+ * (streamCaughtL X numPoints) * (numPoints X allCaughtL) =
+ * (streamCaughtL X allCaughtL) 
+ * AND
+ * (oldCaughtL X numPoints) * (numPoints X streamCaughtL) =
+ * (oldCaughtL X streamCaughtL) 
+ *
+ * So the sizes of the dgemms rise with each hop in the stream.
+ * 
+ * These results must then be copied to the correct rows and columns
+ * in the tile output.  As each tile is filled we can contribute it
+ * and thereby get some streaming output.  This is slightly different
+ * from the backward path because here our stream begins as a trickle
+ * and ends as a river.  Which is still an improvement over the old
+ * mechanism which was just a flood.
+ *
+*/
+void
+PairCalculator::multiplyForwardStream(bool flag_dp)
+{
+  //  CkPrintf("[%d,%d,%d,%d,%d] multi fw stream\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  CkAssert((streamCaughtL >= streamFW) && (symmetric || (streamCaughtR >= streamFW)) || (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)));
+
+  int actualPoints= numPoints*2;
+  char transform='N';
+  char transformT='T';
+  int m_in;              // rows of op(A)==rows C	 
+  int n_in;              // columns of op(B)==columns C 
+  int k_in=actualPoints; // columns op(A) == rows op(B) 
+  int lda=actualPoints;  //leading dimension A
+  int ldb=actualPoints;  //leading dimension B
+  int ldc;               //leading dimension C  <--- n_in
+
+  double alpha=double(1.0);// scale it up by 2
+  if (flag_dp) {
+    alpha=double(2.0);
+  }
+  double beta=double(0.0); // C is unset
+  double *outData1=NULL;
+  double *outData2=NULL;
+  // if asym deal with right by left
+  int oldCaughtLeft=numRecLeft-streamCaughtL;
+  int oldCaughtRight=numRecRight-streamCaughtR;
+  if(!symmetric)
+  {
+
+    // As these multiplies create two different shapes of disjoint results
+    // we'll be saner if we allocate the results in two different arrays
+    
+    //multiply all right with new left
+    m_in= numRecRight;
+    n_in= streamCaughtL;
+    ldc = n_in; 
+    outData1= new double[m_in*n_in];
+    double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
+    DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+
+    //kick off progress before next dgemm
+    CmiNetworkProgress();
+    copyIntoTiles(outData1, outTiles, m_in, n_in, RightOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+    //oldCaught is the same pointer as AllCaught, we just decrease n.
+
+
+    //note: for first multiply there is only new left and new right
+    //multiply new right with old left
+    if(oldCaughtLeft){
+      m_in= streamCaughtR;
+      n_in= oldCaughtLeft;
+      ldc = n_in; 
+
+      // right newTemp is last bit of old
+      double *rightNewTemp = &(allCaughtRight[(oldCaughtRight)*actualPoints]);
+      outData2= new double[m_in*n_in];
+      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+      copyIntoTiles(outData2, outTiles, m_in, n_in, &(RightOffsets[oldCaughtRight]),LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+    }
+
+  }
+  else // in sym there is only left by left
+    {
+      // multiply all left by new left
+      // left newTemp is last bit of old
+      m_in= numRecLeft;
+      n_in= streamCaughtL;
+      ldc = n_in; 
+
+      outData1= new double[m_in*n_in];
+      double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
+      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+      //kick off progress before next dgemm
+      CmiNetworkProgress();
+      copyIntoTiles(outData1, outTiles, m_in, n_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+      // multiply new left by old left
+      if(oldCaughtLeft)
+	{
+	  m_in= streamCaughtL;
+	  n_in= oldCaughtLeft;
+	  ldc = n_in; 
+	  outData2= new double[m_in*n_in];
+	  // oldCaught is the same pointer as Allcaught, we just decrease n.
+	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+	  copyIntoTiles(outData2, outTiles, m_in, n_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+	}
+    }
+
+  // check all touched tiles for completeness, send completed tiles
+  sendTiles();
+  // cleanup
+  if(outData1!=NULL)
+    delete [] outData1;
+  if(outData2!=NULL)
+    delete [] outData2;
+  streamCaughtL=0;
+  streamCaughtR=0;
+  if((numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)))
+    { // we are done
+      numRecLeft= numRecRight=numRecd=0;
+      int numOrtho=grainSize/orthoGrainSize;
+      numOrtho*=numOrtho;
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+      for(int i=0 ; i<numOrtho ; i++)
+	{
+	  CkAssert(touchedTiles[i]==0);
+	}
+#endif
+    }
+}
+
 
 /**
  * Forward path multiply.  
@@ -676,6 +872,38 @@ PairCalculator::multiplyForward(bool flag_dp)
 #endif
 }
 
+
+void
+PairCalculator::sendTiles()
+{
+  int tilesq=orthoGrainSize*orthoGrainSize;
+  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
+  int numOrtho=grainSize/orthoGrainSize;
+  numOrtho*=numOrtho;
+  for(int i=0;i<numOrtho;i++)
+    {
+      if(touchedTiles[i]==tilesq)
+	{
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	  CkPrintf("[%d %d %d %d %d]: contributes %i \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+#endif
+	  mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[i], sumMatrixDoubleType, orthoCookies[i], orthoCB[i]);	  
+	  touchedTiles[i]=0;
+	}
+      else if(touchedTiles[i]>tilesq)
+	{
+	  CkPrintf("tile i has %d vs %d\n",i, touchedTiles[i], tilesq);
+	  CkAbort("invalid large number of tiles touched");
+	}
+      else
+	{
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+	  CkPrintf("[%d %d %d %d %d]: %i not ready with %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i, touchedTiles[i]);
+#endif
+	}
+    }
+}
+
 void
 PairCalculator::contributeSubTiles(double *fullOutput)
 {
@@ -690,13 +918,12 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   dumpMatrixDouble("fullOutput", fullOutput, grainSize, grainSize);
 #endif
-  //tranpose the output first
   
   for(int orthoX=0; orthoX<numOrtho; orthoX++)
     for(int orthoY=0; orthoY<numOrtho; orthoY++)
       {
 	// copy into submatrix, contribute
-	// we need to stride by sGrainSize and copy by orthoGrainSize
+	// we need to stride by grainSize and copy by orthoGrainSize
 	int orthoIndex=orthoX*numOrtho+orthoY;
 	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
 	CkAssert(orthoIndex<numOrtho*numOrtho);
@@ -711,21 +938,8 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 	snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
 	dumpMatrixDouble(filename, outTile, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
-	/* cheap dirty transpose
-	  double *dest= outTile;
-	int chunksize=orthoGrainSize;
-	double tmp;
-	for(int i = 0; i < chunksize; i++)
-	  for(int j = i + 1; j < chunksize; j++){
-	    tmp = dest[i * chunksize + j];
-	    dest[i * chunksize + j] = dest[j*chunksize + i];
-	    dest[j * chunksize + i] = tmp;
-	  }
-	*/
 
 	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
-
-
 
       }
   delete [] outTile;
@@ -806,9 +1020,9 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   double *amatrix2=matrix2;  // may be overridden later
 
   // default DGEMM for non streaming comp case
-  int m_in=numPoints*2;   // rows of op(A)==rows C
-  int n_in=grainSize;     // columns of op(B)==columns C
-  int k_in=grainSize;     // columns op(A) == rows op(B)
+  int m_in=numPoints*2;   // rows of op(A)==rows C	 
+  int n_in=grainSize;     // columns of op(B)==columns C 
+  int k_in=grainSize;     // columns op(A) == rows op(B) 
   double betad(0.0);
 
   // default these to 0, will be set for streaming comp if !collectAllTiles
@@ -1328,6 +1542,30 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
       fprintf(loutfile,"%d %d %.12g %.12g \n",i+xstart,j+ystart,matrix[i*ydim+j].re, matrix[i*ydim+j].im);
   fclose(loutfile);
 }
+
+  void PairCalculator::copyIntoTiles(double *source, double**dest, int sourceRows, int sourceCols, int *offsetsRow, int *offsetsCol, int *touched, int tileSize, int tilesPerRow )
+  
+{
+  
+  // foreach element
+  for(int j=0;j<sourceRows;j++) // x is inner index
+    for(int i=0;i<sourceCols;i++)
+      {
+	int x=offsetsRow[i];
+	int y=offsetsCol[j];
+	int sourceOffset=y*sourceCols+x;
+	double value=source[sourceOffset];
+	int tilex=x/tileSize;
+	int tiley=y/tileSize*tilesPerRow;
+	int tilei=x%tileSize;
+	int tilej=y%tileSize;
+	dest[tiley+tilex][tilej*tileSize+tilei]=value;
+	touched[tiley+tilex]++;
+	//	CkPrintf(" j %d i %d, x %d y %d copy %g into tilex %d tiley %d, offset %d touched %d\n", j,i, x, y, value, tilex, tiley, tilej*tileSize+tilei, touched[tiley+tilex]);
+	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
+      }
+}
+
 
 #include "ckPairCalculator.def.h"
 

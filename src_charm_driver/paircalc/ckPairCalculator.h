@@ -216,7 +216,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -228,6 +228,8 @@ class PairCalculator: public CBase_PairCalculator {
     rck=0;
     AtSync();
   };
+  void multiplyForwardStream(bool flag_dp);
+  void sendTiles();
   void multiplyForward(bool);
   void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
@@ -252,10 +254,32 @@ class PairCalculator: public CBase_PairCalculator {
   int blkSize;               //! number points in gspace plane
   int numStates;             //! total number of states
   int numPoints;             //! number of points in this chunk
-  int numChunks;             //! number of blocks the stateplane is divided into
+  int numChunks;             //! number of blocks the stateplane is
+			     //divided into
+
+  int streamFW;              //! number of rows to accumulate before
+			     //computing
+  
+  int streamCaughtR;          //! number of rows caught so far R stream
+  int streamCaughtL;          //! number of rows caught so far L stream
+  
+  int numRecLeft;           //! number of rows so far total left
+  int numRecRight;          //! number of rows so far total right
+  
+
+  int *LeftOffsets;           //! index numbers of caught stream elements
+  int *RightOffsets;           //! index numbers of caught stream elements
+
+  double **outTiles;         //! in output streaming we populate the
+			     //! tiles directly
+
+  int *touchedTiles;         //! tracker to detect when tiles are full
+  
   bool symmetric;            //! if true, one triangle is missing
   bool conserveMemory;       //! free up matrices when not in use
-  bool lbpaircalc;           //! allow migration 
+  bool lbpaircalc;
+
+
   bool collectAllTiles;      //! If true, don't stream compute on tiles in the backward path.
    
   redtypes cpreduce;         //! which reducer we're using (defunct)
@@ -279,6 +303,10 @@ class PairCalculator: public CBase_PairCalculator {
   double *outData;           //! results of fw multiply
   int actionType;            //! matrix usage control [NORMAL, KEEPORTHO, PSIV]
 
+  double *allCaughtLeft;     //! unordered rows of FW input
+  double *allCaughtRight;    //! unordered rows of FW input
+  
+
   double *inResult1;         //! accumulate ortho or lambda
   double *inResult2;         //! used in gamma calc (non minization)
 
@@ -298,11 +326,24 @@ class PairCalculator: public CBase_PairCalculator {
 				    // by column 
   int *columnCountOther;             //! count of processed rows in BW
 				    //by column
+// copy the results from outdata1 and outdata2 into the tiles
+/**
+ * Iterate through the source array, look up the destination row in
+ * offsetsRow, destination col in offsetsCol
+ *
+ * This will be the destination row and column for the output if the
+ * output were considered as a single matrix.
+ *
+ * Use tileSize to map these values into the destination tile.
+ *
+ */
+  void copyIntoTiles(double *source, double**dest, int sourceRows, int sourceCols, int *offsetsRow, int *offsetsCol, int *touched, int tileSize, int tilesPerRow );
 
 };
 
 //forward declaration
 CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs);
 CkReductionMsg *sumBlockGrain(int nMsg, CkReductionMsg **msgs);
+
 
 #endif

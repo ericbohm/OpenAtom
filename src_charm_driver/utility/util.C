@@ -1345,6 +1345,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"PCCollectTiles: %d\n",PCCollectTiles);
      fprintf(fp,"PCdelayBWSend: %d\n",PCdelayBWSend);
      fprintf(fp,"PCstreamBWout: %d\n",PCstreamBWout);
+     fprintf(fp,"PCstreamFWblock: %d\n",PCstreamFWblock);
      fprintf(fp,"useGHartInsRhoRP: %d\n", useGHartInsRhoRP);
      fprintf(fp,"useGIns0RhoRP: %d\n", useGIns0RhoRP);
      fprintf(fp,"useGIns1RhoRP: %d\n", useGIns1RhoRP);
@@ -1435,6 +1436,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     config.PCCollectTiles       = 1;
     config.PCstreamBWout       = 0;
+    config.PCstreamFWblock       = 0;
     config.PCdelayBWSend       = 1;
     config.useGHartInsRhoRP	= config.useCommlib;
     config.useGIns0RhoRP	= config.useCommlib;
@@ -1520,6 +1522,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.PCdelayBWSend = atoi(parameterValue);
         else if (!strcmp(parameterName, "PCstreamBWout"))
             config.PCstreamBWout = atoi(parameterValue);
+        else if (!strcmp(parameterName, "PCstreamFWblock"))
+            config.PCstreamFWblock = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGHartInsRhoRP"))
             config.useGHartInsRhoRP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGIns0RhoRP"))
