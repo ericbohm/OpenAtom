@@ -1453,14 +1453,14 @@ void Config::readConfig(const char* fileName, Config &config,
     config.numSfDups            = 1;
     config.prioFFTMsg           = 1; 
     config.sfpriority           = 10000000;
-    config.rsfftpriority        = 1000000;
+    config.rsfftpriority        = 1500000;
     config.gsfftpriority        = 1000000;
     config.rsifftpriority       = 100000000;
     config.gsifftpriority       = 200000000;
     config.lambdapriority       = 300000000;
     config.psipriority          = 400000000;
     config.rhorpriority         = 2000000;
-    config.rhogpriority         = 2000000; 
+    config.rhogpriority         = 2500000; 
     config.gExpandFact          = 1.0;
     config.gExpandFactRho       = 1.0;
     config.fftprogresssplit     = 20;
