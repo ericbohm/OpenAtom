@@ -189,6 +189,7 @@ void registersumMatrixDouble(void)
 
 // sum together matrices of doubles
 // possibly faster than sum_double due to minimizing copies
+// and calling CmiNetworkProgress 
 inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 {
   double *ret=(double *)msgs[0]->getData();
@@ -202,6 +203,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
       inmatrix=(double *) msgs[i]->getData();
       for(int d=0;d<size;d++)
 	ret[d]+=inmatrix[d];
+      CmiNetworkProgress();
     }
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
 }
