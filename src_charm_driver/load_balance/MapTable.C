@@ -100,6 +100,8 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   maptable=_map;
   availprocs=_availprocs;
   int srcpe=0,destpe=availprocs->findNext();
+  if(availprocs->count()==0)
+    availprocs->reset();
 
   if(planes_per_pe==0)
     CkAbort("Choose a smaller Gstates_per_pe\n");
@@ -251,7 +253,9 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	//pl, pm, srem, rem);
 	int srcpe=0;
 	int destpe=availprocs->findNext();
-	
+	if(availprocs->count()==0)
+	  availprocs->reset();
+
         for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
         {
                 if(ychunk==(pm-rem)*m)
@@ -314,6 +318,9 @@ RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 	rrsobjs_per_pe += 1;
     }
   int destpe=availprocs->findNext(); 
+  if(availprocs->count()==0)
+    availprocs->reset();
+
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
     {
@@ -418,6 +425,8 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
 	rghobjs_per_pe += 1;
     }
   int destpe=availprocs->findNext();
+  if(availprocs->count()==0)
+    availprocs->reset();
   for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
     {
       if(rem!=0)
