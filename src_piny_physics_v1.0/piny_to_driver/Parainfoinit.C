@@ -455,12 +455,12 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
 
    int *nlines_per_chareG = sim->nlines_per_chareG;
    int *npts_per_chareG   = sim->npts_per_chareG;
-   int nchareG          = sim->nchareG;
-   int sizeX             = sim->sizeX;
-   int nlines_tot        = sim->nlines_tot;
-   int npts_tot          = sim->npts_tot;
+   int nchareG            = sim->nchareG;
+   int sizeX              = sim->sizeX;
+   int nlines_tot         = sim->nlines_tot;
+   int npts_tot           = sim->npts_tot;
 
-   int nsize = MAX(sizeX,nchareG);
+   int nsize = nchareG;
    double *pts_per_chareG   = new double [nsize];
    double *lines_per_chareG = new double [nsize];
 
@@ -473,12 +473,7 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
      nlines += nlines_per_chareG[i];
    }//endfor
 
-   for(int i=nchareG;i<sizeX;i++){
-     pts_per_chareG[i]    = 0.0;
-     lines_per_chareG[i]  = 0.0;
-   }//endfor
-
-   if(npts!=npts_tot || nlines != nlines_tot || nchareG > sizeX){
+   if(npts!=npts_tot || nlines != nlines_tot){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      PRINTF("Inconsistency between nlines and pts per plane and totals\n");
      PRINTF("%d %d : %d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot,

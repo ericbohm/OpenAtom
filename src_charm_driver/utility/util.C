@@ -257,10 +257,10 @@ void make_rho_runs(CPcharmParaInfo *sim){
 //===================================================================================
 // Decompose lines to balance points
 
-    int *istrt_lgrp   = new int [sizeX];
-    int *iend_lgrp    = new int [sizeX];
-    int *npts_lgrp    = new int [sizeX];
-    int *nline_lgrp   = new int [sizeX];
+    int *istrt_lgrp   = new int [nchareRhoG];
+    int *iend_lgrp    = new int [nchareRhoG];
+    int *npts_lgrp    = new int [nchareRhoG];
+    int *nline_lgrp   = new int [nchareRhoG];
 
     ParaGrpParse::get_chareG_line_prms(nPacked,nchareRhoG,nline_tot,npts_line,
                                istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,false);
@@ -275,7 +275,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       nlines_max=MAX(nlines_max,nline_lgrp[i]);
       nlines_min=MIN(nlines_min,nline_lgrp[i]);
     }//endfor
-    int **index_tran_upack_rho = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
+    int **index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max,"util.C");
    
     int yspace=sizeX/2+1;
 
@@ -286,7 +286,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     }//endfor
 
     CkVec<RunDescriptor> *RhosortedRunDescriptors;
-    RhosortedRunDescriptors = new CkVec<RunDescriptor> [sizeX];
+    RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
     for(int igrp = 0; igrp < nchareRhoG; igrp++){
       for(int i=istrt_lgrp[igrp];i<iend_lgrp[igrp];i++){
  	 int j  = 2*i;
@@ -294,10 +294,6 @@ void make_rho_runs(CPcharmParaInfo *sim){
          RhosortedRunDescriptors[igrp].push_back(runs[j]);
          RhosortedRunDescriptors[igrp].push_back(runs[j1]);
       }//endfor
-    }//endfor
-
-    for(int igrp = nchareRhoG; igrp < sizeX; igrp++){
-      RhosortedRunDescriptors[igrp].length() = 0;
     }//endfor
 
   for(int x = 0; x < nchareRhoG; x ++) {
@@ -311,8 +307,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
 //============================================================================
 // variables that could be used for mapping but aren't yet.
 
-  double *pts_per_chare = new double[sizeX];
-  double *lines_per_chare = new double[sizeX];
+  double *pts_per_chare = new double[nchareRhoG];
+  double *lines_per_chare = new double[nchareRhoG];
   for(int i=0;i<nchareRhoG;i++){
       pts_per_chare[i]  =(double) npts_lgrp[i];
       lines_per_chare[i]=(double) nline_lgrp[i];
@@ -1690,7 +1686,6 @@ void Config::readConfig(const char* fileName, Config &config,
 
     double temp         = (config.gExpandFact)*((double)nplane_x);
     int nchareG         = ((int)temp);
-//    nchareG             = MIN(nchareG,sizex);
     config.nchareG      = nchareG;
     double temp_rho         = (config.gExpandFactRho)*((double)nplane_x_rho);
     int nchareRhoG         = ((int)temp_rho);
@@ -1758,22 +1753,6 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.pesPerState>config.nchareG){
       CkPrintf("Warning : pesPerState > %d %g %d\n",config.nchareG,
                  config.gExpandFact,sizex);
-    }//endif
-
-    if(config.nchareG>sizex){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Error: nchareG> sizex : reduce gExpandFact\n");
-      CkPrintf("Memory allocations needs love in pups and elsewhere!\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    if(config.nchareRhoG>sizex){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Error: nchareRhoG> sizex : reduce gExpandFactRho\n");
-      CkPrintf("Memory allocations needs love in pups and elsewhere!\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
     }//endif
 
     if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
@@ -2100,6 +2079,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int ibinary_opt    = sim->ibinary_opt;
     int sizeY          = sim->sizeY;
     int sizeZ          = sim->sizeZ;
+    int nchareG        = sim->nchareG;
     int doublePack     = config.doublePack;
     double gExpandFact = config.gExpandFact;
 
@@ -2109,10 +2089,10 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     complex *complexPoints = new complex[numData];
     CkVec<RunDescriptor> runDescriptorVec;
     int nline_tot;
-    int *istrt_lgrp   = new int [sizeX];
-    int *iend_lgrp    = new int [sizeX];
-    int *npts_lgrp    = new int [sizeX];
-    int *nline_lgrp   = new int [sizeX];
+    int *istrt_lgrp   = new int [nchareG];
+    int *iend_lgrp    = new int [nchareG];
+    int *npts_lgrp    = new int [nchareG];
+    int *nline_lgrp   = new int [nchareG];
     int *kx_line      = NULL;
     int *ky_line      = NULL;
     int *kx           = NULL;
@@ -2123,7 +2103,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
                       &nline_tot,&(sim->nplane_x),istrt_lgrp,iend_lgrp,
                       npts_lgrp,nline_lgrp,&kx_line,&ky_line,&kx,&ky,&kz,1);
     int nplane  = sim->nplane_x;
-    int nchareG = sim->nchareG;
 
     if(config.low_x_size != nplane && config.doublePack){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2148,7 +2127,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
     int nlines_max=0;
     for(int i=0;i<nchareG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
-    int **index_tran_upack = cmall_int_mat(0,sizeX,0,nlines_max,"util.C");
+    int **index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"util.C");
    
     int yspace = sizeX;
     if(doublePack){yspace=sizeX/2+1;}
@@ -2159,7 +2138,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     }//endfor
 
     CkVec<RunDescriptor> *sortedRunDescriptors;
-    sortedRunDescriptors = new CkVec<RunDescriptor> [sizeX];
+    sortedRunDescriptors = new CkVec<RunDescriptor> [nchareG];
     for(int igrp = 0; igrp < nchareG; igrp++){
       for(int i=istrt_lgrp[igrp];i<iend_lgrp[igrp];i++){
  	 int j  = 2*i;
@@ -2167,10 +2146,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
          sortedRunDescriptors[igrp].push_back(runDescriptorVec[j]);
          sortedRunDescriptors[igrp].push_back(runDescriptorVec[j1]);
       }//endfor
-    }//endfor
-
-    for(int igrp = nchareG; igrp < sizeX; igrp++){
-      sortedRunDescriptors[igrp].length() = 0;
     }//endfor
 
     int *index_output_off = new int[nchareG];

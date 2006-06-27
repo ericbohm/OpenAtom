@@ -1,7 +1,7 @@
 #===============================================================================
 #CHARMBASE           = /home/net/bohm/stable/charm/net-linux-ifc-icc
 #CHARMBASE           = /home/net/bohm/work/charm/net-linux-ifc-icc
-CHARMBASE           = /home/net/bohm/stable/charm/net-linux
+CHARMBASE           = /home/net/bohm/stable/charm/net-linux-ifc-icc
 
 CHARMC              = $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) 
 CPAIMD_DRV_SRC      = $(CPAIMD)/src_charm_driver
@@ -10,7 +10,7 @@ MAKE_CPAIMD_DRV_INC = $(CPAIMD)/src_charm_driver/compile
 MAKE_CPAIMDDP_DRV_INC = $(CPAIMD)/srcdp_charm_driver/compile
 CHARMLIB            = -module CkMulticast \
 			-L$(FFT_HOME)/lib -module commlib -lfftw \
-			-lrfftw -lm 
+			-lrfftw -lm -lz 
 
 #===============================================================================
 

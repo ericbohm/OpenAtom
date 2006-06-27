@@ -210,7 +210,7 @@ class CPcharmParaInfo {
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
      }//endif
-     if(nchareG==0 || nchareG > sizeX || nchareG < nplane_x){
+     if(nchareG==0 || nchareG < nplane_x){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Error in CPcharmParaInfo constructor\n");
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -231,7 +231,7 @@ class CPcharmParaInfo {
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
      }//endif
-     if(nchareRhoG==0 || nchareRhoG > sizeX || nchareRhoG < nplane_rho_x){
+     if(nchareRhoG==0 || nchareRhoG < nplane_rho_x){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Error in CPcharmParaInfo constructor\n");
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -250,7 +250,7 @@ class CPcharmParaInfo {
       }//endfor
      }//endfor
 
-     sortedRunDescriptors = new CkVec<RunDescriptor> [sizeX];
+     sortedRunDescriptors = new CkVec<RunDescriptor> [nchareG];
      for(int i=0;i<nchareG;i++){
        for(int j=0;j<s.sortedRunDescriptors[i].size();j++){
           sortedRunDescriptors[i].push_back(s.sortedRunDescriptors[i][j]);
