@@ -509,7 +509,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
 
   /* multiply */
-  int Ksplit_m=50;  //this should be a config param
+  int Ksplit_m=k;  //this could be a config param
   char trans = 't';
   double betap = 1.0;
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
@@ -517,21 +517,43 @@ void CLA_Matrix::multiply(){
   int Kloop    = K/Ksplit-1;
 #define ORTHO_DGEMM_SPLIT 
 #ifdef ORTHO_DGEMM_SPLIT 
+
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
+
   CmiNetworkProgress();
   
   for(int i=1;i<=Kloop;i++){
     int aoff = Ksplit*i;
     int boff = n*i*Ksplit;
     if(i==Kloop){Ksplit+=Krem;}
+#ifndef CMK_OPTIMIZE
+    StartTime=CmiWallTimer();
+#endif
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap,dest, &m);
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
     CmiNetworkProgress();
   }//endfor
 #else
   /* old unsplit version */
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
      DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
+
    dest, &m);
 #endif
   /* transpose result */
@@ -623,7 +645,14 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
   gotA = gotB = false;
   char trans = 't';
   double *C = new double[m * n];
+#ifndef CMK_OPTIMIZE
+  double  StartTime=CmiWallTimer();
+#endif
   DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(402, StartTime, CmiWallTimer());
+#endif
+  CmiNetworkProgress();
   redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
    sectionCookie, reduce_CB);
   delete [] C;

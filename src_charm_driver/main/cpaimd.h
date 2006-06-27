@@ -301,7 +301,8 @@ class CPcharmParaInfoGrp: public Group {
 #define WhiteByrdFFTX_       181
 #define WhiteByrdFFTY_       182
 #define WhiteByrdFFTZ_       183
-
+#define OrthoDGEMM1_         401
+#define OrthoDGEMM2_         402
 //200-300 reserved for paircalculator
 #define IntegrateModForces_  1000
 #define Scalcmap_            2000

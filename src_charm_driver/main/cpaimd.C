@@ -341,6 +341,7 @@ main::main(CkArgMsg *msg) {
      traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
      traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
      traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
+     traceRegisterUserEvent("OrthoDGEMM1", OrthoDGEMM1_);
      traceRegisterUserEvent("GradCorrGGA", GradCorrGGA_);
      traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
      traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
@@ -348,6 +349,7 @@ main::main(CkArgMsg *msg) {
      traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
      traceRegisterUserEvent("RhoRtoGFFT", RhoRtoGFFT_);
      traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
+     traceRegisterUserEvent("OrthoDGEMM2", OrthoDGEMM2_);
      traceRegisterUserEvent("ByrdanddoFwFFTGtoR",ByrdanddoFwFFTGtoR_);
 
      traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
