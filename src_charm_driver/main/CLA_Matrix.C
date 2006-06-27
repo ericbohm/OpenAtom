@@ -509,10 +509,31 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
 
   /* multiply */
+  int Ksplit_m=50;  //this should be a config param
   char trans = 't';
-  DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
-   dest, &m);
+  double betap = 1.0;
+  int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
+  int Krem     = (K % Ksplit);
+  int Kloop    = K/Ksplit-1;
+#define ORTHO_DGEMM_SPLIT 
+#ifdef ORTHO_DGEMM_SPLIT 
+  DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
+        dest,&m);
+  CmiNetworkProgress();
   
+  for(int i=1;i<=Kloop;i++){
+    int aoff = Ksplit*i;
+    int boff = n*i*Ksplit;
+    if(i==Kloop){Ksplit+=Krem;}
+    DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
+          &tmpB[boff], &n, &betap,dest, &m);
+    CmiNetworkProgress();
+  }//endfor
+#else
+  /* old unsplit version */
+     DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
+   dest, &m);
+#endif
   /* transpose result */
   transpose(dest, n, m);
 

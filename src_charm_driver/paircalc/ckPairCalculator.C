@@ -176,7 +176,6 @@
 
 #include "ckPairCalculator.h"
 
-#define PARTITION_SIZE 500
 
 ComlibInstanceHandle mcastInstanceCP;
 
@@ -1038,7 +1037,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     {
       amatrix=matrix1;  // index is 0 in this case, so this is silly
     }
-  else if (orthoGrainSize==grainSize||actionType==PSIV)
+
+  if (orthoGrainSize==grainSize||actionType==PSIV)
     { // you were sent the correct section only
       amatrix=matrix1;
     }
