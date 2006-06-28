@@ -198,13 +198,20 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   int size=size0/sizeof(double);
 
   double *inmatrix;
+  //  int progcount=0;
   for(int i=1; i<nMsg;i++)
     {
       inmatrix=(double *) msgs[i]->getData();
       for(int d=0;d<size;d++)
 	ret[d]+=inmatrix[d];
-      CmiNetworkProgress();
+      /*      if(progcount++==8)
+	{
+
+	  progcount=0;
+	}
+      */
     }
+  //  CmiNetworkProgress();
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
 }
 
@@ -589,7 +596,14 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   /*
    * Once we have accumulated all rows  we gemm it.
    */
-  if((streamFW>0) && (((streamCaughtL >= streamFW) && (symmetric || (streamCaughtR >= streamFW))) || (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))))
+  bool streamready;
+
+  if(symmetric)
+    streamready=streamCaughtL>=streamFW && streamFW>0;
+  else 
+    streamready=(streamCaughtL>=streamFW||streamCaughtR>=streamCaughtR)&& streamCaughtR>2 && streamCaughtL>2 && streamFW>0;
+
+  if(streamready || ((streamFW>0) && (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))))
     {
 	multiplyForwardStream(msg->flag_dp);	
 	CkAssert(!msg->doPsiV);
@@ -660,7 +674,7 @@ void
 PairCalculator::multiplyForwardStream(bool flag_dp)
 {
   //  CkPrintf("[%d,%d,%d,%d,%d] multi fw stream\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-  CkAssert((streamCaughtL >= streamFW) && (symmetric || (streamCaughtR >= streamFW)) || (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)));
+
 
   int actualPoints= numPoints*2;
   char transform='N';
@@ -1336,7 +1350,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
-#ifdef PC_BWD_DGEMM_SPLIT 20
+
+#ifdef PC_BWD_DGEMM_SPLIT
 
       if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
 	{
