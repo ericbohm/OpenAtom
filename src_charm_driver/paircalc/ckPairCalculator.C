@@ -1096,7 +1096,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   int m_in=numPoints*2;   // rows of op(A)==rows C	 
   int n_in=grainSize;     // columns of op(B)==columns C 
   int k_in=grainSize;     // columns op(A) == rows op(B) 
-  double betad(0.0);
+  double beta(0.0);
 
   // default these to 0, will be set for streaming comp if !collectAllTiles
   //BTransform=T offsets for C and A matrices
@@ -1178,7 +1178,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       BNCoffset=orthoX * m_in * orthoGrainSize;
       BNAoffset=orthoY * m_in * orthoGrainSize;
 
-      betad=1.0;  // need to sum over tiles within orthoY columns
+      beta=1.0;  // need to sum over tiles within orthoY columns
     }
 
   numOrtho=numOrtho*numOrtho;
@@ -1231,7 +1231,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	othernewData=NULL;
 
       double *mynewDatad= reinterpret_cast <double *> (mynewData);
-      double alphad(1.0);
+      double alpha(1.0);
       char transform='N';
       char transformT='T';
 
@@ -1267,18 +1267,79 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
 
       //first multiply to apply the T or L matrix
-      
-      if(symmetric)
-	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alphad, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &betad, &(mynewDatad[BNCoffset]), &m_in);
-      else
-	DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alphad, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &betad, &(mynewDatad[BTCoffset]), &m_in);
+#define PC_BWD_DGEMM_SPLIT 20
+#ifdef PC_BWD_DGEMM_SPLIT
 
+      if(symmetric)
+	{
+	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
+	  int Mrem     = (m_in % Msplit);
+	  int Mloop    = m_in/Msplit-1;
+	  
+	  DGEMM(&transform, &transform, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]),  &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]),&m_in);
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+
+	  CmiNetworkProgress();
+	  for(int i=1;i<=Mloop;i++){
+	    int off = i*Msplit;
+	    if(i==Mloop){Msplit+=Mrem;}
+#ifndef CMK_OPTIMIZE
+	    StartTime=CmiWallTimer();
+#endif
+	    DGEMM(&transform, &transform, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset+off]),  &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset+off]),&m_in);
+#ifndef CMK_OPTIMIZE
+	    traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+	    CmiNetworkProgress();
+	  }//endfor
+	  
+	}
+      else
+	{
+	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
+	  int Mrem     = (m_in % Msplit);
+	  int Mloop    = m_in/Msplit-1;
+	  DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in, amatrix, &k_in, &beta,&(mynewDatad[BTCoffset]),&m_in);
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+	  CmiNetworkProgress();
+	  for(int i=1;i<=Mloop;i++){
+	    int off = i*Msplit;
+	    if(i==Mloop){Msplit+=Mrem;}
+#ifndef CMK_OPTIMIZE
+	    StartTime=CmiWallTimer();
+#endif
+	    DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset+off]), &m_in, amatrix, &k_in, &beta,&(mynewDatad[BTCoffset+off]),&m_in);
+#ifndef CMK_OPTIMIZE
+	    traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+
+	    CmiNetworkProgress();
+	  }//endfor
+	  
+	}
+#else // no SPLIT
+
+
+      if(symmetric)
+	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
+      else
+	DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
+
+
+#endif
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
+#ifdef PC_BWD_DGEMM_SPLIT 20
+
       if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
 	{
-	  CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
@@ -1286,12 +1347,42 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  //for off diagonal need to handle the offrow with this multiply
 	  
 	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
-	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alphad, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &betad, &(BTCoffset[othernewDatad]), &m_in);
+	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
+	  int Mrem     = (m_in % Msplit);
+	  int Mloop    = m_in/Msplit-1;
+	  DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in, amatrix, &k_in, &beta,&(othernewDatad[BTCoffset]),&m_in);
 #ifndef CMK_OPTIMIZE
-	  traceUserBracketEvent(250, StartTime, CmiWallTimer());
+	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
+	  CmiNetworkProgress();
+	  for(int i=1;i<=Mloop;i++){
+	    int off = i*Msplit;
+	    if(i==Mloop){Msplit+=Mrem;}
+#ifndef CMK_OPTIMIZE
+	    StartTime=CmiWallTimer();
+#endif
+	    DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset+off]), &m_in, amatrix, &k_in, &beta,&(othernewDatad[BTCoffset+off]),&m_in);
+#ifndef CMK_OPTIMIZE
+	    traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+	    CmiNetworkProgress();
+	  }
 	}
+#else  // no SPLIt
 
+      if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
+	{
+
+	  CmiNetworkProgress();
+	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
+	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(BTCoffset[othernewDatad]), &m_in);
+	}
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(250, StartTime, CmiWallTimer());
+#endif
+
+#endif  // SPLIT
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
       dumpMatrixComplex("bwgmodata",mynewData,grainSize,numPoints,0,ystart);
@@ -1313,18 +1404,18 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif
-	alphad=-1.0;  //comes in with a minus sign
+	alpha=-1.0;  //comes in with a minus sign
 	if(thisIndex.x!=thisIndex.y){
-	  betad=0.0; // new contribution off-diagonal
+	  beta=0.0; // new contribution off-diagonal
 	  othernewDatad= reinterpret_cast <double *> (othernewData);    
 	}else{
-	  betad=1.0; //subtract contribution from existing on diagonal
+	  beta=1.0; //subtract contribution from existing on diagonal
 	  othernewDatad=mynewDatad;
 	}//endif
 
 	CmiNetworkProgress();
-	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alphad, &(inDataRight[BNAoffset]), 
-	      &m_in,  amatrix2, &k_in, &betad, &(othernewDatad[BNCoffset]), &m_in);
+	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BNAoffset]), 
+	      &m_in,  amatrix2, &k_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
 	dumpMatrixComplex("bwg2modata",othernewData,grainSize,numPoints);
