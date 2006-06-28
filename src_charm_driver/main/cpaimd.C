@@ -539,6 +539,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs));
    //symmetric AKA Psi
 
+    //    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock);
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, 0);
 
     CkArrayIndex2D myindex(0, 0);

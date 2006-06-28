@@ -246,7 +246,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   touchedTiles=NULL;
   inDataLeft = NULL;
   inDataRight = NULL;
-
+  allCaughtLeft=NULL;
+  allCaughtRight=NULL;
   outData = NULL;
   mynewData= NULL;
   othernewData= NULL;
@@ -522,14 +523,15 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpected,numPoints);
 #endif
-	if(streamFW>0)
-	  {
-	    numRecLeft=0;
-	    streamCaughtL=0;
-	    allCaughtLeft=new double[numExpected*numPoints*2];
-	  }
 
       }
+    if(streamFW>0 && allCaughtLeft==NULL)
+      {
+	numRecLeft=0;
+	streamCaughtL=0;
+	allCaughtLeft=new double[numExpected*numPoints*2];
+      }
+
     CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
     memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
@@ -554,15 +556,16 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpected,numPoints);
 #endif
-	if(streamFW>0)
-	  {
-	    numRecRight=0;
-	    streamCaughtR=0;
-	    allCaughtRight=new double[numExpected*numPoints*2];
-	  }
       }
     CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
+    if(streamFW>0 && allCaughtRight==NULL)
+      {
+	numRecRight=0;
+	streamCaughtR=0;
+	allCaughtRight=new double[numExpected*numPoints*2];
+      }
+
     memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
     if(streamFW>0)
       { //record offset, copy data
@@ -574,21 +577,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,offset,numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
 #endif
-#ifdef _PAIRCALC_DEBUG_STUPID_PARANOID_
-    CkPrintf("copying in \n");
-    double re;
-    double im;
-    for(int i=0;i<numPoints;i++)
-      {
-	re=msg->points[i].re;
-	im=msg->points[i].im;
-	CkPrintf("CR %d %g %g\n",i,re,im);
-	if(fabs(re)>0.0)
-	  CkAssert(fabs(re)>1.0e-300);
-	if(fabs(im)>0.0)
-	  CkAssert(fabs(im)>1.0e-300);
-      }
-#endif
+
   }
 
 
@@ -681,7 +670,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
   int k_in=actualPoints; // columns op(A) == rows op(B) 
   int lda=actualPoints;  //leading dimension A
   int ldb=actualPoints;  //leading dimension B
-  int ldc;               //leading dimension C  <--- n_in
+  int ldc;               //leading dimension C  <--- m_in
 
   double alpha=double(1.0);// scale it up by 2
   if (flag_dp) {
@@ -705,11 +694,20 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
     ldc = n_in; 
     outData1= new double[m_in*n_in];
     double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
+
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
     DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
 
     //kick off progress before next dgemm
     CmiNetworkProgress();
-    copyIntoTiles(outData1, outTiles, m_in, n_in, RightOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+    //    copyIntoTiles(outData1, outTiles, m_in, n_in, RightOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+    copyIntoTiles(outData1, outTiles, n_in, m_in,  &(LeftOffsets[oldCaughtLeft]), RightOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
     //oldCaught is the same pointer as AllCaught, we just decrease n.
 
 
@@ -723,8 +721,18 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       // right newTemp is last bit of old
       double *rightNewTemp = &(allCaughtRight[(oldCaughtRight)*actualPoints]);
       outData2= new double[m_in*n_in];
+
+#ifndef CMK_OPTIMIZE
+      StartTime=CmiWallTimer();
+#endif
+
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
-      copyIntoTiles(outData2, outTiles, m_in, n_in, &(RightOffsets[oldCaughtRight]),LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
+      copyIntoTiles(outData2, outTiles, n_in, m_in, LeftOffsets, &(RightOffsets[oldCaughtRight]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
     }
 
   }
@@ -734,23 +742,44 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       // left newTemp is last bit of old
       m_in= numRecLeft;
       n_in= streamCaughtL;
-      ldc = n_in; 
+      ldc = m_in; 
 
       outData1= new double[m_in*n_in];
       double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
+
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
       //kick off progress before next dgemm
       CmiNetworkProgress();
+
       copyIntoTiles(outData1, outTiles, m_in, n_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
       // multiply new left by old left
       if(oldCaughtLeft)
 	{
 	  m_in= streamCaughtL;
-	  n_in= oldCaughtLeft;
+	  m_in= oldCaughtLeft;
 	  ldc = n_in; 
 	  outData2= new double[m_in*n_in];
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
+
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+
 	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
 	  copyIntoTiles(outData2, outTiles, m_in, n_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
 	}
     }
@@ -769,6 +798,13 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       numRecLeft= numRecRight=numRecd=0;
       int numOrtho=grainSize/orthoGrainSize;
       numOrtho*=numOrtho;
+      // no point in keeping these around
+      if(allCaughtLeft!=NULL)
+	delete [] allCaughtLeft;
+      allCaughtLeft=NULL;
+      if(allCaughtRight!=NULL)
+	delete [] allCaughtRight;
+      allCaughtRight=NULL;
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
       for(int i=0 ; i<numOrtho ; i++)
 	{
@@ -815,8 +851,6 @@ PairCalculator::multiplyForward(bool flag_dp)
   int m_in=numExpected;
   int n_in=numExpected;
   int k_in=doubleN;
-  int lda=doubleN;   //leading dimension A
-  int ldb=doubleN;   //leading dimension B
   int ldc=numExpected;   //leading dimension C
   double alpha=double(1.0);//multiplicative identity
   double beta=double(0.0); // C is unset
@@ -826,29 +860,67 @@ PairCalculator::multiplyForward(bool flag_dp)
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d] gemming %c %c %d %d %d %f A %d B %d %f C %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,transformT,transform, m_in, n_in, k_in, alpha, lda, ldb, beta, ldc);
 #endif
+
+  double *matrixA;
   if( numRecd == numExpected * 2)
+    {
+      matrixA=inDataRight;
+    }
+  else
+    {
+      matrixA=inDataLeft;
+    }
+
+
+#define PC_FWD_DGEMM_SPLIT 20
+#ifdef PC_FWD_DGEMM_SPLIT
+  double betap = 1.0;
+  int Ksplit_m = (orthoGrainSize> PC_FWD_DGEMM_SPLIT) ? orthoGrainSize : PC_FWD_DGEMM_SPLIT;
+  int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
+  int Krem     = (k_in % Ksplit);
+  int Kloop    = k_in/Ksplit-1;
+
+  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta,  outData,&ldc);
+  CmiNetworkProgress();
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
+  for(int i=1;i<=Kloop;i++){
+    int off = i*Ksplit;
+    if(i==Kloop){Ksplit+=Krem;}
+#ifndef CMK_OPTIMIZE
+    StartTime=CmiWallTimer();
+#endif
+    DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
+    CmiNetworkProgress();
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
+  }//endfor
+
+#else  // not SPLIT 
+
+  int lda=doubleN;   //leading dimension A
+  int ldb=doubleN;   //leading dimension B
+
+  if( (numRecd == numExpected * 2 )|| (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))
     {
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
       dumpMatrixDouble("fwlmdata", inDataLeft, numExpected, numPoints*2);
       dumpMatrixDouble("fwrmdata", inDataRight, numExpected, numPoints*2);
 #endif
-      CkAssert(inDataRight!=NULL);
+      CkAssert(matrixA!=NULL);
       CkAssert(inDataLeft!=NULL);
       CkAssert(outData!=NULL);
-      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataRight, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-
-    }
-  else if (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)
-    {
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-      dumpMatrixDouble("fwlmdata",inDataLeft,numExpected, numPoints*2);
-#endif
-      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, inDataLeft, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-    }
+      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
+
+#endif  // SPLIT
 
   numRecd = 0; 
   if (flag_dp) {
