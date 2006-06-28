@@ -133,10 +133,11 @@ void AtomsGrp::StartRealspaceForces(){
    Atom *atoms       = ag->atoms;
    int natm          = ag->natm;
    int myid          = CkMyPe();
+   int nproc         = CkNumPes();
    double pot_ewd_rs = 0.0;
 
 #ifndef  _CP_DEBUG_PSI_OFF_
-   if(myid==0){CPRSPACEION::CP_getionforce(natm,atoms,myid,&pot_ewd_rs);}
+   if(myid<natm-1){CPRSPACEION::CP_getionforce(natm,atoms,myid,nproc,&pot_ewd_rs);}
 #endif
 
 #ifdef GJM_DBG_ATMS

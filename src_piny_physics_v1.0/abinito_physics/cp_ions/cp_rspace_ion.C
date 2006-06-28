@@ -10,7 +10,7 @@
 //============================================================================
 
 void
-CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, 
+CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
                             double *pot_ewd_ret)
 
 //============================================================================
@@ -29,7 +29,6 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid,
   double alp_ewd    = genewald->alp_ewd;
   double *hmati     = gencell->hmati;
   double *hmat      = gencell->hmat;
-  double pot_ewd;
 
   double p  = 0.3614;
   double e1 = 0.2041422096422003; double  e2 = 0.1997535956961481;
@@ -44,25 +43,34 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid,
 
 //============================================================================
 
-  pot_ewd = 0.0;
-  if(myid==0){
-
 #ifdef _CP_DEBUG_ATM_FORC_
-    double *fx = (double *)malloc(natm*sizeof(double));
-    double *fy = (double *)malloc(natm*sizeof(double));
-    double *fz = (double *)malloc(natm*sizeof(double));
-    for(int i=0;i<natm;i++){
-      fx[i]=0.0;
-      fy[i]=0.0;
-      fz[i]=0.0;
-    }//endfor
+  double *fx = (double *)malloc(natm*sizeof(double));
+  double *fy = (double *)malloc(natm*sizeof(double));
+  double *fz = (double *)malloc(natm*sizeof(double));
+  for(int i=0;i<natm;i++){
+     fx[i]=0.0;
+     fy[i]=0.0;
+     fz[i]=0.0;
+  }//endfor
 #endif
+
+//============================================================================
+// Primitively Parallelize the computation
+
+   double pot_ewd  = 0.0;
+   if(natm>1 && myid<natm-1){   
+     int natm1 = natm-1;
+     int ndiv  = MIN(natm1,nproc);
+     int nsiz  = natm1/ndiv;
+     int nrem  = (natm1 % ndiv);
+     int ist   = nsiz*myid + MIN(nrem,myid);
+     nsiz      = (myid<nrem ? nsiz+1 : nsiz);
+     int iend  = ist+nsiz;
 
      double talp2    = 2.0*alp_ewd*alp_ewd;
      double palp     = p*alp_ewd;
      double hmat_min = 0.5*MIN3(hmat[1],hmat[5],hmat[9]);
-
-     for(int iatm = 0; iatm < natm-1; iatm++){
+     for(int iatm = ist; iatm < iend; iatm++){
        for(int jatm = iatm+1; jatm < natm; jatm++){
 
          double dx = atoms[iatm].x-atoms[jatm].x;
@@ -104,10 +112,16 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid,
             atoms[jatm].fz -= dz*dvnow;
 #endif
          }//endif
+       }//endfor : jatm
+       CmiNetworkProgress();
+     }//endfor : iatm
+   }//endif : there is work to do 
+  *pot_ewd_ret = pot_ewd;
 
-       }//endfor
-     }//endfor
+//============================================================================
+
 #ifdef _CP_DEBUG_ATM_FORC_
+   if(myid==0){
      FILE *fp = fopen("atom_rspace_only_forc.out","w");
        for(int i=0;i<natm;i++){
          fprintf(fp,"%d %g %g %g\n",i+1,fx[i],fy[i],fz[i]);
@@ -115,13 +129,12 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid,
      fclose(fp);
      CkPrintf("Atom forces written to atom_forc.out don't contain\n");
      CkPrintf("the real space contribution. Those are in rspace_only.out\n");
-     free(fx);
-     free(fy);
-     free(fz);
+     CkPrintf("Currently only proc 0 rspace_only forces are given.\n");
+   }//endif
+   free(fx);
+   free(fy);
+   free(fz);
 #endif
-  }//endif
-
-  *pot_ewd_ret = pot_ewd;
 
 //============================================================================
   } /* End function */
