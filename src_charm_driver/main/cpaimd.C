@@ -244,6 +244,7 @@ main::main(CkArgMsg *msg) {
     if (msg->argc < 3) {
       CkAbort("Usage: cpaimd.x cpaimd_config pinysystem.input");
     }//endif
+    CkPrintf("Executing leanCP %s\n", msg->argv[0]);
     if(msg->argc >3 && msg->argv[3][0] == 't')
       {
 
@@ -283,7 +284,7 @@ main::main(CkArgMsg *msg) {
 	sleep(1);
       }
     CkPrintf("\n================================================\n");
-    CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase \n");
+    CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase\n");
     CkPrintf("---------------------------------------------------\n");
     CkPrintf("  Cpaimd-Charm-Driver running on %d processors. \n", CkNumPes());
     CkPrintf("  Reading Physics input from %s\n",msg->argv[2]);
