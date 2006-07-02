@@ -40,7 +40,14 @@ class PairCalcID {
   CkVec <CkArrayIndex4D> listLNotFrom;
   CkVec <CkArrayIndex4D> listRNotFrom;
   PairCalcID() {}
-  ~PairCalcID() {}
+  ~PairCalcID() {
+    if(existsLproxy)
+      delete [] proxyLFrom;
+    if(existsLNotFromproxy)
+      delete [] proxyLNotFrom;
+    if(existsRproxy)
+      delete [] proxyRNotFrom;
+  }
 
   void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority, bool _useEtoM) {
     Aid = aid;

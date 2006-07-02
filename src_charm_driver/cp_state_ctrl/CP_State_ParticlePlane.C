@@ -171,6 +171,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
       EnlCookieMsg *emsg= new EnlCookieMsg;
       mcastGrp->setSection(particlePlaneENLProxy);
       particlePlaneENLProxy.setEnlCookie(emsg);
+      delete [] elems;
 
   }//endif
   int constructed=1;

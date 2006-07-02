@@ -666,6 +666,10 @@ CP_State_GSpacePlane::~CP_State_GSpacePlane(){
     k_y = NULL;
     k_z = NULL;
     coef_mass = NULL;
+    delete [] lambdaproxyother;
+    delete [] lambdaproxy;
+    delete [] psiproxyother;
+    delete [] psiproxy;
   }//
 }
 //============================================================================

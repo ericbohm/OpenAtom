@@ -60,6 +60,8 @@ class main : public Chare {
     main(CkMigrateMessage *m) { }
     main(CkArgMsg *);
     void doneInit(CkReductionMsg *msg);
+    ~main();
+    
 
 };
 //============================================================================

@@ -472,7 +472,7 @@ main::main(CkArgMsg *msg) {
     delete msg;
     delete sim;
     delete [] indexZ;
-
+    delete [] foo;
 //============================================================================
     newtime=CmiWallTimer();
     CkPrintf("\n-----------------------------------------------------\n");
@@ -487,7 +487,22 @@ main::main(CkArgMsg *msg) {
    }// end Main
 //============================================================================
 
+//============================================================================    
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================    
+/**
+ * Cleanup stuff in the hopes of getting clean valgrind
+ */
+main::~main()
+{
 
+    if (config.useCommlib) {        
+	if(config.usePairEtoM)
+	{
+	}
+    }
+
+}
 //============================================================================    
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================    
@@ -612,6 +627,8 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	     numG, gchares, numCalc, asymcalcchares);
 
 	  gAsymInstance= ComlibRegister(asym_strat);
+	  delete [] gchares;
+	  delete [] asymcalcchares;
 	  gchares = new CkArrayIndexMax[numG];
 	  index=0;
 	  for (i = 0; i < config.nstates; i++) 
@@ -636,7 +653,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	     numG, gchares, numCalc, symcalcchares);
 
 	  gSymInstance= ComlibRegister(sym_strat);
-
+	  delete [] symcalcchares;
 	}
 	/*
       //StreamingStrategy *cmstrat = new StreamingStrategy(0.1,10);
@@ -668,8 +685,10 @@ void init_commlib_strategies(int numRhoG, int numReal){
       CharmStrategy *real_strat = new EachToManyMulticastStrategy
 	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
 	 numReal, rhoRealElements, numRhoG, rhoGElements);
-
+      
       commRealInstance= ComlibRegister(real_strat);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
       //--------------------------------------------------------------
       //  For drho(r)/dx to igx*rho(g)
       rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -686,6 +705,8 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
 	 numReal, rhoRealElements, numRhoG,rhoGElements);
       commRealIGXInstance= ComlibRegister(real_strat_igx);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
       //--------------------------------------------------------------
       //  For drho(r)/dy to igy*rho(g)
       rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -702,6 +723,10 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
 	 numReal, rhoRealElements, numRhoG,rhoGElements);
       commRealIGYInstance= ComlibRegister(real_strat_igy);
+
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       //  For drho(r)/dz to igz*rho(g)
       rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -718,6 +743,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
 	 numReal, rhoRealElements, numRhoG,rhoGElements);
       commRealIGZInstance= ComlibRegister(real_strat_igz);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       // For hartree-Ext(g) to vks(r)
       rhoGElements = new CkArrayIndexMax[numRhoGHart];
@@ -734,6 +762,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoGHart, rhoGElements, numReal, rhoRealElements);
       commGHartInstance = ComlibRegister(gstrathart);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       // vks(g), igxrho igyrho igzrho and white byrd to g-space
       rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -750,6 +781,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoG, rhoGElements, numReal, rhoRealElements);
       commGInstance0 = ComlibRegister(gstrat0);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
@@ -765,6 +799,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoG, rhoGElements, numReal, rhoRealElements);
       commGInstance1 = ComlibRegister(gstrat1);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
@@ -780,6 +817,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoG, rhoGElements, numReal, rhoRealElements);
       commGInstance2 = ComlibRegister(gstrat2);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
@@ -795,6 +835,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoG, rhoGElements, numReal, rhoRealElements);
       commGInstance3 = ComlibRegister(gstrat3);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
+
       //--------------------------------------------------------------
       // For white-byrd
       rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -811,6 +854,8 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
 	 numRhoG, rhoGElements, numReal, rhoRealElements);
       commGByrdInstance = ComlibRegister(gstratByrd);
+      delete [] rhoGElements;
+      delete [] rhoRealElements;
 
     }//endif : use commlib
 
@@ -873,9 +918,8 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
-
-    CkCallback *orthoReduction = new CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
-    orthoProxy.ckSetReductionClient(orthoReduction);
+    CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
+    orthoProxy.ckSetReductionClient(&ocb);
     
     // extra triangle ortho elements are really a waste of our time
     // and resources, but we don't have a triangular solver for
