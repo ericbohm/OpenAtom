@@ -971,7 +971,8 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 //============================================================================
 void main::doneInit(CkReductionMsg *msg){
 //============================================================================
-    delete msg;
+  CkPrintf("Done_init for %d\n",(int)((int *)msg->getData())[0]);
+  delete msg;
     double newtime=CmiWallTimer();
     if(done_init<3){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
@@ -985,8 +986,11 @@ void main::doneInit(CkReductionMsg *msg){
     }//endif
 
     if (done_init == 2){
-	// kick off file reading in gspace
-	CkPrintf("Initiating import of states\n");
+      // 2nd to last, we do this after we know gsp, pp, and rp exist
+      // its completion triggers the final phase
+
+      // kick off file reading in gspace
+      CkPrintf("Initiating import of states\n");
 #ifdef USE_TOPOMAP
   for(int s=0;s<nstates;s++){
     gSpacePlaneProxy(s,peUsedByNLZ[s]).readFile();
@@ -1034,6 +1038,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
      */
 
   PRINT_LINE_STAR;
+  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
   PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",nstates,sizeYZ[0],sizeYZ[1]);
   PRINT_LINE_DASH;printf("\n");
   availGlob->reset();
@@ -1051,8 +1056,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
 								
   fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
-  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
-  sfCompProxy = CProxy_StructureFactor::ckNew();
+
+
   availGlob->reset();
   GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
@@ -1071,6 +1076,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
 							    1, numSfGrps, natm_nl, natm_nl_grp_max, config.nstates, 
 							    config.nchareG, config.Gstates_per_pe, particleOpts);
+
     /*
      * Insert the planes in the particle plane array, gSpacePlane array
      */
@@ -1088,8 +1094,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
     gSpacePlaneProxy.doneInserting();
     particlePlaneProxy.doneInserting();
-    //particlePlaneProxy.setReductionClient(doneCreatingPP, (void *) NULL);
-    
     /*
      * Insert the planes in the real space plane array
      */
@@ -1099,9 +1103,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
             {realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1);}}
 
     realSpacePlaneProxy.doneInserting();
-    // 
-    //    gSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
-    //    realSpacePlaneProxy.setReductionClient(doneInit, (void *) NULL);
 
     int *nsend   = new int[nchareG];
     int **listpe = new int * [nchareG];
@@ -1165,6 +1166,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	dupmax=config.numSfDups;
     config.numSfDups=dupmax;
     CkPrintf("real numSfdups is %d based on maxsend of %d\n",config.numSfDups, maxsend);
+
+    sfCompProxy = CProxy_StructureFactor::ckNew();
     for (int dup=0; dup<dupmax; dup++)
       for (x = 0; x < nchareG; x += 1)
       {

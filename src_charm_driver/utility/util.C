@@ -17,7 +17,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 extern Config config;
 extern int sizeX;
-#if CMK_PROJECTIONS_USE_ZLIB
+#ifdef CMK_PROJECTIONS_USE_ZLIB
 #include "zlib.h"
 #endif
 
@@ -672,6 +672,14 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 //===================================================================================
 // First read in the state and k-vectors : allows parsing of doublePack option
 
+#ifndef CMK_PROJECTIONS_USE_ZLIB
+    if(ibinary_opt>1)
+      {
+	CkPrintf("Attempt to use ZLIB Failed! Please review compilation\n");
+	CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
+	CkExit();
+      }
+#endif
     int nx,ny,nz;
     int nktot = 0;
     if(ibinary_opt==0){
@@ -707,8 +715,9 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 	}//endfor
        fclose(fp);
     }
-#ifdef ZLIB_H
+#ifdef CMK_PROJECTIONS_USE_ZLIB
     else if(ibinary_opt==2){
+      //      CkPrintf("Using ZLIB to load ascii states\n");
       char bigenough[1000];  //we know our lines are shorter than this
 	char localFile[1000]; // fromFile is const
 	strcpy(localFile,fromFile);
@@ -767,6 +776,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     }
     else if (ibinary_opt==3)
       {
+	//	CkPrintf("Using ZLIB to load binary states\n");
 	char localFile[1000]; // fromFile is const
 	strcpy(localFile,fromFile);
 	strcat(localFile,".gz");
@@ -1128,6 +1138,16 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
+#ifndef CMK_PROJECTIONS_USE_ZLIB
+    if(ibinary_opt>1)
+      {
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("Attempt to use ZLIB Failed! Please review compilation\n");
+	CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+#endif
 
   int nktot;
   int nplane0;
@@ -1167,7 +1187,7 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
       }//endfor
       fclose(fp);
     }
-#ifdef ZLIB_H
+#ifdef CMK_PROJECTIONS_USE_ZLIB
   else if(ibinary_opt==2){
     char bigenough[1000];  //we know our lines are shorter than this
     char localFile[1000]; // fromFile is const
@@ -2316,7 +2336,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 	     k_x[index[i]],k_y[index[i]],k_z[index[i]]);
      fclose(fp);
    }
-#ifdef ZLIB_H
+#ifdef CMK_PROJECTIONS_USE_ZLIB
    else if(ibinary_write_opt==2){
      strcat(psiName,".gz");
      gzFile zfp  = gzopen(psiName,"w");
@@ -2392,7 +2412,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 	      k_x[index[i]],k_y[index[i]],k_z[index[i]]);
       fclose(fp);
     }
-#ifdef ZLIB_H
+#ifdef CMK_PROJECTIONS_USE_ZLIB
    else if(ibinary_write_opt==2){
      strcat(vpsiName,".gz");
      gzFile zfp=gzopen(vpsiName,"w");

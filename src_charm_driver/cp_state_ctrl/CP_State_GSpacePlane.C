@@ -1035,9 +1035,13 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
 // Send the k's to the structure factor 
 
+
   for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
     for(int dup=0;dup<config.numSfDups;dup++){ //each dup
       if(dup==thisIndex.x){
+#ifdef _CP_DEBUG_SF_CACHE_
+	CkPrintf("GSP [%d,%d] on PE %d sending KVectors to SF[%d,%d,%d]\n",thisIndex.x, thisIndex.y, CkMyPe(), atm, thisIndex.y, dup);
+#endif
         sfCompProxy(atm,thisIndex.y,dup).acceptKVectors(gSpaceNumPoints, k_x, k_y, k_z);
       }//endif
     }//endfor
@@ -1059,7 +1063,8 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   makePCproxies();
 
 //---------------------------------------------------------------------------
-   }// end routine
+   
+}// end routine
 //============================================================================
 
 
@@ -1094,7 +1099,9 @@ void CP_State_GSpacePlane::makePCproxies(){
 void CP_State_GSpacePlane::startNewIter ()  {
 //============================================================================
 // Check for flow of control errors :
-
+#ifdef _CP_DEBUG_SF_CACHE_
+    CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
+#endif
   if(iteration>0){
    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
      atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
@@ -1160,6 +1167,9 @@ void CP_State_GSpacePlane::startNewIter ()  {
 //==============================================================================
 void CP_State_GSpacePlane::releaseSFComputeZ() {
 //==============================================================================
+#ifdef _CP_DEBUG_SF_CACHE_
+    CkPrintf("GSP [%d,%d] releases SFComp\n",thisIndex.x, thisIndex.y);
+#endif
 
   if(thisIndex.x==0){
        //multicast to all states of our plane and dups using the section proxy

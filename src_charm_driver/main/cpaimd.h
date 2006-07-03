@@ -11,7 +11,7 @@
 
 #ifndef _CPAIMD_H
 #define _CPAIMD_H
-
+#define USE_TOPOMAP 1
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
@@ -19,7 +19,7 @@
 #include "ckhashtable.h"
 #include "PeList.h"
 #include "MapTable.h"
-#define USE_TOPOMAP 1
+
 
 #define LOAD_BALANCE_STEP 10
 
@@ -87,7 +87,7 @@ class CkArrayMapTable : public CkArrayMap
 
 
   CkArrayMapTable() {}
-  int procNum(int, const CkArrayIndex &){}
+  int procNum(int, const CkArrayIndex &){CkAbort("do not call the base procnum");return(0);}
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);

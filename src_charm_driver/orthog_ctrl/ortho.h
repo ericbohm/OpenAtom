@@ -313,9 +313,9 @@ class OrthoMap : public CkArrayMap {
 	if(nOrtho<CkNumPes())
 	  offset=1;  //skip proc 0
       }
-    virtual int procNum(int arrayHdl, const CkArrayIndex &idx){
-      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
-      return (N * idx2d.index[0] + idx2d.index[1] + offset) % CkNumPes();
+    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
+      int *index=(int *) iIndex.data();
+      return (N * index[0] + index[1] + offset) % CkNumPes();
     }
   private:
     int N;

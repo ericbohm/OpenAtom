@@ -139,9 +139,14 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(int x, int y, int z,
 //  It is set to 1 in reduceZ.
 //  After this only GSpacePlane will begin the next iteration.
 //  register with the SFCache
-
+#ifdef _CP_DEBUG_SF_CACHE_
+  CkPrintf("PP [%d,%d] has %d numSfGrps\n",thisIndex.x, thisIndex.y, numSfGrps);
+#endif
   StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
   for(int i=0;i<numSfGrps;i++){
+#ifdef _CP_DEBUG_SF_CACHE_
+    CkPrintf("PP [%d,%d] registers grp %i with SFC[%d]\n",thisIndex.x, thisIndex.y,i, CkMyPe());
+#endif
     sfcache->registerPP(thisIndex.x, thisIndex.y,i);
   }//endfor
 

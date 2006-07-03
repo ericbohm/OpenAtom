@@ -51,6 +51,21 @@ class MapTable
  public:
   CkHashtableT <intdual, int > *maptable;
   PeList *availprocs;
+  void dump()
+    {
+      CkHashtableIterator *it=maptable->iterator();
+      it->seekStart();
+      CkPrintf("Map dump\n");
+      intdual *key;
+      while(it->hasNext())
+	{
+	  it->next((void **) &key);
+	  int proc =maptable->get(key[0]);
+	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
+	}
+      delete it;
+    }
+
  protected:
    CkVec <intdual> *reverseMap;
 
@@ -66,20 +81,6 @@ class MapTable
 	delete [] reverseMap;
     }
   void makeReverseMap();
-  void dump()
-    {
-      CkHashtableIterator *it=maptable->iterator();
-      it->seekStart();
-      CkPrintf("Map dump\n");
-      intdual *key;
-      while(it->hasNext())
-	{
-	  it->next((void **) &key);
-	  int proc =maptable->get(key[0]);
-	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
-	}
-      delete it;
-    }
   
   /**
    * return ckvec containing the  reverse map of  all elements on

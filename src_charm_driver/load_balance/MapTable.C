@@ -1,6 +1,8 @@
 #include "charm++.h"
+#include "../../include/debug_flags.h"
 #include "PeList.h"
 #include "MapTable.h"
+
 
 
 GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, 

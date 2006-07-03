@@ -20,8 +20,14 @@ class CPcharmParaInfo; //forward decl
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+// much hate for this
+#ifdef DUAL_FFTW
+#include <dfftw.h>
+#include <drfftw.h>
+#else
 #include <fftw.h>
 #include <rfftw.h>
+#endif
 #include <charm++.h>
 #include <pairutil.h>
 

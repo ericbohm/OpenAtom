@@ -203,12 +203,6 @@ mainmodule cpaimd {
 	}
 
 
-        array [3D] StructureFactor {
-	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
-	        entry void acceptDestination(int nsend, int destinations[nsend]);
-         	entry void computeSF(SFDummyMsg *msg);
-		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
-	};
 
 	class CLA_Matrix_interface;
 
@@ -273,6 +267,12 @@ mainmodule cpaimd {
 		entry void acceptStructFact(StructFactorMsg *msg);
 
 		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max);
+	};
+        array [3D] StructureFactor {
+	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
+	        entry void acceptDestination(int nsend, int destinations[nsend]);
+         	entry void computeSF(SFDummyMsg *msg);
+		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
 	};
 
 	group AtomsGrp {
