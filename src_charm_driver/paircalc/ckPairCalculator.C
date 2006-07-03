@@ -888,8 +888,8 @@ PairCalculator::multiplyForward(bool flag_dp)
     }
 
 
-#define PC_FWD_DGEMM_SPLIT 8
-#ifdef PC_FWD_DGEMM_SPLIT
+
+#if PC_FWD_DGEMM_SPLIT > 0
   double betap = 1.0;
   int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
   int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
@@ -898,6 +898,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta,  outData,&ldc);
   CmiNetworkProgress();
+
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
@@ -905,11 +906,14 @@ PairCalculator::multiplyForward(bool flag_dp)
   for(int i=1;i<=Kloop;i++){
     int off = i*Ksplit;
     if(i==Kloop){Ksplit+=Krem;}
+
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
 #endif
+
     DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
     CmiNetworkProgress();
+
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
@@ -921,29 +925,28 @@ PairCalculator::multiplyForward(bool flag_dp)
   int lda=doubleN;   //leading dimension A
   int ldb=doubleN;   //leading dimension B
 
-  if( (numRecd == numExpected * 2 )|| (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))
-    {
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-      dumpMatrixDouble("fwlmdata", inDataLeft, numExpected, numPoints*2);
-      dumpMatrixDouble("fwrmdata", inDataRight, numExpected, numPoints*2);
+  dumpMatrixDouble("fwlmdata", inDataLeft, numExpected, numPoints*2);
+  dumpMatrixDouble("fwrmdata", inDataRight, numExpected, numPoints*2);
 #endif
-      CkAssert(matrixA!=NULL);
-      CkAssert(inDataLeft!=NULL);
-      CkAssert(outData!=NULL);
-      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-
+  CkAssert(matrixA!=NULL);
+  CkAssert(inDataLeft!=NULL);
+  CkAssert(outData!=NULL);
+  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
+  
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-
 #endif  // SPLIT
-
-  numRecd = 0; 
+  if( (numRecd == numExpected * 2 )|| (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))
+    {
+      numRecd = 0; 
+    }
   if (flag_dp) {
     for (int i = 0; i < grainSize*grainSize; i++)
       outData[i] *= 2.0;
   }
-
+      
 #ifdef _PAIRCALC_DEBUG_PARANOID_
   dumpMatrixDouble("fwgmodata",outData,grainSize, grainSize);
 #endif
@@ -959,7 +962,8 @@ PairCalculator::multiplyForward(bool flag_dp)
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
-}
+
+  }
 
 
 void
@@ -1283,8 +1287,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
 
       //first multiply to apply the T or L matrix
-#define PC_BWD_DGEMM_SPLIT 8
-#ifdef PC_BWD_DGEMM_SPLIT
+
+#if PC_BWD_DGEMM_SPLIT > 0
 
       if(symmetric)
 	{
@@ -1306,6 +1310,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    StartTime=CmiWallTimer();
 #endif
 	    DGEMM(&transform, &transform, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset+off]),  &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset+off]),&m_in);
+
 #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
@@ -1323,14 +1328,18 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
+
 	  CmiNetworkProgress();
 	  for(int i=1;i<=Mloop;i++){
 	    int off = i*Msplit;
 	    if(i==Mloop){Msplit+=Mrem;}
+
 #ifndef CMK_OPTIMIZE
 	    StartTime=CmiWallTimer();
 #endif
+
 	    DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset+off]), &m_in, amatrix, &k_in, &beta,&(mynewDatad[BTCoffset+off]),&m_in);
+
 #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
@@ -1339,9 +1348,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  }//endfor
 	  
 	}
+
 #else // no SPLIT
-
-
       if(symmetric)
 	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
       else
@@ -1349,11 +1357,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
 #endif
+
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 
-#ifdef PC_BWD_DGEMM_SPLIT
+#if PC_BWD_DGEMM_SPLIT > 0
 
       if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
 	{
@@ -1369,6 +1378,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;
 	  DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in, amatrix, &k_in, &beta,&(othernewDatad[BTCoffset]),&m_in);
+
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
