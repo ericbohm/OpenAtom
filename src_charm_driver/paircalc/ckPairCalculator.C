@@ -194,6 +194,8 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 {
   double *ret=(double *)msgs[0]->getData();
 
+  CkAssert ((unsigned int) ret % 8 == 0);
+
   int size0=msgs[0]->getSize();
   int size=size0/sizeof(double);
 
@@ -886,10 +888,10 @@ PairCalculator::multiplyForward(bool flag_dp)
     }
 
 
-#define PC_FWD_DGEMM_SPLIT 20
+#define PC_FWD_DGEMM_SPLIT 8
 #ifdef PC_FWD_DGEMM_SPLIT
   double betap = 1.0;
-  int Ksplit_m = (orthoGrainSize> PC_FWD_DGEMM_SPLIT) ? orthoGrainSize : PC_FWD_DGEMM_SPLIT;
+  int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
   int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
   int Krem     = (k_in % Ksplit);
   int Kloop    = k_in/Ksplit-1;
@@ -1281,12 +1283,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
 
       //first multiply to apply the T or L matrix
-#define PC_BWD_DGEMM_SPLIT 20
+#define PC_BWD_DGEMM_SPLIT 8
 #ifdef PC_BWD_DGEMM_SPLIT
 
       if(symmetric)
 	{
-	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit_m = PC_BWD_DGEMM_SPLIT;
 	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;
@@ -1313,7 +1315,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	}
       else
 	{
-	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit_m = PC_BWD_DGEMM_SPLIT;
 	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;
@@ -1362,7 +1364,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  //for off diagonal need to handle the offrow with this multiply
 	  
 	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
-	  int Msplit_m = (orthoGrainSize>PC_BWD_DGEMM_SPLIT)? orthoGrainSize: PC_BWD_DGEMM_SPLIT;
+	  int Msplit_m = PC_BWD_DGEMM_SPLIT;
 	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;
@@ -1582,6 +1584,10 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
       {
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
+#ifndef CMK_OPTIMIZE
+	double StartTime=CmiWallTimer();
+#endif
+
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
@@ -1590,6 +1596,11 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 	int outOffset=thisIndex.z;
 	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+	//	if((j-startGrain) % 8)
+	  CmiNetworkProgress();
 
       }
   }
@@ -1598,13 +1609,25 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
       CkAssert(mynewData!=NULL);
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
-	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+
+#ifndef CMK_OPTIMIZE
+	double StartTime=CmiWallTimer();
+#endif
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	  CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
+
 	  int outOffset=thisIndex.z;
 	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
-	  
+
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(220, StartTime, CmiWallTimer());
+#endif
+
+	  //	  if((j-startGrain) % 8)
+	    CmiNetworkProgress();
 	}
     }
 }
