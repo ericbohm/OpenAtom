@@ -235,7 +235,7 @@ class PairCalculator: public CBase_PairCalculator {
     AtSync();
   };
   void multiplyForwardStream(bool flag_dp);
-  void sendTiles();
+  void sendTiles(bool flag_dp);
   void multiplyForward(bool);
   void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
