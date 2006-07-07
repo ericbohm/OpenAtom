@@ -244,6 +244,7 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   existsOut=false;
   existsNew=false;
   numRecd = 0;
+  numRecdBW = 0;
   numRecRight = 0;
   numRecLeft = 0;
   streamCaughtR=0;
@@ -307,6 +308,7 @@ PairCalculator::pup(PUP::er &p)
 {
   ArrayElement4D::pup(p);
   p|numRecd;
+  p|numRecdBW;
   p|numExpected;
   p|grainSize;
   p|numStates;
@@ -554,7 +556,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
 #endif
   }
-  else {
+  else { //not from row
     offset = msg->sender - thisIndex.y;
     if (!existsRight)
       { // now that we know numPoints we can allocate contiguous space
@@ -589,7 +591,8 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #endif
 
   }
-
+  if(streamFW)
+    CkAssert(numRecRight+numRecLeft==numRecd);
 
   /*
    *  NOTE: For this to work the data chunks of the same plane across
@@ -606,7 +609,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   else 
     {
       streamready=((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) && ((numRecLeft>0) && (numRecRight>0) && (streamFW>0));
-      // CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
+      //      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
 
     }
 
@@ -703,70 +706,75 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
   int oldCaughtRight=numRecRight-streamCaughtR;
   if(!symmetric)
   {
+    CkAssert(streamCaughtL>0 || (streamCaughtR>0&&oldCaughtLeft>0));
 
     // As these multiplies create two different shapes of disjoint results
     // we'll be saner if we allocate the results in two different arrays
-    
-    //multiply all right with new left
+
     m_in= numRecRight;
     n_in= streamCaughtL;
     ldc = m_in; 
-    outData1= new double[m_in*n_in];
+
     double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
 
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
+
+    //multiply all right with new left
+    // if we have new left data
+    if(streamCaughtL>0)
+      {
+	outData1= new double[m_in*n_in];
+
 #if PC_FWD_DGEMM_SPLIT > 0
-  double betap = 1.0;
-  int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
-  int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
-  int Krem     = (k_in % Ksplit);
-  int Kloop    = k_in/Ksplit-1;
-
-  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
-  CmiNetworkProgress();
-
+	double betap = 1.0;
+	int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+	int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
+	int Krem     = (k_in % Ksplit);
+	int Kloop    = k_in/Ksplit-1;
+	DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+	CmiNetworkProgress();
 #ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(210, StartTime, CmiWallTimer());
+	traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
-  for(int i=1;i<=Kloop;i++){
-    int off = i*Ksplit;
-    if(i==Kloop){Ksplit+=Krem;}
-
+	for(int i=1;i<=Kloop;i++){
+	  int off = i*Ksplit;
+	  if(i==Kloop){Ksplit+=Krem;}
+	  
 #ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
+	  StartTime=CmiWallTimer();
 #endif
-    DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(allCaughtRight[off]), &lda, &(leftNewTemp[off]), &ldb, &betap, outData1, &ldc);
-    CmiNetworkProgress();
-
+	  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(allCaughtRight[off]), &lda, &(leftNewTemp[off]), &ldb, &betap, outData1, &ldc);
+	  CmiNetworkProgress();
+	  
 #ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
-  }//endfor
+	}//endfor
 
 #else  // not SPLIT 
-    DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+	DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
 
 #ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+	traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
 #endif //split 
 
-    //kick off progress before next dgemm
-    CmiNetworkProgress();
+	//kick off progress before next dgemm
+	CmiNetworkProgress();
 
-    copyIntoTiles(outData1, outTiles, n_in, m_in,  RightOffsets, &(LeftOffsets[oldCaughtLeft]),  touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
-
-    //oldCaught is the same pointer as AllCaught, we just decrease n.
+	copyIntoTiles(outData1, outTiles, n_in, m_in,  RightOffsets, &(LeftOffsets[oldCaughtLeft]),  touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
 
 
-    //note: for first multiply there is only new left and new right
-    //multiply new right with old left
-    if(oldCaughtLeft){
+      }
+
+    //
+    //multiply new right with old left if they exist
+    if(oldCaughtLeft && streamCaughtR){
       m_in= streamCaughtR;
       n_in= oldCaughtLeft;
       ldc = m_in; 
@@ -1171,9 +1179,9 @@ void
 PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecd, msg->actionType);
+  CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
 #endif
-  numRecd++; 
+  numRecdBW++; 
   int size=msg->size;
   int size2=msg->size2;
   double *matrix1=msg->matrix1;
@@ -1227,7 +1235,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   else if (collectAllTiles)
     {
 #ifdef _PAIRCALC_DEBUG_
-      CkPrintf("[%d %d %d %d %d]: MultiplyResult aggregating numRecd %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecd);
+      CkPrintf("[%d %d %d %d %d]: MultiplyResult aggregating numRecdBW %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW);
 #endif      
       
       //do strided copy 
@@ -1237,13 +1245,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       // goffset=orthoX*orthoGrainSize+orthoY
       // into amatrix[goffset]
       // goffset+=grainSize
-      if(numRecd==1) //alloc on first receipt
+      if(numRecdBW==1) //alloc on first receipt
 	{
 	  CkAssert(inResult1==NULL);
 	  inResult1 = new double[matrixSize];
 	}
       if(!unitcoef){ // CG non minimization case have GAMMA      
-	if(numRecd==1) //alloc on first receipt
+	if(numRecdBW==1) //alloc on first receipt
 	  inResult2 = new double[matrixSize];
 	amatrix2 = inResult2;
 	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
@@ -1290,7 +1298,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 
   numOrtho=numOrtho*numOrtho;
-  if(orthoGrainSize==grainSize || numRecd==numOrtho || !collectAllTiles)
+  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles)
     { // we have all the result matrices we need
       // if(cpreduce==section) //could update cookie from multicast
       // we rely on manual resets for this in migration case
@@ -1591,7 +1599,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       // this could be refined to track an array of completed columns
       // and send them in some grouping scheme
 
-      if(numRecd==numOrtho)
+      if(numRecdBW==numOrtho)
 	{ //all done clean up after ourselves
 	  delete [] mynewData;
 	  mynewData=NULL;
@@ -1601,12 +1609,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  othernewData=NULL;
 	  bzero(columnCount, sizeof(int) * numOrthoCol);
 	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
-	  numRecd=0;
+	  numRecdBW=0;
 	}
       
       
     }
-  else if(orthoGrainSize==grainSize || numRecd==numOrtho) // we have all the results
+  else if(orthoGrainSize==grainSize || numRecdBW==numOrtho) // we have all the results
     {
       
       sendBWsignalMsg *sigmsg;
@@ -1650,7 +1658,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	delete [] inResult1;
       inResult1=NULL;
       inResult2=NULL;
-      numRecd=0;
+      numRecdBW=0;
     }
 }
 

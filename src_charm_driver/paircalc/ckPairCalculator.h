@@ -254,6 +254,7 @@ class PairCalculator: public CBase_PairCalculator {
 
  private:
   int numRecd;               //! number of messages received
+  int numRecdBW;               //! number of messages received BW
   int numExpected;           //! number of messages expected
   int grainSize;             //! number of states per chare
   int orthoGrainSize;        //! number of states per ortho tile
