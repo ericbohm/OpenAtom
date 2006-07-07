@@ -21,6 +21,8 @@
 #include "MapTable.h"
 
 
+//#define GPSI_BARRIER 1
+
 #define LOAD_BALANCE_STEP 10
 
 #define PRE_BALANCE_STEP 2

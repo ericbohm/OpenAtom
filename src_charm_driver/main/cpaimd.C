@@ -360,6 +360,9 @@ main::main(CkArgMsg *msg) {
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
      traceRegisterUserEvent("Scalcmap", Scalcmap_);
      traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
+     traceRegisterUserEvent("GSProcnum", 10000);
+     traceRegisterUserEvent("RSProcnum", 20000);
+     traceRegisterUserEvent("SCProcnum", 30000);
      Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
      Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
      Ortho_UE_error = traceRegisterUserEvent("Ortho error");

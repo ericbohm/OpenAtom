@@ -7,7 +7,7 @@
 //#define _CP_DEBUG_NONLOC_BARRIER_
 //#define _CP_DEBUG_ORTHO_OFF_
 //#define _CP_DEBUG_PSI_OFF_
-
+//#define GPSI_BARRIER
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -131,6 +131,12 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (C) FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real, 
     //      complete IFFT of F(gx,gy,z) to F(gx,gy,gz) when it comes back.
+#ifdef GPSI_BARRIER  // pause for every single chare to finish
+       if(!(c->allAcceptedPsiDone())){
+	  RTH_Suspend(); // wait for broadcast that all psi is done  
+       }//endif
+#endif               //end pause
+
        c->doFFT(); 
        c->sendFFTData();
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
@@ -273,6 +279,20 @@ void CP_State_GSpacePlane::gdonePsiV(CkReductionMsg *msg){
       delete msg;
       //let my nonlocals go!
       needPsiV=false;
+      RTH_Runtime_resume(run_thread);
+  }
+//============================================================================
+
+
+//============================================================================
+//     All GSpace objects have finished psi : Debugging only
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_GSpacePlane::gdonePsi(CkReductionMsg *msg){
+      delete msg;
+      //let my ffts go!
+      allAcceptedPsi=true;
       RTH_Runtime_resume(run_thread);
   }
 //============================================================================
@@ -543,6 +563,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   doneDoingIFFT       = false;
   allgdoneifft        = false;
   acceptedPsi         = true;    // we start out with a psi
+  allAcceptedPsi         = true;    // we start out with a psi
   acceptedVPsi        = true;    // we start out with a vpsi
   acceptedLambda      = false;   // no forces yet
   needPsiV            = false;   // don't need tolerance check in first step
@@ -711,6 +732,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|doneNewIter;
   p|allgdoneifft;
   p|acceptedPsi;
+  p|allAcceptedPsi;
   p|acceptedVPsi;
   p|acceptedLambda;
   p|itemp; // 2 temporary variables for debugging in scope
@@ -2221,6 +2243,7 @@ void CP_State_GSpacePlane::sendPsi() {
 // Prepare the data : If cp dynamics is going, save the non-orthogonal puppies.
 
   acceptedPsi =false;
+  allAcceptedPsi =false;
 
   complex *data=gs.packedPlaneData;
 
@@ -2333,6 +2356,12 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   if(countPsi==AllPsiExpected){ 
     //--------------------------------------------------------------------
     // (A) Reset counters and rescale the kx=0 stuff
+
+#ifdef GPSI_BARRIER
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+      CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsi(NULL),gSpacePlaneProxy));
+#endif
     acceptedPsi=true;
     countPsi=0;
     bzero(countPsiO,config.numChunksSym);

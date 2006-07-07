@@ -28,6 +28,10 @@
 
 int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
+#ifndef CMK_OPTIMIZE
+	double StartTime=CmiWallTimer();
+#endif
+
 	int *index=(int *) iIndex.data();
 	if(maptable==NULL)
 	{
@@ -35,6 +39,10 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	  maptable= &GSmaptable;
 	}
 	int retval=maptable->get(intdual(index[0],index[1]));
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(10000, StartTime, CmiWallTimer());
+#endif
+
 	return retval;
 }
 
@@ -47,6 +55,10 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
  */
 int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
+#ifndef CMK_OPTIMIZE
+	double StartTime=CmiWallTimer();
+#endif
+
 	int *index=(int *) iIndex.data();
 	/* this works due to 4D being stored as 2 ints */
 
@@ -59,6 +71,9 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 	    maptable= &AsymScalcmaptable;
 	}
 	int retval=maptable->get(intdual(index[0], index[1]));
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(30000, StartTime, CmiWallTimer());
+#endif
 	return retval;
 }
 
@@ -68,6 +83,10 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 
 int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
+#ifndef CMK_OPTIMIZE
+	double StartTime=CmiWallTimer();
+#endif
+
 	int *index=(int *) iIndex.data();
 	if(maptable==NULL)
 	{
@@ -75,6 +94,10 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	  maptable= &RSmaptable;
 	}
 	int retval=maptable->get(intdual(index[0], index[1]));
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(20000, StartTime, CmiWallTimer());
+#endif
+
 	return retval;
 
 }

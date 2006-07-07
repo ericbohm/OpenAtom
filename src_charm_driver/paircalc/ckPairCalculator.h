@@ -234,6 +234,30 @@ class PairCalculator: public CBase_PairCalculator {
     rck=0;
     AtSync();
   };
+  void bwbarrier(CkReductionMsg *msg)
+    {
+      // everyone is done
+      delete msg;
+      // figure out how to send the results from here sanely
+      sendBWsignalMsg *sigmsg;
+      if(PCdelayBWSend)
+	sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+      else
+	sigmsg= new  sendBWsignalMsg;
+      //collapse this into 1 flag
+      bool unitcoef=true;  //cheap hack for minimzation only
+      sigmsg->otherdata= 
+	((!unitcoef || symmetric) &&(thisIndex.x !=thisIndex.y)) ? true : false;
+
+      if(PCdelayBWSend)
+	{
+	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+					    // than non prioritized
+	}
+      thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+
+    }
   void multiplyForwardStream(bool flag_dp);
   void sendTiles(bool flag_dp);
   void multiplyForward(bool);

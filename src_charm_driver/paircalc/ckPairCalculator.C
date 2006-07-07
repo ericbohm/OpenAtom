@@ -1616,7 +1616,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
   else if(orthoGrainSize==grainSize || numRecdBW==numOrtho) // we have all the results
     {
-      
+      //#define PC_BARRIER_BW
+#ifdef PC_BARRIER_BW
+      int wehaveours=1;
+      contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		 CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
+
+#else      
       sendBWsignalMsg *sigmsg;
       if(PCdelayBWSend)
 	sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
@@ -1633,7 +1639,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 					    // than non prioritized
 	}
       thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-      //sendBWResult(sigmsg);
+#endif
       if(conserveMemory)
 	{
 	  // clear the right and left they'll get reallocated on the next pass

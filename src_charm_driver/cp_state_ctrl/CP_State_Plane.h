@@ -223,6 +223,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void acceptEnergy(GSAtmMsg *msg);
 	void gdoneIFFT(CkReductionMsg *msg);
 	void gdonePsiV(CkReductionMsg *msg);
+	void gdonePsi(CkReductionMsg *msg);
+	bool allAcceptedPsiDone(){return(allAcceptedPsi);}
         void resumePsiV (CkReductionMsg *msg);
         void psiWriteComplete(CkReductionMsg *msg);
 	void releaseSFComputeZ();
@@ -264,8 +266,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool allgdoneifft;
 	bool doneDoingIFFT;
 	bool initialized;
+	bool allAcceptedPsi;
 	bool acceptedPsi;
 	bool acceptedVPsi;
+	bool allAcceptedVPsi;
         bool doneNewIter;
 	bool acceptedLambda;
 	double ehart_total;

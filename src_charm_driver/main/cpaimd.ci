@@ -142,6 +142,7 @@ mainmodule cpaimd {
 		entry void requirePsiV();
 		entry void resumePsiV(CkReductionMsg *msg);
 		entry void gdonePsiV(CkReductionMsg *msg);
+		entry void gdonePsi(CkReductionMsg *msg);
 
 		entry void makePCproxies();
 		entry void isAtSync(int);
