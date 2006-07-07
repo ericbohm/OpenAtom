@@ -548,6 +548,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
       { //record offset, copy data
 	memcpy(&(allCaughtLeft[numRecLeft *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
 	LeftOffsets[numRecLeft++]=offset;
+	streamCaughtL++;
       }
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
@@ -601,7 +602,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   bool streamready;
 
   if(symmetric)
-    streamready=streamCaughtL>=streamFW && streamFW>0;
+    streamready=((streamCaughtL>=streamFW) && (streamFW>0));
   else 
     streamready=(streamCaughtL>=streamFW||streamCaughtR>=streamFW)&& streamCaughtR>2 && streamCaughtL>2 && streamFW>0;
 
@@ -705,7 +706,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
     //multiply all right with new left
     m_in= numRecRight;
     n_in= streamCaughtL;
-    ldc = n_in; 
+    ldc = m_in; 
     outData1= new double[m_in*n_in];
     double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
 
@@ -720,8 +721,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 
     //kick off progress before next dgemm
     CmiNetworkProgress();
-    //    copyIntoTiles(outData1, outTiles, m_in, n_in, RightOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+
     copyIntoTiles(outData1, outTiles, n_in, m_in,  RightOffsets, &(LeftOffsets[oldCaughtLeft]),  touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+
     //oldCaught is the same pointer as AllCaught, we just decrease n.
 
 
@@ -730,7 +732,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
     if(oldCaughtLeft){
       m_in= streamCaughtR;
       n_in= oldCaughtLeft;
-      ldc = n_in; 
+      ldc = m_in; 
 
       // right newTemp is last bit of old
       double *rightNewTemp = &(allCaughtRight[(oldCaughtRight)*actualPoints]);
@@ -743,7 +745,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
 
 #ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+      traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
       copyIntoTiles(outData2, outTiles, n_in, m_in, &(RightOffsets[oldCaughtRight]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
@@ -757,30 +759,29 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       m_in= numRecLeft;
       n_in= streamCaughtL;
       ldc = m_in; 
-
+      CkPrintf("numRecLeft %d streamCaughtL %d \n",numRecLeft, streamCaughtL);
       outData1= new double[m_in*n_in];
       double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
 
 #ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
+      double StartTime=CmiWallTimer();
 #endif
-
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
 
 #ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+      traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
       //kick off progress before next dgemm
       CmiNetworkProgress();
 
-      copyIntoTiles(outData1, outTiles, m_in, n_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+      copyIntoTiles(outData1, outTiles, n_in, m_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
       // multiply new left by old left
       if(oldCaughtLeft)
 	{
 	  m_in= streamCaughtL;
-	  m_in= oldCaughtLeft;
-	  ldc = n_in; 
+	  n_in= oldCaughtLeft;
+	  ldc = m_in; 
 	  outData2= new double[m_in*n_in];
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 
@@ -794,7 +795,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
-	  copyIntoTiles(outData2, outTiles, m_in, n_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+	  copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
 	}
     }
 
@@ -971,22 +972,27 @@ PairCalculator::sendTiles(bool flag_dp)
   int tilesq=orthoGrainSize*orthoGrainSize;
   CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
   int numOrtho=grainSize/orthoGrainSize;
-  for(int orthoX=0; orthoX<numOrtho; orthoX++)
-    for(int orthoY=0; orthoY<numOrtho; orthoY++)
+  //  for(int orthoX=0; orthoX<numOrtho; orthoX++)
+  //    for(int orthoY=0; orthoY<numOrtho; orthoY++)
+  for(int orthoIndex=0;orthoIndex<numOrtho*numOrtho;orthoIndex++)
       {
 	// copy into submatrix, contribute
 	// we need to stride by grainSize and copy by orthoGrainSize
-	int orthoIndex=orthoX*numOrtho+orthoY;
+	//	int orthoIndex=orthoX*numOrtho+orthoY;
+
 	if(touchedTiles[orthoIndex]==tilesq)
 	  {
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
+	    if(symmetric)
 	    CkPrintf("[%d %d %d %d %d]: contributes %i \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
 #endif
 	    if (flag_dp) {
-	      for (int i = 0; i < grainSize*grainSize; i++)
+	      for (int i = 0; i < orthoGrainSize*orthoGrainSize; i++)
 		outTiles[orthoIndex][i] *= 2.0;
 	    }
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+	    int orthoX=orthoIndex/numOrtho;	   
+	    int orthoY=orthoIndex%numOrtho;
 	    char filename[80];
 	    snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
 	    dumpMatrixDouble(filename, outTiles[orthoIndex], orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
@@ -997,13 +1003,13 @@ PairCalculator::sendTiles(bool flag_dp)
 	  }
 	else if(touchedTiles[orthoIndex]>tilesq)
 	  {
-	    CkPrintf("tile orthoIndex has %d vs %d\n",orthoIndex, touchedTiles[orthoIndex], tilesq);
+	    CkPrintf("tile orthoIndex %d has %d vs %d\n",orthoIndex, touchedTiles[orthoIndex], tilesq);
 	    CkAbort("invalid large number of tiles touched");
 	  }
 	else
 	  {
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
-	    CkPrintf("[%d %d %d %d %d]: %i not ready with %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, orthoIndex, touchedTiles[orthoIndex]);
+	      CkPrintf("[%d %d %d %d %d]: %i not ready with %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, orthoIndex, touchedTiles[orthoIndex]);
 #endif
 	  }
       }
@@ -1787,8 +1793,9 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
 	int tilej=y%tileSize;
 	dest[tiley+tilex][tilej*tileSize+tilei]=value;
 	touched[tiley+tilex]++;
-	//	CkPrintf(" j %d i %d, x %d y %d copy %g into tilex %d tiley %d, offset %d touched %d\n", j,i, x, y, value, tilex, tiley, tilej*tileSize+tilei, touched[tiley+tilex]);
-	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
+	//	if(symmetric)
+	//	  CkPrintf(" j %d i %d, x %d y %d copy %g into tilex %d tiley %d, offset %d touched %d\n", j,i, x, y, value, tilex, tiley, tilej*tileSize+tilei, touched[tiley+tilex]);
+	//	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
       }
 }
 
