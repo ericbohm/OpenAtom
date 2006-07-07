@@ -891,6 +891,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  CkAssert(touchedTiles[i]==0);
 	}
 #endif
+      numRecd=0;
     }
 }
 
