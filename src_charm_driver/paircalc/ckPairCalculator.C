@@ -604,7 +604,11 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   if(symmetric)
     streamready=((streamCaughtL>=streamFW) && (streamFW>0));
   else 
-    streamready=(streamCaughtL>=streamFW||streamCaughtR>=streamFW)&& streamCaughtR>2 && streamCaughtL>2 && streamFW>0;
+    {
+      streamready=((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) && ((numRecLeft>0) && (numRecRight>0) && (streamFW>0));
+      // CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
+
+    }
 
   if(streamready || ((streamFW>0) && (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))))
     {
@@ -891,7 +895,6 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  CkAssert(touchedTiles[i]==0);
 	}
 #endif
-      numRecd=0;
     }
 }
 
