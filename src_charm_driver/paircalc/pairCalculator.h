@@ -25,6 +25,7 @@ class PairCalcID {
   bool Symmetric;
   bool useComlib;
   bool useEtoM;
+  bool useDirectSend;
   bool isDoublePacked;
   bool conserveMemory;
   bool lbpaircalc;
@@ -50,7 +51,7 @@ class PairCalcID {
       delete [] proxyRNotFrom;
   }
 
-  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority, bool _useEtoM) {
+  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority, bool _useEtoM, bool _useDirectSend) {
     Aid = aid;
     GrainSize = grain;
     numChunks = _numChunks;
@@ -58,6 +59,7 @@ class PairCalcID {
     Symmetric = sym;
     useComlib = _useComlib;
     useEtoM = _useEtoM;
+    useDirectSend = _useDirectSend;
     conserveMemory = _conserveMemory;
     existsRproxy=false;
     existsLproxy=false;
@@ -108,6 +110,7 @@ class PairCalcID {
     Symmetric=pid.Symmetric;
     useComlib=pid.useComlib;
     useEtoM=pid.useEtoM;
+    useDirectSend=pid.useDirectSend;
     isDoublePacked=pid.isDoublePacked;
     conserveMemory=pid.conserveMemory;
     lbpaircalc=pid.lbpaircalc;
@@ -130,6 +133,7 @@ class PairCalcID {
     p|Symmetric;
     p|useComlib;
     p|useEtoM;
+    p|useDirectSend;
     p|isDoublePacked;
     p|conserveMemory;
     p|lbpaircalc;
@@ -177,7 +181,7 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 

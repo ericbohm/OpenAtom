@@ -217,12 +217,12 @@ void Ortho::collect_results(void){
 	      }//endfor
 	  if(itime>0)
 	    {
-	      CkPrintf("%d\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
+	      CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
 	      CkPrintf("------------------------------\n");
 	    }
         }else{
 	  if(numGlobalIter>0){
-	    CkPrintf("Iteration time (ORTHO) : %d\n", 
+	    CkPrintf("Iteration time (ORTHO) : %g\n", 
                wallTimeArr[itime] - wallTimeArr[itime-1]);
 	  }//endif
         }//endif

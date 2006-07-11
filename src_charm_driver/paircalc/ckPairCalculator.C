@@ -696,7 +696,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
   int ldb=actualPoints;  //leading dimension B
   int ldc;               //leading dimension C  <--- m_in
 
-  double alpha=double(1.0);// scale it up by 2
+  double alpha=double(1.0);
 
   double beta=double(0.0); // C is unset
   double *outData1=NULL;
@@ -839,11 +839,14 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       ldc = m_in; 
       outData1= new double[m_in*n_in];
       double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
-
+      if(flag_dp) // scale it up by 2
+	alpha=2.0;
 #ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
-      DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+      //DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
+      DGEMM(&transformT, &transform, &n_in, &m_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData1, &n_in);
+
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -852,7 +855,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       //kick off progress before next dgemm
       CmiNetworkProgress();
 
-      copyIntoTiles(outData1, outTiles, n_in, m_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+      //copyIntoTiles(outData1, outTiles, n_in, m_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]), touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+      
+      copyIntoTiles(outData1, outTiles, m_in, n_in,  &(LeftOffsets[oldCaughtLeft]),LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
       // multiply new left by old left
       if(oldCaughtLeft)
 	{
@@ -866,13 +871,15 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  StartTime=CmiWallTimer();
 #endif
 
-	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+	  //DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+	  DGEMM(&transformT, &transform, &n_in, &m_in, &k_in, &alpha, allCaughtLeft,&ldb, leftNewTemp, &lda, &beta, outData2, &n_in);
 
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
-	  copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+	  //copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
+	  copyIntoTiles(outData2, outTiles, m_in, n_in, LeftOffsets, &(LeftOffsets[oldCaughtLeft]),  touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
 	}
     }
 
@@ -1063,10 +1070,11 @@ PairCalculator::sendTiles(bool flag_dp)
 	    if(symmetric)
 	    CkPrintf("[%d %d %d %d %d]: contributes %i \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
 #endif
-	    if (flag_dp) {
-	      for (int i = 0; i < orthoGrainSize*orthoGrainSize; i++)
-		outTiles[orthoIndex][i] *= 2.0;
-	    }
+	    //	    if (flag_dp) {
+	    //	      for (int i = 0; i < orthoGrainSize*orthoGrainSize; i++)
+	    //		outTiles[orthoIndex][i] *= 2.0;
+	    //	    }
+	    //#if 1
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	    int orthoX=orthoIndex/numOrtho;	   
 	    int orthoY=orthoIndex%numOrtho;

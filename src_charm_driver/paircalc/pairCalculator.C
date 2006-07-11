@@ -65,7 +65,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -95,7 +95,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   int proc = 0;
 
-  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useEtoM);
+  pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useEtoM, useDirectSend);
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
@@ -410,7 +410,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	  CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
 #endif
 
-	  if(pcid->useEtoM)
+	  if(pcid->useEtoM || pcid->useDirectSend)
 	    { // use the ckvec to send
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem < pcid->listLFrom.size() ; elem++)
@@ -455,7 +455,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    {// last chunk  gets remainder
 	      outsize += n % pcid->numChunks;
 	    }
-	  if(pcid->useEtoM)
+	  if(pcid->useEtoM || pcid->useDirectSend)
 	    { // use the ckvec to send
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem<pcid->listLNotFrom.size();elem++)
@@ -539,7 +539,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		  idx.index[1]=s1;
 		  idx.index[2]=s2;
 		  elemsfromrow[erowcount++]=idx;
-		  if(pcid->useEtoM && chunk==0)
+		  if((pcid->useEtoM||pcid->useDirectSend) && chunk==0)
 		    {
 		      pcid->listLFrom.push_back(idx);
 		    }
@@ -550,7 +550,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		  idx.index[1]=s2;
 		  idx.index[2]=s1;
 		  elems[ecount++]=idx;
-		  if(pcid->useEtoM && chunk==0)
+		  if((pcid->useEtoM||pcid->useDirectSend) && chunk==0)
 		    {
 		      pcid->listLNotFrom.push_back(idx);
 		    }
@@ -607,7 +607,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 								      0, nstates-grainSize, grainSize,
 								      chunk, chunk, 1);
 	    pcid->existsLproxy=true;      
-	    if(pcid->useEtoM && chunk==0)
+	    if((pcid->useEtoM || pcid->useDirectSend) && chunk==0)
 	      {
 		for(s2 = 0; s2 < nstates; s2 += grainSize){
 		  pcid->listLFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,chunk));
@@ -649,22 +649,8 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
   if(!pcid->existsRproxy)
     {
       makeRightTree(pcid,myS,myPlane);
-      /*    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
-    pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
-    if(pcid->useEtoM)
-      if(pcid->Symmetric)
-	ComlibAssociateProxy(&gSymInstance,pcid->cproxy);
-      else
-	ComlibAssociateProxy(&gAsymInstance,pcid->cproxy);
-      */
 
     }
-  /*  if(pcid->useEtoM)
-    if(pcid->Symmetric)
-      gSymInstance.beginIteration();
-    else
-      gAsymInstance.beginIteration();
-  */
   if(pcid->existsRproxy)
     {
 #ifdef _DEBUG_PAIRCALC_PARANOID_
@@ -688,7 +674,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	    {// last chunk gets remainder
 	      outsize+=n % pcid->numChunks;
 	    }
-	  if(pcid->useEtoM)
+	  if(pcid->useEtoM || pcid->useDirectSend)
 	    {
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem<pcid->listRNotFrom.size();elem++)
@@ -755,7 +741,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 						0, nstates-grainSize, grainSize,
 						s2, s2, 1,
 						c, c, 1);
-	  if(pcid->useEtoM && c==0)
+	  if((pcid->useEtoM  ||pcid->useDirectSend) && c==0)
 	    {
 
 	      for(int s1 = 0; s1 < nstates; s1 += grainSize){

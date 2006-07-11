@@ -187,6 +187,7 @@ class Config {
 	int useRInsIGZRhoGP;
 	int useGssInsRealP;
 	int usePairEtoM;
+	int usePairDirectSend;
 	int useMssInsGP;
 	int numMulticastMsgs;
 	int useGMulticast;

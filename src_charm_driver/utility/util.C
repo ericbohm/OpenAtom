@@ -1358,6 +1358,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"lbdensity: %d\n",lbdensity);
      fprintf(fp,"useCommlib: %d\n",useCommlib);
      fprintf(fp,"usePairEtoM: %d\n",usePairEtoM);
+     fprintf(fp,"usePairDirectSend: %d\n",usePairDirectSend);
      fprintf(fp,"PCCollectTiles: %d\n",PCCollectTiles);
      fprintf(fp,"PCdelayBWSend: %d\n",PCdelayBWSend);
      fprintf(fp,"PCstreamBWout: %d\n",PCstreamBWout);
@@ -1449,6 +1450,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useCommlibMulticast  = 1;
     config.useCommlib           = 1;
     config.usePairEtoM           = 0;
+    config.usePairDirectSend     = 0;
 
     config.PCCollectTiles       = 1;
     config.PCstreamBWout       = 0;
@@ -1478,7 +1480,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.rsifftpriority       = 100000000;
     config.gsifftpriority       = 200000000;
     config.lambdapriority       = 300000000;
-    config.psipriority          = 400000000;
+    config.psipriority          = 500000;
     config.rhorpriority         = 2000000;
     config.rhogpriority         = 2500000; 
     config.gExpandFact          = 1.0;
@@ -1532,6 +1534,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.useCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairEtoM"))
             config.usePairEtoM = atoi(parameterValue);
+        else if (!strcmp(parameterName, "usePairDirectSend"))
+            config.usePairDirectSend = atoi(parameterValue);
         else if (!strcmp(parameterName, "PCCollectTiles"))
             config.PCCollectTiles = atoi(parameterValue);
         else if (!strcmp(parameterName, "PCdelayBWSend"))
@@ -1726,6 +1730,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.useCommlibMulticast,"useCommlibMulticast",1);
     rangeExit(config.useCommlib,"useCommlib",1);
     rangeExit(config.usePairEtoM,"usePairEtoM",1);
+    rangeExit(config.usePairDirectSend,"usePairDirectSend",1);
     rangeExit(config.PCCollectTiles,"PCCollectTiles",1);
     rangeExit(config.PCdelayBWSend,"PCdelayBWSend",1);    
     rangeExit(config.PCstreamBWout,"PCstreamBWout",1);
