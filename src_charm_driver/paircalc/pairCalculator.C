@@ -189,6 +189,12 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
 									       0, nstates-GrainSize, GrainSize,
 									       s2, s2, 1,
 									       chunk, chunk,1);
+  CkSectionID sid=sectProxy.ckGetSectionID();
+  int newListStart=state%GrainSize + chunk;
+  if(newListStart> sid._nElems)
+    newListStart= newListStart % sid._nElems;
+  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
@@ -208,7 +214,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
   // so we'll have to make this the tedious explicit way
   CkArrayIndexMax *elems= new CkArrayIndexMax[nstates/GrainSize-1];
   int ecount=0;
-  for(int s2 = 0; s2<nstates; s2+=GrainSize)
+  for(int s2 =0; s2<nstates; s2+=GrainSize)
     {
       if(s1!=s2)
 	{
@@ -216,6 +222,11 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
 	  elems[ecount++]=idx4d;
 	}
     }
+  int newListStart=state%GrainSize + chunk;
+  if(newListStart> ecount)
+    newListStart= newListStart % ecount;
+  bool order=reorder_elem_list( elems, ecount, newListStart);
+  CkAssert(order);
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
@@ -238,6 +249,12 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 									       0, s2, GrainSize,
 									       s2, s2, 1,
 									       chunk, chunk, 1);
+  CkSectionID sid=sectProxy.ckGetSectionID();
+  int newListStart=state%GrainSize + chunk;
+  if(newListStart> sid._nElems)
+    newListStart= newListStart % sid._nElems;
+  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
@@ -260,6 +277,13 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
 					  s1, s1, 1,
 					  s1+GrainSize, nstates-GrainSize, GrainSize,
 					  chunk, chunk, 1);
+
+  CkSectionID sid=sectProxy.ckGetSectionID();
+  int newListStart=state%GrainSize + chunk;
+  if(newListStart> sid._nElems)
+    newListStart= newListStart % sid._nElems;
+  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
@@ -271,7 +295,7 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY)
+CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize)
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
@@ -279,12 +303,23 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
 #endif
   CkArrayIndexMax *elems= new CkArrayIndexMax[numZ*numChunks];
   //add chunk loop
-  for(int chunk = 0; chunk < numChunks; chunk++){
-    for(int numX = 0; numX < numZ; numX++){
+  for(int chunk = numChunks-1; chunk >=0; chunk--){
+    for(int numX = numZ-1; numX >=0; numX--){
       CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
       elems[ecount++]=idx4d;
     }
   }
+  int numOrtho=pcid->GrainSize/orthoGrainSize;
+  int orthoIndexX=(orthoX*orthoGrainSize-s1)/orthoGrainSize;
+  int orthoIndexY=(orthoY*orthoGrainSize-s2)/orthoGrainSize;
+  int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
+
+  int newListStart=orthoIndex;
+  if(newListStart> ecount)
+    newListStart= newListStart % ecount;
+  bool order=reorder_elem_list( elems, ecount, newListStart);
+  CkAssert(order);
+
   // now that we have the section, make the proxy and do delegation
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
@@ -789,6 +824,21 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
   }
 }
 
-
-
+//
+bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
+{
+  if(newstart>numelems)
+    return(false);
+  CkArrayIndexMax  swap;
+  int where=newstart;  
+  for(int i=0;i<newstart;i++,where++)
+    {
+      if(where>=numelems)
+	where=0;
+      swap=elems[i];
+      elems[i]=elems[where];
+      elems[where]=swap;
+    }
+  return(true);
+}
 

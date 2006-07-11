@@ -1,3 +1,4 @@
+
 /** \file pairCalculator.h
  *
  */
@@ -189,7 +190,7 @@ extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalcu
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2);
+CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin);
 
 void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 
@@ -210,5 +211,5 @@ void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId,
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
-
+bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart);
 #endif
