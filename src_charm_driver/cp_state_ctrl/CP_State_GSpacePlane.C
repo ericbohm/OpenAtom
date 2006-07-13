@@ -8,6 +8,7 @@
 //#define _CP_DEBUG_ORTHO_OFF_
 //#define _CP_DEBUG_PSI_OFF_
 //#define GPSI_BARRIER
+//#define GIFFT_BARRIER
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

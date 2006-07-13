@@ -65,7 +65,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -96,6 +96,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   int proc = 0;
 
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useEtoM, useDirectSend);
+  pcid->orthomCastGrpId=orthomCastGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
@@ -190,7 +191,7 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
 									       s2, s2, 1,
 									       chunk, chunk,1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize + chunk;
+  int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
@@ -222,7 +223,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
 	  elems[ecount++]=idx4d;
 	}
     }
-  int newListStart=state%GrainSize + chunk;
+  int newListStart=state%GrainSize;
   if(newListStart> ecount)
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list( elems, ecount, newListStart);
@@ -250,7 +251,7 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 									       s2, s2, 1,
 									       chunk, chunk, 1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize + chunk;
+  int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
@@ -279,7 +280,7 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
 					  chunk, chunk, 1);
 
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize + chunk;
+  int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
@@ -324,7 +325,7 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
 
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[0]).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
   sectProxy.ckSectionDelegate(mcastGrp);
 
   // send the message to initialize it with the callback and groupid

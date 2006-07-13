@@ -1446,6 +1446,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.doublePack           = 1;
     config.conserveMemory       = 0;
     config.numMulticastMsgs     = 10;
+    config.PCSpanFactor         = 2;
     config.useGMulticast        = 0;
     config.useCommlibMulticast  = 1;
     config.useCommlib           = 1;
@@ -1572,6 +1573,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.useGMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "numMulticastMsgs"))
             config.numMulticastMsgs = atoi(parameterValue);
+        else if (!strcmp(parameterName, "PCSpanFactor"))
+            config.PCSpanFactor = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlibMulticast"))
             config.useCommlibMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhoGHelpers"))
@@ -1740,6 +1743,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.fftprogresssplitReal,"fftprogresssplitReal",0);
     rangeExit(config.rhoGHelpers,"rhoGHelpers",0);
     rangeExit(config.numMulticastMsgs,"numMulticastMsgs",0);
+    rangeExit(config.PCSpanFactor,"numMulticastMsgs",0);
     rangeExit(config.pesPerState,"pesPerState;",0);
     rangeExit(config.GpesPerState,"GpesPerState;",0);
     rangeExit(config.RpesPerState,"RpesPerState;",0);

@@ -379,9 +379,9 @@ void Ortho::lbresume(CkReductionMsg *msg) {
 	CkAbort("must fix ortho proxy reset!\n");
 	if(thisIndex.x <= thisIndex.y) //lambda is done
 	  {
-	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId[0]).ckLocalBranch();               
+	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
 	    mcastGrp->resetSection(pcProxy);
-	    setGredProxy(&pcProxy, pairCalcID1.mCastGrpId[0],  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
+	    setGredProxy(&pcProxy, pairCalcID1.orthomCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
 	    if(thisIndex.x!=thisIndex.y)
 	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
 	  }

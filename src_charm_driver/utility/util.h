@@ -190,6 +190,7 @@ class Config {
 	int usePairDirectSend;
 	int useMssInsGP;
 	int numMulticastMsgs;
+	int PCSpanFactor;
 	int useGMulticast;
 	int useCommlibMulticast;
 	int pesPerState;

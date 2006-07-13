@@ -126,37 +126,30 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 		{
 		  CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-		  if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
-		    {
 
+		  if(count<scobjs_per_pe)
+		    {
+		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
 		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 		      count++;
 		    }
 		  else
 		    {
-		      if(count<scobjs_per_pe)
-			{
-			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-			  count++;
-			}
-		      else
-			{
-			  // new partition
-			  procno++;
-			  srcpe=destpe;
-			  if(availprocs->noPes())
-			    availprocs->rebuild();
-			  //			  availprocs->sortSource(srcpe);
-			  destpe=availprocs->findNext();
-			  if(rem!=0)
-			    if(procno==rem)
-			      scobjs_per_pe-=1;
-			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-			  count=0;
-			  count++;
-			}
+		      // new partition
+		      procno++;
+		      srcpe=destpe;
+		      if(availprocs->noPes())
+			availprocs->rebuild();
+		      //			  availprocs->sortSource(srcpe);
+		      destpe=availprocs->findNext();
+		      if(rem!=0)
+			if(procno==rem)
+			  scobjs_per_pe-=1;
+		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+		      count=0;
+		      count++;
 		    }
+
 		}
 #ifdef MAP_DEBUG
       CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
@@ -180,36 +173,29 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 		{
 		  CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
 		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-		  if(xchunk==0 && ychunk==0 && newdim==0 && plane==0)
+
+		  if(count<scobjs_per_pe)
 		    {
-		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc 0\n", plane, xchunk, ychunk, newdim); 
-		      maptable->put(intdual(intidx[0], intidx[1]))=0;
+		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 		      count++;
 		    }
 		  else
-		    {
-		      if(count<scobjs_per_pe)
-			{
-			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
-			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-			  count++;
-			}
-		      else
-			{  // new partition
-			  procno++;
-			  srcpe=destpe;
-			  if(availprocs->noPes())
-			      availprocs->rebuild();
-			  //			  availprocs->sortSource(srcpe);
-			  destpe=availprocs->findNext();
-			  if(rem!=0)
-			    if(procno==rem)
-			      scobjs_per_pe-=1;
-			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-			  count=0;
-			  count++;
-			}
+		    {  // new partition
+		      procno++;
+		      srcpe=destpe;
+		      if(availprocs->noPes())
+			availprocs->rebuild();
+		      //			  availprocs->sortSource(srcpe);
+		      destpe=availprocs->findNext();
+		      if(rem!=0)
+			if(procno==rem)
+			  scobjs_per_pe-=1;
+		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+		      count=0;
+		      count++;
 		    }
+
 		}
 #ifdef MAP_DEBUG
       CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
