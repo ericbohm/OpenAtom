@@ -3,7 +3,7 @@
 #include "PeList.h"
 #include "MapTable.h"
 
-
+#define MAP_DEBUG
 
 GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, 
 		       int _nchareG, double *_lines_per_chareG, double *_pts_per_chareG, 
@@ -101,9 +101,6 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
-  int srcpe=0,destpe=availprocs->findNext();
-  if(availprocs->count()==0)
-    availprocs->reset();
 
   if(planes_per_pe==0)
     CkAbort("Choose a smaller Gstates_per_pe\n");
@@ -115,6 +112,14 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       rem = lesser_scalc*nchareG*numChunksSym % availprocs->count();
       if(rem!=0)
 	scobjs_per_pe+=1;
+#ifdef MAP_DEBUG
+      CkPrintf(" lesser_scalc %d *nchareG %d *numChunksSym %d %% availprocs->count() %d = rem %d and scobjs_per_pe is %d\n", lesser_scalc,scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe);
+#endif
+
+      int srcpe=0,destpe=availprocs->findNext();
+      if(availprocs->count()==0)
+	availprocs->reset();
+
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksSym, rem);
 			
       for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
@@ -160,10 +165,17 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
     {
       scobjs_per_pe = scalc_per_plane*nchareG*numChunksAsym/availprocs->count();
       rem = scalc_per_plane*nchareG*numChunksAsym % availprocs->count();
+
+
       if(rem!=0)
 	scobjs_per_pe+=1;
-
+#ifdef MAP_DEBUG
+      CkPrintf(" scalc_per_plane %d *nchareG %d *numChunksAsym %d %% availprocs->count() %d = rem %d and scobjs_per_pe is %d\n", scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe);
+#endif
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
+      int srcpe=0,destpe=availprocs->findNext();
+      if(availprocs->count()==0)
+	availprocs->reset();
 			
       for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 	for(int newdim=0; newdim<numChunksAsym; newdim++)
