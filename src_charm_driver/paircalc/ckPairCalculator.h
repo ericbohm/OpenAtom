@@ -114,9 +114,6 @@ class partialResultMsg : public CMessage_partialResultMsg {
   complex *result;
   int N;
   int myoffset;
-  int priority;
-  CkCallback cb;
-
   friend class CMessage_partialResultMsg;
 };
 
@@ -222,7 +219,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -266,7 +263,9 @@ class PairCalculator: public CBase_PairCalculator {
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
   void sendBWResult(sendBWsignalMsg *msg);
+  void sendBWResultDirect(sendBWsignalMsg *msg);
   void sendBWResultColumn(bool other, int startGrain, int endGrain);
+  void sendBWResultColumnDirect(bool other, int startGrain, int endGrain);
   void multiplyResult(multiplyResultMsg *msg);
   void multiplyPsiV();
   void multiplyResultI(multiplyResultMsg *msg);
@@ -325,6 +324,9 @@ class PairCalculator: public CBase_PairCalculator {
 
   bool PCstreamBWout;        //! stream output from BW path       
   bool PCdelayBWSend;        //! use priority to delay BW output 
+
+  bool gSpaceSum;            //! sum in gspace instead of reduction
+  int gpriority;            //! priority of msg to gspace
 
   complex *mynewData;        //! results of bw multiply
   complex *othernewData;     //! results of sym off diagonal multiply,

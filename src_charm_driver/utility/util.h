@@ -232,6 +232,7 @@ class Config {
 	int numChunks;
 	int numChunksSym;
 	int numChunksAsym;
+	int gSpaceSum;
 	int blockSize;
 	int prioBW;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];

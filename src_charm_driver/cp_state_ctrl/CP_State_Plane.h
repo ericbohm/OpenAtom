@@ -229,11 +229,17 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void psiWriteComplete(CkReductionMsg *msg);
 	void releaseSFComputeZ();
 	void acceptNewPsi(CkReductionMsg *msg);
+	void acceptNewPsi(partialResultMsg  *msg);
+	void doNewPsi();
         void collectFileOutput(GStateOutMsg *msg);
 	void acceptNewPsiV(CkReductionMsg *msg);
+	void acceptNewPsiV(partialResultMsg *msg);
+	void doNewPsiV();
 	void acceptAllLambda(CkReductionMsg *msg);
         void psiCgOvlap(CkReductionMsg *msg);
 	void acceptLambda(CkReductionMsg *msg);
+	void acceptLambda(partialResultMsg *msg);
+	void doLambda();
         void acceptRedPsi(GSRedPsiMsg *msg);  
         void computeCgOverlap();
         void run ();

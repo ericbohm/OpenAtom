@@ -1398,6 +1398,7 @@ void Config::print(char *fname_in) {
      fprintf(fp, "scalc_per_plane: %d\n", scalc_per_plane);
      fprintf(fp, "Rstates_per_pe: %d\n", Rstates_per_pe);
      fprintf(fp,"numChunks: %d\n",numChunks);
+     fprintf(fp,"gSpaceSum: %d\n",gSpaceSum);
      fprintf(fp,"prioBW: %d\n",prioBW);
      fprintf(fp,"numChunksSym: %d\n",numChunksSym);
      fprintf(fp,"numChunksAsym: %d\n",numChunksAsym);
@@ -1500,6 +1501,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.gBucketSize         = 5;
     config.rBucketSize         = 5;
     config.numChunks            = 1;
+    config.gSpaceSum             = 0;
     config.numChunksSym            = 1;
     config.numChunksAsym            = 1;
     strcpy(config.dataPath,"./");
@@ -1635,6 +1637,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.Gstates_per_pe = atoi(parameterValue);
         else if (!strcmp(parameterName, "Rstates_per_pe"))
             config.Rstates_per_pe = atoi(parameterValue);
+	else if (!strcmp(parameterName, "gSpaceSum"))
+            config.gSpaceSum = atoi(parameterValue);
 	else if (!strcmp(parameterName, "numChunks"))
             config.numChunks = atoi(parameterValue);
 	else if (!strcmp(parameterName, "numChunksSym"))
@@ -1749,11 +1753,18 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.RpesPerState,"RpesPerState;",0);
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
     rangeExit(config.numChunks,"numChunks;",0);
+    rangeExit(config.gSpaceSum,"gSpaceSum;",1);
     rangeExit(config.numChunksAsym,"numChunksAsym;",0);
     rangeExit(config.numChunksSym,"numChunksSym;",0);
 
 //===================================================================================
 // Consistency Checks on the input
+    if(config.gSpaceSum && !config.usePairDirectSend){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("gSpaceSum requires usePairDirectSend\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }
 
     if(config.gExpandFact<1.0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

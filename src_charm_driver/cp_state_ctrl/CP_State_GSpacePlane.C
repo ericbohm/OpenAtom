@@ -597,7 +597,18 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     AllPsiExpected=1;
 
   AllPsiExpected*=config.numChunksSym;
+  int numGrains=nstates/s_grain;
+  if(config.gSpaceSum) // no reductions its all coming direct
+    {
+      /*      if(nstates == s_grain)
+	AllPsiExpected=numGrains*config.numChunksSym;
+      else if(ourgrain<(nstates-s_grain)) // corner has no extras
+	AllPsiExpected=2*numGrains*config.numChunksSym;
+      else
+      */
+	AllPsiExpected=numGrains*config.numChunksSym;
 
+    }
   if(cp_min_opt==0) 
     {    //expect non diagonal column results
       if(nstates == s_grain)
@@ -611,7 +622,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     }
   AllLambdaExpected*=config.numChunksAsym;
 //============================================================================
-
+  if(config.gSpaceSum) // no reductions its all coming direct
+    {
+      AllLambdaExpected*=numGrains;
+    }
   gSpaceNumPoints = 0;
   tpsi           = NULL;
   tvpsi          = NULL;
@@ -1100,17 +1114,20 @@ void CP_State_GSpacePlane::makePCproxies(){
   psiproxy=new CProxySection_PairCalculator[config.numChunksSym];
   psiproxyother=new CProxySection_PairCalculator[config.numChunksSym];
   //need one proxy per chunk
-  for(int chunk=0;chunk<config.numChunksAsym;chunk++)
+  if(!config.gSpaceSum)
     {
-      lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
-      if(AllLambdaExpected/config.numChunksAsym == 2)  // need additional column reduction in dynamics
-	lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
-    }
-  for(int chunk=0; chunk < config.numChunksSym ;chunk++)
-    {
-      psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
-      if(AllPsiExpected / config.numChunksSym > 1)
-	psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+      for(int chunk=0;chunk<config.numChunksAsym;chunk++)
+	{
+	  lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
+	  if(AllLambdaExpected/config.numChunksAsym == 2)  // need additional column reduction in dynamics
+	    lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
+	}
+      for(int chunk=0; chunk < config.numChunksSym ;chunk++)
+	{
+	  psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+	  if(AllPsiExpected / config.numChunksSym > 1)
+	    psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+	}
     }
 }
 //============================================================================
@@ -1575,9 +1592,6 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 // Get the modified forces
 
-
-
-
   countLambda++;//lambda arrives in as many as 2 * numChunks reductions
 //=============================================================================
 // (II) Add it in to our forces
@@ -1608,7 +1622,6 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
    }
    else
      {
-       
        if(countLambdaO[offset]<1)
 	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
        else
@@ -1623,43 +1636,121 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   }//endif
   delete msg;  
 
-  countLambdaO[offset]++;//psi arrives in as many as 2 
-//=============================================================================
-// (II) If you have got it all : Rescale it and resume
-
+  countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
-
-   if(cp_min_opt==0){
-    // dynamics scale it out
-     if(gs.ihave_kx0==1){
-       double rad2i = 1.0/sqrt(2.0);
-       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
-     }//endif
-   }//endif
-//==============================================================================
-// Retrieve Non-orthog psi
-
-    if(cp_min_opt==0){
-      int ncoef          = gs.numPoints;
-      complex *psi_g     = gs.packedPlaneData;
-      complex *psi_g_scr = gs.packedPlaneDataScr;
-      CmiMemcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
-    }//endif
-    
-//==============================================================================
- // Resume 
-
-    acceptedLambda=true;
-    countLambda=0;
-    for(int i=0;i<config.numChunksAsym;i++)
-      countLambdaO[i]=0;
-    /*
-    if(thisIndex.y==0)
-      dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
-    */
-    RTH_Runtime_resume(run_thread);
+    doLambda();
   }
 //==============================================================================
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
+//==============================================================================
+
+  complex *data  = msg->result;
+  int       N    = msg->N;
+  complex *force = gs.packedForceData;
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+
+//==============================================================================
+// Get the modified forces
+
+  countLambda++;//lambda arrives in as many as 2 * numChunks reductions
+//=============================================================================
+// (II) Add it in to our forces
+
+  int offset=msg->myoffset;
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunksAsym;
+  int chunkoffset=offset*chunksize; // how far into the points this
+				  // contribution lies
+  /*
+  if(thisIndex.y==0)
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);
+
+  if(thisIndex.y==0)
+    {
+      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
+    }
+  */
+  if(config.doublePack==1){
+   if(cp_min_opt==1){
+
+     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
+       double wght  = (k_x[idest]==0 ? 0.5 : 1);
+       force[idest].re -= wght*data[i].re;
+       force[idest].im -= wght*data[i].im;
+     }//endfor
+   }
+   else
+     {
+       if(countLambdaO[offset]<1)
+	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
+       else
+	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+     }//endif
+ 
+  }else{
+    for(int i=0,idest=chunkoffset; i<N; i++,idest){
+       force[idest].re -= 0.5*data[i].re;
+       force[idest].im -= 0.5*data[i].im;
+    }//endfor
+  }//endif
+  delete msg;  
+
+  countLambdaO[offset]++;
+  if(countLambda==AllLambdaExpected){ 
+    doLambda();
+  }
+//==============================================================================
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::doLambda() {
+  //==============================================================================
+
+  // (I) If you have got it all : Rescale it and resume
+
+  CkAssert(countLambda==AllLambdaExpected);
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  complex *force = gs.packedForceData;
+  if(cp_min_opt==0){
+    // dynamics scale it out
+    if(gs.ihave_kx0==1){
+      double rad2i = 1.0/sqrt(2.0);
+      for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
+    }//endif
+  }//endif
+  //==============================================================================
+  // Retrieve Non-orthog psi
+
+  if(cp_min_opt==0){
+    int ncoef          = gs.numPoints;
+    complex *psi_g     = gs.packedPlaneData;
+    complex *psi_g_scr = gs.packedPlaneDataScr;
+    CmiMemcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+  }//endif
+    
+  //==============================================================================
+  // Resume 
+
+  acceptedLambda=true;
+  countLambda=0;
+  for(int i=0;i<config.numChunksAsym;i++)
+    countLambdaO[i]=0;
+  /*
+    if(thisIndex.y==0)
+    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
+  */
+  RTH_Runtime_resume(run_thread);
+  //==============================================================================
 }//end routine
 //==============================================================================
 
@@ -2355,50 +2446,111 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   countPsi++;//psi arrives in as many as 2 *numblock reductions
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
-    //--------------------------------------------------------------------
-    // (A) Reset counters and rescale the kx=0 stuff
+    doNewPsi();
+  }
+//----------------------------------------------------------------------------
+}//end routine
+//==============================================================================
 
-#ifdef GPSI_BARRIER
-    int wehaveours=1;
-    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-      CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsi(NULL),gSpacePlaneProxy));
-#endif
-    acceptedPsi=true;
-    countPsi=0;
-    bzero(countPsiO,config.numChunksSym);
-    if(gs.ihave_kx0==1){
-      double rad2 = sqrt(2.0);
-      for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
-    }//endif
-    //--------------------------------------------------------------------
-    // (B) Generate some screen output of orthogonal psi
-    screenOutputPsi();
-    //--------------------------------------------------------------------
-    // (D) Go back to the top or exit
-    int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
-      int i;
-      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
-    }//endif
-    if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
-        config.stateOutputOn==0){
-      int i;
-      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
-    }///endif
-    //--------------------------------------------------------------------
-    // (E) Reset psi if debugging
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-     if(cp_min_opt==1){
-       CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-               sizeof(complex)*gs.numPoints);
-       memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-     }//endif
-#endif      
-    RTH_Runtime_resume(run_thread);
-  } // if countPsi
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/**
+ * When the psi calculator is sending to us directly
+ */
+void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
+//=============================================================================
+// (I) Unpack the contribution to newpsi (orthonormal psi)
 
+  int N         = msg->N;
+  complex *data = msg->result;
+  complex *psi  = gs.packedPlaneData;
+  int offset=msg->myoffset;
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunksSym;
+  int chunkoffset=offset*chunksize; // how far into the points this
+				  // contribution lies
+  int idest=chunkoffset;
+  if(countPsiO[offset]<1)
+    //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
+    for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
+  else
+    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
+
+  delete msg;
+  /*
+  if(thisIndex.y==0)
+    {
+      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
+    }
+  */
+  countPsi++;//psi arrives in as many as 2 *numblock * numgrain reductions
+  countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
+  if(countPsi==AllPsiExpected){ 
+    doNewPsi();
+  }
 //----------------------------------------------------------------------------
    }//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/**
+ * All Psi have arrived, finish the new Psi process
+ */
+
+void CP_State_GSpacePlane::doNewPsi(){
+  //=============================================================================
+  // (I) If you have got it all : Rescale it, produce some output
+
+  CkAssert(countPsi==AllPsiExpected); 
+  //--------------------------------------------------------------------
+  // (A) Reset counters and rescale the kx=0 stuff
+  complex *psi  = gs.packedPlaneData;
+
+#ifdef GPSI_BARRIER
+  int wehaveours=1;
+  contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+	     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsi(NULL),gSpacePlaneProxy));
+#endif
+  acceptedPsi=true;
+  countPsi=0;
+  bzero(countPsiO,config.numChunksSym);
+  if(gs.ihave_kx0==1){
+    double rad2 = sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
+  }//endif
+  //--------------------------------------------------------------------
+  // (B) Generate some screen output of orthogonal psi
+  screenOutputPsi();
+  //--------------------------------------------------------------------
+  // (D) Go back to the top or exit
+  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
+    int i;
+    contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+  }//endif
+  if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
+     config.stateOutputOn==0){
+       int i;
+       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+     }///endif
+  //--------------------------------------------------------------------
+  // (E) Reset psi if debugging
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  if(cp_min_opt==1){
+    CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+	      sizeof(complex)*gs.numPoints);
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
+#endif      
+  RTH_Runtime_resume(run_thread);
+
+
+  //----------------------------------------------------------------------------
+}//end routine
 //==============================================================================
 
 //==============================================================================
@@ -2426,41 +2578,88 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   
   delete msg;
 
+  countVPsi++;//psi arrives in as many as 2 reductions
+  countVPsiO[offset]++;//psi arrives in as many as 2 reductions
+  if(countVPsi==AllPsiExpected){ 
+    doNewPsiV();
+  }
+
+//----------------------------------------------------------------------------
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 //=============================================================================
-// (II) If you have got it all : Rescale it, produce some output
+// (I) Unpack the contribution to newpsi (orthonormal psi)
+
+  int N         = msg->N;
+  complex *data = msg->result;
+  complex *vpsi = gs.packedVelData;
+  int offset=msg->myoffset;
+  if(offset<0)
+    offset=0;
+  int chunksize=gs.numPoints/config.numChunksSym;
+  int chunkoffset=offset*chunksize;; // how far into the points this
+				  // contribution lies
+  int idest=chunkoffset;
+  if(countVPsiO[offset]<1) 
+    // memcpy(&(vpsi[idest]), &(data[0]), N*sizeof(complex));//slower?
+    for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
+  else
+    for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
+  
+  delete msg;
 
   countVPsi++;//psi arrives in as many as 2 reductions
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
-
   if(countVPsi==AllPsiExpected){ 
-    //--------------------------------------------------------------------
-    // (A) Reset counters and rescale the kx=0 stuff
-    acceptedVPsi=true;
-    countVPsi=0;
-    for(int i=0;i<config.numChunksSym;i++)
-      countVPsiO[i]=0;
-    if(gs.ihave_kx0==1){
-      double rad2 = sqrt(2.0);
-      for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
-    }//endif
-    /* debugging barrier
-    int wehaveours=1;
-    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-      CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
-    */
-    if(!acceptedPsi){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Flow of Control Error : Attempting to v-psi\n");
-      CkPrintf("resume without completing psi\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    needPsiV=false;
-    RTH_Runtime_resume(run_thread);
-  } // if countPsi
+    doNewPsiV();
+  }
 
 //----------------------------------------------------------------------------
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::doNewPsiV(){
+//=============================================================================
+// (I) If you have got it all : Rescale it, produce some output
+
+
+  CkAssert(countVPsi==AllPsiExpected); 
+  //--------------------------------------------------------------------
+  // (A) Reset counters and rescale the kx=0 stuff
+  complex *vpsi = gs.packedVelData;
+  acceptedVPsi=true;
+  countVPsi=0;
+  for(int i=0;i<config.numChunksSym;i++)
+    countVPsiO[i]=0;
+  if(gs.ihave_kx0==1){
+    double rad2 = sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
+  }//endif
+  /* debugging barrier
+     int wehaveours=1;
+     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
+  */
+  if(!acceptedPsi){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Flow of Control Error : Attempting to v-psi\n");
+    CkPrintf("resume without completing psi\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  needPsiV=false;
+  RTH_Runtime_resume(run_thread);
+
+  //----------------------------------------------------------------------------
 }//end routine
 //==============================================================================
 

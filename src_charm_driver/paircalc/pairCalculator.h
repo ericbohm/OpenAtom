@@ -68,6 +68,7 @@ class PairCalcID {
     isDoublePacked = _dp;
     lbpaircalc=_lbpaircalc;
     priority=_priority;
+    
   }
   void resetProxy()
     {
@@ -184,7 +185,7 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 

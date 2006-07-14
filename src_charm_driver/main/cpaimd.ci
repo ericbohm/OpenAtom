@@ -133,12 +133,15 @@ mainmodule cpaimd {
                 entry [nokeep] void acceptEnergy(GSAtmMsg *msg);
                 entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
+		entry void acceptNewPsi(partialResultMsg *msg);	
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	
 
 		entry void acceptLambda(CkReductionMsg *msg);
+		entry void acceptLambda(partialResultMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
 
 		entry void acceptNewPsiV(CkReductionMsg *msg);
+		entry void acceptNewPsiV(partialResultMsg *msg);
 		entry void requirePsiV();
 		entry void resumePsiV(CkReductionMsg *msg);
 		entry void gdonePsiV(CkReductionMsg *msg);

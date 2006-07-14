@@ -220,7 +220,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -239,6 +239,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   orthoGrainSize=_orthoGrainSize;
   collectAllTiles=_collectTiles;
   streamFW=_streamFW;
+  gSpaceSum=_gSpaceSum;
+  gpriority=_gpriority;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -333,6 +335,8 @@ PairCalculator::pup(PUP::er &p)
   p|orthoGrainSize;
   p|PCstreamBWout;
   p|PCdelayBWSend;
+  p|gSpaceSum;
+  p|gpriority;
   int numOrthoCol=grainSize/orthoGrainSize;
   int numOrtho=numOrthoCol*numOrthoCol;
   if (p.isUnpacking()) 
@@ -1584,7 +1588,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  if(++columnCount[orthoX]==numOrthoCol) // BNC
 	    {
 	      // send orthoX in newData
-	      sendBWResultColumn(false, orthoXgrain, orthoXgrain+orthoGrainSize);
+	      if(gSpaceSum)
+		sendBWResultColumnDirect(false, orthoXgrain, orthoXgrain+orthoGrainSize);
+	      else
+		sendBWResultColumn(false, orthoXgrain, orthoXgrain+orthoGrainSize);
 	    }
 
 	}
@@ -1593,13 +1600,19 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  if(++columnCount[orthoY]==numOrthoCol) // BTC 
 	    {
 	      //send orthoY in newdata
-	      sendBWResultColumn(false, orthoYgrain, orthoYgrain+orthoGrainSize);
+	      if(gSpaceSum)
+		sendBWResultColumnDirect(false, orthoYgrain, orthoYgrain+orthoGrainSize);
+	      else
+		sendBWResultColumn(false, orthoYgrain, orthoYgrain+orthoGrainSize);
 	    }
 	}
       if(symmetric && (thisIndex.x !=thisIndex.y) && existsRight)
 	if(++columnCountOther[orthoY]==numOrthoCol) // BTC
 	  {
 	    //send orthoY in otherNewData
+	    if(gSpaceSum)
+	      sendBWResultColumnDirect(true, orthoYgrain, orthoYgrain+orthoGrainSize);
+	    else
 	      sendBWResultColumn(true, orthoYgrain, orthoYgrain+orthoGrainSize);
 	  }
 
@@ -1646,7 +1659,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
 					    // than non prioritized
 	}
-      thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+      if(gSpaceSum)
+	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+      else
+	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
 #endif
       if(conserveMemory)
 	{
@@ -1673,6 +1689,72 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       inResult1=NULL;
       inResult2=NULL;
       numRecdBW=0;
+    }
+}
+
+void
+PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int endGrain  )
+{
+#ifdef _PAIRCALC_DEBUG_CONTRIB_
+  CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect with actionType %d startGrain %d sendGrain %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType, startGrain, endGrain);
+#endif
+
+
+  int cp_entry=cb_ep;
+  if(actionType==PSIV)
+    {
+      cp_entry= cb_ep_tol;
+    }
+  if(otherdata){  // we have this othernewdata issue for the symmetric case
+    // and the asymmetric dynamic case
+    // for the off diagonal elements
+    CkAssert(othernewData!=NULL);
+    for(int j=startGrain;j<endGrain;j++)
+      {
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
+	partialResultMsg *msg;
+	if(gpriority)
+	  msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+	else
+	  msg= new (numPoints) partialResultMsg;
+	msg->N=numPoints;
+	msg->myoffset = thisIndex.z; // chunkth
+	memcpy(msg->result,othernewData+j*numPoints,msg->N*sizeof(complex));
+	if(gpriority)
+	  {
+	    *((int*)CkPriorityPtr(msg)) = gpriority;
+	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	  }
+#ifdef _PAIRCALC_DEBUG_
+	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+	mycb.send(msg);
+
+      }
+  }
+  else
+    {
+      for(int j=startGrain;j<endGrain;j++) //mynewdata
+	{
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+	partialResultMsg *msg;
+	if(gpriority)
+	  msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+	else
+	  msg= new (numPoints) partialResultMsg;
+	msg->N=numPoints;
+	msg->myoffset = thisIndex.z; // chunkth
+	memcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
+	if(gpriority)
+	  {
+	    *((int*)CkPriorityPtr(msg)) = gpriority;
+	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	  }
+#ifdef _PAIRCALC_DEBUG_
+	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+	mycb.send(msg);
+	}
     }
 }
 
@@ -1752,7 +1834,78 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
     }
 }
 
+void
+PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
+{
 
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d %d %d %d %d]: sendBWResultDirect with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
+#endif
+  bool otherdata=msg->otherdata;
+  delete msg;  
+  // Now we have results in mynewData and if(symmetric) othernewData
+  int cp_entry=cb_ep;
+  if(actionType==PSIV)
+    {
+      cp_entry= cb_ep_tol;
+    }
+  /*
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+  */
+  if(otherdata){  // we have this othernewdata issue for the symmetric case
+    // and the asymmetric dynamic case
+    // for the off diagonal elements
+    CkAssert(othernewData!=NULL);
+    for(int j=0;j<grainSize;j++)
+      {
+	//this callback creation could be obviated by keeping an
+	//array of callbacks, not clearly worth doing
+	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
+	partialResultMsg *omsg;
+	if(gpriority)
+	  omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+	else
+	  omsg= new (numPoints) partialResultMsg;
+	omsg->N=numPoints;
+	omsg->myoffset = thisIndex.z; // chunkth
+	memcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
+	if(gpriority)
+	  {
+	    *((int*)CkPriorityPtr(omsg)) = gpriority;
+	    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+	  }
+#ifdef _PAIRCALC_DEBUG_
+	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+	mycb.send(omsg);
+
+      }
+  }
+  CkAssert(mynewData!=NULL);
+  for(int j=0;j<grainSize;j++) //mynewdata
+    {
+      CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+      partialResultMsg *omsg;
+      if(gpriority)
+	omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+      else
+	omsg= new (numPoints) partialResultMsg;
+      omsg->N=numPoints;
+      omsg->myoffset = thisIndex.z; // chunkth
+      memcpy(omsg->result,mynewData+j*numPoints,omsg->N*sizeof(complex));
+      if(gpriority)
+	{
+	  *((int*)CkPriorityPtr(omsg)) = gpriority;
+	  CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+	}
+#ifdef _PAIRCALC_DEBUG_
+      CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+      mycb.send(omsg);
+    }
+}
 
 // entry method to allow us to delay this outbound communication
 // to minimize brain dead BG/L interference we have a signal to prioritize this

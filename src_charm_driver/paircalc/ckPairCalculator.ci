@@ -46,10 +46,11 @@ module ckPairCalculator {
 
 	array [4D] PairCalculator {
 
- 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW );
+ 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority );
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);
+		entry void sendBWResultDirect(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
    		entry [nokeep] void acceptPairData(calculatePairsMsg *msg);
