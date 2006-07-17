@@ -185,10 +185,17 @@ class Config {
 	int useRInsIGXRhoGP;
 	int useRInsIGYRhoGP;
 	int useRInsIGZRhoGP;
-	int useGssInsRealP;
 	int usePairEtoM;
 	int usePairDirectSend;
-	int useMssInsGP;
+
+
+	int useGssInsRealP;   // state g   talks to state r
+	int useMssInsGP;      // state r   talks to state g
+	int useGssInsRealPP;  // state ppg talks to state ppr
+	int useMssInsGPP;     // state ppr talks to state ppg
+        int useGHartInsRHart; // ghart talks to rhart
+        int useRHartInsGHart; // rhart talks to ghart
+
 	int numMulticastMsgs;
 	int PCSpanFactor;
 	int useGMulticast;
@@ -198,21 +205,31 @@ class Config {
 	int GpesPerState;
 	int doublePack;
 	int conserveMemory;
-	int prioFFTMsg; 
 	int lbgspace;
 	int lbpaircalc;
 	int lbdensity;
         int numSfGrps;
         int numSfDups;
-	int sfpriority;
+
+	int prioFFTMsg; 
 	int rsfftpriority;
 	int gsfftpriority;
 	int rsifftpriority;
 	int gsifftpriority;
-	int lambdapriority;
-	int psipriority;
 	int rhorpriority;
 	int rhogpriority;
+
+	int sfpriority;
+	int lambdapriority;
+	int psipriority;
+
+	int prioNLFFTMsg; 
+	int prioEextFFTMsg; 
+        int rhorHartpriority;
+        int rhogHartpriority;
+	int gsNLfftpriority;
+	int rsNLfftpriority;
+
 	int fftprogresssplit;
 	int fftprogresssplitReal;
         int stateOutputOn;
@@ -288,6 +305,8 @@ void writeStateFile(int ,complex *,complex *,
                     int *,int *,int *,int ,int,int,int,char *,char *,int);
 
 void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
+
+void getSplitDecomp(int *,int *,int *, int , int ,int ); 
 
 //===================================================================================
 

@@ -102,6 +102,19 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 
 }
 
+int RSPMap::procNum(int handle, const CkArrayIndex &index)
+{
+	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
+	if(maptable==NULL)
+	{
+	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
+	  maptable= &RSPmaptable;
+	}
+	int retval=maptable->get(intdual(idx2d.index[0], idx2d.index[1]));
+	return retval;
+
+}
+
 /** 
  * New functions beind added for the topology mapping of the
  * density objects - RhoR, RhoG, RhoGHartExt
@@ -157,3 +170,18 @@ int RhoGHartMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 
 }    
 
+int RhoRHartMap::procNum(int arrayHdl, const CkArrayIndex &idx)
+{
+      CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
+      if(maptable==NULL)
+      {
+	CkPrintf("Warning! RhoGHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+        maptable= &RhoRHartmaptable;
+
+      }  
+      int retval=maptable->get(intdual(idx2d.index[0], 0));
+      CkAssert(retval>=0);
+      CkAssert(retval<CkNumPes());
+      return retval;
+
+}    

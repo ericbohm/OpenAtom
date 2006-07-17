@@ -7,7 +7,7 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "StructFactorCache.h"
 #include "../../include/debug_flags.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"

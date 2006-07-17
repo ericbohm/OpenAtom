@@ -46,6 +46,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
    int *kz;
    int nline_tot; 
    int nPacked;
+   int rhoGHelpers = config.rhoGHelpers;
+   int sizeXEext = sim->ngrid_eext_a;
    int sizeX     = sim->sizeX;
    int sizeY     = sim->sizeY;
    int sizeZ     = sim->sizeZ;
@@ -57,12 +59,14 @@ void make_rho_runs(CPcharmParaInfo *sim){
 //===================================================================================
 // Reorder the kvectors to produce better balance for the lines : 
 
-    int *kx_ind     = new int[nline_tot];
-    int *kx_line    = new int[nline_tot];
-    int *ky_line    = new int[nline_tot];
-    int *istrt_line = new int [nline_tot];
-    int *iend_line  = new int [nline_tot];
-    int *npts_line  = new int [nline_tot];
+    int *kx_ind      = new int[nline_tot];
+    int *kx_line     = new int[nline_tot];
+    int *ky_line     = new int[nline_tot];
+    int *kx_line_ext = new int[nline_tot];
+    int *ky_line_ext = new int[nline_tot];
+    int *istrt_line  = new int [nline_tot];
+    int *iend_line   = new int [nline_tot];
+    int *npts_line   = new int [nline_tot];
 
     int nplane_x=0;
     int ic = 0;
@@ -88,11 +92,13 @@ void make_rho_runs(CPcharmParaInfo *sim){
     }//endif
     nplane_x      += 1;
 
-    double temp    = ((double)nplane_x)*config.gExpandFactRho;
-    int nchareRhoG = (int)temp;
-    int nx             = sim->sizeX;
-    int ny             = sim->sizeY;
-    int nz             = sim->sizeZ;
+    double temp     = ((double)nplane_x)*config.gExpandFactRho;
+    int nchareRhoG  = (int)temp;
+    int nx          = sim->sizeX;
+    int ny          = sim->sizeY;
+    int nz          = sim->sizeZ;
+    int nx_ext      = sim->ngrid_eext_a;
+    int ny_ext      = sim->ngrid_eext_b;
     int *kxt        = new int[nPacked];
     int *kyt        = new int[nPacked];
     int *kzt        = new int[nPacked];
@@ -132,27 +138,36 @@ void make_rho_runs(CPcharmParaInfo *sim){
     delete [] kyt;
     delete [] kzt;
 
-    ic            = 0;
-    istrt_line[0] = 0;
-    kx_line[0]    = kx[0];
-    ky_line[0]    = ky[0];
-    if(ky_line[0]<0){ky_line[0]+=ny;}
-    if(kx_line[0]<0){kx_line[0]+=nx;}
+    ic              = 0;
+    istrt_line[0]   = 0;
+    kx_line[ic]     = kx[ic];
+    ky_line[ic]     = ky[ic];
+    kx_line_ext[ic] = kx[ic];
+    ky_line_ext[ic] = ky[ic];
+    if(kx_line[ic]    <0){kx_line[ic]    +=nx;}
+    if(ky_line[ic]    <0){ky_line[ic]    +=ny;}
+    if(kx_line_ext[ic]<0){kx_line_ext[ic]+=nx_ext;}
+    if(ky_line_ext[ic]<0){ky_line_ext[ic]+=ny_ext;}
     for(int i = 1;i<nPacked;i++){
       if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
-        iend_line[ic] = i;
-        npts_line[ic] = iend_line[ic]-istrt_line[ic];
+        iend_line[ic]   = i;
+        npts_line[ic]   = iend_line[ic]-istrt_line[ic];
         ic++;
-        istrt_line[ic] = i;
-        kx_line[ic] = kx[i];
-        ky_line[ic] = ky[i];
-        if(ky_line[ic]<0){ky_line[ic]+=ny;}
-        if(kx_line[ic]<0){kx_line[ic]+=nx;}
+        istrt_line[ic]  = i;
+        kx_line[ic]     = kx[i];
+        ky_line[ic]     = ky[i];
+        kx_line_ext[ic] = kx[i];
+        ky_line_ext[ic] = ky[i];
+        if(kx_line[ic]    <0){kx_line[ic]    +=nx;}
+        if(ky_line[ic]    <0){ky_line[ic]    +=ny;}
+        if(kx_line_ext[ic]<0){kx_line_ext[ic]+=nx_ext;}
+        if(ky_line_ext[ic]<0){ky_line_ext[ic]+=ny_ext;}
       }//endfor
     }//endfor
     iend_line[ic] = nPacked;
     npts_line[ic] = iend_line[ic]-istrt_line[ic];
     ic++;
+
     if(ic!=nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Toasty Line Flip-lines.b!\n");
@@ -195,7 +210,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
         //            0 1 2 3 is a separte  ``run of z''
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
-        runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+        runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
         nrun_tot      +=1;
         run_length_sum += run_length;
         curr_x          = x;
@@ -204,7 +219,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
         tmpz            = z;
         run_length      = 1;
         if(kz[pNo]==0 && kz[(pNo-1)]>=0){
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
           nrun_tot      +=1;
 	}//endif
       }//endif
@@ -221,7 +236,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       }//endif
     }//endfor
     // Record the last run of z.
-    runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+    runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
     run_length_sum += run_length;
 
     if(run_length_sum!=nPacked){
@@ -257,10 +272,12 @@ void make_rho_runs(CPcharmParaInfo *sim){
 //===================================================================================
 // Decompose lines to balance points
 
-    int *istrt_lgrp   = new int [nchareRhoG];
-    int *iend_lgrp    = new int [nchareRhoG];
-    int *npts_lgrp    = new int [nchareRhoG];
-    int *nline_lgrp   = new int [nchareRhoG];
+    int nchareRhoGEext   = nchareRhoG*rhoGHelpers;
+    int *istrt_lgrp      = new int [nchareRhoG];
+    int *iend_lgrp       = new int [nchareRhoG];
+    int *npts_lgrp       = new int [nchareRhoG];
+    int *nline_lgrp      = new int [nchareRhoG];
+    int *nline_lgrp_eext = new int [nchareRhoGEext];
 
     ParaGrpParse::get_chareG_line_prms(nPacked,nchareRhoG,nline_tot,npts_line,
                                istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,false);
@@ -275,13 +292,28 @@ void make_rho_runs(CPcharmParaInfo *sim){
       nlines_max=MAX(nlines_max,nline_lgrp[i]);
       nlines_min=MIN(nlines_min,nline_lgrp[i]);
     }//endfor
-    int **index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max,"util.C");
+    int **index_tran_upack_rho  = cmall_int_mat(0,nchareRhoG,0,nlines_max,"util.C");
+    int **index_tran_upack_eext = cmall_int_mat(0,nchareRhoGEext,0,nlines_max,"util.C");
    
     int yspace=sizeX/2+1;
-
     for(int igrp=0;igrp<nchareRhoG;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
         index_tran_upack_rho[igrp][j] = kx_line[i] + ky_line[i]*yspace;
+      }//endfor
+    }//endfor
+
+    int yspaceEext=sizeXEext/2+1;
+    for(int igrp=0,jgrp=0;igrp<nchareRhoG;igrp++){
+      int nlTot = nline_lgrp[igrp];
+      int istrt = istrt_lgrp[igrp];
+      for(int k=0;k<rhoGHelpers;k++,jgrp++){
+        int kstrt,kend,nl;
+        getSplitDecomp(&kstrt,&kend,&nl,nlTot,rhoGHelpers,k);
+        kstrt += istrt;
+        nline_lgrp_eext[jgrp] = nl;
+        for(int j=0,i=kstrt;j<nl;j++,i++){
+          index_tran_upack_eext[jgrp][j] = kx_line_ext[i] + ky_line_ext[i]*yspaceEext;
+        }//endfor
       }//endfor
     }//endfor
 
@@ -337,10 +369,13 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
     sim->nplane_rho_x            = nplane_x;
     sim->nchareRhoG              = nchareRhoG;
+    sim->nchareRhoGEext          = nchareRhoGEext;
     sim->npts_per_chareRhoG      = npts_lgrp;
     sim->index_tran_upack_rho    = index_tran_upack_rho;
+    sim->index_tran_upack_eext   = index_tran_upack_eext;
     sim->nlines_max_rho          = nlines_max;
     sim->nlines_per_chareRhoG    = nline_lgrp;
+    sim->nlines_per_chareRhoGEext= nline_lgrp_eext;
     sim->RhosortedRunDescriptors = RhosortedRunDescriptors;
     sim->npts_tot_rho            = nPacked;
     sim->nlines_tot_rho          = nline_tot;
@@ -353,6 +388,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
     delete [] kx_ind;
     delete [] kx_line;
     delete [] ky_line;
+    delete [] kx_line_ext;
+    delete [] ky_line_ext;
     delete [] istrt_line;
     delete [] iend_line;
     delete [] npts_line;
@@ -530,7 +567,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         //            0 1 2 3 is a separte  ``run of z''
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
-        runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+        runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
         nrun_tot      +=1;
         run_length_sum += run_length;
         curr_x          = x;
@@ -539,7 +576,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         tmpz            = z;
         run_length      = 1;
         if(kz[pNo]==0 && kz[(pNo-1)]>=0){
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1));
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
           nrun_tot      +=1;
 	}//endif
       }//endif
@@ -556,7 +593,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
       }//endif
     }//endfor
     // Record the last run of z.
-    runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1));
+    runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
     run_length_sum += run_length;
 
     if(run_length_sum!=nPacked){
@@ -1373,8 +1410,14 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useRInsIGXRhoGP: %d\n", useRInsIGXRhoGP);
      fprintf(fp,"useRInsIGYRhoGP: %d\n", useRInsIGYRhoGP);
      fprintf(fp,"useRInsIGZRhoGP: %d\n", useRInsIGZRhoGP);
+
      fprintf(fp,"useGssInsRealP: %d\n", useGssInsRealP);
+     fprintf(fp,"useGssInsRealP: %d\n", useGssInsRealPP);
      fprintf(fp,"useMssInsGP: %d\n", useMssInsGP);
+     fprintf(fp,"useMssInsGPP: %d\n", useMssInsGPP);
+     fprintf(fp,"useGHartInsRHart %d\n",useGHartInsRHart);
+     fprintf(fp,"useRHartInsGHart %d\n",useRHartInsGHart);
+
      fprintf(fp,"useGMulticast: %d\n",useGMulticast);
      fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
      fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
@@ -1382,16 +1425,26 @@ void Config::print(char *fname_in) {
      fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
      fprintf(fp,"RpesPerState: %d\n",RpesPerState);
      fprintf(fp,"GpesPerState: %d\n",GpesPerState);
+
      fprintf(fp,"prioFFTMsg %d\n",prioFFTMsg);
-     fprintf(fp,"sfpriority: %d\n",sfpriority);
      fprintf(fp,"rsfftpriority: %d\n",rsfftpriority);
      fprintf(fp,"gsfftpriority: %d\n",gsfftpriority);
      fprintf(fp,"rsifftpriority: %d\n",rsifftpriority);
      fprintf(fp,"gsifftpriority: %d\n",gsifftpriority);
-     fprintf(fp,"lambdapriority: %d\n",lambdapriority);
      fprintf(fp,"rhorpriority: %d\n",rhorpriority);
      fprintf(fp,"rhogpriority: %d\n",rhogpriority);
+
+     fprintf(fp,"sfpriority: %d\n",sfpriority);
+     fprintf(fp,"lambdapriority: %d\n",lambdapriority);
      fprintf(fp,"psipriority: %d\n",psipriority);
+
+     fprintf(fp,"prioNLFFTMsg %d\n",prioNLFFTMsg);
+     fprintf(fp,"prioEextFFTMsg %d\n",prioEextFFTMsg);
+     fprintf(fp,"gsNLfftpriority: %d\n",gsNLfftpriority);
+     fprintf(fp,"rsNLfftpriority: %d\n",rsNLfftpriority);
+     fprintf(fp,"rhorHartpriority %d\n", rhorHartpriority);
+     fprintf(fp,"rhogHartpriority %d\n", rhogHartpriority);
+
      fprintf(fp,"doublePack: %d\n", doublePack);
      fprintf(fp, "conserveMemory: %d\n", conserveMemory);
      fprintf(fp, "Gstates_per_pe: %d\n", Gstates_per_pe);
@@ -1458,6 +1511,8 @@ void Config::readConfig(const char* fileName, Config &config,
     config.PCstreamBWout       = 0;
     config.PCstreamFWblock       = 0;
     config.PCdelayBWSend       = 1;
+
+    // Density FFT comlib flags
     config.useGHartInsRhoRP	= config.useCommlib;
     config.useGIns0RhoRP	= config.useCommlib;
     config.useGIns1RhoRP	= config.useCommlib;
@@ -1468,23 +1523,45 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useRInsIGXRhoGP	= config.useCommlib;
     config.useRInsIGYRhoGP	= config.useCommlib;
     config.useRInsIGZRhoGP	= config.useCommlib;
+
+    // state real and state g FFT comlib flags
     config.useGssInsRealP	= config.useCommlib;
     config.useMssInsGP		= config.useCommlib;
+
+    // Ees methods for NLPP and EESEext FFT comblib flags
+    config.useGssInsRealPP	= config.useCommlib;
+    config.useMssInsGPP		= config.useCommlib;
+    config.useGHartInsRHart	= config.useCommlib;
+    config.useRHartInsGHart	= config.useCommlib;
+
     config.lbpaircalc           = 0;
     config.lbgspace             = 0;
     config.lbdensity            = 0;
     config.numSfGrps            = 1;
     config.numSfDups            = 1;
+
+    // density and state fft prios
     config.prioFFTMsg           = 1; 
-    config.sfpriority           = 10000000;
-    config.rsfftpriority        = 1500000;
+    config.rsfftpriority        = 1000000;
     config.gsfftpriority        = 1000000;
     config.rsifftpriority       = 100000000;
     config.gsifftpriority       = 200000000;
-    config.lambdapriority       = 300000000;
-    config.psipriority          = 500000;
     config.rhorpriority         = 2000000;
-    config.rhogpriority         = 2500000; 
+    config.rhogpriority         = 2000000; 
+
+    // PC and SF prios
+    config.sfpriority           = 10000000;
+    config.lambdapriority       = 300000000;
+    config.psipriority          = 400000000;
+
+    // ees method prios
+    config.prioNLFFTMsg         = 1; 
+    config.prioEextFFTMsg       = 1; 
+    config.rsNLfftpriority      = 1000000;
+    config.gsNLfftpriority      = 1500000;
+    config.rhorHartpriority     = 2000000;
+    config.rhogHartpriority     = 2000000;
+
     config.gExpandFact          = 1.0;
     config.gExpandFactRho       = 1.0;
     config.fftprogresssplit     = 20;
@@ -1549,6 +1626,10 @@ void Config::readConfig(const char* fileName, Config &config,
             config.PCstreamFWblock = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGHartInsRhoRP"))
             config.useGHartInsRhoRP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGHartInsRHart"))
+            config.useGHartInsRHart = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useRHartInsGHart"))
+            config.useRHartInsGHart = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGIns0RhoRP"))
             config.useGIns0RhoRP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGIns1RhoRP"))
@@ -1569,8 +1650,12 @@ void Config::readConfig(const char* fileName, Config &config,
             config.useRInsIGZRhoGP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGssInsRealP"))
             config.useGssInsRealP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useGssInsRealPP"))
+            config.useGssInsRealPP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useMssInsGP"))
             config.useMssInsGP = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useMssInsGPP"))
+            config.useMssInsGPP = atoi(parameterValue);
         else if (!strcmp(parameterName, "useGMulticast"))
             config.useGMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "numMulticastMsgs"))
@@ -1591,8 +1676,6 @@ void Config::readConfig(const char* fileName, Config &config,
             config.doublePack = atoi(parameterValue);
 	else if (!strcmp(parameterName, "conserveMemory"))
 	    config.conserveMemory = atoi(parameterValue);
-	else if (!strcmp(parameterName, "prioFFTMsg"))
-	    config.prioFFTMsg = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbgspace"))
 	    config.lbgspace = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbpaircalc"))
@@ -1603,8 +1686,9 @@ void Config::readConfig(const char* fileName, Config &config,
             config.numSfGrps = atoi(parameterValue);
         else if (!strcmp(parameterName, "numSfDups"))
             config.numSfDups = atoi(parameterValue);
-        else if (!strcmp(parameterName, "sfpriority"))
-            config.sfpriority = atoi(parameterValue);
+
+	else if (!strcmp(parameterName, "prioFFTMsg"))
+	    config.prioFFTMsg = atoi(parameterValue);
         else if (!strcmp(parameterName, "rsfftpriority"))
             config.rsfftpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "gsfftpriority"))
@@ -1613,14 +1697,32 @@ void Config::readConfig(const char* fileName, Config &config,
             config.rsifftpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "gsifftpriority"))
             config.gsifftpriority = atoi(parameterValue);
-        else if (!strcmp(parameterName, "lambdapriority"))
-            config.lambdapriority = atoi(parameterValue);
-        else if (!strcmp(parameterName, "psipriority"))
-            config.psipriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhorpriority"))
             config.rhorpriority = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhogpriority"))
             config.rhogpriority = atoi(parameterValue);
+
+        else if (!strcmp(parameterName, "sfpriority"))
+            config.sfpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "lambdapriority"))
+            config.lambdapriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "psipriority"))
+            config.psipriority = atoi(parameterValue);
+
+	else if (!strcmp(parameterName, "prioNLFFTMsg"))
+	    config.prioNLFFTMsg = atoi(parameterValue);
+	else if (!strcmp(parameterName, "prioEextFFTMsg"))
+	    config.prioEextFFTMsg = atoi(parameterValue);
+        else if (!strcmp(parameterName, "rhorHartpriority"))
+            config.rhorHartpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "rhogHartpriority"))
+            config.rhogHartpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "rsNLfftpriority"))
+            config.rsNLfftpriority = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gsNLfftpriority"))
+            config.gsNLfftpriority = atoi(parameterValue);
+
+
         else if (!strcmp(parameterName, "fftprogresssplit"))
             config.fftprogresssplit = atoi(parameterValue);
         else if (!strcmp(parameterName, "fftprogresssplitReal"))
@@ -1759,6 +1861,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
 //===================================================================================
 // Consistency Checks on the input
+
     if(config.gSpaceSum && !config.usePairDirectSend){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("gSpaceSum requires usePairDirectSend\n");
@@ -2120,6 +2223,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int sizeY          = sim->sizeY;
     int sizeZ          = sim->sizeZ;
     int nchareG        = sim->nchareG;
+    int sizeXNL        = sim->ngrid_nloc_a;
+    int nxNL           = sim->ngrid_nloc_a;
+    int nyNL           = sim->ngrid_nloc_b;
     int doublePack     = config.doublePack;
     double gExpandFact = config.gExpandFact;
 
@@ -2162,18 +2268,51 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     }//endif
 
 //============================================================================
+// setup the non-local stuff
+
+    int *kx_lineNL  = new int[nline_tot];
+    int *ky_lineNL  = new int[nline_tot];
+   
+    int ic = 0;
+    kx_lineNL[ic]    = kx[ic];
+    ky_lineNL[ic]    = ky[ic];
+    if(kx_lineNL[ic]<0){kx_lineNL[ic]+=nxNL;}
+    if(ky_lineNL[ic]<0){ky_lineNL[ic]+=nyNL;}
+    for(int i = 1;i<numData;i++){
+      if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){
+        ic++;
+        kx_lineNL[ic] = kx[i];
+        ky_lineNL[ic] = ky[i];
+        if(kx_lineNL[ic]<0){kx_lineNL[ic]+=nxNL;}
+        if(ky_lineNL[ic]<0){ky_lineNL[ic]+=nyNL;}
+      }//endfor
+    }//endfor
+    ic++;
+
+    if(ic!=nline_tot){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Incorrect number of lines in util.C\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
+
+//============================================================================
 // Create the line decomposition and a sorted run descriptor
 // There are two rundescriptors per line : Noah's arc sort
 
     int nlines_max=0;
     for(int i=0;i<nchareG;i++){nlines_max=MAX(nlines_max,nline_lgrp[i]);}
-    int **index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"util.C");
+    int **index_tran_upack   = cmall_int_mat(0,nchareG,0,nlines_max,"util.C");
+    int **index_tran_upackNL = cmall_int_mat(0,nchareG,0,nlines_max,"util.C");
    
-    int yspace = sizeX;
-    if(doublePack){yspace=sizeX/2+1;}
+    int yspace   = sizeX;
+    int yspaceNL = sizeXNL;
+    if(doublePack){yspace  =sizeX/2+1;}
+    if(doublePack){yspaceNL=sizeXNL/2+1;}
     for(int igrp=0;igrp<nchareG;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
         index_tran_upack[igrp][j] = kx_line[i] + ky_line[i]*yspace;
+        index_tran_upackNL[igrp][j] = kx_lineNL[i] + ky_lineNL[i]*yspaceNL;
       }//endfor
     }//endfor
 
@@ -2303,6 +2442,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 
     sim->npts_per_chareG      = npts_lgrp;
     sim->index_tran_upack     = index_tran_upack;
+    sim->index_tran_upackNL   = index_tran_upackNL;
     sim->nlines_max           = nlines_max;
     sim->nlines_per_chareG    = nline_lgrp;
     sim->sortedRunDescriptors = sortedRunDescriptors;
@@ -2316,6 +2456,8 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     delete [] complexPoints;
     delete [] kx_line;
     delete [] ky_line;
+    delete [] kx_lineNL;
+    delete [] ky_lineNL;
     delete [] kx;
     delete [] ky;
     delete [] kz;
@@ -2608,3 +2750,46 @@ void sort_kxky_old(int n,int *kx,int *ky,int *index,int *kyt){
 //============================================================================
 
 
+
+//============================================================================
+// Initialization Function
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void getSplitDecomp(int *istrt_ret,int *iend_ret,int *n_ret,
+                    int ntot, int ndiv,int idiv) 
+//============================================================================
+  {//begin routine
+//============================================================================
+
+   if(idiv>=ndiv || ntot< ndiv){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Incorrect input to RhoGHart collection creator.\n");
+     CkPrintf("idiv %d ndiv %d, ntot %d.\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+   }//endif
+
+   int n     = (ntot/ndiv);
+   int r     = (ntot%ndiv);
+
+   int istrt = n*idiv;
+   if(idiv>=r){istrt += r;}
+   if(idiv<r) {istrt += idiv;}
+   if(idiv<r) {n++;}
+   int iend  = n+istrt;
+
+   if(n==0){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("No lines in a RhoGHart collection!!\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+   }//endif
+  
+   (*n_ret)     = n;
+   (*istrt_ret) = istrt;
+   (*iend_ret)  = iend;
+
+//---------------------------------------------------------------------------
+  }//end routine
+//============================================================================

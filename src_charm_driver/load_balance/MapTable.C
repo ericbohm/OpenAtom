@@ -358,8 +358,8 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 }
 #endif
 RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
-	int _nstates, int _sizeY, int _Rstates_per_pe) :
-   nstates(_nstates), sizeY(_sizeY),
+	int _nstates, int _sizeZ, int _Rstates_per_pe) :
+   nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
 {
         int c = 0;
@@ -385,18 +385,19 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	if(pm==0)
 	  CkAbort("Choose a larger Rstates_per_pe\n");
 
-        m = sizeY / pm;
-        rem = sizeY % pm;
+        m = sizeZ / pm;
+        rem = sizeZ % pm;
 
-        //CkPrintf("nstates %d sizeY %d Pes %d\n", nstates, sizeY, availprocs->count());	
+        //CkPrintf("nstates %d sizeZ %d Pes %d\n", nstates, sizeZ, availprocs->count());	
 	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
 	//pl, pm, srem, rem);
 	int srcpe=0;
 	int destpe=availprocs->findNext();
-	if(availprocs->count()==0)
-	  availprocs->reset();
 
-        for(int ychunk=0; ychunk<sizeY; ychunk=ychunk+m)
+	if(availprocs->count()==0)
+	  availprocs->reset();	
+
+        for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
         {
                 if(ychunk==(pm-rem)*m)
               		m=m+1;
@@ -414,7 +415,7 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
                         c=0;
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
 			{
-				for(int plane=ychunk; plane<ychunk+m && plane<sizeY; plane++)
+				for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
 				{
 					if(xchunk==0 && ychunk==0)
 					{
@@ -436,6 +437,85 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	dump();
 #endif
 }
+
+RSPMapTable::RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+	int _nstates, int _sizeZNL, int _Rstates_per_pe) :
+   nstates(_nstates), sizeZNL(_sizeZNL),
+  Rstates_per_pe(_Rstates_per_pe)
+{
+        int c = 0;
+	
+	int l, m, pl, pm, srem, rem, i=0;
+	reverseMap=NULL;
+	maptable=_map;
+	availprocs=_availprocs;
+        
+        l=Rstates_per_pe;		// no of states in one chunk
+        pl = nstates / l;
+        if(nstates % l == 0)
+		srem = 0;
+	else
+	{
+		while(pow(2.0, (double)i) < pl)
+			i++;
+		pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
+		srem = nstates % pl;
+	}
+        pm = availprocs->count() / pl;
+        
+	if(pm==0)
+	  CkAbort("Choose a larger Rstates_per_pe\n");
+
+        m = sizeZNL / pm;
+        rem = sizeZNL % pm;
+
+        //CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, availprocs->count());	
+	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
+	//pl, pm, srem, rem);
+	int srcpe=0;
+	int destpe=availprocs->findNext();
+	
+        for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+        {
+                if(ychunk==(pm-rem)*m)
+              		m=m+1;
+        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+		{
+                	if(xchunk==(pl-srem)*l)
+				l=l+1;
+			if(xchunk==0 && ychunk==0) {}
+			else
+			{
+			    srcpe=destpe;
+			    //			    availprocs->sortSource(srcpe);
+			    destpe=availprocs->findNext();
+			}
+                        c=0;
+			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+			{
+				for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
+				{
+					if(xchunk==0 && ychunk==0)
+					{
+                                                c++;
+						maptable->put(intdual(state, plane))=0;
+						//CkPrintf("%d %d on 0\n", state, plane);
+					}
+					else
+					{
+                                                c++;
+						maptable->put(intdual(state, plane))=destpe;
+					}
+				}
+			}
+                }
+        }
+#ifdef MAP_DEBUG
+	CkPrintf("RSPMap created on processor %d\n", CkMyPe());
+	dump();
+#endif
+}
+
 
 RhoRSMapTable::RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareRhoR): nchareRhoR(_nchareRhoR)
 {
@@ -516,6 +596,10 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 	rgsobjs_per_pe += 1;
     }
   int destpe=availprocs->findNext();
+
+  if(availprocs->count()==0)
+    availprocs->reset();
+
   //if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
@@ -540,6 +624,67 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 #endif
 }
 
+
+RhoRHartMapTable::RhoRHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareRhoRHart): nchareRhoRHart(_nchareRhoRHart)
+{
+  reverseMap=NULL;
+  maptable=_map;
+  availprocs=_availprocs;
+  int rrsobjs_per_pe, rem;
+  int srcpe=0;
+  if(availprocs->count()==0)
+    availprocs->reset();
+
+  if(availprocs->count()==1)
+    {
+      rrsobjs_per_pe= nchareRhoRHart;
+      rem=0;
+    }
+  else
+    {
+      rrsobjs_per_pe= nchareRhoRHart/(availprocs->count());
+      rem = nchareRhoRHart % (availprocs->count());
+      if(rem!=0)
+	rrsobjs_per_pe += 1;
+    }
+  int destpe=availprocs->findNext(); 
+
+  if(availprocs->count()==0)
+    availprocs->reset();
+
+  //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoRHart, rrsobjs_per_pe, rem);   
+  for(int chunk=0; chunk<nchareRhoRHart; chunk+=rrsobjs_per_pe)
+    {
+      if(rem!=0)
+	if(chunk==rem*rrsobjs_per_pe)
+	  rrsobjs_per_pe -= 1;
+      if(chunk==0) {}
+      else
+	{
+	  srcpe=destpe;
+	  //	  availprocs->sortSource(srcpe);
+	  destpe=availprocs->findNext();
+	}
+      for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
+	{
+	  if(chunk==0)
+            {
+              maptable->put(intdual(i, 0))=0;
+              //CkPrintf("%d on %d\n", i, 0);
+            }
+	  else
+            {
+
+	      maptable->put(intdual(i, 0))=destpe;
+	    }
+	}
+    }
+#ifdef MAP_DEBUG
+	CkPrintf("RhoRHartMap created on processor %d\n", CkMyPe());
+	dump();
+#endif
+
+}
 
 RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareRhoGHart): nchareRhoGHart(_nchareRhoGHart)
 {

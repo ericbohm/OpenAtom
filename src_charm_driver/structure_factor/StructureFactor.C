@@ -9,7 +9,7 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "../../include/debug_flags.h"
 #include "StructureFactor.h"
 #include "StructFactorCache.h"

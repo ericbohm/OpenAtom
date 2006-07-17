@@ -46,7 +46,7 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 #include "ortho.h"
 #include <unistd.h>

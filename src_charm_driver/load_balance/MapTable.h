@@ -14,6 +14,8 @@
  *  functions.
  */
 
+#define  _VERBOSE_MAP_OFF_
+
 class intdual {
  private:
     int x, y;
@@ -61,7 +63,9 @@ class MapTable
 	{
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
+#ifdef _VERBOSE_MAP_
 	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
+#endif
 	}
       delete it;
     }
@@ -150,7 +154,9 @@ class SCalcMapTable : public MapTable
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
 	  short *four=(short*) key;
+#ifdef _VERBOSE_MAP_
 	  CkPrintf("%d %d %d %d %d\n", four[0], four[1], four[2], four[3],proc);
+#endif
 	}
       delete it;
     }
@@ -161,12 +167,25 @@ class RSMapTable  : public MapTable
 {
  public:
   int nstates;
-  int sizeY;
+  int sizeZ;
   int Rstates_per_pe;
   RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
-	int _nstates, int _sizeY, int _Rstates_per_pe) ;
+	int _nstates, int _sizeZ, int _Rstates_per_pe) ;
   RSMapTable(){}
 };
+
+
+class RSPMapTable  : public MapTable
+{
+ public:
+  int nstates;
+  int sizeZNL;
+  int Rstates_per_pe;
+  RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+	int _nstates, int _sizeZNL, int _Rstates_per_pe) ;
+  RSPMapTable(){}
+};
+
 
 class RhoRSMapTable  : public MapTable
 {
@@ -175,6 +194,16 @@ class RhoRSMapTable  : public MapTable
   RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	int _nchareRhoR);
   RhoRSMapTable(){}
+};
+
+
+class RhoRHartMapTable  : public MapTable
+{
+ public:
+  int nchareRhoRHart;
+  RhoRHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+	int _nchareRhoRHart);
+  RhoRHartMapTable(){}
 };
 
 class RhoGHartMapTable  : public MapTable
