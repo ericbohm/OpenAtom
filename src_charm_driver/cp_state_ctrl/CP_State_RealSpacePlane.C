@@ -32,24 +32,25 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 
 
 //============================================================================
 
-extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
+extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
+extern CProxy_CP_Rho_RealSpacePlane   rhoRealProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CProxy_main mainProxy;
-extern CkGroupID mCastGrpId;
-extern Config config;
-extern int sizeX;
-extern ComlibInstanceHandle ssInstance;
+extern CProxy_CPcharmParaInfoGrp      scProxy;
+extern CProxy_main                    mainProxy;
+extern CProxy_CP_State_ParticlePlane  particlePlaneProxy;
+extern CProxy_FFTcache                fftCacheProxy;
+
+extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssInstance;
-extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
-extern CProxy_FFTcache fftCacheProxy;
+
+extern int    sizeX;
+extern Config config;
 
 //============================================================================
 
@@ -102,10 +103,12 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     flagsRecd = false;
     sendFFTDataSize = 0;
     setMigratable(false);
+
     gproxy = gSpacePlaneProxy;
     if (config.useMssInsGP){
       ComlibAssociateProxy(&mssInstance,gproxy);
     }//endif
+
     vks=NULL;
     run();
 }
@@ -364,12 +367,14 @@ void CP_State_RealSpacePlane::doProduct(int Size, const double *Vks)
 void CP_State_RealSpacePlane::doProduct() {
 //============================================================================
 
+
 #ifdef _CP_DEBUG_STATER_VERBOSE_
    CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
              thisIndex.x, thisIndex.y,CmiMemoryUsage());
 #endif
 
 #ifdef _CP_DEBUG_RHO_OFF_
+   
    size = sizeX*rs.planeSize[0];
    if(vks==NULL){vks = new double [size];}
     memset(vks,0,sizeof(double)*size);
@@ -434,6 +439,8 @@ void CP_State_RealSpacePlane::doProduct() {
     }else{
       rs.zeroOutPlanes();
     }//endif
+
+    //  CkPrintf("RSP [%d %d] sent back to GSP \n",thisIndex.x,thisIndex.y);
 
 //============================================================================
    }//end routine : CP_State_RealSpacePlane::doProduct()

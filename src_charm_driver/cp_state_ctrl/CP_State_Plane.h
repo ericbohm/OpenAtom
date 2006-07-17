@@ -82,6 +82,20 @@ public:
 };
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class GSPPIFFTMsg: public CMessage_GSPPIFFTMsg {
+public:
+	int size;
+	int offset;
+        int iterNL;
+	complex *data;
+};
+//============================================================================
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -101,9 +115,41 @@ class RhoGHartMsg: public CMessage_RhoGHartMsg {
 public:
 	int size;
         int senderIndex;
+        int offset;
+        int iter;
 	complex *data;
 };
 //============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class RhoRHartMsg: public CMessage_RhoRHartMsg {
+public:
+	int size;
+        int senderIndex;
+        int iopt;
+        int iter;
+	complex *data;
+};
+//============================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class NLFFTMsg: public CMessage_NLFFTMsg {
+public:
+	int size;
+        int senderIndex;
+        int step;
+	complex *data;
+};
+//============================================================================
+
+
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -155,6 +201,18 @@ public:
 };
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class RSPPFFTMsg: public CMessage_RSPPFFTMsg {
+public:
+    int size; 
+    int senderIndex;
+    int numPlanes;
+    complex *data;
+};
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -189,14 +247,15 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int isuspend_energy;
         int isuspend_atms;
 	int numChunks;
+        int ees_nonlocal;
 	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void pup(PUP::er &);
 	void initGSpace(int, RunDescriptor *, int, complex *,int ,complex *,
-                        int,int,int,int);
-
+                        int,int,int,int,int,int,int);
+        void startNLEes();
         void launchAtoms();
 	void syncpsi();
 	void requirePsiV();
@@ -216,6 +275,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void ResumeFromSync();
 	bool weneedPsiV();
         void acceptNLForces ();
+        void acceptNLForcesEes();
         bool doneNLForces();
 	bool allDoneIFFT() {return allgdoneifft;}
 	void doIFFT(GSIFFTMsg *);
@@ -359,8 +419,11 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
  public:	
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-	CP_Rho_RealSpacePlane(int, size2d, int, int, bool);
+	CP_Rho_RealSpacePlane(int, size2d, int, int, bool,int,int);
 	~CP_Rho_RealSpacePlane();
+        int cp_grad_corr_on;
+	int ees_eext_on;
+        int ngridcEext;
 	void acceptDensity(CkReductionMsg *);
 	void acceptDensity();
 	void acceptDensity(int, double *, int);
@@ -379,7 +442,6 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         void acceptWhiteByrd(RhoRSFFTMsg *msg);
 	void doMulticast();
 	void pup(PUP::er &);
-        int cp_grad_corr_on;
 	void isAtSync(int iter){AtSync();};
  private:
 	double FFTscale;        
@@ -425,6 +487,8 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	void pup(PUP::er &p);
 	void isAtSync(int iter){AtSync();};
         int cp_grad_corr_on;
+        int ees_eext_on;
+        int ngridcEext;
  private:
         int nPacked;
 	int count;
@@ -444,21 +508,89 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 };
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
+ public:
+        int registrationFlag;
+        int launchFlag;
+        int ngrida;
+        int ngridb;
+        int ngridc;
+        int ees_eext_on;
+        int natmTyp;
+        int countFFT[2];
+        int iteration;
+        int iterAtmTyp;
+        int csize;
+        int nAtmTypRecv;
+        complex *atmSFC;
+        double  *atmSFR;
+        complex *atmForcC;
+        double  *atmForcR;
+
+        complex *atmEwdSFC;
+        double  *atmEwdSFR;
+        complex *atmEwdForcC;
+        double  *atmEwdForcR;
+        CProxy_CP_Rho_GHartExt rhoGHartProxy_com;
+
+	CP_Rho_RHartExt(CkMigrateMessage *m) {}
+	CP_Rho_RHartExt(int , int , int , int , int );
+	~CP_Rho_RHartExt();
+	void pup(PUP::er &p);
+        void startEextIter();
+	void computeAtmSF();
+	void FFTSFBck();
+	void SendAtmSFRhoGHart();
+	void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
+	void FFTAtmForcFwd(int);
+	void computeAtmForc(int);
+        void registrationDone(CkReductionMsg *msg);
+};
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
  public:
 	CP_Rho_GHartExt(CkMigrateMessage *m) {}
-	CP_Rho_GHartExt(size2d);
+	CP_Rho_GHartExt(size2d,int , int , int , int ,int );
 	~CP_Rho_GHartExt();
+	void pup(PUP::er &);
 	void acceptData(RhoGHartMsg *msg);
 	void HartExtVksG();
+	void FFTVks();
 	void sendVks();
-	void pup(PUP::er &);
+        void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
+        void FFTEesBck();
+        void getHartEextEes();
+        void FFTEesFwd(int );
+        void sendAtmSF(int );
 	void isAtSync(int iter){AtSync();};
+        int ngridaEext;
+        int ngridbEext;
+        int ngridcEext;
+        int ees_eext_on;
+        int natmTyp;
+        int iterAtmTyp;
+        int nsendAtmTyp;
+        int numFullEext;
+        int registrationFlag;
+        int launchFlag;
+        complex *atmSF;
+        complex *atmSFtot;
+        double ehart_ret;
+        double eext_ret;
+        double ewd_ret;
+        void registrationDone(CkReductionMsg *msg);
  private:
 	RhoGSlab rho_gs;
+        int atmSFHere;
+        int densityHere;
+        int countEextFFT;
 	int iopt;
         int iteration;
         int ind_x;       // This chares index=thisIndex.x.
@@ -469,6 +601,8 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         int iend_lines;   // end of my subdivion of lines in rhog()
         int numLines;    // Number of lines in my subdivision
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
+        CProxy_CP_Rho_RHartExt       rhoRHartProxy_com0;
+        CProxy_CP_Rho_RHartExt       rhoRHartProxy_com1;
 };
 //============================================================================
 
@@ -479,30 +613,54 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
  public:
 	CP_State_ParticlePlane(CkMigrateMessage *m) {}
-	CP_State_ParticlePlane(int, int, int, int, int, int, int, int, int, int);
+	CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,
+                               int ,int ,int ,int ,int );
 	~CP_State_ParticlePlane();
+	void pup(PUP::er &);
+
 	void computeZ(PPDummyMsg *m);
 	void setEnlCookie(EnlCookieMsg *m);
 	void ResumeFromSync();
 	void reduceZ(int, int, complex *,complex *,complex *,complex *);
-	void sumEnergies(double);
 	void getForces(int, int, complex *);
-	void pup(PUP::er &);
+
+        void startNLEes(int );
+        void createNLEesFFTdata();
+        void FFTNLEesFwd();
+        void sendToEesRPP();
+        void recvFromEesRPP(GSPPIFFTMsg *msg);
+        void FFTNLEesBck();
+        void computeNLEesForces();
+        void registrationDone(CkReductionMsg *msg);
+
 	friend class CP_State_GSpacePlane;
 	int *k_x, *k_y, *k_z;
+        int myChareG;
+	int iteration;
+        int iterNL;
+        int numNLiter;
+        int ees_nonlocal;
+        int ngridaNL;
+        int ngridbNL;
+        int ngridcNL;
 	int gSpaceNumPoints;
+        int numLines;
+        int numFullNL;
         int natm_nl;
         int natm_nl_grp_max;
         int numSfGrps;
 	int nstates;
 	int nchareG;
 	int Gstates_per_pe;
+        int countNLIFFT;
+        int registrationFlag;
  private:
 	int calcReductionPlaneNum(int);
 	void initKVectors(GStateSlab *);
 	bool doneGettingForces;
-	complex *myForces, *gspace;
+	complex *myForces, *gspace, *projPsiG;
 	complex *zmatrixSum, *zmatrix;
+        double *dyp_re,*dyp_im;
         double enl;
         double enl_total;
 	double totalEnergy;
@@ -517,9 +675,80 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         complex *zmatrixSum_fx,*zmatrixSum_fy,*zmatrixSum_fz;
 	CkSectionInfo enlCookie; 
 	CProxySection_CP_State_ParticlePlane particlePlaneENLProxy;
+	CProxy_CP_State_RealParticlePlane realPP_proxy;
  public: 
 };
 //============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
+ public:
+  // Variables
+   int ees_nonlocal;
+   int nChareR;           // Real Space chares=# C-planes
+   int nChareG;           // G Space chares
+   int Rstates_per_pe;    // Real Space topomap variable
+   int myPlane;           // Real space plane number
+
+   int numIterNl;         // # of non-local iterations per time step
+   int countZ;
+   int countEnl;
+   int count;             // fft communication counter
+   int iterNL;            // Nl iteration counter
+   int itime;             // time step counter;
+ 
+   int ngridA;            // FFT grid size along a
+   int ngridB;            // FFT grid size along b
+   int ngridC;            // FFT grid size along c
+   int planeSize;         // expanded plane size for FFTing
+   int planeSizeT;        // true plane size 
+   int csize;             // complex variable size for FFT
+   int zmatSizeTot;       // zmatrix size for projector
+   int reductionPlaneNum; // Reduction Plane number
+
+   int registrationFlag;
+
+   double cp_enl;         // Non-local energy
+   double *projPsiR;      // real/final form of projector (after gx,gy FFTs)
+   double *zmat;          // Non-local matrix
+   complex *projPsiC;     // complex/intermediate form of projector (before gx,gy FFTs)
+
+  //-----------
+  // Proxies
+
+   CProxySection_CP_State_RealParticlePlane rPlaneSectProxy; // Section Red proxy zmat
+   CProxySection_CP_State_RealParticlePlane rPlaneENLProxy;  // Section Red proxy cp_enl
+   CkSectionInfo rPlaneRedCookie;   // Section Red cookie for zmat
+   CkSectionInfo rEnlCookie;        // Section Red cookie for cp_enl
+   CProxy_CP_State_ParticlePlane gPP_proxy;
+
+  //-----------
+  // Functions
+   CP_State_RealParticlePlane(CkMigrateMessage *m) {}
+   CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+  ~CP_State_RealParticlePlane();
+   void pup(PUP::er &);
+   void printEnlR(CkReductionMsg *m);
+   void printEnlRSimp(double,int);
+   void recvFromEesGPP(NLFFTMsg *);
+   void FFTNLEesFwdR();
+   void computeZmatEes();
+   void recvZMatEes(CkReductionMsg *);
+   void computeAtmForcEes(int, double *);
+   void createNLEesFFTdataR();	
+   void FFTNLEesBckR();
+   void sendToEesGPP();
+   void setPlaneRedCookie(EnlCookieMsg *);
+   void setEnlCookie(EnlCookieMsg *);
+   int calcReductionPlaneNum(int );
+   void registrationDone(CkReductionMsg *msg);
+   void recvZMatEesSimp(int , double *,int);
+};
+//============================================================================
+
 
 //============================================================================
 #endif // #ifndef _PLANE_H_

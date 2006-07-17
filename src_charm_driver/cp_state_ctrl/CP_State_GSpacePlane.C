@@ -53,7 +53,8 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "eesCache.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 #include "StructFactorCache.h"
 //---------------------------------------------------------------------------
@@ -73,24 +74,26 @@ extern Config config;
 extern PairCalcID pairCalcID1;
 extern PairCalcID pairCalcID2;
 
-extern CProxy_main mainProxy;
+extern CProxy_main                    mainProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
-extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern CProxy_Ortho orthoProxy;
-extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CProxy_AtomsGrp atomsGrpProxy;
+extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
+extern CProxy_Ortho                   orthoProxy;
+extern CProxy_CP_State_ParticlePlane  particlePlaneProxy;
+extern CProxy_CPcharmParaInfoGrp      scProxy;
+extern CProxy_AtomsGrp                atomsGrpProxy;
+extern CProxy_StructureFactor         sfCompProxy;
+extern CProxy_EnergyGroup             egroupProxy; //energy group proxy
+extern CProxy_FFTcache                fftCacheProxy;
+extern CProxy_StructFactCache         sfCacheProxy;
+extern CProxy_eesCache                eesCacheProxy;
+
 extern CProxy_ComlibManager mgrProxy;
 extern ComlibInstanceHandle gssInstance;
-extern CProxy_StructureFactor sfCompProxy;
+extern ComlibInstanceHandle mcastInstancePP;
 
-extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 extern int nstates;
 extern int sizeX;
 extern int nchareG;              // number of g-space chares <= sizeX and >=nplane_x
-extern ComlibInstanceHandle mcastInstancePP;
-extern CProxy_FFTcache fftCacheProxy;
-extern CProxy_StructFactCache sfCacheProxy;
 
 void cleanExit(void *, void *);
 void allDoneCPForces(void *, void *);
@@ -124,9 +127,15 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (B) Start SF/computeZ of NL forces. If you want, wait until they finish
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
-       c->releaseSFComputeZ();
+       if(c->ees_nonlocal==0){
+         c->releaseSFComputeZ();
+       }else{
+         c->startNLEes(); //invokes controller in cp_state_particle_plane
+       }//endif
 #ifdef _CP_DEBUG_NONLOC_BARRIER_
        RTH_Suspend();  // resume is called by acceptNLForces()
+                       //                     acceptNLForceEes
+                       // The latter invoked by CP_State_ParticlePlane
 #endif
 #endif  // non-local is allowed
     //------------------------------------------------------------------------
@@ -146,7 +155,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     // (D) If NL-pseudo forces are not done, wait for them.
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
        if(!c->doneNLForces()){
-         RTH_Suspend(); // resume called in acceptNLforces when NL forces done
+         RTH_Suspend(); // resume called in acceptNLforces or acceptNLForcesEes
+                        // when NL forces are ALL done (all channels/atm types).
+                        // The latter invoked by CP_State_ParticlePlane.
        }//endif
 #endif // non-local is allowed
     //------------------------------------------------------------------------
@@ -521,38 +532,41 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //============================================================================
    {//begin routine
 //============================================================================
-
 //  ckout << "State G Space Constructor : "
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
+//============================================================================
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
-//============================================================================
-  numChunks=_numChunks;
-  initialized     = false;
-  first_step      = 1;
-  iteration       = 0;
-  nrotation       = 0;
-  myatom_integrate_flag=0;
-  myenergy_reduc_flag=0;
-  isuspend_energy=0;
-  isuspend_atms=0;
 
-  total_energy   = 0.0;
-  ehart_total    = 0.0;
-  enl_total      = 0.0;
-  eke_total      = 0.0;
-  egga_total     = 0.0;
-  eexc_total     = 0.0;
-  eext_total     = 0.0;
-  ewd_total      = 0.0;
-  fovlap         = 0.0;
-  fovlap_old     = 0.0;
-  fmagPsi_total  = 0.0;
-  fmagPsi_total0 = 0.0; // only chare(0,0) cares
+//============================================================================
+
+  ees_nonlocal         = sim->ees_nloc_on;  
+  numChunks            = _numChunks;
+  initialized          = false;
+  first_step           = 1;
+  iteration            = 0;
+  nrotation            = 0;
+  myatom_integrate_flag= 0;
+  myenergy_reduc_flag  = 0;
+  isuspend_energy      = 0;
+  isuspend_atms        = 0;
+
+  total_energy      = 0.0;
+  ehart_total       = 0.0;
+  enl_total         = 0.0;
+  eke_total         = 0.0;
+  egga_total        = 0.0;
+  eexc_total        = 0.0;
+  eext_total        = 0.0;
+  ewd_total         = 0.0;
+  fovlap            = 0.0;
+  fovlap_old        = 0.0;
+  fmagPsi_total     = 0.0;
+  fmagPsi_total0    = 0.0; // only chare(0,0) cares
   fmagPsi_total_old = 0.0;
-  cpuTimeNow     = 0.0;
-  fictEke_total  = 0.0;
+  cpuTimeNow        = 0.0;
+  fictEke_total     = 0.0;
 
   iwrite_now          = 0;
   ireset_cg           = 1;
@@ -575,57 +589,60 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countPsi        = 0;
   countLambda     = 0;
   countVPsi       = 0;
-  countPsiO= new int[config.numChunksSym];
-  for(int i=0;i<config.numChunksSym;i++)
-    countPsiO[i]=0;
-  countVPsiO= new int[config.numChunksSym];
-  for(int i=0;i<config.numChunksSym;i++)
-    countVPsiO[i]=0;
-  countLambdaO= new int[config.numChunksAsym];
-  for(int i=0;i<config.numChunksAsym;i++)
-    countLambdaO[i]=0;
   countIFFT       = 0;
   ecount          = 0; //No energies have been received.
 
+  countPsiO       = new int[config.numChunksSym];
+  for(int i=0;i<config.numChunksSym;i++)
+    countPsiO[i]=0;
+
+  countVPsiO= new int[config.numChunksSym];
+  for(int i=0;i<config.numChunksSym;i++)
+    countVPsiO[i]=0;
+
+  countLambdaO= new int[config.numChunksAsym];
+  for(int i=0;i<config.numChunksAsym;i++)
+    countLambdaO[i]=0;
+
   numRecvRedPsi   = sim->RCommPkg[thisIndex.y].num_recv_tot;
+
+ //---------------------------------------------
+ // Symm PC accounting 
   int ourgrain    = thisIndex.x/s_grain*s_grain; 
-  if(nstates == s_grain)
-      AllPsiExpected=1;
-  else if(ourgrain<(nstates-s_grain)) // corner has no extras
-    AllPsiExpected=2;
-  else
-    AllPsiExpected=1;
-
+  if(nstates == s_grain){
+     AllPsiExpected=1;
+  }else{ 
+    if(ourgrain<(nstates-s_grain)){ // corner has no extras
+       AllPsiExpected=2;
+    }else{
+       AllPsiExpected=1;
+    }//endif
+  }//endif
   AllPsiExpected*=config.numChunksSym;
-  int numGrains=nstates/s_grain;
-  if(config.gSpaceSum) // no reductions its all coming direct
-    {
-      /*      if(nstates == s_grain)
-	AllPsiExpected=numGrains*config.numChunksSym;
-      else if(ourgrain<(nstates-s_grain)) // corner has no extras
-	AllPsiExpected=2*numGrains*config.numChunksSym;
-      else
-      */
-	AllPsiExpected=numGrains*config.numChunksSym;
 
-    }
-  if(cp_min_opt==0) 
-    {    //expect non diagonal column results
-      if(nstates == s_grain)
+  int numGrains=nstates/s_grain;
+  if(config.gSpaceSum){ // no reductions its all coming direct
+      AllPsiExpected=numGrains*config.numChunksSym;
+  }//endif
+
+ //---------------------------------------------
+ // Asymm PC accounting 
+  if(cp_min_opt==0){    //expect non diagonal column results
+    if(nstates == s_grain){
 	AllLambdaExpected=1;
-      else 
+    }else {
 	AllLambdaExpected=2;
-    }
-  else  //no column reduction results in minimization
-    {
+    }//endif
+  }else{  //no column reduction results in minimization
       AllLambdaExpected=1;
-    }
+  }//endif
   AllLambdaExpected*=config.numChunksAsym;
-//============================================================================
-  if(config.gSpaceSum) // no reductions its all coming direct
-    {
+
+  if(config.gSpaceSum){ // no reductions its all coming direct
       AllLambdaExpected*=numGrains;
-    }
+  }//endif
+
+//============================================================================
   gSpaceNumPoints = 0;
   tpsi           = NULL;
   tvpsi          = NULL;
@@ -642,6 +659,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
                  thisIndex.y,thisIndex.x);
 
 //============================================================================
+// Load Balancing etc
 
   usesAtSync = CmiTrue;
   if(config.lbgspace){
@@ -650,12 +668,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     setMigratable(false);
   }//endif
 
+//============================================================================
+// Section Reductions and SF proxy creation
+
   real_proxy = realSpacePlaneProxy;
-  if (config.useGssInsRealP)
-      ComlibAssociateProxy(&gssInstance,real_proxy);
+  if (config.useGssInsRealP){
+     ComlibAssociateProxy(&gssInstance,real_proxy);
+  }//endif
 
   // create structure factor proxy
-  if(thisIndex.x==0){
+  if(thisIndex.x==0 && ees_nonlocal==0){
       // dups must be less than the number of states because thats
       // the maximum number of time you can duplicate a plane
       int dups=config.numSfDups;
@@ -671,6 +693,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 					     (CkArrayIndexMax *) 
 					     sfelems.getVec(), sfelems.size());
   }//endif : state=0 
+
+//============================================================================
+// Contribute to the reduction telling main we are done
+
   int constructed=1;
   contribute(sizeof(int), &constructed, CkReduction::sum_int, 
 	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
@@ -753,6 +779,8 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|itemp; // 2 temporary variables for debugging in scope
   p|jtemp;
 
+  p|ees_nonlocal;
+
   p|ehart_total;
   p|enl_total;
   p|eke_total;
@@ -834,6 +862,10 @@ void CP_State_GSpacePlane::readFile() {
   int *istrt_lgrp   = NULL;
   int *iend_lgrp    = NULL;
 
+  int ngridaNL      =  sim->ngrid_nloc_a;
+  int ngridbNL      =  sim->ngrid_nloc_b;
+  int ngridcNL      =  sim->ngrid_nloc_c;
+
 //============================================================================
 // Set the file name using the config path and state number
 
@@ -914,9 +946,8 @@ void CP_State_GSpacePlane::readFile() {
       }//endif
 
       gSpacePlaneProxy(ind_state, x).initGSpace(runsToBeSent,runDesc,
-                                                numPoints,dataToBeSent,
-                                                numPointsV,vdataToBeSent,
-                                                nx,ny,nz,istart_typ_cp);
+                                numPoints,dataToBeSent,numPointsV,vdataToBeSent,
+				nx,ny,nz,ngridaNL,ngridbNL,ngridcNL,istart_typ_cp);
       delete [] dataToBeSent;
       delete [] vdataToBeSent;
       delete [] runDesc;
@@ -962,13 +993,16 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
                                       complex*       points,
                                       int            vsize, 
                                       complex*       vpoints,
-                                      int nx, int ny, int nz, int istart_cp) 
+                                      int nx, int ny, int nz, 
+                                      int nxNL, int nyNL, int nzNL, 
+                                      int istart_cp) 
 //============================================================================
    { //begin routine
 //============================================================================
 //#ifdef _CP_DEBUG_STATEG_VERBOSE_
 //  CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
 //#endif
+
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
 
@@ -982,20 +1016,27 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 // Setup gs
 
   istart_typ_cp  = istart_cp;
+
   gs.eke_ret     = 0.0;  
   gs.fictEke_ret = 0.0;  
   gs.ekeNhc_ret  = 0.0;  
   gs.numRuns     = runDescSize;
   gs.numLines    = runDescSize/2;
   gs.numFull     = (gs.numLines)*nz;
+  gs.numFullNL   = (gs.numLines)*nzNL;
   gs.runs        = new RunDescriptor[gs.numRuns];
   gs.istate_ind  = thisIndex.x;
   gs.iplane_ind  = thisIndex.y;
   gs.mysizeX     = sizeX;
   gs.fftReqd     = true;
+
   gs.xdim        = 1;
   gs.ydim        = ny;
   gs.zdim        = nz;
+
+  gs.ngridaNL    = nxNL;
+  gs.ngridbNL    = nyNL;
+  gs.ngridcNL    = nzNL;
 
   gs.numPoints=0;
   for (int r = 0; r < gs.numRuns; r++) {
@@ -1004,6 +1045,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   }//endfor
   CkAssert(gs.numPoints == size);
 
+  gs.ees_nonlocal        = ees_nonlocal;
   gs.packedPlaneData     = new complex[gs.numPoints];
   gs.packedPlaneDataScr  = new complex[gs.numPoints];
   gs.packedForceData     = new complex[gs.numPoints];
@@ -1072,17 +1114,19 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
 // Send the k's to the structure factor 
 
-
-  for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
+  if(ees_nonlocal==0){
+   for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
     for(int dup=0;dup<config.numSfDups;dup++){ //each dup
       if(dup==thisIndex.x){
 #ifdef _CP_DEBUG_SF_CACHE_
-	CkPrintf("GSP [%d,%d] on PE %d sending KVectors to SF[%d,%d,%d]\n",thisIndex.x, thisIndex.y, CkMyPe(), atm, thisIndex.y, dup);
+	CkPrintf("GSP [%d,%d] on PE %d sending KVectors to SF[%d,%d,%d]\n",
+                    thisIndex.x, thisIndex.y, CkMyPe(), atm, thisIndex.y, dup);
 #endif
         sfCompProxy(atm,thisIndex.y,dup).acceptKVectors(gSpaceNumPoints, k_x, k_y, k_z);
       }//endif
     }//endfor
-  }//endfor
+   }//endfor
+  }//endif
 
 //============================================================================
 // This reduction is done to signal the end of initialization to main
@@ -1410,6 +1454,10 @@ void CP_State_GSpacePlane::doIFFT () {
   }/*endfor*/
 
   doneDoingIFFT = true;
+
+  //  if(thisIndex.x==0)
+  //   CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
+
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
@@ -1419,6 +1467,12 @@ void CP_State_GSpacePlane::doIFFT () {
 //==============================================================================
 bool CP_State_GSpacePlane::doneNLForces(){
 //==============================================================================
+
+  if(!particlePlaneProxy(thisIndex.x,thisIndex.y).ckLocal()->doneGettingForces){
+    if(thisIndex.x==0)
+       CkPrintf("suspend me in gsp \n");
+  }
+
 return particlePlaneProxy(thisIndex.x,thisIndex.y).ckLocal()->doneGettingForces;
 }
 //==============================================================================
@@ -1428,6 +1482,26 @@ return particlePlaneProxy(thisIndex.x,thisIndex.y).ckLocal()->doneGettingForces;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptNLForces(){
+//================================================================================
+//  I. You have called resume until these guys report. You have not started FFT
+#ifdef _CP_DEBUG_NONLOC_BARRIER_
+  RTH_Runtime_resume(run_thread);
+#endif
+//================================================================================
+//  I. If the fft forces finished first, you need to resume(they are waiting).
+// II. If the fft forces are not done, hang loose till they finish.
+#ifndef _CP_DEBUG_NONLOC_BARRIER_
+  if(doneDoingIFFT){RTH_Runtime_resume(run_thread);}
+#endif
+//-------------------------------------------------------------------------------
+  }//end routine   
+//================================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptNLForcesEes(){
 //================================================================================
 //  I. You have called resume until these guys report. You have not started FFT
 #ifdef _CP_DEBUG_NONLOC_BARRIER_
@@ -2781,17 +2855,6 @@ void CP_State_GSpacePlane::isAtSync(int numIter) {
     if(numIter == 3 * LOAD_BALANCE_STEP)
       traceEnd();
 #endif
-    /* needs to be rewritten completely
-    if(config.lbgspace)
-      {
-
-	StructFactCache *sfCache = sfCacheProxy.ckLocalBranch();
-	CkAssert(sfCache != NULL);
-	sfCache->removeAll();
-
-      }
-    */
-    //    CkPrintf("G %d %d atsync\n",thisIndex.x, thisIndex.y);
 
     if(thisIndex.x==0 && thisIndex.y==0){
       isAtSyncPairCalc(&gpairCalcID1);
@@ -3079,4 +3142,18 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
     delete msg;
     CkAbort("GSP do not call acceptAllLambda\n");
 }// end routine
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::startNLEes(){
+
+  CP_State_ParticlePlane *pp = 
+    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+
+  pp->startNLEes(iteration);
+
+}
 //==============================================================================
