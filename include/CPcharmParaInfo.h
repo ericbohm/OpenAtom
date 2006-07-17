@@ -129,7 +129,11 @@ class CPcharmParaInfo {
    int cp_min_opt;
    int cp_min_cg;
    int cp_min_std;
-   int sizeX, sizeY, sizeZ;  
+   int sizeX, sizeY, sizeZ;
+   int ees_eext_on;         //Opt: EES option on for external energy
+   int ees_nloc_on;         //Opt: EES option on for non-local energy
+   int ngrid_nloc_a, ngrid_nloc_b, ngrid_nloc_c; 
+   int ngrid_eext_a, ngrid_eext_b, ngrid_eext_c; 
    int nstates;
    int ntime;
    int ibinary_opt;
@@ -140,7 +144,12 @@ class CPcharmParaInfo {
    int nlines_max; // maximum number of lines in any collection
    int npts_tot;   // total number of pts in g-space
    int natm_tot;
+   int nlIters;        // number of non-local iterations
+   int nmem_zmat_tot;  // total size of zmatrix memory
+   int *ioff_zmat;     // offset into zmatrix memory
+   int *nmem_zmat;     // zmatrix memory for each iteration
    int natm_nl;
+   int natm_typ;
    int numSfGrps;
    int natm_nl_grp_max;
    double *lines_per_chareG;  // lines in each collection (g-space)
@@ -150,6 +159,7 @@ class CPcharmParaInfo {
    int *npts_per_chareG;     // pts in each collection   (g-space)
    int *index_output_off;    // offset to unpack output fore each chareg
    int **index_tran_upack;   // unpack indicies for each chareG
+   int **index_tran_upackNL; // unpack indicies for each chareG
 
 
    int nlines_tot_rho; // total number of lines in rhog-space
@@ -158,11 +168,14 @@ class CPcharmParaInfo {
 
    int nplane_rho_x;   // # of non-zero planes of rho gx
    int nchareRhoG;    // # of collections of lines in rhog-space
+   int nchareRhoGEext;  // # of collections of lines in rhog-space for eext
    double *lines_per_chareRhoG;  // lines in each collection (rhog-space)
    double *pts_per_chareRhoG;    // pts in each collection   (rhog-space)
    int *nlines_per_chareRhoG;   // lines in each collection (rhog-space)
+   int *nlines_per_chareRhoGEext;  // lines in each collection (rhog-space)
    int *npts_per_chareRhoG;     // pts in each collection   (rhog-space)
    int **index_tran_upack_rho;   // unpack indicies for each chareRhoG
+   int **index_tran_upack_eext;   // unpack indicies for each chareRhoG
    CkVec<RunDescriptor> *RhosortedRunDescriptors; // description of collection
    RedundantCommPkg *RCommPkg;  // communication of redundant elements
 //=============================================================================
@@ -174,35 +187,44 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
     CkPrintf("CPcharmParaInfo copy constructor\n");
 #endif
-     vol         = s.vol;
-     tol_norb    = s.tol_norb;
-     tol_cp_min  = s.tol_cp_min;
-     tol_cp_dyn  = s.tol_cp_dyn;
-     dt          = s.dt;
-     ndump_frq   = s.ndump_frq;
-     istart_typ_cp = s.istart_typ_cp;
+     vol          = s.vol;
+     tol_norb     = s.tol_norb;
+     tol_cp_min   = s.tol_cp_min;
+     tol_cp_dyn   = s.tol_cp_dyn;
+     dt           = s.dt;
+     ndump_frq    = s.ndump_frq;
+     istart_typ_cp= s.istart_typ_cp;
      cp_grad_corr_on = s.cp_grad_corr_on;
-     cp_opt      = s.cp_opt; 
-     cp_std      = s.cp_std;
-     cp_wave     = s.cp_wave;
-     cp_min_opt  = s.cp_min_opt;
-     cp_min_cg   = s.cp_min_cg;
-     cp_min_std  = s.cp_min_std;
-     sizeX       = s.sizeX;
-     sizeY       = s.sizeY;
-     sizeZ       = s.sizeZ;
-     nstates     = s.nstates;
-     ntime       = s.ntime;
-     ibinary_opt = s.ibinary_opt;
+     cp_opt       = s.cp_opt; 
+     cp_std       = s.cp_std;
+     cp_wave      = s.cp_wave;
+     cp_min_opt   = s.cp_min_opt;
+     cp_min_cg    = s.cp_min_cg;
+     cp_min_std   = s.cp_min_std;
+     sizeX        = s.sizeX;
+     sizeY        = s.sizeY;
+     sizeZ        = s.sizeZ;
+     nstates      = s.nstates;
+     ees_eext_on  = s.ees_eext_on;
+     ees_nloc_on  = s.ees_nloc_on; 
+     ngrid_nloc_a = s.ngrid_nloc_a; 
+     ngrid_nloc_b = s.ngrid_nloc_b; 
+     ngrid_nloc_c = s.ngrid_nloc_c; 
+     ngrid_eext_a = s.ngrid_eext_a; 
+     ngrid_eext_b = s.ngrid_eext_b; 
+     ngrid_eext_c = s.ngrid_eext_c; 
+     ntime        = s.ntime;
+     ibinary_opt  = s.ibinary_opt;
      ibinary_write_opt = s.ibinary_write_opt;
-     nplane_x    = s.nplane_x;
-     nchareG     = s.nchareG;
-     nlines_tot  = s.nlines_tot;
-     npts_tot    = s.npts_tot;
-     nlines_max  = s.nlines_max;
-     natm_tot    = s.natm_tot;
-     natm_nl     = s.natm_nl;
-     numSfGrps   = s.numSfGrps;
+     nplane_x     = s.nplane_x;
+     nchareG      = s.nchareG;
+     nlines_tot   = s.nlines_tot;
+     npts_tot     = s.npts_tot;
+     nlines_max   = s.nlines_max;
+     natm_tot     = s.natm_tot;
+     natm_typ     = s.natm_typ;
+     natm_nl      = s.natm_nl;
+     numSfGrps    = s.numSfGrps;
      natm_nl_grp_max = s.natm_nl_grp_max;
      if(nplane_x==0 || nplane_x > sizeX){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -220,9 +242,11 @@ class CPcharmParaInfo {
      npts_tot_rho    = s.npts_tot_rho;
      nlines_max_rho  = s.nlines_max_rho;
      nplane_rho_x    = s.nplane_rho_x;
-     nchareRhoG     = s.nchareRhoG;
+     nchareRhoG      = s.nchareRhoG;
+     nchareRhoGEext  = s.nchareRhoGEext;
      npts_per_chareRhoG   = new int[nchareRhoG];
      nlines_per_chareRhoG = new int[nchareRhoG];
+     nlines_per_chareRhoGEext = new int[nchareRhoGEext];
      lines_per_chareRhoG  = new double[nchareRhoG];
      pts_per_chareRhoG    = new double[nchareRhoG];
      if(nplane_rho_x==0 || nplane_rho_x > sizeX){
@@ -243,10 +267,22 @@ class CPcharmParaInfo {
        pts_per_chareRhoG[i]    = s.pts_per_chareRhoG[i];
        npts_per_chareRhoG[i]   = s.npts_per_chareRhoG[i];
      }//endfor
-     index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max_rho,"cpcharmparainfo.h");
+     index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max_rho,
+                                          "cpcharmparainfo.h");
      for(int i=0;i<nchareRhoG;i++){
       for(int j=0;j<nlines_per_chareRhoG[i];j++){
         index_tran_upack_rho[i][j] = s.index_tran_upack_rho[i][j];
+      }//endfor
+     }//endfor
+
+     for(int i=0;i<nchareRhoGEext;i++){
+       nlines_per_chareRhoGEext[i] = s.nlines_per_chareRhoGEext[i];
+     }//endfor
+     index_tran_upack_eext=cmall_int_mat(0,nchareRhoGEext,0,nlines_max_rho,
+                                         "cpcharmparainfo.h");
+     for(int i=0;i<nchareRhoGEext;i++){
+      for(int j=0;j<nlines_per_chareRhoGEext[i];j++){
+        index_tran_upack_eext[i][j] = s.index_tran_upack_eext[i][j];
       }//endfor
      }//endfor
 
@@ -282,8 +318,24 @@ class CPcharmParaInfo {
       }//endfor
      }//endfor
 
+     index_tran_upackNL = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
+     for(int i=0;i<nchareG;i++){
+      for(int j=0;j<nlines_per_chareG[i];j++){
+        index_tran_upackNL[i][j] = s.index_tran_upackNL[i][j];
+      }//endfor
+     }//endfor
+
      RCommPkg = new RedundantCommPkg [nchareG]; 
      for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i]);}
+
+     nlIters   = s.nlIters;
+     ioff_zmat = new int [nlIters];
+     nmem_zmat = new int [nlIters];;
+     for(int i =0;i<nlIters;i++){
+       ioff_zmat[i] = s.ioff_zmat[i];
+       nmem_zmat[i] = s.nmem_zmat[i];
+     }//endif
+
 
      LBTurnInstrumentOff();
    }//end constructor
@@ -304,8 +356,13 @@ class CPcharmParaInfo {
        lines_per_chareRhoG=NULL; 
        pts_per_chareRhoG=NULL;
        nlines_per_chareRhoG=NULL; 
+       nlines_per_chareRhoGEext=NULL; 
        npts_per_chareRhoG=NULL;
        RCommPkg  = NULL;
+
+       ioff_zmat = NULL;
+       nmem_zmat = NULL;
+
    }
 //=============================================================================
 
@@ -319,11 +376,17 @@ class CPcharmParaInfo {
 
       delete []  lines_per_chareRhoG;  lines_per_chareRhoG = NULL;
       delete [] nlines_per_chareRhoG; nlines_per_chareRhoG = NULL;
+      delete [] nlines_per_chareRhoGEext; nlines_per_chareRhoGEext = NULL;
       delete []  pts_per_chareRhoG;    pts_per_chareRhoG   = NULL;
       delete [] npts_per_chareRhoG;   npts_per_chareRhoG   = NULL;
       delete [] RCommPkg;             RCommPkg= NULL;
+      delete [] ioff_zmat;
+      delete [] nmem_zmat;
+
       cfree_int_mat(index_tran_upack,0,nchareG,0,nlines_max);
+      cfree_int_mat(index_tran_upackNL,0,nchareG,0,nlines_max);
       cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
+      cfree_int_mat(index_tran_upack_eext,0,nchareRhoGEext,0,nlines_max_rho);
       
   }//end destructor
 //=============================================================================
@@ -339,23 +402,29 @@ class CPcharmParaInfo {
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
       p|sizeX;      p|sizeY;      p|sizeZ;  
+      p|ees_eext_on;    p|ees_nloc_on;
+      p|ngrid_nloc_a;  p|ngrid_nloc_b;   p|ngrid_nloc_c;
+      p|ngrid_eext_a;  p|ngrid_eext_b;   p|ngrid_eext_c;
       p|nplane_x;   p|nchareG;    p|natm_tot;    p|natm_nl;
       p|nstates;    p|ntime;      p|ibinary_opt; p|ibinary_write_opt;
-      p|natm_tot;   p|natm_nl;    p|numSfGrps;
+      p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; p|nmem_zmat_tot;
       p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;
       p|nlines_max;
-      p|nplane_rho_x; p|nchareRhoG; 
+      p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 
       p|nlines_max_rho; p|nlines_tot_rho; p|npts_tot_rho;
       if(p.isUnpacking()) {
-        lines_per_chareRhoG  = new double[nchareRhoG];
-        pts_per_chareRhoG    = new double[nchareRhoG];
-        nlines_per_chareRhoG = new int[nchareRhoG];
-        npts_per_chareRhoG   = new int[nchareRhoG];
+        lines_per_chareRhoG      = new double[nchareRhoG];
+        pts_per_chareRhoG        = new double[nchareRhoG];
+        nlines_per_chareRhoG     = new int[nchareRhoG];
+        nlines_per_chareRhoGEext = new int[nchareRhoGEext];
+        npts_per_chareRhoG       = new int[nchareRhoG];
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
 	CkPrintf("nchareRhoG %d nlines_max_rho %d sizeX %d\n",
              nchareRhoG, nlines_max_rho, sizeX);
 #endif
         index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max_rho,
+                                             "cpcharmparainfo.h");
+        index_tran_upack_eext= cmall_int_mat(0,nchareRhoGEext,0,nlines_max_rho,
                                              "cpcharmparainfo.h");
         RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
       }//enddif : unpacking
@@ -364,6 +433,7 @@ class CPcharmParaInfo {
 #endif
       PUParray(p,lines_per_chareRhoG, nchareRhoG);
       PUParray(p,nlines_per_chareRhoG, nchareRhoG);
+      PUParray(p,nlines_per_chareRhoGEext, nchareRhoGEext);
       PUParray(p,pts_per_chareRhoG, nchareRhoG);
       PUParray(p,npts_per_chareRhoG, nchareRhoG);
       for(int igrp=0;igrp<nchareRhoG;igrp++){
@@ -372,21 +442,29 @@ class CPcharmParaInfo {
       for(int igrp=0;igrp<nchareRhoG;igrp++){
 	PUParray(p,index_tran_upack_rho[igrp],nlines_per_chareRhoG[igrp]);
       }
+      for(int igrp=0;igrp<nchareRhoGEext;igrp++){
+	PUParray(p,index_tran_upack_eext[igrp],nlines_per_chareRhoGEext[igrp]);
+      }
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 3 \n");
 #endif
       if(p.isUnpacking()) {
+        ioff_zmat         = new int [nlIters];
+        nmem_zmat         = new int [nlIters];;
         lines_per_chareG  = new double[nchareG];
         pts_per_chareG    = new double[nchareG];
         nlines_per_chareG = new int[nchareG];
         npts_per_chareG   = new int[nchareG];
         index_output_off  = new int[nchareG];
-        index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
+        index_tran_upack  = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
+        index_tran_upackNL= cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
         sortedRunDescriptors = new CkVec<RunDescriptor> [nchareG];
       }//endif : unpacking
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 4 \n");
 #endif
+      p(ioff_zmat,nlIters);
+      p(nmem_zmat,nlIters);
       p(lines_per_chareG,nchareG);
       p(nlines_per_chareG,nchareG);
       p(pts_per_chareG,nchareG);
@@ -397,6 +475,9 @@ class CPcharmParaInfo {
       }//endfor
       for(int igrp=0;igrp<nchareG;igrp++){
 	p(index_tran_upack[igrp],nlines_per_chareG[igrp]);
+      }//endfor
+      for(int igrp=0;igrp<nchareG;igrp++){
+	p(index_tran_upackNL[igrp],nlines_per_chareG[igrp]);
       }//endfor
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 5 \n");
