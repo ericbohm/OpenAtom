@@ -30,7 +30,7 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
@@ -457,7 +457,6 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Do a Comlib Dance
     switch(iopt){
-
 	case 0 : if(config.useGIns0RhoRP) commGInstance0.beginIteration();break;
 	case 1 : if(config.useGIns1RhoRP) commGInstance1.beginIteration();break;
 	case 2 : if(config.useGIns2RhoRP) commGInstance2.beginIteration();break;
@@ -466,6 +465,8 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     }//end switc
 
 //============================================================================
+// Send the message
+
   for(int z=0; z < sizeZ; z++) {
 
     RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;

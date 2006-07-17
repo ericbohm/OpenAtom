@@ -30,27 +30,33 @@
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
 //============================================================================
 
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
-extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
+extern CProxy_CP_Rho_RealSpacePlane   rhoRealProxy;
+extern CProxy_CP_Rho_GSpacePlane      rhoGProxy;
+extern CProxy_CPcharmParaInfoGrp      scProxy;
+extern CProxy_FFTcache                fftCacheProxy;
+extern CProxy_CP_Rho_RHartExt         rhoRHartExtProxy;
+
 extern ComlibInstanceHandle commRealInstance;
 extern ComlibInstanceHandle commRealIGXInstance;
 extern ComlibInstanceHandle commRealIGYInstance;
 extern ComlibInstanceHandle commRealIGZInstance;
 extern ComlibInstanceHandle mcastInstance;
-extern CProxy_FFTcache fftCacheProxy;
-extern CkGroupID mCastGrpId;
-extern Config config;
-extern int nstates;
+extern CkGroupID            mCastGrpId;
+
+extern Config    config;
+extern int       nstates;
 
 bool is_pow2(int );
+
+
+#define  _CP_RHO_RSP_VERBOSE_OFF
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -100,7 +106,8 @@ void CP_Rho_RealSpacePlane::run () {
 //
 //============================================================================
 CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim, 
-				     int numRealSpace, int numRhoG, bool _useCommlib)
+             int numRealSpace, int numRhoG, bool _useCommlib,int _ees_eext_on,
+             int _ngridcEext)
 //============================================================================
    {//begin routine
 //============================================================================
@@ -110,10 +117,10 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
 #endif
 
 //============================================================================
-// set flag
-
-//============================================================================
 // Malloc Memory, Intialize counters, set constants
+
+    ees_eext_on = _ees_eext_on;
+    ngridcEext  = _ngridcEext;
 
     initRhoRealSlab(&rho_rs, xdim, yzdim[0], yzdim[1], numRealSpace, 
                     numRhoG,thisIndex.x,thisIndex.y);
@@ -175,7 +182,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,
     // inform realspace element of this section proxy.
     realSpaceSectionProxy.init(dummyProductMessage);
 
-    rhoGProxy_com = rhoGProxy;
+    rhoGProxy_com    = rhoGProxy;
     rhoGProxyIGX_com = rhoGProxy;
     rhoGProxyIGY_com = rhoGProxy;
     rhoGProxyIGZ_com = rhoGProxy;
@@ -210,9 +217,13 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 }
 //============================================================================
 
-void CP_Rho_RealSpacePlane::pup(PUP::er &p)
-{
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
+  p|ees_eext_on;
+  p|ngridcEext;
   p|cp_grad_corr_on;
   p|FFTscale;        
   p|volumeFactor;        
@@ -244,7 +255,7 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p)
     if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
 
-    }
+    }//endif
 
   /* 
   if(p.isUnpacking())
@@ -254,8 +265,9 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p)
     }
   RTH_Runtime_pup(run_thread,p,this);
   */
-
 }
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -272,12 +284,14 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
     CkPrintf("RhoReal accepting Density %d %d %d\n",
               thisIndex.x,thisIndex.y,CkMyPe());
 #endif
+
    if(cp_grad_corr_on!=0){
      doneWhiteByrd  = false;
    }else{
      doneWhiteByrd  = true;
-   }
-    doneHartVks    = false;
+   }//endif
+   doneHartVks      = false;
+
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
     doneHartVks    = true;
 #endif
@@ -317,8 +331,40 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptDensity() {
-	energyComputation();
-}
+//============================================================================
+// Launch the external energy computation in r-space
+ 
+  if(ees_eext_on==1){
+    int ngridc = rho_rs.sizeZ;
+    int div    = (ngridcEext / ngridc);
+    int rem    = (ngridcEext % ngridc);
+    int ind    = thisIndex.x+ngridc;
+    if(div>1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Eext Grid size too large for launch Scheme\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+#ifdef _CP_RHO_RSP_VERBOSE_
+    CkPrintf("HI, I am r-rho chare %d lauchning %d : ngrids %d %d : %d\n",
+             thisIndex.x,thisIndex.x,ngridcEext,ngridc,rem);
+#endif
+    rhoRHartExtProxy(thisIndex.x,0).startEextIter();
+    if(thisIndex.x<rem){
+#ifdef _CP_RHO_RSP_VERBOSE_
+      CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
+#endif
+      rhoRHartExtProxy(ind,0).startEextIter();
+    }
+  }//endif
+
+//============================================================================
+// Compute the exchange correlation energy (density no-grad part)
+
+  energyComputation();
+
+//----------------------------------------------------------------------------
+  }//end routine
 //============================================================================
 
 
@@ -371,7 +417,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
    fftRhoRtoRhoG();
 
 //============================================================================
-}//end routine
+  }//end routine
 //============================================================================
 
 
@@ -417,8 +463,9 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
  sendPartlyFFTtoRhoG(iopt);
 
 //============================================================================
-}//end routine
+   }//end routine
 //============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -443,13 +490,13 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Launch the communication
 
-	switch(iopt){
-	    case 0 : if(config.useRInsRhoGP) commRealInstance.beginIteration(); break;
-	    case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.beginIteration(); break;
-	    case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
-	    case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
+    switch(iopt){
+       case 0 : if(config.useRInsRhoGP) commRealInstance.beginIteration(); break;
+       case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.beginIteration(); break;
+       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
+       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
 
-	}
+    }//end switch
     for(int ic = 0; ic < nchareRhoG; ic ++) { // chare arrays to which we will send
 
       int sendFFTDataSize = nlines_per_chareRhoG[ic];
@@ -478,12 +525,12 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 
     }//end for : chare sending
 
-	switch(iopt){
-	    case 0 : if(config.useRInsRhoGP) commRealInstance.endIteration(); break;
-	    case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.endIteration(); break;
-	    case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
-	    case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
-	}
+    switch(iopt){
+       case 0 : if(config.useRInsRhoGP) commRealInstance.endIteration(); break;
+       case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.endIteration(); break;
+       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
+       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
+    }//end switch
 
 //---------------------------------------------------------------------------
   }//end routine
@@ -512,10 +559,12 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
   int pSize              = (rho_rs.sizeX+2)*(rho_rs.sizeY);
+
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
 	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
 #endif
+
 //============================================================================
 // Perform some error checking
 
@@ -530,8 +579,8 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 
   if(size!=nlines_per_chareG[Index]){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Dude, %d != %d for rho chare %d %d\n",size,nlines_per_chareG[Index],
-                  thisIndex.y,Index);
+     CkPrintf("Dude.1, %d != %d for rho chare %d %d %d\n",size,nlines_per_chareG[Index],
+                  thisIndex.y,Index,iopt);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
@@ -546,6 +595,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
       case 2: data = rho_rs.rhoIRY; break;
       case 3: data = rho_rs.rhoIRZ; break;
   }//end switch
+
   complex *planeArr = reinterpret_cast<complex*> (data);
   if(countGradVks[iopt]==1){memset(data,0,sizeof(double)*pSize);}
 
@@ -579,7 +629,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   }//endif
 
 //----------------------------------------------------------------------------
-}//end routine
+   }//end routine
 //============================================================================
 
 
@@ -676,7 +726,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 
     whiteByrdFFT();
 
-//============================================================================
+//---------------------------------------------------------------------------
    }//end routine
 //============================================================================
 
@@ -801,7 +851,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 
   if(size!=nlines_per_chareG[Index]){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Dude, %d != %d for rho chare %d %d\n",size,nlines_per_chareG[Index],
+     CkPrintf("Dude.2, %d != %d for rho chare %d %d\n",size,nlines_per_chareG[Index],
                   thisIndex.y,Index);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
@@ -860,8 +910,10 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   }//endif : communication from rhog has all arrived safely
 
 //============================================================================
-}//end routine
+   }//end routine
 //============================================================================
+
+
 
 //============================================================================
 /**
@@ -872,6 +924,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 //============================================================================
+// Local pointers
 
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int nchareG            = sim->nchareRhoG;
@@ -884,10 +937,15 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   int iopt               = msg->iopt;
   complex *partiallyFFTd = msg->data;
   int pSize              = (rho_rs.sizeX+2)*(rho_rs.sizeY);
+
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
 	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
 #endif
+
+//============================================================================
+// Copy out the hart-eext contrib to vks
+
   countGradVks[iopt]++;
   double *data      = rho_rs.doFFTonThis;
   complex *planeArr = reinterpret_cast<complex*> (data);
@@ -899,6 +957,10 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 
   delete msg;  
   CkAssert(iopt==0);
+
+//============================================================================
+// fft the puppy if you've got it all
+
   if (countGradVks[iopt] == nchareG*rhoGHelpers){
       countGradVks[iopt]=0;
       double scale = 1.0;
@@ -946,6 +1008,9 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   }//end routine 
 //============================================================================
 
+
+//============================================================================
+// Send vks back to the states
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -963,6 +1028,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 
 //============================================================================
 // Send vks back to the states in real space
+
    if ((config.useGMulticast+config.useCommlibMulticast)!=1) {
      CkAbort("No multicast strategy\n");
    }//endif
@@ -992,7 +1058,6 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 //============================================================================
    }//end routine
 //============================================================================
-
 
 
 //============================================================================
