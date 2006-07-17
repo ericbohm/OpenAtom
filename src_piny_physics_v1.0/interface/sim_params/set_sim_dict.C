@@ -312,7 +312,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 34;
+  *num_dict = 38;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
 /*========================================================================*/
@@ -504,6 +504,29 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[34].keyword,"cp_isok_opt");
         strcpy((*dict)[34].keyarg,"off");
   /*-----------------------------------------------------------------------*/ 
+  /* 35)\cp_nonloc_ees_opt{on,off} */
+        i = 35;
+        strcpy((*dict)[i].error_mes,"on,off");
+        strcpy((*dict)[i].keyword,"cp_nonloc_ees_opt");
+        strcpy((*dict)[i].keyarg,"off");
+  /*-----------------------------------------------------------------------*/ 
+  /* 36)\cp_pseudo_ees_order{4} */
+        i = 36;
+        strcpy((*dict)[i].error_mes,"an positive even integer < nkf/2-1");
+        strcpy((*dict)[i].keyword,"cp_pseudo_ees_order");
+        strcpy((*dict)[i].keyarg, "6");
+  /*-----------------------------------------------------------------------*/ 
+  /* 37)\cp_pseudo_ees_scale{1.2} */
+        i = 37;
+        strcpy((*dict)[i].error_mes,"a real number > 1.1");
+        strcpy((*dict)[i].keyword,"cp_pseudo_ees_scale");
+        strcpy((*dict)[i].keyarg, "1.2");
+  /*-----------------------------------------------------------------------*/ 
+  /* 38)\cp_eext_ees_opt{on,off} */
+        i = 38;
+        strcpy((*dict)[i].error_mes,"on,off");
+        strcpy((*dict)[i].keyword,"cp_eext_ees_opt");
+        strcpy((*dict)[i].keyarg,"off");
 
 /*========================================================================*/
 /*------------------------------------------------------------------------*/

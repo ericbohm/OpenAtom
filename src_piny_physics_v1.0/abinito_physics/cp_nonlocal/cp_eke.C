@@ -15,11 +15,8 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void
-CPNONLOCAL::CP_eke_calc
-         (const int ncoef, const int istate,complex *forces,complex *psi_g,
-          const int *k_x, const int *k_y, const int *k_z,double *eke_ret,
-          int mydoublePack)
+void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_g,
+                  int *k_x, int *k_y, int *k_z,double *eke_ret,int mydoublePack)
 
 //============================================================================
   { /* Begin Function */

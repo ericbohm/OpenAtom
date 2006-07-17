@@ -1,3 +1,4 @@
+
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
@@ -52,7 +53,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
                           int kmax_ewd,int kmax_res,
                           double *tot_memory,int int_res_ter,
                           MDPART_MESH *part_mesh,MDECOR *ecor, 
-                          int cp_lsda,int cp_min_diis,int cp_dual_grid_opt_on) 
+                          int cp_lsda,int cp_min_diis,int cp_dual_grid_opt_on,
+                          PSNONLOCAL *psnonlocal, CPPSEUDO * cppseudo) 
 
 /*=======================================================================*/
 /*            Begin subprogram:                                          */
@@ -111,6 +113,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
    double *hmat_ewd_cp = cell->hmat_ewd_cp;
 
    int box_rat      =   cpewald->box_rat;
+   int cp_nonlocal_ees_opt = psnonlocal->ees_on;
+   int cp_eext_ees_opt = psnonlocal->ees_eext_on;
 
 /*=======================================================================*/
 /* 0) Output to screen                                                   */
@@ -521,7 +525,7 @@ if(cp_on == 1){
       cpewald->ibrk2_sm = (int *) cmalloc(nmall*sizeof(int),"control_set_cp_ewald")-1;
 
       nmall =  ncoef; if((nmall % 2)==0){nmall++;}
-      cpcoeffs_info->cmass = (double *)cmalloc(nmall*sizeof(double),"control_set_cp_ewald")-1;
+      cpcoeffs_info->cmass=(double *)cmalloc(nmall*sizeof(double),"control_set_cp_ewald")-1;
 
         PRINTF("CP allocation: %g Mbytes; Total memory %g Mbytes\n",
                  now_mem,*tot_memory);
@@ -534,10 +538,10 @@ if(cp_on == 1){
                    cpewald->ibrk1_sm,cpewald->ibrk2_sm,
                    &(cpewald->gw_gmin),&(cpewald->gw_gmax));
 
-    if(cp_dual_grid_opt_on == 0 && cp_on == 1){
-      check_kvec(ewald->nktot,ewald->kastr,ewald->kbstr,ewald->kcstr,nktot_sm,
+      if(cp_dual_grid_opt_on == 0 && cp_on == 1){
+        check_kvec(ewald->nktot,ewald->kastr,ewald->kbstr,ewald->kcstr,nktot_sm,
                   cpewald->kastr_sm,cpewald->kbstr_sm,cpewald->kcstr_sm);
-    }
+      }/*endif*/
 
       if(cp_dual_grid_opt_on >= 1 && cp_on == 1){
         check_kvec(cpewald->nktot_dens_cp_box,cpewald->kastr_dens_cp_box,
@@ -557,6 +561,16 @@ if(cp_on == 1){
       cpopts->cp_hess_cut  = cp_parse->cp_mass_cut_def;
       cpopts->cp_hess_tau = cp_parse->cp_mass_tau_def;
 
+/*--------------------------------------------------------------------*/
+/*  E) Set up the pme-nonlocal                                        */
+
+      if(cp_nonlocal_ees_opt==1){
+        init_nonlocal_ees(kmax_cp_dens_cp_box,ecut_sm,psnonlocal);
+      }/*endif*/
+
+      if(cp_eext_ees_opt==1){
+        init_eext_ees(kmax_cp_dens_cp_box,cppseudo);
+      }/*endif*/
    }/*endif:cpon*/
 
 /*=======================================================================*/

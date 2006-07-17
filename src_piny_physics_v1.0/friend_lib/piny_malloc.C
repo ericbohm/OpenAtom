@@ -252,6 +252,81 @@ double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, cha
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
+/* cmall_itens3: Careful malloc a rank 3 tensor of type int               */
+/*==========================================================================*/
+int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char *func_name)
+
+/* allocate a int rank3 tensor with subscript range                       */
+/* m[nrl...nrh][ncl...nch][ndl...ndh] */
+{
+  long i,j, nrow=nrh-nrl+1,ncol=nch-ncl+1,ndep=ndh-ndl+1;
+  int ***m;
+
+  if(nrow <= 0 || ncol <= 0 || ndep <= 0) return (int ***)NULL;
+/* allocate pointers to rows */
+  m=(int ***) malloc((size_t)((nrow+NR_END)*sizeof(int**)));
+  if(!m) 
+    {
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("allocation failure of row pointers cmall_tens3\n");
+     PRINTF("Error occurred in function %s\n",func_name);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+     FFLUSH(stdout);
+     EXIT(1);
+    }
+  m += NR_END;
+  m -= nrl;
+
+/* allocate rows and set pointers to them */
+  m[nrl]=(int **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(int*)));
+  if(!m[nrl]) 
+    {
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("allocation failure of rows in cmall_tens3\n");
+      PRINTF("Error occurred in function %s\n",func_name);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }
+  m[nrl] += NR_END;
+  m[nrl] -= ncl;
+
+/* allocate columns and set pointers to them */
+  m[nrl][ncl]=(int *) malloc((size_t)((nrow*ncol*ndep+NR_END)
+					 *sizeof(int)));
+  if(!m[nrl][ncl]) 
+    {
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("allocation failure of columns in cmall_tens3\n");
+      PRINTF("Error occurred in function %s\n",func_name);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }
+  m[nrl][ncl] += NR_END;
+  m[nrl][ncl] -= ndl;
+
+
+   for(i=ncl+1;i<=nch;i++) {
+     m[nrl][i]=m[nrl][i-1]+ndep;
+   }/*endfor*/
+
+   for(i=nrl+1;i<=nrh;i++) {
+     m[i]=m[i-1]+ncol;
+     m[i][ncl]=m[i-1][ncl]+ncol*ndep;
+    for(j=ncl+1;j<=nch;j++) {
+      m[i][j]=m[i][j-1]+ndep;
+    }/*endfor*/
+   }/*endfor*/
+
+/* return pointer to array of pointers to rows */
+   return m;  
+}/* end routine */
+/*===========================================================================*/
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
 /* cmall_tens4: Careful malloc a rank 4 tensor of type double               */
 /*==========================================================================*/
 double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
@@ -648,6 +723,23 @@ void cfree_int_mat(int **m,long nrl, long nrh, long ncl, long nch)
 
 void cfree_tens3(double ***m,long nrl,long nrh,long ncl,long nch,
                              long ndl,long ndh)
+{
+  free((char *) (m[nrl][ncl]+ndl-NR_END));
+  free((char *) (m[nrl]+ncl-NR_END));
+  free((char *) (m+nrl-NR_END));
+  
+}       
+/*==========================================================================*/
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/* cfree_tens3: Careful free a int rank 3 tensor                            */
+/*==========================================================================*/
+
+void cfree_itens3(int ***m,long nrl,long nrh,long ncl,long nch,
+                           long ndl,long ndh)
 {
   free((char *) (m[nrl][ncl]+ndl-NR_END));
   free((char *) (m[nrl]+ncl-NR_END));

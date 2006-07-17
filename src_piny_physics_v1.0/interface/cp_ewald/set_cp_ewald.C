@@ -1335,25 +1335,9 @@ void get_bspline_wght1d(int n_interp,int ngrid,double *aj,double *rn,
 /*==========================================================================*/
 /* II) Transform coeffs                                                     */
 
-/*----------------------------------------------*/
-/*       i)On HP perform transform using 1D FFT */
-#ifdef HP_VECLIB
-   for(k=1;k<=ngrid;k++){
-     bden_r[k] = 0.0;
-     bden_i[k] = 0.0;
-   }/*endfor*/
-   for(k=1;k<=n_interp-1;k++){
-     bden_r[k] = mn_k[k];
-   }/*endfor*/
-    iopt = 1;ierr = 0;incl = 1;nn = 1;incn = 1;
-    nk = ngrid;
-    DFFTS(&bden_r[1],&bden_i[1],&nk,&incl,&nn,&incn,&iopt,&ierr);
-   for(k=1;k<=ngrid;k++){
-     bden_i[k] *= -1.0;
-   }/*endfor*/
 /*-----------------------------------------------*/
-/*     ii) Not HP perform transform using 1D SFT */
-#else
+/*    i)Perform transform using 1D Slow FT */
+
    tpi_n = 2.0*M_PI/grid;
    for(m=1;m<=ngrid;m++){
      bden_r[m] = 0.0;
@@ -1364,7 +1348,6 @@ void get_bspline_wght1d(int n_interp,int ngrid,double *aj,double *rn,
        bden_i[m] += sin(arg)*mn_k[k];
      }/*endfor*/
    }/*endfor*/
-#endif
 
 /*==========================================================================*/
 /* III) Make separable bweights                                             */
@@ -1394,12 +1377,310 @@ void get_bspline_wght1d(int n_interp,int ngrid,double *aj,double *rn,
 
 
 
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+
+void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
+
+/*==========================================================================*/
+   {/*begin routine */
+/*==========================================================================*/
+/* Local variables */
+
+   int i;  
+
+   int n_interp = psnonlocal->n_interp;
+   double scale = psnonlocal->fft_size_scale;
+
+   int nk1      = kmax[1];
+   int nk2      = kmax[2];
+   int nk3      = kmax[3];
+
+   int nkf1t,nkf2t,nkf3t;
+   int nkf1,nkf2,nkf3,nrad;
+
+   int krad[51];
+   int nrad_in=50;
+
+/*==========================================================================*/
+/* (I) Compute the grid size : */
+
+   set_fftsizes(nrad_in,&nrad,&(krad[1])); /* radix conditions */
+
+   nkf1 = (int)( 2.0*scale*((double)nk1) );
+   nkf2 = (int)( 2.0*scale*((double)nk2) );
+   nkf3 = (int)( 2.0*scale*((double)nk3) );
+
+   if(nkf1 < 2*nk1){nkf1++;}
+   if(nkf2 < 2*nk2){nkf2++;}
+   if(nkf3 < 2*nk3){nkf3++;}
+
+   nkf1t = 0;  nkf2t = 0;  nkf3t = 0;
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf1){nkf1t=krad[i];break;}}
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf2){nkf2t=krad[i];break;}}
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf3){nkf3t=krad[i];break;}}
+
+   if( (nkf1t==0) || (nkf2t==0) || (nkf3t==0) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("3D-FFT size required too large %d %d %d\n",nkf1,nkf2,nkf3);
+     PRINTF("for the hard coded radix conditions. Time to update!\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");    
+     FFLUSH(stdout);
+     EXIT(1);
+   }/*endif*/
+
+   nkf1 = nkf1t;
+   nkf2 = nkf2t;
+   nkf3 = nkf3t;
+
+   if( (nkf1<n_interp) || (nkf2<n_interp) || (nkf3<n_interp) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("The PME n_interp parameter > number of grid points \n");
+     PRINTF("This is not allowed\n");      
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     FFLUSH(stdout);
+     EXIT(1);      
+   }/*endif*/
+
+ 
+/*==========================================================================*/
+/* (III) Pack the structure                                                 */
+
+   psnonlocal->nk1       = nk1;
+   psnonlocal->nk2       = nk2;
+   psnonlocal->nk3       = nk3;
+   psnonlocal->ngrid_a   = nkf1;
+   psnonlocal->ngrid_b   = nkf2;
+   psnonlocal->ngrid_c   = nkf3;
+   psnonlocal->nfft      = nkf1*nkf2;
+   psnonlocal->ecut      = ecut;
+   psnonlocal->n_interp2 = n_interp*n_interp;
+
+   PRINTF("Your Non-local EES g-space grid is: (-%d,%d) x (-%d,%d) x (-%d,%d)\n",
+                  kmax[1],kmax[1],kmax[2],kmax[2],kmax[3],kmax[3]);
+   PRINTF("Your Non-local EES r-space grid is : %d x %d x %d\n",
+                                       nkf1,nkf2,nkf3);
+
+/*--------------------------------------------------------------------------*/
+   }/*end routine */
+/*==========================================================================*/
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+
+void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
+
+/*==========================================================================*/
+   {/*begin routine */
+/*==========================================================================*/
+/* Local variables */
+
+   int i;  
+
+   int n_interp = cppseudo->n_interp_ps;
+   double scale = cppseudo->fft_size_scale_ps;
+
+   int nk1      = 2*(kmax[1]+1);
+   int nk2      = 2*(kmax[2]+1);
+   int nk3      = 2*(kmax[3]+1);
+
+   int nkf1t,nkf2t,nkf3t;
+   int nkf1,nkf2,nkf3,nrad;
+
+   int krad[51];
+   int nrad_in=50;
+
+/*==========================================================================*/
+/* (I) Compute the grid size : */
+
+   set_fftsizes(nrad_in,&nrad,&krad[1]); /* radix conditions */
+
+   nkf1 = (int)( 2.0*scale*((double)nk1) );
+   nkf2 = (int)( 2.0*scale*((double)nk2) );
+   nkf3 = (int)( 2.0*scale*((double)nk3) );
+
+   if(nkf1 < 2*nk1){nkf1++;}
+   if(nkf2 < 2*nk2){nkf2++;}
+   if(nkf3 < 2*nk3){nkf3++;}
+
+   nkf1t = 0;  nkf2t = 0;  nkf3t = 0;
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf1){nkf1t=krad[i];break;}}
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf2){nkf2t=krad[i];break;}}
+   for(i=1;i<=nrad;i++){if(krad[i]>=nkf3){nkf3t=krad[i];break;}}
+
+   if( (nkf1t==0) || (nkf2t==0) || (nkf3t==0) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("3D-FFT size required too large %d %d %d\n",nkf1,nkf2,nkf3);
+     PRINTF("for the hard coded radix conditions. Time to update!\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");    
+     FFLUSH(stdout);
+     EXIT(1);
+   }/*endif*/
+
+   nkf1 = nkf1t;
+   nkf2 = nkf2t;
+   nkf3 = nkf3t;
+
+   if( (nkf1<n_interp) || (nkf2<n_interp) || (nkf3<n_interp) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("The PME n_interp parameter > number of grid points \n");
+     PRINTF("This is not allowed\n");      
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     FFLUSH(stdout);
+     EXIT(1);      
+   }/*endif*/
+ 
+/*==========================================================================*/
+/* (III) Pack the structure                                                 */
+
+   cppseudo->ngrid_eext_a = nkf1;
+   cppseudo->ngrid_eext_b = nkf2;
+   cppseudo->ngrid_eext_c = nkf3;
+   cppseudo->nka_eext     = 2*kmax[1];
+   cppseudo->nkb_eext     = 2*kmax[2];
+   cppseudo->nkc_eext     = 2*kmax[3];
+
+   PRINTF("Your Eext EES g-space grid is: (-%d,%d) x (-%d,%d) x (-%d,%d)\n",
+             2*kmax[1],2*kmax[1],2*kmax[2],2*kmax[2],2*kmax[3],2*kmax[3]);
+   PRINTF("Your Eext EES r-space grid is : %d x %d x %d\n",nkf1,nkf2,nkf3);
+
+/*--------------------------------------------------------------------------*/
+   }/*end routine */
+/*==========================================================================*/
 
 
 
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
 
+void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
 
+/*==========================================================================*/
+  {/*begin routine */
+/*-------------------------------------------------------------------------*/
 
+  int nrad=50;
+ (*nrad_ret)  = nrad;
 
+  if(nrad_in<nrad){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Internal Error in hardcoded radix size array.\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    FFLUSH(stdout);
+    EXIT(1);
+  }/*endif*/
+
+#ifdef IBM_ESSL
+  krad[0] = 4;
+  krad[1] = 8;
+  krad[2] = 12;
+  krad[3] = 16;
+  krad[4] = 20;
+  krad[5] = 24;
+  krad[6] = 32;
+  krad[7] = 36;
+  krad[8] = 40;
+  krad[9] = 48;
+  krad[10] = 60;
+  krad[11] = 64;
+  krad[12] = 72;
+  krad[13] = 80;
+  krad[14] = 96;
+  krad[15] = 112;
+  krad[16] = 112;
+  krad[17] = 120;
+  krad[18] = 128;
+  krad[19] = 144;
+  krad[20] = 160;
+  krad[21] = 180;
+  krad[22] = 192;
+  krad[23] = 220;
+  krad[24] = 224;
+  krad[25] = 240;
+  krad[26] = 252;
+  krad[27] = 288;
+  krad[28] = 308;
+  krad[29] = 320;
+  krad[30] = 336;
+  krad[31] = 360;
+  krad[32] = 384;
+  krad[33] = 420;
+  krad[34] = 440;
+  krad[35] = 480;
+  krad[36] = 504;
+  krad[37] = 512;
+  krad[38] = 560;
+  krad[39] = 576;
+  krad[40] = 616;
+  krad[41] = 640;
+  krad[42] = 660;
+  krad[43] = 720;
+  krad[44] = 768;
+  krad[45] = 792;
+  krad[46] = 880;
+  krad[47] = 896;
+  krad[48] = 960;
+  krad[49] = 1008;
+#else
+  krad[0] = 4;
+  krad[1] = 8;
+  krad[2] = 12;
+  krad[3] = 16;
+  krad[4] = 20;
+  krad[5] = 24;
+  krad[6] = 32;
+  krad[7] = 36;
+  krad[8] = 40;
+  krad[9] = 48;
+  krad[10] = 60;
+  krad[11] = 64;
+  krad[12] = 72;
+  krad[13] = 80;
+  krad[14] = 96;
+  krad[15] = 100;
+  krad[16] = 108;
+  krad[17] = 120;
+  krad[18] = 128;
+  krad[19] = 144;
+  krad[20] = 160;
+  krad[21] = 180;
+  krad[22] = 192;
+  krad[23] = 200;
+  krad[24] = 216;
+  krad[25] = 240;
+  krad[26] = 256;
+  krad[27] = 288;
+  krad[28] = 300;
+  krad[29] = 320;
+  krad[30] = 324;
+  krad[31] = 360;
+  krad[32] = 384;
+  krad[33] = 400;
+  krad[34] = 432;
+  krad[35] = 480;
+  krad[36] = 500;
+  krad[37] = 512;
+  krad[38] = 540;
+  krad[39] = 576;
+  krad[40] = 600;
+  krad[41] = 640;
+  krad[42] = 648;
+  krad[43] = 720;
+  krad[44] = 768;
+  krad[45] = 800;
+  krad[46] = 864;
+  krad[47] = 900;
+  krad[48] = 960;
+  krad[49] = 972;
+#endif
+  
+
+/*--------------------------------------------------------------------------*/
+   }/*end routine */
+/*==========================================================================*/
 
 

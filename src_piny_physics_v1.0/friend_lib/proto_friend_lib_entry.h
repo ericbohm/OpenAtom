@@ -15,6 +15,8 @@ double **creall_mat(double **,long,long,long,long ,long ,long ,long ,long ,char 
 void cfree_mat(double **,long , long , long , long );
 void cfree_int_mat(int **,long , long , long , long );
 void cfree_tens3(double ***,long ,long ,long ,long ,long ,long );
+int ***cmall_itens3(long ,long ,long ,long ,long ,long , char *);
+void cfree_itens3(int ***,long ,long ,long ,long ,long ,long );
 
 /*---------------------------------------------------------------------*/
 /*     friend_lib.c                                                    */

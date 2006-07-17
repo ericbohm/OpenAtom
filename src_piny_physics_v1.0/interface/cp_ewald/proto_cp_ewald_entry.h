@@ -2,7 +2,7 @@ void control_set_cp_ewald(GENSIMOPTS *,GENCELL *,CPCOEFFS_INFO *, CPOPTS *,
                           GENEWALD *, CPEWALD *,CP_PARSE *,
                           double *,double *,double *, int ,int ,
                           double *,int ,MDPART_MESH *,MDECOR *, 
-                          int ,int ,int);
+                          int ,int ,int,PSNONLOCAL *, CPPSEUDO *);
 
 void get_coul_clus_corr(GENEWALD *,GENCELL *,int ,int ,
                         double ,double ,int ,int ,

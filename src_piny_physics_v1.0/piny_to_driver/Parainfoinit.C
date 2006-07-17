@@ -27,31 +27,46 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-  int ndump_frq     = genfilenames->iwrite_dump;
-  int istart_typ_cp = gensimopts->istart_cp;
-  int cp_opt        = (gensimopts->cp+gensimopts->cp_wave);
-  int cp_min_opt    = (gensimopts->cp_wave_min+gensimopts->cp_min);
-  int cp_std        = gensimopts->cp;
-  int cp_wave       = gensimopts->cp_wave;
-  int cp_min_cg     = genminopts->cp_min_cg;
-  int cp_min_std    = genminopts->cp_min_std;
-  int *kmax         = cpewald->kmax_cp_dens_cp_box;
-  int nkf1          = 4*(kmax[1]+1);
-  int nkf2          = 4*(kmax[2]+1);
-  int nkf3          = 4*(kmax[3]+1);
-  int nstates       = cpcoeffs_info->nstate_up;
-  int ntime         = gentimeinfo->ntime;
-  int ibinary_opt   = cpopts->iread_coef_binary;
-  int ibinary_write_opt = cpopts->iwrite_coef_binary;
-  int natm_tot      = (mdatoms->mdclatoms_info.natm_tot);
-  int natm_nl       = (cppseudo->nonlocal.natm);
-  int cp_grad_corr_on= cpopts->cp_gga;
+  int ndump_frq       = genfilenames->iwrite_dump;
+  int istart_typ_cp   = gensimopts->istart_cp;
+  int cp_opt          = (gensimopts->cp+gensimopts->cp_wave);
+  int cp_min_opt      = (gensimopts->cp_wave_min+gensimopts->cp_min);
+  int cp_std          = gensimopts->cp;
+  int cp_wave         = gensimopts->cp_wave;
+  int cp_min_cg       = genminopts->cp_min_cg;
+  int cp_min_std      = genminopts->cp_min_std;
+  int *kmax           = cpewald->kmax_cp_dens_cp_box;
+  int nkf1            = 4*(kmax[1]+1);
+  int nkf2            = 4*(kmax[2]+1);
+  int nkf3            = 4*(kmax[3]+1);
+  int nstates         = cpcoeffs_info->nstate_up;
+  int ntime           = gentimeinfo->ntime;
+  int ibinary_opt     = cpopts->iread_coef_binary;
+  int ibinary_write_opt= cpopts->iwrite_coef_binary;
+  int natm_tot        = (mdatoms->mdclatoms_info.natm_tot);
+  int natm_nl         = (cppseudo->nonlocal.natm);
+  int natm_typ        = cppseudo->natm_typ;
+  int cp_grad_corr_on = cpopts->cp_gga;
 
-  double vol        = gencell->vol;
-  double dt         = gentimeinfo->dt;
-  double tol_norb   = cpconstrnt->c_tolnorb;
-  double tol_cp_min = genminopts->tol_coef;
-  double tol_cp_dyn = cpopts->tol_coef;
+  double vol          = gencell->vol;
+  double dt           = gentimeinfo->dt;
+  double tol_norb     = cpconstrnt->c_tolnorb;
+  double tol_cp_min   = genminopts->tol_coef;
+  double tol_cp_dyn   = cpopts->tol_coef;
+
+  int ees_eext_on     = cppseudo->nonlocal.ees_eext_on;
+  int ees_nloc_on     = cppseudo->nonlocal.ees_on;
+  int ngrid_eext_a    = cppseudo->ngrid_eext_a;
+  int ngrid_eext_b    = cppseudo->ngrid_eext_b;
+  int ngrid_eext_c    = cppseudo->ngrid_eext_c;
+  int ngrid_nloc_a    = cppseudo->nonlocal.ngrid_a;
+  int ngrid_nloc_b    = cppseudo->nonlocal.ngrid_b;
+  int ngrid_nloc_c    = cppseudo->nonlocal.ngrid_c;
+
+  int nlIters         = (cppseudo->nonlocal.nl_iter);
+  int nmem_zmat_tot   = cppseudo->nonlocal.ntot_zmat;
+  int *nmem_zmat      = cppseudo->nonlocal.n_zmat;
+  int *ioff_zmat      = cppseudo->nonlocal.ioff_zmat;
 
 //========================================================================
 
@@ -74,39 +89,56 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      PRINTF("No gen-wave restarts yet. Sorry\n");
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
-   }
-
+   }//endif
 
 //========================================================================
 
-   sim->vol        = vol;
-   sim->tol_norb   = tol_norb;
-   sim->tol_cp_min = tol_cp_min;
-   sim->tol_cp_dyn = tol_cp_dyn;
-   sim->dt         = dt;
+   sim->nstates        = nstates;
+   sim->natm_typ       = natm_typ;
+   sim->natm_tot       = natm_tot;
+   sim->natm_nl        = natm_nl;
+   sim->nlIters        = nlIters;
+   sim->ntime          = ntime;
+   sim->dt             = dt;
+   sim->vol            = vol;
 
-   sim->ndump_frq  = ndump_frq;
-   sim->istart_typ_cp = istart_typ_cp;
+   sim->cp_min_opt     = cp_min_opt;
+   sim->cp_min_cg      = cp_min_cg;
+   sim->cp_min_std     = cp_min_std;
+   sim->cp_opt         = cp_opt;
+   sim->cp_std         = cp_std;
+   sim->cp_wave        = cp_wave;
+   sim->cp_grad_corr_on= cp_grad_corr_on;
 
-   sim->cp_grad_corr_on=cp_grad_corr_on;
-   sim->cp_min_opt = cp_min_opt;
-   sim->cp_min_cg  = cp_min_cg;
-   sim->cp_min_std = cp_min_std;
+   sim->tol_norb       = tol_norb;
+   sim->tol_cp_min     = tol_cp_min;
+   sim->tol_cp_dyn     = tol_cp_dyn;
 
-   sim->cp_opt     = cp_opt;
-   sim->cp_std     = cp_std;
-   sim->cp_wave    = cp_wave;
+   sim->ndump_frq      = ndump_frq;
+   sim->istart_typ_cp  = istart_typ_cp;
+   sim->ibinary_opt    = ibinary_opt;
+   sim->ibinary_write_opt= ibinary_write_opt;
 
-   sim->sizeX      = nkf1;
-   sim->sizeY      = nkf2;
-   sim->sizeZ      = nkf3;
+   sim->sizeX          = nkf1;
+   sim->sizeY          = nkf2;
+   sim->sizeZ          = nkf3;
 
-   sim->nstates    = nstates;
-   sim->ntime      = ntime;
-   sim->ibinary_opt= ibinary_opt;
-   sim->ibinary_write_opt = ibinary_write_opt;
-   sim->natm_tot   = natm_tot;
-   sim->natm_nl    = natm_nl;
+   sim->ees_eext_on    = ees_eext_on;
+   sim->ees_nloc_on    = ees_nloc_on;
+   sim->ngrid_nloc_a   = ngrid_nloc_a; 
+   sim->ngrid_nloc_b   = ngrid_nloc_b; 
+   sim->ngrid_nloc_c   = ngrid_nloc_c; 
+   sim->ngrid_eext_a   = ngrid_eext_a; 
+   sim->ngrid_eext_b   = ngrid_eext_b; 
+   sim->ngrid_eext_c   = ngrid_eext_c; 
+
+   sim->nmem_zmat_tot  = nmem_zmat_tot;
+   sim->ioff_zmat      = new int [nlIters];
+   sim->nmem_zmat      = new int [nlIters];
+   for(int i=0;i<nlIters;i++){
+     sim->ioff_zmat[i] = ioff_zmat[(i+1)];
+     sim->nmem_zmat[i] = nmem_zmat[(i+1)];
+   }//endfor
 
 //-----------------------------------------------------------------------
   }//end routine
@@ -476,8 +508,7 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
    if(npts!=npts_tot || nlines != nlines_tot){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      PRINTF("Inconsistency between nlines and pts per plane and totals\n");
-     PRINTF("%d %d : %d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot,
-                                       nchareG,sizeX);
+     PRINTF("%d %d : %d %d \n",npts,npts_tot,nlines,nlines_tot);
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
    }//endif

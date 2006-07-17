@@ -26,6 +26,13 @@ cp_nlmat.o  :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_nonlocal/cp_nlmat.C
 #------------------------------------------------------------------
+cp_ees_nonlocal.o  :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
+               $(COMPLEX)   \
+               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) \
+               $(CODE)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C
+	$(ECHO) $@
+	$(COBJ_TEST) $(CODE)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C
+#------------------------------------------------------------------
 cp_hart_ext.o :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) \
                $(CLASS_CP) $(FFTW) \
                $(COMPLEX)   \

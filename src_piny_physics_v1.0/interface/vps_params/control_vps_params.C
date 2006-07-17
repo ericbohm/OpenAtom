@@ -87,6 +87,7 @@ void control_vps_params(CPPSEUDO *cppseudo,GENCELL *gencell,
    int nsplin_g,n_rad_max,n_ang_max1;
    int ngh_tot,nsplin_g_tot,nlist,norm_size;
    int natm_nonloc_now;
+   double *q_typ = cppseudo->q_typ;
 
 /*==========================================================================*/
 /* 0) Output                                                                */
@@ -503,6 +504,22 @@ void control_vps_params(CPPSEUDO *cppseudo,GENCELL *gencell,
 /* X) Create the non-local list */
 
     create_non_local_list(cppseudo,natm_tot,iatm_atm_typ,natm_typ);
+
+    double *q_pseud=cppseudo->q_pseud;
+/*==========================================================================*/
+/* Test the q_pseud */
+    
+    for(i=1;i<=natm_typ;i++){
+      if(q_typ[i]!=q_pseud[i]){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("Charges assigned to the atom types must\n");
+        PRINTF("match the pseudo potential charge : %d : %g %g!\n",
+                i,q_typ[i],q_pseud[i]);
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        FFLUSH(stdout);
+        EXIT(1);
+      }//endif
+    }//endfor
 
 /*==========================================================================*/
 /*  XII) Output                                                             */
@@ -1615,43 +1632,57 @@ void make_weight_gen(double *wgh_tmp,double *wgh,double *rgh, double *dvl,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-
-void make_cp_atom_list(CPATOM_MAPS *cpatom_maps,int *cp_atm_flag,
-                       int *nab_initio,int natm_tot)
-
+void make_cp_atom_list(CPATOM_MAPS *cpatom_maps,CPPSEUDO *cppseudo,
+                int natm_tot, int natm_typ, double *q,int *iatm_atm_typ)
 //========================================================================
-//             Begin Routine                                              
-         {//Begin subprogram: 
+{//Begin subprogram: 
 //========================================================================
-//             Local variable declarations                                
+// Create the list of cp-atoms
 
- int i,iii,j;
- int nab_init_cnt = 0;
-
-//------------------------------------------------------------------------
-
- for(i=1; i <= natm_tot; i++){
-   if( cp_atm_flag[i] == 1 ){ nab_init_cnt++; }
- }
-
-   *nab_initio = nab_init_cnt;
-
-//------------------------------------------------------------------------
-// malloc the list array that holds indices of ab initio atoms 
-
-   cpatom_maps->cp_atm_lst = (int *) 
-            cmalloc(nab_init_cnt*sizeof(int),"make_cp_atom_list") -1;
-
-//------------------------------------------------------------------------
-//  Fill the map with atom inidices of ab initio atoms 
-
-     j = 1;
-      
-   for(i=1; i <= natm_tot; i++){
-     if( cp_atm_flag[i] == 1){
-       cpatom_maps->cp_atm_lst[j] = i; j++; 
-     }//endif
+   int *cp_atm_flag = cpatom_maps->cp_atm_flag;
+   int nab_initio   = 0;
+   for(int i=1;i<=natm_tot;i++){
+     if(cp_atm_flag[i]==1){nab_initio++;}
    }//endfor
+
+#ifdef _QMMM_STUFF_
+   int *cp_atm_lst = (int *)cmalloc(nab_initio*sizeof(int),"make_cp_atom_list")-1;
+
+   int j = 1;
+   for(int i=1;i<=natm_tot;i++){
+     if(cp_atm_flag[i]==1){cp_atm_lst[j]=i;j++;}
+   }//endfor
+
+   cppseudo->cp_atm_list = cp_atm_lst;
+   cppseudo->nab_initio  = nab_initio;
+#endif
+
+   if(nab_initio!=natm_tot){
+       PRINTF("All Atoms must be Abinitio\n");
+       EXIT(1);
+   }//endif
+
+//------------------------------------------------------------------------
+// Set up the charge of each atom type : For now, all the same!!
+
+  double *q_typ = (double *)cmalloc(natm_typ*sizeof(double),"cp_atm_list")-1;
+
+  for(int i=1;i<=natm_tot;i++){q_typ[iatm_atm_typ[i]] = q[i];}
+
+  for(int i=1;i<=natm_tot;i++){
+    if(q[i]!=q_typ[iatm_atm_typ[i]]){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Charges of all atoms with the same type label must\n");
+      PRINTF("match for now: q[%d]=%g qtyp[%d]=%g\n",
+              i,q[i],iatm_atm_typ[i],q_typ[iatm_atm_typ[i]]);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+    }//endif
+  }//endfor
+
+  cppseudo->q_typ    = q_typ;
+  cppseudo->natm_typ = natm_typ;
 
 //------------------------------------------------------------------------
   }//end routine 
@@ -1663,10 +1694,8 @@ void make_cp_atom_list(CPATOM_MAPS *cpatom_maps,int *cp_atm_flag,
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
-
 void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
                            int *iatm_atm_typ, int natm_typ)
-
 /*==========================================================================*/
   {/*begin routine*/
 /*==========================================================================*/
@@ -1680,6 +1709,9 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   int *n_ang       = cppseudo->n_ang;
   int *loc_opt     = cppseudo->loc_opt;
   double *vpsnorm  = cppseudo->vpsnorm;
+  int ees_on       = cppseudo->nonlocal.ees_on;
+  int ees_eext_on  = cppseudo->nonlocal.ees_eext_on;
+  int n_interp     = cppseudo->nonlocal.n_interp;
 
       /* malloced, setup and stored below*/
   int natm_nl;           /* number of total non-local atoms */
@@ -1694,7 +1726,6 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   complex *ei_inc;
   complex *ti_inc;
   double *vnorm_0;
-
 
 /*=========================================================================*/
 /* I) Some redudant checking */
@@ -1837,6 +1868,143 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   cppseudo->nonlocal.ti_inc        = ti_inc;
   cppseudo->nonlocal.vnorm_0       = vnorm_0;  
 
+  // add the non-local ees memory
+  if(ees_on==1 || ees_eext_on==1){
+    int natm = natm_tot;
+    cppseudo->nonlocal.aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    cppseudo->nonlocal.rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    cppseudo->nonlocal.rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    cppseudo->nonlocal.frac_a  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    cppseudo->nonlocal.frac_b  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    cppseudo->nonlocal.frac_c  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
+    cppseudo->nonlocal.iatemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    cppseudo->nonlocal.ibtemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    cppseudo->nonlocal.ictemp  = (int *)cmalloc(natm*sizeof(int),"psnl_pup");
+    cppseudo->nonlocal.igrid_a = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.igrid_b = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.igrid_c = cmall_int_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.mn_a    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.mn_b    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.mn_c    = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.ua      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.ub      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.uc      = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.dmn_a   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.dmn_b   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    cppseudo->nonlocal.dmn_c   = cmall_mat(1,n_interp,0,natm,"psnl_pup");
+    nlEesSetIter(cppseudo);
+  }//endif
+
 /*-----------------------------------------------------------------------*/
   }/*end routine*/
 /*==========================================================================*/
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void nlEesSetIter(CPPSEUDO *cppseudo){
+//==========================================================================
+
+  int nl_max         = cppseudo->nonlocal.nl_max;
+  int *natm_typ_lang = cppseudo->nonlocal.natm_typ_lang;
+  int **iatm_typ_lang = cppseudo->nonlocal.iatm_typ_lang;
+  int *natm_lang     = cppseudo->nonlocal.natm_lang;
+
+//==========================================================================
+// Count the number of iterations
+
+  int nl_iter   = 0;
+  int ntot_zmat = 0;  
+  for(int lang=0,lang1=1;lang<=nl_max;lang++,lang1++){// l-channels      
+    int natm_typ = natm_typ_lang[lang1];// num atom types in this l-channel 
+    if(natm_typ>0){
+      for(int mang=-lang;mang<=lang;mang++){// m-channels in this l-channel 
+        for(int ityp=1;ityp<=natm_typ;ityp++){// atm types in this channel  
+          int iatm_typ = iatm_typ_lang[ityp][lang1]; // true atom type      
+          int natm     = natm_lang[iatm_typ];        // # atms of this type 
+          nl_iter     += 1;
+          ntot_zmat   += natm;
+        }//endfor
+      }//endfor
+    }//endfor
+  }//endfor
+
+//==========================================================================
+// Malloc
+
+  int *lang_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+  int *mang_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+  int *ityp_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+  int *n_zmat    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+  int *ioff_zmat = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+
+//==========================================================================
+// Store the {l,m,ityp} of each iteration 
+
+  int i=0;
+  for(int lang=0,lang1=1;lang<=nl_max;lang++,lang1++){// l-channels      
+    int natm_typ = natm_typ_lang[lang1];// num atom types in this l-channel 
+    if(natm_typ>0){
+      for(int mang=-lang;mang<=lang;mang++){// m-channels in this l-channel 
+        for(int ityp=1;ityp<=natm_typ;ityp++){// atm types in this channel  
+          int iatm_typ = iatm_typ_lang[ityp][lang1]; // true atom type      
+          int natm     = natm_lang[iatm_typ];        // # atms of this type 
+          i++;
+          lang_v[i]    = lang;
+          mang_v[i]    = mang;
+          ityp_v[i]    = ityp;
+          n_zmat[i]    = natm;
+        }//endfor
+      }//endfor
+    }//endif
+  }//endfor
+
+  ioff_zmat[1] = 0;
+  for(i=2;i<=nl_iter;i++){
+    ioff_zmat[i] = ioff_zmat[(i-1)] + n_zmat[i];
+  }//endfor
+
+//==========================================================================
+// Pack the data
+
+  cppseudo->nonlocal.nl_iter   = nl_iter;
+  cppseudo->nonlocal.ntot_zmat = ntot_zmat;
+  cppseudo->nonlocal.lang_v    = lang_v;
+  cppseudo->nonlocal.mang_v    = mang_v;
+  cppseudo->nonlocal.ityp_v    = ityp_v;
+  cppseudo->nonlocal.n_zmat    = n_zmat;
+  cppseudo->nonlocal.ioff_zmat = ioff_zmat;
+
+//--------------------------------------------------------------------------
+  }//end routine
+//==========================================================================
+
+//==========================================================================
+// spherical harmonic constants : Easiest to do here. They never change
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void set_ylm_cons(CPYLM_CONS *ylm_cons)
+//==========================================================================
+  {// begin routine*/
+//==========================================================================
+
+   double tpi           = 2.0*M_PI;
+   double fpi           = 4.0*M_PI;
+
+   ylm_cons->rt_fpi     = 1.0/sqrt(fpi);
+   ylm_cons->rt_thrfpi  = sqrt(3.0/fpi);
+   ylm_cons->rt_threpi  = sqrt(1.50/fpi);
+   ylm_cons->hrt_fivfpi = 0.50*sqrt(5.0/fpi);
+   ylm_cons->rt_fiftepi = sqrt(7.50/fpi);
+   ylm_cons->hrt_sevfpi = 0.50*sqrt(7.0/fpi);
+   ylm_cons->hrt_toepi  = 0.50*sqrt(10.50/fpi)/sqrt(2.0);
+   ylm_cons->hrt_ohffpi = 0.50*sqrt(105.0/fpi)/sqrt(2.0);
+   ylm_cons->hrt_tfepi  = 0.50*sqrt(17.50/fpi)/sqrt(2.0);
+
+//--------------------------------------------------------------------------
+  }//end routine
+//==========================================================================
+
+

@@ -86,3 +86,9 @@ void get_bspline_wght1d(int ,int ,double *,double *,
 
 /*==========================================================================*/
 
+
+void init_nonlocal_ees(int *,double, PSNONLOCAL *);
+void init_eext_ees(int *,CPPSEUDO *);
+void set_fftsizes(int, int *, int *);
+
+/*==========================================================================*/

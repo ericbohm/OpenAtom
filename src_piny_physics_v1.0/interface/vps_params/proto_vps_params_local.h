@@ -39,43 +39,5 @@ void get_dvl(int ,double *,double *,double *,
 void make_weight_gen(double *,double *,double *, double *,
                      int ,int ,int ,int);
 
+
 /*---------------------------------------------------------------*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

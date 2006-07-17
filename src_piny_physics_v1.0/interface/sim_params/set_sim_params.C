@@ -264,7 +264,7 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 #include "../class_defs/allclass_strip_gen.h"
 
    int iii;
-   int ifound,index,itemp,cp_orth_sum;
+   int ifound,index,itemp,cp_orth_sum,int_key_arg;
    double real_key_arg;
 
 /*========================================================================*/
@@ -721,6 +721,58 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if(ifound != 1){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
 
+  /*-----------------------------------------------------------------------*/ 
+  /* 35)\cp_nonloc_ees_opt{on,off} */
+       index=35;
+       ifound = 0;
+       if(strcasecmp(dict[index].keyarg,"on")==0)    {
+          cppseudo->nonlocal.ees_on = 1; ifound++;}
+       if(strcasecmp(dict[index].keyarg,"off")==0)    {
+          cppseudo->nonlocal.ees_on = 0; ifound++;}
+       if(ifound != 1){
+          keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+        cppseudo->ees_nonloc_on = cppseudo->nonlocal.ees_on;
+  /*-----------------------------------------------------------------------*/ 
+  /* 36)\cp_pseudo_ees_order{4} */
+       index=36;
+       sscanf(dict[index].keyarg,"%lg",&real_key_arg);
+       int_key_arg = (int) real_key_arg;
+       cppseudo->n_interp_ps          = int_key_arg;
+       cppseudo->nonlocal.n_interp  = int_key_arg;
+       cppseudo->nonlocal.n_interp2 = (int_key_arg*int_key_arg);
+       if( ((int_key_arg % 2)!=0) || (int_key_arg < 4) ){
+         keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+       }/*endif*/
+       if(int_key_arg>8){
+         printf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+         printf("The recommended range of cp_nonloc_pme_order is 4-8 \n");
+         printf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+       }/*endif*/
+  /*-----------------------------------------------------------------------*/ 
+  /* 37)\cp_pseudo_pme_scale{1.2} */
+       index=37;
+       sscanf(dict[index].keyarg,"%lg",&real_key_arg);
+       cppseudo->fft_size_scale_ps         = real_key_arg;
+       cppseudo->nonlocal.fft_size_scale = real_key_arg;
+       if(real_key_arg <= 1.1){
+         keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+       }/*endif*/
+       if(real_key_arg>1.4){
+         printf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+         printf("The recommended range of cp_nonloc_pme_scale is 1.1-1.4 \n");
+         printf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+       }/*endif*/
+  /*-----------------------------------------------------------------------*/ 
+  /* 38)\cp_eext_ees_opt{on,off} */
+       index=38;
+       ifound = 0;
+       if(strcasecmp(dict[index].keyarg,"on")==0)    {
+          cppseudo->nonlocal.ees_eext_on = 1; ifound++;}
+       if(strcasecmp(dict[index].keyarg,"off")==0)    {
+          cppseudo->nonlocal.ees_eext_on = 0; ifound++;}
+       if(ifound != 1){
+          keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+        cppseudo->ees_eext_on = cppseudo->nonlocal.ees_eext_on;
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/

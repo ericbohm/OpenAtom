@@ -17,6 +17,8 @@ class CPPSEUDO{
 //-------------------------------------------------------------------------
  public:
   int cp_any_on;              // Opt: Is cp of any type ``on''
+  int ees_nonloc_on;          // Opt : nonlocal ees method
+  int ees_eext_on;            // Opt : eext ees method
   int cp_ptens_calc;          // Opt : pressure tensor on
   int natm_typ;               // Num : num atom types
   int natm_tot;               // Num : num atom types
@@ -38,7 +40,14 @@ class CPPSEUDO{
                               //         pseudopot angular momentum 
                               //         channels =sum np_nl(j)         
   int nl_cut_on;              // Opt: Non-local cutoff scheme opt    
-  int n_interp_pme_dual;      //Num: Order of interpolation         
+  int n_interp_ps;            //Num: Order of interpolation for pseudo stuff
+  int n_interp_pme_dual;      //Num: Order of interpolation
+  int ngrid_eext_a;           //Num : External eext stuff
+  int ngrid_eext_b;
+  int ngrid_eext_c;
+  int nka_eext;
+  int nkb_eext;
+  int nkc_eext;
   int natm_typ_nl;            //Num: number of nonlocal atom types  
                               //    this is a subset of iatm_atm_typ
   int natm_typ_gh;            //Num: number of nonlocal atom types  
@@ -53,6 +62,7 @@ class CPPSEUDO{
   int np_nonloc_cp_box_gh;    // Num: # of gauss-hermite nonlocal atoms 
   int natm_nonloc;              // Num: s-wave non-local atoms KB type 
 
+  double fft_size_scale_ps;   // Num: fft size scale factor for pseudo ees method
   double gmin_true;           // Num: Mag of smallest g-vector       
   double gmin_spl;            // Num: Min mag of g-vec in spline     
   double gmax_spl;            // Num: Max mag of g-vec in spline     
@@ -131,6 +141,8 @@ class CPPSEUDO{
                               //    to read it in                       
   double *q_pseud;            // charge associated with pseudo  
                               // Lth: natm_typ 
+  double *q_typ;              // charge associated with the atoms
+                              // Lth: natm_typ 
   char *vxc_typ;              // Chr: Exchange-correlation type 
                               //    Lth: MAXWORD                        
   char *ggax_typ;             // Chr: GGA-Exchange-correlation type 
@@ -142,6 +154,8 @@ class CPPSEUDO{
 //con-destruct:
    CPPSEUDO(){
      cp_any_on           = 0;
+     ees_nonloc_on       = 0;
+     ees_eext_on         = 0;
      cp_ptens_calc       = 0;
      natm_typ            = 0;
      natm_tot            = 0;
@@ -154,6 +168,13 @@ class CPPSEUDO{
      nsplin_g_tot        = 0;      
      num_nl_lst          = 0;        
      nl_cut_on           = 0;         
+     n_interp_ps         = 0; 
+     ngrid_eext_a        = 0;
+     ngrid_eext_b        = 0;
+     ngrid_eext_c        = 0;
+     nka_eext            = 0;         
+     nkb_eext            = 0;
+     nkc_eext            = 0;
      n_interp_pme_dual   = 0; 
      natm_typ_nl         = 0;       
      natm_typ_gh         = 0;       
@@ -166,6 +187,7 @@ class CPPSEUDO{
      np_nonloc_cp_box_kb = 0;  
      np_nonloc_cp_box_gh = 0;  
      natm_nonloc         = 0;
+     fft_size_scale_ps   = 1.0;
    };
   ~CPPSEUDO(){};
 
@@ -175,6 +197,8 @@ class CPPSEUDO{
   void pup(PUP::er &p){
     //pupping ints
       p | cp_any_on;      
+      p | ees_nonloc_on;
+      p | ees_eext_on;
       p | cp_ptens_calc;      
       p | natm_typ;
       p | natm_tot;
@@ -187,6 +211,13 @@ class CPPSEUDO{
       p | nsplin_g_tot;
       p | num_nl_lst;
       p | nl_cut_on;
+      p | n_interp_ps;
+      p | ngrid_eext_a;
+      p | ngrid_eext_b;
+      p | ngrid_eext_c;
+      p | nka_eext;
+      p | nkb_eext;
+      p | nkc_eext;
       p | n_interp_pme_dual;
       p | natm_typ_nl;
       p | natm_typ_gh;
@@ -200,6 +231,7 @@ class CPPSEUDO{
       p | nlist;
       p | natm_nonloc;
     //pupping dbles
+      p | fft_size_scale_ps;
       p | gmin_true;
       p | gmin_spl;
       p | gmax_spl;
@@ -221,6 +253,7 @@ class CPPSEUDO{
           pup1d_int(p,&ivps_label,natm_typ);
 
           pup1d_dbl(p,&q_pseud,natm_typ);
+          pup1d_dbl(p,&q_typ,natm_typ);
           pup1d_dbl(p,&gzvps,natm_typ);
           pup1d_dbl(p,&gzvps0,natm_typ);
           pup1d_dbl(p,&rcut_nl,natm_typ);

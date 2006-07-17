@@ -189,7 +189,7 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                           (class_parse.kmax_res),tot_memory,
                           (gentimeinfo->int_res_ter),mdpart_mesh,mdecor,
                           (cpopts->cp_lsda),(genminopts->cp_min_diis),
-                          cp_dual_grid_opt_on); 
+                          cp_dual_grid_opt_on,&(cppseudo->nonlocal),cppseudo); 
 
      if(cp_on==1){
        cpopts->te_ext         /= (double) ( (cpcoeffs_info->nstate_up
@@ -241,9 +241,11 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   if(cp_on==1){
 
-    make_cp_atom_list(cpatom_maps,cpatom_maps->cp_atm_flag,
-                      &(cpatom_maps->nab_initio),mdclatoms_info->natm_tot);
+    set_ylm_cons(&(cp->cpylm_cons));
 
+    make_cp_atom_list(cpatom_maps, cppseudo, mdclatoms_info->natm_tot,
+                      mdatom_maps->natm_typ,mdclatoms_info->q,
+                      mdatom_maps->iatm_atm_typ);
 
     control_vps_params(cppseudo,gencell,&filename_parse,
                        &spline_parse,mdatom_maps->iatm_atm_typ,

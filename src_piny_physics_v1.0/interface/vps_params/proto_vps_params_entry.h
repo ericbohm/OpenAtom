@@ -6,9 +6,13 @@ void control_vps_params(CPPSEUDO *,GENCELL *,FILENAME_PARSE *,
 			double *,int, int,int ,int , 
                         double);
 
-void make_cp_atom_list(CPATOM_MAPS *,int *, int *,int );
+void make_cp_atom_list(CPATOM_MAPS *,CPPSEUDO *,int, int, double *, int *);
 
-void create_non_local_list(CPPSEUDO *cppseudo,int,int*,int);
+void create_non_local_list(CPPSEUDO *,int,int*,int);
+
+void set_ylm_cons(CPYLM_CONS *);
+
+void nlEesSetIter(CPPSEUDO *);
 
 /*---------------------------------------------------------------*/
 
