@@ -16,7 +16,7 @@
 #include "cpaimd.h"
 #include "groups.h"
 #include <math.h>
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 
 //----------------------------------------------------------------------------

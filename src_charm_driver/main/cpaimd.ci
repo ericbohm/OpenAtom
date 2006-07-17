@@ -17,9 +17,11 @@ mainmodule cpaimd {
 
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
+	readonly CkHashtableT<intdual, int> RSPmaptable;
 	readonly CkHashtableT<intdual, int> RhoGSmaptable;
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
+	readonly CkHashtableT<intdual, int> RhoRHartmaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
 
@@ -32,9 +34,11 @@ mainmodule cpaimd {
 	readonly CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 	readonly CProxy_CP_State_ParticlePlane particlePlaneProxy;
 	readonly CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
+	readonly CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
 	readonly CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 	readonly CProxy_CP_Rho_GSpacePlane rhoGProxy;
 	readonly CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
+	readonly CProxy_CP_Rho_RHartExt rhoRHartExtProxy;
 	readonly CProxy_Ortho orthoProxy;
 	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
@@ -42,8 +46,11 @@ mainmodule cpaimd {
 	readonly CProxy_FFTcache fftCacheProxy;
 	readonly CProxy_StructFactCache sfCacheProxy;
 	readonly CProxy_StructureFactor sfCompProxy;
+	readonly CProxy_eesCache                   eesCacheProxy;
 	
 	readonly CkGroupID mCastGrpId;
+
+        // exc, hart, eext communication
 	readonly ComlibInstanceHandle commGHartInstance;
 	readonly ComlibInstanceHandle commGInstance0;
 	readonly ComlibInstanceHandle commGInstance1;
@@ -54,22 +61,37 @@ mainmodule cpaimd {
 	readonly ComlibInstanceHandle commRealIGXInstance;
 	readonly ComlibInstanceHandle commRealIGYInstance;
 	readonly ComlibInstanceHandle commRealIGZInstance;
-	readonly ComlibInstanceHandle mcastInstance;
-	readonly ComlibInstanceHandle ssInstance;
-	readonly ComlibInstanceHandle mssInstance;
-	readonly ComlibInstanceHandle gssInstance;
-	readonly ComlibInstanceHandle mcastInstancePP;
+
+        // pc communication
 	readonly ComlibInstanceHandle gAsymInstance;
 	readonly ComlibInstanceHandle gSymInstance;
 
+        // multicast for vks to states and other things
+	readonly ComlibInstanceHandle mcastInstance;
+	readonly ComlibInstanceHandle mcastInstancePP;
+	readonly ComlibInstanceHandle mcastInstanceRPP;
+	readonly ComlibInstanceHandle mcastInstancemRPP;
+
+        // density from psi : g->r and r->g
+	readonly ComlibInstanceHandle mssInstance;
+	readonly ComlibInstanceHandle gssInstance;
+
+        // Nonlocal Ees method : g->r and r->g
+	readonly ComlibInstanceHandle gssPInstance;
+	readonly ComlibInstanceHandle mssPInstance;
+
+        // Eext method : g->r and r->g
+	readonly ComlibInstanceHandle commRHartGHartIns;
+	readonly ComlibInstanceHandle commGHartRHartIns0;
+	readonly ComlibInstanceHandle commGHartRHartIns1;
+
+        // PINY Physics readonly data structures
         readonly MDINTEGRATE  readonly_mdintegrate;
         readonly MDATOMS      readonly_mdatoms;
         readonly MDINTER      readonly_mdinter;
         readonly MDINTRA      readonly_mdintra;
         readonly GENERAL_DATA readonly_general_data;
         readonly CP           readonly_cp; 
-
-
 
 	message PPDummyMsg;
 	message SFDummyMsg;
@@ -92,11 +114,17 @@ mainmodule cpaimd {
 	
 	message GSIFFTMsg {complex data[];};
 
+	message GSPPIFFTMsg {complex data[];};
+
 	message RSFFTMsg {complex data[];};
+
+	message RSPPFFTMsg {complex data[];};
 
 	message RhoGSFFTMsg {complex data[];};
 
 	message RhoGHartMsg {complex data[];};
+
+	message RhoRHartMsg {complex data[];};
 
 	message RhoRSFFTMsg {complex data[];};
 
@@ -113,7 +141,9 @@ mainmodule cpaimd {
 		int k_y[];
 		int k_z[];
 	};
-	
+
+	message NLFFTMsg {complex data[];};
+
 	mainchare main {
 		entry main();
 	        entry void doneInit(CkReductionMsg *msg);
@@ -124,7 +154,8 @@ mainmodule cpaimd {
                         int numG, int numR, int s_grain, int numChunks);
 		entry void initGSpace(int n, RunDescriptor r[n], int m, 
 			complex pts[m],int mv, complex vpts[mv], 
-                        int nx,int ny,int nz,int istart_cp);
+                        int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
+                        int istart_cp);
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
 		entry void syncpsi();
@@ -150,6 +181,7 @@ mainmodule cpaimd {
 		entry void makePCproxies();
 		entry void isAtSync(int);
 		entry void startNewIter ();
+		entry void startNLEes ();
 		entry void gdoneIFFT(CkReductionMsg *msg);
 
 		entry void psiWriteComplete(CkReductionMsg *msg);
@@ -161,15 +193,30 @@ mainmodule cpaimd {
 	};
 	
 	array [2D] CP_State_ParticlePlane {
-		entry CP_State_ParticlePlane(int x, int y, int z, 
-                       int numPlanes,int numSfGrps,int natm_nl,int natm_nl_grp_max,
-		       int nstates, int nchareG, int Gstates_per_pe);
+		entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,
+                                             int ,int ,int ,int ,int ,int ,int ,int);
 		entry void computeZ(PPDummyMsg *dmsg);
 		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],
-			complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
-		entry void sumEnergies(double energy);
+			complex zmatrix_fx[size], complex zmatrix_fy[size],
+                        complex zmatrix_fz[size]);
 		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
 		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
+		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
+		entry void startNLEes (int);
+                entry void registrationDone(CkReductionMsg *msg);
+	};
+
+	array [2D] CP_State_RealParticlePlane {
+		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+                entry void recvFromEesGPP(NLFFTMsg *);
+                entry void recvZMatEes(CkReductionMsg *);
+                entry void computeAtmForcEes(int nZmat, double zmat_loc[nZmat]);
+                entry [nokeep] void setPlaneRedCookie(EnlCookieMsg *);
+                entry [nokeep] void setEnlCookie(EnlCookieMsg *);
+                entry void registrationDone(CkReductionMsg *msg);
+		entry void printEnlR(CkReductionMsg *);
+		entry void printEnlRSimp(double ,int);
+                entry void recvZMatEesSimp(int size, double _zmat[size],int index);
 	};
 
 	array [2D] CP_State_RealSpacePlane {
@@ -184,14 +231,19 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool);
+		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool,int,int);
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
 		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
 		entry void isAtSync(int);
 	};
-
+       array [2D] CP_Rho_RHartExt {
+                entry CP_Rho_RHartExt(int, int, int,int,int);
+                entry void startEextIter();
+                entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
+                entry void registrationDone(CkReductionMsg *msg);
+        }
 
 	array [2D] CP_Rho_GSpacePlane {
 		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool);
@@ -201,11 +253,12 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_GHartExt {
-		entry CP_Rho_GHartExt(size2d);
+		entry CP_Rho_GHartExt(size2d,int,int,int,int,int);
 		entry void acceptData(RhoGHartMsg *msg);
 		entry void isAtSync(int);
-	}
-
+		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
+                entry void registrationDone(CkReductionMsg *msg);
+	};
 
 
 	class CLA_Matrix_interface;
@@ -251,11 +304,20 @@ mainmodule cpaimd {
 	group RhoGHartMap : CkArrayMap {
 		entry RhoGHartMap();
 	};
+
+	group RhoRHartMap : CkArrayMap {
+		entry RhoRHartMap();
+	};
         
 	group GSMap : CkArrayMap {
 		entry GSMap();
 	};
 	
+	group RSPMap : CkArrayMap {
+		entry RSPMap();
+	};
+
+
 	group RSMap : CkArrayMap {
 		entry RSMap();
 	};
@@ -264,7 +326,7 @@ mainmodule cpaimd {
 		entry SCalcMap(bool);
 	};
 	group FFTcache {
-		entry FFTcache(size2d, int);
+		entry FFTcache(size2d, int,int,int,int,int,int,int,int);
 	};
 
 	group StructFactCache {
@@ -300,6 +362,10 @@ mainmodule cpaimd {
 		entry EnergyGroup();
 		entry void updateEnergiesFromGS(EnergyStruct es);
                 entry void energyDone(CkReductionMsg *);
+	};
+	
+	group eesCache {
+		entry eesCache(int,int,int,int);
 	};
 	
 

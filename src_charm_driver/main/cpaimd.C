@@ -98,7 +98,8 @@
 #include "cpaimd.h"
 #include "groups.h"
 #include "ortho.h"
-#include "sim_subroutines.h"
+#include "fftCacheSlab.h"
+#include "eesCache.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
 #include "CP_State_Plane.h"
@@ -107,7 +108,6 @@
 #include "PeList.h"
 #ifdef USE_TOPOMAP
 #include "bgltorus.h"
-#include "FindProcessor.h"
 #endif
 //============================================================================
 #include "../include/CPcharmParaInfo.h"
@@ -144,38 +144,48 @@ extern CP           readonly_cp;
  * handles.
  */
 //============================================================================
+
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
+CkHashtableT<intdual, int> RSPmaptable(10000,0.25);
 CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
+CkHashtableT<intdual, int> RhoRHartmaptable;
 CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
 CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
 
-Config config;
 PairCalcID pairCalcID1;
 PairCalcID pairCalcID2;
-CProxy_main mainProxy;
-CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-CProxy_CP_State_ParticlePlane particlePlaneProxy;
-CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
-CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-CProxy_CP_Rho_GSpacePlane rhoGProxy;
-CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
-CProxy_Ortho orthoProxy;
-CProxy_CPcharmParaInfoGrp scProxy;
-CProxy_AtomsGrp atomsGrpProxy;
-CProxy_EnergyGroup egroupProxy;
-CProxy_FFTcache fftCacheProxy;
-CProxy_StructFactCache sfCacheProxy;
-CProxy_StructureFactor sfCompProxy;
+
+CProxy_main                       mainProxy;
+CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
+CProxy_CP_State_ParticlePlane     particlePlaneProxy;
+CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
+CProxy_CP_State_RealSpacePlane    realSpacePlaneProxy;
+CProxy_CP_Rho_RealSpacePlane      rhoRealProxy;
+CProxy_CP_Rho_GSpacePlane         rhoGProxy;
+CProxy_CP_Rho_RHartExt            rhoRHartExtProxy;
+CProxy_CP_Rho_GHartExt            rhoGHartExtProxy;
+CProxy_Ortho                      orthoProxy;
+CProxy_CPcharmParaInfoGrp         scProxy;
+CProxy_AtomsGrp                   atomsGrpProxy;
+CProxy_EnergyGroup                egroupProxy;
+CProxy_FFTcache                   fftCacheProxy;
+CProxy_StructFactCache            sfCacheProxy;
+CProxy_StructureFactor            sfCompProxy;
+CProxy_eesCache                   eesCacheProxy;
+
+Config     config;
 
 //============================================================================
+
+
+//============================================================================
+// readonly globals
 
 double Timer;
-
-//============================================================================
-int nstates;              // readonly globals
+int nstates; 
 int sizeX;
 int nchareG;
 int Ortho_UE_step2;
@@ -185,11 +195,8 @@ bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
 
-
-
 CkVec <int> peUsedBySF;
 CkVec <int> peUsedByNLZ;
-
 PeList *availGlob;
 
 #ifdef USE_TOPOMAP
@@ -197,14 +204,15 @@ PeList *availGlob;
 BGLTorusManager *bgltm;
 #endif
 #endif
+
 //============================================================================
 
 
 //============================================================================
 // For using the multicast library :  Set some reduction clients
 
-CkGroupID mCastGrpId; 
-// For using the communication library
+CkGroupID            mCastGrpId; 
+
 ComlibInstanceHandle commGHartInstance;
 ComlibInstanceHandle commGInstance0;
 ComlibInstanceHandle commGInstance1;
@@ -215,27 +223,38 @@ ComlibInstanceHandle commRealInstance;
 ComlibInstanceHandle commRealIGXInstance;
 ComlibInstanceHandle commRealIGYInstance;
 ComlibInstanceHandle commRealIGZInstance;
-ComlibInstanceHandle mcastInstance;
-ComlibInstanceHandle ssInstance;
-ComlibInstanceHandle mssInstance;
-ComlibInstanceHandle gssInstance;
-ComlibInstanceHandle mcastInstancePP;
+
 ComlibInstanceHandle gAsymInstance;
 ComlibInstanceHandle gSymInstance;
+
+ComlibInstanceHandle mcastInstance;
+ComlibInstanceHandle mcastInstancePP;
+ComlibInstanceHandle mcastInstanceRPP;
+ComlibInstanceHandle mcastInstancemRPP;
+
+ComlibInstanceHandle mssInstance;
+ComlibInstanceHandle gssInstance;
+
+ComlibInstanceHandle gssPInstance;
+ComlibInstanceHandle mssPInstance;
+
+ComlibInstanceHandle commRHartGHartIns;
+ComlibInstanceHandle commGHartRHartIns0;
+ComlibInstanceHandle commGHartRHartIns1;
 
 CkReduction::reducerType complexVectorAdderType;
 #include "ReductionClients.h"
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 //============================================================================
 /** The Main of CPAIMD. It calls all the init functions.
  *
  */
 //============================================================================
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 main::main(CkArgMsg *msg) {
 //============================================================================
 /** Check arguments : Tell people what we are doing */
@@ -300,8 +319,10 @@ main::main(CkArgMsg *msg) {
 
     CPcharmParaInfo *sim  = new CPcharmParaInfo();
     PhysicsParamTransfer::ParaInfoInit(sim);
-    int ibinary_opt = sim->ibinary_opt;
-    int natm_nl     = sim->natm_nl;
+    int ibinary_opt    = sim->ibinary_opt;
+    int natm_nl        = sim->natm_nl;
+    int ees_eext_opt   = sim->ees_eext_on;
+    int nchareRhoRHart = sim->ngrid_eext_c;
 
 //============================================================================    
 /* Invoke Ramkumar input class */
@@ -321,8 +342,7 @@ main::main(CkArgMsg *msg) {
     nchareG          = config.nchareG;
     sim->nchareG     = nchareG; 
 
-
-    nstates          = config.nstates;    // globals on all procs
+    nstates          = config.nstates;    // globals : avail on all procs
     sizeX            = sim->sizeX;
 
     config.print(msg->argv[1]);
@@ -333,18 +353,20 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Cpaimd-Charm-Driver input completed in %g\n",newtime-Timer);
     CkPrintf("================================================\n\n");
     Timer=newtime;
+
 //============================================================================
 // Set user trace events for projections optimizations
 
      traceRegisterUserEvent("doRealFwFFT", doRealFwFFT_);
-     traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
+
      traceRegisterUserEvent("GspaceFwFFT", GspaceFwFFT_);
-     traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
+
      traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
      traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
      traceRegisterUserEvent("OrthoDGEMM1", OrthoDGEMM1_);
      traceRegisterUserEvent("GradCorrGGA", GradCorrGGA_);
      traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
+     traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
      traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
      traceRegisterUserEvent("WhiteByrdFFTZ", WhiteByrdFFTZ_);
      traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
@@ -355,7 +377,7 @@ main::main(CkArgMsg *msg) {
 
      traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
      traceRegisterUserEvent("divRhoVksGspace",divRhoVksGspace_);
-
+     traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
      traceRegisterUserEvent("DoFFTContribute", DoFFTContribute_);
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
      traceRegisterUserEvent("Scalcmap", Scalcmap_);
@@ -386,40 +408,39 @@ main::main(CkArgMsg *msg) {
     make_rho_runs(sim);
 
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
+
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
 // Initialize chare arrays for real and g-space of states 
+
     int l=config.Gstates_per_pe;
     int m, pl, pm;
     pl = nstates / l;
     pm = CkNumPes() / pl;
-    if(pm==0)
-      CkAbort("Choose a larger Gstates_per_pe\n");
+    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
     m = config.nchareG / pm;
 
     planes_per_pe=m;
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
-    if(pm==0)
-    CkAbort("Choose a larger Gstates_per_pe\n");
-    for(int i=0; i<nstates;i++)
+    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
+    for(int i=0; i<nstates;i++){
       peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
-
-
-    //    CkVec<int> OurPes(CkNumPes());
-    //    for(int i=0;i<CkNumPes();i++)
-    //      OurPes[i]=i;
+    }//endfor
 
 #ifdef USE_TOPOMAP
-  CkPrintf("\n==============================================================================\n");
+  CkPrintf("\n===========================================================================\n");
   CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
   CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
-  CkPrintf("\n==============================================================================\n\n");
+  CkPrintf("\n=========================================================================\n\n");
 #endif
 #ifdef CMK_VERSION_BLUEGENE
     CkPrintf("Initializing BGLTorusManager\n");
     bgltm = BGLTorusManager::getObject();
-    CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),bgltm->getXNodeSize(), bgltm->getYNodeSize(), bgltm->getZNodeSize(),bgltm->isVnodeMode());
+    CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
+             bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),
+             bgltm->getXNodeSize(), bgltm->getYNodeSize(),bgltm->getZNodeSize(),
+             bgltm->isVnodeMode());
 #endif
     CkPrintf("Initializing PeList\n");
     PeList *foo=  new PeList [1];  // heap it
@@ -427,6 +448,7 @@ main::main(CkArgMsg *msg) {
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
+
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 //============================================================================    
@@ -434,7 +456,6 @@ main::main(CkArgMsg *msg) {
 //    read in atoms : create atoms group 
     
     control_physics_to_driver();
-
 
 //============================================================================ 
 // Create mapping classes for Paircalcular
@@ -467,7 +488,7 @@ main::main(CkArgMsg *msg) {
 //============================================================================ 
 // Initialize commlib strategies for later association and delegation
 
-    init_commlib_strategies(sim->nchareRhoG, sizeYZ[1]);
+    init_commlib_strategies(sim->nchareRhoG, sizeYZ[1],nchareRhoRHart);
 
 //============================================================================
 // clean up
@@ -477,6 +498,7 @@ main::main(CkArgMsg *msg) {
     delete [] indexZ;
     delete [] foo;
 //============================================================================
+
     newtime=CmiWallTimer();
     CkPrintf("\n-----------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-phase1start);
@@ -486,6 +508,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Launching chare arrays and obtaining data sets  \n");
     CkPrintf("------------------------------------------------------\n\n");
     Timer=newtime;
+
 //============================================================================
    }// end Main
 //============================================================================
@@ -516,29 +539,35 @@ main::~main()
 void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
                            int doublePack, CPcharmParaInfo *sim)
 //============================================================================    
-   {
+  {// begin routine
 //============================================================================    
 
   PRINT_LINE_STAR;
   PRINTF("Building Psi and Lambda Pair Calculators\n");
   PRINT_LINE_DASH;printf("\n");
+
+//============================================================================    
   //-------------------------------------------------------------
   // Populate maptables for Paircalculators
   Timer =CmiWallTimer();
   availGlob->reset();
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
-					 availGlob, config.nstates,
-                   config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, 
-		 config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
+	   availGlob, config.nstates,
+           config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
+           sim->lines_per_chareG, sim->pts_per_chareG, 
+   	   config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
   double newtime=CmiWallTimer();
   CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
+
+  //-------------------------------------------------------------
+  // Populate maptables for Paircalculators
   Timer=newtime;
   availGlob->reset();
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
+                   planes_per_pe, config.numChunksAsym, config.numChunksSym);
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
   CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
@@ -546,8 +575,6 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
-  
-
   //-------------------------------------------------------------
   // Register the PCs
   int gsp_ep;
@@ -590,15 +617,16 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
    }//end routine
 //============================================================================ 
 
-//============================================================================ 
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
 //============================================================================ 
 /**
  * Initialize Commlib communication strategies  
  */ 
-//                                          
+//============================================================================ 
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_commlib_strategies(int numRhoG, int numReal){
+void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
 //============================================================================
 
   PRINT_LINE_STAR;
@@ -612,13 +640,11 @@ void init_commlib_strategies(int numRhoG, int numReal){
   int numRhoGHart = rhoGhelpers*numRhoG;
 
 //============================================================================
-    if (config.useCommlib) {        
+  if (config.useCommlib) {        
 
-      //      CkPrintf("Making gcalc_strategy with src %d nstates %d ngchares dest %d ngchares, %d grains  %d numChunks \n",config.nstates, config.nchareG, config.nchareG, config.scalc_per_plane, config.numChunks );
-
-	if(config.usePairEtoM)
-	{
-
+     //================================================================
+       if(config.usePairEtoM){
+        //---------------------------------------------------------------
 	  int numG=config.nchareG *  config.nstates;
 	  int numCalc=config.nchareG  * config.scalc_per_plane * config.numChunksAsym;
 	  CkArrayIndexMax *gchares = new CkArrayIndexMax[numG];
@@ -644,8 +670,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	     numG, gchares, numCalc, asymcalcchares);
 
 	  gAsymInstance= ComlibRegister(asym_strat);
-	  delete [] gchares;
-	  delete [] asymcalcchares;
+        //---------------------------------------------------------------
 	  gchares = new CkArrayIndexMax[numG];
 	  index=0;
 	  for (i = 0; i < config.nstates; i++) 
@@ -670,9 +695,9 @@ void init_commlib_strategies(int numRhoG, int numReal){
 	     numG, gchares, numCalc, symcalcchares);
 
 	  gSymInstance= ComlibRegister(sym_strat);
-	  delete [] symcalcchares;
-	}
-	/*
+        //---------------------------------------------------------------
+       }//endif : pc usePairEtoM
+/*
       //StreamingStrategy *cmstrat = new StreamingStrategy(0.1,10);
       MeshStreamingStrategy *cmstrat = new MeshStreamingStrategy(1,5);
       gAsymInstance= ComlibRegister(cmstrat);    
@@ -681,10 +706,10 @@ void init_commlib_strategies(int numRhoG, int numReal){
       MeshStreamingStrategy *csymstrat = new MeshStreamingStrategy(1,5);
       gSymInstance= ComlibRegister(csymstrat);    
 */
-
-	  
-      CkPrintf("Making real_strategy with src numReal %d dest numRhoG %d and numHartG %d\n",
-	       numReal,numRhoG,numRhoGHart);
+     //================================================================
+      CkPrintf("Making real_strategy with :");
+      CkPrintf("src numReal %d dest numRhoG %d and numHartG %d numHartR\n",
+	       numReal,numRhoG,numRhoGHart,numRhoRhart);
       //--------------------------------------------------------------
       //  For rho(r) to rho(g)
       CkArrayIndexMax *rhoGElements = new CkArrayIndexMax[numRhoG];
@@ -802,6 +827,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
       delete [] rhoRealElements;
 
       //--------------------------------------------------------------
+      // rhog sends to rhor : div_x rho
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
 	rhoGElements[i] = CkArrayIndex2D(i,0);
@@ -820,6 +846,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
       delete [] rhoRealElements;
 
       //--------------------------------------------------------------
+      // rhog sends to rhor : div_y rho
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
 	rhoGElements[i] = CkArrayIndex2D(i,0);
@@ -838,6 +865,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
       delete [] rhoRealElements;
 
       //--------------------------------------------------------------
+      // rhog sends to rhor : div_z rho
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
 	rhoGElements[i] = CkArrayIndex2D(i,0);
@@ -856,7 +884,7 @@ void init_commlib_strategies(int numRhoG, int numReal){
       delete [] rhoRealElements;
 
       //--------------------------------------------------------------
-      // For white-byrd
+      // For white-byrd :  rhog sends to rhor : white byrd
       rhoGElements = new CkArrayIndexMax[numRhoG];
       for (i = 0; i < numRhoG; i++) {
 	rhoGElements[i] = CkArrayIndex2D(i,0);
@@ -874,40 +902,99 @@ void init_commlib_strategies(int numRhoG, int numReal){
       delete [] rhoGElements;
       delete [] rhoRealElements;
 
-    }//endif : use commlib
+      //--------------------------------------------------------------
+      // For rhogHart send to rhorHart SF atmtyp
+      rhoGElements = new CkArrayIndexMax[numRhoGHart];
+      for (i = 0; i < numRhoGHart; i++) {
+	rhoGElements[i] = CkArrayIndex2D(i,0);
+      }
+
+      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+      for(i = 0; i < numRhoRhart; i++) {
+	rhoRealElements[i] = CkArrayIndex2D(i,0);
+      }
+
+      CharmStrategy *gstratEext0 = new EachToManyMulticastStrategy
+	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
+	 numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
+
+      commGHartRHartIns0 = ComlibRegister(gstratEext0);
+
+      //--------------------------------------------------------------
+      // For rhogHart send to rhoRHart SF tot
+      rhoGElements = new CkArrayIndexMax[numRhoGHart];
+      for (i = 0; i < numRhoGHart; i++) {
+	rhoGElements[i] = CkArrayIndex2D(i,0);
+      }
+
+      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+      for(i = 0; i < numRhoRhart; i++) {
+	rhoRealElements[i] = CkArrayIndex2D(i,0);
+      }
+
+      CharmStrategy *gstratEext1 = new EachToManyMulticastStrategy
+	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
+	 numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
+
+      commGHartRHartIns1 = ComlibRegister(gstratEext1);
+
+      //--------------------------------------------------------------
+      // For rhoRHart send to rhoGHart SF
+      rhoGElements = new CkArrayIndexMax[numRhoGHart];
+      for (i = 0; i < numRhoGHart; i++) {
+	rhoGElements[i] = CkArrayIndex2D(i,0);
+      }//endfor
+
+      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+      for(i = 0; i < numRhoRhart; i++) {
+	rhoRealElements[i] = CkArrayIndex2D(i,0);
+      }//endfor
+        
+      CharmStrategy *real_strat_eext = new EachToManyMulticastStrategy
+	(USE_DIRECT, rhoRHartExtProxy.ckGetArrayID(), rhoGHartExtProxy.ckGetArrayID(),
+	 numRhoRhart, rhoRealElements, numRhoGHart,rhoGElements);
+      commRHartGHartIns  = ComlibRegister(real_strat_eext);
+
+  }//endif : use commlib
 
 //============================================================================
 // Real state space to gspace state and particle plane comm.
 
-    if (config.useCommlibMulticast) {
+  if (config.useCommlibMulticast) {
         DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
 	    (realSpacePlaneProxy.ckGetArrayID(),1);
         
         RingMulticastStrategy *rstrat = new RingMulticastStrategy
             (realSpacePlaneProxy.ckGetArrayID(),1);
         
-	//        MultiRingMulticast *mrstrat = new MultiRingMulticast
-        //    (realSpacePlaneProxy.ckGetArrayID(),1);
-        
-	//        DirectMulticastStrategy *d1strat = new DirectMulticastStrategy
-	//            (particlePlaneProxy.ckGetArrayID(),1);
-
         RingMulticastStrategy *r1strat = new RingMulticastStrategy
             (particlePlaneProxy.ckGetArrayID(),1);
 
         MultiRingMulticast *mr1strat = new MultiRingMulticast
             (particlePlaneProxy.ckGetArrayID(),1);
-
+ 
+        DirectMulticastStrategy *ppdstrat = new DirectMulticastStrategy
+	  (realParticlePlaneProxy.ckGetArrayID(),1);
+ 
+        RingMulticastStrategy *pprstrat = new RingMulticastStrategy
+	  (realParticlePlaneProxy.ckGetArrayID(),1);
+ 
+        MultiRingMulticast *ppmr1strat = new MultiRingMulticast
+	  (realParticlePlaneProxy.ckGetArrayID(),1);
          //multiring should be good on large runs, but not on BG/L
 	if(CkNumNodes()>64){
 	      mcastInstance=ComlibRegister(dstrat);
 	      mcastInstancePP=ComlibRegister(mr1strat);
+	      mcastInstanceRPP=ComlibRegister(ppdstrat);
+              mcastInstancemRPP=ComlibRegister(ppmr1strat);
         }else{
 	      mcastInstance=ComlibRegister(rstrat);
 	      mcastInstancePP=ComlibRegister(r1strat);
+	      mcastInstanceRPP=ComlibRegister(pprstrat);
+              mcastInstancemRPP=ComlibRegister(ppmr1strat);
         }//endif
 	
-    }// end Sameer's new communication strategies 
+  }// end Sameer's new communication strategies 
 
 //============================================================================
    }//end routine
@@ -991,6 +1078,7 @@ void main::doneInit(CkReductionMsg *msg){
   CkPrintf("Done_init for %d\n",(int)((int *)msg->getData())[0]);
   delete msg;
     double newtime=CmiWallTimer();
+
     if(done_init<3){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
       Timer=newtime;
@@ -1042,24 +1130,63 @@ void main::doneInit(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
-                 int doublePack, CPcharmParaInfo *sim)
-
+                       int doublePack, CPcharmParaInfo *sim)
 //============================================================================
    { //begin routine 
 //============================================================================
-    /*
-     * Set up the map variables used to control the location of the
-     * 2d-array elements over processors   
-     */
+/*
+ * Set up the map variables used to control the location of the
+ * 2d-array elements over processors   
+*/
+//============================================================================
+// Useful Local variables
+
+  int nstate          = sim->nstates;
+
+  int ngridaNl        = sim->ngrid_nloc_a;
+  int ngridbNl        = sim->ngrid_nloc_b;
+  int ngridcNl        = sim->ngrid_nloc_c;
+  int ees_nonlocal_on = sim->ees_nloc_on;
+
+  int ngridaEext      = sim->ngrid_eext_a;
+  int ngridbEext      = sim->ngrid_eext_b;
+  int ngridcEext      = sim->ngrid_eext_c;
+  int ees_eext_on     = sim->ees_eext_on;
+
+  int nchareG         = sim->nchareG;
+  int nchareR         = sim->sizeZ;
+  int nchareRPP       = ngridcNl;
+
+  int numIterNL       = sim->nlIters;
+  int zmatSizeTot     = sim->nmem_zmat_tot;
+
+  int nchareRhoG      = sim->nchareRhoG;
+  int rhoGHelpers     = config.rhoGHelpers;
+  int nchareGHart     = rhoGHelpers*nchareRhoG;
+  int nchareRHart     = ngridcEext;
+
+  int Rstates_per_pe  = config.Rstates_per_pe;
+  int Gstates_per_pe  = config.Gstates_per_pe;
+  int sGrainSize      = config.sGrainSize; 
+  int numChunks       = config.numChunks;
+
+//============================================================================
 
   PRINT_LINE_STAR;
-  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
-  PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",nstates,sizeYZ[0],sizeYZ[1]);
+  PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",
+          nstates,sizeYZ[0],sizeYZ[1]);
   PRINT_LINE_DASH;printf("\n");
+
+//============================================================================
+// Instantiate the Chares with placement determined by the maps
+
+ //---------------------------------------------------------------------------
+ // state r-space
+
   availGlob->reset();
-  RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, config.nstates, sim->sizeY, config.Rstates_per_pe);
+  RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, nstates, nchareR, 
+                                 Rstates_per_pe);
 
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   double newtime=CmiWallTimer();
@@ -1070,62 +1197,104 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   size2d sizeRealPlane(sizeYZ[1], sizeX);
   realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
 							      realSpaceOpts);
-
-								
-  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,1);
-
+ //--------------------------------------------------------------------------------
+ // state r-particleplane
 
   availGlob->reset();
-  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob, sim->nchareG, sim->lines_per_chareG, sim->pts_per_chareG, config.nstates, config.Gstates_per_pe);
+  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlob,nstates,
+				    nchareRPP, Rstates_per_pe);
+  CProxy_RSPMap rspMap= CProxy_RSPMap::ckNew();
+  newtime=CmiWallTimer();
+  CkPrintf("RSPMap created in %g\n",newtime-Timer);
+  Timer=newtime;
+  CkArrayOptions pRealSpaceOpts;
+  pRealSpaceOpts.setMap(rspMap);
+  realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
+                                ngridaNl,ngridbNl,ngridcNl,
+                                numIterNL,zmatSizeTot,Rstates_per_pe,
+		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
+
+ //--------------------------------------------------------------------------------
+ // Groups : no placement required 
+
+  fftCacheProxy = CProxy_FFTcache::ckNew(
+                     sizeRealPlane,ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
+                     ngridaNl,ngridbNl,ngridcNl,ees_nonlocal_on);
+  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
+  sfCompProxy = CProxy_StructureFactor::ckNew();
+  eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart);
+
+ //--------------------------------------------------------------------------------
+ // state g-space
+
+  availGlob->reset();
+  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob,nchareG,
+				   sim->lines_per_chareG, sim->pts_per_chareG,
+				   nstates, Gstates_per_pe);
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n",newtime-Timer);
   Timer=newtime;
   CkArrayOptions gSpaceOpts;
   gSpaceOpts.setMap(gsMap);
-  gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(sizeX, sizeYZ,1, 
-							1,config.sGrainSize, config.numChunks, gSpaceOpts);
+  gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
+                     sizeX, sizeYZ,1, 1,sGrainSize,numChunks,gSpaceOpts);
 
-  // We bind the particlePlane array to the gSpacePlane array migrate together
+ //--------------------------------------------------------------------------------
+ // We bind the particlePlane array to the gSpacePlane array migrate together
+
   CkArrayOptions particleOpts;
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
   particleOpts.bindTo(gSpacePlaneProxy);
-  particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(nchareG, sizeYZ[0], sizeYZ[1],   
-							    1, numSfGrps, natm_nl, natm_nl_grp_max, config.nstates, 
-							    config.nchareG, config.Gstates_per_pe, particleOpts);
+  particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(
+                       nchareG, sizeYZ[0], sizeYZ[1],ngridaNl,ngridbNl,ngridcNl,
+                       1, numSfGrps, natm_nl, natm_nl_grp_max, nstates, 
+                       nchareG, Gstates_per_pe, numIterNL, ees_nonlocal_on, 
+                       particleOpts);
 
-    /*
-     * Insert the planes in the particle plane array, gSpacePlane array
-     */
-  int s,x;
+ //--------------------------------------------------------------------------------
+ // Insert the planes in the particle plane array, gSpacePlane array
+
   CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
-    for (s = 0; s < nstates; s++){
-      for (x = 0; x <nchareG; x++){
-             gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1, 
-                                    1,config.sGrainSize, config.numChunks);
-             particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
-				      1, numSfGrps, natm_nl, natm_nl_grp_max,
-				      config.nstates, config.nchareG, config.Gstates_per_pe);
-      }
-    }
+  for (int s = 0; s < nstates; s++){
+    for (int x = 0; x <nchareG; x++){
+        gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1,1,sGrainSize,numChunks);
+        particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
+                                        ngridaNl,ngridbNl,ngridcNl,1,
+   				        numSfGrps, natm_nl, natm_nl_grp_max,
+				        nstates,nchareG,config.Gstates_per_pe,
+                                        numIterNL,ees_nonlocal_on);
+    }//endfor
+  }//endfor
+  gSpacePlaneProxy.doneInserting();
+  particlePlaneProxy.doneInserting();
 
-    gSpacePlaneProxy.doneInserting();
-    particlePlaneProxy.doneInserting();
-    /*
-     * Insert the planes in the real space plane array
-     */
-    int y;
-    for (s = 0;  s < nstates; s++)
-        {for (y = 0; y < sizeYZ[0]; y += 1)
-            {realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1);}}
+ //--------------------------------------------------------------------------------    
+ // Insert the planes in the real space plane array
 
+    for (int s = 0;  s < nstates; s++){
+      for (int y = 0; y < nchareR; y += 1){
+         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1);
+      }//endfor
+    }//endfor
     realSpacePlaneProxy.doneInserting();
 
-    int *nsend   = new int[nchareG];
-    int **listpe = new int * [nchareG];
-    int numproc  = CkNumPes();
+    for (int s = 0;  s < nstates; s++){
+      for (int y = 0; y < ngridcNl; y += 1){
+        realParticlePlaneProxy(s, y).insert(ngridaNl,ngridbNl,ngridcNl,
+                                            numIterNL,zmatSizeTot,Rstates_per_pe,
+		                            nchareG,ees_nonlocal_on);
+      }//endfor
+    }//endfor
+    realParticlePlaneProxy.doneInserting();
+
+  //--------------------------------------------------------------------------------
+  // Do a fancy dance to determine placement of structure factors
+
+    int *nsend       = new int[nchareG];
+    int **listpe     = new int * [nchareG];
+    int numproc      = CkNumPes();
     int *gspace_proc = new int [numproc];
-    
    
     for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
     for(int j=0;j<nchareG;j++){   
@@ -1138,14 +1307,12 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       lst_sort_clean(nstates, &nsend[j], listpe[j]);
     }//endfor
     
-    
     FILE *fp = fopen("gspplane_proc_distrib.out","w");
     for(int i=0;i<numproc;i++){
       fprintf(fp,"%d %d\n",i,gspace_proc[i]);
     }//endfor
     fclose(fp);
     delete [] gspace_proc;
-
 
     int minsend=nstates;
     int maxsend=0;
@@ -1172,62 +1339,70 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     CkPrintf("---------------------------\n");
     CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)chareG_use);
     CkPrintf("============================\n");
-    // Insert the objects into the StructureFactor array
+
+  //--------------------------------------------------------------------------------
+  // Insert the objects into the StructureFactor array
 
     int dupmax=maxsend;  // there is no point in ever having more than that
+    if(config.numSfDups<dupmax){dupmax=config.numSfDups;}
+    config.numSfDups = dupmax;
+    int numSfDups    = dupmax;
+    CkPrintf("real numSfdups is %d based on maxsend of %d\n",numSfDups, maxsend);
 
-//    if (dupmax>=natm_nl) // stability issues if over 
-//      dupmax=natm_nl-1;  
-    
-    if (config.numSfDups<dupmax)
-	dupmax=config.numSfDups;
-    config.numSfDups=dupmax;
-    CkPrintf("real numSfdups is %d based on maxsend of %d\n",config.numSfDups, maxsend);
-
-    sfCompProxy = CProxy_StructureFactor::ckNew();
-    for (int dup=0; dup<dupmax; dup++)
-      for (x = 0; x < nchareG; x += 1)
-      {
+    for (int dup=0; dup<dupmax; dup++){
+      for (int x = 0; x < nchareG; x += 1){
 	  int num_dup, istart, iend;
-	  get_grp_params( nsend[x],  config.numSfDups,  dup, x ,&num_dup,  &istart, &iend);
+	  get_grp_params( nsend[x],  numSfDups,  dup, x ,&num_dup,  &istart, &iend);
 	  int pe_ind=istart;
 	  if(x%2==0)
 	      pe_ind=iend;
-	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++)
-	  {
-	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps, config.numSfDups, natm_nl_grp_max,  num_dup, &(listpe[x][istart]),atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
-	      peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x], AtmGrp, dup,x));	      
+	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++){
+	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps,numSfDups, 
+                      natm_nl_grp_max,  num_dup, &(listpe[x][istart]),
+                      atmGrpMap(istart, num_dup, nsend[x], listpe[x],AtmGrp,dup,x));
+	      peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x], 
+                                             AtmGrp, dup,x));	      
 	      pe_ind++;
-	      if(pe_ind>nsend[x])
-		  pe_ind=0;
-	  }
-      }
+	      if(pe_ind>nsend[x]){ pe_ind=0;}
+	  }//endfor : AtmGrp
+      }//endfor : chareG
+    }//endfor : Dups
     sfCompProxy.doneInserting();
 
-    for(int j=0;j<nchareG;j++)
-      delete [] listpe[j];
+    for(int j=0;j<nchareG;j++){delete [] listpe[j];}
     delete [] listpe;
     delete [] nsend;
+
+//============================================================================
+// Set some com strategy of Sameer
+
     if(config.useCommlib) {
-        // Set some com strategy of Sameer
-        ssInstance = CkGetComlibInstance();
-        StreamingStrategy *strat = new StreamingStrategy(0.2,5);
-        //strat->enableShortArrayMessagePacking();
-        ssInstance.setStrategy(strat);
-        
-        // Set some com strategy of Sameer
-        StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,config.rBucketSize);
         //mstrat->enableShortArrayMessagePacking();
+        //rspaceState to gspaceState : gspaceState to rspaceState 
+        StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,
+                                                          config.rBucketSize);
         mssInstance= ComlibRegister(mstrat);    
-        StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,config.gBucketSize);
-        //mstrat->enableShortArrayMessagePacking();
+
+        StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,
+                                                           config.gBucketSize);
         gssInstance= ComlibRegister(gmstrat);    
 
-    }
+        //mstrat->enableShortArrayMessagePacking();
+        //rPPState to gPPState : gPPState to rPPState 
+        StreamingStrategy *rpmstrat = new StreamingStrategy(config.rStreamPeriod,
+                                                            config.rBucketSize);
+        mssPInstance= ComlibRegister(rpmstrat);    
+
+        StreamingStrategy *gpmstrat = new StreamingStrategy(config.gStreamPeriod,
+                                                            config.gBucketSize);
+        gssPInstance= ComlibRegister(gpmstrat);    
+    }//endif
+
+//============================================================================
 
   printf("\n");
   PRINT_LINE_DASH;
-  PRINTF("Completed g-space chare build\n");
+  PRINTF("Completed G-space/R-space state chare array build\n");
   PRINT_LINE_STAR;printf("\n");
 
 //----------------------------------------------------------------------------
@@ -1253,43 +1428,69 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 //  Chare array sizes and offsets 
 
-    int nchareRhoR     = sizeYZ[1];
-    int nchareRhoG     = sim->nchareRhoG;
-    int rhoGHelpers    = config.rhoGHelpers;
-    int nchareRhoGHart = rhoGHelpers*nchareRhoG;
-    
-    availGlob->reset();
+   int ngrid_eext_a    = sim->ngrid_eext_a;
+   int ngrid_eext_b    = sim->ngrid_eext_b;
+   int ngrid_eext_c    = sim->ngrid_eext_c;
+   int ees_eext_on     = sim->ees_eext_on;
+   int ees_nonlocal_on = sim->ees_nloc_on;
+   int natmTyp         = sim->natm_typ;
+   int nchareRhoG      = sim->nchareRhoG;
+   int nchareRhoR      = sim->sizeZ;
+   int rhoGHelpers     = config.rhoGHelpers;
 
-    // subtract processors used by other nonscaling chares (non local reduceZ)
+   int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
+   int nchareRhoRHart  = ngrid_eext_c;
 
-    if(nchareRhoR+peUsedByNLZ.size()<availGlob->count())
-      {
-	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",peUsedByNLZ.size(),availGlob->count());
-	PeList nlz(peUsedByNLZ);
-	*availGlob-nlz; //unary minus
-      }
+//============================================================================
+// Output to the screen
 
-    // subtract processors used by other nonscaling chares (Structure Factor)
-    if(nchareRhoR+peUsedBySF.size()<availGlob->count())
-      {
-	CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",peUsedBySF.size(),availGlob->count());
-	PeList sf(peUsedBySF);
-	*availGlob-sf;
-      }
-    availGlob->resort();
+  PRINT_LINE_STAR;
+  CkPrintf("Building RhoR, RhoG, RhoGHartExt, RhoRHartExt Chares %d %d %d %d %d\n",
+            nchareRhoR,nchareRhoG,nchareRhoGHart,nchareRhoRHart,natmTyp);
+  PRINT_LINE_DASH;printf("\n");
+
+//============================================================================
+// Nuke some procs from the list : reset, nuke, reset if you run out
+
+   availGlob->reset();
+
+  //------------------------------------------------------------------------
+  // subtract processors used by other nonscaling chares (non local reduceZ)
+   if(nchareRhoR+peUsedByNLZ.size()<availGlob->count()){
+       CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
+                 peUsedByNLZ.size(),availGlob->count());
+       PeList nlz(peUsedByNLZ);
+       *availGlob-nlz; //unary minus
+   }//endif
+
+  //------------------------------------------------------------------------
+  // subtract processors used by other nonscaling chares
+   if(ees_nonlocal_on==0){
+     if(nchareRhoR+peUsedBySF.size()<availGlob->count()){
+       CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
+                  peUsedBySF.size(),availGlob->count());
+       PeList sf(peUsedBySF);
+       *availGlob-sf;
+     }//endif
+   }else{
+     CkPrintf("We need new exclusions based on realPP\n");
+   }//endif
+
+   if(availGlob->count()>2){availGlob->resort();}
+
 //============================================================================
 // Maps and options
+
     RhoRSMapTable RhoRStable(&RhoRSmaptable, availGlob, nchareRhoR);
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
     // if there aren't enough free procs refresh the availGlob list;
-    if(nchareRhoG>availGlob->count())
-      {
+    if(nchareRhoG>availGlob->count()){
 	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoG);
 	availGlob->rebuild();
-      }
+    }//endif
 
     RhoGSMapTable RhoGStable(&RhoGSmaptable, availGlob,nchareRhoG);
     CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
@@ -1297,33 +1498,44 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhogsOpts.setMap(rhogsMap);
 
     // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoGHart>availGlob->count())
-      {
+    if(nchareRhoGHart>availGlob->count()){
 	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoGHart);
 	availGlob->rebuild();
-      }
+    }//endif
 
     RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, availGlob, nchareRhoGHart);
     CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
+    // if there aren't enough free procs refresh the avail list;
+    if(nchareRhoRHart>availGlob->count()){
+	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoRHart);
+	availGlob->rebuild();
+    }//endif
+
+    RhoRHartMapTable RhoRHarttable(&RhoGHartmaptable, availGlob, nchareRhoRHart);
+    CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
+    CkArrayOptions rhorhartOpts;
+    rhorhartOpts.setMap(rhorHartMap);
+
 //============================================================================
 // Instantiate the chares
 
     bool dummy = true;
 
-//---------------------------------------------------------------------------
-// rhoreal
+  //---------------------------------------------------------------------------
+  // insert rhoreal
     rhoRealProxy = 
-      CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX, sizeYZ, 1, 1, dummy, rhorsOpts);
+      CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,1,1,dummy, 
+                                          ees_eext_on,ngrid_eext_c,rhorsOpts);
     for (int i = 0; i < nchareRhoR; i++) {
-	rhoRealProxy(i,0).insert(sizeX, sizeYZ, 1,1,dummy);
+	rhoRealProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy,ees_eext_on,ngrid_eext_c);
     }//endfor
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
-//---------------------------------------------------------------------------
-// rhog
+  //---------------------------------------------------------------------------
+  // insert rhog
     rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
 						 1, dummy, 
 						 rhogsOpts);
@@ -1331,14 +1543,33 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
     }//endfor
     rhoGProxy.doneInserting();
-//---------------------------------------------------------------------------
-// rhoghart
-    rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ, rhoghartOpts);
+  //---------------------------------------------------------------------------
+  // insert rhoghart
+    rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+                                 ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
     for (int i = 0; i < nchareRhoGHart; i++){
-      rhoGHartExtProxy(i,0).insert(sizeYZ);
+      rhoGHartExtProxy(i,0).insert(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+                                   ngrid_eext_c,ees_eext_on,natmTyp);
     }//endfor
     rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
     rhoGHartExtProxy.doneInserting();
+  //---------------------------------------------------------------------------
+  // insert rhoRhart
+    rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
+                                 ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
+    for (int i = 0; i < nchareRhoRHart; i++){
+      rhoRHartExtProxy(i,0).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
+                                   ees_eext_on,natmTyp);
+    }//endfor
+    rhoRHartExtProxy.doneInserting();
+
+//===========================================================================
+// Output to the screen
+
+  printf("\n");
+  PRINT_LINE_DASH;
+  PRINTF("Completed G-space/R-space Rho chare array build\n");
+  PRINT_LINE_STAR;printf("\n");
 
 //===========================================================================
   }//end routine
@@ -1351,9 +1582,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 void control_physics_to_driver(){
-
 //============================================================================
 // make a group : create a proxy for the atom class and also a reduction client
 
@@ -1374,7 +1603,6 @@ void control_physics_to_driver(){
     atomsGrpProxy = CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
                                            kT,atoms,atomsNHC);
-
     delete [] atoms;
     delete [] atomsNHC;
     delete PhysicsAtom;
@@ -1385,15 +1613,15 @@ void control_physics_to_driver(){
     egroupProxy = CProxy_EnergyGroup::ckNew(); 
 
 //----------------------------------------------------------------------------
-    }
+  }//end routine
 //============================================================================
 
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-static CkReductionMsg *complexSum(int nMsg, CkReductionMsg **msgs)
-{
+static CkReductionMsg *complexSum(int nMsg, CkReductionMsg **msgs){
+//============================================================================
     // get the size of the messages from the first message
     int matrixSize = msgs[0]->getSize() / sizeof(complex);
     complex *matrix = new complex[matrixSize];
@@ -1418,7 +1646,9 @@ static CkReductionMsg *complexSum(int nMsg, CkReductionMsg **msgs)
 //============================================================================
 void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret)
-{
+//============================================================================
+ {// begin routine
+//============================================================================
 
    int n     = (natm_nl/numSfDups);
    int m     = (natm_nl % numSfDups);
@@ -1444,12 +1674,11 @@ void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
    (*n_ret)     = n;
    (*istrt_ret) = istrt;
    (*iend_ret)  = iend;
-}
+
+//---------------------------------------------------------------------------
+  }//end routine
 //============================================================================
 
-
-
-//============================================================================
 
 
 //============================================================================
@@ -1457,28 +1686,35 @@ void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
 //============================================================================
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex)
-{
+//============================================================================
+  {// begin routine
+//============================================================================
 
   int numSfDups=config.numSfDups;
-  if(listsize <= numSfDups)
-    { //dup list not unique
+
+  if(listsize <= numSfDups){ //dup list not unique
       return listpe[(dup % listsize)];
-    }
-  if(nsend <= config.numSfGrps)
-    {  //atom group list not unique
+  }//endif
+
+  if(nsend <= config.numSfGrps){  //atom group list not unique
       return listpe[(istart + (AtmGrp % nsend))];
-    }
+  }//endif
+
   // nsend must be > numSfGrps and its list is unique
   return listpe[(istart + ((AtmGrp + config.numSfGrps * planeIndex)%nsend))];
 
-}
+//---------------------------------------------------------------------------
+  }// end routine
 //============================================================================
 
 
-int gsprocNum(CPcharmParaInfo *sim,int state, int plane)
-{
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+int gsprocNum(CPcharmParaInfo *sim,int state, int plane){
 	return GSmaptable.get(intdual(state, plane));
 }
+//============================================================================
 
 
 //============================================================================
@@ -1486,10 +1722,10 @@ int gsprocNum(CPcharmParaInfo *sim,int state, int plane)
 //============================================================================
 void mapOutput()
 //============================================================================
-    {//begin routine
+ {//begin routine
 //============================================================================
 
-//============================================================================
+//----------------------------------------------------------------------------
   }//end routine
 //============================================================================
 

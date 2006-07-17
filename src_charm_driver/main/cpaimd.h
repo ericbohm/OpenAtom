@@ -40,9 +40,11 @@
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
+extern CkHashtableT <intdual, int> RSPmaptable;
 extern CkHashtableT <intdual, int> RhoGSmaptable;
 extern CkHashtableT <intdual, int> RhoRSmaptable;
 extern CkHashtableT <intdual, int> RhoGHartmaptable;
+extern CkHashtableT <intdual, int> RhoRHartmaptable;
 extern CkHashtableT <intdual, int> AsymScalcmaptable;
 extern CkHashtableT <intdual, int> SymScalcmaptable;
 
@@ -154,6 +156,24 @@ class RSMap: public CkArrayMapTable {
 };
 //============================================================================
 
+class RSPMap: public CkArrayMapTable {
+
+ public:
+  RSPMap()
+      { 
+	maptable= &RSPmaptable;
+      }
+  void pup(PUP::er &p)
+	{
+	    CkArrayMapTable::pup(p);
+	    maptable= &RSPmaptable;
+	}
+  int procNum(int, const CkArrayIndex &);
+  ~RSPMap(){
+  }
+};
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -254,6 +274,27 @@ class RhoGHartMap : public CkArrayMapTable {
 
 };
 
+class RhoRHartMap : public CkArrayMapTable {
+  public:
+  RhoRHartMap()
+  {
+    maptable= &RhoRHartmaptable;
+  }
+  
+  ~RhoRHartMap()
+  {
+  }
+  
+  int procNum(int arrayHdl, const CkArrayIndex &idx);
+    
+  void pup(PUP::er &p)
+      {
+	CkArrayMapTable::pup(p);
+	maptable= &RhoRHartmaptable;
+      }
+
+};
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -326,7 +367,7 @@ class size2d; //forward decl to shup the compiler
 void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, CPcharmParaInfo *sim);
 void init_ortho_chares(int, int, int *);
 
-void init_commlib_strategies(int, int);
+void init_commlib_strategies(int, int,int);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(size2d,int,int,int,int,CPcharmParaInfo *);
 void init_rho_chares(size2d ,CPcharmParaInfo*);
