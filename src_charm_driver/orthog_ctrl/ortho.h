@@ -172,6 +172,7 @@ class Ortho : public CBase_Ortho{
     p | pcProxy;
     p | pcRedProxy;
     p | pcLambdaProxy;
+    p | pcLambdaRedProxy;
     p | numGlobalIter;
     p | lbcaught;
     p | toleranceCheckOrthoT;
@@ -285,6 +286,7 @@ class Ortho : public CBase_Ortho{
   CProxySection_PairCalculator pcProxy;
   CProxySection_PairCalculator pcRedProxy;
   CProxySection_PairCalculator pcLambdaProxy;
+  CProxySection_PairCalculator pcLambdaRedProxy;
   int num_ready;
   bool got_start;
   int lbcaught;

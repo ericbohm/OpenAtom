@@ -198,7 +198,7 @@ extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalcu
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom);
+CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct);
 
 void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 

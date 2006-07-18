@@ -297,7 +297,7 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom)
+CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct)
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
@@ -334,7 +334,7 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   // now that we have the section, make the proxy and do delegation
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
-  if(!phantom) // only delegating nonphantom mcast proxy for reduction
+  if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
     {
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
       sectProxy.ckSectionDelegate(mcastGrp);
