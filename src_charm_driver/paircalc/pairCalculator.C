@@ -65,7 +65,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -90,7 +90,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   }
   else {
     options.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority,options);
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, options);
   }
 
   int proc = 0;
@@ -106,14 +106,15 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   if(sym)
     for(int numX = 0; numX < numZ; numX ++){
       for (int s1 = 0; s1 < s; s1 += grainSize) {
-	for (int s2 = s1; s2 < s; s2 += grainSize) {
+	int s2start=(phantomSym) ? 0 : s1;
+	for (int s2 = s2start; s2 < s; s2 += grainSize) {
 	  for (int c = 0; c < numChunks; c++) {
 	    if(mapid) {
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 	      pairCalculatorProxy(z[numX],s1,s2,c).
-		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority );
+		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym );
 	    }
 	    else
 	      {
@@ -121,7 +122,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, proc);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -140,14 +141,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym);
 	      }
 	      else{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, proc);
+		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -296,18 +297,27 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize)
+CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom)
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric);
 #endif
-  CkArrayIndexMax *elems= new CkArrayIndexMax[numZ*numChunks];
+  CkArrayIndexMax *elems;
+  if(phantom && s1!=s2)
+    elems =new CkArrayIndexMax[numZ*numChunks*2];
+  else
+    elems =new CkArrayIndexMax[numZ*numChunks];
   //add chunk loop
   for(int chunk = numChunks-1; chunk >=0; chunk--){
     for(int numX = numZ-1; numX >=0; numX--){
       CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
       elems[ecount++]=idx4d;
+      if(phantom && s1!=s2)
+	{
+	  CkArrayIndex4D idx4d(z[numX],s2,s1,chunk);
+	  elems[ecount++]=idx4d;
+	}
     }
   }
   int numOrtho=pcid->GrainSize/orthoGrainSize;
@@ -324,12 +334,15 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   // now that we have the section, make the proxy and do delegation
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
+  if(!phantom) // only delegating nonphantom mcast proxy for reduction
+    {
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
+      sectProxy.ckSectionDelegate(mcastGrp);
+      
+      // send the message to initialize it with the callback and groupid
+      setGredProxy(&sectProxy, pcid->orthomCastGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+    }
 
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
-  sectProxy.ckSectionDelegate(mcastGrp);
-
-  // send the message to initialize it with the callback and groupid
-  setGredProxy(&sectProxy, pcid->mCastGrpId[0], cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
   return sectProxy;
 }
 
@@ -403,12 +416,12 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      outsize= chunksize + (n % numChunks);
 	    }
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  if(symmetric && myPlane==0)
-	    dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,myS,chunk,symmetric);
+	  if(pcid->Symmetric && myPlane==0)
+	    dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,myS,chunk,pcid->Symmetric);
 #endif
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
+	  CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcid->Symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
 #endif
 
 	  if(pcid->useEtoM || pcid->useDirectSend)
@@ -433,8 +446,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	      if(symmetric && myPlane==0)
-		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,symmetric);
+	      if(pcid->Symmetric && myPlane==0)
+		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,pcid->Symmetric);
 #endif
 
 	      pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);

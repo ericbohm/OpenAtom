@@ -551,12 +551,21 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   // Populate maptables for Paircalculators
   Timer =CmiWallTimer();
   availGlob->reset();
+  bool maptype=true;
+  int achunks=config.numChunksAsym;
+  if(config.phantomSym)
+    { // evil trickery to use asym map code for phantom sym
+      maptype=false;
+      achunks=config.numChunksSym; 
+      
+    }
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
-	   availGlob, config.nstates,
-           config.nchareG, config.sGrainSize, CmiTrue, sim->nchareG, 
-           sim->lines_per_chareG, sim->pts_per_chareG, 
-   	   config.scalc_per_plane, planes_per_pe, config.numChunksAsym, config.numChunksSym);
+					 availGlob, config.nstates,
+                   config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
+                   sim->lines_per_chareG, sim->pts_per_chareG, 
+		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
+
   double newtime=CmiWallTimer();
   CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
 
@@ -596,8 +605,9 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     //mCastGrpIds.push_back(symMcast);
    //symmetric AKA Psi
 
-    //    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend);
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, mCastGrpId, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, 0, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority);
+
+    //    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, mCastGrpId, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, 0, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym);
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, mCastGrpId, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym);
 
     CkArrayIndex2D myindex(0, 0);
     if(config.gSpaceSum)
@@ -611,7 +621,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     //mCastGrpIdsA.push_back(symMcast);
 
     //asymmetric AKA Lambda AKA Gamma
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, mCastGrpId, config.numChunksAsym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, mCastGrpId, config.numChunksAsym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false);
 
 //============================================================================ 
    }//end routine

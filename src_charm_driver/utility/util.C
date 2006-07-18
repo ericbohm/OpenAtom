@@ -1452,6 +1452,7 @@ void Config::print(char *fname_in) {
      fprintf(fp, "Rstates_per_pe: %d\n", Rstates_per_pe);
      fprintf(fp,"numChunks: %d\n",numChunks);
      fprintf(fp,"gSpaceSum: %d\n",gSpaceSum);
+     fprintf(fp,"phantomSym: %d\n",phantomSym);
      fprintf(fp,"prioBW: %d\n",prioBW);
      fprintf(fp,"numChunksSym: %d\n",numChunksSym);
      fprintf(fp,"numChunksAsym: %d\n",numChunksAsym);
@@ -1579,6 +1580,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.rBucketSize         = 5;
     config.numChunks            = 1;
     config.gSpaceSum             = 0;
+    config.phantomSym             = 0;
     config.numChunksSym            = 1;
     config.numChunksAsym            = 1;
     strcpy(config.dataPath,"./");
@@ -1678,6 +1680,8 @@ void Config::readConfig(const char* fileName, Config &config,
 	    config.conserveMemory = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbgspace"))
 	    config.lbgspace = atoi(parameterValue);
+	else if (!strcmp(parameterName, "phantomSym"))
+	    config.phantomSym = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbpaircalc"))
 	    config.lbpaircalc = atoi(parameterValue);
 	else if (!strcmp(parameterName, "lbdensity"))
@@ -1856,6 +1860,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
     rangeExit(config.numChunks,"numChunks;",0);
     rangeExit(config.gSpaceSum,"gSpaceSum;",1);
+    rangeExit(config.gSpaceSum,"phantomSym;",1);
     rangeExit(config.numChunksAsym,"numChunksAsym;",0);
     rangeExit(config.numChunksSym,"numChunksSym;",0);
 
@@ -1990,7 +1995,14 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-
+    if(config.phantomSym && !config.gSpaceSum)
+      {
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Current implementation of phantomSym requires gSpaceSum\n");
+      CkPrintf("The price of midnight hacking sessions.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+      }
     if(config.Rstates_per_pe<1 || config.Rstates_per_pe>config.nstates){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The number of states per pe must be >=1 < num states\n");

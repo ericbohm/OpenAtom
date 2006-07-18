@@ -239,6 +239,7 @@ class Config {
 	int Gstates_per_pe; // new
 	int scalc_per_plane; // new
         int Rstates_per_pe; // new
+	int phantomSym;
         double gExpandFact;
         double gExpandFactRho;
 	double gStreamPeriod;

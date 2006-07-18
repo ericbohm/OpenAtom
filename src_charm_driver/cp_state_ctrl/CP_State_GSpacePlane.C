@@ -2536,6 +2536,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //=============================================================================
 // (I) Unpack the contribution to newpsi (orthonormal psi)
 
+//  CkPrintf("GSP [%d,%d] acceptNewPsi\n",thisIndex.x,thisIndex.y);
   int N         = msg->N;
   complex *data = msg->result;
   complex *psi  = gs.packedPlaneData;
@@ -2565,7 +2566,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
     doNewPsi();
   }
 //----------------------------------------------------------------------------
-   }//end routine
+}//end routine
 //==============================================================================
 
 //==============================================================================

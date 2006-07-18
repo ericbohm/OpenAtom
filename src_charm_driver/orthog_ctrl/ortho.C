@@ -532,11 +532,21 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 
   if(s1 <= s2)   //we get the reduction
     {
-      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize);
+      pcRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false);
+      if(config.phantomSym)
+	{
+	  pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true);
 	if(s1!=s2)
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
+	}
+      else
+	{
+	  if(s1!=s2)
+	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcRedProxy);
+	  pcProxy=pcRedProxy;
+	}
     }
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize);
+    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false);
 
 //----------------------------------------------------------------------------
   }// end routine

@@ -29,6 +29,10 @@ module ckPairCalculator {
 	  complex points[];
 	};
 
+	message phantomMsg  {
+	  double points[];
+	};
+
 	message multiplyResultMsg  {
 	  double matrix1[];
 	  double matrix2[];
@@ -46,7 +50,7 @@ module ckPairCalculator {
 
 	array [4D] PairCalculator {
 
- 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority );
+ 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym );
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);
@@ -54,6 +58,7 @@ module ckPairCalculator {
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
    		entry [nokeep] void acceptPairData(calculatePairsMsg *msg);
+   		entry void acceptPhantomData(phantomMsg *msg);
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
 		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
 

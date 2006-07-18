@@ -26,6 +26,7 @@
 #define PC_FWD_DGEMM_SPLIT 0
 #define PC_BWD_DGEMM_SPLIT 0
 #endif
+
 //flags to control semantic for matrix contents
 #define NORMALPC   0  // standard
 #define KEEPORTHO  1  // retain orthoT
@@ -151,6 +152,22 @@ class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsM
 
 };
 
+class phantomMsg : public CMessage_phantomMsg {
+ public:
+  int size;
+  int numPoints;
+  double *points;
+  int blkSize;
+  void init(int _size, int _numPoints, bool _flag_dp, double *_points, int _blkSize)
+    {
+      size=_size;
+      numPoints=_numPoints;
+      blkSize=_blkSize;
+      memcpy(points,_points,size*sizeof(double));
+    }
+
+};
+
 class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultMsg {
  public:
   double *matrix1;
@@ -219,7 +236,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -262,6 +279,7 @@ class PairCalculator: public CBase_PairCalculator {
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
+  void acceptPhantomData(phantomMsg *msg);
   void sendBWResult(sendBWsignalMsg *msg);
   void sendBWResultDirect(sendBWsignalMsg *msg);
   void sendBWResultColumn(bool other, int startGrain, int endGrain);
@@ -308,7 +326,11 @@ class PairCalculator: public CBase_PairCalculator {
   bool symmetric;            //! if true, one triangle is missing
   bool conserveMemory;       //! free up matrices when not in use
   bool lbpaircalc;
+  bool phantomSym;           //! phantoms exist to balance the BW path
+			     //otherdata work
 
+  bool amPhantom;            //! consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
+  
 
   bool collectAllTiles;      //! If true, don't stream compute on tiles in the backward path.
    
