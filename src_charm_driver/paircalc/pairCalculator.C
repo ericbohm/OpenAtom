@@ -55,6 +55,7 @@
 //*************************************************************************
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
+#include <algorithm>
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
@@ -824,7 +825,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
   }
 }
 
-//
+#ifdef ROTATE_LIST
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
 {
   if(newstart>numelems)
@@ -842,3 +843,11 @@ bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
   return(true);
 }
 
+#else
+
+bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
+{
+  std::random_shuffle(elems,elems+numelems);
+  return(true);
+}
+#endif

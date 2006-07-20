@@ -1376,7 +1376,7 @@ void CP_State_GSpacePlane::sendFFTData () {
     complex *data = msg->data;
     for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdataGrp[j];}
     real_proxy(thisIndex.x, z).doFFT(msg);  // same state, realspace char[z]
-
+    CmiNetworkProgress();
   }//endfor
     
   if (config.useGssInsRealP){gssInstance.endIteration();}
@@ -1470,6 +1470,9 @@ void CP_State_GSpacePlane::doIFFT () {
 
   doneDoingIFFT = true;
 
+
+  CmiNetworkProgress();
+
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
      CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
@@ -1560,7 +1563,7 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 
   gs.addForces(pp->myForces,pp->k_x);
   bzero(pp->myForces,gs.numPoints*sizeof(complex));
-
+  CmiNetworkProgress();
 //================================================================================
 // Compute force due to quantum kinetic energy and add it in.
 // Reduce quantum kinetic energy or eke
@@ -1660,6 +1663,7 @@ void  CP_State_GSpacePlane::sendLambda() {
 #ifndef _CP_DEBUG_ORTHO_OFF_
   int toSend = numPoints;
   startPairCalcLeft(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
+  CmiNetworkProgress();
   startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y);
 #else
   acceptedLambda=true;
