@@ -1146,7 +1146,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,
                  fPsiG[ig].re,fPsiG[ig].im);}
 #endif
 #ifdef CMK_VERSION_BLUEGENE
-    if(ig%nfreq==0{CmiNetworkProgress();}
+    if(ig%nfreq==0){CmiNetworkProgress();}
 #endif
   }//endfor
 
