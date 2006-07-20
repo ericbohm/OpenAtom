@@ -319,9 +319,11 @@ main::main(CkArgMsg *msg) {
 
     CPcharmParaInfo *sim  = new CPcharmParaInfo();
     PhysicsParamTransfer::ParaInfoInit(sim);
+
     int ibinary_opt    = sim->ibinary_opt;
     int natm_nl        = sim->natm_nl;
     int ees_eext_opt   = sim->ees_eext_on;
+    int ees_nonloc_opt = sim->ees_nloc_on;
     int nchareRhoRHart = sim->ngrid_eext_c;
 
 //============================================================================    
@@ -334,7 +336,7 @@ main::main(CkArgMsg *msg) {
     double phase1start=Timer;
     Config::readConfig(msg->argv[1],config,sim->nstates,
                        sim->sizeX,sim->sizeY,sim->sizeZ,
-                       sim->ntime,ibinary_opt,natm_nl);
+                       sim->ntime,ibinary_opt,natm_nl,ees_nonloc_opt);
 
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
@@ -558,7 +560,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       maptype=false;
       achunks=config.numChunksSym; 
       
-    }
+    }//endif
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 

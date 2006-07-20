@@ -101,6 +101,9 @@ void printFictEke(void *, void *);
 void printEnergyEke(void *, void *);
 void testeke(int ,complex *,int *,int *,int *, int ,int);
 
+//#define _CP_DEBUG_STATEG_VERBOSE_
+//#define _CP_DEBUG_WARN_SUSPEND_
+
 //============================================================================
 
 
@@ -146,7 +149,6 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 	  RTH_Suspend(); // wait for broadcast that all psi is done  
        }//endif
 #endif               //end pause
-
        c->doFFT(); 
        c->sendFFTData();
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
@@ -176,30 +178,32 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (F) Add contraint forces (rotate forces to non-orthogonal frame)
 #ifndef _CP_DEBUG_PSI_OFF_  // you are moving evertying
-       c->sendLambda();        
+       c->sendLambda();
 #ifndef _CP_DEBUG_ORTHO_OFF_
-       RTH_Suspend(); // wait for forces to be fixed up : acceptLambda resumes
+       RTH_Suspend(); // wait for forces to be fixed up 
+                      // acceptLambda resumes
 #endif
     //------------------------------------------------------------------------
     // Get sum sq forces (even under dynamics its good to have) : also cg thingy
-	c->computeCgOverlap();
-	RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
+       c->computeCgOverlap();
+       RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
     //------------------------------------------------------------------------
     // (H) Output the states for cp dynamics
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
-         c->writeStateDumpFile();// wait for output : psiwritecomplete resumes
-  	 if(c->iwrite_now==1){RTH_Suspend();}
-      }//endif
+       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 &&
+          c->iteration<= config.maxIter){
+            c->writeStateDumpFile();   // wait for output : psiwritecomplete resumes
+ 	    if(c->iwrite_now==1){RTH_Suspend();}
+       }//endif
     //------------------------------------------------------------------------
-    // (I) Evolve the electrons to the next step
-      c->integrateModForce();
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
-        c->sendRedPsi();  // Sync Redundant psi entries
-        if(c->finishedRedPsi==0){
-          RTH_Suspend();  // Resume is called in acceptRedPsi
-	}//endif
-        c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
-      }//endif
+    // (I) Evolve the electrons to the next step    
+        c->integrateModForce();
+        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
+            c->sendRedPsi();  // Sync Redundant psi entries
+            if(c->finishedRedPsi==0){
+              RTH_Suspend();  // Resume is called in acceptRedPsi
+   	    }//endif
+            c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
+        }//endif
 #endif  // you are moving everyting
     }// endif determine entry point
  //==========================================================================
@@ -207,13 +211,15 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    //------------------------------------------------------------------------
    // (A) Orthogonalize
 #ifndef _CP_DEBUG_PSI_OFF_   // move everything
-    c->sendPsi();      // send to Pair Calculator
+    c->sendPsi();   // send to Pair Calculator
 #ifndef _CP_DEBUG_ORTHO_OFF_
-    RTH_Suspend();     // Wait for new Psi : resume is called in acceptNewPsi
+    RTH_Suspend();  // Wait for new Psi : 
+                    // resume is called in acceptNewPsi
 #endif
    //------------------------------------------------------------------------
    // (B) Output the states for minimization
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1){
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1 &&
+       c->iteration<= config.maxIter){
        c->writeStateDumpFile();
        if(c->iwrite_now==1){RTH_Suspend();}// wait : psiwritecomplete resumes
     }//endif
@@ -226,18 +232,18 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
       }//endif
     }//endif
    //------------------------------------------------------------------------
-   // (d) Check for Energy reduction completion : should just be a safety
-    if(c->myenergy_reduc_flag==0 && c->iteration>0){
-      c->isuspend_energy=1;
+   // (D) Check for Energy reduction completion : should just be a safety
+    if(c->myenergy_reduc_flag==0 && c->iteration>0 && c->isuspend_energy==0){
+       c->isuspend_energy=1;
 #ifdef _CP_DEBUG_WARN_SUSPEND_
       CkPrintf("Suspend energy on proc %d : too many of these==bad scheme\n",CkMyPe());
 #endif
       RTH_Suspend();     // resume called in acceptEnergy
     }//endif
-#endif // you are moving everyting
+#endif // you are moving everything
    //------------------------------------------------------------------------
    // (E) Check for atom integration : should just be a safety
-    if(c->myatom_integrate_flag==0 && c->iteration>0){
+    if(c->myatom_integrate_flag==0 && c->iteration>0 && c->isuspend_atms==0){
 #ifdef _CP_DEBUG_WARN_SUSPEND_
       CkPrintf("Suspend atms on proc %d : too many of these==bad scheme\n",CkMyPe());
 #endif
@@ -591,8 +597,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countVPsi       = 0;
   countIFFT       = 0;
   ecount          = 0; //No energies have been received.
+  cleanExitCalled = 0;
 
   countPsiO       = new int[config.numChunksSym];
+
   for(int i=0;i<config.numChunksSym;i++)
     countPsiO[i]=0;
 
@@ -752,6 +760,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|exitFlag;
   p|isuspend_energy;
   p|isuspend_atms;
+  p|cleanExitCalled;
   p|myatom_integrate_flag;
   p|myenergy_reduc_flag;
   p|finishedCpIntegrate;
@@ -999,9 +1008,9 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
    { //begin routine
 //============================================================================
-//#ifdef _CP_DEBUG_STATEG_VERBOSE_
-//  CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
-//#endif
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+    CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
+#endif
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
@@ -1186,16 +1195,18 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
 #endif
+
   if(iteration>0){
    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
      atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error : Starting new iter before\n");
       CkPrintf("finishing atom integrate or iteration mismatch.\n");
-      CkPrintf("iter_gsp %d iter_energy %d iter_atm %d\n",
- 	        iteration,
-	        egroupProxy.ckLocalBranch()->iteration_gsp,
-                atomsGrpProxy.ckLocalBranch()->iteration);
+      CkPrintf("iter_gsp %d iter_energy %d iter_atm %d and %d and %d\n",
+ 	        iteration,egroupProxy.ckLocalBranch()->iteration_gsp,
+                atomsGrpProxy.ckLocalBranch()->iteration,
+	       config.maxIter,cleanExitCalled);
+      CkPrintf("chare %d %d\n",thisIndex.x,thisIndex.y);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
@@ -1221,6 +1232,10 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   iteration++;   // my iteration # : not exactly in sync with other chares
                  //                  but should agree when chares meet.
+
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
+#endif
 
 //============================================================================
 // Check Load Balancing, Increment counter, set done flags equal to false.
@@ -1455,8 +1470,10 @@ void CP_State_GSpacePlane::doIFFT () {
 
   doneDoingIFFT = true;
 
-  //  if(thisIndex.x==0)
-  //   CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+     CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
+#endif
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -1468,11 +1485,12 @@ void CP_State_GSpacePlane::doIFFT () {
 bool CP_State_GSpacePlane::doneNLForces(){
 //==============================================================================
 
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(!particlePlaneProxy(thisIndex.x,thisIndex.y).ckLocal()->doneGettingForces){
     if(thisIndex.x==0)
        CkPrintf("suspend me in gsp \n");
-  }
-
+  }//endif
+#endif
 return particlePlaneProxy(thisIndex.x,thisIndex.y).ckLocal()->doneGettingForces;
 }
 //==============================================================================
@@ -1592,6 +1610,7 @@ void CP_State_GSpacePlane::launchAtoms() {
   if(iteration==config.maxIter+1){
     int i=0;
     contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+    cleanExitCalled = 1;
   }else{
 #endif
    int i=0;
@@ -1645,6 +1664,11 @@ void  CP_State_GSpacePlane::sendLambda() {
 #else
   acceptedLambda=true;
   memset(force, 0, sizeof(complex)*numPoints);
+#endif
+
+#ifdef _CP_DEBUG_STATEG_VERBOSE_ 
+  if(thisIndex.x==0)
+   CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
 //-----------------------------------------------------------------------------
@@ -1713,6 +1737,10 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
     doLambda();
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
   }
 //==============================================================================
 }//end routine
@@ -1779,9 +1807,14 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
     doLambda();
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
   }
+
 //==============================================================================
-}//end routine
+ }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -1823,9 +1856,14 @@ void CP_State_GSpacePlane::doLambda() {
     if(thisIndex.y==0)
     dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
   */
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+  if(thisIndex.x==0)
+   CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
+
   RTH_Runtime_resume(run_thread);
-  //==============================================================================
-}//end routine
+//==============================================================================
+  }//end routine
 //==============================================================================
 
 //=========================================================================
@@ -1868,6 +1906,11 @@ void CP_State_GSpacePlane::computeCgOverlap() {
    redforc[1] = force_sq_sum_loc;
    contribute(2*sizeof(double),redforc,CkReduction::sum_double,
 	     CkCallback(CkIndex_CP_State_GSpacePlane::psiCgOvlap(NULL),thisProxy));
+
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("ovlpa %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
 
 //----------------------------------------------------------------------------
   }// end routine : computeCgOverlap
@@ -1968,7 +2011,10 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
       if(thisIndex.y!=0){
         int i = 0;
         if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
-          contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+          if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+            contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+	  }//endif
+          cleanExitCalled = 1;
 	}else{
           contribute(sizeof(int),&i,CkReduction::sum_int,
                    CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),
@@ -2046,7 +2092,10 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      delete [] tk_z; tk_z  = NULL;
      int i=0;
      if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
-       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+       if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+         contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+         cleanExitCalled = 1;
+       }//endif
      }else{
        contribute(sizeof(int),&i,CkReduction::sum_int,
                 CkCallback(CkIndex_CP_State_GSpacePlane::psiWriteComplete(NULL),
@@ -2074,6 +2123,11 @@ void CP_State_GSpacePlane::integrateModForce() {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
+
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("integrate %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
 
 //==============================================================================
 // II. Local pointers    
@@ -2216,6 +2270,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 //==============================================================================
 void CP_State_GSpacePlane::sendRedPsi() {
 //==============================================================================
+
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
@@ -2382,6 +2437,11 @@ void CP_State_GSpacePlane::sendPsi() {
 //==============================================================================
 // Error checking
 
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("sendpsi %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
+
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt = sim->cp_min_opt;
 
@@ -2444,8 +2504,11 @@ void CP_State_GSpacePlane::sendPsi() {
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
       config.stateOutputOn==0){
-      int i;
-      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+        int i;
+        contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+      }//endif
+      cleanExitCalled = 1;
   }///endif
 #endif
 
@@ -2521,6 +2584,10 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
     doNewPsi();
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
   }
 //----------------------------------------------------------------------------
 }//end routine
@@ -2564,21 +2631,32 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   if(countPsi==AllPsiExpected){ 
     doNewPsi();
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
   }
+
 //----------------------------------------------------------------------------
 }//end routine
 //==============================================================================
 
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 //==============================================================================
 /**
  * All Psi have arrived, finish the new Psi process
  */
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+  void CP_State_GSpacePlane::doNewPsi(){
+//=============================================================================
+// (I) If you have got it all : Rescale it, produce some output
 
-void CP_State_GSpacePlane::doNewPsi(){
-  //=============================================================================
-  // (I) If you have got it all : Rescale it, produce some output
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("donewpsi %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
 
   CkAssert(countPsi==AllPsiExpected); 
   //--------------------------------------------------------------------
@@ -2604,16 +2682,23 @@ void CP_State_GSpacePlane::doNewPsi(){
   // (D) Go back to the top or exit
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
-    int i;
-    contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
-  }//endif
+     if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+      int i;
+      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+     }//endif
+     cleanExitCalled = 1;
+  }//endifw
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
      config.stateOutputOn==0){
+     if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
        int i;
        contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
-     }///endif
+     }//endif
+     cleanExitCalled = 1;
+  }///endif
   //--------------------------------------------------------------------
   // (E) Reset psi if debugging
+
 #ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
     CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
@@ -2621,12 +2706,13 @@ void CP_State_GSpacePlane::doNewPsi(){
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
 #endif      
+
   RTH_Runtime_resume(run_thread);
 
-
-  //----------------------------------------------------------------------------
-}//end routine
+//----------------------------------------------------------------------------
+  }//end routine
 //==============================================================================
+
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2743,6 +2829,10 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //==============================================================================
 void CP_State_GSpacePlane::screenOutputPsi(){
 //==============================================================================
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+   if(thisIndex.x==0)
+    CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
 
   int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
@@ -2784,6 +2874,10 @@ void CP_State_GSpacePlane::screenOutputPsi(){
     //--------------------------------------------------------------------
 #endif
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  CkPrintf("GSP [%d,%d] screenwrite: %d\n",thisIndex.x, thisIndex.y,iteration);
+#endif
+
 //----------------------------------------------------------------------------
    }//end routine
 //==============================================================================
@@ -2816,8 +2910,15 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
+   if(myenergy_reduc_flag==1 && cleanExitCalled==1){
+     int i;
+     contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+   }//endif
    if(isuspend_atms==1){ // I suspended to wait for atoms, resume me baby.
      isuspend_atms=0;
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+     CkPrintf("Atoms resuming on GSP chare %d %d\n",thisIndex.x,thisIndex.y);
+#endif
      RTH_Runtime_resume(run_thread);
    }//endif
 }//end routine
@@ -2836,7 +2937,14 @@ void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
+   if(myatom_integrate_flag==1 && cleanExitCalled==1){
+     int i;
+     contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+   }//endif
    if(isuspend_energy==1){ // I suspended to wait for energy, resume me baby.
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+     CkPrintf("Energy resuming on GSP chare %d %d\n",thisIndex.x,thisIndex.y);
+#endif
      isuspend_energy=0;
      RTH_Runtime_resume(run_thread);
    }//endif
@@ -2953,53 +3061,80 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
   switch(param){
       
     case ENERGY_EHART : 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received Hart\n");
+#endif
       ehart_total = d;
       total_energy += d;
       ecount++;
       break;
       
     case ENERGY_ENL :
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received Enl\n");
+#endif
       enl_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_EKE : 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received Eke\n");
+#endif
       eke_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_EGGA :
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received GGA\n");
+#endif
       egga_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_EEXC :
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received EEXC\n");
+#endif
       eexc_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_EEXT :
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received EEXT\n");
+#endif
       eext_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_EWD :
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received EWD\n");
+#endif
       ewd_total = d;
       total_energy += d;
       ecount++;
       break;
         
     case ENERGY_FICTEKE : 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received FICTEKE\n");
+#endif
       fictEke_total = d;
       ecount++;
       break;
       
     case ENERGY_FMAG : 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+      CkPrintf("Received FMAG\n");
+#endif
       fmagPsi_total0 = d;
       ecount++;
       break;
@@ -3025,7 +3160,9 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 #endif
 #endif
 
-
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  CkPrintf("ecount %d %d\n",ecount,NUM_ENERGIES-isub);
+#endif
   if(ecount == NUM_ENERGIES-isub){
     EnergyStruct estruct;
     estruct.enl             = enl_total;
@@ -3039,6 +3176,9 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
     estruct.totalElecEnergy = total_energy;
     estruct.fmagPsi         = fmagPsi_total0;
     estruct.iteration_gsp   = iteration;
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+    CkPrintf("Bcasting to energygrp\n");
+#endif
     egroupProxy.updateEnergiesFromGS(estruct); // broadcast the electronic energies
                                                //  so that all procs have them
     total_energy        = 0.0;

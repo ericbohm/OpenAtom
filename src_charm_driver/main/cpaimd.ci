@@ -210,13 +210,15 @@ mainmodule cpaimd {
 		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
                 entry void recvFromEesGPP(NLFFTMsg *);
                 entry void recvZMatEes(CkReductionMsg *);
-                entry void computeAtmForcEes(int nZmat, double zmat_loc[nZmat]);
+                entry void computeAtmForcEes(int nZmat, double zmat_loc[nZmat],
+                                             int iterNL_in);
                 entry [nokeep] void setPlaneRedCookie(EnlCookieMsg *);
                 entry [nokeep] void setEnlCookie(EnlCookieMsg *);
                 entry void registrationDone(CkReductionMsg *msg);
 		entry void printEnlR(CkReductionMsg *);
-		entry void printEnlRSimp(double ,int);
-                entry void recvZMatEesSimp(int size, double _zmat[size],int index);
+		entry void printEnlRSimp(double ,int,int);
+                entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
+                                           int index, int iterNL_in);
 	};
 
 	array [2D] CP_State_RealSpacePlane {

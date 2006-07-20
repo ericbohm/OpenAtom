@@ -492,7 +492,9 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
       case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
 
     }//end switch
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
   }//endfor
 
 //============================================================================

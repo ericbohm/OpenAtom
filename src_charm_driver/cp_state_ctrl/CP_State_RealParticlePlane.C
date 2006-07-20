@@ -40,6 +40,8 @@ extern int    nstates;
 extern int    nchareG;
 extern Config config;
 
+//#define _CP_DEBUG_STATE_RPP_VERBOSE_
+
 //=========================================================================
 
 
@@ -48,44 +50,49 @@ extern Config config;
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void printEnlR(void *param, void *msg){
-  CkReductionMsg *m=(CkReductionMsg *)msg;
-  double d = ((double *)m->getData())[0];
-  CkPrintf("ENL(EES)    = %5.8lf\n", d);
-  delete m;
-
-  gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  
-}
-//============================================================================
-
-//============================================================================
-// Energy reduction client for ees method!
-//============================================================================
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
+
+  //unpack
   double d = ((double *)m->getData())[0];
-  CkPrintf("ENL(EES)    = %5.8lf\n", d);
   delete m;
+
+  //output and save the data
+  CkPrintf("ENL(EES)    = %5.8lf\n", d);
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  
 }
 //============================================================================
+
 
 //============================================================================
 // Energy reduction client for ees method!
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index){
+void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int itime_in){
 
-  countEnl++;  if(countEnl==1){cp_enl=0.0;}
-  cp_enl += cp_enl_loc;
+  // upack
+  countEnl++;
+  if(countEnl==1){itimeRed=itime_in;}
+  cp_enlTot += cp_enl_loc;
 
-  CkPrintf("Enl contrib arrived from %d : %g %d %g\n",index,cp_enl_loc,countEnl,cp_enl);
+  if(itimeRed!=itime_in){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Yo dawg, ees nonlocal is racin' into the enl reduction\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
+  CkPrintf("Enl contrib arrived from %d : %g %d %d %d\n",index,cp_enl_loc,countEnl,
+            itime_in,itimeRed);
+#endif
+
+  // output and save the data
   if(countEnl==nstates){
-    countEnl = 0;
-    CkPrintf("ENL(EES)    = %5.8lf\n", cp_enl);
-    gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, cp_enl);  
+    CkPrintf("ENL(EES)    = %5.8lf\n", cp_enlTot);
+    gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL,cp_enlTot);  
+    countEnl  = 0;
+    cp_enlTot = 0.0;
   }//endif
 
 }
@@ -124,13 +131,17 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   zmatSizeTot    = zmatSizeTot_in;       // zmatrix size
   ees_nonlocal   = ees_nonlocal_in;
 
-  cp_enl         = 0.0;                  // non-local energy
-  count          = 0;                    // fft communication counter
-  countZ         = 0;                    // Zmat communication counter
-  countEnl       = 0;                    // Energy counter
-  iterNL         = 0;                    // Nl iteration counter
-  itime          = 0;                    // time step;
+  cp_enl           = 0.0;                // non-local energy
+  cp_enlTot        = 0.0;
+  count            = 0;                  // fft communication counter
+  countEnl         = 0;                  // Energy counter
+  iterNL           = 0;                  // Nl iteration counter
+  itimeRed         = 0;                  // time of reduction
+  itime            = 0;                  // time step;
   registrationFlag = 0;
+  recvBlock        = 0;
+
+  countZ = 0.0;      // Zmat communication counter
 
 //============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache
@@ -141,6 +152,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
     projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
     projPsiR    = reinterpret_cast<double*> (projPsiC);
     zmat        = new double[zmatSizeTot];
+    zmatScr     = new double[zmatSizeTot];
    //--------
    // Register
     eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
@@ -244,10 +256,12 @@ CP_State_RealParticlePlane::~CP_State_RealParticlePlane(){
   if(ees_nonlocal==1){
     fftw_free(projPsiC);
     delete [] zmat;
+    delete [] zmatScr;
   }//endif
   projPsiC    = NULL;
   projPsiR    = NULL;
   zmat        = NULL;
+  zmatScr     = NULL;
 
 }
 //============================================================================
@@ -255,6 +269,7 @@ CP_State_RealParticlePlane::~CP_State_RealParticlePlane(){
 
 //============================================================================
 // Recv FFT data/psi-projector from CP_StateParticlePlane
+// kicking things off for this Chare.
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -284,9 +299,13 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 
     count++;
     // if we are starting a totally new time step, increment the time
-    if(iterNL==0 && count==1){itime++;}
+    if(iterNL==0 && count==1){itime++; cp_enl=0.0;}
+
     // we doing a new iteration, refresh the memory, increment iterNL
-    if(count==1){iterNL++; memset(projPsiR,0,planeSize*sizeof(double));}
+    if(count==1){
+      iterNL++; 
+      memset(projPsiR,0,planeSize*sizeof(double));
+    }//endif
 
 //============================================================================
 // Consistency Checking
@@ -308,10 +327,10 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
       CkExit();
     }//endif
 
-    if(iterNLNow!=iterNL){
+    if(iterNLNow!=iterNL || recvBlock==1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d\n",iterNLNow,iterNL,
-                   thisIndex.y,Index);
+      CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d %d\n",iterNLNow,iterNL,
+                   thisIndex.y,Index,recvBlock);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -336,9 +355,12 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 // When you have collected the full data set, continue
 
     if(count == nchareG) {
-      count=0;
+      count     = 0;
+      recvBlock = 1;
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
       if(thisIndex.x==0)
        CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
       FFTNLEesFwdR();
     }//endif
 
@@ -355,16 +377,20 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in FFTNL : %d %d %d %d\n",
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+#endif
 
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB);
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in FFTNL.2 : %d %d %d %d\n",
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+#endif
 
   if(registrationFlag==1){computeZmatEes();}
 
@@ -405,18 +431,22 @@ void CP_State_RealParticlePlane::computeZmatEes(){
    int **igrid      = eesData->RppData[myPlane].igrid;
    double **mn      = eesData->RppData[myPlane].mn;
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in computeZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
 
    CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,&zmat[offZmat],igrid,mn,
-                             plane_index,myPlane);
+                             plane_index,thisIndex.x,myPlane);
 
 //============================================================================
 // Launch section reduction : 
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in send to zmat-red : %d %d %d %d %d\n",
          thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,offZmat,zmatSizeTot);
+#endif
 
 #define _FANCY_RED_METHOD_OFF_
 #ifdef _FANCY_RED_METHOD_
@@ -428,7 +458,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
                          rPlaneRedCookie,cb);
 #else
    thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,&zmat[offZmat],
-                                                            thisIndex.y);
+                                               thisIndex.x,thisIndex.y,iterNL);
 #endif
 
 
@@ -438,38 +468,72 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 
 
 //============================================================================
-void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,int index){
+// A chare can be behind by 1 iteration only. This message can arrive before
+// this chare has sent its zmat. This chare must therefore recv in zmatScr
+//============================================================================
+void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
+                                        int state, int index,int iterNL_in){
 //============================================================================
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-   int iterNL1          = iterNL-1;           // silly C++ convention
+   int iterNL1          = iterNL_in-1;        // silly C++ convention
    int *ioff_zmat       = sim->ioff_zmat;     // offset into zmat memory
    int offZmat          = ioff_zmat[iterNL1];
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
 
 //============================================================================
+// check for errors
+
+   if(size !=  nZmat){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, size != nzmat : %d : %d %d : %d %d\n",
+                   iterNL,thisIndex.x,thisIndex.y,state,index);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+   }//endif
+   if(iterNL!=iterNL_in && iterNL!=iterNL_in-1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, wrong iterNls : %d %d : %d %d : %d %d\n",
+                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+   }//endif
+   if(state != thisIndex.x){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, you sent to the wrong state : %d %d  : %d %d : %d %d\n",
+                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+   }//endif
+
+//============================================================================
 // Recv the reduced zmatrix and chuck the message
 
-   if(thisIndex.x==0)
-    CkPrintf("HI, I am rPP %d %d in recvZmatSimp : %d %d\n",
-        thisIndex.x,thisIndex.y,iterNL,index);
-
-    CkAssert(size ==  nZmat);
-
     countZ++;
-    if(countZ==1){ for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]=0.0;} }
-    for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]+=_zmat[i];}
+    if(countZ==1){ 
+      for(int i=0;i<nZmat;i++){zmatScr[(i+offZmat)]=0.0;} 
+    }//endif
+    for(int i=0;i<nZmat;i++){zmatScr[(i+offZmat)]+=_zmat[i];}
 
 //============================================================================
 // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
 
     if(countZ==nChareR){
-      countZ=0;
+      if(iterNL != iterNL){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("Wrong iterNls strange racing: %d %d : %d %d : %d %d\n",
+                   iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit();
+      }//endif
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
       CkPrintf("HI, I am rPP %d %d in recvZmatSimp blasting off to forces: %d %d\n",
           thisIndex.x,thisIndex.y,iterNL,index);
+#endif
+      countZ=0;
       for(int i=0;i<nChareR;i++){
-        thisProxy(thisIndex.x,i).computeAtmForcEes(nZmat,&zmat[offZmat]);
+        thisProxy(thisIndex.x,i).computeAtmForcEes(nZmat,&zmatScr[offZmat],iterNL_in);
       }//endfor
     }//endif
 
@@ -495,8 +559,10 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //============================================================================
 // Recv the reduced zmatrix and chuck the message
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
     if(thisIndex.x==0)
      CkPrintf("HI, I am rPP %d %d in recvZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
 
     CkAssert(msg->getSize() ==  nZmat* sizeof(double));
     double *realValues = (double *) msg->getData(); 
@@ -507,10 +573,13 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //============================================================================
 // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
     if(thisIndex.x==0)
      CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
             thisIndex.x,thisIndex.y,iterNL);
-   rPlaneSectProxy.computeAtmForcEes(nZmat,&zmat[offZmat]);
+#endif
+
+   rPlaneSectProxy.computeAtmForcEes(nZmat,&zmat[offZmat],iterNL);
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -522,12 +591,24 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc){
+void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
+                                                   int iterNL_in){
 //============================================================================
 // Unpack the message : Get some sizes
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
+   if(iterNL_in !=  iterNL){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, iteration mismatch : %d %d : %d %d \n",iterNL,iterNL_in,
+                   thisIndex.x,thisIndex.y);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+   }//endif
+
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL-1;          // silly C++ convention
    int *ioff_zmat       = sim->ioff_zmat;    // offset into zmat 
@@ -535,9 +616,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc){
    int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
    int nZmatNow         = nmem_zmat[iterNL1];
 
-   if(thisIndex.y!=reductionPlaneNum){
-     for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]=zmat_loc[i];}
-   }//endif
+   for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]=zmat_loc[i];}
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces
@@ -552,17 +631,22 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc){
    AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch();
    Atom *atoms      = ag->atoms;
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,&zmat[offZmat], 
-               igrid,dmn_x,dmn_y,dmn_z,projPsiR,plane_index,myPlane,atoms);
+               igrid,dmn_x,dmn_y,dmn_z,projPsiR,plane_index,myPlane,thisIndex.x,atoms);
 
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast
 
    if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
      if(thisIndex.x==0)
        CkPrintf("HI, I am rPP %d %d sending Enl : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
 
 #ifdef _FANCY_RED_METHOD_
      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
@@ -573,10 +657,12 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc){
      mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
 		          CkReduction::sum_double,rEnlCookie, cb);
 #else
-     thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x);
+     thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
 #endif
-     cp_enl = 0.0;  // its blasted off, we're done with it.
    }//endif
+
+   // zero the total enl energy if we are done.
+   if(iterNL==numIterNl){cp_enl = 0.0;}
 
 //============================================================================
 // Time to make the Psiforces (donuts!)
@@ -611,8 +697,11 @@ void CP_State_RealParticlePlane::createNLEesFFTdataR(){
 //============================================================================
 // Set up the FFT data, then call the fft routine
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in createNL : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
   CPNONLOCAL::eesPsiForcRchare(iterNL,&zmat[offZmat],igrid,mn,projPsiR,
                                plane_index,myPlane);
   FFTNLEesBckR();
@@ -629,19 +718,23 @@ void CP_State_RealParticlePlane::createNLEesFFTdataR(){
 void CP_State_RealParticlePlane::FFTNLEesBckR(){
 
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+#endif
+
   fftCacheProxy.ckLocalBranch()->doNlFFTRtoG_Rchare(projPsiC,projPsiR,
                                                 nplane_x,ngridA,ngridB);
-
   sendToEesGPP();
 }
 //============================================================================
 
 
 //============================================================================
-// Send the PsiForce NL FFT back to GparticlePlane
+// Send the PsiForce NL FFT back to GparticlePlane.
+// Until ALL RealPP chares send forces, PP cannot start the next iteration
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -656,8 +749,11 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 //===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in sendtoGPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
   if(config.useMssInsGPP){mssPInstance.beginIteration();}
 
     for (int ic=0;ic<nchareG;ic++) { // chare arrays to which we will send
@@ -673,6 +769,9 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
       }//endif
       for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiC[tranpack[ic][i]];}
       particlePlaneProxy(thisIndex.x, ic).recvFromEesRPP(msg); // send the message
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
     }//end for : chare sending
 
   if(config.useMssInsGPP){mssPInstance.endIteration();}
@@ -681,9 +780,11 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 // If it looks like this is the end, reset my counters baby.
 // If its not the end, GParticlePlane will invoke entry methods.
 
+  recvBlock = 0; // I am done, I can recv messages now from PP
+                 // If I recv with block==1, something is terribly wrong
   if(iterNL==numIterNl){
     iterNL = 0;
-    cp_enl = 0.0;
+    cp_enl = 0;
   }//endif
    
 //----------------------------------------------------------------------------
@@ -721,8 +822,12 @@ int CP_State_RealParticlePlane::calcReductionPlaneNum(int state){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
+
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
+#endif
+
   CkGetSectionInfo(rPlaneRedCookie,m);
 }
 //============================================================================
@@ -734,9 +839,13 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
+
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
+#endif
   CkGetSectionInfo(rEnlCookie,m);
+
 }
 //============================================================================
 
@@ -751,8 +860,10 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
   int sum = ((int *)msg->getData())[0];
   delete msg;
 
+#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am realPPa %d %d in reg : %d\n",thisIndex.x,thisIndex.y,sum);
+#endif
 
   registrationFlag=1;
   if(iterNL==1){computeZmatEes();}
@@ -780,13 +891,15 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
    p|Rstates_per_pe;
    p|myPlane;
    p|registrationFlag;
+   p|recvBlock;
 
    p|numIterNl;
-   p|countZ;
    p|countEnl;
    p|count;
    p|iterNL;
    p|itime;
+   p|itimeRed;
+   p|countZ;
  
    p|ngridA;
    p|ngridB;
@@ -797,6 +910,7 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
    p|zmatSizeTot;
    p|reductionPlaneNum;
    p|cp_enl; 
+   p|cp_enlTot; 
 
    p|rPlaneSectProxy;
    p|rPlaneENLProxy;
@@ -806,12 +920,14 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
 
    if(ees_nonlocal==1){
      if (p.isUnpacking()) {
-       projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
-       projPsiR    = reinterpret_cast<double*> (projPsiC);
-       zmat         = new double[zmatSizeTot];
+       projPsiC = (complex*) fftw_malloc(csize*sizeof(complex));
+       projPsiR = reinterpret_cast<double*> (projPsiC);
+       zmat     = new double[zmatSizeTot];
+       zmatScr = new double[zmatSizeTot];
      }//endif
      p((char*)projPsiC,csize *sizeof(complex));
      p(zmat,zmatSizeTot);
+     p(zmatScr,zmatSizeTot);
    }//endif
 
 //---------------------------------------------------------------------------

@@ -248,6 +248,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int isuspend_atms;
 	int numChunks;
         int ees_nonlocal;
+        int cleanExitCalled;
 	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
@@ -653,6 +654,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 	int nchareG;
 	int Gstates_per_pe;
         int countNLIFFT;
+        int sendDone;
         int registrationFlag;
  private:
 	int calcReductionPlaneNum(int);
@@ -699,6 +701,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    int count;             // fft communication counter
    int iterNL;            // Nl iteration counter
    int itime;             // time step counter;
+   int recvBlock;
  
    int ngridA;            // FFT grid size along a
    int ngridB;            // FFT grid size along b
@@ -708,12 +711,15 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    int csize;             // complex variable size for FFT
    int zmatSizeTot;       // zmatrix size for projector
    int reductionPlaneNum; // Reduction Plane number
+   int itimeRed;
 
    int registrationFlag;
 
    double cp_enl;         // Non-local energy
+   double cp_enlTot;      // Reduced Non-local energy
    double *projPsiR;      // real/final form of projector (after gx,gy FFTs)
    double *zmat;          // Non-local matrix
+   double *zmatScr;      // Non-local matrix
    complex *projPsiC;     // complex/intermediate form of projector (before gx,gy FFTs)
 
   //-----------
@@ -732,12 +738,12 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
   ~CP_State_RealParticlePlane();
    void pup(PUP::er &);
    void printEnlR(CkReductionMsg *m);
-   void printEnlRSimp(double,int);
+   void printEnlRSimp(double,int,int);
    void recvFromEesGPP(NLFFTMsg *);
    void FFTNLEesFwdR();
    void computeZmatEes();
    void recvZMatEes(CkReductionMsg *);
-   void computeAtmForcEes(int, double *);
+   void computeAtmForcEes(int, double *,int );
    void createNLEesFFTdataR();	
    void FFTNLEesBckR();
    void sendToEesGPP();
@@ -745,7 +751,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void setEnlCookie(EnlCookieMsg *);
    int calcReductionPlaneNum(int );
    void registrationDone(CkReductionMsg *msg);
-   void recvZMatEesSimp(int , double *,int);
+   void recvZMatEesSimp(int , double *,int,int,int);
 };
 //============================================================================
 

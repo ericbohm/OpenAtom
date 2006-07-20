@@ -452,7 +452,9 @@ void CP_Rho_GHartExt::sendVks() {
     complex *Vks = rho_gs.Vks;
     for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = Vks[j];}
     rhoRealProxy_com(z,0).acceptHartVks(msg);
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
   }//endfor
 
 //============================================================================
@@ -741,7 +743,9 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
       case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
       case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
     }//end switch
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
   }//endfor
 
 //============================================================================

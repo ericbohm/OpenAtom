@@ -125,6 +125,32 @@ class PSNONLOCAL{
     p | ecut;
     p | fft_size_scale;
 
+    // Malloc the unpuppables
+    if(p.isUnpacking() && (ees_on+ees_eext_on) > 0){
+       aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+       rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+       rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+       frac_a  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
+       frac_b  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
+       frac_c  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
+       iatemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
+       ibtemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
+       ictemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
+       igrid_a = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       igrid_b = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       igrid_c = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       mn_a    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       mn_b    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       mn_c    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       ua    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       ub    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       uc    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       dmn_a   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       dmn_b   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+       dmn_c   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
+    }//endif
+
+     // the pups also malloc
     if(natm>0){
       pup1d_int(p,&natm_typ_lang,nl_max1);
       pup1d_int(p,&map_nl,natm);
@@ -142,34 +168,10 @@ class PSNONLOCAL{
       pup1d_dbl(p,&y,natm);
       pup1d_dbl(p,&z,natm);
       pup1d_dbl(p,&vnorm_0,natm);
-
       pup1d_cpl(p,&ei_inc,natm);
       pup1d_cpl(p,&ti_inc,natm);
-
-      if(p.isUnpacking() && (ees_on+ees_eext_on) > 0){
-        aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-        rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-        rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
-        frac_a  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-        frac_b  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-        frac_c  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
-        iatemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-        ibtemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-        ictemp  = (int *)cmalloc(natm_tot*sizeof(int),"psnl_pup");
-        igrid_a = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        igrid_b = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        igrid_c = cmall_int_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        mn_a    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        mn_b    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        mn_c    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        ua    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        ub    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        uc    = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        dmn_a   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        dmn_b   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-        dmn_c   = cmall_mat(1,n_interp,0,natm_tot,"psnl_pup");
-      }//endif
     }//endif
+
   }//end pupping
 #endif
 //-------------------------------------------------------------------------

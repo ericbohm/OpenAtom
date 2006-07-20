@@ -1,9 +1,8 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \file groups.C
+/** \file eesCache.C
  * 
- *           Processor group class Functions : Atoms and parainfo
  *
  */
 //==============================================================================
@@ -32,9 +31,11 @@ extern CProxy_CP_Rho_GHartExt            rhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CProxy_AtomsGrp                   atomsGrpProxy;
 extern CProxy_eesCache                   eesCacheProxy;
-//==============================================================================
 
 #define _EESCACHE_VERBOSE_OFF_
+
+//==============================================================================
+
 
 
 //==============================================================================
@@ -131,11 +132,11 @@ void eesCache::registerCacheRHart(int index){
 // Cache warm up
 
   if(allowedRhoRHartChares[index]==0){
-    nchareRHartProc             += 1;
-    allowedRhoRHartChares[index] = 1;
 #ifdef  _EESCACHE_VERBOSE_
     CkPrintf("Registering Rhart %d\n",index);
 #endif
+    nchareRHartProc             += 1;
+    allowedRhoRHartChares[index] = 1;
     RhoRHartData[index].init(index);
   }//endif
 
@@ -287,9 +288,12 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     }//endif
     itimeRPP= itime;
 
+#ifdef  _EESCACHE_VERBOSE_
+    CkPrintf("HI, I am rPP %d in query : %d\n",index,iter);
+#endif
+
     AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
     Atom *atoms  = ag->atoms;
-    CkPrintf("HI, I am rPP %d in query : %d\n",index,iter);
     CPNONLOCAL::eesAtmBsplineRgrp(atoms,allowedRppChares,RppData);
 
   }//endif : time to update the B-splines
@@ -321,11 +325,12 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
     }//endif
     itimeRHart= itime;
 
-    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
-    Atom *atoms  = ag->atoms;
 #ifdef  _EESCACHE_VERBOSE_
     CkPrintf("Computing eesAtmBspline\n");
 #endif
+
+    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
+    Atom *atoms  = ag->atoms;
     CPLOCAL::eesAtmBsplineRgrp(atoms,allowedRhoRHartChares,RhoRHartData);
 
   }//endif : time to update the B-splines

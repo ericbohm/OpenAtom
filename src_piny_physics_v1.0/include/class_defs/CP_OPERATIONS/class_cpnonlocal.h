@@ -58,19 +58,21 @@ static void eesSplProjectorGgrp(int , int *, int *, int *,double *,int *);
 static void eesAtmBsplineRgrp(Atom *, int *, RPPDATA *);
 
 static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
-                          double *, double *, double *, double *,complex *,int *,double *);
+                          double *, double *, double *, double *,complex *,int *,
+                          double *,int,int);
 
 static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double *, 
                       double *,double *);
 
-static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int );
+static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,int);
 
 static void eesEnergyAtmForcRchare(int , double *, double *, int **,double **,
-                                   double **,double **,double *, int *, int ,Atom *);
+                                   double **,double **,double *, int *, int ,int,Atom *);
 
 static void eesPsiForcRchare(int , double *,int **,double **,double *, int *,int );
 
-static void eesPsiForcGspace(int , int , int ,complex *,complex *, double *,double *);
+static void eesPsiForcGspace(int , int , int ,complex *,complex *, double *,double *,
+                             int *,int *, int *,int , int, int);
 
 //---------------------------------------------------------------------------
    }; //CPNONLOCAL

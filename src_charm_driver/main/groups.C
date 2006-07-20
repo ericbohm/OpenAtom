@@ -34,10 +34,15 @@ extern CProxy_EnergyGroup egroupProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 void IntegrationComplete(void *, void *);
 
+//#define _CP_DEBUG_PSI_OFF_
+//#define _CP_ENERGY_GRP_VERBOSE_
+//#define _CP_DEBUG_ATMS_
+//#define _CP_DEBUG_ATMS_EXIT_
+
 //==============================================================================
 
 
-//#define _CP_DEBUG_PSI_OFF_
+
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -140,7 +145,7 @@ void AtomsGrp::StartRealspaceForces(){
    if(myid<natm-1){CPRSPACEION::CP_getionforce(natm,atoms,myid,nproc,&pot_ewd_rs);}
 #endif
 
-#ifdef GJM_DBG_ATMS
+#ifdef _CP_DEBUG_ATMS_
    CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
 #endif
    atomsGrpProxy[myid].contributeforces(pot_ewd_rs);
@@ -171,7 +176,7 @@ void AtomsGrp::contributeforces(double pot_ewd_rs){
   }//endfor
   ftot[3*natm]=pot_ewd_rs;
   ag->pot_ewd_rs = pot_ewd_rs_loc;
-#ifdef GJM_DBG_ATMS
+#ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
 #endif
   CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), atomsGrpProxy);
@@ -207,7 +212,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //============================================================
 // Copy out the reduction of energy and forces
 
-#ifdef GJM_DBG_ATMS
+#ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside recv forces %d : %d\n",myid,natm);
 #endif
   double pot_ewd_rs = ftot[3*natm];
@@ -217,7 +222,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
     atoms[i].fy = ftot[j+1];
     atoms[i].fz = ftot[j+2];
     fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
-#ifdef GJM_DEBUG_ATMS
+#ifdef _CP_DEBUG_ATMS_
     if(myid==0){
       CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
     }//endif
@@ -227,14 +232,14 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   fmag  = sqrt(fmag);
   delete msg;
 
-#ifdef GJM_DEBUG_ATMS_EXIT
+#ifdef _CP_DEBUG_ATMS_EXIT_
   if(myid==0){CkExit();}
 #endif
 
 //============================================================
 // Integrate the atoms
 
-#ifdef GJM_DBG_ATMS
+#ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
 #endif
   double eKinetic_loc   =0.0;
@@ -271,10 +276,12 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    fclose(fp);
    CkExit();
 #endif
+   int myoutput_on = output_on;
+   if(iteration+1>config.maxIter){myoutput_on = 0;}
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-                    output_on);
+                    myoutput_on);
 #ifdef  _CP_DEBUG_PSI_OFF_
    double etot_atm;
    if(isokin_opt==0){
@@ -698,6 +705,9 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 void EnergyGroup::energyDone(){
 //==========================================================================
     int myid = CkMyPe();
+#ifdef  _CP_ENERGY_GRP_VERBOSE_
+    CkPrintf("energygroup::Energy done %d\n",myid);
+#endif
     if(myid==0){
         GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
         CkSetQueueing(msg, CK_QUEUEING_IFIFO);

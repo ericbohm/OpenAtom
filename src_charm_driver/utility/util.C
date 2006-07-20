@@ -1483,7 +1483,7 @@ void Config::print(char *fname_in) {
 //===================================================================================
 void Config::readConfig(const char* fileName, Config &config,
 			int nstates_in, int nkf1, int nkf2, int nkf3, int maxIter_in,
-			int ibinary_opt,int natm_nl)
+			int ibinary_opt,int natm_nl, int ees_nonlocal_on)
 //===================================================================================
     { // begin routine
 //===================================================================================
@@ -1568,8 +1568,13 @@ void Config::readConfig(const char* fileName, Config &config,
     config.fftprogresssplit     = 20;
     config.fftprogresssplitReal = 5;
     config.stateOutputOn        = 0;
-    config.localAtomBarrier     = 1;
-    config.localEnergyBarrier   = 1;
+    if(ees_nonlocal_on==1){
+      config.localAtomBarrier     = 0;
+      config.localEnergyBarrier   = 0;
+    }else{
+      config.localAtomBarrier     = 1;
+      config.localEnergyBarrier   = 1;
+    }//endif
     config.toleranceInterval    = 1;
     config.Gstates_per_pe	= config.nstates;
     config.scalc_per_plane	= 1;
@@ -1780,9 +1785,6 @@ void Config::readConfig(const char* fileName, Config &config,
     configFile.close();
     CkPrintf("   Closing cpaimd config file : %s\n\n",fileName);
     
-
-
-
 //===================================================================================
 // Set FFT and g-space size from state file
 
@@ -2009,6 +2011,15 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
+
+    if(config.localAtomBarrier+config.localEnergyBarrier!=0 && ees_nonlocal_on==1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Local Barrier require the SF cache which is off\n");
+      CkPrintf("under the ees nonlocal option.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -2057,9 +2068,9 @@ void Config::rangeExit(int param, char *name, int iopt){
  * TODO: set numChunks and sGrainSize to give us fairly square
  * multiplies.
  */
-void Config::guesstimateParms(int natm_nl)
-{
-
+//=============================================================================
+void Config::guesstimateParms(int natm_nl){
+//=============================================================================
     // If the user hasn't set a value in the config, try to come up with
     // something suitable for the system size and number of processes
     // based on what they have set.
@@ -2068,6 +2079,8 @@ void Config::guesstimateParms(int natm_nl)
 
     // should come up with an ifdef macro approach so we don't
     // have the extra function call in non BG/L case
+//=============================================================================
+
 #ifndef CMK_VERSION_BLUEGENE
     fftprogresssplit=1000;
     fftprogresssplitReal=1000;

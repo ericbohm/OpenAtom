@@ -21,6 +21,7 @@ extern CProxy_StructureFactor sfCompProxy;
 extern CProxy_StructFactCache sfCacheProxy;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_EnergyGroup egroupProxy; //energy group proxy
+extern CProxy_CPcharmParaInfoGrp      scProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
 //==============================================================================
@@ -34,6 +35,13 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 // 
    int iteration_src = msg->iteration_src;
    delete msg; // prioritized trigger
+   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   if(sim->ees_nloc_on==1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("No structure factors under EES nonlocal\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+   }//endif
 
    // The guy who called us is up to date. Are we? The caller is one ahead
    // of the energy dude and the atoms because it flipped its iteration counter

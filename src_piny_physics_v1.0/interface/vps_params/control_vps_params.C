@@ -1850,6 +1850,7 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
 /*===================================================================*/
 /* V) Put the stuff back */
 
+  cppseudo->nonlocal.natm_tot      = natm_tot;
   cppseudo->nonlocal.natm          = natm_nl;
   cppseudo->nonlocal.natm_typ      = natm_typ;
   cppseudo->nonlocal.nl_max        = n_ang_max;

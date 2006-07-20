@@ -314,6 +314,9 @@ void CP_Rho_RHartExt::SendAtmSFRhoGHart(){
       }//endif
       for(int i=0;i<sendFFTDataSize;i++){data[i] = atmSFC[tranpack[ic][i]];}
       rhoGHartProxy_com(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
     }//end for : chare sending
 
   if(config.useRHartInsGHart){commRHartGHartIns.endIteration();}

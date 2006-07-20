@@ -65,6 +65,8 @@ extern int    nstates;
 extern int    nchareG;
 extern Config config;
 
+//#define _CP_DEBUG_STATE_GPP_VERBOSE_
+
 //=========================================================================
 
 
@@ -123,6 +125,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   enl                  = 0.0;
   energy_count         = 0;
   totalEnergy          = 0.0;
+  sendDone             = 0;
 
   numSfGrps            = numSfGrps_in;
   natm_nl              = natm_nl_in;
@@ -330,6 +333,7 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|numLines;          // NL has same number as states but a copy is nice
 	p|gSpaceNumPoints;   // NL has same number as states but a copy is nice
 	p|doneGettingForces;
+	p|sendDone;
 	p|numSfGrps;
         p|natm_nl;
 	p|natm_nl_grp_max;
@@ -414,6 +418,7 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
+
     doneGettingForces = false;    //if you are here, you ain't done.
                                   //It is also reset in sendLambda 
                                   //which is when the results of the previous
@@ -649,9 +654,13 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_ParticlePlane::setEnlCookie(EnlCookieMsg *m){
+
   CkGetSectionInfo(enlCookie,m);
-  //  CkPrintf("PP [%d %d] get enl cookie\n",thisIndex.x, thisIndex.y); 
-  //  delete m; 
+
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+    CkPrintf("PP [%d %d] get enl cookie\n",thisIndex.x, thisIndex.y); 
+#endif
+
 }
 //============================================================================
 
@@ -741,11 +750,25 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
   }//endif
 
 //==============================================================================
-// Lets boogy : provided we have registered.
+// Lets boogy : provided we have registered and we are not trying to do some
+//              bogus iteration
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in startNLees : %d\n",thisIndex.x,thisIndex.y,iterNL);
-  if(registrationFlag==1){createNLEesFFTdata();}
+#endif
+
+  if(registrationFlag==1 && iteration<=config.maxIter){createNLEesFFTdata();}
+
+  // Bogus iteration :
+  //   Spin my wheels while atoms integrate, cleanExit and Energy reducts
+  //   and ortho does who knows what.
+  if(iteration>config.maxIter){
+     CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x,thisIndex.y).ckLocal();
+     iterNL = 0;
+     doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
+     gsp->acceptNLForcesEes(); // Let the lads know you are done
+  }//endif
 
 //-----------------------------------------------------------------------------
    }//end routine
@@ -785,10 +808,13 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
    int ihave_g0   = gss->ihave_g000;      // I have the special pt, g=0!
    int ind_g0     = gss->ind_g000;        // This is the index of   g=0 !
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am gPP %d %d in createNLEes : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
     CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
-                              d_re,d_im,dyp_re,dyp_im,projPsiG,ind_gspl,h_gspl);
+                              d_re,d_im,dyp_re,dyp_im,projPsiG,ind_gspl,h_gspl,
+                              thisIndex.x,thisIndex.y);
 
    FFTNLEesFwd();
 
@@ -819,8 +845,11 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 //============================================================================
 // Do the FFT and then send it to r-space to complete the fft
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in FFTNLFwd : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
   fftcache->doNlFftGtoR_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),(gss->runs),ngridcNL);
   sendToEesRPP();
@@ -846,8 +875,10 @@ void CP_State_ParticlePlane::sendToEesRPP(){
     CkExit();
   }//endif
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in sendtoEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
 
   if (config.useGssInsRealPP){gssPInstance.beginIteration();}
 
@@ -871,13 +902,16 @@ void CP_State_ParticlePlane::sendToEesRPP(){
      complex *data = msg->data;
      for (int i=0,j=z; i<numLines; i++,j+=ngridcNL){data[i] = projPsiG[j];}
      realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
    }//endfor
 
 //============================================================================
 // Turn off commlib
     
   if (config.useGssInsRealPP){gssPInstance.endIteration();}
+  sendDone = 1;
 
 //============================================================================
    }//end routine    
@@ -886,6 +920,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 
 //============================================================================
 // Receive the projector back modified to generate psi forces
+// A message cannot come back until I have sent!!
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -899,8 +934,13 @@ void CP_State_ParticlePlane::recvFromEesRPP(GSPPIFFTMsg *msg){
     CkExit();
   }//endif
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+    if(thisIndex.x==0)
+     CkPrintf("HI, I am gPP %d %d in recvFromEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
+
 //============================================================================
-// unpack and check sizes
+// unpack, check sizes, iteration numbers, and if you could be overwriting memory
 
   int size             = msg->size;
   int offset           = msg->offset;
@@ -908,6 +948,12 @@ void CP_State_ParticlePlane::recvFromEesRPP(GSPPIFFTMsg *msg){
   complex *partlyIFFTd = msg->data;
 
   CkAssert(numLines == size);
+  if(iterNLnow != iterNL || sendDone==0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Iteration mismatch in ParticlePlane %d %d %d\n",iterNL,iterNLnow,sendDone);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
 //============================================================================
 // Copy out the data and delete the message
@@ -926,9 +972,12 @@ void CP_State_ParticlePlane::recvFromEesRPP(GSPPIFFTMsg *msg){
   countNLIFFT++;
   if (countNLIFFT == ngridcNL) {
     countNLIFFT = 0;
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     if(thisIndex.x==0)
      CkPrintf("HI, I am gPP %d %d in recvFromEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
     FFTNLEesBck();
+    sendDone = 0;
   }//endif
 
 //----------------------------------------------------------------------------
@@ -937,7 +986,7 @@ void CP_State_ParticlePlane::recvFromEesRPP(GSPPIFFTMsg *msg){
 
 
 //============================================================================
-// Complete the FFT : projPsi(gx,gy,z) -> projPsi(gx,gy,gz)
+// Complete the FFT : projPsif(gx,gy,z) -> projPsif(gx,gy,gz)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -959,8 +1008,10 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 //============================================================================
 // Do the FFT and then compute Psi forces
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in FFTNLeesBck : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
   fftcache->doNlFftRtoG_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),(gss->runs),ngridcNL);
   computeNLEesForces();
@@ -985,15 +1036,22 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   int ihave_g0    = gss->ihave_g000;
   int ind_g0      = gss->ind_g000;
   complex *fPsiG  = myForces;
+
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in computeNLeesForc : %d\n",thisIndex.x,thisIndex.y,iterNL);
-  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,projPsiG,fPsiG,dyp_re,dyp_im);
+#endif
+
+  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,projPsiG,fPsiG,dyp_re,dyp_im,
+                               k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
 
 //============================================================================
 
   if(iterNL==numNLiter){
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     if(thisIndex.x==0)
      CkPrintf("HI, I am gPP %d %d done! : %d\n",thisIndex.x,thisIndex.y,iterNL);
+#endif
     iterNL = 0;
     doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
     gsp->acceptNLForcesEes(); // Let the lads know you are done
@@ -1017,8 +1075,10 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   int sum = ((int *)msg->getData())[0];
   delete msg;
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
-  CkPrintf("HI, I am gPP %d %d in reg : %d\n",thisIndex.x,thisIndex.y,sum);
+    CkPrintf("HI, I am gPP %d %d in reg : %d\n",thisIndex.x,thisIndex.y,sum);
+#endif
 
   registrationFlag = 1;
   if(iterNL==1){createNLEesFFTdata();}

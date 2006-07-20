@@ -10,6 +10,8 @@
 #include "../class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 #include "../proto_defs/proto_cp_ewald_local.h"
 
+//#define _CP_DEBUG_EES_NONLOCAL_
+
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -268,9 +270,9 @@ void CPNONLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, RPPDATA *RP
   double **mn_a  = nonlocal->mn_a;
   double **mn_b  = nonlocal->mn_b;
   double **mn_c  = nonlocal->mn_c;
-  double **ua  = nonlocal->ua;
-  double **ub  = nonlocal->ub;
-  double **uc  = nonlocal->uc;
+  double **ua    = nonlocal->ua;
+  double **ub    = nonlocal->ub;
+  double **uc    = nonlocal->uc;
   double **dmn_a = nonlocal->dmn_a;
   double **dmn_b = nonlocal->dmn_b;
   double **dmn_c = nonlocal->dmn_c;
@@ -509,7 +511,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, RPPDATA *RP
 void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
                      int ihave_g0, int ind_g0, int iter_nl,
                      double *d_re, double *d_im, double *dyp_re, double *dyp_im,
-                     complex *projPsiG, int *ind_gspl, double *h_gspl)
+                     complex *projPsiG, int *ind_gspl, double *h_gspl,
+                     int istate,int ichare)
 //==========================================================================
    {//begin routine
 //==========================================================================
@@ -536,18 +539,29 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   double *vps1   = cppseudo->vps1;
   double *vps2   = cppseudo->vps2;
   double *vps3   = cppseudo->vps3;
-  double *gzvps0 =  cppseudo->gzvps0;
+  double *gzvps0 = cppseudo->gzvps0;
 
-  int lang     = lang_v[iter_nl];  // piny indices
-  int mang     = mang_v[iter_nl];
-  int ityp     = ityp_v[iter_nl];
+  // piny indices : start at 1
+  int lang     = lang_v[iter_nl]; // l-channel 
+  int mang     = mang_v[iter_nl]; // m-channel
+  int ityp     = ityp_v[iter_nl]; // the 3rd type is this lm channel
+
   int lang1    = lang+1;
-
   int iatm_typ = iatm_typ_lang[ityp][lang1]; // true atom type      
   int natm     = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str = iatm_str_lang[iatm_typ];    // where atms begin    
 
   int nfreq=100;
+
+//==========================================================================
+// Set up the debugging stuff
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  char myFileName[1000];
+  sprintf(myFileName, "proj_Gpsi_%d.out.%d.%d",istate,ichare,iter_nl);
+  FILE *fp;
+  if(istate==4){fp = fopen(myFileName,"w");}
+#endif  
 
 //==========================================================================
 // The dyp_re,dyp_im,psi, must be memory on each chare!! It is reused below!! 
@@ -557,7 +571,18 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 
   eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati);
 
-  int ind_off = (ityp-1)*nsplin_g*(n_ang_max+1) + lang*nsplin_g;
+  int ii = (ihave_g0==1 ? ind_g0 : ncoef+10);
+  if(lang==0 && ihave_g0==1){
+    double vnow = gzvps0[iatm_typ];
+    dyp_re[ii] *= vnow;
+    dyp_im[ii]  = 0.0;
+  }//endif
+  if(lang!=0 && ihave_g0==1){
+    dyp_re[ii] = 0.0;
+    dyp_im[ii] = 0.0;
+  }//endif
+
+  int ind_off = (iatm_typ-1)*nsplin_g*(n_ang_max+1) + lang*nsplin_g;
   for(int i=0;i<ncoef;i++){
     int ind_now = ind_off + ind_gspl[i];
     double h    = h_gspl[i];
@@ -566,23 +591,13 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     double v2   = vps2[ind_now];
     double v3   = vps3[ind_now];
     double vnow = ((v3*h+v2)*h+v1)*h+v0;
+    vnow        = (ii==i ? 1.0 : vnow);
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
 #ifdef CMK_VERSION_BLUEGENE
     if(i%nfreq==0){CmiNetworkProgress();}
 #endif
   }//endfor
-
-  int i = ind_g0;
-  if(lang==0 && ihave_g0==1){
-    double vnow = gzvps0[ityp];
-    dyp_re[i] *= vnow;
-    dyp_im[i]  = 0.0;
-  }//endif
-  if(lang!=0 && ihave_g0==1){
-    dyp_re[i] = 0.0;
-    dyp_im[i] = 0.0;
-  }//endif
 
 //==========================================================================
 // Using your psi and your dyp create the puppy to be 3DFFTed to real space
@@ -591,12 +606,25 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   for(int ig=0;ig<ncoef;ig++){ 
      projPsiG[ig].re =  dyp_re[ig]*psi[ig].re-dyp_im[ig]*psi[ig].im;
      projPsiG[ig].im =-(dyp_im[ig]*psi[ig].re+dyp_re[ig]*psi[ig].im);
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+     if(istate==4){
+      fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],projPsiG[ig].re,projPsiG[ig].im);
+     }/*endif*/
+#endif
 #ifdef CMK_VERSION_BLUEGENE
     if(ig%nfreq==0){CmiNetworkProgress();}
 #endif
   }//endfor
+
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
+#endif
+
+//==========================================================================
+// close any debug files
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  if(istate==4){fclose(fp);}
 #endif
 
 //-------------------------------------------------------------------------
@@ -777,7 +805,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
 //==========================================================================
 void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat, 
                                int **igrid, double **mn,int *plane_index,
-                               int plane){
+                               int state,int plane){
 //==========================================================================
   CP           *cp           = CP::get();
   GENERAL_DATA *general_data = GENERAL_DATA::get();
@@ -790,26 +818,49 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
   int n_interp   = cppseudo->n_interp_ps;
   int n_interp2  = n_interp*n_interp;
 
-  int *natm_typ_lang = cppseudo->nonlocal.natm_typ_lang;
-  int *natm_lang     = cppseudo->nonlocal.natm_lang;
-  int *iatm_str_lang = cppseudo->nonlocal.iatm_str_lang;
+  int *natm_typ_lang  = cppseudo->nonlocal.natm_typ_lang;
+  int *natm_lang      = cppseudo->nonlocal.natm_lang;
+  int *iatm_str_lang  = cppseudo->nonlocal.iatm_str_lang;
   int **iatm_typ_lang = cppseudo->nonlocal.iatm_typ_lang;
-  int *lang_v        = cppseudo->nonlocal.lang_v;
-  int *mang_v        = cppseudo->nonlocal.mang_v;
-  int *ityp_v        = cppseudo->nonlocal.ityp_v;
-  double *vpsnorm    = cppseudo->vpsnorm; 
+  int *lang_v         = cppseudo->nonlocal.lang_v;
+  int *mang_v         = cppseudo->nonlocal.mang_v;
+  int *ityp_v         = cppseudo->nonlocal.ityp_v;
+  double *vpsnorm     = cppseudo->vpsnorm; 
 
-  int lang           = lang_v[iter_nl];
-  int mang           = mang_v[iter_nl];
-  int ityp           = ityp_v[iter_nl];
-  int lang1          = lang+1;
+  int ngrida          = cppseudo->nonlocal.ngrid_a;
+  int ngridb          = cppseudo->nonlocal.ngrid_b;
 
-  int iatm_typ       = iatm_typ_lang[ityp][lang1]; // true atom type      
-  int natm           = natm_lang[iatm_typ];        // # atms of this type 
-  int iatm_str       = iatm_str_lang[iatm_typ];    // where atms begin    
+  int lang            = lang_v[iter_nl];
+  int mang            = mang_v[iter_nl];
+  int ityp            = ityp_v[iter_nl];
+  int lang1           = lang+1;
 
-  int ind_now        = (ityp-1)*(n_ang_max+1) + lang + 1;
-  double vnorm_now   = vpsnorm[ind_now];
+  int iatm_typ        = iatm_typ_lang[ityp][lang1]; // true atom type      
+  int natm            = natm_lang[iatm_typ];        // # atms of this type 
+  int iatm_str        = iatm_str_lang[iatm_typ];    // where atms begin    
+
+  int ind_now         = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
+  double vnorm_now    = vpsnorm[ind_now];
+
+//==========================================================================
+// A little debugging for you
+
+#ifdef _CP_DEBUG_EES_NONLOCAL
+  if(state==4){
+    char myFileName[1000];
+    sprintf(myFileName, "proj_Rpsi_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+    int ic = 0;
+    for(int j=0;j<ngridb;j++){
+     for(int i=0;i<ngrida;i++){
+       fprintf(fp,"%d %g\n",i,projPsiR[ic]);
+       ic++;
+     }//endfor
+     ic+=2;
+    }//endfor
+    fclose(fp);
+  }//endif : state=0
+#endif  
 
 //==========================================================================
 // The projPsiR should be FFT3D(projPsiG)
@@ -836,6 +887,22 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 // We malloc enough zmat memory to contain iterations. The msg should contain
 // the iteration counter. Really the FFTs guarantee you won't get into trouble 
 // but thats OK. Saftey first.
+
+//==========================================================================
+// A little debugging for you
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  if(state==4){
+    char myFileName2[1000];
+    sprintf(myFileName2, "proj_zmat_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName2,"w");
+     for(int jatm=0;jatm<natm;jatm++){ // atms of this type
+       fprintf(fp,"%d %g\n",jatm,zmat[jatm]);
+     }//endfor
+    fclose(fp);
+  }//endif : state=0
+#endif  
+
 //==========================================================================
   }//end routine
 //==========================================================================
@@ -848,7 +915,7 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 //==========================================================================
 void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double *zmat, 
                 int **igrid,double **dmn_x,double **dmn_y,double **dmn_z,
-		double *projPsiR, int *plane_index, int plane, Atom *atoms)
+		double *projPsiR, int *plane_index, int plane, int state,Atom *atoms)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -883,12 +950,25 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
   int natm           = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str       = iatm_str_lang[iatm_typ];    // where atms begin    
 
-  int ind_now        = (ityp-1)*(n_ang_max+1) + lang + 1;
+  int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
   double vnorm_now   = vpsnorm[ind_now];
+
+//==========================================================================
+// Set up some debuggin stuff
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+   double *fxt = new double [natm];
+   double *fyt = new double [natm];
+   double *fzt = new double [natm];
+   for(int i =0;i<natm;i++){fxt[i]=0.;fyt[i]=0.;fzt[i]=0.;}
+#endif
 
 //==========================================================================
 // Compute cp_enl whether you are the reduction plane or not.
 // Its cheap, so why not? Then Piny code does not care what plane it is given.
+// When all non-local interations are done, the reduction plane, ONLY,
+// contributes to a reduction over all states to get the total 
+// non-local energy, ENL. 
 
    double cp_enl = 0.0; 
    for(int jatm=0;jatm<natm;jatm++){ // atms of this type
@@ -896,9 +976,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    }//endfor
    cp_enl_tot[0] += cp_enl;
 
-// When all non-local interations are done, the reduction plane, ONLY,
-// contributes to a reduction over all states to get the total 
-// non-local energy, ENL. 
 //==========================================================================
 // Atom forces
 
@@ -914,12 +991,35 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          atoms[katm].fx -= pz*dmn_x[iatm][j];   // forces
          atoms[katm].fy -= pz*dmn_y[iatm][j];
          atoms[katm].fz -= pz*dmn_z[iatm][j];
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+         fxt[jatm]     -= pz*dmn_x[iatm][j]; 
+         fyt[jatm]     -= pz*dmn_y[iatm][j];
+         fzt[jatm]     -= pz*dmn_z[iatm][j];
+#endif
        }//endfor : B spline interpolation for fatm
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
      }//endif : atom is interpolated on this plane
    }//endfor : iatm
+
+//==========================================================================
+// output the debugging stuff
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+    char myFileName[1000];
+    sprintf(myFileName, "fatm_Rproj_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+     for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
+       int iatm  = iatm_str+jatm-1;    // index of atm in non-local atm list
+       int katm  = map_nl[(iatm+1)]-1; // index of atm in full atom list
+       fprintf(fp,"%d %.10g %.10g %.10g\n",katm,fxt[jatm],fyt[jatm],fzt[jatm]);
+     }//endfor
+    fclose(fp);
+    delete [] fxt;
+    delete [] fyt;
+    delete [] fzt;
+#endif  
 
 //--------------------------------------------------------------------------
   }//end routine
@@ -970,7 +1070,7 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
   int natm           = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str       = iatm_str_lang[iatm_typ];    // where atms begin    
 
-  int ind_now        = (ityp-1)*(n_ang_max+1) + lang + 1;
+  int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
   double vnorm_now   = vpsnorm[ind_now];
 
 //==========================================================================
@@ -993,7 +1093,9 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
      }//endif
    }//endfor : iatm
 
+//==========================================================================
 // projPSiR now goeth forth to FFT3D land
+
 //-------------------------------------------------------------------------
   }//end routine
 //==========================================================================
@@ -1007,35 +1109,60 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
 //==========================================================================
 void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,
     			          complex *projPsiG,complex *fPsiG, 
-                                  double *dyp_re,double *dyp_im)
+                                  double *dyp_re,double *dyp_im,
+                                  int *ka, int *kb,int *kc,
+                                  int istate,int ichare,int iter_nl)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
-// projPsiG is FFT3Dinv(projPsiR)
+// Setup some debugging stuff
 
-   int nfreq = 100;
-
-   for(int ig=0;ig<ncoef;ig++){ 
-     double qtilde_re = projPsiG[ig].re;
-     double qtilde_im = projPsiG[ig].im;
-     fPsiG[ig].re    -= 2.0*(dyp_re[ig]*qtilde_re - dyp_im[ig]*qtilde_im);
-     fPsiG[ig].im    += 2.0*(dyp_im[ig]*qtilde_re + dyp_re[ig]*qtilde_im);
-#ifdef CMK_VERSION_BLUEGENE
-     if(ig%nfreq==0){CmiNetworkProgress();}
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  char myFileName[1000];
+  sprintf(myFileName, "proj_fpsiG_%d.out.%d.%d",istate,ichare,iter_nl);
+  FILE *fp;
+  if(istate==0){fp = fopen(myFileName,"w");}
 #endif
-   }//endfor
 
-   if(ihave_g0==1){
-     int ig           = ind_g0;
-     double qtilde_re = projPsiG[ig].re;
-     fPsiG[ig].re    -= 2.0*dyp_re[ig]*qtilde_re;
-     fPsiG[ig].im     = 0.0;
-   }//endif
+//==========================================================================
+// Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
+
+  int nfreq   = 100;
+  double wght = 2.0;
+  if(ihave_g0==1){
+    int ig           = ind_g0;
+    projPsiG[ig].im  = 0.0;
+    dyp_im[ig]       = 0.0;
+  }//endif
+
+  for(int ig=0;ig<ncoef;ig++){ 
+    double wght_now  = (ka[ig]==0 ? 1.0 : wght);
+    double qtilde_re = projPsiG[ig].re;
+    double qtilde_im = projPsiG[ig].im;
+    fPsiG[ig].re    -= wght_now*(dyp_re[ig]*qtilde_re - dyp_im[ig]*qtilde_im);
+    fPsiG[ig].im    += wght_now*(dyp_im[ig]*qtilde_re + dyp_re[ig]*qtilde_im);
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+    if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+                 fPsiG[ig].re,fPsiG[ig].im);}
+#endif
+#ifdef CMK_VERSION_BLUEGENE
+    if(ig%nfreq==0{CmiNetworkProgress();}
+#endif
+  }//endfor
 
 #ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgress();
+  CmiNetworkProgress();
 #endif
-   // Done with this iteration
+
+//==========================================================================
+// Close the files if debugging
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  if(istate==0){fclose(fp);}
+#endif
+
+//==========================================================================
+// Done with this iteration
 
 //-------------------------------------------------------------------------
   }//end routine

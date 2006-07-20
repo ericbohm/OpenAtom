@@ -522,7 +522,9 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
         case 3 : rhoGProxyIGZ_com(ic,0).acceptWhiteByrd(msg); break;
 
       }//end switch
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
     }//end for : chare sending
 
     switch(iopt){

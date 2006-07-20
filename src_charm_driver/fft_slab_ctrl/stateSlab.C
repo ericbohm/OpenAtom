@@ -1,7 +1,7 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \file gslab.C
+/** \file stateSlab.C
  * Add functions to allow application programmers to initialize these and
  * the corresponding functions in Charm++ to call these functions with
  * appropriate parameters 

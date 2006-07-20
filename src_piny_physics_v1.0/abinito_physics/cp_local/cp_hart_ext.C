@@ -11,6 +11,10 @@
 #include "../class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "../proto_defs/proto_cp_ewald_local.h"
 
+//#define _CP_DEBUG_VKS_HART_EEXT_
+
+//============================================================================
+//  N^2 method  : Invoked from gchare
 //============================================================================
 //  N^2 method  : Invoked from gchare
 //============================================================================
