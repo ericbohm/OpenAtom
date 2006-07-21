@@ -648,7 +648,7 @@ RhoRHartMapTable::RhoRHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
 	rrsobjs_per_pe += 1;
     }
   int destpe=availprocs->findNext(); 
-
+  srcpe=destpe;
   if(availprocs->count()==0)
     availprocs->reset();
 
@@ -658,26 +658,14 @@ RhoRHartMapTable::RhoRHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
       if(rem!=0)
 	if(chunk==rem*rrsobjs_per_pe)
 	  rrsobjs_per_pe -= 1;
-      if(chunk==0) {}
-      else
-	{
-	  srcpe=destpe;
-	  //	  availprocs->sortSource(srcpe);
-	  destpe=availprocs->findNext();
-	}
       for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
 	{
-	  if(chunk==0)
-            {
-              maptable->put(intdual(i, 0))=0;
-              //CkPrintf("%d on %d\n", i, 0);
-            }
-	  else
-            {
-
-	      maptable->put(intdual(i, 0))=destpe;
-	    }
+	  maptable->put(intdual(i, 0))=destpe;
 	}
+      srcpe=destpe;
+      //	  availprocs->sortSource(srcpe);
+      destpe=availprocs->findNext();
+
     }
 #ifdef MAP_DEBUG
 	CkPrintf("RhoRHartMap created on processor %d\n", CkMyPe());
@@ -717,17 +705,13 @@ RhoGHartMapTable::RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_
       if(rem!=0)
 	if(chunk==rem*rghobjs_per_pe)
 	  rghobjs_per_pe -= 1; 
-      if(chunk==0) {}
-      else
-	{
-	  srcpe=destpe;
-	  //	  availprocs->sortSource(srcpe);
-	  destpe=availprocs->findNext();
-	}
       for(int i=chunk;i<chunk+rghobjs_per_pe;i++)
 	{
 	  maptable->put(intdual(i, 0))=destpe;
 	} 
+      srcpe=destpe;
+      //	  availprocs->sortSource(srcpe);
+      destpe=availprocs->findNext();
     }
 #ifdef MAP_DEBUG
   CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
