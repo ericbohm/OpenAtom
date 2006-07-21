@@ -2,6 +2,14 @@
 #include "ckcomplex.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 
+#ifdef DUAL_FFTW
+#include <dfftw.h>
+#include <drfftw.h>
+#else
+#include <fftw.h>
+#include <rfftw.h>
+#endif
+
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
@@ -13,7 +21,7 @@ void *cmalloc(size_t len,char *func_name)
   double request;
   
   if(len == 0) return NULL;
-  mem_ptr = malloc(len);
+  mem_ptr = fftw_malloc(len);
   if(mem_ptr == NULL) {
    request = ((double) len)*1.0e-6;
    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -40,7 +48,7 @@ void *cmalloc(size_t len,char *func_name)
 void cfree(void *p,char *func_name)
 {/* begin routine */
   if(p==NULL) PRINTF("Freeing unallocated pointer in function %s\n",func_name);
-  free(p);
+  fftw_free(p);
 }/* end routine */
 
 
@@ -55,7 +63,7 @@ void *crealloc(void *ptr,size_t len,char *func_name)
   double request;
   
   if(len==0){
-    free(ptr);
+    fftw_free(ptr);
     return NULL;
   }
 
@@ -89,7 +97,7 @@ int **cmall_int_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
 
   if(nrow <= 0 || ncol <= 0) return (int **)NULL;
 /* allocate pointers to rows */
-  m=(int **) malloc((size_t)((nrow+NR_END)*sizeof(int*)));
+  m=(int **) fftw_malloc((size_t)((nrow+NR_END)*sizeof(int*)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -103,7 +111,7 @@ int **cmall_int_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(int *) malloc((size_t)((nrow*ncol+NR_END)*sizeof(int)));
+  m[nrl]=(int *) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(int)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -137,7 +145,7 @@ double **cmall_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
 
   if(nrow <= 0 || ncol <= 0) return (double **)NULL;
 /* allocate pointers to rows */
-  m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
+  m=(double **) fftw_malloc((size_t)((nrow+NR_END)*sizeof(double*)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -151,7 +159,7 @@ double **cmall_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(double *) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
+  m[nrl]=(double *) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(double)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -188,7 +196,7 @@ double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, cha
 
   if(nrow <= 0 || ncol <= 0 || ndep <= 0) return (double ***)NULL;
 /* allocate pointers to rows */
-  m=(double ***) malloc((size_t)((nrow+NR_END)*sizeof(double**)));
+  m=(double ***) fftw_malloc((size_t)((nrow+NR_END)*sizeof(double**)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -202,7 +210,7 @@ double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, cha
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(double **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double*)));
+  m[nrl]=(double **) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(double*)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -216,7 +224,7 @@ double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, cha
   m[nrl] -= ncl;
 
 /* allocate columns and set pointers to them */
-  m[nrl][ncl]=(double *) malloc((size_t)((nrow*ncol*ndep+NR_END)
+  m[nrl][ncl]=(double *) fftw_malloc((size_t)((nrow*ncol*ndep+NR_END)
 					 *sizeof(double)));
   if(!m[nrl][ncl]) 
     {
@@ -264,7 +272,7 @@ int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char 
 
   if(nrow <= 0 || ncol <= 0 || ndep <= 0) return (int ***)NULL;
 /* allocate pointers to rows */
-  m=(int ***) malloc((size_t)((nrow+NR_END)*sizeof(int**)));
+  m=(int ***) fftw_malloc((size_t)((nrow+NR_END)*sizeof(int**)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -278,7 +286,7 @@ int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char 
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(int **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(int*)));
+  m[nrl]=(int **) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(int*)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -292,7 +300,7 @@ int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char 
   m[nrl] -= ncl;
 
 /* allocate columns and set pointers to them */
-  m[nrl][ncl]=(int *) malloc((size_t)((nrow*ncol*ndep+NR_END)
+  m[nrl][ncl]=(int *) fftw_malloc((size_t)((nrow*ncol*ndep+NR_END)
 					 *sizeof(int)));
   if(!m[nrl][ncl]) 
     {
@@ -344,7 +352,7 @@ double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
   }
 
 /* allocate pointers to rows */
-  m=(double ****) malloc((size_t)((nrow+NR_END)*sizeof(double***)));
+  m=(double ****) fftw_malloc((size_t)((nrow+NR_END)*sizeof(double***)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -358,7 +366,7 @@ double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(double ***) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double**)));
+  m[nrl]=(double ***) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(double**)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -372,7 +380,7 @@ double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
   m[nrl] -= ncl;
 
 /* allocate columns and set pointers to them */
-  m[nrl][ncl]=(double **) malloc((size_t)((nrow*ncol*ndep+NR_END)
+  m[nrl][ncl]=(double **) fftw_malloc((size_t)((nrow*ncol*ndep+NR_END)
 					 *sizeof(double*)));
   if(!m[nrl][ncl]) 
     {
@@ -387,7 +395,7 @@ double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
   m[nrl][ncl] -= ndl;
 
 /* allocate depths and set pointers to them */
-  m[nrl][ncl][ndl]=(double *) malloc((size_t)((nrow*ncol*ndep*ntes+NR_END)
+  m[nrl][ncl][ndl]=(double *) fftw_malloc((size_t)((nrow*ncol*ndep*ntes+NR_END)
 					       *sizeof(double)));
   if(!m[nrl][ncl][ndl]) 
     {
@@ -457,7 +465,7 @@ int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
     return (int ****)NULL;
   }
 /* allocate pointers to rows */
-  m=(int ****) malloc((size_t)((nrow+NR_END)*sizeof(int***)));
+  m=(int ****) fftw_malloc((size_t)((nrow+NR_END)*sizeof(int***)));
   if(!m) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -471,7 +479,7 @@ int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
   m -= nrl;
 
 /* allocate rows and set pointers to them */
-  m[nrl]=(int ***) malloc((size_t)((nrow*ncol+NR_END)*sizeof(int**)));
+  m[nrl]=(int ***) fftw_malloc((size_t)((nrow*ncol+NR_END)*sizeof(int**)));
   if(!m[nrl]) 
     {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -485,7 +493,7 @@ int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
   m[nrl] -= ncl;
 
 /* allocate columns and set pointers to them */
-  m[nrl][ncl]=(int **) malloc((size_t)((nrow*ncol*ndep+NR_END)
+  m[nrl][ncl]=(int **) fftw_malloc((size_t)((nrow*ncol*ndep+NR_END)
 					 *sizeof(int*)));
   if(!m[nrl][ncl]) 
     {
@@ -500,7 +508,7 @@ int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
   m[nrl][ncl] -= ndl;
 
 /* allocate depths and set pointers to them */
-  m[nrl][ncl][ndl]=(int *) malloc((size_t)((nrow*ncol*ndep*ntes+NR_END)
+  m[nrl][ncl][ndl]=(int *) fftw_malloc((size_t)((nrow*ncol*ndep*ntes+NR_END)
 					       *sizeof(int)));
   if(!m[nrl][ncl][ndl]) 
     {
@@ -568,7 +576,7 @@ double **creall_mat(double **m_old,long nrl_old,long nrh_old,
 
   if(nrow <= 0 || ncol <= 0) return (double **)NULL;
 /* allocate pointers to rows */
-  m_new=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
+  m_new=(double **) fftw_malloc((size_t)((nrow+NR_END)*sizeof(double*)));
   if(!m_new) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@@\n");
@@ -582,7 +590,7 @@ double **creall_mat(double **m_old,long nrl_old,long nrh_old,
   m_new -= nrl_new;
 
 /* allocate rows and set pointers to them */
-  m_new[nrl_new]=(double *) malloc((size_t)((nrow*ncol+NR_END)
+  m_new[nrl_new]=(double *) fftw_malloc((size_t)((nrow*ncol+NR_END)
                                             *sizeof(double)));
   if(!m_new[nrl_new]) 
     {
@@ -638,7 +646,7 @@ int **creall_int_mat(int **m_old,long nrl_old,long nrh_old,
 
   if(nrow <= 0 || ncol <= 0) return (int **)NULL;
 /* allocate pointers to rows */
-  m_new=(int **) malloc((size_t)((nrow+NR_END)*sizeof(int*)));
+  m_new=(int **) fftw_malloc((size_t)((nrow+NR_END)*sizeof(int*)));
   if(!m_new) 
     {
      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@@\n");
@@ -652,7 +660,7 @@ int **creall_int_mat(int **m_old,long nrl_old,long nrh_old,
   m_new -= nrl_new;
 
 /* allocate rows and set pointers to them */
-  m_new[nrl_new]=(int *) malloc((size_t)((nrow*ncol+NR_END)
+  m_new[nrl_new]=(int *) fftw_malloc((size_t)((nrow*ncol+NR_END)
                                             *sizeof(int)));
   if(!m_new[nrl_new]) 
     {
@@ -699,8 +707,8 @@ int **creall_int_mat(int **m_old,long nrl_old,long nrh_old,
 
 void cfree_mat(double **m,long nrl, long nrh, long ncl, long nch)
 {
-  free((char *) (m[nrl]+ncl-NR_END));
-  free((char *) (m+nrl-NR_END));
+  fftw_free((char *) (m[nrl]+ncl-NR_END));
+  fftw_free((char *) (m+nrl-NR_END));
 }/* end routine */
 
 /*==========================================================================*/
@@ -711,8 +719,8 @@ void cfree_mat(double **m,long nrl, long nrh, long ncl, long nch)
 
 void cfree_int_mat(int **m,long nrl, long nrh, long ncl, long nch)
 {
-  free((char *) (m[nrl]+ncl-NR_END));
-  free((char *) (m+nrl-NR_END));
+  fftw_free((char *) (m[nrl]+ncl-NR_END));
+  fftw_free((char *) (m+nrl-NR_END));
 }/* end routine */
 
 /*==========================================================================*/
@@ -724,9 +732,9 @@ void cfree_int_mat(int **m,long nrl, long nrh, long ncl, long nch)
 void cfree_tens3(double ***m,long nrl,long nrh,long ncl,long nch,
                              long ndl,long ndh)
 {
-  free((char *) (m[nrl][ncl]+ndl-NR_END));
-  free((char *) (m[nrl]+ncl-NR_END));
-  free((char *) (m+nrl-NR_END));
+  fftw_free((char *) (m[nrl][ncl]+ndl-NR_END));
+  fftw_free((char *) (m[nrl]+ncl-NR_END));
+  fftw_free((char *) (m+nrl-NR_END));
   
 }       
 /*==========================================================================*/
@@ -741,9 +749,9 @@ void cfree_tens3(double ***m,long nrl,long nrh,long ncl,long nch,
 void cfree_itens3(int ***m,long nrl,long nrh,long ncl,long nch,
                            long ndl,long ndh)
 {
-  free((char *) (m[nrl][ncl]+ndl-NR_END));
-  free((char *) (m[nrl]+ncl-NR_END));
-  free((char *) (m+nrl-NR_END));
+  fftw_free((char *) (m[nrl][ncl]+ndl-NR_END));
+  fftw_free((char *) (m[nrl]+ncl-NR_END));
+  fftw_free((char *) (m+nrl-NR_END));
   
 }       
 /*==========================================================================*/

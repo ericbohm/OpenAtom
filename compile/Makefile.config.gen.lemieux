@@ -8,6 +8,7 @@ OPTS             = $(DBG_OPT) -O3
 F_COMPILER       = f77 $(OPTS) 
 F_COMPILER_NOPT  = f77 $(DBG_OPT)
 OPT_FORT         = -DFORTRANUNDERSCORE
+DUAL_FFTW        = -DDUAL_FFTW_OFF
 RUNCOMMAND       = ../cpaimd.x	
 #-----------------------------------------------------------------
 

@@ -10,6 +10,7 @@
 
 #include "../class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "../proto_defs/proto_cp_ewald_local.h"
+#include "../proto_defs/proto_friend_lib_entry.h"
 
 //#define _CP_DEBUG_VKS_HART_EEXT_
 
@@ -150,10 +151,11 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
 //============================================================================
 // Set up variables for break point calculations (helpful vectors!)
 
-   int *index_atm  = new int[(natm+1)];
-   double *vtemp   = new double[natm];
-   complex *ei_inc = new complex[natm];
-   complex *h      = new complex[natm];
+   int *index_atm  = (int *)     cmalloc((natm+1)*sizeof(int),"hartree");
+   double *vtemp   = (double *)  cmalloc(natm*sizeof(double),"hartree");
+   complex *ei_inc = (complex *) cmalloc(natm*sizeof(complex),"hartree");
+   complex *h      = (complex *) cmalloc(natm*sizeof(complex),"hartree");
+
    int izero         = -10;
    int igo           = 0;
    double count      = 0.0;
@@ -340,10 +342,11 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
    *ehart_ret = ehart/2.0;
    *eext_ret  = eext;
    *ewd_ret   = EwdEnergy/2.0;
-   delete [] index_atm;
-   delete [] vtemp;
-   delete [] ei_inc;
-   delete [] h;
+
+   cfree(index_atm,"hartree");
+   cfree(vtemp,"hartree");
+   cfree(ei_inc,"hartree");
+   cfree(h,"hartree");
 
 //============================================================================
 // VIII. Debug output Control

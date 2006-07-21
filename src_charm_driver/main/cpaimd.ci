@@ -367,7 +367,7 @@ mainmodule cpaimd {
 	};
 	
 	group eesCache {
-		entry eesCache(int,int,int,int);
+		entry eesCache(int,int,int,int,int,int);
 	};
 	
 

@@ -54,6 +54,7 @@ extern Config config;
 
 //============================================================================
 
+//#define _CP_DEBUG_STATER_VERBOSE_
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -138,7 +139,7 @@ void CP_State_RealSpacePlane::pup(PUP::er &p)
   if(p.isUnpacking())
     {
       if(makeVks)
-	vks = new double [size];
+	vks = (double *)fftw_malloc(size*sizeof(double));
     }
   if(makeVks)
     PUParray(p,vks,size);
@@ -299,7 +300,7 @@ void CP_State_RealSpacePlane::doReduction(double *data){
     // data is allocated in fftcacheproxy routine : free it here.
     // Data is not a member of the fftcache class but a local variable
     // or temperorary variable whose pointer is passed back to this class
-    delete [] data;
+    fftw_free(data);
 
 //============================================================================
     }//end routine
@@ -318,13 +319,16 @@ void CP_State_RealSpacePlane::doReduction(double *data){
 //============================================================================
 void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
     /* for debugging*/
+#ifdef _CP_DEBUG_STATER_VERBOSE_
+  CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
+#endif
 
     if (msg->datalen != rs.planeSize[0] * sizeX)
         ckout << msg->datalen << endl;
 	
     size=msg->datalen;
     double *vks_in = msg->data;
-    if(vks==NULL){vks = new double [size];}
+    if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
     memcpy(vks,vks_in,sizeof(double)*size);
     //    delete msg;
 
@@ -376,7 +380,7 @@ void CP_State_RealSpacePlane::doProduct() {
 #ifdef _CP_DEBUG_RHO_OFF_
    
    size = sizeX*rs.planeSize[0];
-   if(vks==NULL){vks = new double [size];}
+   if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
     memset(vks,0,sizeof(double)*size);
 #endif
 
@@ -404,7 +408,7 @@ void CP_State_RealSpacePlane::doProduct() {
     fftCacheProxy.ckLocalBranch()->doRealBwFFT(vks,rs.planeArr,
                                        thisIndex.x,thisIndex.y);
     complex *vks_on_state = rs.planeArr;
-    delete [] vks;  vks = NULL;
+    fftw_free(vks);  vks = NULL;
     
 
 #ifndef CMK_OPTIMIZE

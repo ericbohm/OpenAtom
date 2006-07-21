@@ -1,6 +1,8 @@
 #ifndef _eesDataClass_h_
 #define _eesDataClass_h_
 
+#include "../include/RunDescriptor.h"
+
 //============================================================================
 // Data class
 //============================================================================
@@ -78,4 +80,59 @@ class RHOGHARTDATA {
 };
 //============================================================================
 
+//============================================================================
+// Data class : Minimal copies of big redundant data sets
+//============================================================================
+class GCHAREPKG {
+ public:
+   int ihave_g000;
+   int ind_g000;
+   int ihave_kx0;
+   int nkx0;   
+   int nkx0_uni;
+   int nkx0_red;
+   int nkx0_zero;
+   int kx0_strt;
+   int kx0_end; 
+   GCHAREPKG(){};   
+  ~GCHAREPKG(){};   
+};
+//============================================================================
+
+
+//============================================================================
+// Data class : Minimal copies of big redundant data sets
+//============================================================================
+class GSPDATA {
+ public:
+   int index;                     //plane index
+   int ngrid_a,ngrid_b,ngrid_c;   //fft grid size
+   int ncoef;                     //number of g-pts in this collection
+   int numLines;
+   int numRuns;                   //2x the number of z-lines in collection
+   int *ka, *kb, *kc;             //lth: ncoef : g-space
+   RunDescriptor *runs;           //lth:numruns : k's in fft order
+   GSPDATA(){};   
+  ~GSPDATA(){};   
+   void init(int);
+   GCHAREPKG gCharePkg;
+};
+//============================================================================
+
+//============================================================================
+// Data class : Minimal copies of big redundant data sets
+//============================================================================
+class RHOGDATA {
+ public:
+   int index;                     //plane index
+   int ngrid_a,ngrid_b,ngrid_c;   //fft grid size
+   int ncoef;                     //number of g-pts in this collection
+   int numRuns;                   //2x the number of z-lines in collection
+   int *ka, *kb, *kc;             //lth: ncoef : g-space
+   RunDescriptor *runs;           //lth:numruns : k's in fft order
+   RHOGDATA(){};   
+  ~RHOGDATA(){};   
+   void init(int ,int , int, int, int, int);
+};
+//============================================================================
 #endif

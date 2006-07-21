@@ -4,6 +4,9 @@
 
 #ifndef _StructureFactor_h_
 #define _StructureFactor_h_
+void *fftw_malloc(size_t );
+void fftw_free(void *);
+
 /******************************************************************************
  * Three dimensions: atm_grp, plane, dup
  * Calculates structure factor, sends to sfcache group.
@@ -47,16 +50,16 @@ class StructureFactor : public CBase_StructureFactor
   ~StructureFactor(){
     if(k_x!=NULL)
       {
-	delete [] k_x;
-	delete [] k_y;
-	delete [] k_z;
+	fftw_free(k_x);
+	fftw_free(k_y);
+	fftw_free(k_z);
       }
     if(structFactor!=NULL)
       {
-	delete [] structFactor;
-	delete [] structFactor_fx;
-	delete [] structFactor_fy;
-	delete [] structFactor_fz;
+	fftw_free(structFactor);
+	fftw_free(structFactor_fx);
+	fftw_free(structFactor_fy);
+	fftw_free(structFactor_fz);
       }
     if(destinations!=NULL)
       delete [] destinations;
@@ -78,9 +81,9 @@ class StructureFactor : public CBase_StructureFactor
   void acceptKVectors(int n, int *_k_x, int *_k_y, int *_k_z)
     {
       gsSize=n;
-      k_x= new int[gsSize];
-      k_y= new int[gsSize];
-      k_z= new int[gsSize];
+      k_x= (int *)fftw_malloc(gsSize*sizeof(int));
+      k_y= (int *)fftw_malloc(gsSize*sizeof(int));
+      k_z= (int *)fftw_malloc(gsSize*sizeof(int));
       CmiMemcpy(k_x,_k_x,gsSize*sizeof(int));
       CmiMemcpy(k_y,_k_y,gsSize*sizeof(int));
       CmiMemcpy(k_z,_k_z,gsSize*sizeof(int));

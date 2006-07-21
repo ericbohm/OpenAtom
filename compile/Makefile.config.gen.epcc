@@ -4,12 +4,12 @@
 # Compile options and Fortran underscore convention
 #-----------------------------------------------------------------
 DBG_FLAG         =
-OPTS             = -O3 -qstrict -qarch=440 -qtune=440 
-# 			-qcheck=all -qformat=all  -DUSE_TOPOMAP
+OPTS             = -O3 -qstrict -qarch=440 -qtune=440 -qinitauto=FF 
 LNK_OPTS         = -memory gnu -lz
 F_COMPILER       = xlf $(OPTS) 
 F_COMPILER_NOPT  = xlf $(DBG_FLAG)
 OPT_FORT         = 
+DUAL_FFTW        = -DDUAL_FFTW_OFF
 RUNCOMMAND       = ../cpaimd.x	
 #-----------------------------------------------------------------
 # Directories :  (fftw must be the full path)

@@ -70,6 +70,7 @@ extern Config config;
 //=========================================================================
 
 
+
 //============================================================================
 // Reduction client for N^3 nonlocal energy computation
 //============================================================================
@@ -256,12 +257,12 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
     numFullNL    = gss->numFullNL;
     ees_nonlocal = gss->ees_nonlocal;
 
-    myForces = new complex[gSpaceNumPoints]; // forces on coefs
+    myForces =  (complex *)fftw_malloc(gSpaceNumPoints*sizeof(complex)); // forces on coefs
     memset(myForces, 0, gSpaceNumPoints * sizeof(complex));
 
     if(ees_nonlocal==1){
-       dyp_re   = new double[gSpaceNumPoints];
-       dyp_im   = new double[gSpaceNumPoints];
+       dyp_re   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
+       dyp_im   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
        projPsiG = (complex *)fftw_malloc(numFullNL *sizeof(complex)); // fft projector
        memset(projPsiG, 0, numFullNL * sizeof(complex));
     }//endif
@@ -289,22 +290,22 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 //============================================================================
 CP_State_ParticlePlane::~CP_State_ParticlePlane(){
 
-  delete [] k_x;
-  delete [] k_y;
-  delete [] k_z;
-  delete [] myForces;
+  fftw_free(k_x);
+  fftw_free(k_y);
+  fftw_free(k_z);
+  fftw_free(myForces);
 
   if(ees_nonlocal==1){
      fftw_free(projPsiG); 
-     delete [] dyp_re;
-     delete [] dyp_im;
+     fftw_free(dyp_re);
+     fftw_free(dyp_im);
   }//endif
 
   if(ees_nonlocal==0){
-    delete [] zmatrix; //FOO-BAR should i delete this?            
-    delete [] zmatrix_fx; 
-    delete [] zmatrix_fy; 
-    delete [] zmatrix_fz; 
+    fftw_free(zmatrix); //FOO-BAR should i delete this?            
+    fftw_free(zmatrix_fx); 
+    fftw_free(zmatrix_fy); 
+    fftw_free(zmatrix_fz); 
     delete [] count;
     delete [] haveSFAtmGrp;
   }//endif
@@ -341,24 +342,24 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
         p|countNLIFFT;
 	int zsize=numSfGrps*natm_nl_grp_max;
 	if (p.isUnpacking()) {
-		k_x = new int[gSpaceNumPoints];
-		k_y = new int[gSpaceNumPoints];
-		k_z = new int[gSpaceNumPoints];
- 	        myForces = new complex[gSpaceNumPoints]; // forces on coefs
+		k_x = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+		k_y = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+		k_z = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+ 	        myForces = (complex *)fftw_malloc(gSpaceNumPoints*sizeof(complex));
                 if(ees_nonlocal==1){
-                  dyp_re   = new double[gSpaceNumPoints];
-                  dyp_im   = new double[gSpaceNumPoints];
+                  dyp_re   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
+                  dyp_im   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
                   projPsiG = (complex *)fftw_malloc(numFullNL*sizeof(complex)); // fft proj
 		}//endif
                 if(ees_nonlocal==0){
-  		  zmatrixSum    = new complex[zsize];
-                  zmatrixSum_fx = new complex[zsize];
-                  zmatrixSum_fy = new complex[zsize];
-                  zmatrixSum_fz = new complex[zsize];
-		  zmatrix       = new complex[zsize];
-                  zmatrix_fx    = new complex[zsize];
-                  zmatrix_fy    = new complex[zsize];
-                  zmatrix_fz    = new complex[zsize];
+  		  zmatrixSum    = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrixSum_fx = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrixSum_fy = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrixSum_fz = (complex *)fftw_malloc(zsize*sizeof(complex));
+		  zmatrix       = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrix_fx    = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrix_fy    = (complex *)fftw_malloc(zsize*sizeof(complex));
+                  zmatrix_fz    = (complex *)fftw_malloc(zsize*sizeof(complex));
   		  count         = new int[numSfGrps];
 		  haveSFAtmGrp  = new int[numSfGrps];
 		}//endif
@@ -411,6 +412,10 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 //============================================================================
 void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 //============================================================================    
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  if(thisIndex.x==0)
+   CkPrintf("HI, I am gPP %d %d in computeZ \n",thisIndex.x,thisIndex.y);
+#endif
 
     if(ees_nonlocal==1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -448,10 +453,10 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       zsize = natm_nl_grp_max*numSfGrps;
 
       if(zmatrix==NULL){
-	zmatrix    = new complex[zsize];
-	zmatrix_fx = new complex[zsize];
-	zmatrix_fy = new complex[zsize];
-	zmatrix_fz = new complex[zsize];
+	zmatrix    = (complex *)fftw_malloc(zsize*sizeof(complex));
+	zmatrix_fx = (complex *)fftw_malloc(zsize*sizeof(complex));
+	zmatrix_fy = (complex *)fftw_malloc(zsize*sizeof(complex));
+	zmatrix_fz = (complex *)fftw_malloc(zsize*sizeof(complex));
 	memset(zmatrix, 0, sizeof(complex)*zsize);
 	memset(zmatrix_fx, 0, sizeof(complex)*zsize);
 	memset(zmatrix_fy, 0, sizeof(complex)*zsize);
@@ -497,6 +502,11 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 // This method is invoked only CP_State_ParticlePlane(*,reductionPlaneNum)
 //  CkPrintf("PP [%d %d] reduceZ\n",thisIndex.x, thisIndex.y);
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  if(thisIndex.x==0)
+   CkPrintf("HI, I am gPP %d %d in redZ \n",thisIndex.x,thisIndex.y);
+#endif
+
   if(ees_nonlocal==1){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Homes, ees nonlocal is on. You can't call reduceZ\n");
@@ -509,22 +519,22 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
   int zsize = natm_nl_grp_max * numSfGrps;
   int zoffset= natm_nl_grp_max * atmIndex;
   if (zmatrixSum==NULL) {
-      zmatrixSum = new complex[zsize];
+      zmatrixSum = (complex *)fftw_malloc(zsize*sizeof(complex));
       memset(zmatrixSum, 0, zsize * sizeof(complex));
   }//endif
 
   if (zmatrixSum_fx==NULL) {
-      zmatrixSum_fx = new complex[zsize];
+      zmatrixSum_fx = (complex *)fftw_malloc(zsize*sizeof(complex));
       memset(zmatrixSum_fx, 0, zsize * sizeof(complex));
   }//endif
 
   if (zmatrixSum_fy==NULL) {
-      zmatrixSum_fy = new complex[zsize];
+      zmatrixSum_fy = (complex *)fftw_malloc(zsize*sizeof(complex));
       memset(zmatrixSum_fy, 0, zsize * sizeof(complex));
   }//endif
 
   if (zmatrixSum_fz==NULL) {
-      zmatrixSum_fz = new complex[zsize];
+      zmatrixSum_fz = (complex *)fftw_malloc(zsize*sizeof(complex));
       memset(zmatrixSum_fz, 0, zsize * sizeof(complex));
   }//endif
   
@@ -607,6 +617,10 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //============================================================================
 //  Warninging and unpacking
 
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  if(thisIndex.x==0)
+   CkPrintf("HI, I am gPP %d %d in getforces \n",thisIndex.x,thisIndex.y);
+#endif
   if(ees_nonlocal==1){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Homes, ees nonlocal is on. You can't call getForces\n");

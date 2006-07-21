@@ -31,8 +31,8 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 RhoRealSlab::~RhoRealSlab(){
 
-    delete [] Vks; //
-    delete [] density;
+    fftw_free(Vks); //
+    fftw_free(density);
     complex *dummy;
 	dummy  = reinterpret_cast<complex*> (doFFTonThis);
 	fftw_free((fftw_complex *)dummy);
@@ -75,9 +75,9 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 	rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeZ);
         int sizenow      = rho_rs->size;
 
-	rho_rs->Vks     =  new double[sizenow];
+	rho_rs->Vks     =  (double *)fftw_malloc(sizenow*sizeof(double));
 	bzero(rho_rs->Vks, sizenow*sizeof(double));
-	rho_rs->density =  new double[sizenow];
+	rho_rs->density =  (double *)fftw_malloc(sizenow*sizeof(double));
 	bzero(rho_rs->density, sizenow*sizeof(double));
         int csizenow    = sizenow/2;
 
@@ -118,11 +118,11 @@ RhoGSlab::~RhoGSlab()
   if(runs!=NULL)
       delete [] runs;
   if(k_x!=NULL)
-      delete [] k_x;
+      fftw_free( k_x);
   if(k_y!=NULL)
-      delete [] k_y;
+      fftw_free( k_y);
   if(k_z!=NULL)
-      delete [] k_z;
+      fftw_free( k_z);
 }
 //==============================================================================
 
@@ -203,9 +203,9 @@ void RhoGSlab::pup(PUP::er &p) {
       else
 	Vks=NULL;
       runs     = new RunDescriptor[numRuns];
-      k_x = new int[numPoints];
-      k_y = new int[numPoints];
-      k_z = new int[numPoints];
+      k_x = (int *)fftw_malloc(numPoints*sizeof(int));
+      k_y = (int *)fftw_malloc(numPoints*sizeof(int));
+      k_z = (int *)fftw_malloc(numPoints*sizeof(int));
 
     }
   if(RhoMake)
@@ -245,9 +245,9 @@ void RhoGSlab::setKVectors(int *n){
 //======================================================================
 // Construct the k-vectors
 
-  k_x = new int[numPoints];
-  k_y = new int[numPoints];
-  k_z = new int[numPoints];
+  k_x = (int *)fftw_malloc(numPoints*sizeof(int));
+  k_y = (int *)fftw_malloc(numPoints*sizeof(int));
+  k_z = (int *)fftw_malloc(numPoints*sizeof(int));
   
   int r, i, dataCovered = 0;
   int x, y, z;
@@ -567,9 +567,9 @@ void RhoRealSlab::pup(PUP::er &p) {
   int csize    = size/2;
   if(p.isUnpacking())
     {
-	Vks     =  new double[size];
+	Vks     =  (double *)fftw_malloc(size*sizeof(double));
 	bzero(Vks, size*sizeof(double));
-	density =  new double[size];
+	density =  (double *)fftw_malloc(size*sizeof(double));
 	bzero(density, size*sizeof(double));
         complex *dummy;
 	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));

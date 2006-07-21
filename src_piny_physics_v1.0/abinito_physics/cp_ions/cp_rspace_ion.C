@@ -44,9 +44,9 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
 //============================================================================
 
 #ifdef _CP_DEBUG_ATM_FORC_
-  double *fx = (double *)malloc(natm*sizeof(double));
-  double *fy = (double *)malloc(natm*sizeof(double));
-  double *fz = (double *)malloc(natm*sizeof(double));
+  double *fx = (double *)cmalloc(natm*sizeof(double),"debug ions");
+  double *fy = (double *)cmalloc(natm*sizeof(double),"debug ions");
+  double *fz = (double *)cmalloc(natm*sizeof(double),"debug ions");
   for(int i=0;i<natm;i++){
      fx[i]=0.0;
      fy[i]=0.0;
@@ -131,9 +131,9 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
      CkPrintf("the real space contribution. Those are in rspace_only.out\n");
      CkPrintf("Currently only proc 0 rspace_only forces are given.\n");
    }//endif
-   free(fx);
-   free(fy);
-   free(fz);
+   free(fx,"debug ions");
+   free(fy,"debug ions");
+   free(fz,"debug ions");
 #endif
 
 //============================================================================

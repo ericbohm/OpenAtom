@@ -24,6 +24,8 @@ extern CProxy_EnergyGroup egroupProxy; //energy group proxy
 extern CProxy_CPcharmParaInfoGrp      scProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
+//#define _CP_DEBUG_SF_CALC_
+
 //==============================================================================
 
 
@@ -42,7 +44,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
    }//endif
-
+   //    CkPrintf("[%d %d %d] compute %d\n",thisIndex.x,thisIndex.y,thisIndex.z,numdest);
    // The guy who called us is up to date. Are we? The caller is one ahead
    // of the energy dude and the atoms because it flipped its iteration counter
    // at the top of the loop.
@@ -69,12 +71,12 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 #endif
       // allow for clean slate 
       if(structFactor==NULL) {
-	structFactor    = new complex[natm_nl_grp_max*gsSize];
+	structFactor    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
       }//endif
       if(structFactor_fx==NULL) {
-	structFactor_fx    = new complex[natm_nl_grp_max*gsSize];
-	structFactor_fy    = new complex[natm_nl_grp_max*gsSize];
-	structFactor_fz    = new complex[natm_nl_grp_max*gsSize];
+	structFactor_fx    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
+	structFactor_fy    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
+	structFactor_fz    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
       }//endif
       AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
       CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 

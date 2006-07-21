@@ -310,6 +310,10 @@ void CP_Rho_GHartExt::HartExtVksG() {
 //============================================================================
 // Get the variables
 
+#ifdef _CP_GHART_VERBOSE_
+  CkPrintf("Ghart %d Here in hartextvskg at %d\n",thisIndex.x);
+#endif
+
    AtomsGrp *ag  = atomsGrpProxy.ckLocalBranch(); // find me the local copy
    int natm      = ag->natm;
    Atom *atoms   = ag->atoms;
@@ -351,6 +355,10 @@ void CP_Rho_GHartExt::HartExtVksG() {
                  vks[i].re,vks[i].im);
        }//endfor
      fclose(fp);
+#endif
+
+#ifdef _CP_GHART_VERBOSE_
+  CkPrintf("Ghart %d Here in hartextvskg completed at %d\n",thisIndex.x);
 #endif
 
 //============================================================================

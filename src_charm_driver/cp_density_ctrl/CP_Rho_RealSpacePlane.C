@@ -56,7 +56,7 @@ extern int       nstates;
 bool is_pow2(int );
 
 
-#define  _CP_RHO_RSP_VERBOSE_OFF
+//#define  _CP_RHO_RSP_VERBOSE_OFF
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

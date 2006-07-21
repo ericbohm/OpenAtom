@@ -720,7 +720,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
 */
      //================================================================
       CkPrintf("Making real_strategy with :");
-      CkPrintf("src numReal %d dest numRhoG %d and numHartG %d numHartR\n",
+      CkPrintf("src numReal %d dest numRhoG %d and numHartG %d numHartR %d\n",
 	       numReal,numRhoG,numRhoGHart,numRhoRhart);
       //--------------------------------------------------------------
       //  For rho(r) to rho(g)
@@ -1234,7 +1234,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
                      ngridaNl,ngridbNl,ngridcNl,ees_nonlocal_on);
   sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
   sfCompProxy = CProxy_StructureFactor::ckNew();
-  eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart);
+  eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
+                                         nstates,nchareRhoG);
 
  //--------------------------------------------------------------------------------
  // state g-space

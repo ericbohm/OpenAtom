@@ -600,7 +600,7 @@ double* FFTcache::doRealFwFFT(complex *planeArr)
 // 
 
   if(config.doublePack) {
-      data = new double[pSize];
+      data = (double *)fftw_malloc(pSize*sizeof(double));
       int stride = sizeX/2+1;
       // FFT along Y direction : Y moves with stride sizex/2+1 through memory
       fft_split(fwdZ1DdpPlan, // y-plan (label lies)

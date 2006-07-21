@@ -17,6 +17,7 @@
 #include "groups.h"
 #include <math.h>
 #include "fftCacheSlab.h"
+#include "eesCache.h"
 #include "CP_State_Plane.h"
 
 //----------------------------------------------------------------------------
@@ -26,12 +27,17 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //----------------------------------------------------------------------------
-extern CProxy_EnergyGroup egroupProxy;
-extern Config config;
+
+extern CProxy_EnergyGroup          egroupProxy;
+extern Config                      config;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern CProxy_AtomsGrp atomsGrpProxy;
-extern CProxy_EnergyGroup egroupProxy;
-extern CProxy_StructFactCache sfCacheProxy;
+extern CProxy_AtomsGrp             atomsGrpProxy;
+extern CProxy_EnergyGroup          egroupProxy;
+extern CProxy_StructFactCache      sfCacheProxy;
+extern CProxy_eesCache             eesCacheProxy;
+
+//----------------------------------------------------------------------------
+
 void IntegrationComplete(void *, void *);
 
 //#define _CP_DEBUG_PSI_OFF_
@@ -395,7 +401,7 @@ void AtomsGrp::outputAtmEnergy() {
   void AtomsGrp::atomsDone(CkReductionMsg *msg) {
 //==========================================================================
   delete msg;
-      atomsDone();
+  atomsDone();
 }
 //==========================================================================
 
@@ -410,42 +416,42 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
    void AtomsGrp::atomsDone() {
 //==========================================================================
+// Use the cool new data caching system
 
+ int myid = CkMyPe();
  if(config.localAtomBarrier){
-      // atoms on this PE are done so use the forces
-      // Use the StructFactCache to determine who is local
-      StructFactCache *sfcache       = sfCacheProxy.ckLocalBranch();
-      GSAtmMsg *msg = new  GSAtmMsg;
-      CkArrayIndex2D idx2d;
-      for(int i=0; i<sfcache->ppList.length(); i++)
-	{
-	  PlaneAtom regPPs=sfcache->ppList[i];
-	  for(int i=0;i<regPPs.particles.length();i++)// each particle
-	    {
-	      idx2d=regPPs.particles[i];
-	      gSpacePlaneProxy(idx2d.index[0],idx2d.index[1]).ckLocal()->acceptAtoms(msg); 
 
-	    /* Weirdness Alert: as a local branch it could trigger a
-	     * resume successivly in each GSP.  
-	     *
-	     * Probably be nicer as a [local] or [inline] method
-	     */
+   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+   int *indState     = eesData->gspStateInd;
+   int *indPlane     = eesData->gspPlaneInd;
+   int ngo           = eesData->nchareGSPProcT;
 
-	    }// end for
-	}//end for
-
-    }else{
-
-      int myid = CkMyPe();
-      if(myid==0){
-         GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-         *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-         gSpacePlaneProxy.acceptAtoms(msg);
-      }//endif
- 
+   GSAtmMsg *msg = new  GSAtmMsg;
+   int mySum = 0;
+   for(int i=0; i<ngo; i++){
+     mySum += gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptAtoms(msg); 
+   }//endfor
+   if(mySum!=ngo){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Bad registration cache flag on proc %d\n",myid);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
    }//endif
-}
+
+ }else{
+
+   if(myid==0){
+      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
+      gSpacePlaneProxy.acceptAtoms(msg);
+   }//endif
+ 
+ }//endif
+
+//--------------------------------------------------------------------------
+   }//end routine
 //==========================================================================
 
 
@@ -511,7 +517,7 @@ void AtomsGrp::outputAtmEnergy() {
   delete [] atmData;  
 
 //-------------------------------------------------------------------------
-   }
+  }//end routine
 //==========================================================================
 
 
@@ -541,8 +547,8 @@ void AtomsGrp::outputAtmEnergy() {
     CkExit();
   }//endif
 
-  //==========================================================================
-  // pack atom position and velocity
+//==========================================================================
+// unpack atom position and velocity
 
   for(int i=0,j=0;i<natm;i++,j+=6){
     atoms[i].x = atmData[(j)  ];
@@ -553,8 +559,8 @@ void AtomsGrp::outputAtmEnergy() {
     atoms[i].vz= atmData[(j+5)];
   }//endfor
 
-  //==========================================================================
-  // pack NHC position and velocity
+//==========================================================================
+// unpack NHC position and velocity
 
   if(iextended_on==1){
     int joff= 6*natm;
@@ -567,13 +573,13 @@ void AtomsGrp::outputAtmEnergy() {
     }//endfor
   }//endif
 
+//==========================================================================
+// Delete the message and phone home
+
   delete msg;
-
-  //==========================================================================
-
   atomsDone();
 
-//-------------------------------------------------------
+//-------------------------------------------------------------------------
   }//end routine
 //==========================================================================
 
@@ -621,8 +627,8 @@ EnergyGroup::EnergyGroup () {
     estruct.fmag_atm        = 0;        // magnitude of atm forces
     estruct.iteration_atm   = 0;
 
-
-} //end routine
+//-------------------------------------------------------------------------
+  } //end routine
 //==========================================================================
 
 
@@ -631,6 +637,7 @@ EnergyGroup::EnergyGroup () {
 //==========================================================================
 void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
+
       estruct.enl          = es.enl;
       estruct.eke          = es.eke;
       estruct.eext         = es.eext;
@@ -664,36 +671,10 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
   void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;
-  if(config.localEnergyBarrier)
-    {
-      // atoms on this PE are done so use the forces
-      // Use the StructFactCache to determine who is local
-      StructFactCache *sfcache       = sfCacheProxy.ckLocalBranch();
-      GSAtmMsg *msg = new  GSAtmMsg;
-      CkArrayIndex2D idx2d;
-      for(int i=0; i<sfcache->ppList.length(); i++)
-	{
-	  PlaneAtom regPPs=sfcache->ppList[i];
-	  for(int i=0;i<regPPs.particles.length();i++)// each particle
-	    {
-	      idx2d=regPPs.particles[i];
-	      gSpacePlaneProxy(idx2d.index[0],idx2d.index[1]).ckLocal()->acceptEnergy(msg); 
-
-	    /* Weirdness Alert: as a local branch it could trigger a
-	     * resume successivly in each GSP.  
-	     *
-	     * Probably be nicer as a [local] or [inline] method
-	     */
-
-	    }// end for
-	}//end for
-    }
-  else
-    {
-      energyDone();
-    }
+   energyDone();
 }
 //==========================================================================
+
 
 //==========================================================================
 // Needs to have each proc invoke directly acceptenergy method of the
@@ -704,17 +685,42 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 void EnergyGroup::energyDone(){
 //==========================================================================
-    int myid = CkMyPe();
-#ifdef  _CP_ENERGY_GRP_VERBOSE_
-    CkPrintf("energygroup::Energy done %d\n",myid);
-#endif
-    if(myid==0){
-        GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-         *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-         gSpacePlaneProxy.acceptEnergy(msg);
-    }//endif
-}
+// Use the cool new data caching system
+
+ int myid          = CkMyPe();
+ if(config.localAtomBarrier){
+
+   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+   int *indState     = eesData->gspStateInd;
+   int *indPlane     = eesData->gspPlaneInd;
+   int ngo           = eesData->nchareGSPProcT;
+
+   GSAtmMsg *msg = new  GSAtmMsg;
+   int mySum = 0;
+   for(int i=0; i<ngo; i++){
+     mySum += gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptEnergy(msg); 
+   }//endfor
+   if(mySum!=ngo){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Bad registration cache flag on proc %d\n",myid);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+   }//endif
+
+ }else{
+
+   if(myid==0){
+      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
+      gSpacePlaneProxy.acceptEnergy(msg);
+   }//endif
+ 
+ }//endif
+
+//-------------------------------------------------------------------------
+  }//end routine
 //==========================================================================
 
 

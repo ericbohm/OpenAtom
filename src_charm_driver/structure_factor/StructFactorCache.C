@@ -176,10 +176,10 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
       //allocate the arrays
 	incCountStructFact(planeIndex);
 	int structSize=msg->gsSize*numSfGrps*natm_nl_grp_max;
-	complex *structFactor = new complex[structSize];
-	complex *structFactor_fx = new complex[structSize];
-	complex *structFactor_fy = new complex[structSize];
-	complex *structFactor_fz = new complex[structSize];
+	complex *structFactor    = (complex *)fftw_malloc(structSize*sizeof(complex));
+	complex *structFactor_fx = (complex *)fftw_malloc(structSize*sizeof(complex));
+	complex *structFactor_fy = (complex *)fftw_malloc(structSize*sizeof(complex));
+	complex *structFactor_fz = (complex *)fftw_malloc(structSize*sizeof(complex));
 	int *atmGrpArrive        = new int[numSfGrps];
 	bzero(atmGrpArrive, numSfGrps*sizeof(int));
 	structFactorAtmGrps.insert(structFactorAtmGrps.length(),atmGrpArrive);
@@ -283,11 +283,11 @@ int StructFactCache::existsPP(int plane, int atom) {
 void StructFactCache::removeAll() {
 
     for(int i=structFactorList.length()-1; i>=0; i--){
-	delete [] structFactorList[i];
-	delete [] structFactorfxList[i];
-	delete [] structFactorfyList[i];
-	delete [] structFactorfzList[i];
-	delete [] structFactorAtmGrps[i];
+	fftw_free(structFactorList[i]);
+	fftw_free(structFactorfxList[i]);
+	fftw_free(structFactorfyList[i]);
+	fftw_free(structFactorfzList[i]);
+	delete []structFactorAtmGrps[i];
     }
     
     structFactorList.removeAll();

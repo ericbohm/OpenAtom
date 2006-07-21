@@ -86,11 +86,11 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 //==============================================================================
 GStateSlab::~GStateSlab() {
 
-    if(packedPlaneData    !=NULL) delete [] packedPlaneData;
-    if(packedPlaneDataTemp!=NULL) delete [] packedPlaneDataTemp;
-    if(packedForceData    !=NULL) delete [] packedForceData;
-    if(packedPlaneDataScr !=NULL) delete [] packedPlaneDataScr;
-    if(packedVelData      !=NULL) delete [] packedVelData;
+    if(packedPlaneData    !=NULL) fftw_free( packedPlaneData);
+    if(packedPlaneDataTemp!=NULL) fftw_free( packedPlaneDataTemp);
+    if(packedForceData    !=NULL) fftw_free( packedForceData);
+    if(packedPlaneDataScr !=NULL) fftw_free( packedPlaneDataScr);
+    if(packedVelData      !=NULL) fftw_free( packedVelData);
     if(runs               !=NULL) delete [] runs;
     destroyNHC();
 
@@ -147,12 +147,12 @@ void GStateSlab::pup(PUP::er &p) {
 	for (int i = 0; i < numRuns; i++){runs[i].pup(p);}
 
 	if (p.isUnpacking()) {
-           packedPlaneData     = new complex[numPoints];
-	   packedPlaneDataScr  = new complex[numPoints];
-	   packedPlaneDataTemp = new complex[numPoints];
-	   packedForceData     = new complex[numPoints];
-	   packedVelData       = new complex[numPoints];
-           packedRedPsi        = new complex[nkx0];
+           packedPlaneData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   packedPlaneDataScr  = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   packedPlaneDataTemp = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   packedForceData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   packedVelData       = (complex *)fftw_malloc(numPoints*sizeof(complex));
+           packedRedPsi        = (complex *)fftw_malloc(nkx0*sizeof(complex));
 	}//endif
 	p((char *) packedPlaneData, numPoints*sizeof(complex));
 	p((char *) packedPlaneDataScr, numPoints*sizeof(complex));
@@ -301,9 +301,9 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
 //======================================================================
 // Construct the k-vectors
 
-  int *k_x = new int[numPoints];
-  int *k_y = new int[numPoints];
-  int *k_z = new int[numPoints];
+  int *k_x = (int *)fftw_malloc(numPoints*sizeof(int));
+  int *k_y = (int *)fftw_malloc(numPoints*sizeof(int));
+  int *k_z = (int *)fftw_malloc(numPoints*sizeof(int));
   
   int r, i, dataCovered = 0;
   int x, y, z;
@@ -391,7 +391,7 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
     }//endif
   }//endfor
 
-  packedRedPsi  = new complex[nkx0];
+  packedRedPsi  = (complex *)fftw_malloc(nkx0*sizeof(complex));
   memset(packedRedPsi, 0, sizeof(complex)*nkx0);
 
 //==============================================================================

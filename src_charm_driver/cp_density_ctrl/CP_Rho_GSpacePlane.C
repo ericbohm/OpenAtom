@@ -55,6 +55,10 @@ extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_FFTcache fftCacheProxy;
 //extern ComlibInstanceHandle mssInstance;
 
+//#define _CP_DEBUG_RHOG_VERBOSE_
+//============================================================================
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

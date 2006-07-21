@@ -1568,13 +1568,8 @@ void Config::readConfig(const char* fileName, Config &config,
     config.fftprogresssplit     = 20;
     config.fftprogresssplitReal = 5;
     config.stateOutputOn        = 0;
-    if(ees_nonlocal_on==1){
-      config.localAtomBarrier     = 0;
-      config.localEnergyBarrier   = 0;
-    }else{
-      config.localAtomBarrier     = 1;
-      config.localEnergyBarrier   = 1;
-    }//endif
+    config.localAtomBarrier     = 1;
+    config.localEnergyBarrier   = 1;
     config.toleranceInterval    = 1;
     config.Gstates_per_pe	= config.nstates;
     config.scalc_per_plane	= 1;
@@ -2008,14 +2003,6 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.Rstates_per_pe<1 || config.Rstates_per_pe>config.nstates){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The number of states per pe must be >=1 < num states\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-
-    if(config.localAtomBarrier+config.localEnergyBarrier!=0 && ees_nonlocal_on==1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Local Barrier require the SF cache which is off\n");
-      CkPrintf("under the ees nonlocal option.\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif

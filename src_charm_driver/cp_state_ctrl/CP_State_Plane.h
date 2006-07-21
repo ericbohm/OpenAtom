@@ -235,6 +235,9 @@ public:
 //============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
+        int registrationFlag;
+        int istate_ind;
+        int iplane_ind;
         int first_step; //control flags and functions reference by thread are public
         int iwrite_now;
 	int iteration;

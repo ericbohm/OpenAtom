@@ -4,11 +4,11 @@
 
 
 #=================================================================
-piny_malloc.o     :          $(STANDARD) $(DEFINES) \
+piny_malloc.o     :      $(STANDARD) $(DEFINES) \
                          $(FRND_ENT) \
                          $(CODE)/friend_lib/piny_malloc.C
 	$(ECHO) $@
-	$(COBJ) $(CODE)/friend_lib/piny_malloc.C
+	$(COBJ) $(DUAL_FFTW) -I$(FFT_HOME)/include $(CODE)/friend_lib/piny_malloc.C
 
 #-----------------------------------------------------------------
 piny_pup.o     :          $(STANDARD) $(DEFINES) \

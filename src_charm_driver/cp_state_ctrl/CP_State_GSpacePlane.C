@@ -169,7 +169,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        if(!(c->allDoneIFFT())){
 	  RTH_Suspend(); // wait for broadcast that all gspace is done  
        }//endif
-#endif               //end pause
+#endif //end pause
 #endif // only move the atoms
     //------------------------------------------------------------------------
     // E) The atoms can't go until all cp forces are accounted for.
@@ -235,20 +235,19 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    // (D) Check for Energy reduction completion : should just be a safety
     if(c->myenergy_reduc_flag==0 && c->iteration>0 && c->isuspend_energy==0){
        c->isuspend_energy=1;
-#ifdef _CP_DEBUG_WARN_SUSPEND_
-      CkPrintf("Suspend energy on proc %d : too many of these==bad scheme\n",CkMyPe());
-#endif
-      RTH_Suspend();     // resume called in acceptEnergy
     }//endif
 #endif // you are moving everything
    //------------------------------------------------------------------------
    // (E) Check for atom integration : should just be a safety
     if(c->myatom_integrate_flag==0 && c->iteration>0 && c->isuspend_atms==0){
-#ifdef _CP_DEBUG_WARN_SUSPEND_
-      CkPrintf("Suspend atms on proc %d : too many of these==bad scheme\n",CkMyPe());
-#endif
       c->isuspend_atms=1;
-      RTH_Suspend();     // resume called in acceptAtoms
+    }//endif
+    if(c->isuspend_atms==1 || c->isuspend_energy==1){
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+      CkPrintf("Suspend atm/energy on proc %d : chare %d %d : %d %d\n",
+             CkMyPe(),c->istate_ind,c->iplane_ind,c->isuspend_atms,c->isuspend_energy);
+#endif
+      RTH_Suspend();     // resume called in acceptEnergy or in acceptAtoms
     }//endif
     c->first_step = 0;   // its not the first step anymore!
 //--------------------------------------------------------------------------
@@ -547,6 +546,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 //============================================================================
 
+  istate_ind           = thisIndex.x;
+  iplane_ind           = thisIndex.y;
   ees_nonlocal         = sim->ees_nloc_on;  
   numChunks            = _numChunks;
   initialized          = false;
@@ -703,6 +704,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif : state=0 
 
 //============================================================================
+// Register with the cache : Eric's multiple reduction schemes ensure its done
+//                           before we need it.
+
+   registrationFlag  = 1;
+   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+   eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
+
+//============================================================================
 // Contribute to the reduction telling main we are done
 
   int constructed=1;
@@ -728,10 +737,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(CkMigrateMessage *m) {
 //============================================================================
 CP_State_GSpacePlane::~CP_State_GSpacePlane(){
   if(initialized) {
-    delete [] k_x;
-    delete [] k_y;
-    delete [] k_z;
-    delete [] coef_mass;
+    fftw_free(k_x);
+    fftw_free(k_y);
+    fftw_free(k_z);
+    fftw_free(coef_mass);
     k_x = NULL;
     k_y = NULL;
     k_z = NULL;
@@ -753,6 +762,9 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   ArrayElement2D::pup(p);
 
   p|first_step; //control flags and functions reference by thread are public
+  p|istate_ind;
+  p|iplane_ind;
+  p|registrationFlag;
   p|initialized;
   p|istart_typ_cp;
   p|iteration;
@@ -818,10 +830,11 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   gs.pup(p);
   p|gSpaceNumPoints;
   if (p.isUnpacking()) {
-    k_x       = new int[gSpaceNumPoints];
-    k_y       = new int[gSpaceNumPoints];
-    k_z       = new int[gSpaceNumPoints];
-    coef_mass = new double[gSpaceNumPoints];
+    k_x       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+    k_y       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+    k_z       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
+    coef_mass = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
+
     lambdaproxy=new CProxySection_PairCalculator[config.numChunksAsym];
     lambdaproxyother=new CProxySection_PairCalculator[config.numChunksAsym];
     psiproxy=new CProxySection_PairCalculator[config.numChunksSym];
@@ -883,13 +896,13 @@ void CP_State_GSpacePlane::readFile() {
   //------------------------------------------------------------------
   // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
 
-  complex *complexPoints  = new complex[numData];
+  complex *complexPoints  = (complex *)fftw_malloc(numData*sizeof(complex));
   complex *vcomplexPoints = NULL;
-  if(istart_typ_cp>=3){vcomplexPoints = new complex[numData];}
+  if(istart_typ_cp>=3){vcomplexPoints = (complex *)fftw_malloc(numData*sizeof(complex));}
 
-  int *kx=  new int[numData];
-  int *ky=  new int[numData];
-  int *kz=  new int[numData];
+  int *kx=  (int *)fftw_malloc(numData*sizeof(int));
+  int *ky=  (int *)fftw_malloc(numData*sizeof(int));
+  int *kz=  (int *)fftw_malloc(numData*sizeof(int));
   int nlines_tot,nplane,nx,ny,nz;
 
   if(istart_typ_cp>=3){
@@ -924,7 +937,7 @@ void CP_State_GSpacePlane::readFile() {
 	numPoints += sortedRunDescriptors[x][j].length;
       }//endfor
 
-      complex *dataToBeSent  = new complex[numPoints];
+      complex *dataToBeSent  = (complex *)fftw_malloc(numPoints*sizeof(complex));
       complex *temp          = complexPoints+ioff;
       CmiMemcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
 
@@ -932,12 +945,12 @@ void CP_State_GSpacePlane::readFile() {
       complex *vdataToBeSent;
       if(istart_typ_cp>=3){
          numPointsV          = numPoints;
-         vdataToBeSent       = new complex[numPoints];
+         vdataToBeSent       = (complex *)fftw_malloc(numPointsV*sizeof(complex));
          complex *vtemp      = vcomplexPoints+ioff;
          CmiMemcpy(vdataToBeSent,vtemp,(sizeof(complex) * numPoints));
       }else{
          numPointsV          = 1;
-         vdataToBeSent       = new complex[numPointsV];
+         vdataToBeSent       = (complex *)fftw_malloc(numPointsV*sizeof(complex));
          vdataToBeSent[0].re = 0.0;
          vdataToBeSent[0].im = 0.0;
       }//endif
@@ -957,9 +970,9 @@ void CP_State_GSpacePlane::readFile() {
       gSpacePlaneProxy(ind_state, x).initGSpace(runsToBeSent,runDesc,
                                 numPoints,dataToBeSent,numPointsV,vdataToBeSent,
 				nx,ny,nz,ngridaNL,ngridbNL,ngridcNL,istart_typ_cp);
-      delete [] dataToBeSent;
-      delete [] vdataToBeSent;
-      delete [] runDesc;
+      fftw_free(dataToBeSent);
+      fftw_free(vdataToBeSent);
+      delete []runDesc;
 
       ioff += numPoints;
   }//endfor : loop over all possible chares in g-space (pencils)
@@ -969,11 +982,11 @@ void CP_State_GSpacePlane::readFile() {
 //============================================================================
 // Clean up
 
-  delete [] complexPoints;
-  if(istart_typ_cp>=3){delete [] vcomplexPoints;}
-  delete [] kx;
-  delete [] ky;
-  delete [] kz;
+  fftw_free(complexPoints);
+  if(istart_typ_cp>=3){fftw_free(vcomplexPoints);}
+  fftw_free(kx);
+  fftw_free(ky);
+  fftw_free(kz);
 
 //---------------------------------------------------------------------------
    }//read the file
@@ -1055,11 +1068,11 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   CkAssert(gs.numPoints == size);
 
   gs.ees_nonlocal        = ees_nonlocal;
-  gs.packedPlaneData     = new complex[gs.numPoints];
-  gs.packedPlaneDataScr  = new complex[gs.numPoints];
-  gs.packedForceData     = new complex[gs.numPoints];
-  gs.packedPlaneDataTemp = new complex[gs.numPoints];
-  gs.packedVelData       = new complex[gs.numPoints];
+  gs.packedPlaneData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  gs.packedPlaneDataScr  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  gs.packedForceData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  gs.packedVelData       = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
 
   CmiMemcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
   CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
@@ -1086,7 +1099,7 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   gs.setKVectors(&gSpaceNumPoints, &k_x, &k_y, &k_z);
   CkAssert(gSpaceNumPoints == size);
 
-  coef_mass        = new double[gSpaceNumPoints];
+  coef_mass        = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
   int mydoublePack = config.doublePack;
   CPINTEGRATE::CP_create_mass(gSpaceNumPoints,k_x,k_y,k_z,coef_mass,mydoublePack);
 
@@ -1269,6 +1282,9 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] releases SFComp\n",thisIndex.x, thisIndex.y);
 #endif
+#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+  CkPrintf("GSP [%d,%d] releases SFComp\n",thisIndex.x, thisIndex.y);
+#endif
 
   if(thisIndex.x==0){
        //multicast to all states of our plane and dups using the section proxy
@@ -1311,6 +1327,9 @@ void CP_State_GSpacePlane::releaseSFComputeZ() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::doFFT() {
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+    CkPrintf("dofft %d.%d \n",thisIndex.x,thisIndex.y);
+#endif
 
   // If there is no data to send, return immediately
   if (gs.numNonZeroPlanes == 0 || gs.fftReqd == false){
@@ -1348,6 +1367,9 @@ void CP_State_GSpacePlane::doFFT() {
 //============================================================================
 
 void CP_State_GSpacePlane::sendFFTData () {
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+    CkPrintf("sendfft %d.%d \n",thisIndex.x,thisIndex.y);
+#endif
 
 //============================================================================
 // Do a Comlib Dance
@@ -1399,6 +1421,9 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
+#ifdef _CP_DEBUG_STATEG_VERBOSE_
+    CkPrintf("doIfft %d.%d \n",thisIndex.x,thisIndex.y);
+#endif
 
   int size             = msg->size;
   int offset           = msg->offset;
@@ -2054,11 +2079,11 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
 // Receive the message
 
   if(countFileOut==0){
-    tpsi  = new complex[npts_tot];
-    tvpsi = new complex[npts_tot];
-    tk_x  = new int[npts_tot];
-    tk_y  = new int[npts_tot];
-    tk_z  = new int[npts_tot];
+    tpsi  = (complex *)fftw_malloc(npts_tot*sizeof(complex));
+    tvpsi = (complex *)fftw_malloc(npts_tot*sizeof(complex));
+    tk_x  = (int *)fftw_malloc(npts_tot*sizeof(int));
+    tk_y  = (int *)fftw_malloc(npts_tot*sizeof(int));
+    tk_z  = (int *)fftw_malloc(npts_tot*sizeof(int));
   }//endif
   countFileOut++;
 
@@ -2089,11 +2114,11 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
        sprintf(vpsiName,"%s/newVstate%d.out",config.dataPath,ind_state);
        writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
                       sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt);
-     delete [] tpsi; tpsi  = NULL;
-     delete [] tvpsi;tvpsi = NULL;
-     delete [] tk_x; tk_x  = NULL;
-     delete [] tk_y; tk_y  = NULL;
-     delete [] tk_z; tk_z  = NULL;
+     fftw_free(tpsi); tpsi  = NULL;
+     fftw_free(tvpsi);tvpsi = NULL;
+     fftw_free(tk_x); tk_x  = NULL;
+     fftw_free(tk_y); tk_y  = NULL;
+     fftw_free(tk_z); tk_z  = NULL;
      int i=0;
      if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
        if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
@@ -2903,7 +2928,11 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
-  //delete msg; do not delete nokeep message
+//==============================================================================
+// Do not delete msg. Its a no keep.
+//==============================================================================
+// Flip my flag, check my iteration
+
    myatom_integrate_flag=1;
    if(atomsGrpProxy.ckLocalBranch()->iteration != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2914,25 +2943,40 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+   CkPrintf("Atoms on proc %d GSP chare %d %d : %d %d\n",
+             CkMyPe(),thisIndex.x,thisIndex.y,myatom_integrate_flag,iteration);
+#endif
+
+//==============================================================================
+// Exit if the time is right
+
    if(myenergy_reduc_flag==1 && cleanExitCalled==1){
      int i;
      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
    }//endif
+
+//==============================================================================
+// Lift the suspension if my energy is ready to rock and roll
+
    if(isuspend_atms==1){ // I suspended to wait for atoms, resume me baby.
      isuspend_atms=0;
-#ifdef _CP_DEBUG_WARN_SUSPEND_
-     CkPrintf("Atoms resuming on GSP chare %d %d\n",thisIndex.x,thisIndex.y);
-#endif
-     RTH_Runtime_resume(run_thread);
+     if(isuspend_energy==0){RTH_Runtime_resume(run_thread);}
    }//endif
-}//end routine
+
+//-----------------------------------------------------------------------------
+  }//end routine
 //==============================================================================
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
-  //   delete msg; do not delete nokeep message
+//==============================================================================
+//   do not delete message : Its a nokeep 
+//==============================================================================
+// Flip my flag, check my iteration
+
    myenergy_reduc_flag=1;
    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2941,18 +2985,29 @@ void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
+#ifdef _CP_DEBUG_WARN_SUSPEND_
+   CkPrintf("Energy on proc %d GSP chare %d %d : %d %d\n",
+             CkMyPe(),thisIndex.x,thisIndex.y,myenergy_reduc_flag,iteration);
+#endif
+
+//==============================================================================
+// Exit if the time is right
+
    if(myatom_integrate_flag==1 && cleanExitCalled==1){
      int i;
      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
    }//endif
+
+//==============================================================================
+// Lift the suspension if my atoms are ready to rock and roll
+
    if(isuspend_energy==1){ // I suspended to wait for energy, resume me baby.
-#ifdef _CP_DEBUG_WARN_SUSPEND_
-     CkPrintf("Energy resuming on GSP chare %d %d\n",thisIndex.x,thisIndex.y);
-#endif
      isuspend_energy=0;
-     RTH_Runtime_resume(run_thread);
+     if(isuspend_atms==0){RTH_Runtime_resume(run_thread);}
    }//endif
-}//end routine
+
+//------------------------------------------------------------------------------
+  }//end routine
 //==============================================================================
 
 
@@ -3164,8 +3219,9 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 #endif
 #endif
 
+  int myid = CkMyPe();
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
-  CkPrintf("ecount %d %d\n",ecount,NUM_ENERGIES-isub);
+  CkPrintf("ecount %d %d %d\n",ecount,NUM_ENERGIES-isub,myid);
 #endif
   if(ecount == NUM_ENERGIES-isub){
     EnergyStruct estruct;
@@ -3181,7 +3237,7 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
     estruct.fmagPsi         = fmagPsi_total0;
     estruct.iteration_gsp   = iteration;
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
-    CkPrintf("Bcasting to energygrp\n");
+    CkPrintf("Bcasting to energygrp %d\n",myid);
 #endif
     egroupProxy.updateEnergiesFromGS(estruct); // broadcast the electronic energies
                                                //  so that all procs have them
