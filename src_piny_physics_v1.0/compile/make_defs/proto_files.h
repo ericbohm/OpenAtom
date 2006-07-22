@@ -72,6 +72,5 @@ PATH_INIT_ENT = $(CODE)/interface/path_integral/proto_path_init_entry.h
 PARSE_LOC     = $(CODE)/interface/parse/proto_parse_local.h
 PARSE_ENT     = $(CODE)/interface/parse/proto_parse_entry.h
 MATH          = $(CODE)/mathlib/proto_math.h
-CP_OPERATIONS = $(CODE)/abinito_physics/proto_cp_operations.h
 
 #-------------------------------------------------------
