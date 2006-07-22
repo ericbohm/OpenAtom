@@ -606,17 +606,12 @@ RhoGSMapTable::RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       if(rem!=0)
 	if(chunk==rem*rgsobjs_per_pe)
 	  rgsobjs_per_pe -= 1;  
-      if(chunk==0) {}
-      else
-	{
-	  srcpe=destpe;
-	  //	  availprocs->sortSource(srcpe);
-	  destpe=availprocs->findNext();
-	}
       for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
 	{
 	  maptable->put(intdual(i, 0))=destpe;
 	} 
+      srcpe=destpe;
+      destpe=availprocs->findNext();
     }
 #ifdef MAP_DEBUG
   CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
