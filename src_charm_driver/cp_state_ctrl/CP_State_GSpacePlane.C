@@ -132,29 +132,35 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
        if(c->ees_nonlocal==0){
          c->releaseSFComputeZ();
-       }else{
-         c->startNLEes(); //invokes controller in cp_state_particle_plane
-       }//endif
 #ifdef _CP_DEBUG_NONLOC_BARRIER_
-       RTH_Suspend();  // resume is called by acceptNLForces()
-                       //                     acceptNLForceEes
-                       // The latter invoked by CP_State_ParticlePlane
-#endif
-#endif  // non-local is allowed
+         RTH_Suspend();  // resume is called by acceptNLForces()
+#endif  // Barrier for non-local
+       }//endif
+#endif // non-local is allowed
     //------------------------------------------------------------------------
-    // (C) FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real, 
-    //      complete IFFT of F(gx,gy,z) to F(gx,gy,gz) when it comes back.
+    // (C) Before starting any state related comps wait for everyone to arrive
 #ifdef GPSI_BARRIER  // pause for every single chare to finish
        if(!(c->allAcceptedPsiDone())){
 	  RTH_Suspend(); // wait for broadcast that all psi is done  
        }//endif
 #endif               //end pause
+    //------------------------------------------------------------------------
+    // (D) FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real, 
        c->doFFT(); 
        c->sendFFTData();
+    //------------------------------------------------------------------------
+    // (E) Start the non-local computation with done using EES
+#ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
+       if(c->ees_nonlocal==1){
+         c->startNLEes();   //invokes controller in cp_state_particle_plane
+       }//endif
+#endif
+    //------------------------------------------------------------------------
+    // (F) Chill out until Psi forces come back to us and then do back FFT
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
        c->doIFFT();    // Message from realspace arrives : doifft(msg) resumes
     //------------------------------------------------------------------------
-    // (D) If NL-pseudo forces are not done, wait for them.
+    // (G) If NL-pseudo forces are not done, wait for them.
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
        if(!c->doneNLForces()){
          RTH_Suspend(); // resume called in acceptNLforces or acceptNLForcesEes
@@ -163,7 +169,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        }//endif
 #endif // non-local is allowed
     //------------------------------------------------------------------------
-    // (E) If NL-pseudo forces done, suspend.
+    // (H) Added up all force contributions
        c->combineForcesGetEke();
 #ifdef GIFFT_BARRIER  // pause for every single chare to finish
        if(!(c->allDoneIFFT())){
@@ -172,38 +178,38 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #endif //end pause
 #endif // only move the atoms
     //------------------------------------------------------------------------
-    // E) The atoms can't go until all cp forces are accounted for.
+    // I) The atoms can't go until cp forces are completely finished (all chares)
     //    However, the atoms can overlap with all this lambda, psi stuff.
        c->launchAtoms();
     //------------------------------------------------------------------------
-    // (F) Add contraint forces (rotate forces to non-orthogonal frame)
-#ifndef _CP_DEBUG_PSI_OFF_  // you are moving evertying
+    // (G) Add contraint forces (rotate forces to non-orthogonal frame)
+#ifndef _CP_DEBUG_PSI_OFF_  // you are moving everything
        c->sendLambda();
 #ifndef _CP_DEBUG_ORTHO_OFF_
        RTH_Suspend(); // wait for forces to be fixed up 
                       // acceptLambda resumes
 #endif
     //------------------------------------------------------------------------
-    // Get sum sq forces (even under dynamics its good to have) : also cg thingy
+    // (H) Get sum sq forces (even under dynamics its good to have) : also cg thingy
        c->computeCgOverlap();
        RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
     //------------------------------------------------------------------------
-    // (H) Output the states for cp dynamics
+    // (I) Output the states for cp dynamics
        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 &&
           c->iteration<= config.maxIter){
             c->writeStateDumpFile();   // wait for output : psiwritecomplete resumes
  	    if(c->iwrite_now==1){RTH_Suspend();}
        }//endif
     //------------------------------------------------------------------------
-    // (I) Evolve the electrons to the next step    
-        c->integrateModForce();
-        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
-            c->sendRedPsi();  // Sync Redundant psi entries
-            if(c->finishedRedPsi==0){
+    // (J) Evolve the electrons to the next step    
+       c->integrateModForce();
+       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
+          c->sendRedPsi();  // Sync Redundant psi entries
+          if(c->finishedRedPsi==0){
               RTH_Suspend();  // Resume is called in acceptRedPsi
-   	    }//endif
-            c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
-        }//endif
+   	  }//endif
+          c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
+       }//endif
 #endif  // you are moving everyting
     }// endif determine entry point
  //==========================================================================
@@ -242,6 +248,8 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     if(c->myatom_integrate_flag==0 && c->iteration>0 && c->isuspend_atms==0){
       c->isuspend_atms=1;
     }//endif
+   //------------------------------------------------------------------------
+   // (F) If the atom or energy stuff is slow, relax for a bit
     if(c->isuspend_atms==1 || c->isuspend_energy==1){
 #ifdef _CP_DEBUG_WARN_SUSPEND_
       CkPrintf("Suspend atm/energy on proc %d : chare %d %d : %d %d\n",
@@ -249,6 +257,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #endif
       RTH_Suspend();     // resume called in acceptEnergy or in acceptAtoms
     }//endif
+   //------------------------------------------------------------------------
+   // (G) If you have trigger an exit condition just chill until ckexit
+    if(c->cleanExitCalled==1){RTH_Suspend();} 
     c->first_step = 0;   // its not the first step anymore!
 //--------------------------------------------------------------------------
    }//end while: Go back to top of the loop now (no suspending : no pausing)

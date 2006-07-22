@@ -560,13 +560,13 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
    //-----------------------------------------------------------------------
    // energy and atom forces
-    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
-    Atom *atoms  = ag->atoms;
+    AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
+    FastAtoms *fastAtoms = &(ag->fastAtoms);
     int mydoublePack = config.doublePack;
     double myenl     = 0.0;
-    CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,atoms,&zmatrixSum[zoffset],
-	     &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],
-             &myenl,mydoublePack);
+    CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,fastAtoms,&zmatrixSum[zoffset],
+               &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],
+               &myenl,mydoublePack);
     enl+=myenl;
 
 #ifdef _CP_DEBUG_NLMAT_

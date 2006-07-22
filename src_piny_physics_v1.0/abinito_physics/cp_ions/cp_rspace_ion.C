@@ -3,16 +3,14 @@
 #include "../../../include/debug_flags.h"
 #include "../class_defs/allclass_gen.h"
 #include "../class_defs/allclass_mdatoms.h"
+#include "../proto_defs/proto_friend_lib_entry.h"
 #include "../class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
-void
-CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
-                            double *pot_ewd_ret)
-
+void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int nproc,
+                                 double *pot_ewd_ret)
 //============================================================================
   { /* Begin Function */
 //----------------------------------------------------------------------------
@@ -23,12 +21,6 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
 
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
-
-  int natm_piny     = mdclatoms_info->natm_tot; 
-  double *q         = mdclatoms_info->q;
-  double alp_ewd    = genewald->alp_ewd;
-  double *hmati     = gencell->hmati;
-  double *hmat      = gencell->hmat;
 
   double p  = 0.3614;
   double e1 = 0.2041422096422003; double  e2 = 0.1997535956961481;
@@ -41,16 +33,29 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
   double de4 = 4.0*e4; double de5 = 5.0*e5; double de6 = 6.0*e6;
   double de7 = 7.0*e7; double de8 = 8.0*e8; double de9 = 9.0*e9;
 
+
+  int natm_piny  = mdclatoms_info->natm_tot; 
+  double alp_ewd = genewald->alp_ewd;
+  double *hmati  = gencell->hmati;
+  double *hmat   = gencell->hmat;
+  double *q      = atoms->q;
+  double *x      = atoms->x;
+  double *y      = atoms->y;
+  double *z      = atoms->z;
+  double *fx     = atoms->fx;
+  double *fy     = atoms->fy;
+  double *fz     = atoms->fz;
+
 //============================================================================
 
 #ifdef _CP_DEBUG_ATM_FORC_
-  double *fx = (double *)cmalloc(natm*sizeof(double),"debug ions");
-  double *fy = (double *)cmalloc(natm*sizeof(double),"debug ions");
-  double *fz = (double *)cmalloc(natm*sizeof(double),"debug ions");
+  double *fxt = (double *)cmalloc(natm*sizeof(double),"debug ions");
+  double *fyt = (double *)cmalloc(natm*sizeof(double),"debug ions");
+  double *fzt = (double *)cmalloc(natm*sizeof(double),"debug ions");
   for(int i=0;i<natm;i++){
-     fx[i]=0.0;
-     fy[i]=0.0;
-     fz[i]=0.0;
+     fxt[i]=0.0;
+     fyt[i]=0.0;
+     fzt[i]=0.0;
   }//endfor
 #endif
 
@@ -73,9 +78,9 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
      for(int iatm = ist; iatm < iend; iatm++){
        for(int jatm = iatm+1; jatm < natm; jatm++){
 
-         double dx = atoms[iatm].x-atoms[jatm].x;
-         double dy = atoms[iatm].y-atoms[jatm].y;
-         double dz = atoms[iatm].z-atoms[jatm].z;
+         double dx = x[iatm]-x[jatm];
+         double dy = y[iatm]-y[jatm];
+         double dz = z[iatm]-z[jatm];
          dx -= NINT(dx*hmati[1])*hmat[1];
          dy -= NINT(dy*hmati[5])*hmat[5];
          dz -= NINT(dz*hmati[9])*hmat[9];
@@ -83,7 +88,7 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
          double r  = sqrt(r2);
 
          if(r<=hmat_min){
-            double qij    = atoms[iatm].q*atoms[jatm].q;
+            double qij    = q[iatm]*q[jatm];
             double ralp   = r * alp_ewd;
             double eee    = exp(-ralp*ralp);
             double tt     = 1.0/(1.0+p*ralp);
@@ -96,20 +101,20 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
             double dvnow  = (gerfc/r2 + dgerfc/r)*qij/r;
             pot_ewd += vnow;
 #ifdef _CP_DEBUG_ATM_FORC_
+            fxt[iatm] += dx*dvnow;
+            fyt[iatm] += dy*dvnow;
+            fzt[iatm] += dz*dvnow;
+            fxt[jatm] -= dx*dvnow;
+            fyt[jatm] -= dy*dvnow;
+            fzt[jatm] -= dz*dvnow;
+#endif
+#ifndef _CP_DEBUG_ATM_FORC_
             fx[iatm] += dx*dvnow;
             fy[iatm] += dy*dvnow;
             fz[iatm] += dz*dvnow;
             fx[jatm] -= dx*dvnow;
             fy[jatm] -= dy*dvnow;
             fz[jatm] -= dz*dvnow;
-#endif
-#ifndef _CP_DEBUG_ATM_FORC_
-            atoms[iatm].fx += dx*dvnow;
-            atoms[iatm].fy += dy*dvnow;
-            atoms[iatm].fz += dz*dvnow;
-            atoms[jatm].fx -= dx*dvnow;
-            atoms[jatm].fy -= dy*dvnow;
-            atoms[jatm].fz -= dz*dvnow;
 #endif
          }//endif
        }//endfor : jatm
@@ -124,16 +129,16 @@ CPRSPACEION::CP_getionforce(const int natm,Atom *atoms,int myid, int nproc,
    if(myid==0){
      FILE *fp = fopen("atom_rspace_only_forc.out","w");
        for(int i=0;i<natm;i++){
-         fprintf(fp,"%d %g %g %g\n",i+1,fx[i],fy[i],fz[i]);
+         fprintf(fp,"%d %g %g %g\n",i+1,fxt[i],fyt[i],fzt[i]);
        }//endfor
      fclose(fp);
      CkPrintf("Atom forces written to atom_forc.out don't contain\n");
      CkPrintf("the real space contribution. Those are in rspace_only.out\n");
      CkPrintf("Currently only proc 0 rspace_only forces are given.\n");
    }//endif
-   free(fx,"debug ions");
-   free(fy,"debug ions");
-   free(fz,"debug ions");
+   cfree(fxt,"debug ions");
+   cfree(fyt,"debug ions");
+   cfree(fzt,"debug ions");
 #endif
 
 //============================================================================

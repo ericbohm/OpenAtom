@@ -57,6 +57,22 @@ class Atom {
 PUPmarshall(Atom);
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class FastAtoms {
+//============================================================================
+ public:
+
+  int natm;
+  double *x,*y,*z,*q;  // no masses or velocities cause these are working vectors
+  double *fx,*fy,*fz;
+  FastAtoms(){}
+ ~FastAtoms(){}
+  
+};//end FastAtom
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

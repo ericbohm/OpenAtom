@@ -228,7 +228,7 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPNONLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, RPPDATA *RPPData)
+void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA *RPPData)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -277,6 +277,10 @@ void CPNONLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, RPPDATA *RP
   double **dmn_b = nonlocal->dmn_b;
   double **dmn_c = nonlocal->dmn_c;
 
+  double *xatm   = atoms->x;
+  double *yatm   = atoms->y;
+  double *zatm   = atoms->z;
+
   double cpu1,cpu2;
 
 //==========================================================================
@@ -302,9 +306,9 @@ void CPNONLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, RPPDATA *RP
 
    for(i=0;i<natm;i++){
      int k = map_nl[(i+1)]-1;
-     x = atoms[k].x;
-     y = atoms[k].y;
-     z = atoms[k].z;
+     x     = xatm[k];
+     y     = yatm[k];
+     z     = zatm[k];
      atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
      btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
      ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
@@ -915,7 +919,8 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 //==========================================================================
 void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double *zmat, 
                 int **igrid,double **dmn_x,double **dmn_y,double **dmn_z,
-		double *projPsiR, int *plane_index, int plane, int state,Atom *atoms)
+		double *projPsiR, int *plane_index, int plane, int state,
+                FastAtoms *atoms)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -939,7 +944,11 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
   int *mang_v        = cppseudo->nonlocal.mang_v;
   int *ityp_v        = cppseudo->nonlocal.ityp_v;
   double *vpsnorm    = cppseudo->vpsnorm; 
-  int *map_nl    = nonlocal->map_nl;
+  int *map_nl        = nonlocal->map_nl;
+
+  double *fx         = atoms->fx;
+  double *fy         = atoms->fy;
+  double *fz         = atoms->fz;
 
   int lang           = lang_v[iter_nl];
   int mang           = mang_v[iter_nl];
@@ -988,9 +997,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        for(int j=1;j<=n_interp2;j++){
          int ind   = igrid[iatm][j];            // index of pt in the plane
          double pz = projPsiR[ind]*zmat[jatm];  // projector*psi
-         atoms[katm].fx -= pz*dmn_x[iatm][j];   // forces
-         atoms[katm].fy -= pz*dmn_y[iatm][j];
-         atoms[katm].fz -= pz*dmn_z[iatm][j];
+         fx[katm] -= pz*dmn_x[iatm][j];   // forces
+         fy[katm] -= pz*dmn_y[iatm][j];
+         fz[katm] -= pz*dmn_z[iatm][j];
 #ifdef _CP_DEBUG_EES_NONLOCAL_
          fxt[jatm]     -= pz*dmn_x[iatm][j]; 
          fyt[jatm]     -= pz*dmn_y[iatm][j];

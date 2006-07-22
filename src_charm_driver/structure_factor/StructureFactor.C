@@ -79,9 +79,10 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 	structFactor_fz    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
       }//endif
       AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+      FastAtoms *fastAtoms = &(ag->fastAtoms);
       CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
 				      structFactor,structFactor_fx,structFactor_fy,
-				      structFactor_fz,ag->atoms, config.doublePack, 
+				      structFactor_fz,fastAtoms, config.doublePack, 
 				      numSfGrps,thisIndex.x);
   //----------------------------------------------------------------------------
   // Communicate the results

@@ -149,7 +149,7 @@ void CPNONLOCAL::CP_enl_force_calc(complex* zMatrixRow, int forcesSize,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, Atom *atoms,
+void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, FastAtoms *atoms,
         complex *zmatrixSum,complex *zmatrixSum_fx,complex *zmatrixSum_fy,
         complex *zmatrixSum_fz,double *enl_ret,int mydoublePack)
 
@@ -166,6 +166,11 @@ void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, Atom *atoms
   double vol      = general_data->gencell.vol;
   double fpi      = 4.0*M_PI;
   double y00      = 1.0/sqrt(fpi);
+
+  double *fx    = atoms->fx;
+  double *fy    = atoms->fy;
+  double *fz    = atoms->fz;
+
 
   if(indexSfGrp>=numSfGrps ||  indexSfGrp<0 || numSfGrps>natm_nl){
     PRINTF("Incorrect SF index %d %d %d\n",indexSfGrp,numSfGrps,natm_nl);
@@ -193,9 +198,9 @@ void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, Atom *atoms
     for (int i = 0; i < natm_nl_grp; i++){
       int k   = i+istrt;
       int ind = map_nl[k]-1;
-      atoms[ind].fx -= (zmatrixSum[i]*zmatrixSum_fx[i].conj()).re;
-      atoms[ind].fy -= (zmatrixSum[i]*zmatrixSum_fy[i].conj()).re;
-      atoms[ind].fz -= (zmatrixSum[i]*zmatrixSum_fz[i].conj()).re;
+      fx[ind] -= (zmatrixSum[i]*zmatrixSum_fx[i].conj()).re;
+      fy[ind] -= (zmatrixSum[i]*zmatrixSum_fy[i].conj()).re;
+      fz[ind] -= (zmatrixSum[i]*zmatrixSum_fz[i].conj()).re;
     }//endfor
 
   }else{
@@ -216,9 +221,9 @@ void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, Atom *atoms
     for (int i = 0,j=0; i < natm_nl_grp; i++,j+=2){
       int k   = i+istrt;
       int ind = map_nl[k]-1;
-      atoms[ind].fx -= dzmatrixSum[j]*dzmatrixSum_fx[j];
-      atoms[ind].fy -= dzmatrixSum[j]*dzmatrixSum_fy[j];
-      atoms[ind].fz -= dzmatrixSum[j]*dzmatrixSum_fz[j];
+      fx[ind] -= dzmatrixSum[j]*dzmatrixSum_fx[j];
+      fy[ind] -= dzmatrixSum[j]*dzmatrixSum_fy[j];
+      fz[ind] -= dzmatrixSum[j]*dzmatrixSum_fz[j];
     }//endfor
 
   }//endif

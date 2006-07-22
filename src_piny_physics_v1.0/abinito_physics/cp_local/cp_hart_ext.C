@@ -21,7 +21,7 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
+void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
                                 complex *vks, double *ehart_ret,double *eext_ret,
                                 double *ewd_ret,int *k_x, int *k_y, int *k_z, 
                                 int index)
@@ -66,10 +66,16 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
 
   /*------------------*/
   /* Atom information */
-  int natm_piny     = mdclatoms_info->natm_tot; 
-  double *q         = mdclatoms_info->q;
-  int natm_typ      = mdatom_maps->natm_typ;
-  int *iatm_typ     = mdatom_maps->iatm_atm_typ;
+  int natm_piny  = mdclatoms_info->natm_tot; 
+  int natm_typ   = mdatom_maps->natm_typ;
+  int *iatm_typ  = mdatom_maps->iatm_atm_typ;
+  double *q      = atoms->q;
+  double *x      = atoms->x;
+  double *y      = atoms->y;
+  double *z      = atoms->z;
+  double *fx     = atoms->fx;
+  double *fy     = atoms->fy;
+  double *fz     = atoms->fz;
 
   /*--------------------------------*/
   /* Cell and pressure information  */
@@ -166,8 +172,8 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
 
    // kx moves fastest through memory : see CP_Rho_GSpacePlane::computeK
    for(int iatm = 0; iatm < natm; iatm++){
-      double arg_tmp = tpi*(hmati[3]*atoms[iatm].x + hmati[6]*atoms[iatm].y 
-                          + hmati[9]*atoms[iatm].z);
+      double arg_tmp = tpi*(hmati[3]*x[iatm] + hmati[6]*y[iatm]
+                          + hmati[9]*z[iatm]);
       ei_inc[iatm] = complex(cos(arg_tmp),sin(arg_tmp));
    }/* endfor */
 
@@ -213,7 +219,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
 
        if(kx_old != k_x[i] || ky_old != k_y[i] || kz_old != k_z[i]-1 || igo==0) {
          for(int iatm = 0; iatm < natm; iatm++){
-           double arg = atoms[iatm].x*gx + atoms[iatm].y*gy + atoms[iatm].z*gz;
+           double arg = x[iatm]*gx + y[iatm]*gy + z[iatm]*gz;
            h[iatm] = complex(cos(arg),sin(arg));
          } /* endfor */
          count_slow+=1.0;
@@ -235,7 +241,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
 #else
          vext  += h[iatm]*vtemp[iatm];
 #endif
-         sewd  += h[iatm]*atoms[iatm].q;
+         sewd  += h[iatm]*q[iatm];
        }//endfor
 
   //----------------------------------------------------------------------------
@@ -249,17 +255,17 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
        double rho_r  = rho[i].re*wght_now;
        double rho_i  = rho[i].im*wght_now;
        for(int iatm=0; iatm < natm; iatm++){
-         double rho_temp_r = ( rho_r*vtemp[iatm] + sumr*atoms[iatm].q);
-         double rho_temp_i = (-rho_i*vtemp[iatm] + sumi*atoms[iatm].q);
+         double rho_temp_r = ( rho_r*vtemp[iatm] + sumr*q[iatm]);
+         double rho_temp_i = (-rho_i*vtemp[iatm] + sumi*q[iatm]);
          double srx        = (gx*rho_temp_r);
          double sry        = (gy*rho_temp_r);
          double srz        = (gz*rho_temp_r);
          double six        = (gx*rho_temp_i);
          double siy        = (gy*rho_temp_i);
          double siz        = (gz*rho_temp_i);
-         atoms[iatm].fx   += (srx*h[iatm].im - six*h[iatm].re);
-         atoms[iatm].fy   += (sry*h[iatm].im - siy*h[iatm].re);
-         atoms[iatm].fz   += (srz*h[iatm].im - siz*h[iatm].re); 
+         fx[iatm]         += (srx*h[iatm].im - six*h[iatm].re);
+         fy[iatm]         += (sry*h[iatm].im - siy*h[iatm].re);
+         fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re); 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
  	   rho_temp_r = ( rho_r*vtemp[iatm] );
@@ -274,8 +280,8 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
            fyt[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
            fzt[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
         }//endif
-        rho_temp_r = sumr*atoms[iatm].q;
-        rho_temp_i = sumi*atoms[iatm].q;
+        rho_temp_r = sumr*q[iatm];
+        rho_temp_i = sumi*q[iatm];
         srx = (gx*rho_temp_r);
         sry = (gy*rho_temp_r);
         srz = (gz*rho_temp_r);
@@ -315,7 +321,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, Atom *atoms,
      vext.re = 0.0;   vext.im = 0.0;
      sewd.re = 0.0;   sewd.im = 0.0;
      for(int iatm=0;iatm< natm; iatm++){
-        sewd.re += atoms[iatm].q;   
+        sewd.re    += q[iatm];   
         vtemp[iatm] = gzvps[iatm_typ[(iatm+1)]]/vol;
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
@@ -447,7 +453,7 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::getEesPrms(int *ngrid_a, int *ngrid_b, int *ngrid_c,
-                            int *n_interp, int *natm)
+                         int *n_interp, int *natm)
 //==========================================================================
   { // begin routine 
 //==========================================================================
@@ -591,7 +597,7 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes, 
+void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, 
                                 RHORHARTDATA *RhoRHartData)
 //==========================================================================
   {// begin routine 
@@ -636,12 +642,17 @@ void CPLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes,
   double **mn_a  = non_local->mn_a;
   double **mn_b  = non_local->mn_b;
   double **mn_c  = non_local->mn_c;
-  double **ua  = non_local->ua;
-  double **ub  = non_local->ub;
-  double **uc  = non_local->uc;
+  double **ua    = non_local->ua;
+  double **ub    = non_local->ub;
+  double **uc    = non_local->uc;
   double **dmn_a = non_local->dmn_a;
   double **dmn_b = non_local->dmn_b;
   double **dmn_c = non_local->dmn_c;
+
+  double *xatm   = atoms->x;
+  double *yatm   = atoms->y;
+  double *zatm   = atoms->z;
+
   double cpu1,cpu2;
 
 //==========================================================================
@@ -666,9 +677,9 @@ void CPLOCAL::eesAtmBsplineRgrp(Atom *atoms, int *allowed_planes,
 #endif
 
    for(i=0;i<natm;i++){
-     x = atoms[i].x;
-     y = atoms[i].y;
-     z = atoms[i].z;
+     x = xatm[i];
+     y = yatm[i];
+     z = zatm[i];
      atemp = x*hmati[1] + y*hmati[4] + z*hmati[7];
      btemp = x*hmati[2] + y*hmati[5] + z*hmati[8];
      ctemp = x*hmati[3] + y*hmati[6] + z*hmati[9];
@@ -1238,7 +1249,7 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPLOCAL::eesAtmForceRchare(int natm, Atom *atoms,int ityp, 
+void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp, 
                 int **igrid, double **dmn_x, double **dmn_y, double **dmn_z, 
                 int *plane_index, double *sfAtmTypR, int iplane,int flag)
 //==========================================================================
@@ -1253,7 +1264,11 @@ void CPLOCAL::eesAtmForceRchare(int natm, Atom *atoms,int ityp,
   int n_interp  = cppseudo->n_interp_ps;
   int n_interp2 = n_interp*n_interp;
   int *iatm_typ = mdatom_maps->iatm_atm_typ;
-  double *q     = mdclatoms_info->q;
+
+  double *q     = atoms->q;
+  double *fx    = atoms->fx;
+  double *fy    = atoms->fy;
+  double *fz    = atoms->fz;
 
 //==========================================================================
 // Setup some debug output
@@ -1277,13 +1292,13 @@ void CPLOCAL::eesAtmForceRchare(int natm, Atom *atoms,int ityp,
     if(iatm_typ[(iatm+1)]==ityp || flag==1){
       int jc = plane_index[iatm];  // interpolation pt of plane
       if(jc>0){
-        double qnow = (flag==1 ? q[(iatm+1)] : 1.0);
+        double qnow = (flag==1 ? q[iatm] : 1.0);
         for(int j=1;j<=n_interp2;j++){
-          int ind         = igrid[iatm][j]; // index of pt in the plane
-          double p        = sfAtmTypR[ind]*qnow;
-          atoms[iatm].fx -= (dmn_x[iatm][j]*p);
-          atoms[iatm].fy -= (dmn_y[iatm][j]*p);
-          atoms[iatm].fz -= (dmn_z[iatm][j]*p);
+          int ind   = igrid[iatm][j];      // index of pt in the plane
+          double p  = sfAtmTypR[ind]*qnow;
+          fx[iatm] -= (dmn_x[iatm][j]*p);
+          fy[iatm] -= (dmn_y[iatm][j]*p);
+          fz[iatm] -= (dmn_z[iatm][j]*p);
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
           fxt[iatm] -=(dmn_x[iatm][j]*p);
           fyt[iatm] -=(dmn_y[iatm][j]*p);

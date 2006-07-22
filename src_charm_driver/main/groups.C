@@ -60,31 +60,55 @@ void IntegrationComplete(void *, void *);
 //==============================================================================
 AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
                    int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC){
+//==============================================================================
+// parameters, options and energies
 
-	natm                = n;
-        natm_nl             = n_nl;
-        len_nhc             = len_nhc_;
-        iextended_on        = iextended_on_;
-        cp_min_opt          = cp_min_opt_;
-        cp_wave_opt         = cp_wave_opt_;
-        isokin_opt          = isokin_opt_;
-        iteration           = 0;
-        kT                  = kT_;
-        pot_ewd_rs_loc      = 0.0;
-        pot_ewd_rs          = 0.0;
-        eKinetic            = 0.0;
-        eKineticNhc         = 0.0;
-        potNhc              = 0.0;    
-	atoms               = new Atom[natm];
-	atomsNHC            = new AtomNHC[natm];
-	CmiMemcpy(atoms, a, natm * sizeof(Atom)); // atoms has no vectors
-        for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
-	zeroforces();
-        if(iextended_on==1 && cp_min_opt==0){
-           zeronhc();
-           computeFNhc();
-	}//endif
-}
+    natm            = n;
+    natm_nl         = n_nl;
+    len_nhc         = len_nhc_;
+    iextended_on    = iextended_on_;
+    cp_min_opt      = cp_min_opt_;
+    cp_wave_opt     = cp_wave_opt_;
+    isokin_opt      = isokin_opt_;
+    iteration       = 0;
+    kT              = kT_;
+    pot_ewd_rs      = 0.0;
+    eKinetic        = 0.0;
+    eKineticNhc     = 0.0;
+    potNhc          = 0.0;    
+
+//==============================================================================
+// Initial positions, forces, velocities 
+
+    atoms           = new Atom[natm];
+    atomsNHC        = new AtomNHC[natm];
+    CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
+    for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
+
+    zeroforces();
+    if(iextended_on==1 && cp_min_opt==0){
+       zeronhc();
+       computeFNhc();
+    }//endif
+
+//==============================================================================
+// A copy of the atoms for fast routines
+
+    fastAtoms.natm = natm;
+    fastAtoms.q    = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.x    = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.y    = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.z    = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
+    fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
+
+    copySlowToFast();
+    double *qq = fastAtoms.q;
+    for(int i=0;i<natm;i++){qq[i]=atoms[i].q;}
+
+//-----------------------------------------------------------------------------
+  }//end routine
 //==============================================================================
 
 
@@ -97,8 +121,14 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
  */
 //==============================================================================
 AtomsGrp::~AtomsGrp(){
-	delete [] atoms;
-	delete [] atomsNHC;
+     delete [] atoms;
+     delete [] atomsNHC;
+     fftw_free(fastAtoms.x);
+     fftw_free(fastAtoms.y);
+     fftw_free(fastAtoms.z);
+     fftw_free(fastAtoms.fx);
+     fftw_free(fastAtoms.fy);
+     fftw_free(fastAtoms.fz);
 }
 //==============================================================================
 
@@ -134,27 +164,24 @@ CPcharmParaInfoGrp::~CPcharmParaInfoGrp(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-
 void AtomsGrp::StartRealspaceForces(){
-
 //==========================================================================
 // Get the real space atom forces
 
-   AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
-   Atom *atoms       = ag->atoms;
-   int natm          = ag->natm;
-   int myid          = CkMyPe();
-   int nproc         = CkNumPes();
-   double pot_ewd_rs = 0.0;
+   int myid   = CkMyPe();
+   int nproc  = CkNumPes();
+   pot_ewd_rs = 0.0;
 
 #ifndef  _CP_DEBUG_PSI_OFF_
-   if(myid<natm-1){CPRSPACEION::CP_getionforce(natm,atoms,myid,nproc,&pot_ewd_rs);}
+   if(myid<natm-1){
+     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs);
+   }//endif
 #endif
 
 #ifdef _CP_DEBUG_ATMS_
    CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
 #endif
-   atomsGrpProxy[myid].contributeforces(pot_ewd_rs);
+   contributeforces();
    
 //==========================================================================
   }//end routine
@@ -164,24 +191,21 @@ void AtomsGrp::StartRealspaceForces(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-
-void AtomsGrp::contributeforces(double pot_ewd_rs){
-
+void AtomsGrp::contributeforces(){
 //==========================================================================
 
   int i,j;
-  AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
   int myid     = CkMyPe();
-  int natm     = ag->natm;
   double *ftot = (double *)malloc((3*natm+1)*sizeof(double));
 
+  copyFastToSlow();
   for(i=0,j=0; i<natm; i++,j+=3){
-    ftot[j]   = ag->atoms[i].fx;
-    ftot[j+1] = ag->atoms[i].fy;
-    ftot[j+2] = ag->atoms[i].fz;
+    ftot[j]   = atoms[i].fx;
+    ftot[j+1] = atoms[i].fy;
+    ftot[j+2] = atoms[i].fz;
   }//endfor
   ftot[3*natm]=pot_ewd_rs;
-  ag->pot_ewd_rs = pot_ewd_rs_loc;
+
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
 #endif
@@ -202,17 +226,10 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
   int i,j;
   double *ftot      = (double *) msg->getData();
-  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+
   EnergyGroup *eg   = egroupProxy.ckLocalBranch();
+
   int myid          = CkMyPe();
-  int natm          = ag->natm;
-  int len_nhc       = ag->len_nhc;
-  int cp_min_opt    = ag->cp_min_opt;
-  int cp_wave_opt   = ag->cp_wave_opt;
-  int iextended_on  = ag->iextended_on;
-  Atom *atoms       = ag->atoms;
-  AtomNHC *atomsNHC = ag->atomsNHC;
-  int isokin_opt    = ag->isokin_opt;
   int output_on     = config.stateOutputOn;
 
 //============================================================
@@ -242,16 +259,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   if(myid==0){CkExit();}
 #endif
 
-//============================================================
-// Integrate the atoms
-
-#ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
-#endif
-  double eKinetic_loc   =0.0;
-  double eKineticNhc_loc=0.0;
-  double potNhc_loc     =0.0;
-  int iwrite_atm        =0;
+//=================================================================
+// Model forces 
 
 #ifdef  _CP_DEBUG_PSI_OFF_
   double omega  = (0.0241888/15.0); // 15 fs^{-1}
@@ -262,8 +271,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
       atoms[i].x = 0.0;
       atoms[i].y = 0.0;
       atoms[i].z = 0.0;
-    }
-  }
+    }//endfor
+  }//endif
   for(i=0;i<natm;i++){
     atoms[i].fx = -omega2*atoms[i].x*atoms[i].m;
     atoms[i].fy = -omega2*atoms[i].y*atoms[i].m;;
@@ -274,6 +283,10 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   }//endfor
   pot_harm *= 0.5;
 #endif
+
+//=================================================================
+// Check the forces
+
 #ifdef _GLENN_CHECK_FORCES
    FILE *fp = fopen("forces.save","w");
    for(i=0;i<natm;i++){
@@ -282,12 +295,27 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    fclose(fp);
    CkExit();
 #endif
-   int myoutput_on = output_on;
+
+//============================================================
+// Integrate the atoms
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
+#endif
+
+   double eKinetic_loc   = 0.0;
+   double eKineticNhc_loc= 0.0;
+   double potNhc_loc     = 0.0;
+   int iwrite_atm        = 0;
+   int myoutput_on       = output_on;
    if(iteration+1>config.maxIter){myoutput_on = 0;}
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
                     myoutput_on);
+
+//============================================================
+  // Debug output
+
 #ifdef  _CP_DEBUG_PSI_OFF_
    double etot_atm;
    if(isokin_opt==0){
@@ -299,16 +327,15 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
                                                     (eKinetic_loc+pot_harm),myid);
    }//endif
 #endif
-  iteration++;
 
 //============================================================
 // Tuck things : At present no reduction required for kin,nhc stuff
 
-  ag->pot_ewd_rs  = pot_ewd_rs;
-  ag->eKinetic    = eKinetic_loc;
-  ag->eKineticNhc = eKineticNhc_loc;
-  ag->potNhc      = potNhc_loc;     
-  ag->iteration   = iteration;
+  iteration++;
+
+  eKinetic    = eKinetic_loc;
+  eKineticNhc = eKineticNhc_loc;
+  potNhc      = potNhc_loc;     
 
   eg->estruct.eewald_real     = pot_ewd_rs;  
   eg->estruct.fmag_atm        = fmag;
@@ -323,6 +350,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //      zero forces, outputAtmEnergy, atomsDone
 
   zeroforces();
+  copySlowToFast();
   outputAtmEnergy();
 
   //--------------------------------------------------
@@ -355,23 +383,17 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
-  AtomsGrp *ag       = atomsGrpProxy.ckLocalBranch();
-  EnergyGroup *eg    = egroupProxy.ckLocalBranch();
-  int cp_min_opt     = ag->cp_min_opt;
-  int myid           = CkMyPe();  
-  double eKinetic    = eg->estruct.eKinetic_atm;
-  double eKineticNhc = eg->estruct.eKineticNhc_atm;
-  double fmag        = eg->estruct.fmag_atm;
-  double pot_ewd_rs  = eg->estruct.eewald_real;
-  double potNhc      = eg->estruct.potNhc_atm;
-  int natm           = ag->natm;
-  int len_nhc        = ag->len_nhc;
-  double free_atm    = 3*((double)natm);
-  int iextended_on   = ag->iextended_on;
-  int isokin_opt     = ag->isokin_opt;
+  EnergyGroup *eg       = egroupProxy.ckLocalBranch();
+  int myid              = CkMyPe();  
+  double eKinetic       = eg->estruct.eKinetic_atm;
+  double eKineticNhc    = eg->estruct.eKineticNhc_atm;
+  double fmag           = eg->estruct.fmag_atm;
+  double pot_ewd_rs_now = eg->estruct.eewald_real;
+  double potNhc         = eg->estruct.potNhc_atm;
+  double free_atm       = 3*((double)natm);
 
   if(myid==0){
-     CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs);
+     CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs_now);
      if(cp_min_opt==0){
         CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
         CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
@@ -461,14 +483,7 @@ void AtomsGrp::outputAtmEnergy() {
   void AtomsGrp::sendAtoms() {
 //==========================================================================
 
-  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
   int myid          = CkMyPe();
-  int natm          = ag->natm;
-  int len_nhc       = ag->len_nhc;
-  int iextended_on  = ag->iextended_on;
-  int iteration     = ag->iteration;
-  Atom *atoms       = ag->atoms;
-  AtomNHC *atomsNHC = ag->atomsNHC;
 
   int nsize = 6*natm;
   if(iextended_on==1){nsize += len_nhc*3*natm;}
@@ -529,11 +544,6 @@ void AtomsGrp::outputAtmEnergy() {
 
   AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
   int myid          = CkMyPe();
-  int natm          = ag->natm;
-  int len_nhc       = ag->len_nhc;
-  int iextended_on  = ag->iextended_on;
-  Atom *atoms       = ag->atoms;
-  AtomNHC *atomsNHC = ag->atomsNHC;
   double *atmData   = msg->data;
   int    nsizeMsg   = msg->nsize;
   
@@ -574,9 +584,11 @@ void AtomsGrp::outputAtmEnergy() {
   }//endif
 
 //==========================================================================
-// Delete the message and phone home
+// Delete the message, copy to the fast vectors and phone home
 
   delete msg;
+
+  copySlowToFast();
   atomsDone();
 
 //-------------------------------------------------------------------------

@@ -314,9 +314,10 @@ void CP_Rho_GHartExt::HartExtVksG() {
   CkPrintf("Ghart %d Here in hartextvskg at %d\n",thisIndex.x);
 #endif
 
-   AtomsGrp *ag  = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-   int natm      = ag->natm;
-   Atom *atoms   = ag->atoms;
+   AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+   int natm             = ag->natm;
+   FastAtoms *fastAtoms = &(ag->fastAtoms);
+
    int numPoints = rho_gs.numPoints;
    int numFull   = rho_gs.numFull;
    complex *rho  = rho_gs.packedRho;
@@ -337,7 +338,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
 #endif    
 
    bzero(vks,numPoints*sizeof(complex));
-   CPLOCAL::CP_hart_eext_calc(numPoints, rho, natm, atoms, vks,
+   CPLOCAL::CP_hart_eext_calc(numPoints, rho, natm, fastAtoms, vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
                               thisIndex.x);
    iteration ++;

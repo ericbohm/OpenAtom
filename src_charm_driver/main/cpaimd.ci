@@ -348,8 +348,6 @@ mainmodule cpaimd {
                                int iextended_on,int cp_min_opt,int cp_wave_opt,
                                int isokin_opt,
                                double kT,Atom atoms[natm],AtomNHC atomsNHC[natm]);
-		entry void contributeforces(double pot_ewald);
-		entry void zeroforces();
                 entry void StartRealspaceForces();
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);

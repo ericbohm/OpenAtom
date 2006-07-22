@@ -24,7 +24,7 @@ class CPLOCAL{
 
  //---------------------------------------------------------------------------
  // functions
-  static void CP_hart_eext_calc(int , complex *,int , Atom *,complex *, 
+  static void CP_hart_eext_calc(int , complex *,int , FastAtoms *,complex *, 
                           double *,double *,double *,int *, int *, int *,int );
 
   static void CP_get_vpsnow(int *,int ,double ,double ,double ,
@@ -37,7 +37,7 @@ class CPLOCAL{
   static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
                                 int ,int ,int ,int );
 
-  static void eesAtmBsplineRgrp(Atom *, int *, RHORHARTDATA *);
+  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA *);
 
   static void eesPackGridRchare(int , int , double *, int ,int **, double **, int *);
 
@@ -48,7 +48,7 @@ class CPLOCAL{
   static void eesEwaldGchare(int ,complex *,double *, double *,double *,
                              int *, int *, int *,int);
 
-  static void eesAtmForceRchare(int , Atom *,int ,int **, double **, double **, 
+  static void eesAtmForceRchare(int , FastAtoms *,int ,int **, double **, double **, 
                                 double **, int *, double *, int ,int );
 
 //---------------------------------------------------------------------------

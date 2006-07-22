@@ -628,8 +628,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
    double **dmn_y     = eesData->RppData[myPlane].dmn_y;
    double **dmn_z     = eesData->RppData[myPlane].dmn_z;
 
-   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch();
-   Atom *atoms      = ag->atoms;
+   AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
+   FastAtoms *fastAtoms = &(ag->fastAtoms);
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
@@ -637,7 +637,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
 #endif
 
    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,&zmat[offZmat], 
-               igrid,dmn_x,dmn_y,dmn_z,projPsiR,plane_index,myPlane,thisIndex.x,atoms);
+               igrid,dmn_x,dmn_y,dmn_z,projPsiR,plane_index,myPlane,
+               thisIndex.x,fastAtoms);
 
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast

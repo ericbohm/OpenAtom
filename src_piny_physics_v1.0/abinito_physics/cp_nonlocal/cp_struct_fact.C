@@ -40,7 +40,7 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
                            complex *StructFact_fx,
                            complex *StructFact_fy,
                            complex *StructFact_fz,
-                           Atom *atoms,
+                           FastAtoms *atoms,
                            int mydoublePack, int numSfGrps, int indexSfGrp)
 
 //============================================================================
@@ -100,6 +100,10 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
   double tpi = 2.0*M_PI;
   double fpi = 4.0*M_PI;
 
+  double *xatm      = atoms->x;
+  double *yatm      = atoms->y;
+  double *zatm      = atoms->z;
+
 #ifdef GJM_DEBUG_SIZE
    PRINTF(" %d : coefs in CP_calc_Struct_Fact: %d\n",gSpaceSize,mydoublePack);
 #endif
@@ -121,9 +125,9 @@ void CPNONLOCAL::CP_calc_Struct_Fact(int gSpaceSize,
    for(int iatm=istrt;iatm<=iend;iatm++){
      int ind = map_nl[iatm]-1;
      int i   = iatm-istrt+1;
-     x[i] = atoms[ind].x;
-     y[i] = atoms[ind].y;
-     z[i] = atoms[ind].z;
+     x[i]    = xatm[ind];
+     y[i]    = yatm[ind];
+     z[i]    = zatm[ind];
    }//endfor
 
    for(int iatm=1;iatm<=natm_nl_grp;iatm++){

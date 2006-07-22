@@ -34,12 +34,12 @@ static void CP_enl_matrix_calc(int , complex *, int *, int *, int *,
 static void CP_enl_force_calc(complex* , int , int *, int *, int *, 
                           complex *,complex *, int , int ,int , int);
 
-static void CP_enl_atm_forc_calc(int , int , Atom *,
+static void CP_enl_atm_forc_calc(int , int , FastAtoms *,
                           complex *,complex *,complex *,complex *,double *,int );
 
 static void CP_calc_Struct_Fact(int , int *, int *, int *, 
                                 complex *, complex *, complex *, complex *,
-                                Atom *,  int , int ,int );
+                                FastAtoms *,  int , int ,int );
 
 static void get_rad_proj(int ,int ,double ,double ,double ,int , int , 
                          double *,double *,double *,double *,double *,double *);
@@ -55,7 +55,7 @@ static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *,
 
 static void eesSplProjectorGgrp(int , int *, int *, int *,double *,int *);
 
-static void eesAtmBsplineRgrp(Atom *, int *, RPPDATA *);
+static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA *);
 
 static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
                           double *, double *, double *, double *,complex *,int *,
@@ -67,7 +67,7 @@ static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double
 static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,int);
 
 static void eesEnergyAtmForcRchare(int , double *, double *, int **,double **,
-                                   double **,double **,double *, int *, int ,int,Atom *);
+                                double **,double **,double *, int *, int ,int,FastAtoms *);
 
 static void eesPsiForcRchare(int , double *,int **,double **,double *, int *,int );
 

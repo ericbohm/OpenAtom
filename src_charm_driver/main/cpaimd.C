@@ -1186,8 +1186,8 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 //============================================================================
 
   PRINT_LINE_STAR;
-  PRINTF("Building G-space and R-space Chares state %d sizeYZ %d %d\n",
-          nstates,sizeYZ[0],sizeYZ[1]);
+  PRINTF("Building G-space (%d %d) and R-space (%d %d/%d) state Chares\n",
+          nstates,nchareG,nstates,nchareR,nchareRPP);
   PRINT_LINE_DASH;printf("\n");
 
 //============================================================================
@@ -1458,7 +1458,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 // Output to the screen
 
   PRINT_LINE_STAR;
-  CkPrintf("Building RhoR, RhoG, RhoGHartExt, RhoRHartExt Chares %d %d %d %d %d\n",
+  CkPrintf("Building RhoR, RhoG, RhoGHartExt, RhoRHartExt Chares %d %d %d %d natmtyp:%d\n",
             nchareRhoR,nchareRhoG,nchareRhoGHart,nchareRhoRHart,natmTyp);
   PRINT_LINE_DASH;printf("\n");
 

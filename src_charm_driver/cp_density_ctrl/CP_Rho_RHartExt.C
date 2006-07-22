@@ -480,11 +480,11 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   double **dmn_y   = eesData->RhoRHartData[myPlane].dmn_y;
   double **dmn_z   = eesData->RhoRHartData[myPlane].dmn_z;
 
-  AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
-  Atom *atoms      = ag->atoms; 
-  int natm         = ag->natm;
+  AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+  FastAtoms *fastAtoms = &(ag->fastAtoms);
+  int natm             = ag->natm;
 
-  CPLOCAL::eesAtmForceRchare(natm,atoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
+  CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
                              plane_index,data,myPlane,flagEwd);
 
 //============================================================================
