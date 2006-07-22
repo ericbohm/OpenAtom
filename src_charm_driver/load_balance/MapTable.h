@@ -63,9 +63,7 @@ class MapTable
 	{
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
-#ifdef _VERBOSE_MAP_
 	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
-#endif
 	}
       delete it;
     }

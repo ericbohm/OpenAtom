@@ -1522,12 +1522,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhoghartOpts.setMap(rhogHartMap);
 
     // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoRHart>availGlob->count()){
+    if(nchareRhoRHart > availGlob->count()){
 	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoRHart);
 	availGlob->rebuild();
     }//endif
 
-    RhoRHartMapTable RhoRHarttable(&RhoGHartmaptable, availGlob, nchareRhoRHart);
+    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, availGlob, nchareRhoRHart);
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
     CkArrayOptions rhorhartOpts;
     rhorhartOpts.setMap(rhorHartMap);
