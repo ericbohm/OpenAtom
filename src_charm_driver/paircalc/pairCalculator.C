@@ -312,11 +312,14 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   //add chunk loop
   for(int chunk = numChunks-1; chunk >=0; chunk--){
     for(int numX = numZ-1; numX >=0; numX--){
-      CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
-      elems[ecount++]=idx4d;
       if(phantom && s1!=s2)
 	{
-	  CkArrayIndex4D idx4d(z[numX],s2,s1,chunk);
+	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
+	  elems[ecount++]=idx4d;
+	}
+      else
+	{
+	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
 	  elems[ecount++]=idx4d;
 	}
     }

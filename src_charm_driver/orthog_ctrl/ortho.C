@@ -295,6 +295,8 @@ void Ortho::resume(){
       finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType,  0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
       finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType, 0);
+    else if(thisIndex.y > thisIndex.x && config.phantomSym)
+      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType, 0);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -536,8 +538,8 @@ void Ortho::makeSections(int indexSize, int *indexZ){
       if(config.phantomSym)
 	{
 	  pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true);
-	if(s1!=s2)
-	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
+	  //	if(s1!=s2)
+	  //	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
 	}
       else
 	{
@@ -545,6 +547,10 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcRedProxy);
 	  pcProxy=pcRedProxy;
 	}
+    }
+  else if(config.phantomSym)
+    {
+      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
     }
     pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false);
     pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);

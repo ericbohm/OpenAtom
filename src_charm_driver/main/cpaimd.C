@@ -420,7 +420,7 @@ main::main(CkArgMsg *msg) {
     int m, pl, pm;
     pl = nstates / l;
     pm = CkNumPes() / pl;
-    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
+    if(pm==0){CkAbort("Choose a smaller Gstates_per_pe \n");}
     m = config.nchareG / pm;
 
     planes_per_pe=m;
