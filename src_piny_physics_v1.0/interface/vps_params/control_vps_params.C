@@ -1940,6 +1940,7 @@ void nlEesSetIter(CPPSEUDO *cppseudo){
 
   int nl_iter   = 0;
   int ntot_zmat = 0;  
+  int nmax_zmat = 0;  
   for(int lang=0,lang1=1;lang<=nl_max;lang++,lang1++){// l-channels      
     int natm_typ = natm_typ_lang[lang1];// num atom types in this l-channel 
     if(natm_typ>0){
@@ -1949,6 +1950,7 @@ void nlEesSetIter(CPPSEUDO *cppseudo){
           int natm     = natm_lang[iatm_typ];        // # atms of this type 
           nl_iter     += 1;
           ntot_zmat   += natm;
+          nmax_zmat   = MAX(nmax_zmat,natm);
         }//endfor
       }//endfor
     }//endfor
@@ -1994,6 +1996,7 @@ void nlEesSetIter(CPPSEUDO *cppseudo){
 
   cppseudo->nonlocal.nl_iter   = nl_iter;
   cppseudo->nonlocal.ntot_zmat = ntot_zmat;
+  cppseudo->nonlocal.nmax_zmat = nmax_zmat;
   cppseudo->nonlocal.lang_v    = lang_v;
   cppseudo->nonlocal.mang_v    = mang_v;
   cppseudo->nonlocal.ityp_v    = ityp_v;

@@ -145,6 +145,7 @@ class CPcharmParaInfo {
    int npts_tot;   // total number of pts in g-space
    int natm_tot;
    int nlIters;        // number of non-local iterations
+   int nmem_zmat_max;  // total size of zmatrix memory
    int nmem_zmat_tot;  // total size of zmatrix memory
    int *ioff_zmat;     // offset into zmatrix memory
    int *nmem_zmat;     // zmatrix memory for each iteration
@@ -407,7 +408,8 @@ class CPcharmParaInfo {
       p|ngrid_eext_a;  p|ngrid_eext_b;   p|ngrid_eext_c;
       p|nplane_x;   p|nchareG;    p|natm_tot;    p|natm_nl;
       p|nstates;    p|ntime;      p|ibinary_opt; p|ibinary_write_opt;
-      p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; p|nmem_zmat_tot;
+      p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; 
+      p|nmem_zmat_tot; p|nmem_zmat_max;
       p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;
       p|nlines_max;
       p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 

@@ -65,6 +65,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
   int nlIters         = (cppseudo->nonlocal.nl_iter);
   int nmem_zmat_tot   = cppseudo->nonlocal.ntot_zmat;
+  int nmem_zmat_max   = cppseudo->nonlocal.nmax_zmat;
   int *nmem_zmat      = cppseudo->nonlocal.n_zmat;
   int *ioff_zmat      = cppseudo->nonlocal.ioff_zmat;
 
@@ -133,6 +134,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ngrid_eext_c   = ngrid_eext_c; 
 
    sim->nmem_zmat_tot  = nmem_zmat_tot;
+   sim->nmem_zmat_max  = nmem_zmat_max;
    sim->ioff_zmat      = new int [nlIters];
    sim->nmem_zmat      = new int [nlIters];
    for(int i=0;i<nlIters;i++){

@@ -290,9 +290,8 @@ void CP_State_RealSpacePlane::doReduction(double *data){
 #ifndef CMK_OPTIMIZE    
       double StartTime=CmiWallTimer();
 #endif
-        mcastGrp->contribute(rs.planeSize[0] * sizeX * 
-                             sizeof(double), data, CkReduction::sum_double, 
-                             cookie, cb);
+        mcastGrp->contribute(rs.planeSize[0] * sizeX * sizeof(double), 
+                             data, CkReduction::sum_double,cookie, cb);
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    

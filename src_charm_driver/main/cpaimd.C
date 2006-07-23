@@ -1171,7 +1171,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int nchareRPP       = ngridcNl;
 
   int numIterNL       = sim->nlIters;
-  int zmatSizeTot     = sim->nmem_zmat_tot;
+  int zmatSizeMax     = sim->nmem_zmat_max;
 
   int nchareRhoG      = sim->nchareRhoG;
   int rhoGHelpers     = config.rhoGHelpers;
@@ -1223,7 +1223,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   pRealSpaceOpts.setMap(rspMap);
   realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
                                 ngridaNl,ngridbNl,ngridcNl,
-                                numIterNL,zmatSizeTot,Rstates_per_pe,
+                                numIterNL,zmatSizeMax,Rstates_per_pe,
 		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
 
  //--------------------------------------------------------------------------------
@@ -1295,7 +1295,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     for (int s = 0;  s < nstates; s++){
       for (int y = 0; y < ngridcNl; y += 1){
         realParticlePlaneProxy(s, y).insert(ngridaNl,ngridbNl,ngridcNl,
-                                            numIterNL,zmatSizeTot,Rstates_per_pe,
+                                            numIterNL,zmatSizeMax,Rstates_per_pe,
 		                            nchareG,ees_nonlocal_on);
       }//endfor
     }//endfor

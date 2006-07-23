@@ -113,9 +113,8 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,
-                                 int *k_z,double *cmass, 
-                                 int mydoublePack)
+void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,int *k_z,
+                                 double *cmass, int mydoublePack)
 
 //============================================================================
    { /* Begin Function */

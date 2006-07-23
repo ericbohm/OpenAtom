@@ -35,7 +35,7 @@ void CPINTEGRATE::CP_integrate_min_STD
    double ecut      = cpcoeffs_info->ecut_psi;
    double tpi       = 2.0*M_PI; 
    double dt        = gentimeinfo->dt;
-
+   int nfreq = 400;
 //----------------------------------------------------------------------------
 // I. Perform a step of steepest descent minimization
 #ifdef _CP_DEBUG_NEWFORCE_
@@ -83,6 +83,9 @@ void CPINTEGRATE::CP_integrate_min_STD
         fprintf(fp5,"%d %d %d : forc_after_lmatrix %.10g %.10g \n",
  		  k_x[i],k_y[i],k_z[i],forces[i].re,forces[i].im);
      }
+#endif
+#ifdef CMK_VERSION_BLUEGENE
+     if(i%nfreq==0){CmiNetworkProgress();}
 #endif
    } /* endfor */
 

@@ -281,6 +281,7 @@ void GStateSlab::addForces(const complex *points, const int *k_x){
         if(i%nfreq==0){CmiNetworkProgress();}
 #endif
       }//endfor
+
       for(i = nkx0; i < numPoints; i++){
 #ifdef _CP_DEBUG_NON_LOCAL_ONLY_
 	packedForceData[i] = 0.0; 
@@ -311,46 +312,25 @@ void GStateSlab::addForces(const complex *points, const int *k_x){
  */
 //==============================================================================
 
-void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
+void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
 
 //======================================================================
 // Construct the k-vectors
 
-  int *k_x = (int *)fftw_malloc(numPoints*sizeof(int));
-  int *k_y = (int *)fftw_malloc(numPoints*sizeof(int));
-  int *k_z = (int *)fftw_malloc(numPoints*sizeof(int));
-  
-  int r, i, dataCovered = 0;
-  int x, y, z;
-  for (r = 0; r < numRuns; r++) { // 2*number of lines z
-    x = runs[r].x;
-    if (x > sizeX/2) x -= sizeX;
-    y = runs[r].y;
-    if (y > planeSize[0]/2) y -= planeSize[0];
-    z = runs[r].z;
-    if (z > planeSize[1]/2) z -= planeSize[1];
-
-    for (i = 0; i < runs[r].length; i++) { //pts in lines of z
-      k_x[dataCovered] = x;
-      k_y[dataCovered] = y;
-      k_z[dataCovered] = (z+i);
-      dataCovered++;
-    }//endfor
-  }//endfor
-
-  CkAssert(dataCovered == numPoints);
+  CkAssert(n == numPoints);
 
 //======================================================================
 // Find pts with k_x==0 then check the layout : kx=0 first
 
+  int i;
   ihave_g000 = 0;
   ind_g000   = -1;
-  ihave_kx0 = 0;
-  nkx0  = 0;
-  nkx0_uni=0;
-  nkx0_red=0;
-  nkx0_zero=0;
-  kx0_strt =0;
+  ihave_kx0  = 0;
+  nkx0       = 0;
+  nkx0_uni   = 0;
+  nkx0_red   = 0;
+  nkx0_zero  = 0;
+  kx0_strt   = 0;
   for(i=0;i<numPoints;i++){
     if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
     if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
@@ -409,14 +389,6 @@ void GStateSlab::setKVectors(int *n, int **kk_x, int **kk_y, int **kk_z){
   packedRedPsi  = (complex *)fftw_malloc(nkx0*sizeof(complex));
   memset(packedRedPsi, 0, sizeof(complex)*nkx0);
 
-//==============================================================================
-// Set the return values
-
-  *n    = numPoints;
-  *kk_x = k_x;
-  *kk_y = k_y;
-  *kk_z = k_z;
-  
 //==============================================================================
   }//end routine
 //==============================================================================

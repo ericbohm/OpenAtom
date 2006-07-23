@@ -21,8 +21,9 @@ class PSNONLOCAL{
    int ngrid_a,ngrid_b,ngrid_c; //Num: EES real space mesh  : NL sizes
    int nfft;                //Num: ngrid_a*ngrid_b*ngrid_c
 
-   int nl_iter;            //Num: Total number NL ees iterations
+   int nl_iter;             //Num: Total number NL ees iterations
    int ntot_zmat;           //Num: Total zmat size
+   int nmax_zmat;           //Num: Total zmat size
    int nl_max;              //Num: maximum occupied l-chan     
    int nl_max1;             //Num: maximum occupied l-chan+1  : spawns a lang channel loop
    int *natm_typ_lang;      // # of atom typs in the lth channel : spawns ityp loop
@@ -91,6 +92,7 @@ class PSNONLOCAL{
      nl_max1     = 0;
      nl_iter    = 0; 
      ntot_zmat   = 0;
+     nmax_zmat   = 0;
      ecut        = 0.0;
      fft_size_scale = 0.0;
    };
@@ -121,6 +123,7 @@ class PSNONLOCAL{
     p | nl_max1;
     p | nl_iter; 
     p | ntot_zmat;
+    p | nmax_zmat;
     //pupping dbles
     p | ecut;
     p | fft_size_scale;

@@ -37,6 +37,7 @@ void CPINTEGRATE::CP_integrate_min_CG
    double ecut      = cpcoeffs_info->ecut_psi;
    double tpi       = 2.0*M_PI; 
    double dt        = gentimeinfo->dt;
+   int nfreq = 400;
 
 //----------------------------------------------------------------------------
 // 0. Create the new conjugate gradient
@@ -47,6 +48,9 @@ void CPINTEGRATE::CP_integrate_min_CG
     gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
     g2 = gx*gx + gy*gy + gz*gz;
     if(g2<=ecut){conj_grad[i] = conj_grad[i]*gamma + forces[i];}
+#ifdef CMK_VERSION_BLUEGENE
+     if(i%nfreq==0){CmiNetworkProgress();}
+#endif
   }//endfor
 
 //----------------------------------------------------------------------------
@@ -90,6 +94,9 @@ void CPINTEGRATE::CP_integrate_min_CG
         fprintf(fp4,"is=%d : %d %d %d : coef_after_cg %.10g %.10g %.10g\n",
  		istate,k_x[i],k_y[i],k_z[i],psi_g[i].re,psi_g[i].im,cmass[i]);
      }
+#endif
+#ifdef CMK_VERSION_BLUEGENE
+     if(i%nfreq==0){CmiNetworkProgress();}
 #endif
    } /* endfor */
 

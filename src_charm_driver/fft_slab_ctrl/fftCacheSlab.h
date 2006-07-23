@@ -122,7 +122,7 @@ public:
 
    complex* doFwFFT();
    void doBwFFT(complex*);
-   void setKVectors(int *, int **, int **, int **);
+   void setKRange(int , int *, int *, int *);
    void addForces(const complex *,const int *);
    void expandGSpace(complex* data, int type, complex *packedPlaneData);
    void compressGSpace(const complex *points, int type);

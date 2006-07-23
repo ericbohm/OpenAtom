@@ -136,6 +136,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   memset(haveSFAtmGrp,-1,numSfGrps*sizeof(int));
   bzero(count,numSfGrps*sizeof(int));
 
+  zsize                = numSfGrps*natm_nl_grp_max;
+
   zmatrixSum    = NULL;
   zmatrix       = NULL;
   zmatrix_fx    = NULL; zmatrix_fy    = NULL; zmatrix_fz    = NULL;
@@ -252,10 +254,10 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 //============================================================================
 
-    gss->setKVectors(&gSpaceNumPoints, &k_x, &k_y, &k_z);
-    numLines     = gss->numLines;
-    numFullNL    = gss->numFullNL;
-    ees_nonlocal = gss->ees_nonlocal;
+    numLines        = gss->numLines;
+    numFullNL       = gss->numFullNL;
+    ees_nonlocal    = gss->ees_nonlocal;
+    gSpaceNumPoints = gss->numPoints;
 
     myForces =  (complex *)fftw_malloc(gSpaceNumPoints*sizeof(complex)); // forces on coefs
     memset(myForces, 0, gSpaceNumPoints * sizeof(complex));
@@ -267,10 +269,19 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
        memset(projPsiG, 0, numFullNL * sizeof(complex));
     }//endif
 
+    // This occurs AFTER GSP has registered
     registrationFlag = 0;
     if(ees_nonlocal==1){
-       int ncoef = gSpaceNumPoints;
        eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+       int ncoef = gSpaceNumPoints;
+       int *k_x  = eesData->GspData[myChareG].ka;
+       int *k_y  = eesData->GspData[myChareG].kb;
+       int *k_z  = eesData->GspData[myChareG].kc;
+       int mycoef= eesData->GspData[myChareG].ncoef;
+       if(eesData->allowedGspChares[myChareG]==0 || mycoef != ncoef){
+         CkPrintf("Plane %d of state %d toasy %d %d\n",myChareG,thisIndex.x,mycoef,ncoef);
+         CkExit();
+       }//endif
        eesData->registerCacheGPP(thisIndex.y,ncoef,k_x,k_y,k_z);
        int i=1;
        CkCallback cb(CkIndex_CP_State_ParticlePlane::registrationDone(NULL),
@@ -290,9 +301,6 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 //============================================================================
 CP_State_ParticlePlane::~CP_State_ParticlePlane(){
 
-  fftw_free(k_x);
-  fftw_free(k_y);
-  fftw_free(k_z);
   fftw_free(myForces);
 
   if(ees_nonlocal==1){
@@ -340,11 +348,8 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|natm_nl_grp_max;
         p|realPP_proxy;
         p|countNLIFFT;
-	int zsize=numSfGrps*natm_nl_grp_max;
+        p|zsize;
 	if (p.isUnpacking()) {
-		k_x = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
-		k_y = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
-		k_z = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
  	        myForces = (complex *)fftw_malloc(gSpaceNumPoints*sizeof(complex));
                 if(ees_nonlocal==1){
                   dyp_re   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
@@ -364,9 +369,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 		  haveSFAtmGrp  = new int[numSfGrps];
 		}//endif
 	}//endif
-	p(k_x, gSpaceNumPoints);
-	p(k_y, gSpaceNumPoints);
-	p(k_z, gSpaceNumPoints);
 	p((char*)myForces,gSpaceNumPoints*sizeof(complex));
         if(ees_nonlocal==1){
   	  p((char*)projPsiG,numFullNL*sizeof(complex));
@@ -389,7 +391,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|sizeY;
 	p|sizeZ;
 	p|gSpacePlanesPerChare;
-	p|zsize;
 	p|energy_count;
 	p|totalEnergy;
 	p|enl;
@@ -441,17 +442,17 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 // OK, so the upshot is, get your part of the Zmatrix and then send to the reduction
 
     if(gsp->acceptedPsi && gsp->doneNewIter){
-      StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+      // get ks
+      eesCache *eesData        = eesCacheProxy.ckLocalBranch();
+      int *k_x = eesData->GspData[myChareG].ka;
+      int *k_y = eesData->GspData[myChareG].kb;
+      int *k_z = eesData->GspData[myChareG].kc;
 
-      complex *structureFactor;
-      complex *structureFactor_fx;
-      complex *structureFactor_fy;
-      complex *structureFactor_fz;
+      // get sf
+      StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+      complex *structureFactor,*structureFactor_fx,*structureFactor_fy,*structureFactor_fz;
       sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, 
 			     &structureFactor_fx, &structureFactor_fy, &structureFactor_fz);
-      zsize = 0;
-      zsize = natm_nl_grp_max*numSfGrps;
-
       if(zmatrix==NULL){
 	zmatrix    = (complex *)fftw_malloc(zsize*sizeof(complex));
 	zmatrix_fx = (complex *)fftw_malloc(zsize*sizeof(complex));
@@ -463,6 +464,7 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 	memset(zmatrix_fz, 0, sizeof(complex)*zsize);
       }//endif
 
+      // get zmat
       int mydoublePack = config.doublePack;
       int zoffset      = natm_nl_grp_max * atmIndex;
       CPNONLOCAL::CP_enl_matrix_calc(gSpaceNumPoints,gss->packedPlaneData, k_x,k_y,k_z, 
@@ -516,7 +518,6 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
   count[atmIndex]++;
   int i,j;
-  int zsize = natm_nl_grp_max * numSfGrps;
   int zoffset= natm_nl_grp_max * atmIndex;
   if (zmatrixSum==NULL) {
       zmatrixSum = (complex *)fftw_malloc(zsize*sizeof(complex));
@@ -629,23 +630,29 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
   }//endif
 
   doneForces++;
-  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  GStateSlab *gss           = &(gsp->gs);
-  int state_ind = gss->istate_ind;                
 
 //============================================================================
 // Compute the non-local forces on the coefficients using PINY physics
 
+  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  GStateSlab *gss           = &(gsp->gs);
+  eesCache *eesData         = eesCacheProxy.ckLocalBranch();
+  StructFactCache *sfcache  = sfCacheProxy.ckLocalBranch();
+
   int mydoublePack = config.doublePack;
-  StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+  int state_ind    = gss->istate_ind;                
+  int *k_x         = eesData->GspData[myChareG].ka;
+  int *k_y         = eesData->GspData[myChareG].kb;
+  int *k_z         = eesData->GspData[myChareG].kc;
   complex *structureFactor,*structureFactor_fx,*structureFactor_fy,*structureFactor_fz;
+
   sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, &structureFactor_fx, 
                          &structureFactor_fy, &structureFactor_fz);
 
   if (gSpaceNumPoints != 0){
-    CPNONLOCAL::CP_enl_force_calc(zmatrixSum_loc,
-				  gSpaceNumPoints, k_x, k_y, k_z, structureFactor,
-				  myForces, state_ind, mydoublePack, numSfGrps, atmIndex);
+    CPNONLOCAL::CP_enl_force_calc(zmatrixSum_loc,gSpaceNumPoints, k_x, k_y, k_z,
+                                  structureFactor,myForces,state_ind,mydoublePack,
+                                  numSfGrps, atmIndex);
   }//endif
 
 //============================================================================
@@ -816,6 +823,9 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
    double *d_im   = eesData->GppData[myChareG].b_im;
    int *ind_gspl  = eesData->GppData[myChareG].ind_gspl;
    double *h_gspl = eesData->GppData[myChareG].h_gspl;
+   int *k_x       = eesData->GspData[myChareG].ka;
+   int *k_y       = eesData->GspData[myChareG].kb;
+   int *k_z       = eesData->GspData[myChareG].kc;
 
    int ncoef      = gSpaceNumPoints;
    complex *psi   = gss->packedPlaneData;
@@ -1045,8 +1055,12 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 
   CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
+  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
 
   int ncoef       = gSpaceNumPoints;
+  int *k_x        = eesData->GspData[myChareG].ka;
+  int *k_y        = eesData->GspData[myChareG].kb;
+  int *k_z        = eesData->GspData[myChareG].kc;
   int ihave_g0    = gss->ihave_g000;
   int ind_g0      = gss->ind_g000;
   int nkx0        = gss->nkx0;

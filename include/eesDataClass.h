@@ -112,6 +112,7 @@ class GSPDATA {
    int numRuns;                   //2x the number of z-lines in collection
    int *ka, *kb, *kc;             //lth: ncoef : g-space
    double *g,*g2;
+   double *coef_mass;
    RunDescriptor *runs;           //lth:numruns : k's in fft order
    GSPDATA(){};   
   ~GSPDATA(){};   

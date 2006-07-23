@@ -107,7 +107,7 @@ void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int i
 //============================================================================
 CP_State_RealParticlePlane::CP_State_RealParticlePlane(
                              int ngridA_in, int ngridB_in, int ngridC_in,
-                             int numIterNL_in, int zmatSizeTot_in,
+                             int numIterNL_in, int zmatSizeMax_in,
                              int Rstates_per_pe_in,int nChareG_in,
                              int ees_nonlocal_in)
 //============================================================================
@@ -128,7 +128,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   csize          = (ngridA+2)*ngridB/2;  // complex variable size
 
   numIterNl      = numIterNL_in;         // # of non-local iterations per time step
-  zmatSizeTot    = zmatSizeTot_in;       // zmatrix size
+  zmatSizeMax    = zmatSizeMax_in;       // zmatrix size
   ees_nonlocal   = ees_nonlocal_in;
 
   cp_enl           = 0.0;                // non-local energy
@@ -151,8 +151,8 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
    // malloc
     projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
     projPsiR    = reinterpret_cast<double*> (projPsiC);
-    zmat        = new double[zmatSizeTot];
-    zmatScr     = new double[zmatSizeTot];
+    zmat        = new double[zmatSizeMax];
+    zmatScr     = new double[zmatSizeMax];
    //--------
    // Register
     eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
@@ -416,8 +416,6 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL-1;           // silly C++ convention
-   int *ioff_zmat       = sim->ioff_zmat;     // offset into zmat memory
-   int offZmat          = ioff_zmat[iterNL1];
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1]; 
 
@@ -436,7 +434,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
     CkPrintf("HI, I am rPP %d %d in computeZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,&zmat[offZmat],igrid,mn,
+   CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,zmat,igrid,mn,
                              plane_index,thisIndex.x,myPlane);
 
 //============================================================================
@@ -444,8 +442,8 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
-    CkPrintf("HI, I am rPP %d %d in send to zmat-red : %d %d %d %d %d\n",
-         thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,offZmat,zmatSizeTot);
+    CkPrintf("HI, I am rPP %d %d in send to zmat-red : %d %d %d d\n",
+         thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
 #endif
 
 #define _FANCY_RED_METHOD_OFF_
@@ -454,10 +452,10 @@ void CP_State_RealParticlePlane::computeZmatEes(){
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
                  CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
                  realParticlePlaneProxy.ckGetArrayID());
-   mcastGrp->contribute((nZmat*sizeof(double)),&zmat[offZmat],CkReduction::sum_double,
+   mcastGrp->contribute((nZmat*sizeof(double)),zmat,CkReduction::sum_double,
                          rPlaneRedCookie,cb);
 #else
-   thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,&zmat[offZmat],
+   thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,
                                                thisIndex.x,thisIndex.y,iterNL);
 #endif
 
@@ -477,8 +475,6 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL_in-1;        // silly C++ convention
-   int *ioff_zmat       = sim->ioff_zmat;     // offset into zmat memory
-   int offZmat          = ioff_zmat[iterNL1];
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
 
@@ -508,13 +504,15 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
    }//endif
 
 //============================================================================
-// Recv the reduced zmatrix and chuck the message
+// Recv the reduced zmatrix and chuck the message. Recv into scratch because
+// it could be this chare has not yet contributed and you would overwrite
+// critical data if you used zmat[]
 
     countZ++;
     if(countZ==1){ 
-      for(int i=0;i<nZmat;i++){zmatScr[(i+offZmat)]=0.0;} 
+      for(int i=0;i<nZmat;i++){zmatScr[i]=0.0;} 
     }//endif
-    for(int i=0;i<nZmat;i++){zmatScr[(i+offZmat)]+=_zmat[i];}
+    for(int i=0;i<nZmat;i++){zmatScr[i]+=_zmat[i];}
 
 //============================================================================
 // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
@@ -533,7 +531,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 #endif
       countZ=0;
       for(int i=0;i<nChareR;i++){
-        thisProxy(thisIndex.x,i).computeAtmForcEes(nZmat,&zmatScr[offZmat],iterNL_in);
+        thisProxy(thisIndex.x,i).computeAtmForcEes(nZmat,zmatScr,iterNL_in);
       }//endfor
     }//endif
 
@@ -543,7 +541,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 
 
 //============================================================================
-// Reduction client of zmat : 
+// Reduction client of zmat :  Here everyone must have the same iteration
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -551,8 +549,6 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL-1;           // silly C++ convention
-   int *ioff_zmat       = sim->ioff_zmat;     // offset into zmat memory
-   int offZmat          = ioff_zmat[iterNL1];
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
 
@@ -566,7 +562,7 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 
     CkAssert(msg->getSize() ==  nZmat* sizeof(double));
     double *realValues = (double *) msg->getData(); 
-    for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]=realValues[i];}
+    for(int i=0;i<nZmat;i++){zmat[i]=realValues[i];}
 
     delete msg;
 
@@ -579,7 +575,7 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
             thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   rPlaneSectProxy.computeAtmForcEes(nZmat,&zmat[offZmat],iterNL);
+   rPlaneSectProxy.computeAtmForcEes(nZmat,zmat,iterNL);
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -587,11 +583,11 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 
 
 //============================================================================
-// Use Zmat and ProjPsi to get atmForces and Energy
+// Use Zmat and ProjPsi to get atmForces, Energy and psiforces
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
+void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_loc,
                                                    int iterNL_in){
 //============================================================================
 // Unpack the message : Get some sizes
@@ -601,7 +597,12 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   if(iterNL_in !=  iterNL){
+   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   int iterNL1          = iterNL-1;          // silly C++ convention
+   int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
+   int nZmat            = nmem_zmat[iterNL1];
+
+   if(iterNL_in !=  iterNL || nZmat_in != nZmat){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, iteration mismatch : %d %d : %d %d \n",iterNL,iterNL_in,
                    thisIndex.x,thisIndex.y);
@@ -609,24 +610,19 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
       CkExit();
    }//endif
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-   int iterNL1          = iterNL-1;          // silly C++ convention
-   int *ioff_zmat       = sim->ioff_zmat;    // offset into zmat 
-   int offZmat          = ioff_zmat[iterNL1];
-   int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
-   int nZmatNow         = nmem_zmat[iterNL1];
-
-   for(int i=0;i<nZmat;i++){zmat[(i+offZmat)]=zmat_loc[i];}
+   for(int i=0;i<nZmat;i++){zmat[i]=zmat_loc[i];}
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces
 
-   eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
-   int *plane_index   = eesData->RppData[myPlane].plane_index;
-   int **igrid        = eesData->RppData[myPlane].igrid;
-   double **dmn_x     = eesData->RppData[myPlane].dmn_x;
-   double **dmn_y     = eesData->RppData[myPlane].dmn_y;
-   double **dmn_z     = eesData->RppData[myPlane].dmn_z;
+   eesCache *eesData   = eesCacheProxy.ckLocalBranch (); 
+   int *plane_index    = eesData->RppData[myPlane].plane_index;
+   int **igrid         = eesData->RppData[myPlane].igrid;
+   double **dmn_x      = eesData->RppData[myPlane].dmn_x;
+   double **dmn_y      = eesData->RppData[myPlane].dmn_y;
+   double **dmn_z      = eesData->RppData[myPlane].dmn_z;
+   double **mn         = eesData->RppData[myPlane].mn;
+   double *projPsiRScr = eesData->rppPsiScr;
 
    AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
    FastAtoms *fastAtoms = &(ag->fastAtoms);
@@ -636,9 +632,9 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,&zmat[offZmat], 
-               igrid,dmn_x,dmn_y,dmn_z,projPsiR,plane_index,myPlane,
-               thisIndex.x,fastAtoms);
+   // projPsiR comes in with info for atoms, leaves with info for psiforces
+   CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
+                       projPsiR,projPsiRScr,plane_index,myPlane,thisIndex.x,fastAtoms);
 
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast
@@ -668,46 +664,10 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat, double *zmat_loc,
 //============================================================================
 // Time to make the Psiforces (donuts!)
 
-   createNLEesFFTdataR();
+  FFTNLEesBckR();
 
 //----------------------------------------------------------------------------
   }//end routine
-//============================================================================
-
-
-//============================================================================
-// Fill the FFT grid with info required to generate Psi forces
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealParticlePlane::createNLEesFFTdataR(){
-//============================================================================
-
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-  int iterNL1          = iterNL-1;          // silly C++ convention
-  int *ioff_zmat       = sim->ioff_zmat;    // offset into zmatrix memory
-  int offZmat          = ioff_zmat[iterNL1];
-  int *nmem_zmat       = sim->nmem_zmat;    // zmatrix memory for each iteration
-  int nZmat            = nmem_zmat[iterNL1];
-
-  eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
-  int *plane_index    = eesData->RppData[myPlane].plane_index;
-  int **igrid         = eesData->RppData[myPlane].igrid;
-  double **mn         = eesData->RppData[myPlane].mn;
-
-//============================================================================
-// Set up the FFT data, then call the fft routine
-
-#ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
-  if(thisIndex.x==0)
-   CkPrintf("HI, I am rPP %d %d in createNL : %d\n",thisIndex.x,thisIndex.y,iterNL);
-#endif
-
-  CPNONLOCAL::eesPsiForcRchare(iterNL,&zmat[offZmat],igrid,mn,projPsiR,
-                               plane_index,myPlane);
-  FFTNLEesBckR();
-
- }//end routine
 //============================================================================
 
 
@@ -908,7 +868,7 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
    p|planeSize;
    p|planeSizeT;
    p|csize;
-   p|zmatSizeTot;
+   p|zmatSizeMax;
    p|reductionPlaneNum;
    p|cp_enl; 
    p|cp_enlTot; 
@@ -923,12 +883,12 @@ void CP_State_RealParticlePlane::pup(PUP::er &p) {
      if (p.isUnpacking()) {
        projPsiC = (complex*) fftw_malloc(csize*sizeof(complex));
        projPsiR = reinterpret_cast<double*> (projPsiC);
-       zmat     = new double[zmatSizeTot];
-       zmatScr = new double[zmatSizeTot];
+       zmat     = new double[zmatSizeMax];
+       zmatScr = new double[zmatSizeMax];
      }//endif
      p((char*)projPsiC,csize *sizeof(complex));
-     p(zmat,zmatSizeTot);
-     p(zmatScr,zmatSizeTot);
+     p(zmat,zmatSizeMax);
+     p(zmatScr,zmatSizeMax);
    }//endif
 
 //---------------------------------------------------------------------------

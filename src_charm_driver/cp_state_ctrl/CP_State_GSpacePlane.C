@@ -663,6 +663,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif
 
 //============================================================================
+// Just zero everything for now
+
   gSpaceNumPoints = 0;
   tpsi           = NULL;
   tvpsi          = NULL;
@@ -671,10 +673,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   tk_z           = NULL;
   ffttempdata    = NULL;
   ffttempdataGrp = NULL;
-  k_x            = NULL;
-  k_y            = NULL;
-  k_z            = NULL;
-  coef_mass      = NULL;
   initGStateSlab(&gs,sizeX,size,gSpaceUnits,realSpaceUnits,s_grain,
                  thisIndex.y,thisIndex.x);
 
@@ -748,14 +746,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(CkMigrateMessage *m) {
 //============================================================================
 CP_State_GSpacePlane::~CP_State_GSpacePlane(){
   if(initialized) {
-    fftw_free(k_x);
-    fftw_free(k_y);
-    fftw_free(k_z);
-    fftw_free(coef_mass);
-    k_x = NULL;
-    k_y = NULL;
-    k_z = NULL;
-    coef_mass = NULL;
     delete [] lambdaproxyother;
     delete [] lambdaproxy;
     delete [] psiproxyother;
@@ -841,11 +831,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   gs.pup(p);
   p|gSpaceNumPoints;
   if (p.isUnpacking()) {
-    k_x       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
-    k_y       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
-    k_z       = (int *)fftw_malloc(gSpaceNumPoints*sizeof(int));
-    coef_mass = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
-
     lambdaproxy=new CProxySection_PairCalculator[config.numChunksAsym];
     lambdaproxyother=new CProxySection_PairCalculator[config.numChunksAsym];
     psiproxy=new CProxySection_PairCalculator[config.numChunksSym];
@@ -854,9 +839,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
     countVPsiO= new int[config.numChunksSym];
     countLambdaO= new int[config.numChunksAsym];
   }//endif  
-  p(k_x, gSpaceNumPoints);
-  p(k_y, gSpaceNumPoints);
-  p(k_z, gSpaceNumPoints);
   PUParray(p,lambdaproxy,config.numChunksAsym);
   PUParray(p,lambdaproxyother,config.numChunksAsym);
   PUParray(p,psiproxy,config.numChunksSym);
@@ -864,7 +846,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   PUParray(p,countPsiO,config.numChunksSym);
   PUParray(p,countVPsiO,config.numChunksSym);
   PUParray(p,countLambdaO,config.numChunksAsym);
-  p(coef_mass,gSpaceNumPoints);
   if(p.isUnpacking())
     {
       run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_GSpacePlane,run),this);
@@ -1105,22 +1086,30 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal()->initKVectors(&gs);
 
 //============================================================================
-// Setup k-vectors and masses and zero the force overlap
+// Setup k-vector ranges, masses and zero the force overlap
 
-  gs.setKVectors(&gSpaceNumPoints, &k_x, &k_y, &k_z);
-  CkAssert(gSpaceNumPoints == size);
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_y          = eesData->GspData[iplane_ind].kb;
+  int *k_z          = eesData->GspData[iplane_ind].kc;
+  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  int mycoef        = eesData->GspData[iplane_ind].ncoef;
+  gSpaceNumPoints   = gs.numPoints;
 
-  coef_mass        = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
-  int mydoublePack = config.doublePack;
-  CPINTEGRATE::CP_create_mass(gSpaceNumPoints,k_x,k_y,k_z,coef_mass,mydoublePack);
+  if(eesData->allowedGspChares[iplane_ind]==0 || mycoef != gSpaceNumPoints){
+    CkPrintf("Plane %d of state %d toasy %d %d\n",iplane_ind,thisIndex.x,
+              mycoef,gSpaceNumPoints);
+    CkExit();
+  }//endif
+
+  gs.setKRange(gSpaceNumPoints,k_x,k_y,k_z);
 
   fovlap      = 0.0; 
-
-  int ncoef       = gSpaceNumPoints;
 
 //============================================================================
 // Init NHC, Sample velocities 
 
+  int ncoef     = gSpaceNumPoints;
   int ncoef_use = gs.numPoints-gs.nkx0_red;
   int maxLenNHC = LEN_NHC_CP;
   int maxNumNHC = NUM_NHC_CP;
@@ -1579,10 +1568,18 @@ void CP_State_GSpacePlane::acceptNLForcesEes(){
 //==============================================================================
 void CP_State_GSpacePlane::combineForcesGetEke(){
 //================================================================================
-// add forces from particle plane to forces from IFFT then zero them
+// Check stuff from the gsplane data cache and particle plane
 
-  CP_State_ParticlePlane *pp = 
-    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  eesCache *eesData          = eesCacheProxy.ckLocalBranch ();
+  complex *ppForces = pp->myForces;
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_y          = eesData->GspData[iplane_ind].kb;
+  int *k_z          = eesData->GspData[iplane_ind].kc;
+  double *g2        = eesData->GspData[iplane_ind].g2;
+
+//================================================================================
+// Add forces from particle plane to forces from IFFT then zero them
 
 #ifdef _CP_DEBUG_VKS_FORCES_
   if(thisIndex.x==0 && thisIndex.y==0){
@@ -1590,23 +1587,21 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
     int ncoef       = gs.numPoints;
     complex *forces = gs.packedForceData;
     for(int i=0;i<ncoef;i++){
-      fprintf(fp,"%d %d %d : %g %g\n",pp->k_x[i],pp->k_y[i],pp->k_z[i],
+      fprintf(fp,"%d %d %d : %g %g\n",k_x[i],k_y[i],k_z[i],
 	      forces[i].re,forces[i].im);
     }//endfor
     fclose(fp);
   }//endif
 #endif
 
-  gs.addForces(pp->myForces,pp->k_x);
-  bzero(pp->myForces,gs.numPoints*sizeof(complex));
+  gs.addForces(ppForces,k_x);
+  bzero(ppForces,gs.numPoints*sizeof(complex));
   CmiNetworkProgress();
 
 //================================================================================
 // Compute force due to quantum kinetic energy and add it in.
 // Reduce quantum kinetic energy or eke
 
-  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
-  double *g2        = eesData->GspData[iplane_ind].g2;
   int istate        = gs.istate_ind;
   int ncoef         = gs.numPoints;
   int nkx0          = gs.nkx0;
@@ -1727,10 +1722,14 @@ void  CP_State_GSpacePlane::sendLambda() {
 void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 
+  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+
   complex *data  = (complex *)msg->getData();
   int       N    = msg->getSize()/sizeof(complex);
   complex *force = gs.packedForceData;
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+
 
 //==============================================================================
 // Get the modified forces
@@ -1796,25 +1795,29 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 //==============================================================================
+// unpack the message : pop out variables from groups
 
-  complex *data  = msg->result;
-  int       N    = msg->N;
-  complex *force = gs.packedForceData;
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  complex *data     = msg->result;
+  int       N       = msg->N;
+  int offset        = msg->myoffset;
+  if(offset<0){offset=0;}
+
+  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+
+  complex *force    = gs.packedForceData;
+  int chunksize     = gs.numPoints/config.numChunksAsym;
+  int chunkoffset   = offset*chunksize; // how far into the points this contribution lies
 
 //==============================================================================
 // Get the modified forces
 
-  countLambda++;//lambda arrives in as many as 2 * numChunks reductions
-//=============================================================================
-// (II) Add it in to our forces
+  countLambda++;  //lambda arrives in as many as 2 * numChunks reductions
 
-  int offset=msg->myoffset;
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksAsym;
-  int chunkoffset=offset*chunksize; // how far into the points this
-				  // contribution lies
+//=============================================================================
+// (II) Add it in to our forces : Careful about offsets, doublepack and cpmin/cp
+
   /*
   if(thisIndex.y==0)
     dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);
@@ -1824,29 +1827,30 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
       CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
     }
   */
-  if(config.doublePack==1){
-   if(cp_min_opt==1){
 
+  if(config.doublePack==1){
+
+   if(cp_min_opt==1){
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
-   }
-   else
-     {
-       if(countLambdaO[offset]<1)
-	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
-       else
-	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
-     }//endif
- 
+   }else{
+     if(countLambdaO[offset]<1)
+        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
+     else
+        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+   }//endif : cp_min_on
+
   }else{
+
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
     }//endfor
-  }//endif
+
+  }//endif : double pack
   delete msg;  
 
   countLambdaO[offset]++;
@@ -1978,6 +1982,12 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   int ind_state  = (thisIndex.x+1);
   int ind_chare  = (thisIndex.y+1);
   int ncoef      = gSpaceNumPoints;
+
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_y          = eesData->GspData[iplane_ind].kb;
+  int *k_z          = eesData->GspData[iplane_ind].kc;
+  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
 
   complex *psi      = gs.packedPlaneData;
   complex *vpsi     = gs.packedPlaneDataScr;  // switch definitions
@@ -2176,6 +2186,12 @@ void CP_State_GSpacePlane::integrateModForce() {
 
 //==============================================================================
 // II. Local pointers    
+
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_y          = eesData->GspData[iplane_ind].kb;
+  int *k_z          = eesData->GspData[iplane_ind].kc;
+  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
 
   int cp_min_opt     = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int cp_min_cg      = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg;
@@ -2878,6 +2894,10 @@ void CP_State_GSpacePlane::screenOutputPsi(){
    if(thisIndex.x==0)
     CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_y          = eesData->GspData[iplane_ind].kb;
+  int *k_z          = eesData->GspData[iplane_ind].kc;
 
   int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;

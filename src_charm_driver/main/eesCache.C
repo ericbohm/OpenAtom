@@ -21,9 +21,11 @@
 #include "CP_State_Plane.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpintegrate.h"
 
 
 //----------------------------------------------------------------------------
+extern Config config;
 extern CProxy_CP_State_ParticlePlane     particlePlaneProxy;
 extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
 extern CProxy_CP_Rho_RHartExt            rhoRHartExtProxy;
@@ -51,6 +53,7 @@ eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
 
    itimeRPP        = 0;
    itimeRHart      = 0;
+   rpp_on          = 0;
    nMallSize       = 100;
 
    nchareRPP       = _nchareRPP;
@@ -116,6 +119,14 @@ void eesCache::registerCacheRPP  (int index){
     nchareRPPProc          += 1;
     allowedRppChares[index] = 1;
     RppData[index].init(index);
+  }//endif
+
+  if(rpp_on==0){
+    rpp_on = 1;
+    int ngrid_a,ngrid_b,ngrid_c,n_interp,natm;
+    CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
+    rppPsiSize = (ngrid_a+2)*ngrid_b;
+    rppPsiScr  = (double *)fftw_malloc(rppPsiSize*sizeof(double));    
   }//endif
 
 }//end routine
@@ -437,6 +448,13 @@ void GSPDATA::init(int index_in){
 
   CPNONLOCAL::genericSetKvector(ncoef,ka,kb,kc,g,g2,numRuns,runs,&gCharePkg,1,
                                 ngrid_a,ngrid_b,ngrid_c);
+
+ //------------------------------------------------------------
+ // set the coef masses
+
+  int mydoublePack = config.doublePack;
+  coef_mass        = (double *)fftw_malloc(ncoef*sizeof(double));
+  CPINTEGRATE::CP_create_mass(ncoef,ka,kb,kc,coef_mass,mydoublePack);
 
 //==============================================================================
   }//end routine

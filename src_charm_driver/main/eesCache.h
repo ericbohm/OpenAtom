@@ -21,6 +21,7 @@ class eesCache: public Group {
   // Variables
    int itimeRPP;
    int itimeRHart;
+   int rpp_on;
 
    int nstates;
    int nchareGSPProcT;           // Total number of GSP on proc
@@ -65,6 +66,9 @@ class eesCache: public Group {
    RHORHARTDATA *RhoRHartData; // lth: nchareRHart: only allowed guys have data
    GSPDATA      *GspData;      // lth: nchareGsp  : only allowed guys have data
    RHOGDATA     *RhoGData;     // lth: nchareRhoG : only allowed guys have data
+
+   int rppPsiSize;
+   double *rppPsiScr;
 
   // Functions
    eesCache(){};

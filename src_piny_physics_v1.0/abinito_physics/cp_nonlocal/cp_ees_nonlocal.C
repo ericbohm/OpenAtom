@@ -948,9 +948,9 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double *zmat, 
-                int **igrid,double **dmn_x,double **dmn_y,double **dmn_z,
-		double *projPsiR, int *plane_index, int plane, int state,
-                FastAtoms *atoms)
+                int **igrid,double **mn,double **dmn_x,double **dmn_y,double **dmn_z,
+		double *projPsiR, double *projPsiRScr, int *plane_index, 
+                int plane, int state, FastAtoms *atoms)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -960,21 +960,24 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 #include "../class_defs/allclass_strip_gen.h"
   PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 
-  double vol         = gencell->vol;
+  double vol     = gencell->vol;
 
-  int n_ang_max  =  cppseudo->n_ang_max;
-  int n_interp   = cppseudo->n_interp_ps;
-  int n_interp2  = n_interp*n_interp;
+  double *vpsnorm = cppseudo->vpsnorm; 
+  int n_ang_max   = cppseudo->n_ang_max;
+  int n_interp    = cppseudo->n_interp_ps;
+  int n_interp2   = n_interp*n_interp;
 
-  int **iatm_typ_lang = cppseudo->nonlocal.iatm_typ_lang;
-  int *natm_typ_lang = cppseudo->nonlocal.natm_typ_lang;
-  int *natm_lang     = cppseudo->nonlocal.natm_lang;
-  int *iatm_str_lang = cppseudo->nonlocal.iatm_str_lang;
-  int *lang_v        = cppseudo->nonlocal.lang_v;
-  int *mang_v        = cppseudo->nonlocal.mang_v;
-  int *ityp_v        = cppseudo->nonlocal.ityp_v;
-  double *vpsnorm    = cppseudo->vpsnorm; 
-  int *map_nl        = nonlocal->map_nl;
+  int ngrid_a         = nonlocal->ngrid_a;
+  int ngrid_b         = nonlocal->ngrid_b;
+  int ngrid_c         = nonlocal->ngrid_c;
+  int **iatm_typ_lang = nonlocal->iatm_typ_lang;
+  int *natm_typ_lang  = nonlocal->natm_typ_lang;
+  int *natm_lang      = nonlocal->natm_lang;
+  int *iatm_str_lang  = nonlocal->iatm_str_lang;
+  int *lang_v         = nonlocal->lang_v;
+  int *mang_v         = nonlocal->mang_v;
+  int *ityp_v         = nonlocal->ityp_v;
+  int *map_nl         = nonlocal->map_nl;
 
   double *fx         = atoms->fx;
   double *fy         = atoms->fy;
@@ -992,6 +995,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
   int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
   double vnorm_now   = vpsnorm[ind_now];
   double vnormVol    = vnorm_now/vol;
+
   int nroll = 5; // you can't check this without modifying the code below
   int nrem,jstrt,jend;
 
@@ -1032,6 +1036,8 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    jstrt = (n_interp2-nrem+1);
    jend  = (n_interp2-nrem);
 
+   bzero(projPsiRScr,(ngrid_a+2)*ngrid_b*sizeof(double));
+
    for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
      int iatm = iatm_str+jatm-1;    // index of atm in non-local atm list
      int jc   = plane_index[iatm];  // interpolation ind to plane ind mapping
@@ -1041,11 +1047,16 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        double fxx=0.0,fyy=0.0,fzz=0.0;
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-         double pz0 = projPsiR[igrid[iatm][j]];                   // psi
+         double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
          double pz1 = projPsiR[igrid[iatm][j1]];     
          double pz2 = projPsiR[igrid[iatm][j2]];     
          double pz3 = projPsiR[igrid[iatm][j3]];     
          double pz4 = projPsiR[igrid[iatm][j4]];     
+         double q0  = zmat[jatm]*mn[iatm][j];     // contrib of this atm to psi force
+         double q1  = zmat[jatm]*mn[iatm][j1];
+         double q2  = zmat[jatm]*mn[iatm][j2];
+         double q3  = zmat[jatm]*mn[iatm][j3];
+         double q4  = zmat[jatm]*mn[iatm][j4];
          fxx       += (pz0*dmn_x[iatm][j]  + pz1*dmn_x[iatm][j1] // forces_x
                       +pz2*dmn_x[iatm][j2] + pz3*dmn_x[iatm][j3]
 		      +pz4*dmn_x[iatm][j4]);
@@ -1055,12 +1066,19 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          fzz       += (pz0*dmn_z[iatm][j]  + pz1*dmn_z[iatm][j1] // forces_z
                       +pz2*dmn_z[iatm][j2] + pz3*dmn_z[iatm][j3]
 		      +pz4*dmn_z[iatm][j4]);
+         projPsiRScr[igrid[iatm][j]]  += q0;       // add contrib into total
+         projPsiRScr[igrid[iatm][j1]] += q1;  
+         projPsiRScr[igrid[iatm][j2]] += q2;  
+         projPsiRScr[igrid[iatm][j3]] += q3;  
+         projPsiRScr[igrid[iatm][j4]] += q4;  
        }//endfor
        for(int j=jstrt;j<=n_interp2;j++){
          double pz = projPsiR[igrid[iatm][j]]; // psi
-         fxx      += (pz*dmn_x[iatm][j]);      // forces
+         double q  = zmat[jatm]*mn[iatm][j];  
+         fxx      += (pz*dmn_x[iatm][j]);
          fyy      += (pz*dmn_y[iatm][j]);
          fzz      += (pz*dmn_z[iatm][j]);
+         projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
        }//endif
        fx[katm]  -= (fxx*zmat[jatm]); // finish up
        fy[katm]  -= (fyy*zmat[jatm]);
@@ -1078,6 +1096,8 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 #endif
      }//endif : atom is interpolated on this plane
   }//endfor : iatm
+
+   memcpy(projPsiR,projPsiRScr,(ngrid_a+2)*ngrid_b*sizeof(double));
 
 //==========================================================================
 // output the debugging stuff
@@ -1098,100 +1118,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 #endif  
 
 //--------------------------------------------------------------------------
-  }//end routine
-//==========================================================================
-
-
-//==========================================================================
-// Every Real Space Chare array invokes me for each non-local loop iteration
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat, 
-  	                          int **igrid,double **mn,double *projPsiR, 
-                                  int *plane_index,int plane)
-//==========================================================================
-   {// begin routine
-//==========================================================================
-
-  CP           *cp           = CP::get();
-  GENERAL_DATA *general_data = GENERAL_DATA::get();
-#include "../class_defs/allclass_strip_cp.h"
-#include "../class_defs/allclass_strip_gen.h"
-
-  double vol         = gencell->vol;
-
-  int nsplin_g   = cppseudo->nsplin_g;
-  int n_ang_max  = cppseudo->n_ang_max;
-  int n_interp   = cppseudo->n_interp_ps;
-  int n_interp2  = n_interp*n_interp;
-
-  int *natm_typ_lang = cppseudo->nonlocal.natm_typ_lang;
-  int *natm_lang     = cppseudo->nonlocal.natm_lang;
-  int *iatm_str_lang = cppseudo->nonlocal.iatm_str_lang;
-  int **iatm_typ_lang = cppseudo->nonlocal.iatm_typ_lang;
-  int *lang_v        = cppseudo->nonlocal.lang_v;
-  int *mang_v        = cppseudo->nonlocal.mang_v;
-  int *ityp_v        = cppseudo->nonlocal.ityp_v;
-  int ngrid_a        = cppseudo->nonlocal.ngrid_a;
-  int ngrid_b        = cppseudo->nonlocal.ngrid_b;
-  double *vpsnorm    = cppseudo->vpsnorm; 
-
-  int lang           = lang_v[iter_nl];
-  int mang           = mang_v[iter_nl];
-  int ityp           = ityp_v[iter_nl];
-  int lang1          = lang+1;
-
-  int iatm_typ       = iatm_typ_lang[ityp][lang1]; // true atom type      
-  int natm           = natm_lang[iatm_typ];        // # atms of this type 
-  int iatm_str       = iatm_str_lang[iatm_typ];    // where atms begin    
-
-  int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
-  double vnorm_now   = vpsnorm[ind_now];
-
-  int nroll = 5; // you can't check this without modifying the code below
-  int nrem,jstrt,jend;
-
-//==========================================================================
-// The zmat had better be reduced over all planes of this state.
-
-   nrem  = (n_interp2 % nroll);
-   jstrt = (n_interp2-nrem+1);
-   jend  = (n_interp2-nrem);
-
-   for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){projPsiR[i]=0.0;}
-
-   for(int jatm=0;jatm<natm;jatm++){// atms of this type
-     int iatm = iatm_str+jatm-1;   // non-local atom index
-     int jc   = plane_index[iatm]; // interpolation index to plane index mapping
-     if(jc>0){ // jc starts at 1 in piny-like fashion
-       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
-           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-         double q0  = zmat[jatm]*mn[iatm][j];   // contrib of this atm to psi force
-         double q1  = zmat[jatm]*mn[iatm][j1];  // contrib of this atm to psi force
-         double q2  = zmat[jatm]*mn[iatm][j2];  // contrib of this atm to psi force
-         double q3  = zmat[jatm]*mn[iatm][j3];  // contrib of this atm to psi force
-         double q4  = zmat[jatm]*mn[iatm][j4];  // contrib of this atm to psi force
-         projPsiR[igrid[iatm][j]]  += q0;       // add contrib into total
-         projPsiR[igrid[iatm][j1]] += q1;       // add contrib into total
-         projPsiR[igrid[iatm][j2]] += q2;       // add contrib into total
-         projPsiR[igrid[iatm][j3]] += q3;       // add contrib into total
-         projPsiR[igrid[iatm][j4]] += q4;       // add contrib into total
-       }//endfor : B spline interpolation for fcoef
-       for(int j=jstrt;j<=n_interp2;j++){
-         double q  = zmat[jatm]*mn[iatm][j];   // contrib of this atm to psi force
-         projPsiR[igrid[iatm][j]] += q;        // add contrib into total
-       }//endfor : B spline interpolation for fcoef
-#ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
-#endif
-     }//endif
-   }//endfor : iatm
-
-//==========================================================================
-// projPSiR now goeth forth to FFT3D land
-
-//-------------------------------------------------------------------------
   }//end routine
 //==========================================================================
 

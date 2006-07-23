@@ -67,10 +67,9 @@ static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double
 
 static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,int);
 
-static void eesEnergyAtmForcRchare(int , double *, double *, int **,double **,
-                                double **,double **,double *, int *, int ,int,FastAtoms *);
-
-static void eesPsiForcRchare(int , double *,int **,double **,double *, int *,int );
+static void eesEnergyAtmForcRchare(int , double *, double *, 
+                                   int **,double **,double **,double **,double **,
+                                   double *, double *, int *, int , int , FastAtoms *);
 
 static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
                              int *,int *, int *,int , int, int);

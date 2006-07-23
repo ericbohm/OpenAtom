@@ -359,8 +359,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         double cpuTimeNow;
 	int gSpaceNumPoints;
 	GStateSlab gs; 
-        double *coef_mass;
-        int *k_x, *k_y, *k_z;
 	int *tk_x,*tk_y,*tk_z;  // Temp memory for output (size could be 0)
         complex *tpsi;          // Temp memory for output (needs careful pup)
         complex *tvpsi;         // Temp memory for output
@@ -638,7 +636,6 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         void registrationDone(CkReductionMsg *msg);
 
 	friend class CP_State_GSpacePlane;
-	int *k_x, *k_y, *k_z;
         int myChareG;
 	int iteration;
         int iterNL;
@@ -712,7 +709,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    int planeSize;         // expanded plane size for FFTing
    int planeSizeT;        // true plane size 
    int csize;             // complex variable size for FFT
-   int zmatSizeTot;       // zmatrix size for projector
+   int zmatSizeMax;       // zmatrix size for projector
    int reductionPlaneNum; // Reduction Plane number
    int itimeRed;
 
@@ -747,7 +744,6 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void computeZmatEes();
    void recvZMatEes(CkReductionMsg *);
    void computeAtmForcEes(int, double *,int );
-   void createNLEesFFTdataR();	
    void FFTNLEesBckR();
    void sendToEesGPP();
    void setPlaneRedCookie(EnlCookieMsg *);
