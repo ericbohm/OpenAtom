@@ -889,28 +889,43 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 
-  int ngrid_a   = cppseudo->ngrid_eext_a;
-  int ngrid_b   = cppseudo->ngrid_eext_b;
-  int n_interp  = cppseudo->n_interp_ps;
-  int n_interp2 = n_interp*n_interp;
-  int *iatm_typ = mdatom_maps->iatm_atm_typ;
+  int ngrid_a    = cppseudo->ngrid_eext_a;
+  int ngrid_b    = cppseudo->ngrid_eext_b;
+  int n_interp   = cppseudo->n_interp_ps;
+  int *natm_eext = cppseudo->natm_eext;
+  int **map_eext = cppseudo->map_eext;
+  int n_interp2  = n_interp*n_interp;
 
 //==========================================================================
 
+  int nroll = 5; // you can't change this without changing the code below
+  int nrem  = (n_interp2 % nroll);
+  int jstrt = (n_interp2-nrem+1);
+  int jend  = (n_interp2-nrem);
+
   for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){sfAtmTypR[i]=0.0;}
 
-  for(int iatm=0;iatm<natm;iatm++){
-    if(iatm_typ[(iatm+1)]==ityp){
-      int jc = plane_index[iatm];  // interpolation pt of plane
-      if(jc>0){
-        for(int j=1;j<=n_interp2;j++){
-          int ind         = igrid[iatm][j]; // index of pt in the plane
-          sfAtmTypR[ind] += mn[iatm][j]; // contribute to zmatrix
-        }//endfor
+  for(int jatm=1;jatm<=natm_eext[ityp];jatm++){
+    int iatm = map_eext[ityp][jatm]-1;
+    int jc   = plane_index[iatm];  // interpolation pt of plane
+    if(jc>0){
+       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         sfAtmTypR[igrid[iatm][j]]  += mn[iatm][j];  // contribute to zmatrix
+         sfAtmTypR[igrid[iatm][j1]] += mn[iatm][j1]; // contribute to zmatrix
+         sfAtmTypR[igrid[iatm][j2]] += mn[iatm][j2]; // contribute to zmatrix
+         sfAtmTypR[igrid[iatm][j3]] += mn[iatm][j3]; // contribute to zmatrix
+         sfAtmTypR[igrid[iatm][j4]] += mn[iatm][j4]; // contribute to zmatrix
+       }//endfor
 #ifdef CMK_VERSION_BLUEGENE
-        CmiNetworkProgress();
+       CmiNetworkProgress();
 #endif
-      }//endif
+       for(int j=jstrt;j<=n_interp2;j++){
+         sfAtmTypR[igrid[iatm][j]] += mn[iatm][j]; // contribute to zmatrix
+       }//endfor
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
     }//endif
   }//endfor
 
@@ -949,11 +964,6 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
   //---------------------------------------------
   // Atom look up information : we are already sorted by atm type
-  int natm_typ_now     = 1;
-  int natm_now         = 1;
-  int iatm_typ_now[2];
-  int index_atm[2];
-  double vtemp[2];
 
   //---------------------------------------------
   // Cell and pressure information  
@@ -1005,9 +1015,8 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 //==========================================================================
 // Initialize atom information
 
-  index_atm[1]    =  (ityp-1)*nsplin_g*(n_ang_max+1)*n_rad_max
-                  +  loc_opt[ityp]*nsplin_g*n_rad_max;
-  iatm_typ_now[1] = 1;
+  int index_atm    =  (ityp-1)*nsplin_g*(n_ang_max+1)*n_rad_max
+                   +  loc_opt[ityp]*nsplin_g*n_rad_max;
 
 //==========================================================================
 // Loop over g-space and do it up!
@@ -1050,25 +1059,34 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
        sfAtmTotG[i].im += (sfAtmTypG[i].im*q_typ[ityp]); // bweight added later
       //------------------------------------------------------
       // b)Atm-electron interaction
-       CP_get_vpsnow(index_atm,nsplin_g,gmin_spl,dg_spl,g,vps0,vps1,vps2,vps3,
-                     vtemp,iatm_typ_now,natm_typ_now,natm_now,vol); 
-       vext.re = temp_r*vtemp[0];
-       vext.im = temp_i*vtemp[0];
-       eext   += (rho[i]*vext).re*wght_now;
+       int iii        = (int)((g-gmin_spl)/dg_spl + 1);
+       iii            = MIN(iii,nsplin_g);
+       iii            = MAX(iii,1);
+       double h0      = ( (double)(iii-1)*dg_spl+gmin_spl );
+       double h       = (g-h0);
+       int index_now  = index_atm + iii;
+       double partem1 = vps0[index_now];
+       double partem2 = vps1[index_now];
+       double partem3 = vps2[index_now];
+       double partem4 = vps3[index_now];
+       double vtemp   = (((partem4*h+partem3)*h+partem2)*h + partem1)/vol;
+       vext.re        = temp_r*vtemp;
+       vext.im        = temp_i*vtemp;
+       eext          += (rho[i]*vext).re*wght_now;
        //------------------------------------------------------
        // c)electron force
        vks[i] += vext.conj();
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
        fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
                k_x[i],k_y[i],k_z[i],
-	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp[0]);
+	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
 #endif
        //------------------------------------------------------
        // d)atom force : set up backtransform
        temp_r          =  (rho[i].re*b_re[i]-rho[i].im*b_im[i]);
        temp_i          = -(rho[i].re*b_im[i]+rho[i].im*b_re[i]);
-       sfAtmTypG[i].re = vtemp[0]*temp_r;
-       sfAtmTypG[i].im = vtemp[0]*temp_i;
+       sfAtmTypG[i].re = vtemp*temp_r;
+       sfAtmTypG[i].im = vtemp*temp_i;
      }else{
        if(g2!=0.0){
          sfAtmTypG[i].re = 0.0;
@@ -1094,8 +1112,8 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
      sfAtmTotG[i].im  = 0.0;
     //------------------------------------------------------
     // Atm-electron interaction
-     vtemp[1]     = gzvps[ityp]/vol;
-     vext.re      = vtemp[1]*temp_r;
+     double vtemp = gzvps[ityp]/vol;
+     vext.re      = vtemp*temp_r;
      vext.im      = 0.0;
      eext        += (rho[i].re*vext.re);
     //------------------------------------------------------
@@ -1105,7 +1123,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
     //------------------------------------------------------
     // atom force : set up backtransform
      temp_r          = rho[i].re*b_re[i];
-     sfAtmTypG[i].re = vtemp[1]*temp_r;
+     sfAtmTypG[i].re = vtemp*temp_r;
      sfAtmTypG[i].im = 0.0;
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
        fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
@@ -1263,7 +1281,10 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 
   int n_interp  = cppseudo->n_interp_ps;
   int n_interp2 = n_interp*n_interp;
-  int *iatm_typ = mdatom_maps->iatm_atm_typ;
+
+  int natm_typ   = cppseudo->natm_typ;
+  int *natm_eext = cppseudo->natm_eext;
+  int **map_eext = cppseudo->map_eext;
 
   double *q     = atoms->q;
   double *fx    = atoms->fx;
@@ -1288,29 +1309,61 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 // Compute the Eext forces from the back transformed ityp SF   : flag=0
 // Compute the Ewald forces from the back transformed total SF : flag=1
 
-  for(int iatm=0;iatm<natm;iatm++){
-    if(iatm_typ[(iatm+1)]==ityp || flag==1){
-      int jc = plane_index[iatm];  // interpolation pt of plane
-      if(jc>0){
-        double qnow = (flag==1 ? q[iatm] : 1.0);
-        for(int j=1;j<=n_interp2;j++){
-          int ind   = igrid[iatm][j];      // index of pt in the plane
-          double p  = sfAtmTypR[ind]*qnow;
-          fx[iatm] -= (dmn_x[iatm][j]*p);
-          fy[iatm] -= (dmn_y[iatm][j]*p);
-          fz[iatm] -= (dmn_z[iatm][j]*p);
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-          fxt[iatm] -=(dmn_x[iatm][j]*p);
-          fyt[iatm] -=(dmn_y[iatm][j]*p);
-          fzt[iatm] -=(dmn_z[iatm][j]*p);
-#endif
-        }//endfor
+  int nroll = 5; // you can't change this without changing the code
+  int nrem  = (n_interp2 % nroll);
+  int jstrt = (n_interp2-nrem+1);
+  int jend  = (n_interp2-nrem);
+
+  int ityp_use = (flag==0 ? ityp : (natm_typ+1));
+  for(int jatm=1;jatm<=natm_eext[ityp_use];jatm++){
+    int iatm = (flag==0 ? (map_eext[ityp][jatm]-1) : (jatm-1));
+    int jc   = plane_index[iatm];  // interpolation pt of plane
+    if(jc>0){
+      double fxx=0.0, fyy=0.0, fzz=0.0;
+      for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+          j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+        double p0  = sfAtmTypR[igrid[iatm][j]];
+        double p1  = sfAtmTypR[igrid[iatm][j1]];
+        double p2  = sfAtmTypR[igrid[iatm][j2]];
+        double p3  = sfAtmTypR[igrid[iatm][j3]];
+        double p4  = sfAtmTypR[igrid[iatm][j4]];
+        fxx += (dmn_x[iatm][j]*p0  + dmn_x[iatm][j1]*p1
+               +dmn_x[iatm][j2]*p2 + dmn_x[iatm][j3]*p3
+               +dmn_x[iatm][j4]*p4);
+        fyy += (dmn_y[iatm][j]*p0  + dmn_y[iatm][j1]*p1
+               +dmn_y[iatm][j2]*p2 + dmn_y[iatm][j3]*p3
+               +dmn_y[iatm][j4]*p4);
+        fzz += (dmn_z[iatm][j]*p0  + dmn_z[iatm][j1]*p1
+               +dmn_z[iatm][j2]*p2 + dmn_z[iatm][j3]*p3
+               +dmn_z[iatm][j4]*p4);
+      }//endfor
 #ifdef CMK_VERSION_BLUEGENE
-        CmiNetworkProgress();
+      CmiNetworkProgress();
 #endif
-      }//endif
-    }//endif
-  }//endfor
+      for(int j=jstrt;j<=n_interp2;j++){
+        double p  = sfAtmTypR[igrid[iatm][j]];
+        fxx += (dmn_x[iatm][j]*p);
+        fyy += (dmn_y[iatm][j]*p);
+        fzz += (dmn_z[iatm][j]*p);
+      }//endfor
+      double qnow = (flag==1 ? q[iatm] : 1.0);
+      fx[iatm] -= fxx*qnow;
+      fy[iatm] -= fyy*qnow;
+      fz[iatm] -= fzz*qnow;
+#ifdef _CP_DEBUG_VKS_HART_EEXT_
+      for(int j=1;j<=n_interp2;j++){
+        int ind   = igrid[iatm][j];      // index of pt in the plane
+        double p  = sfAtmTypR[ind]*qnow;
+        fxt[iatm] -=(dmn_x[iatm][j]*p);
+        fyt[iatm] -=(dmn_y[iatm][j]*p);
+        fzt[iatm] -=(dmn_z[iatm][j]*p);
+      }//endfor
+#endif
+#ifdef CMK_VERSION_BLUEGENE
+           CmiNetworkProgress();
+#endif
+    }//endif : plane is allowed
+  }//endfor : atm type is allowed
 
 //==========================================================================
 // Debug output

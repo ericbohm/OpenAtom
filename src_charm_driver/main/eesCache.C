@@ -235,11 +235,11 @@ void RPPDATA::init(int index_in){
    dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
    for(int i=0;i<natm;i++){
-     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int));
-     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
+     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int))-1;
+     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
    }//endfor
 
 }//end routine
@@ -259,6 +259,7 @@ void GPPDATA::init(int index_in,int ncoef_in, int *ka, int *kb, int *kc){
   b_im     = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   h_gspl   = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   ind_gspl = (int *)fftw_malloc((ncoef+1)*sizeof(int));
+
 
   CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
   CPNONLOCAL::eesSetEesWghtGgrp(ncoef,ka,kb,kc,b_re,b_im,ngrid_a,ngrid_b,ngrid_c,
@@ -289,11 +290,11 @@ void RHORHARTDATA::init(int index_in){
    dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
    for(int i=0;i<natm;i++){
-     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int));
-     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
-     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double));
+     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int))-1;
+     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
    }//endfor
 
 }//end routine
@@ -428,125 +429,14 @@ void GSPDATA::init(int index_in){
  //------------------------------------------------------------
  // set the k-vectors
 
+  g  = (double *)fftw_malloc((ncoef+1)*sizeof(double));
+  g2 = (double *)fftw_malloc((ncoef+1)*sizeof(double));
   ka = (int *)fftw_malloc(ncoef*sizeof(int));
   kb = (int *)fftw_malloc(ncoef*sizeof(int));
   kc = (int *)fftw_malloc(ncoef*sizeof(int));
-  genericSetKvector(ncoef,ka,kb,kc,numRuns,runs,&gCharePkg,1,ngrid_a,ngrid_b,ngrid_c);
 
-//==============================================================================
-  }//end routine
-//==============================================================================
-
-
-//==============================================================================
-//  A generic routine to set kvectors and indices from runs
-//==============================================================================
-void genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
-                       int numRuns, RunDescriptor *runs, GCHAREPKG *gCharePkg,
-                       int checkFill, int ngrid_a, int ngrid_b, int ngrid_c){
-//======================================================================
-// Construct the k-vectors
-  
-  int dataCovered = 0;
-  for (int r = 0; r < numRuns; r++) { // 2*number of lines z
-    int x, y, z;
-    x = runs[r].x;
-    if (x > ngrid_a/2){x -= ngrid_a;}
-    y = runs[r].y;
-    if (y > ngrid_b/2){y -= ngrid_b;}
-    z = runs[r].z;
-    if (z > ngrid_c/2){z -= ngrid_c;}
-    for(int i = 0; i < runs[r].length; i++) { //pts in lines of z
-      k_x[dataCovered] = x;
-      k_y[dataCovered] = y;
-      k_z[dataCovered] = (z+i);
-      dataCovered++;
-    }//endfor
-  }//endfor
-
-  CkAssert(dataCovered == numPoints);
-
-//======================================================================
-// Find pts with k_x==0 then check the layout : kx=0 first
-
-  int ihave_g000 =  0;
-  int ind_g000   = -1;
-  int ihave_kx0  = 0;
-  int nkx0       = 0;
-  int nkx0_uni   = 0;
-  int nkx0_red   = 0;
-  int nkx0_zero  = 0;
-  int kx0_strt   = 0;
-  for(int i=0;i<numPoints;i++){
-    if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
-    if(k_x[i]==0){
-      if(ihave_kx0==0){kx0_strt=i;}
-      ihave_kx0=1;
-      nkx0++;
-    }//endif
-  }//endif
-  int kx0_end = kx0_strt + nkx0;
-
-  if(checkFill==1){
-   if(kx0_strt!=0){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-   }//endif
-  
-   if(nkx0!=nkx0_uni+nkx0_red){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Incorrect count of redundant guys\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-   }//endif
-
-   for(int i=0;i<nkx0;i++){  
-    if(k_x[i]!=0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("kx should be stored consecutively and first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-   }//endfor
-
-   for(int i=0;i<nkx0_red;i++){  
-    if(k_y[i]>0 || (k_y[i]==0 && k_z[i]>=0)){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("ky <0 should be stored first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-     }//endif
-   }//endfor
-
-   for(int i=nkx0_red;i<nkx0_uni;i++){  
-    if(k_y[i]<0 || (k_y[i]==0 && k_z[i]<0)){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("ky <0 should be stored first\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
-   }//endfor
-
-  }//endif : check the ordering : states only
-
-//==============================================================================
-// Set the return values
-
-  gCharePkg->ihave_g000 = ihave_g000;
-  gCharePkg->ind_g000   = ind_g000;
-  gCharePkg->ihave_kx0  = ihave_kx0;
-  gCharePkg->nkx0       = nkx0;
-  gCharePkg->nkx0_uni   = nkx0_uni;
-  gCharePkg->nkx0_red   = nkx0_red;
-  gCharePkg->nkx0_zero  = nkx0_zero;
-  gCharePkg->kx0_strt   = kx0_strt;
-  gCharePkg->kx0_end    = kx0_end;
+  CPNONLOCAL::genericSetKvector(ncoef,ka,kb,kc,g,g2,numRuns,runs,&gCharePkg,1,
+                                ngrid_a,ngrid_b,ngrid_c);
 
 //==============================================================================
   }//end routine

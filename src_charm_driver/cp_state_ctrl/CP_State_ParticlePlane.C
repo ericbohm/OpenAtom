@@ -1049,6 +1049,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   int ncoef       = gSpaceNumPoints;
   int ihave_g0    = gss->ihave_g000;
   int ind_g0      = gss->ind_g000;
+  int nkx0        = gss->nkx0;
   complex *fPsiG  = myForces;
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
@@ -1056,7 +1057,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
    CkPrintf("HI, I am gPP %d %d in computeNLeesForc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,projPsiG,fPsiG,dyp_re,dyp_im,
+  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiG,fPsiG,dyp_re,dyp_im,
                                k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
 
 //============================================================================

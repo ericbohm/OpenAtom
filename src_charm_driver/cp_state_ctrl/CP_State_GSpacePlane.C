@@ -1600,17 +1600,22 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   gs.addForces(pp->myForces,pp->k_x);
   bzero(pp->myForces,gs.numPoints*sizeof(complex));
   CmiNetworkProgress();
+
 //================================================================================
 // Compute force due to quantum kinetic energy and add it in.
 // Reduce quantum kinetic energy or eke
 
-  int istate      = gs.istate_ind;
-  int ncoef       = gs.numPoints;
-  complex *psi_g  = gs.packedPlaneData;
-  complex *forces = gs.packedForceData;
-  double *eke_ret = &(gs.eke_ret);
-  CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,eke_ret,
-			  config.doublePack);
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  double *g2        = eesData->GspData[iplane_ind].g2;
+  int istate        = gs.istate_ind;
+  int ncoef         = gs.numPoints;
+  int nkx0          = gs.nkx0;
+  complex *psi_g    = gs.packedPlaneData;
+  complex *forces   = gs.packedForceData;
+  double *eke_ret   = &(gs.eke_ret);
+
+  CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,
+			  config.doublePack,nkx0);
   contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
 	     CkCallback(printEnergyEke, NULL));
   myenergy_reduc_flag=0;

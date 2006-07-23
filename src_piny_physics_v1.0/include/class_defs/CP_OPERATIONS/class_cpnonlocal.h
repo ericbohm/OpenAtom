@@ -8,6 +8,7 @@
 #define _CPNONLOCAL_
 
 #include "../../../../include/Atoms.h"
+#include "../../../../include/RunDescriptor.h"
 #include "../../../../include/eesDataClass.h"
 
 class CPNONLOCAL{
@@ -24,7 +25,7 @@ class CPNONLOCAL{
  // functions
 
 static void CP_eke_calc(int, int ,complex *,complex *,
-                        int *, int *, int *,double *,int);
+                        int *, int *, int *,double *,double *,int,int);
 
 static void CP_enl_matrix_calc(int , complex *, int *, int *, int *, 
                                complex *, complex *,complex *,complex *,
@@ -53,7 +54,7 @@ static void getEesPrms(int *, int *, int *,int *, int *);
 static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
                               int ,int ,int ,int );
 
-static void eesSplProjectorGgrp(int , int *, int *, int *,double *,int *);
+static void eesSplProjectorGgrp(int ,int *,int *,int *,double *,int *);
 
 static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA *);
 
@@ -71,8 +72,11 @@ static void eesEnergyAtmForcRchare(int , double *, double *, int **,double **,
 
 static void eesPsiForcRchare(int , double *,int **,double **,double *, int *,int );
 
-static void eesPsiForcGspace(int , int , int ,complex *,complex *, double *,double *,
+static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
                              int *,int *, int *,int , int, int);
+
+static void genericSetKvector(int ,int *,int *,int *,double *,double *,
+                              int ,RunDescriptor *,GCHAREPKG *,int ,int ,int ,int );
 
 //---------------------------------------------------------------------------
    }; //CPNONLOCAL

@@ -48,6 +48,7 @@ class CPPSEUDO{
   int nka_eext;
   int nkb_eext;
   int nkc_eext;
+  int natm_eext_max;
   int natm_typ_nl;            //Num: number of nonlocal atom types  
                               //    this is a subset of iatm_atm_typ
   int natm_typ_gh;            //Num: number of nonlocal atom types  
@@ -114,6 +115,9 @@ class CPPSEUDO{
 
   int *map_nl;                // Lst: order atoms in decreasing order
                               //         of # of radial channels          
+
+  int *natm_eext;             // Lst : number of atoms of each type
+  int **map_eext;             // Lst : map of atoms of each type
 
   int *ip_loc_cp_box;         // Lst: index of atms on small cp box   
                               // Lth: natm_tot                        
@@ -230,6 +234,7 @@ class CPPSEUDO{
       p | norm_size;
       p | nlist;
       p | natm_nonloc;
+      p | natm_eext_max;
     //pupping dbles
       p | fft_size_scale_ps;
       p | gmin_true;
@@ -239,6 +244,7 @@ class CPPSEUDO{
       p | gga_cut;
       p | nlvps_skin;
       p | alpha_conv_dual;
+    
     //pupping arrays
       if(cp_any_on==1){
 
@@ -251,12 +257,17 @@ class CPPSEUDO{
           pup1d_int(p,&nrad_max_l,natm_typ);
           pup1d_int(p,&loc_opt,natm_typ);
           pup1d_int(p,&ivps_label,natm_typ);
+          pup1d_int(p,&natm_eext,(natm_typ+1));
+          pup2d_int(p,&map_eext,natm_typ,natm_eext_max);
 
           pup1d_dbl(p,&q_pseud,natm_typ);
           pup1d_dbl(p,&q_typ,natm_typ);
           pup1d_dbl(p,&gzvps,natm_typ);
           pup1d_dbl(p,&gzvps0,natm_typ);
           pup1d_dbl(p,&rcut_nl,natm_typ);
+
+  int **map_eext;             // Lst : map of atoms of each type
+
         }//endif
         if(norm_size>0){
           pup1d_dbl(p,&vpsnorm,norm_size);

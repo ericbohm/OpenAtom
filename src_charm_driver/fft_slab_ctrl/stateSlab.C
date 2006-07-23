@@ -268,16 +268,31 @@ void GStateSlab::addForces(const complex *points, const int *k_x){
 
     }else{
 
-      for(i = 0; i < numPoints; i++){
-        wght = (k_x[i] == 0 ? 1.0 : 2.0);
+      int nfreq=1000;
+      for(i = 0; i < nkx0; i++){
 #ifdef _CP_DEBUG_NON_LOCAL_ONLY_
 	packedForceData[i] = 0.0; 
 #endif
 #ifdef _CP_DEBUG_VKS_ONLY_
 	packedForceData[i] = 0.0; 
 #endif
-	packedForceData[i] *= wght; 
 	packedForceData[i] += points[i];
+#ifdef CMK_VERSION_BLUEGENE
+        if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+      }//endfor
+      for(i = nkx0; i < numPoints; i++){
+#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
+	packedForceData[i] = 0.0; 
+#endif
+#ifdef _CP_DEBUG_VKS_ONLY_
+	packedForceData[i] = 0.0; 
+#endif
+	packedForceData[i] *= 2.0; 
+	packedForceData[i] += points[i];
+#ifdef CMK_VERSION_BLUEGENE
+        if(i%nfreq==0){CmiNetworkProgress();}
+#endif
       }//endfor
 
     }//endif : doublePack

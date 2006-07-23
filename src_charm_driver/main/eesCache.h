@@ -86,8 +86,6 @@ class eesCache: public Group {
 };
 //============================================================================
 
-void genericSetKvector(int ,int *,int *,int *,int ,RunDescriptor *,GCHAREPKG *,
-                       int ,int ,int ,int );
 
 //============================================================================
 

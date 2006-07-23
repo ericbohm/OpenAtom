@@ -1685,6 +1685,29 @@ void make_cp_atom_list(CPATOM_MAPS *cpatom_maps,CPPSEUDO *cppseudo,
   cppseudo->natm_typ = natm_typ;
 
 //------------------------------------------------------------------------
+// Create external list
+
+   int *natm_eext = (int *)cmalloc((natm_typ+1)*sizeof(int),"control_vps_params")-1;
+   for(int i=0;i<=natm_typ;i++){natm_eext[i]=0;}
+   for(int i=1;i<=natm_tot;i++){natm_eext[iatm_atm_typ[i]]+=1;}
+
+   int natm_eext_max = 0;
+   for(int i=1;i<=natm_typ;i++){natm_eext_max = MAX(natm_eext_max,natm_eext[i]);}
+
+   int **map_eext = cmall_int_mat(1,natm_typ,1,natm_eext_max,"ctrl_vps_params");
+   for(int i=0;i<=natm_typ;i++){natm_eext[i]=0;}
+   for(int i=1;i<=natm_tot;i++){
+     natm_eext[iatm_atm_typ[i]]+=1;
+     int ic = natm_eext[iatm_atm_typ[i]];
+     map_eext[iatm_atm_typ[i]][ic] = i;
+   }//endfor
+   natm_eext[(natm_typ+1)]=natm_tot;
+
+   cppseudo->natm_eext     = natm_eext;
+   cppseudo->natm_eext_max = natm_eext_max;
+   cppseudo->map_eext      = map_eext;
+
+//------------------------------------------------------------------------
   }//end routine 
 //==========================================================================
 

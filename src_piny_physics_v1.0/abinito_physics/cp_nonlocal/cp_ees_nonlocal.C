@@ -177,8 +177,9 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
   int i,iii;
   double aka,akb,akc;
   double xk,yk,zk;
-  double g2,g,h0,h;
+  double h0,h;
   double tpi = 2.0*M_PI;
+  double g2,g;
 
   double *hmati   = gencell->hmati;
   int nsplin_g    = cppseudo->nsplin_g;
@@ -575,7 +576,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 
   eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati);
 
-  int ii = (ihave_g0==1 ? ind_g0 : ncoef+10);
+  int ii = (ihave_g0==1 ? ind_g0 : ncoef);
   if(lang==0 && ihave_g0==1){
     double vnow = gzvps0[iatm_typ];
     dyp_re[ii] *= vnow;
@@ -587,7 +588,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   }//endif
 
   int ind_off = (iatm_typ-1)*nsplin_g*(n_ang_max+1) + lang*nsplin_g;
-  for(int i=0;i<ncoef;i++){
+  for(int i=0;i<ii;i++){
     int ind_now = ind_off + ind_gspl[i];
     double h    = h_gspl[i];
     double v0   = vps0[ind_now];
@@ -595,7 +596,23 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     double v2   = vps2[ind_now];
     double v3   = vps3[ind_now];
     double vnow = ((v3*h+v2)*h+v1)*h+v0;
-    vnow        = (ii==i ? 1.0 : vnow);
+    dyp_re[i]  *= vnow;
+    dyp_im[i]  *= vnow;
+#ifdef CMK_VERSION_BLUEGENE
+    if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+  }//endfor
+#ifdef CMK_VERSION_BLUEGENE
+    if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+  for(int i=ii+1;i<ncoef;i++){
+    int ind_now = ind_off + ind_gspl[i];
+    double h    = h_gspl[i];
+    double v0   = vps0[ind_now];
+    double v1   = vps1[ind_now];
+    double v2   = vps2[ind_now];
+    double v3   = vps3[ind_now];
+    double vnow = ((v3*h+v2)*h+v1)*h+v0;
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
 #ifdef CMK_VERSION_BLUEGENE
@@ -843,8 +860,9 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
   int natm            = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str        = iatm_str_lang[iatm_typ];    // where atms begin    
 
-  int ind_now         = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
-  double vnorm_now    = vpsnorm[ind_now];
+  int nroll = 5; // you can't check this without modifying the code below
+  int nrem,jstrt,jend;
+
 
 //==========================================================================
 // A little debugging for you
@@ -870,15 +888,27 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 // The projPsiR should be FFT3D(projPsiG)
 // Mr. zmat should be passed in with the correct offset for interation counter.
 
+   nrem  = (n_interp2 % nroll);
+   jstrt = (n_interp2-nrem+1);
+   jend  = (n_interp2-nrem);
+
    for(int jatm=0;jatm<natm;jatm++){ // atms of this type
      int iatm   = iatm_str+jatm-1;   // non-local atom index
      int jc     = plane_index[iatm]; // interpolation 
      zmat[jatm] = 0.0; 
      if(jc>0){
-       for(int j=1;j<=n_interp2;j++){
-         int ind     = igrid[iatm][j];             // index of pt in the plane
-         double p    = projPsiR[ind]*mn[iatm][j]; // projection operator
-         zmat[jatm] += p;                          // contribute to zmatrix
+       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         double p0   = projPsiR[igrid[iatm][j]]*mn[iatm][j];  // projection operator
+         double p1   = projPsiR[igrid[iatm][j1]]*mn[iatm][j1]; 
+         double p2   = projPsiR[igrid[iatm][j2]]*mn[iatm][j2]; 
+         double p3   = projPsiR[igrid[iatm][j3]]*mn[iatm][j3]; 
+         double p4   = projPsiR[igrid[iatm][j4]]*mn[iatm][j4]; 
+         zmat[jatm] += (p0+p1+p2+p3+p4);                       // add to zmatrix
+       }//endfor : B-spline interp to get Zmat contributions
+       for(int j=jstrt;j<=n_interp2;j++){
+         double p   = projPsiR[igrid[iatm][j]]*mn[iatm][j]; // projection operator
+         zmat[jatm] += p;                                   // add to zmatrix
        }//endfor : B-spline interp to get Zmat contributions
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
@@ -961,6 +991,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 
   int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
   double vnorm_now   = vpsnorm[ind_now];
+  double vnormVol    = vnorm_now/vol;
+  int nroll = 5; // you can't check this without modifying the code below
+  int nrem,jstrt,jend;
 
 //==========================================================================
 // Set up some debuggin stuff
@@ -979,38 +1012,72 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 // contributes to a reduction over all states to get the total 
 // non-local energy, ENL. 
 
+   nrem  = (natm % nroll);
+   jstrt = (natm-nrem);
+   jend  = (natm-nrem);
+
    double cp_enl = 0.0; 
-   for(int jatm=0;jatm<natm;jatm++){ // atms of this type
-     cp_enl += ((zmat[jatm]*zmat[jatm])*(vnorm_now/vol));
+   for(int j=0;j<jend;j+=nroll){
+     cp_enl += (zmat[j]    *zmat[j]     + zmat[(j+1)]*zmat[(j+1)]
+               +zmat[(j+2)]*zmat[(j+2)] + zmat[(j+3)]*zmat[(j+3)]
+               +zmat[(j+4)]*zmat[(j+4)]);
    }//endfor
-   cp_enl_tot[0] += cp_enl;
+   for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
+   cp_enl_tot[0] += (cp_enl*vnormVol);
 
 //==========================================================================
 // Atom forces
 
+   nrem  = (n_interp2 % nroll);
+   jstrt = (n_interp2-nrem+1);
+   jend  = (n_interp2-nrem);
+
    for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
-     int iatm    = iatm_str+jatm-1;    // index of atm in non-local atm list
-     int katm    = map_nl[(iatm+1)]-1; // index of atm in full atom list
-     int jc      = plane_index[iatm];  // interpolation ind to plane ind mapping
-     zmat[jatm] *= (2.0*vnorm_now/vol); 
+     int iatm = iatm_str+jatm-1;    // index of atm in non-local atm list
+     int jc   = plane_index[iatm];  // interpolation ind to plane ind mapping
      if(jc>0){ // jc starts at 1 in piny-like fashion
-       for(int j=1;j<=n_interp2;j++){
-         int ind   = igrid[iatm][j];            // index of pt in the plane
-         double pz = projPsiR[ind]*zmat[jatm];  // projector*psi
-         fx[katm] -= pz*dmn_x[iatm][j];   // forces
-         fy[katm] -= pz*dmn_y[iatm][j];
-         fz[katm] -= pz*dmn_z[iatm][j];
+       int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
+       zmat[jatm] *= (2.0*vnormVol); 
+       double fxx=0.0,fyy=0.0,fzz=0.0;
+       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         double pz0 = projPsiR[igrid[iatm][j]];                   // psi
+         double pz1 = projPsiR[igrid[iatm][j1]];     
+         double pz2 = projPsiR[igrid[iatm][j2]];     
+         double pz3 = projPsiR[igrid[iatm][j3]];     
+         double pz4 = projPsiR[igrid[iatm][j4]];     
+         fxx       += (pz0*dmn_x[iatm][j]  + pz1*dmn_x[iatm][j1] // forces_x
+                      +pz2*dmn_x[iatm][j2] + pz3*dmn_x[iatm][j3]
+		      +pz4*dmn_x[iatm][j4]);
+         fyy       += (pz0*dmn_y[iatm][j]  + pz1*dmn_y[iatm][j1] // forces_y
+                      +pz2*dmn_y[iatm][j2] + pz3*dmn_y[iatm][j3]
+		      +pz4*dmn_y[iatm][j4]);
+         fzz       += (pz0*dmn_z[iatm][j]  + pz1*dmn_z[iatm][j1] // forces_z
+                      +pz2*dmn_z[iatm][j2] + pz3*dmn_z[iatm][j3]
+		      +pz4*dmn_z[iatm][j4]);
+       }//endfor
+       for(int j=jstrt;j<=n_interp2;j++){
+         double pz = projPsiR[igrid[iatm][j]]; // psi
+         fxx      += (pz*dmn_x[iatm][j]);      // forces
+         fyy      += (pz*dmn_y[iatm][j]);
+         fzz      += (pz*dmn_z[iatm][j]);
+       }//endif
+       fx[katm]  -= (fxx*zmat[jatm]); // finish up
+       fy[katm]  -= (fyy*zmat[jatm]);
+       fz[katm]  -= (fzz*zmat[jatm]);
 #ifdef _CP_DEBUG_EES_NONLOCAL_
-         fxt[jatm]     -= pz*dmn_x[iatm][j]; 
-         fyt[jatm]     -= pz*dmn_y[iatm][j];
-         fzt[jatm]     -= pz*dmn_z[iatm][j];
+       for(int j=1;j<=n_interp2;j++){
+         double pz  = projPsiR[igrid[iatm][j]]*zmat[jatm]; // projector*psi
+         fxt[jatm] -= pz*dmn_x[iatm][j];                   // forces 
+         fyt[jatm] -= pz*dmn_y[iatm][j];
+         fzt[jatm] -= pz*dmn_z[iatm][j];
+       }//endif
 #endif
-       }//endfor : B spline interpolation for fatm
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
      }//endif : atom is interpolated on this plane
-   }//endfor : iatm
+  }//endfor : iatm
 
 //==========================================================================
 // output the debugging stuff
@@ -1041,8 +1108,8 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat, 
- 	             int **igrid,double **mn,double *projPsiR, 
-                     int *plane_index,int plane)
+  	                          int **igrid,double **mn,double *projPsiR, 
+                                  int *plane_index,int plane)
 //==========================================================================
    {// begin routine
 //==========================================================================
@@ -1082,8 +1149,15 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
   int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
   double vnorm_now   = vpsnorm[ind_now];
 
+  int nroll = 5; // you can't check this without modifying the code below
+  int nrem,jstrt,jend;
+
 //==========================================================================
 // The zmat had better be reduced over all planes of this state.
+
+   nrem  = (n_interp2 % nroll);
+   jstrt = (n_interp2-nrem+1);
+   jend  = (n_interp2-nrem);
 
    for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){projPsiR[i]=0.0;}
 
@@ -1091,10 +1165,22 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
      int iatm = iatm_str+jatm-1;   // non-local atom index
      int jc   = plane_index[iatm]; // interpolation index to plane index mapping
      if(jc>0){ // jc starts at 1 in piny-like fashion
-       for(int j=1;j<=n_interp2;j++){
-         int ind        = igrid[iatm][j];         // index of pt in the plane
-         double q       = zmat[jatm]*mn[iatm][j]; // contrib of this atm to psi force
-         projPsiR[ind] += q;                      // add contrib into total
+       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         double q0  = zmat[jatm]*mn[iatm][j];   // contrib of this atm to psi force
+         double q1  = zmat[jatm]*mn[iatm][j1];  // contrib of this atm to psi force
+         double q2  = zmat[jatm]*mn[iatm][j2];  // contrib of this atm to psi force
+         double q3  = zmat[jatm]*mn[iatm][j3];  // contrib of this atm to psi force
+         double q4  = zmat[jatm]*mn[iatm][j4];  // contrib of this atm to psi force
+         projPsiR[igrid[iatm][j]]  += q0;       // add contrib into total
+         projPsiR[igrid[iatm][j1]] += q1;       // add contrib into total
+         projPsiR[igrid[iatm][j2]] += q2;       // add contrib into total
+         projPsiR[igrid[iatm][j3]] += q3;       // add contrib into total
+         projPsiR[igrid[iatm][j4]] += q4;       // add contrib into total
+       }//endfor : B spline interpolation for fcoef
+       for(int j=jstrt;j<=n_interp2;j++){
+         double q  = zmat[jatm]*mn[iatm][j];   // contrib of this atm to psi force
+         projPsiR[igrid[iatm][j]] += q;        // add contrib into total
        }//endfor : B spline interpolation for fcoef
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
@@ -1110,13 +1196,12 @@ void CPNONLOCAL::eesPsiForcRchare(int iter_nl, double *zmat,
 //==========================================================================
 
 
-
 //==========================================================================
 // Every G-Space Chare array invokes me for each non-local loop iteration
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,
+void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
     			          complex *projPsiG,complex *fPsiG, 
                                   double *dyp_re,double *dyp_im,
                                   int *ka, int *kb,int *kc,
@@ -1134,22 +1219,41 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,
 #endif
 
 //==========================================================================
-// Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
+// G=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
 
-  int nfreq   = 100;
-  double wght = 2.0;
   if(ihave_g0==1){
     int ig           = ind_g0;
     projPsiG[ig].im  = 0.0;
     dyp_im[ig]       = 0.0;
   }//endif
 
-  for(int ig=0;ig<ncoef;ig++){ 
-    double wght_now  = (ka[ig]==0 ? 1.0 : wght);
-    double qtilde_re = projPsiG[ig].re;
-    double qtilde_im = projPsiG[ig].im;
-    fPsiG[ig].re    -= wght_now*(dyp_re[ig]*qtilde_re - dyp_im[ig]*qtilde_im);
-    fPsiG[ig].im    += wght_now*(dyp_im[ig]*qtilde_re + dyp_re[ig]*qtilde_im);
+//==========================================================================
+// Gx=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
+
+  int nfreq   = 100;
+  for(int ig=0;ig<nkx0;ig++){ 
+    fPsiG[ig].re    -= (dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
+    fPsiG[ig].im    += (dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+    if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
+                 fPsiG[ig].re,fPsiG[ig].im);}
+#endif
+#ifdef CMK_VERSION_BLUEGENE
+    if(ig%nfreq==0){CmiNetworkProgress();}
+#endif
+  }//endfor
+
+#ifdef CMK_VERSION_BLUEGENE
+  CmiNetworkProgress();
+#endif
+
+//==========================================================================
+// Gx!=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
+
+  double wght = 2.0;
+  for(int ig=nkx0;ig<ncoef;ig++){ 
+    fPsiG[ig].re    -= wght*(dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
+    fPsiG[ig].im    += wght*(dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
 #ifdef _CP_DEBUG_EES_NONLOCAL_
     if(istate==0){fprintf(fp,"%d %d %d : %g %g\n",ka[ig],kb[ig],kc[ig],
                  fPsiG[ig].re,fPsiG[ig].im);}
@@ -1176,3 +1280,140 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,
 //-------------------------------------------------------------------------
   }//end routine
 //==========================================================================
+
+
+//==============================================================================
+//  A generic routine to set kvectors and indices from runs
+//==============================================================================
+void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
+                        double *g, double *g2,int numRuns, RunDescriptor *runs, 
+                        GCHAREPKG *gCharePkg, int checkFill, 
+                        int ngrid_a, int ngrid_b, int ngrid_c){
+//======================================================================
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+#include "../class_defs/allclass_strip_gen.h"
+  double *hmati   = gencell->hmati;
+
+//======================================================================
+// Construct the k-vectors
+  
+  int dataCovered = 0;
+  for (int r = 0; r < numRuns; r++) { // 2*number of lines z
+    int x, y, z;
+    x = runs[r].x;
+    if (x > ngrid_a/2){x -= ngrid_a;}
+    y = runs[r].y;
+    if (y > ngrid_b/2){y -= ngrid_b;}
+    z = runs[r].z;
+    if (z > ngrid_c/2){z -= ngrid_c;}
+    for(int i = 0; i < runs[r].length; i++) { //pts in lines of z
+      k_x[dataCovered] = x;
+      k_y[dataCovered] = y;
+      k_z[dataCovered] = (z+i);
+      dataCovered++;
+    }//endfor
+  }//endfor
+
+  CkAssert(dataCovered == numPoints);
+
+//======================================================================
+// give me some g's
+
+  double tpi = 2.0*M_PI;
+  for(int i=0;i<numPoints;i++){
+    double aka = ((double)(k_x[i]));
+    double akb = ((double)(k_y[i]));
+    double akc = ((double)(k_z[i]));
+    double xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+    double yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+    double zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+    g2[i]      = xk*xk+yk*yk+zk*zk;
+    g[i]       = sqrt(g2[i]);
+  }//endfor
+
+//======================================================================
+// Find pts with k_x==0 then check the layout : kx=0 first
+
+  int ihave_g000 =  0;
+  int ind_g000   = -1;
+  int ihave_kx0  = 0;
+  int nkx0       = 0;
+  int nkx0_uni   = 0;
+  int nkx0_red   = 0;
+  int nkx0_zero  = 0;
+  int kx0_strt   = 0;
+  for(int i=0;i<numPoints;i++){
+    if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
+    if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
+    if(k_x[i]==0){
+      if(ihave_kx0==0){kx0_strt=i;}
+      ihave_kx0=1;
+      nkx0++;
+    }//endif
+  }//endif
+  int kx0_end = kx0_strt + nkx0;
+
+  if(checkFill==1){
+   if(kx0_strt!=0){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+   }//endif
+  
+   if(nkx0!=nkx0_uni+nkx0_red){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Incorrect count of redundant guys\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+   }//endif
+
+   for(int i=0;i<nkx0;i++){  
+    if(k_x[i]!=0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("kx should be stored consecutively and first\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+   }//endfor
+
+   for(int i=0;i<nkx0_red;i++){  
+    if(k_y[i]>0 || (k_y[i]==0 && k_z[i]>=0)){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("ky <0 should be stored first\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+     }//endif
+   }//endfor
+
+   for(int i=nkx0_red;i<nkx0_uni;i++){  
+    if(k_y[i]<0 || (k_y[i]==0 && k_z[i]<0)){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("ky <0 should be stored first\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+   }//endfor
+
+  }//endif : check the ordering : states only
+
+//==============================================================================
+// Set the return values
+
+  gCharePkg->ihave_g000 = ihave_g000;
+  gCharePkg->ind_g000   = ind_g000;
+  gCharePkg->ihave_kx0  = ihave_kx0;
+  gCharePkg->nkx0       = nkx0;
+  gCharePkg->nkx0_uni   = nkx0_uni;
+  gCharePkg->nkx0_red   = nkx0_red;
+  gCharePkg->nkx0_zero  = nkx0_zero;
+  gCharePkg->kx0_strt   = kx0_strt;
+  gCharePkg->kx0_end    = kx0_end;
+
+//==============================================================================
+  }//end routine
+//==============================================================================
