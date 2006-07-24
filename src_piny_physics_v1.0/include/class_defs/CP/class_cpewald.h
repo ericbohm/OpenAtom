@@ -32,20 +32,6 @@ class CPEWALD {
                                    //  dual=1 kmax_cp_dens_cp_box=kmax_cp 
                                    //         but kmax_cp requires box_rat
                                    //  dual=2 kmax_cp has true values     
-  int *kastr_sm,*kbstr_sm,*kcstr_sm;// Lst: Small spherically cutoff 
-                                    //      g-vectors; dens_cp_box
-                                    //   Lth: nktot_sm                  
-  int *kastr_dens_cp_box,           // Lst: large spherically cutoff 
-      *kbstr_dens_cp_box,           //       g-vectors in cp_box;
-      *kcstr_dens_cp_box;           //Lth: nktot_cp_l                  
-
-  int *ibrk1_sm,*ibrk2_sm;          // Lst: RESPA spherically cutoff 
-                                    //      g-space grid break-pts;
-                                    // Lth: nktot_sm                        
-  int *ibrk1_dens_cp_box,           // Lst: RESPA spherically cutoff 
-      *ibrk2_dens_cp_box;           // g-space grid break-pts;
-                                    // Lth: nktot_sm                        
-
  //----------------
  //con-destruct:
    CPEWALD(){
@@ -78,18 +64,6 @@ class CPEWALD {
     if(cp_any_on==1){
        pup1d_int(p,&kmax_cp,3);
        pup1d_int(p,&kmax_cp_dens_cp_box,3);
-       pup1d_int(p,&kastr_sm,(nktot_sm+1));
-       pup1d_int(p,&kbstr_sm,nktot_sm);
-       pup1d_int(p,&kcstr_sm,nktot_sm);
-       pup1d_int(p,&ibrk1_sm,nktot_sm);
-       pup1d_int(p,&ibrk2_sm,nktot_sm);
-      if(nktot_dens_cp_box > 0){  // used in dual griding 
-       pup1d_int(p,&kastr_dens_cp_box,nktot_dens_cp_box);
-       pup1d_int(p,&kbstr_dens_cp_box,nktot_dens_cp_box);
-       pup1d_int(p,&kcstr_dens_cp_box,nktot_dens_cp_box);
-       pup1d_int(p,&ibrk1_dens_cp_box,nktot_dens_cp_box);
-       pup1d_int(p,&ibrk2_dens_cp_box,nktot_dens_cp_box);
-      }
     }//endif
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

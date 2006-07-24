@@ -31,17 +31,6 @@ class GENEWALD {
   double alp_clus;            // Num: Ewald alpha for cluster BCs 
   double gs_max;              // Num: Max (gx^2+gy^2)^1/2 calc by all 
 
-  int *kastr,*kbstr,*kcstr;   // Lst: Large spherically cutoff g vecs
-                              //   Lth: nktot                            
-  int *ibrk1,*ibrk2,*ibrk3;   // Lst: Large spherically cutoff 
-                              //         g-space grid break-pts;
-                              //    Lth: nktot                           
-  int *kastr_res,*kbstr_res,*kcstr_res;// Lst: RESPA sphere cutoff 
-                                       //         g-vectors; 
-                                       //    Lth: nktot_res              
-  int *ibrk1_res,*ibrk2_res;  // Lst: RESPA spherically cutoff 
-                              //      g-space grid break-pts;  
-                              //      Lth: nktot_res                      
   double *clus_corr_r,*dclus_corr_r;
   double *clus_corr_r_res,*dclus_corr_r_res;
   double *cvgs_2d0,*cvgs_2d1,*cvgs_2d2,*cvgs_2d3,*vgc_2d;
@@ -86,22 +75,6 @@ class GENEWALD {
         p | ecut_clus;
         p | alp_clus;
         p | gs_max;
-    //pupping int  arrays
-        if(ewald_on==1){
-         pup1d_int(p,&kastr,nktot1);
-         pup1d_int(p,&kbstr,nktot1);
-         pup1d_int(p,&kcstr,nktot1);
-         pup1d_int(p,&ibrk1,nktot1);
-         pup1d_int(p,&ibrk2,nktot1);
-         pup1d_int(p,&ibrk3,nktot1);
-         if(int_res_ter==1){
-          pup1d_int(p,&kastr_res,nktot_res1);
-          pup1d_int(p,&kbstr_res,nktot_res1);
-          pup1d_int(p,&kcstr_res,nktot_res1);
-          pup1d_int(p,&ibrk1_res,nktot_res1);
-          pup1d_int(p,&ibrk2_res,nktot_res1);
-        }//endif
-       }//endif
     //pupping dbl  arrays
 #ifdef CP_NON3D_BOX_IMPLEMENTED
         if(cp_any_on==1){

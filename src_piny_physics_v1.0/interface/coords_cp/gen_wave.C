@@ -121,8 +121,6 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
 
   double *occ_dn      = cpcoeffs_info->occ_dn;
   double *occ_up      = cpcoeffs_info->occ_up;
-  double *rocc_sum_up = cpcoeffs_info->rocc_sum_up;
-  double *rocc_sum_dn = cpcoeffs_info->rocc_sum_dn;
   int iocc;
 
 //----------------------------------------------------------------------
@@ -356,24 +354,6 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
      occ_up[i] += occ_dn[i];
     }//endfor
    }//endif cp_lda
-
-   iocc=0;
-   for(i=1;i<=nstate_up;i++){
-    for(j=1;j<=nstate_up;j++){
-     iocc++;
-     rocc_sum_up[iocc] = 1.0/(occ_up[i]+occ_up[j]);
-    }//endfor i
-   }// endfor j
-
-   if(cp_lsda==1){
-    iocc=0;
-    for(i=1;i<=nstate_dn;i++){
-     for(j=1;j<=nstate_dn;j++){
-      iocc++;
-      rocc_sum_dn[iocc] = 1.0/(occ_dn[i]+occ_dn[j]);
-     }//endfor i
-    }//endfor j
-   }//endif
 
 //=========================================================================
 // bessel transform the radial wave functions and spline the result        

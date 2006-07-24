@@ -29,16 +29,8 @@ class CPCOEFFS_INFO {
   double tau_mass;            // Num: mass tau
   double ecut;                // Num: Energy cutoff large sparse grid    
   double ecut_dens_cp_box;    // Num: Energy cutoff cp_box               
-  double *cmass;              // Lst: PW coef forces;
-                              // Lth: ncoef                          
-
   double *occ_up,*occ_dn;     // Lst: orbital occupation numbers     
                               // Lth: nstate_up                     
-  double *rocc_sum_up;        // Lst: reciprocal sums of occ numbers 
-                              // Lth: nstate_up*nstate_up           
-  double *rocc_sum_dn;        // Lst: reciprocal sums of occ numbers 
-                              // Lth: nstate_up*nstate_up           
-
  //---------------------------------------------------------------------------
  //con-destruct:
    CPCOEFFS_INFO(){
@@ -79,9 +71,6 @@ class CPCOEFFS_INFO {
       if(cp_any_on==1){
        pup1d_dbl(p,&occ_up,nstate_up);
        if(nstate_dn>0){pup1d_dbl(p,&occ_dn,nstate_dn);}
-       pup1d_dbl(p,&rocc_sum_up,nstate2);
-       pup1d_dbl(p,&rocc_sum_dn,nstate2); 
-       pup1d_dbl(p,&cmass,ncoef);
       }//endif
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

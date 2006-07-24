@@ -265,13 +265,6 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
       cpcoeffs_info->occ_dn      = (double *)
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
-      cpcoeffs_info->rocc_sum_up =  (double *)
-                     cmalloc(nstate2*sizeof(double),"parse:hack")-1;
-      cpcoeffs_info->rocc_sum_dn =  (double *)
-                     cmalloc(nstate2*sizeof(double),"parse:hack")-1;
-      cpcoeffs_info->cmass =  (double *)
-                     cmalloc(ncoef*sizeof(double),"parse:hack")-1;
-
   }//endif : cp_on
 
 //========================================================================

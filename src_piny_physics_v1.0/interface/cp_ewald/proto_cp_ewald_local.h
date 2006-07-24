@@ -38,12 +38,12 @@ void radixme(int *, int *, int *);
 /*==========================================================================*/
 /*               Proto for countkvec3d:                                     */ 
 
-void countkvec3d(int *,double ,int *,double *);
+void countkvec3d(int *,double ,int *,double *,double *,double *,double *);
 
 /*==========================================================================*/
 /*               Proto for countkvec3d_sm:                                  */ 
 
-void countkvec3d_sm(int *, double , int *, double * );
+void countkvec3d_sm(int *, double , int *, double * , double *, double *);
 
 /*==========================================================================*/
 /*               Proto for makemap_cp:                                      */ 

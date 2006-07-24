@@ -4,6 +4,7 @@
 #include "../class_defs/allclass_gen.h"
 #include "../class_defs/allclass_cp.h"
 #include "../include/class_defs/allclass_mdatoms.h"
+#include "../include/proto_defs/proto_cp_ewald_local.h"
 #include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 
 //========================================================================
@@ -159,7 +160,9 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
 //========================================================================
 // Local variables 
 
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp                     = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
@@ -167,14 +170,21 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
 
-  int *kmax      = cpewald->kmax_cp_dens_cp_box;
-  int nkf1       = 4*(kmax[1]+1);
-  int nkf2       = 4*(kmax[2]+1);
-  int nkf3       = 4*(kmax[3]+1);
-  int nktot      = cpewald->nktot_sm;
-  int *ka        = cpewald->kastr_sm;
-  int *kb        = cpewald->kbstr_sm;
-  int *kc        = cpewald->kcstr_sm;
+  double *hmati = gencell->hmati;
+  double ecut   = cpcoeffs_info->ecut;
+  int *kmax     = cpewald->kmax_cp_dens_cp_box;
+  int nktot     = cpewald->nktot_sm;
+  int nkf1      = 4*(kmax[1]+1);
+  int nkf2      = 4*(kmax[2]+1);
+  int nkf3      = 4*(kmax[3]+1);
+  int *ka       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+  int *kb       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+  int *kc       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+  int *ibrk1    = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+  int *ibrk2    = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+  double gmin,gmax;
+
+  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax);
 
   int cp_para_typ=0;
 
@@ -215,6 +225,12 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   sim->nplane_x        = nkf1;
   sim->lines_per_chareG = lines_per_plane;
   sim->pts_per_chareG   = pts_per_plane;
+
+  cfree(&ka[1],"parainfo");
+  cfree(&kb[1],"parainfo");
+  cfree(&kc[1],"parainfo");
+  cfree(&ibrk1[1],"parainfo");
+  cfree(&ibrk2[1],"parainfo");
 
 //========================================================================
 

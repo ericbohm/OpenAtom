@@ -303,8 +303,8 @@ void set_pme_grid(double ecut_now,double deth,double *hmatik,int *kmaxv,
 /* Count the number of k vectors on large grid */
 /*==========================================================================*/
 
-void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
-
+void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik, 
+                 double *gmin_spl,double *gmin_true,double *gmax_spl)
 /*==========================================================================*/
 /*       Begin routine */
 {/*begin routine */
@@ -316,7 +316,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
   double xk, yk, zk;
   double tryme;
   double tpi;
-  double aka, akb, akc;
+  double aka, akb, akc,g;
 
 /*==========================================================================*/
 /* Count the kvectors */
@@ -324,6 +324,9 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
   tpi = 2.0*M_PI;
   icount = 0;
   kamax = kmaxv[1];
+
+  gmin_spl[0] = 1.0e10;
+  gmax_spl[0] = 0.0;
 
 /*********************************/
 
@@ -333,9 +336,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
     yk = aka * hmatik[4] * tpi;
     zk = aka * hmatik[7] * tpi;
     tryme = (xk * xk + yk * yk + zk * zk) * .5;
-    if (tryme > ecut * 4.) {
-      break;
-    }
+    if (tryme > ecut * 4.) {break;}
   }
 
   kamax = i - 1;
@@ -354,9 +355,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
-      if (tryme <= ecut * 4.) {
-	break;
-      }
+      if (tryme <= ecut * 4.) {break;}
     }
 
 /*********************************/
@@ -368,9 +367,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
-      if (tryme > ecut * 4.) {
-	break;
-      }
+      if (tryme > ecut * 4.) {break;}
     }
     
     kbmax = i - 1;
@@ -387,9 +384,7 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
 	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
 	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
 	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut * 4.) {
-	  break;
-	}
+	if (tryme <= ecut * 4.) {break;}
       }
 /*********************************/
 
@@ -400,21 +395,32 @@ void countkvec3d(int *nktot,double ecut,int *kmaxv,double *hmatik)
 	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
 	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
 	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut * 4.) {
-	  break;
-	}
-      }
+	if (tryme > ecut * 4.) {break;}
+      }//endfor : kc
 
       kcmax = i - 1;
       akc = (double) kcmin;
       for (kc = kcmin; kc <= kcmax; ++kc) {
+	akc = (double) kc;
+	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+        g  = sqrt(xk * xk + yk * yk + zk * zk);
+        gmin_spl[0] = MIN(gmin_spl[0],g);
+        gmax_spl[0] = MAX(gmax_spl[0],g);
 	++icount;
-      }
-    }
-  }
+      }//endfor : kc
+
+    }//endfor : kb
+  }//end for :ka
   *nktot = icount;
+
+  gmin_true[0] = gmin_spl[0];
+  gmin_spl[0] *= 0.75;
+  gmax_spl[0] *= (4.0/3.0);
+
 /*--------------------------------------------------------------------------*/
-} /* countkvec3d */
+  } /* countkvec3d */
 /*==========================================================================*/
 
 
@@ -1021,7 +1027,8 @@ void radixme(int *kmax1, int *kmax2, int *kmax3)
 /* Count number of k vectors on small grid */
 /*==========================================================================*/
 
-void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
+void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
+                    double *gmin, double *gmax)
 
 /*==========================================================================*/
 /*       Begin routine */
@@ -1033,12 +1040,14 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
   int i, kbmin, kcmin, kbmax, kcmax, kamax, ka, kb, kc;
   double xk, yk, zk;
   int icount;
-  double aka, akb, akc;
+  double aka, akb, akc,g;
   double tpi, tryme;
 
 /*==========================================================================*/
 
   tpi = M_PI * 2.;
+  gmin[0] = 1.0e10;
+  gmax[0] = 0.0;
 
   icount = 0;
   i1 = kmax_cp[1];
@@ -1048,9 +1057,7 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
     yk = aka * hmatik[4] * tpi;
     zk = aka * hmatik[7] * tpi;
     tryme = (xk * xk + yk * yk + zk * zk) * .5;
-    if (tryme > ecut) {
-      break;
-    }
+    if (tryme > ecut) {break;}
   }
   kamax = i - 1;
   i1 = kamax;
@@ -1066,9 +1073,7 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
-      if (tryme <= ecut) {
-	break;
-      }
+      if (tryme <= ecut) {break;}
     }
 
     kbmin = i;
@@ -1079,9 +1084,7 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
       yk = (aka * hmatik[4] + akb * hmatik[5]) * tpi;
       zk = (aka * hmatik[7] + akb * hmatik[8]) * tpi;
       tryme = (xk * xk + yk * yk + zk * zk) * .5;
-      if (tryme > ecut) {
-	break;
-      }
+      if (tryme > ecut) {break;}
     }
 
     kbmax = i - 1;
@@ -1098,9 +1101,7 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
 	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
 	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
 	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme <= ecut) {
-	  break;
-	}
+	if (tryme <= ecut) {break;}
       }
 
       kcmin = i;
@@ -1111,14 +1112,19 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
 	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
 	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
 	tryme = (xk * xk + yk * yk + zk * zk) * .5;
-	if (tryme > ecut) {
-	  break;
-	}
+	if (tryme > ecut) {break;}
       }
 
       kcmax = i - 1;
       i3 = kcmax;
       for (kc = kcmin; kc <= i3; ++kc) {
+	akc = (double) kc;
+	xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+	yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+	zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+        g  = sqrt(xk * xk + yk * yk + zk * zk);
+        gmin[0] = MIN(gmin[0],g);
+        gmax[0] = MAX(gmax[0],g);
 	++icount;
       }
     }
@@ -1126,7 +1132,7 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik )
   *nktot = icount;
 
 /*--------------------------------------------------------------------------*/
-} /* countkvec3d_sm */
+  } /* countkvec3d_sm */
 /*==========================================================================*/
 
 
