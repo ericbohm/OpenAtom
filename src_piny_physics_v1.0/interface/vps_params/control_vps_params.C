@@ -353,13 +353,6 @@ void control_vps_params(CPPSEUDO *cppseudo,GENCELL *gencell,
    nlist_mall = (cppseudo->n_ang_max1)*natm_tot;
    if((nlist_mall % 2)==0){nlist_mall++;}
 
-   cppseudo->x0w   = (double *)
-             cmalloc(natm_mall*sizeof(double),"control_vps_params")-1;
-   cppseudo->y0w   = (double *)
-             cmalloc(natm_mall*sizeof(double),"control_vps_params")-1;
-   cppseudo->z0w   = (double *)
-             cmalloc(natm_mall*sizeof(double),"control_vps_params")-1;
-
    cppseudo->np_nl        = (int *)
          cmalloc((cppseudo->n_ang_max1)*sizeof(int),"control_vps_params")-1;
    cppseudo->np_nl_gh     = (int *)
@@ -1745,9 +1738,11 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   int *natm_lang;        /* # atms of this type: iatm_typ_lang     */
   int *iatm_str_lang;    /* where atm is in list: iatm_typ_lang    */
 
-  double *x,*y,*z;
+  int *index_atm;
+  double *x,*y,*z,*vtemp;
   complex *ei_inc;
   complex *ti_inc;
+
   double *vnorm_0;
 
 /*=========================================================================*/
@@ -1861,14 +1856,18 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   x          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
   y          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
   z          = (double  *)cmalloc(natm_nl*sizeof(double),"nonloc_list")-1;
-  ei_inc     = (complex *)cmalloc(natm_nl*sizeof(complex),"nonloc_list")-1;
-  ti_inc     = (complex *)cmalloc(natm_nl*sizeof(complex),"nonloc_list")-1;
+
+  // reused by hartree so a bit bigger
+  index_atm  = (int *)cmalloc(natm_tot*sizeof(int),"nonloc_list")-1;
+  vtemp      = (double *)cmalloc(natm_tot*sizeof(double),"nonloc_list")-1;
+  ei_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
+  ti_inc     = (complex *)cmalloc(natm_tot*sizeof(complex),"nonloc_list")-1;
 
   for(i=1;i<=natm_nl;i++){x[i]=0.0;}
   for(i=1;i<=natm_nl;i++){y[i]=0.0;}
   for(i=1;i<=natm_nl;i++){z[i]=0.0;}
-  for(i=1;i<=natm_nl;i++){ei_inc[i]=complex(0.0,0.0);}
-  for(i=1;i<=natm_nl;i++){ti_inc[i]=complex(0.0,0.0);}
+  for(i=1;i<=natm_tot;i++){ei_inc[i]=complex(0.0,0.0);}
+  for(i=1;i<=natm_tot;i++){ti_inc[i]=complex(0.0,0.0);}
 
 /*===================================================================*/
 /* V) Put the stuff back */
@@ -1891,6 +1890,9 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
   cppseudo->nonlocal.ei_inc        = ei_inc;
   cppseudo->nonlocal.ti_inc        = ti_inc;
   cppseudo->nonlocal.vnorm_0       = vnorm_0;  
+  cppseudo->nonlocal.index_atm     = index_atm;
+  cppseudo->nonlocal.vtemp         = vtemp;
+
 
   // add the non-local ees memory
   if(ees_on==1 || ees_eext_on==1){

@@ -210,6 +210,10 @@ void make_rho_runs(CPcharmParaInfo *sim){
         //            0 1 2 3 is a separte  ``run of z''
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
+        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+	}//endif
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
         nrun_tot      +=1;
         run_length_sum += run_length;
@@ -218,10 +222,6 @@ void make_rho_runs(CPcharmParaInfo *sim){
         curr_z          = z;
         tmpz            = z;
         run_length      = 1;
-        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
-          nrun_tot      +=1;
-	}//endif
       }//endif
       if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
         nline_tot_now++;
@@ -267,6 +267,12 @@ void make_rho_runs(CPcharmParaInfo *sim){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
       }//endfor 
+      if(Desi1->z!=0){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("The rho rundescriptor MUST have 2nd z ==0\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit(); 
+      }
     }//endfor
 
 //===================================================================================
@@ -567,6 +573,10 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         //            0 1 2 3 is a separte  ``run of z''
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
+        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
+          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+	}//endif
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
         nrun_tot      +=1;
         run_length_sum += run_length;
@@ -575,10 +585,6 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         curr_z          = z;
         tmpz            = z;
         run_length      = 1;
-        if(kz[pNo]==0 && kz[(pNo-1)]>=0){
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
-          nrun_tot      +=1;
-	}//endif
       }//endif
       if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
         nline_tot_now++;
@@ -623,6 +629,12 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endfor
+      if(Desi1->z!=0){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("The rho rundescriptor MUST have 2nd z == 0\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit(); 
+      }
     }//endfor
 
 //===================================================================================

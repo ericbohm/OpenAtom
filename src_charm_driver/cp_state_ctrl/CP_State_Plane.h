@@ -362,9 +362,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int *tk_x,*tk_y,*tk_z;  // Temp memory for output (size could be 0)
         complex *tpsi;          // Temp memory for output (needs careful pup)
         complex *tvpsi;         // Temp memory for output
-	complex *ffttempdataGrp;// temp memory from group for fft (unpuppable!)
-	complex *ffttempdata;   // temp memory malloced and freed in scope for fft
-                                // probably should be pupped (size could be 0)
 	CProxy_CP_State_RealSpacePlane real_proxy;
 	CProxySection_StructureFactor sfCompSectionProxy;
 	CProxySection_PairCalculator *lambdaproxy;

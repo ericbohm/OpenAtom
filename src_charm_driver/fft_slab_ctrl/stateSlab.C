@@ -91,17 +91,23 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 GStateSlab::~GStateSlab() {
 
     if(packedPlaneData    !=NULL) fftw_free( packedPlaneData);
-    if(packedPlaneDataTemp!=NULL) fftw_free( packedPlaneDataTemp);
     if(packedForceData    !=NULL) fftw_free( packedForceData);
-    if(packedPlaneDataScr !=NULL) fftw_free( packedPlaneDataScr);
     if(packedVelData      !=NULL) fftw_free( packedVelData);
+    if(cp_min_opt==0){
+      if(packedPlaneDataScr !=NULL) fftw_free( packedPlaneDataScr);
+    }//endif
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+    if(cp_min_opt==1){
+      if(packedPlaneDataTemp!=NULL) fftw_free( packedPlaneDataTemp);
+    }//endif
+#endif
     destroyNHC();
 
     packedPlaneData     = NULL;
-    packedPlaneDataTemp = NULL;
     packedForceData     = NULL;
-    packedPlaneDataScr  = NULL;
     packedVelData       = NULL;
+    packedPlaneDataScr  = NULL;
+    packedPlaneDataTemp = NULL;
 
 }
 //==============================================================================
@@ -148,7 +154,7 @@ void GStateSlab::pup(PUP::er &p) {
 
 	if (p.isUnpacking()) {
            packedPlaneData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
-	   packedForceData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   packedForceData     = (complex *)fftw_malloc(numFull*sizeof(complex));
 	   packedVelData       = (complex *)fftw_malloc(numPoints*sizeof(complex));
            packedRedPsi        = (complex *)fftw_malloc(nkx0*sizeof(complex));
            if(cp_min_opt==0){
@@ -161,7 +167,7 @@ void GStateSlab::pup(PUP::er &p) {
 #endif
 	}//endif
         p((char *) packedPlaneData, numPoints*sizeof(complex));
-	p((char *) packedForceData, numPoints*sizeof(complex));
+	p((char *) packedForceData, numFull*sizeof(complex));
 	p((char *) packedVelData, numPoints*sizeof(complex));   //cg under min
 	p((char *) packedRedPsi, nkx0*sizeof(complex));
         if(cp_min_opt==0){

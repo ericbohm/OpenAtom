@@ -302,9 +302,11 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
     if(iterNL==0 && count==1){itime++; cp_enl=0.0;}
 
     // we doing a new iteration, refresh the memory, increment iterNL
+    // In real space, we must zero out here because not every value
+    // is initialized. e.g. some zero elements are not set.
     if(count==1){
       iterNL++; 
-      memset(projPsiR,0,planeSize*sizeof(double));
+      bzero(projPsiR,planeSize*sizeof(double));
     }//endif
 
 //============================================================================
@@ -509,9 +511,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 // critical data if you used zmat[]
 
     countZ++;
-    if(countZ==1){ 
-      for(int i=0;i<nZmat;i++){zmatScr[i]=0.0;} 
-    }//endif
+    if(countZ==1){bzero(zmatScr,nZmat*sizeof(double));}
     for(int i=0;i<nZmat;i++){zmatScr[i]+=_zmat[i];}
 
 //============================================================================

@@ -195,7 +195,9 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
     if(config.conserveMemory && count==1){rs.allocate();}
     complex *planeArr = rs.planeArr;
-    if(count==1){memset(planeArr,0,planeSize*sizeof(complex));} 
+
+    // non-zero elements are set. Zero elements are zeroed here
+    if(count==1){bzero(planeArr,planeSize*sizeof(complex));} 
 
 // You have received packed data (x,y) from processor sendIndex
 // Every real space chare receives the same x,y indicies.
@@ -328,7 +330,7 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
     size=msg->datalen;
     double *vks_in = msg->data;
     if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
-    memcpy(vks,vks_in,sizeof(double)*size);
+    CmiMemcpy(vks,vks_in,sizeof(double)*size);
     //    delete msg;
 
     RSDummyResume *pmsg= new (8*sizeof(int)) RSDummyResume;
@@ -376,11 +378,10 @@ void CP_State_RealSpacePlane::doProduct() {
              thisIndex.x, thisIndex.y,CmiMemoryUsage());
 #endif
 
-#ifdef _CP_DEBUG_RHO_OFF_
-   
+#ifdef _CP_DEBUG_RHO_OFF_  
    size = sizeX*rs.planeSize[0];
    if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
-    memset(vks,0,sizeof(double)*size);
+   bzero(vks,sizeof(double)*size);
 #endif
 
 //===================================================================
@@ -395,7 +396,6 @@ void CP_State_RealSpacePlane::doProduct() {
       fclose(fp);
     }
 #endif    
-
 
 //===================================================================
 // Log the 2D-FFT call and do it : in place

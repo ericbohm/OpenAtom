@@ -671,8 +671,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   tk_x           = NULL;
   tk_y           = NULL;
   tk_z           = NULL;
-  ffttempdata    = NULL;
-  ffttempdataGrp = NULL;
   initGStateSlab(&gs,sizeX,size,gSpaceUnits,realSpaceUnits,s_grain,
                  thisIndex.y,thisIndex.x);
 
@@ -824,10 +822,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|gpairCalcID1;
   p|gpairCalcID2;
   p| numChunks;
-  // temp variables like tk_x,ffttempdata probably should be pupped.
-  // Need to be careful because they could have zero length
-  // or be in use with a size. They are used to catch communication.
-  // Might need to add a current size variable for them.
   gs.pup(p);
   p|gSpaceNumPoints;
   if (p.isUnpacking()) {
@@ -1052,10 +1046,10 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gs.ees_nonlocal        = ees_nonlocal;
 
   gs.packedPlaneData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-  gs.packedForceData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  gs.packedForceData     = (complex *)fftw_malloc(gs.numFull*sizeof(complex));
   gs.packedVelData       = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
   CmiMemcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
-  memset(gs.packedForceData, 0, sizeof(complex)*gs.numPoints);
+  bzero(gs.packedForceData,sizeof(complex)*gs.numFull);
 
   // A little extra memory of dynamics
   if(cp_min_opt==0){
@@ -1129,7 +1123,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   memset(gs.packedPlaneData, 0, sizeof(complex)*gs.numPoints);
 #endif
 //#ifdef _CP_DEBUG_DYNAMICS_
-  memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
+  bzero(gs.packedVelData,sizeof(complex)*gs.numPoints);
 //#endif
 
 //============================================================================
@@ -1350,9 +1344,8 @@ void CP_State_GSpacePlane::doFFT() {
   eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
   RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
 
-  ffttempdataGrp = fftCacheProxy.ckLocalBranch()->doGSRealFwFFT(gs.packedPlaneData, 
-   	           runs, gs.numRuns, gs.numLines, gs.numFull, gs.numPoints,
-                   gs.zdim, gs.fftReqd);
+  fftCacheProxy.ckLocalBranch()->doStpFftGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
+	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
@@ -1364,6 +1357,8 @@ void CP_State_GSpacePlane::doFFT() {
 
 //============================================================================
 // Send result to realSpacePlane : perform the transpose
+// Force data cannot be overwritten due to all to all nature of comm.
+// Until everyone sends, no one gets anything back
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -1373,6 +1368,10 @@ void CP_State_GSpacePlane::sendFFTData () {
     CkPrintf("sendfft %d.%d \n",thisIndex.x,thisIndex.y);
 #endif
 
+  complex *data_out = gs.packedForceData;
+  int numLines = gs.numLines; // same amount of data to each realspace chare puppy
+  int sizeZ    = gs.planeSize[1];
+
 //============================================================================
 // Do a Comlib Dance
 
@@ -1381,11 +1380,9 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 // Send your (x,y,z) to processors z.
 
-  int numLines = gs.numLines; // same amount of data to each realspace chare puppy
-  int sizeZ    = gs.planeSize[1];
-
   for(int z=0; z < sizeZ; z++) {
 
+   // Malloc and prio the message
     RSFFTMsg *msg    = new (numLines,8*sizeof(int)) RSFFTMsg;
     msg->size        = numLines;
     msg->senderIndex = thisIndex.y;  // planenumber
@@ -1396,17 +1393,22 @@ void CP_State_GSpacePlane::sendFFTData () {
        *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
                                    thisIndex.x*gs.planeSize[0]+thisIndex.y;
     }//endif
-    // beam out all points with same z to chare array index z
-    complex *data = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdataGrp[j];}
+
+   // beam out all points with same z to chare array index z
+    complex *data    = msg->data;
+    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j];}
     real_proxy(thisIndex.x, z).doFFT(msg);  // same state, realspace char[z]
+
+   // progress engine baby
     CmiNetworkProgress();
+
   }//endfor
-    
+
+//============================================================================    
+// Finish up 
+
   if (config.useGssInsRealP){gssInstance.endIteration();}
     
-  ffttempdataGrp = NULL; // its memory from the FFTgroup : don't touch it
-
 //----------------------------------------------------------------------
   }//end routine 
 //============================================================================
@@ -1414,15 +1416,23 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 //============================================================================
 /**
+ *
  * This is used to send data to the CP_State_GSpacePlanes, which  do the
  * inverse ffts (upon receiving data from all the corresponding
  * realSpacePlanes)
+ *
+ * Force cannot be overwitten because we can't receive until all chares send.
+ * The beauty of all to all comm
+ *
+ * Forces are initialized HERE. No need to zero them etc. elsewhere.
+ *
  */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
+
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     CkPrintf("doIfft %d.%d \n",thisIndex.x,thisIndex.y);
 #endif
@@ -1431,23 +1441,27 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
   int offset           = msg->offset;
   complex *partlyIFFTd = msg->data;
 
+  complex *data_in     = gs.packedForceData;
   int numLines         = gs.numLines;
   int sizeZ            = gs.planeSize[1];
   int expandedDataSize = numLines*sizeZ;
 
   CkAssert(numLines == size);
 
-  if(ffttempdata==NULL) { 
-    ffttempdata = (complex *)fftw_malloc(expandedDataSize *sizeof(complex));
-    memset(ffttempdata, 0, sizeof(complex)*expandedDataSize);
-  }//endif
+//============================================================================
+// Recv the message
 
+  countIFFT++;
+
+  // This is not a reduction. Don't zero me please. Every elements is set.
   // z=offset is inner index : collections of z-lines of constant (gx,gy)
-  for(int i=0,j=offset; i< numLines; i++,j+=sizeZ){ffttempdata[j] = partlyIFFTd[i];}
+  for(int i=0,j=offset; i< numLines; i++,j+=sizeZ){data_in[j] = partlyIFFTd[i];}
 
   delete msg;
-  // receive 1 message from each z-chare    
-  countIFFT++;
+
+//============================================================================
+// If you have recved from every z plane, go on
+
   if (countIFFT == gs.planeSize[1]) {
     countIFFT = 0;
 #ifdef GIFFT_BARRIER
@@ -1469,41 +1483,47 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
 void CP_State_GSpacePlane::doIFFT () {
 //============================================================================
-//now do the IFFT  does the ifft in place (this is done on the forceArr)
+// Now do the IFFT in place 
 
 #ifndef CMK_OPTIMIZE    
   double StartTime=CmiWallTimer();
 #endif
 
-  gs.doBwFFT(ffttempdata);
-  fftw_free(ffttempdata); // its mine, I can free it if I like
-  ffttempdata = NULL;
+  eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
+  RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
+  FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
+
+  complex *forcTmp = fftcache->tmpData;
+  fftcache->doStpFftRtoG_Gchare(gs.packedForceData,forcTmp,
+            gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
+
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceBwFFT_, StartTime, CmiWallTimer());
 #endif    
 
-  /* Scale the forces by 1/(128^3) */
-  double scaleFactor = 1/double(scProxy.ckLocalBranch()->cpcharmParaInfo->sizeX * 
-                                scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY * 
-                                scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ);
 //============================================================================
-// set the forces from vks
+// Finish up by multiplying the the FFT scaling factor
+
+  double scaleFactor = -2.0/double(scProxy.ckLocalBranch()->cpcharmParaInfo->sizeX * 
+                                   scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY * 
+                                   scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ);
 
   complex *forces = gs.packedForceData;
   for(int index=0; index<gs.numPoints; index++){
-    forces[index].re = -2.0 * forces[index].re * scaleFactor;
-    forces[index].im = -2.0 * forces[index].im * scaleFactor;
+    forces[index] = forcTmp[index]*scaleFactor;
   }/*endfor*/
 
-  doneDoingIFFT = true;
-
-
   CmiNetworkProgress();
+
+//============================================================================
+// Report that you are done
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
      CkPrintf("Done doing Ifft gsp : %d %d\n",thisIndex.x,thisIndex.y);
 #endif
+
+  doneDoingIFFT = true;
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -1705,7 +1725,7 @@ void  CP_State_GSpacePlane::sendLambda() {
   startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y);
 #else
   acceptedLambda=true;
-  memset(force, 0, sizeof(complex)*numPoints);
+  bzero(force,sizeof(complex)*numPoints);
 #endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_ 
@@ -1757,20 +1777,17 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   */
   if(config.doublePack==1){
    if(cp_min_opt==1){
-
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
-   }
-   else
-     {
+   }else{
        if(countLambdaO[offset]<1)
 	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
        else
 	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
-     }//endif
+   }//endif
  
   }else{
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
@@ -2328,7 +2345,6 @@ void CP_State_GSpacePlane::integrateModForce() {
   gs.fictEke_ret      = fictEke;
   gs.ekeNhc_ret       = ekeNhc;
   finishedCpIntegrate = 1;
-  memset(forces, 0, sizeof(complex)*ncoef);
 
 //------------------------------------------------------------------------------
    }// end CP_State_GSpacePlane::integrateModForce

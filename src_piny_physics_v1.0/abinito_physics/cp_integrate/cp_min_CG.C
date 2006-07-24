@@ -107,8 +107,6 @@ void CPINTEGRATE::CP_integrate_min_CG
     if(istate==0 && ncoef > 0){fclose(fp4);}
 #endif
 
-   memset(forces,0,ncoef*sizeof(complex));
-
 //============================================================================
   } /* End function */
 //============================================================================

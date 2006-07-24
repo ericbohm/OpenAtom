@@ -61,7 +61,6 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
     int nlines_max = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
     int psize      = nlines_max*planeSize[0];
-    fftData        = (complex*) fftw_malloc(psize*sizeof(complex)); 
 
 //==============================================================================
 // Density and State plans/scratch : funky names : non-cubic broken
@@ -71,18 +70,21 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     size[0] = planeSize[1]; size[1] = planeSize[0]; size[2] = 1;
     sizeZ   = planeSize[0];
 
+    // really y plans
     fwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_FORWARD, 
                     FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
     bwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
                     FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+    // x is correct!
     fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
                     FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
     bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
                     FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+    // really z plans
     fwdYPlan = fftw_create_plan(sizeZ,FFTW_FORWARD, 
                     FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
     bwdYPlan = fftw_create_plan(sizeZ,FFTW_BACKWARD, 
-                    FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
+                    FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM); 
 
 //==============================================================================
 // Euler spline scratch and sizes
@@ -91,12 +93,11 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     int psizeEext      = nlines_max_rho*ngridcEext;
     int psizeNL        = nlines_max*ngridcNL;
 
-    if(ees_eext_on==1){
-      tmpData = (complex*) fftw_malloc(psizeEext*sizeof(complex)); 
-    }//endif
-    if(ees_eext_on==0 && ees_NL_on==1){
-      tmpData = (complex*) fftw_malloc(psizeNL*sizeof(complex)); 
-    }//endif
+    int pmax = psize;
+    if(ees_eext_on==1){pmax = (pmax>psizeEext ? pmax : psizeEext);}
+    if(ees_NL_on==1)  {pmax = (pmax>psizeNL   ? pmax : psizeNL);}
+
+    tmpData = (complex*) fftw_malloc(pmax*sizeof(complex)); 
 
 //==============================================================================
 // Euler spline plans : better names : non-cubic broken
@@ -162,20 +163,19 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
 //      The negative guys go 1st
 //   Total size is nlines*nfftz where nlines=numRuns/2
 
-  memset(data, 0, sizeof(complex)*numFull); // zero expanded duder
+  bzero(data,numFull*sizeof(complex));
+  int nsub = (nfftz-runs[0].nz);
   int koff = 0;
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
 
-    int joff = l*nfftz + runs[r].z;
-    if(runs[r].z!=0){joff += (nfftz-runs[r].nz);} // allow same runs different fftsize
+    int joff = l*nfftz + runs[r].z + nsub; // k < 0
     for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
       data[j] = packedData[k];
     }//endfor
     koff += runs[r].length;
 
     int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    if(runs[r1].z!=0){joff += (nfftz-runs[r1].nz);} // allow same runs different fftsize
+    joff = l*nfftz + runs[r1].z; // k >= 0
     for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
       data[j] = packedData[k];
     }//endfor
@@ -211,12 +211,11 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 //      The negative guys go 1st
 //   Total size is nlines*nfftz where nlines=numRuns/2
 
-  memset(packedData, 0, sizeof(complex)*numPoints); // zero packed duder
   int koff = 0;
+  int nsub = (nfftz-runs[0].nz);
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
 
-    int joff = l*nfftz + runs[r].z;
-    if(runs[r].z!=0){joff += (nfftz-runs[r].nz);} // allow same runs different fftsize
+    int joff = l*nfftz + runs[r].z + nsub;
     for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
       packedData[k] = data[j];
     }//endfor
@@ -224,7 +223,6 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 
     int r1=r+1;
     joff = l*nfftz + runs[r1].z;
-    if(runs[r1].z!=0){joff += (nfftz-runs[r1].nz);} // allow same runs different fftsize
     for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
       packedData[k] = data[j];
     }//endfor
@@ -244,7 +242,8 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doNlFftRtoG_Gchare(complex *data,int numFull, int numPoints,
+void FFTcache::doNlFftRtoG_Gchare(complex *data_in,complex *data_out,
+                                  int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
                                   int nfftz){
 //==============================================================================
@@ -253,7 +252,7 @@ void FFTcache::doNlFftRtoG_Gchare(complex *data,int numFull, int numPoints,
   fft_split(
           bwdZPlanNL,             // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
-	  (fftw_complex *)data,   //input data
+	  (fftw_complex *)data_in,   //input data
 	  1,                      //stride
 	  nfftz,                  //distance between z-data sets
 	  NULL, 0, 0,             // input is ouput
@@ -263,8 +262,7 @@ void FFTcache::doNlFftRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 // Pack for computing
 
-  memcpy(tmpData,data,sizeof(complex)*numFull); // data is expanded; cp to tmp; 
-  packGSpace(tmpData,data,runs,numRuns,numFull,numPoints,nfftz); // data is packed
+  packGSpace(data_in,data_out,runs,numRuns,numFull,numPoints,nfftz); // data_out is upacked
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -276,26 +274,25 @@ void FFTcache::doNlFftRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doNlFftGtoR_Gchare(complex *data,int numFull, int numPoints,
-                                  int numLines, int numRuns, RunDescriptor *runs, 
-                                  int nfftz){
+void FFTcache::doNlFftGtoR_Gchare(complex *data_in,complex *data_out,
+          int numFull, int numPoints,int numLines, int numRuns, 
+          RunDescriptor *runs, int nfftz){
 //==============================================================================
-// Expand for ffting
+// Expand for ffting : Trickery
 
-  memcpy(tmpData,data,sizeof(complex)*numPoints); // data is packed; cp to tmp; 
-  expandGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz);// data is expanded
+  expandGSpace(data_out,data_in,runs,numRuns,numFull,numPoints,nfftz);//data_out is expanded
 
 //==============================================================================
 // FFT in expanded form
 
   fft_split(
-          fwdZPlanNL,             // Z-direction forward plan
-          numLines,               // # of ffts : one for every line of z in the chare
-	  (fftw_complex *)data,   //input data
-	  1,                      //stride
-	  nfftz,                  //distance between z-data sets
-	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+          fwdZPlanNL,               // Z-direction forward plan
+          numLines,                 // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_out, // data
+	  1,                        //stride
+	  nfftz,                    //distance between z-data sets
+	  NULL, 0, 0,               // input is ouput
+          config.fftprogresssplit   // split parameter
          ); 
 
 //------------------------------------------------------------------------------
@@ -412,8 +409,8 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 // pack for computing
 
-  memcpy(tmpData,data,sizeof(complex)*numFull); // data is expanded; cp to tmp; 
-  packGSpace(tmpData,data,runs,numRuns,numFull,numPoints,nfftz); // data is packed
+  packGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz); // data is packed
+  memcpy(data,tmpData,sizeof(complex)*numPoints); // data is expanded; cp to tmp; 
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -536,40 +533,72 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //==============================================================================
 
 
-
-//==============================================================================
-// Expand the data set to line form : numLines*nfftz
-// Perform the fft along z direction : numLines ffts 
-// to get started towards realspace
+//=============================================================================
+// StatePlane : Gchare : data(gx,gy,z) -> data(gx,gy,gz) : backward
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-complex* FFTcache::doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs, 
-                          int numRuns, int numLines,int numFull, int numPoints,
-                          int nfftz, bool fftReqd)
+void FFTcache::doStpFftRtoG_Gchare(complex *data_in,complex *data_out,
+                                  int numFull, int numPoints,
+                                  int numLines, int numRuns, RunDescriptor *runs, 
+                                  int nfftz){
 //==============================================================================
-   {//begin routine
+// FFT in expanded form
+
+  fft_split(
+          bwdYPlan,               // Z-direction backward plan
+          numLines,               // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_in,//input data
+	  1,                      //stride
+	  nfftz,                  //distance between z-data sets
+	  NULL, 0, 0,             // input is ouput
+          config.fftprogresssplit // split parameter
+         ); 
+
 //==============================================================================
+// Pack for computing
 
-    FFTcache *sc   = fftCacheProxy.ckLocalBranch();
-    fftw_plan plan = sc->fwdYPlan; // for historic reasons its the `y' plan.
-                                   // but sorry, its the z plan.
-    expandGSpace(fftData,packedPlaneData,runs,numRuns,numFull,numPoints,nfftz);
-
-    if(fftReqd){
-        fft_split(plan,   // direction Z now
-	     numLines,    // these many ffts : one for every line of z in the chare
-	     (fftw_complex *)fftData, //input data
-	     1,           //stride
-	     nfftz,       //distance between z-data sets
-  	     NULL, 0, 0,  // junk because input array stores the output (in-place)
-             config.fftprogresssplit); 
-    }//endif
-    return fftData;
+  packGSpace(data_in,data_out,runs,numRuns,numFull,numPoints,nfftz);
 
 //------------------------------------------------------------------------------
-   }//end routine
+  }//end routine
 //==============================================================================
+
+
+//=============================================================================
+// StatePlane : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doStpFftGtoR_Gchare(complex *data_in,complex *data_out,
+                                  int numFull, int numPoints,
+                                  int numLines, int numRuns, RunDescriptor *runs, 
+                                  int nfftz){
+//==============================================================================
+// Expand for ffting
+
+  // data_out is expanded
+  // data_in is contracted
+  expandGSpace(data_out,data_in,runs,numRuns,numFull,numPoints,nfftz);
+
+//==============================================================================
+// FFT in expanded form
+
+  fft_split(
+          fwdYPlan,                // Z-direction forward plan
+          numLines,                // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_out,//input data
+	  1,                       //stride
+	  nfftz,                   //distance between z-data sets
+	  NULL, 0, 0,              // input is ouput
+          config.fftprogresssplit  // split parameter
+         ); 
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+ 
+
 
 
 //==============================================================================

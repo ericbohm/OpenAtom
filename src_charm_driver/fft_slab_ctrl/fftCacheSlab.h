@@ -280,7 +280,6 @@ class FFTcache: public Group {
         int ngridcNL;
         int ees_NL_on;
 
-	complex *fftData;  // temporary for state methods
         complex *tmpData;  // temporary for Ees methods
 
 	fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
@@ -307,18 +306,21 @@ class FFTcache: public Group {
 	                int numPoints, int nfftz);
       //-----------------------------------------------------------
       // State and Density FFTs
-        complex *doGSRealFwFFT(complex *packedPlaneData, RunDescriptor *runs, 
-                               int numRuns, int numLines,int numFull, int numPoints,
-		               int nfftz, bool fftReqd);
-	double *doRealFwFFT(complex *);
-	void doRealBwFFT(const double *vks, complex *,int ,int);
-	void doRhoRealtoRhoG(double *realArr);
+
+      double *doRealFwFFT(complex *);
+      void doRealBwFFT(const double *vks, complex *,int ,int);
+      void doRhoRealtoRhoG(double *realArr);
+
+      void doStpFftRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+      void doStpFftGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+
       //-----------------------------------------------------------
       // non-local fft
-        void doNlFftRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
-        void doNlFftGtoR_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
-        void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
-        void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+       void doNlFftRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+       void doNlFftGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+       void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
+       void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+
       //-----------------------------------------------------------
       // eext fft
         void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);

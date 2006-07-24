@@ -60,6 +60,7 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 #include "../class_defs/allclass_strip_gen.h"
+PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 
 /*--------------------------------------------*/
 /*         Local Pointer declarations         */
@@ -157,10 +158,11 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
 //============================================================================
 // Set up variables for break point calculations (helpful vectors!)
 
-   int *index_atm  = (int *)     cmalloc((natm+1)*sizeof(int),"hartree");
-   double *vtemp   = (double *)  cmalloc(natm*sizeof(double),"hartree");
-   complex *ei_inc = (complex *) cmalloc(natm*sizeof(complex),"hartree");
-   complex *h      = (complex *) cmalloc(natm*sizeof(complex),"hartree");
+   // piny style malloc so add 1 to anybody who wants to start at 0
+   int *index_atm  = nonlocal->index_atm;
+   double *vtemp   = nonlocal->vtemp+1;
+   complex *ei_inc = nonlocal->ei_inc+1;
+   complex *h      = nonlocal->ti_inc+1;
 
    int izero         = -10;
    int igo           = 0;
@@ -348,11 +350,6 @@ void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *ato
    *ehart_ret = ehart/2.0;
    *eext_ret  = eext;
    *ewd_ret   = EwdEnergy/2.0;
-
-   cfree(index_atm,"hartree");
-   cfree(vtemp,"hartree");
-   cfree(ei_inc,"hartree");
-   cfree(h,"hartree");
 
 //============================================================================
 // VIII. Debug output Control

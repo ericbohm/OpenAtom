@@ -917,10 +917,10 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
    jstrt = (n_interp2-nrem+1);
    jend  = (n_interp2-nrem);
 
+   bzero(zmat,sizeof(double)*natm);
    for(int jatm=0;jatm<natm;jatm++){ // atms of this type
      int iatm   = iatm_str+jatm-1;   // non-local atom index
      int jc     = plane_index[iatm]; // interpolation 
-     zmat[jatm] = 0.0; 
      if(jc>0){
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
@@ -1070,6 +1070,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
        zmat[jatm] *= (2.0*vnormVol); 
        double fxx=0.0,fyy=0.0,fzz=0.0;
+      //could use a pragma ivep because igrid does not have duplicate values in this loop
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
          double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
@@ -1180,6 +1181,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 
 //==========================================================================
 // Gx=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
+//        The sum over iterations leads to a sum reduction here.
 
   int nfreq   = 100;
   for(int ig=0;ig<nkx0;ig++){ 

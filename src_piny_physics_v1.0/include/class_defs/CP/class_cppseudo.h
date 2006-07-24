@@ -137,12 +137,6 @@ class CPPSEUDO{
                               //    Lth: (natm_typ)                      
   double *rgh,*wgh;           // Lst: Gauss-Hermite nodes and weights 
                               //    Lth: ngh  
-  double *x0w,*y0w,*z0w;      // Lst: Position of atms when non-local
-                              //          list, ip_nl, is calculated;
-                              //    Lth: natm_tot                           
-                              //    Can be eliminated by writing to 
-                              //    disk and using vxg,vyg,vzg as a temp 
-                              //    to read it in                       
   double *q_pseud;            // charge associated with pseudo  
                               // Lth: natm_typ 
   double *q_typ;              // charge associated with the atoms
@@ -310,12 +304,6 @@ class CPPSEUDO{
           pup1d_dbl(p,&rgh,ngh);
           pup1d_dbl(p,&wgh,ngh_tot);
         }//
-
-        if(natm_tot>0){
-          pup1d_dbl(p,&x0w,natm_tot);
-          pup1d_dbl(p,&y0w,natm_tot);
-          pup1d_dbl(p,&z0w,natm_tot);
-        }//endif
 
         pup1d_char(p,&vxc_typ,MAXWORD);
         pup1d_char(p,&ggax_typ,MAXWORD);

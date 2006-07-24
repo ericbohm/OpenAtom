@@ -260,13 +260,13 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
     gSpaceNumPoints = gss->numPoints;
 
     myForces =  (complex *)fftw_malloc(gSpaceNumPoints*sizeof(complex)); // forces on coefs
-    memset(myForces, 0, gSpaceNumPoints * sizeof(complex));
+    bzero(myForces,gSpaceNumPoints * sizeof(complex));
 
     if(ees_nonlocal==1){
        dyp_re   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
        dyp_im   = (double *)fftw_malloc(gSpaceNumPoints*sizeof(double));
        projPsiG = (complex *)fftw_malloc(numFullNL *sizeof(complex)); // fft projector
-       memset(projPsiG, 0, numFullNL * sizeof(complex));
+       bzero(projPsiG, numFullNL * sizeof(complex));
     }//endif
 
     // This occurs AFTER GSP has registered
@@ -815,6 +815,7 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
    CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
    GStateSlab *gss           = &(gsp->gs);
    eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
+   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
 
 //============================================================================
 // Setup the projector and then launch the fft
@@ -836,8 +837,10 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
    if(thisIndex.x==0)
     CkPrintf("HI, I am gPP %d %d in createNLEes : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-    CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
-                              d_re,d_im,dyp_re,dyp_im,projPsiG,ind_gspl,h_gspl,
+
+   complex *projPsiGTmp = fftcache->tmpData; // store in tmp
+   CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
+                              d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
                               thisIndex.x,thisIndex.y);
 
    FFTNLEesFwd();
@@ -875,8 +878,9 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
    CkPrintf("HI, I am gPP %d %d in FFTNLFwd : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-  RunDescriptor *runs = eesData->GspData[myChareG].runs;
-  fftcache->doNlFftGtoR_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
+  RunDescriptor *runs  = eesData->GspData[myChareG].runs;
+  complex *projPsiGTmp = fftcache->tmpData;
+  fftcache->doNlFftGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
   sendToEesRPP();
 
@@ -984,8 +988,7 @@ void CP_State_ParticlePlane::recvFromEesRPP(GSPPIFFTMsg *msg){
 //============================================================================
 // Copy out the data and delete the message
 
-  if(countNLIFFT==0) {memset(projPsiG, 0, sizeof(complex)*numFullNL);}
-
+  // No need to zero because every value is set.
   // z=offset is inner index : collections of z-lines of constant (gx,gy)
   for(int i=0,j=offset; i< numLines; i++,j+=ngridcNL){projPsiG[j] = partlyIFFTd[i];}
 
@@ -1040,8 +1043,9 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
    CkPrintf("HI, I am gPP %d %d in FFTNLeesBck : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-  RunDescriptor *runs = eesData->GspData[myChareG].runs;
-  fftcache->doNlFftRtoG_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
+  RunDescriptor *runs  = eesData->GspData[myChareG].runs;
+  complex *projPsiGTmp = fftcache->tmpData;
+  fftcache->doNlFftRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
   computeNLEesForces();
 
@@ -1061,6 +1065,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
   eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
+  FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
 
   int ncoef       = gSpaceNumPoints;
   int *k_x        = eesData->GspData[myChareG].ka;
@@ -1069,14 +1074,14 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   int ihave_g0    = gss->ihave_g000;
   int ind_g0      = gss->ind_g000;
   int nkx0        = gss->nkx0;
-  complex *fPsiG  = myForces;
+  complex *fPsiG  = myForces; // these are zeroed in gspaceplane at the end of iteration.
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in computeNLeesForc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-
-  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiG,fPsiG,dyp_re,dyp_im,
+  complex *projPsiGTmp = fftcache->tmpData;
+  CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
                                k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
 
 //============================================================================
@@ -1088,7 +1093,8 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 #endif
     iterNL = 0;
     doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
-    gsp->acceptNLForcesEes(); // Let the lads know you are done
+    gsp->acceptNLForcesEes(); // Let the lads in gsp know you are done
+                              // Gsp zeros myForces so it is ready next time
   }else{
     startNLEes(iteration);    // do another iteration
   }//endif
