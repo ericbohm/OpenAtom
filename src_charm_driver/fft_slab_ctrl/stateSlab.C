@@ -15,15 +15,19 @@
 #include "groups.h"
 #include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
+#include "eesCache.h"
 
 //==============================================================================
 
-extern CProxy_FFTcache fftCacheProxy;
-extern Config config;
+extern CProxy_FFTcache           fftCacheProxy;
+extern Config                    config;
+extern CProxy_AtomsGrp           atomsGrpProxy;
+extern CProxy_CPcharmParaInfoGrp scProxy;
+extern CProxy_eesCache           eesCacheProxy;
 extern int nstates;
 extern int sizeX;
-extern CProxy_AtomsGrp atomsGrpProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
+
+//==============================================================================
 
 
 //==============================================================================
@@ -91,7 +95,6 @@ GStateSlab::~GStateSlab() {
     if(packedForceData    !=NULL) fftw_free( packedForceData);
     if(packedPlaneDataScr !=NULL) fftw_free( packedPlaneDataScr);
     if(packedVelData      !=NULL) fftw_free( packedVelData);
-    if(runs               !=NULL) delete [] runs;
     destroyNHC();
 
     packedPlaneData     = NULL;
@@ -99,7 +102,6 @@ GStateSlab::~GStateSlab() {
     packedForceData     = NULL;
     packedPlaneDataScr  = NULL;
     packedVelData       = NULL;
-    runs                = NULL;
 
 }
 //==============================================================================
@@ -112,6 +114,7 @@ void GStateSlab::pup(PUP::er &p) {
 // Dont have to pup fftw plans - they live in the fft cache group
 
 //  CkPrintf("gs pup\n:");
+        p|cp_min_opt;
         p|ees_nonlocal;
         p|numNonZeroPlanes;
 	p|numRuns;
@@ -143,23 +146,32 @@ void GStateSlab::pup(PUP::er &p) {
         p|degfreeNHC;
         p|gammaNHC;
 
-	if (p.isUnpacking()) {runs = new RunDescriptor[numRuns];}
-	for (int i = 0; i < numRuns; i++){runs[i].pup(p);}
-
 	if (p.isUnpacking()) {
            packedPlaneData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
-	   packedPlaneDataScr  = (complex *)fftw_malloc(numPoints*sizeof(complex));
-	   packedPlaneDataTemp = (complex *)fftw_malloc(numPoints*sizeof(complex));
 	   packedForceData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
 	   packedVelData       = (complex *)fftw_malloc(numPoints*sizeof(complex));
            packedRedPsi        = (complex *)fftw_malloc(nkx0*sizeof(complex));
+           if(cp_min_opt==0){
+  	     packedPlaneDataScr  = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   }//endif
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+           if(cp_min_opt==1){
+  	     packedPlaneDataTemp = (complex *)fftw_malloc(numPoints*sizeof(complex));
+	   }//endif
+#endif
 	}//endif
-	p((char *) packedPlaneData, numPoints*sizeof(complex));
-	p((char *) packedPlaneDataScr, numPoints*sizeof(complex));
-	p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
+        p((char *) packedPlaneData, numPoints*sizeof(complex));
 	p((char *) packedForceData, numPoints*sizeof(complex));
-	p((char *) packedVelData, numPoints*sizeof(complex));
+	p((char *) packedVelData, numPoints*sizeof(complex));   //cg under min
 	p((char *) packedRedPsi, nkx0*sizeof(complex));
+        if(cp_min_opt==0){
+  	  p((char *) packedPlaneDataScr, numPoints*sizeof(complex));
+	}//endif
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+        if(cp_min_opt==1){
+  	  p((char *) packedPlaneDataTemp, numPoints*sizeof(complex));
+	}//endif
+#endif
 
         p|len_nhc_cp;
         p|num_nhc_cp;
@@ -213,6 +225,9 @@ void GStateSlab::compressGSpace(const complex *expnddata, int type) {
 //      0,1,2,3 have offset, joff = r*nfftz 
 //     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
 //      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
+
+  eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
+  RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
 
   complex *origdata;
   if(type == 1){origdata = packedPlaneData;}

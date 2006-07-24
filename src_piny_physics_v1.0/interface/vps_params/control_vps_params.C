@@ -1898,6 +1898,10 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
     cppseudo->nonlocal.aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
     cppseudo->nonlocal.rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
     cppseudo->nonlocal.rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+    cppseudo->nonlocal.index_a = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    cppseudo->nonlocal.index_b = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    cppseudo->nonlocal.igrid_at= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+    cppseudo->nonlocal.igrid_bt= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
     cppseudo->nonlocal.frac_a  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
     cppseudo->nonlocal.frac_b  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");
     cppseudo->nonlocal.frac_c  = (double *)cmalloc(natm*sizeof(double),"psnl_pup");

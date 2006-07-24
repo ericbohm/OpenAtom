@@ -259,6 +259,11 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
   double *aj     = nonlocal->aj;
   double *rn     = nonlocal->rn;
   double *rn1    = nonlocal->rn1;
+  int *index_a   = nonlocal->index_a;
+  int *index_b   = nonlocal->index_b;
+  int *igrid_at  = nonlocal->igrid_at;
+  int *igrid_bt  = nonlocal->igrid_bt;
+  int *igo       = nonlocal->iatemp;
   int *iatemp    = nonlocal->iatemp;
   int *ibtemp    = nonlocal->ibtemp;
   int *ictemp    = nonlocal->ictemp;
@@ -452,39 +457,59 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 #endif
 
    for(i=0;i<natm;i++){
-   for(jc=1;jc<=n_interp;jc++){
-     int ip = igrid_c[jc][i];
-     if(allowed_planes[ip]==1){ // if the group wants this plane
-       plane_index = RPPData[ip].plane_index;
-       igrid       = RPPData[ip].igrid;
-       mn          = RPPData[ip].mn;
-       dmn_x       = RPPData[ip].dmn_x;
-       dmn_y       = RPPData[ip].dmn_y;
-       dmn_z       = RPPData[ip].dmn_z;
-       jj = 1;
-       for(jb=1;jb<=n_interp;jb++){
+     igo[i] = 0;
+     for(jc=1;jc<=n_interp;jc++){
+       int ip = igrid_c[jc][i];
+       if(allowed_planes[ip]==1){igo[i]=1; break;}
+     }//endfor
+   }//endfor
+
+   for(i=0;i<natm;i++){
+    if(igo[i]==1){   
+     for(j=1;j<=n_interp;j++){
+       igrid_at[j] = igrid_a[j][i]; index_a[j] = j;  
+       igrid_bt[j] = igrid_b[j][i]; index_b[j] = j;
+     }//endfor
+#define _CP_CACHE_BETTER_
+#ifdef _CP_CACHE_BETTER_
+     sort_commence_piny(n_interp,igrid_at,index_a);
+     sort_commence_piny(n_interp,igrid_bt,index_b);
+#endif
+     for(jc=1;jc<=n_interp;jc++){
+       int ip = igrid_c[jc][i];
+       if(allowed_planes[ip]==1){
+        plane_index = RPPData[ip].plane_index;
+        igrid       = RPPData[ip].igrid;
+        mn          = RPPData[ip].mn;
+        dmn_x       = RPPData[ip].dmn_x;
+        dmn_y       = RPPData[ip].dmn_y;
+        dmn_z       = RPPData[ip].dmn_z;
+        plane_index[i] = jc; // Each jc is a different plane. Ex : plane_index[3] = 4
+                            //      For the 3rd atom, the 4th c-interpolation pt
+                            //      is on plane number ip=25
+        jj = 1;
+        for(jb=1;jb<=n_interp;jb++){
          for(ja=1,j=jj;ja<=n_interp;ja++,j++){
-           igrid[i][j] = igrid_a[ja][i]+igrid_b[jb][i]; //plane index only
-           atemp       = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
-           btemp       =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
-           ctemp       =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
-           mn[i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
+           igrid[i][j] = igrid_at[ja]+igrid_bt[jb]; //plane index only
+           int jaa     = index_a[ja];
+           int jbb     = index_b[jb];
+           atemp       = dmn_a[jaa][i]* mn_b[jbb][i]* mn_c[jc][i]*grid_a;
+           btemp       =  mn_a[jaa][i]*dmn_b[jbb][i]* mn_c[jc][i]*grid_b;
+           ctemp       =  mn_a[jaa][i]* mn_b[jbb][i]*dmn_c[jc][i]*grid_c;
+           mn[i][j]    =  mn_a[jaa][i]* mn_b[jbb][i]* mn_c[jc][i];
            dmn_x[i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
            dmn_y[i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
            dmn_z[i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
          }//endfor : ja
          jj += n_interp;
-       }//endfor : jb
-       plane_index[i] = jc; // Each jc is a different plane.
-                            // Ex : plane_index[3] = 4
-                            //      For the 3rd atom, 
-                            //      the 4th c-interpolation pt
-                            //      is on plane number ip=25
+        }//endfor : jb
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+        CmiNetworkProgress();
 #endif
-     }//endif : allowed
-   }}//endfor : iatm and jc
+       }//endif : this jc is cool
+      }//endfor jc
+    }//endif : allowed
+   }//endfor : iatm
 
 #ifdef DEBUG_GJM_BSPLINE
    for(i=0;i<natm;i++){

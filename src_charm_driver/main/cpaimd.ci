@@ -152,7 +152,7 @@ mainmodule cpaimd {
 	array [2D]  CP_State_GSpacePlane {
 		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
                         int numG, int numR, int s_grain, int numChunks);
-		entry void initGSpace(int n, RunDescriptor r[n], int m, 
+		entry void initGSpace(int m, 
 			complex pts[m],int mv, complex vpts[mv], 
                         int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
                         int istart_cp);

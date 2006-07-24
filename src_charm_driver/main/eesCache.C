@@ -402,7 +402,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 
 
 //==============================================================================
-// Initialize the GParticlePlane Cache Data class
+// Initialize the GstatePlane Cache Data class
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================

@@ -865,6 +865,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
   CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
+  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
 
 //============================================================================
 // Do the FFT and then send it to r-space to complete the fft
@@ -874,8 +875,9 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
    CkPrintf("HI, I am gPP %d %d in FFTNLFwd : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
+  RunDescriptor *runs = eesData->GspData[myChareG].runs;
   fftcache->doNlFftGtoR_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
-                               (gss->numRuns),(gss->runs),ngridcNL);
+                               (gss->numRuns),runs,ngridcNL);
   sendToEesRPP();
 
 //---------------------------------------------------------------------------
@@ -1028,6 +1030,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
+  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
 
 //============================================================================
 // Do the FFT and then compute Psi forces
@@ -1036,8 +1039,10 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   if(thisIndex.x==0)
    CkPrintf("HI, I am gPP %d %d in FFTNLeesBck : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
+
+  RunDescriptor *runs = eesData->GspData[myChareG].runs;
   fftcache->doNlFftRtoG_Gchare(projPsiG,numFullNL,gSpaceNumPoints,numLines,
-                               (gss->numRuns),(gss->runs),ngridcNL);
+                               (gss->numRuns),runs,ngridcNL);
   computeNLEesForces();
 
 //---------------------------------------------------------------------------

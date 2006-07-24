@@ -257,7 +257,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void pup(PUP::er &);
-	void initGSpace(int, RunDescriptor *, int, complex *,int ,complex *,
+	void initGSpace(int, complex *,int ,complex *,
                         int,int,int,int,int,int,int);
         void startNLEes();
         void launchAtoms();

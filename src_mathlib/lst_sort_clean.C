@@ -162,3 +162,80 @@ void sort_commence(int n, int *index_in,int *jndex_in)
 } /*end routine*/ 
 /*==========================================================================*/
 
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/*  Sort one vector commensorate with another  */
+/*==========================================================================*/
+
+void sort_commence_piny(int n, int *index,int *jndex)
+
+/*=======================================================================*/
+/*            Begin subprogram:                                          */
+{/*begin routine*/
+/*=======================================================================*/
+/*          Local variable declarations                                  */
+
+  int m,ir,i,j,rindex,rjndex;
+
+/*=======================================================================*/
+/* I) Setup                        */
+
+  m  = n/2+1;
+  ir = n;
+  if(n==1){return;}
+
+/*=======================================================================*/
+/* II) Sort array index keeping jndex commensurrate */
+
+  for(;;){
+
+/*---------------------------------------------------------------------*/
+/*  A)hire rindex */
+    if(m>1){ 
+      m--;
+      rindex = index[m];
+      rjndex = jndex[m];
+/*--------------------------------------------------------------------*/
+/*  B)retire/promote index[1] */
+    }else{
+      rindex = index[ir];
+      rjndex = jndex[ir];
+      index[ir]=index[1];
+      jndex[ir]=jndex[1];
+      ir--;
+      if(ir==1){
+       index[1]=rindex;
+       jndex[1]=rjndex;
+       break;
+      }/*endif*/
+    }/*endif*/
+/*---------------------------------------------------------------------*/
+/*  C)put rindex in appropriate slot */
+    i=m;
+    j=2*m;
+    while(j<=ir){
+      /*    a)compare to rindex to underling */
+      if((j<ir) && (index[j]< index[(j+1)])) j++;
+      /*    b)demote */
+      if(rindex<index[j]){
+       index[i]=index[j];
+       jndex[i]=jndex[j];
+       i=j;
+       j=2*j;
+      }else{
+       /*    c)if no demotations exit while */
+       j=ir+1;
+      }/*endif*/
+    } /*endwhile*/
+    /*    d)slot rindex */
+    index[i] = rindex;
+    jndex[i] = rjndex;
+  }/*endfor*/
+
+/*-----------------------------------------------------------------------*/
+} /*end routine*/ 
+/*==========================================================================*/
+

@@ -923,7 +923,6 @@ void CP_State_GSpacePlane::readFile() {
   int ioff = 0;
   for(int x = 0; x < nchareG; x ++){
 
-      int runsToBeSent = sortedRunDescriptors[x].size();
       int numPoints    = 0;
       for (int j = 0; j < sortedRunDescriptors[x].size(); j++){
 	numPoints += sortedRunDescriptors[x][j].length;
@@ -947,11 +946,6 @@ void CP_State_GSpacePlane::readFile() {
          vdataToBeSent[0].im = 0.0;
       }//endif
 
-      RunDescriptor *runDesc = new RunDescriptor[runsToBeSent];
-      for (int j = 0; j < sortedRunDescriptors[x].size(); j++) {
-        runDesc[j] = sortedRunDescriptors[x][j];
-      }//endfor
-
       if(ioff>numData){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("Error reading\n");
@@ -959,12 +953,11 @@ void CP_State_GSpacePlane::readFile() {
         CkExit();
       }//endif
 
-      gSpacePlaneProxy(ind_state, x).initGSpace(runsToBeSent,runDesc,
+      gSpacePlaneProxy(ind_state, x).initGSpace(
                                 numPoints,dataToBeSent,numPointsV,vdataToBeSent,
 				nx,ny,nz,ngridaNL,ngridbNL,ngridcNL,istart_typ_cp);
       fftw_free(dataToBeSent);
       fftw_free(vdataToBeSent);
-      delete []runDesc;
 
       ioff += numPoints;
   }//endfor : loop over all possible chares in g-space (pencils)
@@ -1001,9 +994,7 @@ n *
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::initGSpace(int            runDescSize, 
-                                      RunDescriptor* runs, 
-                                      int            size, 
+void CP_State_GSpacePlane::initGSpace(int            size, 
                                       complex*       points,
                                       int            vsize, 
                                       complex*       vpoints,
@@ -1018,6 +1009,8 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 #endif
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  eesCache *eesData     = eesCacheProxy.ckLocalBranch ();
+
   int cp_min_opt  = sim->cp_min_opt;
 
   if (true == initialized) {
@@ -1034,11 +1027,12 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   gs.eke_ret     = 0.0;  
   gs.fictEke_ret = 0.0;  
   gs.ekeNhc_ret  = 0.0;  
-  gs.numRuns     = runDescSize;
-  gs.numLines    = runDescSize/2;
+  gs.cp_min_opt  = cp_min_opt;
+
+  gs.numRuns     = eesData->GspData[iplane_ind].numRuns;
+  gs.numLines    = gs.numRuns/2;
   gs.numFull     = (gs.numLines)*nz;
   gs.numFullNL   = (gs.numLines)*nzNL;
-  gs.runs        = new RunDescriptor[gs.numRuns];
   gs.istate_ind  = thisIndex.x;
   gs.iplane_ind  = thisIndex.y;
   gs.mysizeX     = sizeX;
@@ -1052,25 +1046,31 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
   gs.ngridbNL    = nyNL;
   gs.ngridcNL    = nzNL;
 
-  gs.numPoints=0;
-  for (int r = 0; r < gs.numRuns; r++) {
-    gs.numPoints += runs[r].length;
-    gs.runs[r] = runs[r];
-  }//endfor
+  gs.numPoints   = eesData->GspData[iplane_ind].ncoef;;
   CkAssert(gs.numPoints == size);
 
   gs.ees_nonlocal        = ees_nonlocal;
+
   gs.packedPlaneData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-  gs.packedPlaneDataScr  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
   gs.packedForceData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-  gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
   gs.packedVelData       = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-
   CmiMemcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
-  CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   memset(gs.packedForceData, 0, sizeof(complex)*gs.numPoints);
-  memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
 
+  // A little extra memory of dynamics
+  if(cp_min_opt==0){
+    gs.packedPlaneDataScr  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+    memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
+  }//endif
+  
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  if(cp_min_opt==1){
+    gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+    CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
+  }//endif
+#endif
+
+  // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
     CkAssert(vsize == size);
     CmiMemcpy(gs.packedVelData, vpoints, sizeof(complex)*gs.numPoints);
@@ -1088,7 +1088,6 @@ void CP_State_GSpacePlane::initGSpace(int            runDescSize,
 //============================================================================
 // Setup k-vector ranges, masses and zero the force overlap
 
-  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind].ka;
   int *k_y          = eesData->GspData[iplane_ind].kb;
   int *k_z          = eesData->GspData[iplane_ind].kc;
@@ -1348,8 +1347,11 @@ void CP_State_GSpacePlane::doFFT() {
 // Do fft in forward direction, 1-D, in z direction
 // A local function not a message : get pointer to memory for fft group
 
+  eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
+  RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
+
   ffttempdataGrp = fftCacheProxy.ckLocalBranch()->doGSRealFwFFT(gs.packedPlaneData, 
-   	           gs.runs, gs.numRuns, gs.numLines, gs.numFull, gs.numPoints,
+   	           runs, gs.numRuns, gs.numLines, gs.numFull, gs.numPoints,
                    gs.zdim, gs.fftReqd);
 
 #ifndef CMK_OPTIMIZE
@@ -1884,6 +1886,7 @@ void CP_State_GSpacePlane::doLambda() {
       for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2i;}
     }//endif
   }//endif
+
   //==============================================================================
   // Retrieve Non-orthog psi
 
@@ -2056,8 +2059,13 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
       int *mk_x        = msg->k_x;
       int *mk_y        = msg->k_y;
       int *mk_z        = msg->k_z;
+      if(cp_min_opt==1){
+        for(int i=0;i<ncoef;i++){vdata[i] = vpsi[i];}
+      }else{
+        for(int i=0;i<ncoef;i++){vdata[i] = 0.0;}
+      }//endif
       for (int i=0;i<ncoef; i++){
-        data[i]  = psi[i];  vdata[i] = vpsi[i];
+        data[i]  = psi[i];  
         mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
       }//endfor
       gSpacePlaneProxy(thisIndex.x,0).collectFileOutput(msg);

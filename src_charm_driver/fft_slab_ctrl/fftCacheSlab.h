@@ -30,6 +30,7 @@ class GStateSlab {
 public:
 
    void pup(PUP::er &);
+   int cp_min_opt;
    int numNonZeroPlanes;
    int numRuns, numLines;      // numLines=numRun/2=number of lines in collection
    int numPoints;              // number of non-zero pts in the collection
@@ -59,7 +60,6 @@ public:
    double degfreeNHC;         // Degrees of freedom (num_nhc-1)*len_nhc
    double gammaNHC;           // Degrees of freedom degfree/(degfree+1.0)
 
-   RunDescriptor *runs;        // information about the lines in the collection [numRuns]
    complex *packedPlaneData;   // Non-zero data pts [numPoints]
    complex *packedPlaneDataTemp; 
    complex *packedPlaneDataScr; 
