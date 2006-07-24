@@ -52,6 +52,10 @@ class PSNONLOCAL{
    double *aj;
    double *rn;
    double *rn1;
+   int *index_a;
+   int *index_b;
+   int *igrid_at;
+   int *igrid_bt;
    int *iatemp;
    int *ibtemp;
    int *ictemp;
@@ -133,6 +137,10 @@ class PSNONLOCAL{
        aj      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
        rn      = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
        rn1     = (double *)cmalloc(n_interp*sizeof(double),"psnl_pup")-1;
+       index_a = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+       index_b = (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+       igrid_at= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
+       igrid_bt= (int *)cmalloc(n_interp*sizeof(int),"psnl_pup")-1;
        frac_a  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
        frac_b  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
        frac_c  = (double *)cmalloc(natm_tot*sizeof(double),"psnl_pup");
