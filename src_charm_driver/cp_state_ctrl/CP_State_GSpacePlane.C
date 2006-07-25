@@ -1344,7 +1344,7 @@ void CP_State_GSpacePlane::doFFT() {
   eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
   RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
 
-  fftCacheProxy.ckLocalBranch()->doStpFftGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
+  fftCacheProxy.ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
 	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
 
 #ifndef CMK_OPTIMIZE
@@ -1494,7 +1494,7 @@ void CP_State_GSpacePlane::doIFFT () {
   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
 
   complex *forcTmp = fftcache->tmpData;
-  fftcache->doStpFftRtoG_Gchare(gs.packedForceData,forcTmp,
+  fftcache->doStpFFTRtoG_Gchare(gs.packedForceData,forcTmp,
             gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
 
 #ifndef CMK_OPTIMIZE

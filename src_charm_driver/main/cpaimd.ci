@@ -222,13 +222,11 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_State_RealSpacePlane {
-		entry CP_State_RealSpacePlane(size2d planeSize, int numG, int numR);
+		entry CP_State_RealSpacePlane(size2d , int , int ,int, int, int);
 		entry void doFFT(RSFFTMsg *);
 		entry [nokeep] void doProduct(ProductMsg *m);
-		entry void doProduct(int size, double data[size]);
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
-		entry void resumeProduct(RSDummyResume *msg);
 		entry [nokeep] void init(ProductMsg *m);
 	};
 

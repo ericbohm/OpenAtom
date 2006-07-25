@@ -1156,6 +1156,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
   int nstate          = sim->nstates;
 
+  int ngrida          = sim->sizeX; 
+  int ngridb          = sim->sizeY; 
+  int ngridc          = sim->sizeZ;
+
   int ngridaNl        = sim->ngrid_nloc_a;
   int ngridbNl        = sim->ngrid_nloc_b;
   int ngridcNl        = sim->ngrid_nloc_c;
@@ -1208,7 +1212,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   realSpaceOpts.setMap(rsMap);
   size2d sizeRealPlane(sizeYZ[1], sizeX);
   realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
-							      realSpaceOpts);
+				      ngrida,ngridb,ngridc,realSpaceOpts);
  //--------------------------------------------------------------------------------
  // state r-particleplane
 
@@ -1287,7 +1291,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
     for (int s = 0;  s < nstates; s++){
       for (int y = 0; y < nchareR; y += 1){
-         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1);
+         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1,ngrida,ngridb,ngridc);
       }//endfor
     }//endfor
     realSpacePlaneProxy.doneInserting();

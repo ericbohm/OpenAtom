@@ -63,16 +63,15 @@ RTH_Routine_locals(CP_State_RealSpacePlane,run)
 RTH_Routine_code(CP_State_RealSpacePlane,run) {
 //============================================================================
 
-  while(1) {
-  
+  while(1) { 
     // constructor invokes run and then you suspend (no work yet)
     RTH_Suspend(); 
     c->doFFT();    // state(g,z) from gstate arrives in dofft(msg) which resumes
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
 #endif
-    c->doProduct(); // vks(r) arrives in doproduct(msg) which resumes
-
+    c->doProductThenFFT(); // vks(r) arrives in doproduct(msg) which resumes
+    c->sendFPsiToGSP();
   } //end while not done
 
 //--------------------------------------------------------------------------
@@ -94,72 +93,59 @@ void CP_State_RealSpacePlane::run () {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits, 
-                                                 int realSpaceUnits) {
+                  int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc) {
 //============================================================================
 //  ckout << "State R Space Constructor : "
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
+//============================================================================
 
     count = 0;
+
+    ngrida = _ngrida;
+    ngridb = _ngridb;
+    ngridc = _ngridc;
+    csize = (ngrida/2 + 1)*ngridb; 
+    rsize = (ngrida   + 2)*ngridb; ;
+
     initRealStateSlab(&rs, size, gSpaceUnits, realSpaceUnits, thisIndex.x, thisIndex.y);
-    flagsRecd = false;
-    sendFFTDataSize = 0;
-    setMigratable(false);
 
     gproxy = gSpacePlaneProxy;
     if (config.useMssInsGP){
       ComlibAssociateProxy(&mssInstance,gproxy);
     }//endif
 
-    vks=NULL;
+    setMigratable(false);
+
     run();
+
 }
 //============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::pup(PUP::er &p)
-{
+void CP_State_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
-  p|numPlanes;
+
+  p|ngrida;
+  p|ngridb;
+  p|ngridc;
   p|count;
-  p|sendFFTDataSize;
-  p|size;
-  p|initialized;
-  p|flagsRecd;
-  p|rs;
+  p|csize;
+  p|rsize;
   p|cookie;
   p|gproxy;
-  bool makeVks=false;
-  if(!p.isUnpacking())
-    {
-      if(vks!=NULL)
-	makeVks=true;
-    }
-  if(p.isUnpacking())
-    {
-      if(makeVks)
-	vks = (double *)fftw_malloc(size*sizeof(double));
-    }
-  if(makeVks)
-    PUParray(p,vks,size);
-  /* 
-  if(p.isUnpacking())
-    {
-      run_thread = RTH_Runtime_create(RTH_Routine_lookup(CP_State_RealSpacePlane,run),this);
-      RTH_Runtime_resume(run_thread);
-    }
-  RTH_Runtime_pup(run_thread,p,this);
-  */
 
+  rs.pup(p); // pup your plane, now, honey.
 
 }
+//============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::setNumPlanesToExpect(int num)
-{
+void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
     rs.numPlanesToExpect = num;
 }
 //============================================================================
@@ -168,9 +154,7 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
-
 //============================================================================
 
     int size               = msg->size; 
@@ -192,13 +176,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
     }//endif
 
 //============================================================================
-
-    if(config.conserveMemory && count==1){rs.allocate();}
-    complex *planeArr = rs.planeArr;
-
-    // non-zero elements are set. Zero elements are zeroed here
-    if(count==1){bzero(planeArr,planeSize*sizeof(complex));} 
-
+// Unpack the message
 // You have received packed data (x,y) from processor sendIndex
 // Every real space chare receives the same x,y indicies.
 // For double pack, x=0,1,2,3,4 ...  y= {-K ... K}
@@ -208,6 +186,13 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 // we store this stuff in the convenient package
 // Pictorially a half cylinder is sent which is unpacked into
 // a half cube for easy FFTing. Y is the inner index.
+
+
+    // non-zero elements are set. Zero elements are zeroed here
+    // planeSize contains extra elements on the boundary for fftw
+    if(config.conserveMemory && count==1){rs.allocate();}
+    complex *planeArr = rs.planeArr;
+    if(count==1){bzero(planeArr,planeSize*sizeof(complex));} 
 
     if(size!=nline_per_chareG[Index]){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -221,7 +206,13 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
     delete msg;
 
-    if (count == nchareG) {count=0;RTH_Runtime_resume(run_thread);}
+//============================================================================
+// If every chareG has reported then you can resume/go on and do the FFT
+
+    if (count == nchareG) {
+      count=0;
+      RTH_Runtime_resume(run_thread);
+    }//endif
 
 //============================================================================
    }//end routine
@@ -229,30 +220,49 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
 
 //============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//===============/=============================================================
-void CP_State_RealSpacePlane::doFFT(){
-        flagsRecd = true;
-        count = 0;
-#ifdef _CP_DEBUG_STATER_VERBOSE_
-        ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
-#endif
+// After receiving from G-space, FFT to real space
 //============================================================================
-// Perform the FFT
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::doFFT(){
+//============================================================================
+
+#ifdef _CP_DEBUG_STATER_VERBOSE_
+   ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
+#endif
+
+//============================================================================
+// Perform the FFT and get psi^2 which we can store in cache tmpData because
+// we will blast it right off before losing control
+
+    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+    int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+    complex *planeArr   = rs.planeArr;
+    double  *planeArrR  = rs.planeArrR;
 
 #ifndef CMK_OPTIMIZE    
-      double StartTime=CmiWallTimer();
+    double StartTime=CmiWallTimer();
 #endif
 
-  // Data is allocated in fftcacheproxy. It is a local variable
-  // of the dorealfwfft function. You now own its memory.
-    double *data = fftCacheProxy.ckLocalBranch()->doRealFwFFT(rs.planeArr);
+    fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
+
+    double *data = fftcache->tmpDataR;
+    for(int i=0,i2=0;i<ngridb;i++,i2+=2){
+      for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+        data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)];
+      }//endfor
+    }//endfor
+    CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
-      traceUserBracketEvent(doRealFwFFT_, StartTime, CmiWallTimer());
+    traceUserBracketEvent(doRealFwFFT_, StartTime, CmiWallTimer());
 #endif    
+
+//============================================================================
+// Send off the reduction unless you are skipping rho, whence you call doproduct
+
 #ifndef _CP_DEBUG_RHO_OFF_
-        doReduction(data);
+    doReduction();
 #else
   if(thisIndex.x==0 && thisIndex.y==0){
     CkPrintf("EHART       = OFF FOR DEBUGGING\n");
@@ -262,47 +272,50 @@ void CP_State_RealSpacePlane::doFFT(){
     CkPrintf("EGGA        = OFF FOR DEBUGGING\n");
     CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
   }//endif
+  bzero(data,ngrida*ngridb*sizeof(double));
+  doProductThenFFT();
 #endif
-}
+
+//---------------------------------------------------------------------------
+   }//end routine
 //============================================================================
 
 
+//============================================================================
+// No one else can use tmpdataR until I perform doReduction because 
+// I will not be rolled out until I finish my scalar work.
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::doReduction(double *data){
+void CP_State_RealSpacePlane::doReduction(){
 //============================================================================
-// double *data = rs.doRealFwFFT();  // 2-D forward FFT, in x*Z dimension,
-// data will contain the squared magnitudes of the fftd data.    
-// magnitude is computed and stored in *data
-//============================================================================
-// Perform the Reduction to get the density
+
 #ifdef _CP_DEBUG_STATER_VERBOSE_
     CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,
                 CmiMemoryUsage());
 #endif
 
-      // we should be able to cache this setup stuff and only do it
-      // once per iteration
-        CkMulticastMgr *mcastGrp = 
-            CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-        CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                      CkArrayIndex2D(thisIndex.y,0),
-                      rhoRealProxy.ckGetArrayID());
+//============================================================================
+// Perform the Reduction to get the density : vks holds psi^2 for us
+// Return values for vks cannot hit this chare until the reduciton is complete.
+
+   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+   CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
+                 CkArrayIndex2D(thisIndex.y,0),rhoRealProxy.ckGetArrayID());
+
 #ifndef CMK_OPTIMIZE    
-      double StartTime=CmiWallTimer();
+   double StartTime=CmiWallTimer();
 #endif
-        mcastGrp->contribute(rs.planeSize[0] * sizeX * sizeof(double), 
-                             data, CkReduction::sum_double,cookie, cb);
+
+    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+    double *data        = fftcache->tmpDataR;
+    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
+                         cookie,cb);
+    CmiNetworkProgress();
+
 #ifndef CMK_OPTIMIZE
-      traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
+    traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    
-
-    // data is allocated in fftcacheproxy routine : free it here.
-    // Data is not a member of the fftcache class but a local variable
-    // or temperorary variable whose pointer is passed back to this class
-    fftw_free(data);
-
 //============================================================================
     }//end routine
 //============================================================================
@@ -312,53 +325,39 @@ void CP_State_RealSpacePlane::doReduction(double *data){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
- * In this function we multiply (element-to-element) psi_r with vks
- * We follow this up with finishing a part of the inverse fft (i.e., 
- * ifft in the x-direction. Once that is don, send the "half-baked"
- * data to the CP_State_GSpacePlanes
+ *   In this method, we receive vks from the density. We copy it out 
+ *   because you don't want to work with charms squirely memory 
+ *   and call the working doproduct. The copy is into cache scratch
+ *   which is OK because we should not relinquish the proc to another
+ *   chare until we have finsihed the working doproduct
  */
 //============================================================================
 void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
-    /* for debugging*/
+//============================================================================
+
 #ifdef _CP_DEBUG_STATER_VERBOSE_
   CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
 #endif
 
-    if (msg->datalen != rs.planeSize[0] * sizeX)
-        ckout << msg->datalen << endl;
+//============================================================================
+// Unpack and check size, copy to cache temp, resume which calls doProduct
+// without relinquishing control to other chares
+
+  double *vks_in = msg->data;
+  int mysize     = msg->datalen;
+  CkAssert(mysize == ngrida*ngridb);
 	
-    size=msg->datalen;
-    double *vks_in = msg->data;
-    if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
-    CmiMemcpy(vks,vks_in,sizeof(double)*size);
-    //    delete msg;
+  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+  double *Vks         = fftcache->tmpDataR;
 
-    RSDummyResume *pmsg= new (8*sizeof(int)) RSDummyResume;
-    CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
-    *(int*)CkPriorityPtr(pmsg) = config.rsifftpriority;
-    thisProxy(thisIndex.x,thisIndex.y).resumeProduct(pmsg);
+  CmiMemcpy(Vks,vks_in,sizeof(double)*mysize);
+  CmiNetworkProgress();
+  
+  RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
+                                  // as threaded loops calls working doproduct
 
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealSpacePlane::resumeProduct(RSDummyResume *msg){
-    delete msg;
-    RTH_Runtime_resume(run_thread);
-}
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealSpacePlane::doProduct(int Size, const double *Vks)
-{
-  CkAbort("Depricated doProduct \n");
-}
+//---------------------------------------------------------------------------
+  }//endroutine
 //============================================================================
 
 
@@ -366,85 +365,123 @@ void CP_State_RealSpacePlane::doProduct(int Size, const double *Vks)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
-* doing the product 
+* Really doing the product : called directly from the doProduct(msg) : I don't 
+*                             give way to another chare so I can use the scratch 
+*                             space in the Cache group
 */
 //============================================================================
-void CP_State_RealSpacePlane::doProduct() {
+void CP_State_RealSpacePlane::doProductThenFFT() {
 //============================================================================
-
+// A little output under some circumstances
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
-   CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
+  CkPrintf("In RealSpacePlane[%d %d] doProduct %d\n",
              thisIndex.x, thisIndex.y,CmiMemoryUsage());
 #endif
 
 #ifdef _CP_DEBUG_RHO_OFF_  
-   size = sizeX*rs.planeSize[0];
-   if(vks==NULL){vks = (double *)fftw_malloc(size*sizeof(double));}
-   bzero(vks,sizeof(double)*size);
-#endif
-
-//===================================================================
-// debugging
-
 #ifdef _CP_DEBUG_VKS_RSPACE_
-    if(thisIndex.x==0 && thisIndex.y == 0){
-      FILE *fp = fopen("vks_real_y0_state0.out","w");
+  if(thisIndex.x==0 && thisIndex.y == 0){
+     FILE *fp = fopen("vks_real_y0_state0.out","w");
       for(int i=0;i<size;i++){
         fprintf(fp,"%g\n",vks[i]);
       }//endfor
-      fclose(fp);
-    }
+     fclose(fp);
+  }//endif
 #endif    
-
-//===================================================================
-// Log the 2D-FFT call and do it : in place
-
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
 #endif
 
-    fftCacheProxy.ckLocalBranch()->doRealBwFFT(vks,rs.planeArr,
-                                       thisIndex.x,thisIndex.y);
-    complex *vks_on_state = rs.planeArr;
-    fftw_free(vks);  vks = NULL;
-    
+//===================================================================
+// Do the product and then the FFT
 
+ //------------------------------------------------------------------
+ // Start the timer
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+
+ //------------------------------------------------------------------
+ // The product psi*vks
+  double  *planeArrR  = rs.planeArrR;
+  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+  double *Vks         = fftcache->tmpDataR;
+
+  int stride = sizeX/2+1;
+  for(int i=0,i2=0;i<ngridb;i++,i2+=2){
+    for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+      planeArrR[(j+i2)] *= Vks[j];
+    }//endfor
+  }//endfor
+  CmiNetworkProgress();
+
+ //------------------------------------------------------------------
+ // The FFT
+  int nplane_x      = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  complex *planeArr = rs.planeArr;
+  fftcache->doStpFFTRtoG_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
+
+ //------------------------------------------------------------------
+ // End timer 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(doRealBwFFT_, StartTime, CmiWallTimer());
 #endif
 
 //===================================================================
+// Return to threaded loop which invokes the send routine
+
+//---------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::sendFPsiToGSP() {
+//===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
 
-    int nchareG    = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-    int **tranpack = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-    int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+  int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
+  int **tranpack         = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
+  int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+  complex *vks_on_state  = rs.planeArr;
 
-    if (config.useMssInsGP){mssInstance.beginIteration();}
+ //------------------------------------------------------------------
+  if (config.useMssInsGP){mssInstance.beginIteration();}
+
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
+
       int sendFFTDataSize = nlines_per_chareG[ic];
-      GSIFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
-      msg->size      = sendFFTDataSize;
-      msg->offset    = thisIndex.y;    // z-index
-      complex *data  = msg->data;
+      GSIFFTMsg *msg      = new (sendFFTDataSize, 8 * sizeof(int)) GSIFFTMsg; 
+      msg->size           = sendFFTDataSize;
+      msg->offset         = thisIndex.y;    // z-index
+      complex *data       = msg->data;
+
       if(config.prioFFTMsg){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(msg) = config.gsifftpriority+thisIndex.x*rs.planeSize[0];
       }//endif
+
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
       gproxy(thisIndex.x, ic).doIFFT(msg); // send the message
+      CmiNetworkProgress();
+
     }//end for : chare sending
-    if (config.useMssInsGP){mssInstance.endIteration();}
 
-    if(config.conserveMemory){
-      rs.destroy();
-    }else{
-      rs.zeroOutPlanes();
-    }//endif
+  if (config.useMssInsGP){mssInstance.endIteration();}
+ //------------------------------------------------------------------
 
-    //  CkPrintf("RSP [%d %d] sent back to GSP \n",thisIndex.x,thisIndex.y);
+//===================================================================
+// clean up the states
 
+  if(config.conserveMemory){
+     rs.destroy();
+  }else{
+     rs.zeroOutPlanes();
+  }//endif
+
+//===================================================================
+//  CkPrintf("RSP [%d %d] sent back to GSP \n",thisIndex.x,thisIndex.y);
 //============================================================================
    }//end routine : CP_State_RealSpacePlane::doProduct()
 //============================================================================

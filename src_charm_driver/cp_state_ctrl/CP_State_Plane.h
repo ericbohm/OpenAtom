@@ -381,29 +381,28 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 //============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
-	CP_State_RealSpacePlane(size2d, int, int);
+	CP_State_RealSpacePlane(size2d, int, int,int,int,int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { };
 	void doFFT(RSFFTMsg *);
 	void doFFT();
 	void doProduct(ProductMsg *);
-	void doProduct(int, const double *);
-	void doProduct();
-	void resumeProduct(RSDummyResume *msg);
+	void doProductThenFFT();
+        void sendFPsiToGSP();
 	void run();
 	void setNumPlanesToExpect(int num);
 	void printData();
 	void init(ProductMsg *);
-	void doReduction(double *);
+	void doReduction();
 	void ResumeFromSync();	
 	void pup(PUP::er &);
  private:
-	int numPlanes;
+        int ngrida;
+        int ngridb;
+        int ngridc;
 	int count;
-	int sendFFTDataSize;
-	int size;
-	double *vks;
-	bool initialized, flagsRecd;
+	int rsize;
+	int csize;
 	RealStateSlab rs;
 	CkSectionInfo cookie;
 	CProxy_CP_State_GSpacePlane gproxy;

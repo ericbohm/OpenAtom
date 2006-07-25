@@ -57,13 +57,27 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     ees_NL_on   = _ees_NL_on;
 
 //==============================================================================
-// Density and State Scratch
+// Density, State and EES Scratch
 
-    int nlines_max = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
-    int psize      = nlines_max*planeSize[0];
+    int nlines_max     = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
+    int nlines_max_rho = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max_rho;
+
+    int pGsize         = nlines_max*planeSize[0];
+    int pGsizeNL       = nlines_max*ngridcNL;
+    int pGsizeEext     = nlines_max_rho*ngridcEext;
+    int pRsize         = (sizeX/2+1)*planeSize[0];
+
+    int pmax = pGsize; 
+    pmax     = (pmax > pRsize ? pmax : pRsize);
+
+    if(ees_eext_on==1){pmax = (pmax>pGsizeEext ? pmax : pGsizeEext);}
+    if(ees_NL_on  ==1){pmax = (pmax>pGsizeNL   ? pmax : pGsizeNL);}
+
+    tmpData  = (complex*) fftw_malloc(pmax*sizeof(complex)); 
+    tmpDataR = reinterpret_cast<double*> (tmpData);
 
 //==============================================================================
-// Density and State plans/scratch : funky names : non-cubic broken
+// Density and State plans : funky names : non-cubic broken
 
    //------------------------------------------------
    // Double Pack Plans
@@ -85,19 +99,6 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
                     FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
     bwdYPlan = fftw_create_plan(sizeZ,FFTW_BACKWARD, 
                     FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM); 
-
-//==============================================================================
-// Euler spline scratch and sizes
-
-    int nlines_max_rho = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max_rho;
-    int psizeEext      = nlines_max_rho*ngridcEext;
-    int psizeNL        = nlines_max*ngridcNL;
-
-    int pmax = psize;
-    if(ees_eext_on==1){pmax = (pmax>psizeEext ? pmax : psizeEext);}
-    if(ees_NL_on==1)  {pmax = (pmax>psizeNL   ? pmax : psizeNL);}
-
-    tmpData = (complex*) fftw_malloc(pmax*sizeof(complex)); 
 
 //==============================================================================
 // Euler spline plans : better names : non-cubic broken
@@ -242,7 +243,7 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doNlFftRtoG_Gchare(complex *data_in,complex *data_out,
+void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
                                   int nfftz){
@@ -274,7 +275,7 @@ void FFTcache::doNlFftRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doNlFftGtoR_Gchare(complex *data_in,complex *data_out,
+void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
           int numFull, int numPoints,int numLines, int numRuns, 
           RunDescriptor *runs, int nfftz){
 //==============================================================================
@@ -538,7 +539,7 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doStpFftRtoG_Gchare(complex *data_in,complex *data_out,
+void FFTcache::doStpFFTRtoG_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
                                   int nfftz){
@@ -570,7 +571,7 @@ void FFTcache::doStpFftRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doStpFftGtoR_Gchare(complex *data_in,complex *data_out,
+void FFTcache::doStpFFTGtoR_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
                                   int nfftz){
@@ -600,81 +601,87 @@ void FFTcache::doStpFftGtoR_Gchare(complex *data_in,complex *data_out,
  
 
 
-
-//==============================================================================
-// After the transpose : nfftz*nffty array nicely expanded out.
-//                       Only nplane_x FFTs along Y need to be performed
-//                       due to spherical truncation
-//                       data is |psi|^2 : z is chare array index
-//                                         x is inner index 
-//                                         y is outer index
-//                       chare[z].data[x+y*sizeX]
-//                       chare[z].planeArr[y+x*sizeY] is input
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
+                                   int sizeX,int sizeY){
+//==============================================================================
+// FFT along Y direction : Y moves with stride sizex/2+1 through memory
+//                       : nplane_x is spherical cutoff <= sizeX/2+1
 
-double* FFTcache::doRealFwFFT(complex *planeArr)
+  int stride = sizeX/2+1;
+  fft_split(
+        fwdZ1DdpPlan,                 // y-plan label lies
+	nplane_x,                     // how many < sizeX/2 + 1
+        (fftw_complex *)(dataC),      //input data
+ 	stride,                       // stride betwen elements (x is inner)
+  	1,                            // array separation (nffty elements)
+        NULL,0,0,                     // output data is input data
+        config.fftprogresssplitReal   // splitting parameter
+       );
+
+  // fftw only gives you one sign for real to complex : so do it yourself
+  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
 
 //==============================================================================
-   {//begin routine    
-//==============================================================================
+// FFT along X direction : X moves with stride 1 through memory
 
-   double *data;
-   int pSize    = planeSize[0] * sizeX;
-   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  rfftwnd_complex_to_real_split(
+              fwdX1DdpPlan,                 // x-plan 
+	      sizeY,                        // how many
+	      (fftw_complex *)dataC,        // input data
+              1,                            // stride (x is inner)
+              stride,                       // array separation
+              NULL,0,0,                     // output = input = dataR real
+  	      config.fftprogresssplitReal   // splitting parameter
+             );
 
-//==============================================================================
-// Case doublePack && config.inPlaceFFT
-// 
-
-  if(config.doublePack) {
-      data = (double *)fftw_malloc(pSize*sizeof(double));
-      int stride = sizeX/2+1;
-      // FFT along Y direction : Y moves with stride sizex/2+1 through memory
-      fft_split(fwdZ1DdpPlan, // y-plan (label lies)
-  	   nplane_x,          // how many < sizeX/2 + 1
-	   (fftw_complex *)(planeArr),//input data
- 	   stride,            // stride betwen elements (y is inner)
-  	   1,                 // array separation (nffty elements)
-  	   NULL,0,0,          // output data is input data 
-           config.fftprogresssplitReal);
-      // fftw only gives you one sign for real to complex : so do it yourself
-      for(int i=0;i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-      rfftwnd_complex_to_real_split(fwdX1DdpPlan,
-			      planeSize[0],    // how many
-			      (fftw_complex *)planeArr, 
-                              1,               // stride (x is inner)
-                              stride,          // array separation
-			      NULL,0,0,        // output array is real 
-                              config.fftprogresssplitReal);      
-      // x is now the inner index as fftw has transposed for us
-      double *realArr = reinterpret_cast<double*> (planeArr);
-      for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
-       for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-         data[j] = realArr[(j+i2)]*realArr[(j+i2)];
-       }//endfor
-      }//endfor
-
-    return data;
-
-  }//endif : 
-
-//==============================================================================
-// Case !doublePack && config.inPlaceFFT
-
-  if(!config.doublePack){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Fix the non-double pack FFT\n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
-  }//endif
-
-  return data;                
-
-//==============================================================================
+//------------------------------------------------------------------------------
   }//end routine
 //==============================================================================
+
+
+//=============================================================================
+// 
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
+                                    int sizeX,int sizeY){
+//==============================================================================
+// FFT along x first
+
+  rfftwnd_real_to_complex_split(
+   	     bwdX1DdpPlan,               // backward X plan
+	     sizeY,                      // these many 1D ffts
+	     (fftw_real *)dataR,         // data set
+             1,                          // stride
+             (sizeX+2),                  // spacing between data sets
+  	     NULL,0,0,                   // input array is output array
+             config.fftprogresssplitReal // 
+           );            
+
+  int stride = sizeX/2+1;
+  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+
+//==============================================================================
+// FFT along y
+
+  fft_split(
+            bwdZ1DdpPlan,              // backward Y plan (label lies)
+	    nplane_x,                  // these many 1D ffts
+	    (fftw_complex *)dataC,     // data set
+            stride,                    // stride
+            1,                         // spacing between data sets
+            NULL,0,0,                  // input is output
+            config.fftprogresssplitReal// progress splitting for BG/L
+           );
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
 
 
 //==============================================================================
@@ -715,88 +722,6 @@ void FFTcache::doRhoRealtoRhoG(double *realArr)
  }//end routine
 //==============================================================================
 
-
-//==============================================================================
-//                             vks : z is chare array index
-//                                   x is inner index 
-//                                   y is outer index
-//                                   chare[z].data[x+y*sizeX]
-//
-//          vks is from a message and should not be modified
-//
-//                           planeArr : chare[z].data[y+x*sizeY]
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void FFTcache::doRealBwFFT(const double *vks, complex *planeArr,
-                           int ind_state, int ind_plane)
-//==============================================================================
- {//begin routine 
-//==============================================================================
-
-   int pSize    = planeSize[0] * sizeX;
-   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
-
-//==============================================================================
-// Output
-
-#ifdef _CP_DEBUG_FFTR_VKSR_
-   if(config.doublePack){
-     if(ind_state==0 && ind_plane==0){
-        double *realArr = reinterpret_cast<double*> (planeArr);
-        FILE *fp = fopen("vks_state0_plane0_real.out","w");
-          for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
-            for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-              fprintf(fp,"%g %g\n",vks[j],realArr[(j+i2)]);
-            }//endfor
-          }//endfor
-        fclose(fp);
-     }//endif
-   }//endif
-#endif
-
-//==============================================================================
-// Case : doublePack  and inplace 
-
-  if(config.doublePack){
-     double *realArr = reinterpret_cast<double*> (planeArr);
-     int stride = sizeX/2+1;
-     for(int i=0,i2=0;i<planeSize[0];i++,i2+=2){
-       for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-         realArr[(j+i2)] = realArr[(j+i2)]*vks[j];
-       }//endfor
-     }//endfor
-     rfftwnd_real_to_complex_split(bwdX1DdpPlan,
-			planeSize[0],          // these many 1D ffts
-			realArr,
-                        1,(sizeX+2),   // x is inner here
-  		        NULL,0,0, 
-                        config.fftprogresssplitReal);            
-#ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgress();
-#endif
-
-     for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-     fft_split(bwdZ1DdpPlan,
-	     nplane_x, // these many 1D ffts
-	     (fftw_complex *)planeArr, 
-	     stride,1,
-             NULL,0,0,
-             config.fftprogresssplitReal);
-  }//endif : double pack and in-place
-
-//==============================================================================
-
-  if(!config.doublePack){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Fix the non-double pack FFT\n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
-  }//endif
-
-//------------------------------------------------------------------------------
-   }//end routine
-//==============================================================================
 
 
 //============================================================================

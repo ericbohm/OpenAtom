@@ -120,13 +120,8 @@ public:
      delete []fNHC;
    }//end routine
 
-   complex* doFwFFT();
-   void doBwFFT(complex*);
    void setKRange(int , int *, int *, int *);
    void addForces(const complex *,const int *);
-   void expandGSpace(complex* data, int type, complex *packedPlaneData);
-   void compressGSpace(const complex *points, int type);
-   void printGSpace(int type);
 
 //-----------------------------------------------------------------------------
   };
@@ -140,6 +135,7 @@ class RealStateSlab {
 public:
 	size2d planeSize;         // size of the state in Z*X 
 	complex *planeArr;
+        double *planeArrR;   //planeArr cast to double
 	int thisState;    
 	int thisPlane;      
 	int numPlanesToExpect;
@@ -281,6 +277,7 @@ class FFTcache: public Group {
         int ees_NL_on;
 
         complex *tmpData;  // temporary for Ees methods
+        double *tmpDataR;
 
 	fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
 	fftw_plan    fwdYPlan,     bwdYPlan;            // double pack plans
@@ -307,17 +304,17 @@ class FFTcache: public Group {
       //-----------------------------------------------------------
       // State and Density FFTs
 
-      double *doRealFwFFT(complex *);
-      void doRealBwFFT(const double *vks, complex *,int ,int);
       void doRhoRealtoRhoG(double *realArr);
 
-      void doStpFftRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-      void doStpFftGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+      void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+      void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+      void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int );
+      void doStpFFTRtoG_Rchare(complex *,double *,int , int ,int );
 
       //-----------------------------------------------------------
       // non-local fft
-       void doNlFftRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-       void doNlFftGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+       void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+       void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
        void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
        void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
 

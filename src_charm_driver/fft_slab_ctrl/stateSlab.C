@@ -219,59 +219,6 @@ void GStateSlab::pup(PUP::er &p) {
 
 
 
-//==============================================================================
-// Expanded gspace of size numFull =numRuns/2*nfftz to packed size numPoints
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void GStateSlab::compressGSpace(const complex *expnddata, int type) {
-//==============================================================================
-// Contract lines of z after the backFFT has been performed.
-//   The ``run'' stores each line in two parts
-//      0,1,2,3 have offset, joff = r*nfftz 
-//     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
-//      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
-
-  eesCache *eesData   = eesCacheProxy.ckLocalBranch ();
-  RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
-
-  complex *origdata;
-  if(type == 1){origdata = packedPlaneData;}
-  if(type == 2){origdata = packedForceData;}
-  if(type!=2){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Unpacking invalid data, aborting %d\n",type);
-    CkPrintf("Only the forces should be contracted\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
-  int nfftz = planeSize[1];
-
-  int koff = 0;
-  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
-
-    int joff = l*nfftz + runs[r].z;
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
-      origdata[k]= expnddata[j];
-    }//endfor
-    koff += runs[r].length;
-
-    int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
-      origdata[k] = expnddata[j];
-    }//endfor
-    koff += runs[r1].length;
-
-  }//endfor
-
-  CkAssert(numPoints == koff);
-
-//==============================================================================
-  }//end routine
-//==============================================================================
-
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -417,36 +364,6 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
 
 
 //==============================================================================
-// Perform the back fft along z direction : numLines ffts
-// then compress the data to non-zero points as you are back in g-space
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void GStateSlab::doBwFFT(complex *fftData) {
-
-   FFTcache *sc   = fftCacheProxy.ckLocalBranch();
-   fftw_plan plan = sc->bwdYPlan;  // the Y is a misnomer : its Z
-   int expandtype = 2;
-   int nfftz      = planeSize[1];
-
-   if(fftReqd){
-        fft_split(plan,     // direction Z
-	     numLines,      // these many ffts : lines of z
-	     (fftw_complex *)fftData, //input data
-	     1,             //stride
-	     nfftz,         //distance between arrays
-	     NULL, 0, 0,    // junk because input array stores output (in-place)
-             config.fftprogresssplit);
-   }//endfor
-   compressGSpace(fftData, expandtype);
-
-//==============================================================================
-  }//end routine
-//==============================================================================
-
-
-
-//==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 /* This gets called at the end of the CP_State_RealSpacePlane constructor */
@@ -484,7 +401,8 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
    }else{
       rs->size = rs->nsize;
    }//endif
-   rs->planeArr = (complex *) fftw_malloc(rs->size * sizeof(complex));
+   rs->planeArr  = (complex *) fftw_malloc(rs->size * sizeof(complex));
+   rs->planeArrR = reinterpret_cast<double*> (rs->planeArr);
 
 //==============================================================================    
    }//end routine
@@ -497,7 +415,7 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
 RealStateSlab::~RealStateSlab() {
 //==============================================================================
 
-  if(planeArr != NULL) {fftw_free(planeArr);planeArr = NULL; }
+  if(planeArr != NULL) {fftw_free(planeArr);planeArr = NULL; planeArrR=NULL;}
 
 }
 //==============================================================================
@@ -510,10 +428,10 @@ void RealStateSlab::pup(PUP::er &p) {
 //==============================================================================
   p|planeSize;
   p|size;
-  if (p.isUnpacking()) 
-    {
+  if (p.isUnpacking()) {
       planeArr = (complex *) fftw_malloc(size*sizeof(complex));
-    }
+      planeArrR = reinterpret_cast<double*> (planeArr);
+  }
   PUParray(p, planeArr, size);
   p|thisState;    
   p|thisPlane;      
@@ -530,7 +448,7 @@ void RealStateSlab::pup(PUP::er &p) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::zeroOutPlanes() {    
-  memset(planeArr,0,size*sizeof(complex));
+  bzero(planeArr,size*sizeof(complex));
 }
 //==============================================================================
 
@@ -539,7 +457,10 @@ void RealStateSlab::zeroOutPlanes() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::allocate() {
-  if(planeArr == NULL) {planeArr = (complex *) fftw_malloc(size*sizeof(complex));}
+  if(planeArr == NULL) {
+     planeArr = (complex *) fftw_malloc(size*sizeof(complex));
+     planeArrR = reinterpret_cast<double*> (planeArr);
+  }//endif
 }
 //==============================================================================
 
@@ -548,7 +469,7 @@ void RealStateSlab::allocate() {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RealStateSlab::destroy() {
-  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL;}
+  if(planeArr != NULL) {fftw_free(planeArr); planeArr=NULL; planeArrR = NULL;}
 }
 //==============================================================================
 

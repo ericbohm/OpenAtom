@@ -880,7 +880,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
   complex *projPsiGTmp = fftcache->tmpData;
-  fftcache->doNlFftGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
+  fftcache->doNlFFTGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
   sendToEesRPP();
 
@@ -1045,7 +1045,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
   complex *projPsiGTmp = fftcache->tmpData;
-  fftcache->doNlFftRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
+  fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
   computeNLEesForces();
 

@@ -267,7 +267,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
       }//endfor 
-      if(Desi1->z!=0){
+      if(Desi1->z!=0 || Desi1->length == 0){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("The rho rundescriptor MUST have 2nd z ==0\n");
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -629,9 +629,15 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
       }//endfor
-      if(Desi1->z!=0){
+      if(Desi->z==0 && Desi->length != 0){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("The rho rundescriptor MUST have 2nd z == 0\n");
+        CkPrintf("The rundescriptor with 1st z == 0 must have 0 lngth\n");
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit(); 
+      }
+      if(Desi1->z!=0 || Desi1->length == 0){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("The rundescriptor MUST have 2nd z == 0\n");
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
       }
