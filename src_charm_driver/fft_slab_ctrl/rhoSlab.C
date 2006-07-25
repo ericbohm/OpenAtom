@@ -150,9 +150,6 @@ void RhoGSlab::pup(PUP::er &p) {
   p|eext_ret;
   p|ewd_ret;
   p|size;
-  p|xdim;
-  p|ydim;
-  p|zdim; 
   p|nPacked;
   if(!p.isUnpacking())
     {// create flags for each array in pup
@@ -232,6 +229,134 @@ void RhoGSlab::pup(PUP::er &p) {
 
 
 //==============================================================================
+// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
+
+//==============================================================================
+
+  int nfftz = sizeZ;
+
+//==============================================================================
+// 
+
+  bzero(divRhoX,sizeof(complex)*numFull);  
+  bzero(divRhoY,sizeof(complex)*numFull);  
+  bzero(divRhoZ,sizeof(complex)*numFull);  
+  double gx,gy,gz;
+
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff = l*nfftz + runs[r].z;
+    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      complex tmp = (tmpRho[k].multiplyByi())*(-1.0);
+      divRhoX[j] = tmp*gx;
+      divRhoY[j] = tmp*gy;
+      divRhoZ[j] = tmp*gz;
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    joff = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      complex tmp = (tmpRho[k].multiplyByi())*(-1.0);
+      divRhoX[j] = tmp*gx;
+      divRhoY[j] = tmp*gy;
+      divRhoZ[j] = tmp*gz;
+    }//endfor
+    koff += runs[r1].length;
+
+#ifdef CMK_VERSION_BLUEGENE
+    if(r % 40==0){CmiNetworkProgress();}
+#endif
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+#ifdef CMK_VERSION_BLUEGENE
+  CmiNetworkProgress();
+#endif
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
+//==============================================================================
+// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
+
+//==============================================================================
+
+  int nfftz = sizeZ;
+  double gx,gy,gz;
+  complex tmp;
+
+//==============================================================================
+
+  complex *whitebyrd = divRhoX; // zeroing done carefully inside loop
+                                // so that we can save memory by reusing divRhoX
+  int koff = 0;
+  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
+
+    int joff1 = l*nfftz + runs[r].z;
+    for (int i=0,j=joff1,k=koff; i<runs[r].length; i++,j++,k++) {
+      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
+      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
+    }//endfor
+    koff += runs[r].length;
+
+    int r1=r+1;
+    int joff2 = l*nfftz + runs[r1].z;
+    for (int i=0,j=joff2,k=koff; i<runs[r1].length; i++,j++,k++) {
+      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
+      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
+      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
+      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
+      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
+    }//endfor
+    koff += runs[r1].length;
+
+    int joff3 = joff2+runs[r1].length;
+    for(int j=joff3;j<joff1;j++){whitebyrd[j]=0.0;}
+
+#ifdef CMK_VERSION_BLUEGENE
+    if(r % 40==0){CmiNetworkProgress();}
+#endif
+
+  }//endfor
+
+  CkAssert(numPoints == koff);
+
+#ifdef CMK_VERSION_BLUEGENE
+    CmiNetworkProgress();
+#endif
+
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
+//==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 /*
@@ -277,274 +402,6 @@ void RhoGSlab::setKVectors(int *n){
 //==============================================================================
   }//end routine
 //==============================================================================
-
-//=============================================================================
-// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-
-void RhoGSlab::expandRhoGSpace(complex* data, complex *packedData)
-
-//==============================================================================
-  {//begin routine
-//==============================================================================
-// Expand out lines of z so that an FFT can be performed on them
-//   The ``run'' stores each line in two parts
-//      0,1,2,3 have offset, joff = r*nfftz 
-//     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
-//      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
-//   Total size is nlines*nfftz where nlines=numRuns/2
-
-  memset(data,0,sizeof(complex)*numFull);
-  int nfftz = sizeZ;
-
-  int koff = 0;
-  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
-
-    int joff = l*nfftz + runs[r].z;
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
-      data[j] = packedData[k];
-    }//endfor
-    koff += runs[r].length;
-
-    int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
-      data[j] = packedData[k];
-    }//endfor
-    koff += runs[r1].length;
-
-  }//endfor
-
-  CkAssert(numPoints == koff);
-
-//------------------------------------------------------------------------------
-  }//end routine
-//==============================================================================
-
-//==============================================================================
-// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-
-void RhoGSlab::divRhoGdot(double *hmati, double tpi){
-
-//==============================================================================
-
-  int nfftz = sizeZ;
-  double gx,gy,gz;
-
-//==============================================================================
-
-  memset(divRhoX, 0, sizeof(complex)*numFull);
-  memset(divRhoY, 0, sizeof(complex)*numFull);
-  memset(divRhoZ, 0, sizeof(complex)*numFull);
-
-  int koff = 0;
-  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
-
-    int joff = l*nfftz + runs[r].z;
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
-      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
-      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
-      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
-      complex tmp = (packedRho[k].multiplyByi())*(-1.0);
-      divRhoX[j] = tmp*gx;
-      divRhoY[j] = tmp*gy;
-      divRhoZ[j] = tmp*gz;
-    }//endfor
-    koff += runs[r].length;
-
-    int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
-      gx = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
-      gy = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
-      gz = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
-      complex tmp = (packedRho[k].multiplyByi())*(-1.0);
-      divRhoX[j] = tmp*gx;
-      divRhoY[j] = tmp*gy;
-      divRhoZ[j] = tmp*gz;
-    }//endfor
-    koff += runs[r1].length;
-
-  }//endfor
-
-  CkAssert(numPoints == koff);
-
-//------------------------------------------------------------------------------
-  }//end routine
-//==============================================================================
-
-
-//==============================================================================
-// packed g-space of size numPoints is expanded to numFull =numRuns/2*nfftz
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-
-void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
-
-//==============================================================================
-
-  int nfftz = sizeZ;
-  double gx,gy,gz;
-  complex tmp;
-
-//==============================================================================
-
-  complex *whitebyrd = Rho;
-  memset(whitebyrd,0,sizeof(complex)*numFull);
-
-  int koff = 0;
-  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
-
-    int joff = l*nfftz + runs[r].z;
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
-      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
-      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
-      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
-      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
-      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
-    }//endfor
-    koff += runs[r].length;
-
-    int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
-      gx  = tpi*(k_x[k]*hmati[1] + k_y[k]*hmati[2] + k_z[k]*hmati[3]);
-      gy  = tpi*(k_x[k]*hmati[4] + k_y[k]*hmati[5] + k_z[k]*hmati[6]);
-      gz  = tpi*(k_x[k]*hmati[7] + k_y[k]*hmati[8] + k_z[k]*hmati[9]);
-      tmp = divRhoX[j]*gx + divRhoY[j]*gy + divRhoZ[j]*gz;
-      whitebyrd[j] = tmp.multiplyByi()*(-1.0); 
-    }//endfor
-    koff += runs[r1].length;
-
-  }//endfor
-
-  CkAssert(numPoints == koff);
-
-//------------------------------------------------------------------------------
-  }//end routine
-//==============================================================================
-
-
-//==============================================================================
-//==============================================================================
-// Expanded rhogspace of size numFull =numRuns/2*nfftz to packed size numPoints
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void RhoGSlab::compressGSpace(const complex *expnddata, int type) {
-//==============================================================================
-// Contract lines of z after the backFFT has been performed.
-//   The ``run'' stores each line in two parts
-//      0,1,2,3 have offset, joff = r*nfftz 
-//     -3,-2,-1 have offset, joff = r*nffz + nfftz-3
-//      runs[r].z stores kz if kz>0 and nfftz-kz if kz<0
-
-  complex *data;
-  switch(type){
-    case 0 : data = packedRho; break;
-  }//endif
-
-  int nfftz = sizeZ;
-
-  int koff = 0;
-  for (int r = 0,l=0; r < numRuns; r+=2,l++) {
-
-    int joff = l*nfftz + runs[r].z;
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
-      data[k]= expnddata[j];
-    }//endfor
-    koff += runs[r].length;
-
-    int r1=r+1;
-    joff = l*nfftz + runs[r1].z;
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
-      data[k] = expnddata[j];
-    }//endfor
-    koff += runs[r1].length;
-
-  }//endfor
-
-  CkAssert(numPoints == koff);
-
-//==============================================================================
-  }//end routine
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-// complete the transform of rho(r) to rho(g) : last FFT after tranpose
-// 
-//==============================================================================
-void RhoGSlab::doBwFFTRtoG(int expandtype){
-//==============================================================================
-
-   FFTcache *sc   = fftCacheProxy.ckLocalBranch();
-   fftw_plan plan = sc->bwdYPlan;  // Y label is a misnomer : its Z
-   int nfftz      = sizeZ;
-
-   complex *partlyfftData;
-   switch(expandtype){
-     case 0: partlyfftData = Rho; break;
-     case 1: partlyfftData = divRhoX; break;
-     case 2: partlyfftData = divRhoY; break;
-     case 3: partlyfftData = divRhoZ; break;
-   }//endif
-
-   fft_split(plan,        // direction Z
-        numLines,    // these many ffts : lines of z
-	(fftw_complex *)partlyfftData, //input data
-	1,           //stride
-	nfftz,       //distance between arrays
-	     NULL, 0, 0, config.fftprogresssplit); // junk because input array stores output (in-place)
-
-   if(expandtype==0){compressGSpace(partlyfftData, expandtype);}
-
-//==============================================================================
-  }//end routine
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void RhoGSlab::doFwFFTGtoR(int iopt, int index){
-//==============================================================================
-
-   int nfftz      = sizeZ;
-   FFTcache *sc   = fftCacheProxy.ckLocalBranch();
-   fftw_plan plan = sc->fwdYPlan; // for historic reasons its called `y' plan
-                                  // but it contains the `z' plan.
-
-   complex *fftData;
-   switch(iopt){
-     case 0 : fftData = Rho;     break;
-     case 1 : fftData = divRhoX; break;
-     case 2 : fftData = divRhoY; break;
-     case 3 : fftData = divRhoZ; break;
-     case 4 : fftData = Vks;  break;
-   default: CkAbort("impossible iopt"); break;
-   }//end switch
-
-   fft_split(plan,   // direction Z now
-        numLines,    // these many ffts : one for every line of z in the chare
-	reinterpret_cast<fftw_complex*>(fftData), //input data
-        1,           //stride
-        nfftz,       //distance between z-data sets
-        NULL, 0, 0,   // junk because input array stores the output (in-place)
-        config.fftprogresssplit); 
-
-//==============================================================================
-   }//end routine
-//==============================================================================
-
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -168,6 +168,11 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
 //      The negative guys go 1st
 //   Total size is nlines*nfftz where nlines=numRuns/2
 
+#define _BZERO_METH_
+#ifdef _BZERO_METH_
+    bzero(data,sizeof(complex)*numFull);
+#endif
+
   int nsub = (nfftz-runs[0].nz);
   int koff = 0;
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
@@ -185,12 +190,24 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
     }//endfor
     koff += runs[r1].length;
 
+#ifndef _BZERO_METH_
     int joff3 = joff2+runs[r1].length;
     for(int j=joff3;j<joff1;j++){data[j]=0.0;}
+#endif
+
+#ifdef CMK_VERSION_BLUEGENE
+    if(r % 40==0){
+      CmiNetworkProgress();
+    }//endif
+#endif
 
   }//endfor
 
   CkAssert(numPoints == koff);
+
+#ifdef CMK_VERSION_BLUEGENE
+  CmiNetworkProgress();
+#endif
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -235,9 +252,17 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
     }//endfor
     koff += runs[r1].length;
 
+#ifdef CMK_VERSION_BLUEGENE
+    if(r % 40==0){CmiNetworkProgress();}
+#endif
+
   }//endfor
 
   CkAssert(numPoints == koff);
+
+#ifdef CMK_VERSION_BLUEGENE
+  CmiNetworkProgress();
+#endif
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -604,6 +629,7 @@ void FFTcache::doStpFFTRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 
 
+
 //=============================================================================
 // StatePlane : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
 //==============================================================================
@@ -719,6 +745,78 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 //------------------------------------------------------------------------------
   }//end routine
 //==============================================================================
+
+
+
+//=============================================================================
+// StatePlane : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doRhoFFTGtoR_Gchare(complex *data_in,complex *data_out,
+                                    int numFull, int numPoints,
+                                    int numLines, int numRuns, RunDescriptor *runs, 
+                                    int nfftz,int iexpand){
+//==============================================================================
+// Expand for ffting : data_out is expanded
+
+  if(iexpand==1){
+    expandGSpace(data_out,data_in,runs,numRuns,numFull,numPoints,nfftz);
+  }//endif
+
+//==============================================================================
+// FFT in expanded form
+
+  fft_split(
+          fwdYPlan,                // Z-direction forward plan
+          numLines,                // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_out,//input data
+	  1,                       //stride
+	  nfftz,                   //distance between z-data sets
+	  NULL, 0, 0,              // input is ouput
+          config.fftprogresssplit  // split parameter
+         ); 
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+ 
+
+
+//=============================================================================
+// StatePlane : Gchare : data(gx,gy,z) -> data(gx,gy,gz) : backward
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
+                                  int numFull, int numPoints,
+                                  int numLines, int numRuns, RunDescriptor *runs, 
+                                  int nfftz, int ipack){
+//==============================================================================
+// FFT in expanded form
+
+  fft_split(
+          bwdYPlan,               // Z-direction backward plan
+          numLines,               // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_in,//input data
+	  1,                      //stride
+	  nfftz,                  //distance between z-data sets
+	  NULL, 0, 0,             // input is ouput
+          config.fftprogresssplit // split parameter
+         ); 
+
+//==============================================================================
+// Pack for computing if necessary : data_in is expanded : dataout is contracted
+
+  if(ipack==1){
+    packGSpace(data_in,data_out,runs,numRuns,numFull,numPoints,nfftz);
+  }//endif
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
 
 
 

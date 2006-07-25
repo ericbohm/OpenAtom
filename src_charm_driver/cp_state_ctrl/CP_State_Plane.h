@@ -472,10 +472,8 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
 	CP_Rho_GSpacePlane(int, size2d, int, int, bool);
 	~CP_Rho_GSpacePlane();
-	void acceptData(RhoGSFFTMsg *msg);
-	void acceptData();
-	void recvProcessedPart(int, complex *, int);
-	void recvProcessedPart();
+	void acceptRhoData(RhoGSFFTMsg *msg);
+	void acceptRhoData(); // refine the name
 	void run();
 	void ResumeFromSync();
         void divRhoVksGspace();

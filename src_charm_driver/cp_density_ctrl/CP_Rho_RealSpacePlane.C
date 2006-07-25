@@ -516,7 +516,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       }//endfor
 
       switch(iopt){
-        case 0 : rhoGProxy_com(ic,0).acceptData(msg);   break;
+        case 0 : rhoGProxy_com(ic,0).acceptRhoData(msg);   break;
         case 1 : rhoGProxyIGX_com(ic,0).acceptWhiteByrd(msg); break;
         case 2 : rhoGProxyIGY_com(ic,0).acceptWhiteByrd(msg); break;
         case 3 : rhoGProxyIGZ_com(ic,0).acceptWhiteByrd(msg); break;

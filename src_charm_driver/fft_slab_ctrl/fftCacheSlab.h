@@ -247,12 +247,8 @@ class RhoGSlab {
 	    runs=NULL;
 	}
 	~RhoGSlab();
-	void doBwFFTRtoG(int); 
-	void doFwFFTGtoR(int,int); 
 	void setKVectors(int *n);
-	void compressGSpace(const complex *, int );
-	void expandRhoGSpace(complex* , complex *);
-        void divRhoGdot(double *,double );
+        void divRhoGdot(double *,double ,complex *);
         void createWhiteByrd(double *, double );
 	void pup(PUP::er &p);
 
@@ -312,6 +308,10 @@ class FFTcache: public Group {
      void doHartFFTGtoR_Gchare(complex *,complex *,int , int ,int , int , 
 				RunDescriptor *, int );
      void doRhoRealtoRhoG(double *realArr);
+     void doRhoFFTRtoG_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
+                              int ,int );
+     void doRhoFFTGtoR_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
+                              int ,int );
 
      void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);

@@ -503,6 +503,20 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
          }//endfor : ja
          jj += n_interp;
         }//endfor : jb
+#ifdef JUNK
+        int *nBreakJ, *strBreakJ;
+        nBreakJ       = RPPData[ip].nBreakJ;
+        sBreakJ       = RPPData[ip].sBreakJ;
+        nBreakJ[i]    = 1;   // length natm
+        sBreakJ[i][1] = 1;   // length [natm][n_interp2]
+        for(int jj=2;jj<=n_interp2;jj++){
+          if(igrid[i][jj]!=igrid[i][(jj-1)]){
+	    nBreakJ[i]++;
+            strtBreakJ[i][nBreakJ[i]] = jj;
+	  }//endif
+	}//endfor
+        strtBreakJ[i][(nBreakJ[i]+1)] = n_interp2;
+#endif
 #ifdef CMK_VERSION_BLUEGENE
         CmiNetworkProgress();
 #endif
@@ -885,10 +899,6 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
   int natm            = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str        = iatm_str_lang[iatm_typ];    // where atms begin    
 
-  int nroll = 5; // you can't check this without modifying the code below
-  int nrem,jstrt,jend;
-
-
 //==========================================================================
 // A little debugging for you
 
@@ -913,23 +923,24 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 // The projPsiR should be FFT3D(projPsiG)
 // Mr. zmat should be passed in with the correct offset for interation counter.
 
-   nrem  = (n_interp2 % nroll);
-   jstrt = (n_interp2-nrem+1);
-   jend  = (n_interp2-nrem);
+   int nroll = 5; // you can't check this without modifying the code below
+   int nrem  = (n_interp2 % nroll);
+   int jstrt = (n_interp2-nrem+1);
+   int jend  = (n_interp2-nrem);
 
    bzero(zmat,sizeof(double)*natm);
    for(int jatm=0;jatm<natm;jatm++){ // atms of this type
      int iatm   = iatm_str+jatm-1;   // non-local atom index
      int jc     = plane_index[iatm]; // interpolation 
      if(jc>0){
-       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
-           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-         double p0   = projPsiR[igrid[iatm][j]]*mn[iatm][j];  // projection operator
+       for(int j0=1,j1=2,j2=3,j3=4,j4=5;j0<=jend;
+           j0+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         double p0   = projPsiR[igrid[iatm][j0]]*mn[iatm][j0];  // projection operator
          double p1   = projPsiR[igrid[iatm][j1]]*mn[iatm][j1]; 
          double p2   = projPsiR[igrid[iatm][j2]]*mn[iatm][j2]; 
          double p3   = projPsiR[igrid[iatm][j3]]*mn[iatm][j3]; 
          double p4   = projPsiR[igrid[iatm][j4]]*mn[iatm][j4]; 
-         zmat[jatm] += (p0+p1+p2+p3+p4);                       // add to zmatrix
+         zmat[jatm] += (p0+p1+p2+p3+p4);         // add to zmatrix
        }//endfor : B-spline interp to get Zmat contributions
        for(int j=jstrt;j<=n_interp2;j++){
          double p   = projPsiR[igrid[iatm][j]]*mn[iatm][j]; // projection operator
@@ -1105,7 +1116,20 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          fyy      += (pz*dmn_y[iatm][j]);
          fzz      += (pz*dmn_z[iatm][j]);
          projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
-       }//endif
+       }//endfor
+#ifdef JUNK
+       for(int ib=1;ib<=nBreakJ[iatm];ib++){
+         joff = igrid[iatm][sBreakJ[ib]];
+	 for(int k = sBreakJ[ib],j=joff; k<=sBreakJ[(ib+1)];k++,j++){
+           double pz = projPsiR[j];           // psi
+           double q  = zmat[jatm]*mn[iatm][j];  
+           fxx      += (pz*dmn_x[iatm][j]);
+           fyy      += (pz*dmn_y[iatm][j]);
+           fzz      += (pz*dmn_z[iatm][j]);
+           projPsiRScr[j] += q;               // add contrib into total
+	 }//endfor
+       }//endfor
+#endif
        fx[katm]  -= (fxx*zmat[jatm]); // finish up
        fy[katm]  -= (fyy*zmat[jatm]);
        fz[katm]  -= (fzz*zmat[jatm]);

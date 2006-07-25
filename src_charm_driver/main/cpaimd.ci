@@ -247,7 +247,7 @@ mainmodule cpaimd {
 
 	array [2D] CP_Rho_GSpacePlane {
 		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool);
-		entry void acceptData(RhoGSFFTMsg *msg);
+		entry void acceptRhoData(RhoGSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
 		entry void isAtSync(int);
 	};
