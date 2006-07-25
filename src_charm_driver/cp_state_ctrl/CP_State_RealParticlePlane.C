@@ -610,19 +610,20 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
       CkExit();
    }//endif
 
-   for(int i=0;i<nZmat;i++){zmat[i]=zmat_loc[i];}
+   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat);
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces
 
    eesCache *eesData   = eesCacheProxy.ckLocalBranch (); 
+   FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();  
    int *plane_index    = eesData->RppData[myPlane].plane_index;
    int **igrid         = eesData->RppData[myPlane].igrid;
    double **dmn_x      = eesData->RppData[myPlane].dmn_x;
    double **dmn_y      = eesData->RppData[myPlane].dmn_y;
    double **dmn_z      = eesData->RppData[myPlane].dmn_z;
    double **mn         = eesData->RppData[myPlane].mn;
-   double *projPsiRScr = eesData->rppPsiScr;
+   double *projPsiRScr = fftcache->tmpDataR;
 
    AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
    FastAtoms *fastAtoms = &(ag->fastAtoms);
@@ -632,7 +633,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-   // projPsiR comes in with info for atoms, leaves with info for psiforces
+   // projPsiR     comes in with info for atoms
+   // projPsiRSsr leaves with info for psiforces
    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
                        projPsiR,projPsiRScr,plane_index,myPlane,thisIndex.x,fastAtoms);
 
@@ -656,6 +658,9 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 #else
      thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
 #endif
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
    }//endif
 
    // zero the total enl energy if we are done.
@@ -677,6 +682,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::FFTNLEesBckR(){
+//============================================================================
 
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
 
@@ -686,10 +692,15 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
 
-  fftCacheProxy.ckLocalBranch()->doNlFFTRtoG_Rchare(projPsiC,projPsiR,
-                                                nplane_x,ngridA,ngridB);
+  FFTcache *fftcache   = fftCacheProxy.ckLocalBranch();  
+  double  *projPsiRScr = fftcache->tmpDataR;
+  complex *projPsiCScr = fftcache->tmpData;
+  fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
+
   sendToEesGPP();
-}
+
+//============================================================================
+   }//end routine
 //============================================================================
 
 
@@ -703,9 +714,11 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 //============================================================================
 
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  FFTcache *fftcache     = fftCacheProxy.ckLocalBranch();  
   int nchareG            = sim->nchareG;
   int **tranpack         = sim->index_tran_upackNL;
   int *nlines_per_chareG = sim->nlines_per_chareG;
+  complex *projPsiCScr   = fftcache->tmpData;
 
 //===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
@@ -728,7 +741,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x*planeSize;
       }//endif
-      for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiC[tranpack[ic][i]];}
+      for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
       particlePlaneProxy(thisIndex.x, ic).recvFromEesRPP(msg); // send the message
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();

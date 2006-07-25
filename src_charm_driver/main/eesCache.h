@@ -67,9 +67,6 @@ class eesCache: public Group {
    GSPDATA      *GspData;      // lth: nchareGsp  : only allowed guys have data
    RHOGDATA     *RhoGData;     // lth: nchareRhoG : only allowed guys have data
 
-   int rppPsiSize;
-   double *rppPsiScr;
-
   // Functions
    eesCache(){};
   ~eesCache(){};

@@ -114,8 +114,8 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   ind_xrem         = (ind_x%rhoGHelpers);
   int numLines_tot = sortedRunDescriptors[ind_xdiv].size()/2;
 
-  getSplitDecomp(&istrt_lines,&iend_lines,&numLines,
-                 numLines_tot,rhoGHelpers,ind_xrem);
+  getSplitDecomp(&istrt_lines,&iend_lines,&numLines,numLines_tot,
+                 rhoGHelpers,ind_xrem);
 
 //==================================================================================
 // Carve out your rundescriptor, make the k-vectors , malloc the memory
@@ -140,9 +140,8 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   int numFull = rho_gs.numFull;
   numFullEext = numLines*ngridcEext;
 
-  rho_gs.packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
-  rho_gs.Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
+  rho_gs.Vks       = (complex *)fftw_malloc(nPacked*sizeof(complex));
 
   if(ees_eext_on==1){
     atmSF          = (complex *)fftw_malloc(numFullEext*sizeof(complex));
@@ -321,7 +320,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    int numPoints = rho_gs.numPoints;
    int numFull   = rho_gs.numFull;
    complex *rho  = rho_gs.packedRho;
-   complex *vks  = rho_gs.packedVks;
+   complex *vks  = rho_gs.Vks;
    int *k_x      = rho_gs.k_x;
    int *k_y      = rho_gs.k_y;
    int *k_z      = rho_gs.k_z;
@@ -337,8 +336,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    double  StartTime=CmiWallTimer();
 #endif    
 
-   bzero(vks,numPoints*sizeof(complex));
-   CPLOCAL::CP_hart_eext_calc(numPoints, rho, natm, fastAtoms, vks,
+   CPLOCAL::CP_hart_eext_calc(numPoints,rho,natm,fastAtoms,vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
                               thisIndex.x);
    iteration ++;
@@ -389,16 +387,15 @@ void CP_Rho_GHartExt::FFTVks() {
   CkPrintf("Ghart %d Here in fftvks at %d\n",thisIndex.x,iterAtmTyp);
 #endif
 
-   complex *vks     = rho_gs.packedVks;
-   complex *VksExpd = rho_gs.Vks;
-   int numFull = rho_gs.numFull;
+   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();
+   complex *vks       = rho_gs.Vks;
+   complex *vksScr    = fftcache->tmpData; // scratch from the cache has FFT output
 
-   bzero(VksExpd,numFull*sizeof(complex));
-   rho_gs.expandRhoGSpace(VksExpd, vks);
-   int ioptvks=4;
-   rho_gs.doFwFFTGtoR(ioptvks,thisIndex.x); 
+   fftcache->doHartFFTGtoR_Gchare(vks,vksScr,rho_gs.numFull,rho_gs.numPoints,numLines,
+   			          rho_gs.numRuns,rho_gs.runs,rho_gs.sizeZ);
 
 #ifdef _CP_DEBUG_RHOG_VKSA_
+   int numFull        = rho_gs.numFull;
    sprintf(myFileName, "Vks_GspaceAFFT_%d%d.out", thisIndex.x,thisIndex.y);
    fp = fopen(myFileName,"w");
    for(int i = 0; i < numFull; i++){ 
@@ -434,12 +431,13 @@ void CP_Rho_GHartExt::sendVks() {
 	   thisIndex.x,thisIndex.y);
 #endif
 
+   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();
+   complex *vksScr    = fftcache->tmpData; // scratch from the cache has FFT output
+
 //============================================================================
 // Do a Comlib Dance
 
-  if (config.useGHartInsRhoRP){
-      commGHartInstance.beginIteration();
-  }//endif
+  if(config.useGHartInsRhoRP){commGHartInstance.beginIteration();}
   
 //============================================================================
 
@@ -458,8 +456,7 @@ void CP_Rho_GHartExt::sendVks() {
 
     // beam out all points with same z to chare array index z
     complex *data = msg->data;
-    complex *Vks = rho_gs.Vks;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = Vks[j];}
+    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = vksScr[j];}
     rhoRealProxy_com(z,0).acceptHartVks(msg);
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
@@ -467,11 +464,9 @@ void CP_Rho_GHartExt::sendVks() {
   }//endfor
 
 //============================================================================
-// Complete the commlib dance
+// Complete the commlib dance and hang out.
     
-  if (config.useGHartInsRhoRP){
-      commGHartInstance.endIteration();
-  }//endif
+  if (config.useGHartInsRhoRP){commGHartInstance.endIteration();}
 
 //---------------------------------------------------------------------------
   }// end routine
@@ -616,7 +611,7 @@ void CP_Rho_GHartExt::getHartEextEes(){
 
   int myChareG = thisIndex.x;
   int ncoef    = rho_gs.nPacked;
-  complex *vks = rho_gs.packedVks;
+  complex *vks = rho_gs.Vks;
   complex *rho = rho_gs.packedRho;
   int *k_x     = rho_gs.k_x;
   int *k_y     = rho_gs.k_y;
@@ -625,7 +620,7 @@ void CP_Rho_GHartExt::getHartEextEes(){
   double *b_im = eesData->RhoGHartData[myChareG].b_im;
 
   if(iterAtmTyp==1){  
-     bzero(vks,ncoef*sizeof(complex));
+     bzero(vks,ncoef*sizeof(complex));  // no getting around these zeros
      bzero(atmSFtot,ncoef*sizeof(complex));
      ehart_ret = 0.0;
      eext_ret  = 0.0;
@@ -682,21 +677,29 @@ void CP_Rho_GHartExt::getHartEextEes(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_GHartExt::FFTEesFwd(int flag){
-
+//============================================================================
 #ifdef _CP_GHART_VERBOSE_
   CkPrintf("Ghart %d Here in FFT to r: %.10g %.10g : with %d at %d %d\n",
-      thisIndex.x,ehart_ret,eext_ret,flag,iterAtmTyp,natmTyp);
+            thisIndex.x,ehart_ret,eext_ret,flag,iterAtmTyp,natmTyp);
 #endif
 
-  int numPoints = rho_gs.numPoints;
-  complex *data; if(flag==0){data=atmSF;}else{data=atmSFtot;}
+ //--------------------------------------------
+ // Get the data and some scratch
+  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  complex *data_out  = fftcache->tmpData;
+  complex *data;     if(flag==0){data=atmSF;}else{data=atmSFtot;}
 
-  fftCacheProxy.ckLocalBranch()->doEextFFTGtoR_Gchare(data,numFullEext,numPoints,
-			        numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext);
+ //--------------------------------------------
+ // FFT the data : result goes into scratch
+  fftcache->doEextFFTGtoR_Gchare(data,data_out,numFullEext,rho_gs.numPoints,numLines,
+ 			         rho_gs.numRuns,rho_gs.runs,ngridcEext);
 
+ //--------------------------------------------
+ // send yourself back to real space
   sendAtmSF(flag);
 
-}
+//============================================================================
+   }//end routine
 //============================================================================
 
 
@@ -707,18 +710,13 @@ void CP_Rho_GHartExt::FFTEesFwd(int flag){
 //============================================================================
 void CP_Rho_GHartExt::sendAtmSF(int flag){
 //============================================================================
-// Get the data
-
 #ifdef _CP_GHART_VERBOSE_
   CkPrintf("Ghart %d Here in send to Rhart with opt %d at %d %d\n",
          thisIndex.x,flag,iterAtmTyp,natmTyp);
 #endif
 
-   complex *senddata; 
-   switch(flag){
-     case 0 : senddata=atmSF;    break; 
-     case 1 : senddata=atmSFtot; break; 
-   }//end
+  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  complex *senddata  = fftcache->tmpData;
 
 //============================================================================
 // start commlib

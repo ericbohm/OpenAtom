@@ -266,64 +266,73 @@ class RhoGSlab {
 //==============================================================================
 class FFTcache: public Group {
  public:
-        size2d planeSize;  // sizes for state/rho methods
-        int ngridaEext;    // sizes for ees methods
-        int ngridbEext;
-        int ngridcEext;
-        int ees_eext_on;
-        int ngridaNL;
-        int ngridbNL;
-        int ngridcNL;
-        int ees_NL_on;
+     size2d planeSize;  // sizes for state/rho methods
+     int ngridaEext;    // sizes for ees methods
+     int ngridbEext;
+     int ngridcEext;
+     int ees_eext_on;
+     int ngridaNL;
+     int ngridbNL;
+     int ngridcNL;
+     int ees_NL_on;
 
-        complex *tmpData;  // temporary for Ees methods
-        double *tmpDataR;
+     complex *tmpData;  // temporary for Ees methods
+     double  *tmpDataR;
 
-	fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
-	fftw_plan    fwdYPlan,     bwdYPlan;            // double pack plans
-	rfftwnd_plan fwdX1DdpPlan, bwdX1DdpPlan;
+     fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
+     fftw_plan    fwdYPlan,     bwdYPlan;            // double pack plans
+     rfftwnd_plan fwdX1DdpPlan, bwdX1DdpPlan;
 
-	fftw_plan    fwdY1DdpPlanNL, bwdY1DdpPlanNL;    // ees NL 
-	fftw_plan    fwdZPlanNL,     bwdZPlanNL;        // double pack plans
-	rfftwnd_plan fwdX1DdpPlanNL, bwdX1DdpPlanNL;
+     fftw_plan    fwdY1DdpPlanNL, bwdY1DdpPlanNL;    // ees NL 
+     fftw_plan    fwdZPlanNL,     bwdZPlanNL;        // double pack plans
+     rfftwnd_plan fwdX1DdpPlanNL, bwdX1DdpPlanNL;
 
-	fftw_plan    fwdY1DdpPlanEext, bwdY1DdpPlanEext;// ees Eext
-	fftw_plan    fwdZPlanEext,     bwdZPlanEext;    // double pack plans
-	rfftwnd_plan fwdX1DdpPlanEext, bwdX1DdpPlanEext;
+     fftw_plan    fwdY1DdpPlanEext, bwdY1DdpPlanEext;// ees Eext
+     fftw_plan    fwdZPlanEext,     bwdZPlanEext;    // double pack plans
+     rfftwnd_plan fwdX1DdpPlanEext, bwdX1DdpPlanEext;
 
-      //-----------------------------------------------------------
-      // Generic puppies
-	FFTcache(size2d planeSIZE, int , int , int , 
-                 int , int , int , int , int );
-        void expandGSpace(complex* data, complex *packedData, 
-                          RunDescriptor *runs, int numRuns, int numFull,
- 		          int numPoints, int nfftz);
-        void packGSpace(complex* data, complex *packedPlaneData, 
-                        RunDescriptor *runs, int numRuns, int numFull,
-	                int numPoints, int nfftz);
-      //-----------------------------------------------------------
-      // State and Density FFTs
+    //-----------------------------------------------------------
+    // The constructor 
 
-      void doRhoRealtoRhoG(double *realArr);
+     FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int );
 
-      void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-      void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-      void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int );
-      void doStpFFTRtoG_Rchare(complex *,double *,int , int ,int );
+    //-----------------------------------------------------------
+    // Generic puppies
 
-      //-----------------------------------------------------------
-      // non-local fft
-       void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-       void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-       void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
-       void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+     void expandGSpace(complex* data, complex *packedData, 
+                       RunDescriptor *runs, int numRuns, int numFull,
+ 		       int numPoints, int nfftz);
+     void packGSpace(complex* data, complex *packedPlaneData, 
+                     RunDescriptor *runs, int numRuns, int numFull,
+	             int numPoints, int nfftz);
 
-      //-----------------------------------------------------------
-      // eext fft
-        void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
-        void doEextFFTGtoR_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
-        void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int );
-        void doEextFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+    //-----------------------------------------------------------
+    // State and Density FFTs
+
+     void doHartFFTGtoR_Gchare(complex *,complex *,int , int ,int , int , 
+				RunDescriptor *, int );
+     void doRhoRealtoRhoG(double *realArr);
+
+     void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int );
+     void doStpFFTRtoG_Rchare(complex *,double *,int , int ,int );
+
+   //-----------------------------------------------------------
+   // non-local fft
+
+     void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
+     void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+
+   //-----------------------------------------------------------
+   // eext fft
+
+     void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doEextFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTGtoR_Rchare(complex *,double *,int ,int ,int );
 
 //-----------------------------------------------------------------------------
   };

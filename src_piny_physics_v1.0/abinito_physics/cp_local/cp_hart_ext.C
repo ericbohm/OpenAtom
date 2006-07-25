@@ -153,7 +153,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
    double ehart     = 0.0;
    double eext      = 0.0;
    double EwdEnergy = 0.0;
-   memset(vks,0,sizeof(complex)*ncoef);
+   //vks zeroed outside the routine
 
 //============================================================================
 // Set up variables for break point calculations (helpful vectors!)
@@ -213,7 +213,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
        HartreeFact = fpi/(g2*vol);
        ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
 
-       vks[i] += rho[i]*HartreeFact;
+       vks[i] = rho[i]*HartreeFact;
        count+=1.0;
 
   //----------------------------------------------------------------------------
@@ -334,7 +334,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 #endif
      }/*endfor*/
      int i = izero;
-     vks[i].re += vext.re;
+     vks[i].re  = vext.re;
      vks[i].im  = 0.0;
      eext += (vext.re*rho[i].re);
 #ifdef _CP_DEBUG_VKS_HART_EEXT_

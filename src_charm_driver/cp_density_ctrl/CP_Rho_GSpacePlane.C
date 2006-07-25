@@ -194,17 +194,16 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
   p|rhoGHelpers;
   p|vectorIFFTCount;
   rho_gs.pup(p);
-  if(p.isUnpacking())
-    {
-      numSplit = new int[rhoGHelpers];
-      istrtSplit= new int[rhoGHelpers];
-      iendSplit = new int[rhoGHelpers];
-    }
+  if(p.isUnpacking()){
+      numSplit   = new int[rhoGHelpers];
+      istrtSplit = new int[rhoGHelpers];
+      iendSplit  = new int[rhoGHelpers];
+  }//endif
   PUParray(p,numSplit,rhoGHelpers);
   PUParray(p,istrtSplit,rhoGHelpers);
   PUParray(p,iendSplit,rhoGHelpers);
-  if(p.isUnpacking())
-    { //pupping of comlib proxies unreliable
+  if(p.isUnpacking()){ 
+      //pupping of comlib proxies unreliable
       rhoRealProxy0_com = rhoRealProxy;
       rhoRealProxy1_com = rhoRealProxy;
       rhoRealProxy2_com = rhoRealProxy;
@@ -220,9 +219,11 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
 	ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
       if(config.useGByrdInsRhoRBP)
 	ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
-    }//endif
-}
+   }//endif
+
+}//end routine
 //============================================================================
+
 
 //============================================================================
 //  RhoReal sends rho(gx,gy,z) here such that it is now decomposed 
@@ -258,9 +259,9 @@ void CP_Rho_GSpacePlane::acceptData(RhoGSFFTMsg *msg) {
 
 //============================================================================
 
+ //every value gets set : no need to zero me
   if(rho_gs.Rho==NULL) {
     rho_gs.Rho = (complex *)fftw_malloc(expandedDataSize*sizeof(complex));
-    memset(rho_gs.Rho,0,sizeof(complex)*expandedDataSize);
   }//endif
 
   complex *chunk = rho_gs.Rho;

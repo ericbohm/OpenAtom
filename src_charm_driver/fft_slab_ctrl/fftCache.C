@@ -62,16 +62,20 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     int nlines_max     = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
     int nlines_max_rho = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max_rho;
 
-    int pGsize         = nlines_max*planeSize[0];
-    int pGsizeNL       = nlines_max*ngridcNL;
-    int pGsizeEext     = nlines_max_rho*ngridcEext;
-    int pRsize         = (sizeX/2+1)*planeSize[0];
+    int pGsize         = nlines_max*planeSize[1];     // z-collections
+    int pGsizeHart     = nlines_max_rho*planeSize[1]; // z-collections
+    int pGsizeNL       = nlines_max*ngridcNL;         // z-collections
+    int pGsizeEext     = nlines_max_rho*ngridcEext;   // z-collections
+    int pRsize         = (sizeX/2+1)*planeSize[0];    // x-y plane
+    int pRsizeNL       = (ngridaNL/2+1)*ngridbNL;     // x-y plane
 
     int pmax = pGsize; 
-    pmax     = (pmax > pRsize ? pmax : pRsize);
+    pmax     = (pmax > pRsize     ? pmax : pRsize);
+    pmax     = (pmax > pGsizeHart ? pmax : pGsizeHart);
 
     if(ees_eext_on==1){pmax = (pmax>pGsizeEext ? pmax : pGsizeEext);}
     if(ees_NL_on  ==1){pmax = (pmax>pGsizeNL   ? pmax : pGsizeNL);}
+    if(ees_NL_on  ==1){pmax = (pmax>pRsizeNL   ? pmax : pRsizeNL);}
 
     tmpData  = (complex*) fftw_malloc(pmax*sizeof(complex)); 
     tmpDataR = reinterpret_cast<double*> (tmpData);
@@ -164,23 +168,25 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
 //      The negative guys go 1st
 //   Total size is nlines*nfftz where nlines=numRuns/2
 
-  bzero(data,numFull*sizeof(complex));
   int nsub = (nfftz-runs[0].nz);
   int koff = 0;
   for (int r = 0,l=0; r < numRuns; r+=2,l++) {
 
-    int joff = l*nfftz + runs[r].z + nsub; // k < 0
-    for (int i=0,j=joff,k=koff; i<runs[r].length; i++,j++,k++) {
+    int joff1 = l*nfftz + runs[r].z + nsub; // k < 0
+    for (int i=0,j=joff1,k=koff; i<runs[r].length; i++,j++,k++) {
       data[j] = packedData[k];
     }//endfor
     koff += runs[r].length;
 
     int r1=r+1;
-    joff = l*nfftz + runs[r1].z; // k >= 0
-    for (int i=0,j=joff,k=koff; i<runs[r1].length; i++,j++,k++) {
+    int joff2 = l*nfftz + runs[r1].z; // k >= 0
+    for (int i=0,j=joff2,k=koff; i<runs[r1].length; i++,j++,k++) {
       data[j] = packedData[k];
     }//endfor
     koff += runs[r1].length;
+
+    int joff3 = joff2+runs[r1].length;
+    for(int j=joff3;j<joff1;j++){data[j]=0.0;}
 
   }//endfor
 
@@ -270,6 +276,7 @@ void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 
 
+
 //=============================================================================
 // non-local : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
 //==============================================================================
@@ -299,7 +306,38 @@ void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
 //------------------------------------------------------------------------------
   }//end routine
 //==============================================================================
- 
+
+
+//=============================================================================
+// Hartree : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doHartFFTGtoR_Gchare(complex *data_in,complex *data_out,
+                                  int numFull, int numPoints,int numLines, int numRuns, 
+                                  RunDescriptor *runs, int nfftz){
+//==============================================================================
+// Expand for ffting : Trickery
+
+  expandGSpace(data_out,data_in,runs,numRuns,numFull,numPoints,nfftz);//data_out is expanded
+
+//==============================================================================
+// FFT in expanded form
+
+  fft_split(
+          fwdYPlan,                 // Z-direction forward plan (label lies)
+          numLines,                 // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data_out, // data
+	  1,                        //stride
+	  nfftz,                    //distance between z-data sets
+	  NULL, 0, 0,               // input is ouput
+          config.fftprogresssplit   // split parameter
+         ); 
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
 
 //=============================================================================
 // non-local : Rchare : data(x,y,z) -> data(gx,gy,z) : backward
@@ -410,8 +448,8 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 // pack for computing
 
-  packGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz); // data is packed
-  memcpy(data,tmpData,sizeof(complex)*numPoints); // data is expanded; cp to tmp; 
+  packGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz); // tmpdata returns packed
+  memcpy(data,tmpData,sizeof(complex)*numPoints); // data is expanded; cp in tmpdata; 
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -423,14 +461,14 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doEextFFTGtoR_Gchare(complex *data, int numFull, int numPoints,
-                                    int numLines, int numRuns, RunDescriptor *runs,
+void FFTcache::doEextFFTGtoR_Gchare(complex *data_in, complex *data_out, 
+                                    int numFull, int numPoints,int numLines, 
+                                    int numRuns, RunDescriptor *runs,
                                     int nfftz){
 //==============================================================================
 // expand for ffting
 
-  memcpy(tmpData,data,sizeof(complex)*numPoints); // data is packed; cp to tmp; 
-  expandGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz);// data is expanded
+  expandGSpace(data_out,data_in,runs,numRuns,numFull,numPoints,nfftz);// data_out expanded
 
 //==============================================================================
 // FFT
@@ -438,7 +476,7 @@ void FFTcache::doEextFFTGtoR_Gchare(complex *data, int numFull, int numPoints,
   fft_split(
           fwdZPlanEext,           // Z-direction forward plan
           numLines,               // # of ffts : one for every line of z in the chare
-	  (fftw_complex *)data,   //input data
+	  (fftw_complex *)data_out,//output data
 	  1,                      //stride
 	  nfftz,                  //distance between z-data sets
 	  NULL, 0, 0,             // input is ouput

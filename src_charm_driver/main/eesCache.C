@@ -121,14 +121,6 @@ void eesCache::registerCacheRPP  (int index){
     RppData[index].init(index);
   }//endif
 
-  if(rpp_on==0){
-    rpp_on = 1;
-    int ngrid_a,ngrid_b,ngrid_c,n_interp,natm;
-    CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
-    rppPsiSize = (ngrid_a+2)*ngrid_b;
-    rppPsiScr  = (double *)fftw_malloc(rppPsiSize*sizeof(double));    
-  }//endif
-
 }//end routine
 //==============================================================================
 
@@ -236,7 +228,7 @@ void RPPDATA::init(int index_in){
    CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
 
    index          = index_in;
-   int n_interp21 = n_interp*n_interp+1; // extra space for piny
+   int n_interp2 = n_interp*n_interp;
 
    plane_index    = (int *)fftw_malloc(natm*sizeof(int));
 
@@ -246,11 +238,13 @@ void RPPDATA::init(int index_in){
    dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
    for(int i=0;i<natm;i++){
-     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int))-1;
-     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     igrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
+     double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
+     int ioff    = 0;
+     mn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;
+     dmn_x[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+     dmn_y[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+     dmn_z[i]    = &tmp[ioff]-1;  
    }//endfor
 
 }//end routine

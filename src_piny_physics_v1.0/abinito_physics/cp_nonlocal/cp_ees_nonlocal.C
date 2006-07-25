@@ -1123,8 +1123,6 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
      }//endif : atom is interpolated on this plane
   }//endfor : iatm
 
-   memcpy(projPsiR,projPsiRScr,(ngrid_a+2)*ngrid_b*sizeof(double));
-
 //==========================================================================
 // output the debugging stuff
 
