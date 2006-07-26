@@ -6,6 +6,7 @@ CPAIMD      = ..
 FFT_HOME    = /expand8/home/glenn/fftw
 MYMATH_HOME = ../src_mathlib
 OPT_FORT    = -DFORTRANUNDERSCORE
+DUAL_FFTW   = -DDUAL_FFTW_OFF
 
 # Blas by fortran
 #BLAS_FORT   = $(MYMATH_HOME)/blas_routines.h
