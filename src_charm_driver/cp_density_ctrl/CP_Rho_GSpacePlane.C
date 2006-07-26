@@ -203,7 +203,6 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
   PUParray(p,countWhiteByrd,4);
   p|doneWhiteByrd;
   p|rhoGHelpers;
-  p|vectorIFFTCount;
   rho_gs.pup(p);  // I pup my data class
   if(p.isUnpacking()){
       numSplit   = new int[rhoGHelpers];

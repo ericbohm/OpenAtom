@@ -416,49 +416,51 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 //============================================================================
 class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
  public:	
-	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-	CP_Rho_RealSpacePlane(int, size2d, int, int, bool,int,int);
-	~CP_Rho_RealSpacePlane();
         int cp_grad_corr_on;
 	int ees_eext_on;
+        int nplane_rho_x;
         int ngridcEext;
+	int ngrida;
+        int ngridb;
+        int ngridc;
+        int nptsExpnd;
+        int npts;
+	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
+	CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
+       ~CP_Rho_RealSpacePlane();
+	void run();
 	void acceptDensity(CkReductionMsg *);
 	void acceptDensity();
-	void acceptDensity(int, double *, int);
-	void acceptEnergyForSumming(int, complex *, int);
-	void acceptEnergyForSumming();
 	void energyComputation();
-	void doneFFT();
-	void run();
-	void ResumeFromSync();
 	void fftRhoRtoRhoG();
         void acceptGradRhoVks(RhoRSFFTMsg *);
         void acceptHartVks(RhoHartRSFFTMsg *);
         void GradCorr();
         void whiteByrdFFT();
-        void sendPartlyFFTtoRhoG(int );
         void acceptWhiteByrd(RhoRSFFTMsg *msg);
+        void sendPartlyFFTtoRhoG(int );
 	void doMulticast();
-	void pup(PUP::er &);
 	void isAtSync(int iter){AtSync();};
+	void ResumeFromSync();
+	void pup(PUP::er &);
  private:
+        int rhoGHelpers;
+        int countGradVks[5]; // number of collections that have arrived
+        int countWhiteByrd;  // number of collections that have arrived
+        int doneGradRhoVks; // count 1,2,3 = x,y,z all done
+	bool doneWhiteByrd;
+	bool doneHartVks;
 	double FFTscale;        
 	double volumeFactor;        
 	double probScale;             
-	int count, countFFTdata, numMcastSent;
-        int rhoGHelpers;
-	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
-        int countGradVks[5], doneGradRhoVks;
-        int countWhiteByrd;
-	bool doneWhiteByrd;
-	bool doneHartVks;
+	RhoRealSlab rho_rs; 
         //Comlib multicast proxy
+	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
         CProxySection_CP_State_RealSpacePlane realSpaceSectionCProxy;
 	CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGX_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGY_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
-	RhoRealSlab rho_rs; 
 	RTH_Runtime* run_thread;
 };
 //============================================================================
@@ -472,9 +474,9 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
 	CP_Rho_GSpacePlane(int, size2d, int, int, bool);
 	~CP_Rho_GSpacePlane();
+	void run();
 	void acceptRhoData(RhoGSFFTMsg *msg);
 	void acceptRhoData(); // refine the name
-	void run();
 	void ResumeFromSync();
         void divRhoVksGspace();
         void RhoGSendRhoR(int );
@@ -494,13 +496,12 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int *numSplit;
         int *istrtSplit;
         int *iendSplit;
+	RhoGSlab rho_gs;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy0_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy1_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy2_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy3_com;
         CProxy_CP_Rho_RealSpacePlane rhoRealProxyByrd_com;
-	RhoGSlab rho_gs;
-	int vectorIFFTCount;
 };
 //============================================================================
 

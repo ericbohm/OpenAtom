@@ -19,16 +19,15 @@
 *  the result of which is stored in rhoIRX, rhoIRY and rhoIRZ.  The df/drho(r) term
 *  is stored in gradientCorrection
 */
-
 //============================================================================
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void CPXCFNCTS::CP_getGGAFunctional(
           const int npts, const int nf1,const int nf2,const int nf3,
           double *density,double *rhoIRX, double *rhoIRY, double *rhoIRZ, 
-          double *gradientCorrection,int iyPlane_ind,double *exc_gga_ret)
-
+          double *Vks,int iyPlane_ind,double *exc_gga_ret)
 //============================================================================
-{/* Begin function */
+   {/* Begin function */
 //============================================================================
 // Local variables
 
@@ -53,26 +52,22 @@ void CPXCFNCTS::CP_getGGAFunctional(
     double vscale = vol/((double)(nf1*nf2*nf3));
     
 //============================================================================
-// Initialization
+// Initialization and useful costants
 
     ex = ec = 0.0;
-
-//============================================================================
-// Some useful constants
-
     rho_heali = 1.0/(3.9*gc_cut);
-    rho_cut = 0.1*gc_cut;
+    rho_cut   = 0.1*gc_cut;
 
 //============================================================================
 // Start Loop over part of grid I have 
 
    int nfreq_cmi_update=8;
-   for(int i = 0; i < npts; i++){
+   for(int y = 0; y < nf2; y++){
+   for(int x = 0; x < nf1; x++){
 
+     int i = y*(nf1+2) + x;
 #ifdef CMK_VERSION_BLUEGENE
-     if((i+1)%nfreq_cmi_update==0){
-        CmiNetworkProgress();
-     }//endif
+     if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
 
 //----------------------------------------------------------
@@ -130,7 +125,7 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //----------------------------------------------------------
 // Construct output for the FFT
 
-      gradientCorrection[i] = (dfx_drho + dfc_drho);
+      Vks[i] += (dfx_drho + dfc_drho);
 
       g_rhoi = 1.0/sqrt(g_rho2);
       unit_gx = rhoIRX[i]*g_rhoi;
@@ -144,14 +139,13 @@ void CPXCFNCTS::CP_getGGAFunctional(
 
    } else {  /* Density is less than cutoff */
 
-      gradientCorrection[i] = 0.0;
       rhoIRX[i] = 0.0;
       rhoIRY[i] = 0.0;
       rhoIRZ[i] = 0.0;
 
    } /* Endif density is greater than cutoff */
          
- }//endfor
+ }}//endfor
 
 //============================================================================
 // Store the energy
@@ -159,8 +153,5 @@ void CPXCFNCTS::CP_getGGAFunctional(
    (*exc_gga_ret) = (ex+ec)*vscale;
 
 //============================================================================
-}/* end function */
+   }/* end function */
 //============================================================================
-
-
-

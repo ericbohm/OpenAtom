@@ -189,7 +189,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
 
     // non-zero elements are set. Zero elements are zeroed here
-    // planeSize contains extra elements on the boundary for fftw
+    // planeSize also contains extra elements on the boundary for fftw
     if(config.conserveMemory && count==1){rs.allocate();}
     complex *planeArr = rs.planeArr;
     if(count==1){bzero(planeArr,planeSize*sizeof(complex));} 
@@ -476,8 +476,6 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
   if(config.conserveMemory){
      rs.destroy();
-  }else{
-     rs.zeroOutPlanes();
   }//endif
 
 //===================================================================

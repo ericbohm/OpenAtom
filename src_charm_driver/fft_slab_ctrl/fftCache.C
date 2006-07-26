@@ -823,42 +823,84 @@ void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void FFTcache::doRhoRealtoRhoG(double *realArr)
+void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
+				   int sizeX,int sizeY)
 //==============================================================================
    {//begin routine 
 //==============================================================================
+// FFT along x first
 
-   int nplane_rho_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_rho_x;
+  rfftwnd_real_to_complex_split(
+   	     bwdX1DdpPlan,               // backward X plan
+	     sizeY,                      // these many 1D ffts
+	     (fftw_real *)dataR,         // data set
+             1,                          // stride
+             (sizeX+2),                  // spacing between data sets
+  	     NULL,0,0,                   // input array is output array
+             config.fftprogresssplitReal // 
+           );            
+
+  int stride = sizeX/2+1;
+  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
 
 //==============================================================================
-// Case : doublePack  and inplace no options thats how it is
-   
-   rfftwnd_real_to_complex_split(bwdX1DdpPlan,
-			   planeSize[0],          // these many 1D ffts
-			   realArr,1,(sizeX+2),   // x is inner here
-			   NULL,0,0,              // output is input
-                           config.fftprogresssplitReal);            
-   complex *planeArr = reinterpret_cast<complex*> (realArr);
-   int stride = sizeX/2+1;
+// FFT along y
 
-#ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgress();
-#endif
-
-   for (int i=0; i<stride*planeSize[0];i++){planeArr[i].im = -planeArr[i].im;}
-
-   fft_split(bwdZ1DdpPlan,
-	nplane_rho_x, // these many 1D ffts
-	(fftw_complex *)planeArr, 
-	 stride,1,
-         NULL,0,0,
-         config.fftprogresssplitReal);
+  fft_split(
+            bwdZ1DdpPlan,              // backward Y plan (label lies)
+	    nplane_x,                  // these many 1D ffts
+	    (fftw_complex *)dataC,     // data set
+            stride,                    // stride
+            1,                         // spacing between data sets
+            NULL,0,0,                  // input is output
+            config.fftprogresssplitReal// progress splitting for BG/L
+           );
 
 //------------------------------------------------------------------------------
- }//end routine
+   }//end routine
 //==============================================================================
 
 
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
+                                   int sizeX,int sizeY){
+//==============================================================================
+// FFT along Y direction : Y moves with stride sizex/2+1 through memory
+//                       : nplane_x is spherical cutoff <= sizeX/2+1
+
+  int stride = sizeX/2+1;
+  fft_split(
+        fwdZ1DdpPlan,                 // y-plan label lies
+	nplane_x,                     // how many < sizeX/2 + 1
+        (fftw_complex *)(dataC),      //input data
+ 	stride,                       // stride betwen elements (x is inner)
+  	1,                            // array separation (nffty elements)
+        NULL,0,0,                     // output data is input data
+        config.fftprogresssplitReal   // splitting parameter
+       );
+
+  // fftw only gives you one sign for real to complex : so do it yourself
+  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+
+//==============================================================================
+// FFT along X direction : X moves with stride 1 through memory
+
+  rfftwnd_complex_to_real_split(
+              fwdX1DdpPlan,                 // x-plan 
+	      sizeY,                        // how many
+	      (fftw_complex *)dataC,        // input data
+              1,                            // stride (x is inner)
+              stride,                       // array separation
+              NULL,0,0,                     // output = input = dataR real
+  	      config.fftprogresssplitReal   // splitting parameter
+             );
+
+//------------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

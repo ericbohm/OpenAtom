@@ -31,19 +31,12 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 RhoRealSlab::~RhoRealSlab(){
 
-    fftw_free(Vks); //
-    fftw_free(density);
-    complex *dummy;
-	dummy  = reinterpret_cast<complex*> (doFFTonThis);
-	fftw_free((fftw_complex *)dummy);
-	dummy  = reinterpret_cast<complex*> (rhoIRX);
-	fftw_free((fftw_complex *)dummy);
-	dummy  = reinterpret_cast<complex*> (rhoIRY);
-	fftw_free((fftw_complex *)dummy);
-	dummy  = reinterpret_cast<complex*> (rhoIRZ);
-	fftw_free((fftw_complex *)dummy);
-	dummy  = reinterpret_cast<complex*> (gradientCorrection);
-	fftw_free((fftw_complex *)dummy);
+    fftw_free(densityC);
+    fftw_free(VksC);
+    fftw_free(rhoIRXC);
+    fftw_free(rhoIRYC);
+    fftw_free(rhoIRZC);
+    fftw_free(VksHartC);
 }
 //==============================================================================
 
@@ -54,44 +47,44 @@ RhoRealSlab::~RhoRealSlab(){
 /* This gets called at the end of the RealSpaceDensity Constructor */
 //==============================================================================
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
-                     int numRealSpace, int numRhoG, int myIndexX, int myIndexY)
+                     int myIndexX, int myIndexY)
 //==============================================================================
    {//begin routine
 //==============================================================================
 
-	rho_rs->sizeX = xdim;
-	rho_rs->sizeY = ydim;
-	rho_rs->sizeZ = zdim;
+   rho_rs->sizeX = xdim;
+   rho_rs->sizeY = ydim;
+   rho_rs->sizeZ = zdim;
 
-	rho_rs->xdim = rho_rs->sizeX;
-	rho_rs->ydim = 1;
-	rho_rs->zdim = rho_rs->sizeZ;
+   rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeY);
+   rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeY);
+   int sizenow      = rho_rs->size;
+   int csizenow     = sizenow/2;
 
-	rho_rs->startx = 0;
-	rho_rs->starty = 0;
-	rho_rs->startz = 0; 
+   complex *dummy;
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->VksC     = dummy;
+   rho_rs->Vks      = reinterpret_cast<double*> (dummy);
 
-	rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeZ);
-	rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeZ);
-        int sizenow      = rho_rs->size;
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->densityC = dummy;
+   rho_rs->density  = reinterpret_cast<double*> (dummy); 
 
-	rho_rs->Vks     =  (double *)fftw_malloc(sizenow*sizeof(double));
-	bzero(rho_rs->Vks, sizenow*sizeof(double));
-	rho_rs->density =  (double *)fftw_malloc(sizenow*sizeof(double));
-	bzero(rho_rs->density, sizenow*sizeof(double));
-        int csizenow    = sizenow/2;
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->rhoIRXC  = dummy;
+   rho_rs->rhoIRX   = reinterpret_cast<double*> (dummy);
 
-        complex *dummy;
-	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-	rho_rs->doFFTonThis = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-	rho_rs->rhoIRX      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-	rho_rs->rhoIRY      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-	rho_rs->rhoIRZ      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
-	rho_rs->gradientCorrection = reinterpret_cast<double*> (dummy);
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->rhoIRYC  = dummy;
+   rho_rs->rhoIRY   = reinterpret_cast<double*> (dummy);
+
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->rhoIRZC  = dummy;
+   rho_rs->rhoIRZ   = reinterpret_cast<double*> (dummy);
+
+   dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
+   rho_rs->VksHartC = dummy;
+   rho_rs->VksHart  = reinterpret_cast<double*> (dummy);
 
 //==============================================================================
    }//end routine
@@ -101,28 +94,20 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-RhoGSlab::~RhoGSlab()
-{
-  if(Rho!=NULL)
-    fftw_free(Rho);
-  if(divRhoX!=NULL)
-    fftw_free( divRhoX);
-  if(divRhoY!=NULL)
-    fftw_free( divRhoY);
-  if(divRhoZ!=NULL)
-    fftw_free( divRhoZ);
-  if(packedRho!=NULL)
-    fftw_free( packedRho);
-  if(packedVks!=NULL)
-    fftw_free( packedVks);
-  if(runs!=NULL)
-      delete [] runs;
-  if(k_x!=NULL)
-      fftw_free( k_x);
-  if(k_y!=NULL)
-      fftw_free( k_y);
-  if(k_z!=NULL)
-      fftw_free( k_z);
+RhoGSlab::~RhoGSlab(){
+
+  if(Rho      !=NULL)fftw_free(Rho);
+  if(divRhoX  !=NULL)fftw_free(divRhoX);
+  if(divRhoY  !=NULL)fftw_free(divRhoY);
+  if(divRhoZ  !=NULL)fftw_free(divRhoZ);
+  if(packedRho!=NULL)fftw_free(packedRho);
+  if(packedVks!=NULL)fftw_free(packedVks);
+
+  if(runs!=NULL) delete [] runs;
+  if(k_x !=NULL) fftw_free(k_x);
+  if(k_y !=NULL) fftw_free(k_y);
+  if(k_z !=NULL) fftw_free(k_z);
+
 }
 //==============================================================================
 
@@ -131,13 +116,6 @@ RhoGSlab::~RhoGSlab()
 //==============================================================================
 void RhoGSlab::pup(PUP::er &p) {
   // local bools so we only bother with non null objects
-  bool RhoMake=false;
-  bool divRhoXMake=false;
-  bool divRhoYMake=false;
-  bool divRhoZMake=false;
-  bool packedRhoMake=false;
-  bool packedVksMake=false;
-  bool VksMake=false;
   p|sizeX;
   p|sizeY;
   p|sizeZ;
@@ -151,16 +129,24 @@ void RhoGSlab::pup(PUP::er &p) {
   p|ewd_ret;
   p|size;
   p|nPacked;
-  if(!p.isUnpacking())
-    {// create flags for each array in pup
-      RhoMake= (Rho!=NULL) ? true :false;
-      divRhoXMake= (divRhoX!=NULL) ? true :false;
-      divRhoYMake= (divRhoY!=NULL) ? true :false;
-      divRhoZMake= (divRhoZ!=NULL) ? true :false;
-      packedRhoMake= (packedRho!=NULL) ? true :false;
-      packedVksMake= (packedVks!=NULL) ? true :false;
-      VksMake= (Vks!=NULL) ? true :false;
-    }
+
+  bool RhoMake      =false;
+  bool divRhoXMake  =false;
+  bool divRhoYMake  =false;
+  bool divRhoZMake  =false;
+  bool packedRhoMake=false;
+  bool packedVksMake=false;
+  bool VksMake      =false;
+  if(!p.isUnpacking()){// create flags for each array in pup
+    RhoMake       = (Rho      !=NULL) ? true :false;
+    divRhoXMake   = (divRhoX  !=NULL) ? true :false;
+    divRhoYMake   = (divRhoY  !=NULL) ? true :false;
+    divRhoZMake   = (divRhoZ  !=NULL) ? true :false;
+    packedRhoMake = (packedRho!=NULL) ? true :false;
+    packedVksMake = (packedVks!=NULL) ? true :false;
+    VksMake       = (Vks      !=NULL) ? true :false;
+  }//endif
+
   p|RhoMake;
   p|divRhoXMake;
   p|divRhoYMake;
@@ -168,8 +154,8 @@ void RhoGSlab::pup(PUP::er &p) {
   p|packedRhoMake;
   p|packedVksMake;
   p|VksMake;
-  if(p.isUnpacking())
-    {
+
+  if(p.isUnpacking()){
       if(RhoMake)
 	Rho       = (complex *)fftw_malloc(numFull*sizeof(complex));
       else
@@ -194,37 +180,32 @@ void RhoGSlab::pup(PUP::er &p) {
 	packedVks = (complex *)fftw_malloc(nPacked*sizeof(complex));
       else
 	packedVks = NULL;
-
       if(VksMake)
-	Vks=(complex *)fftw_malloc(numFull*sizeof(complex));
+	Vks       = (complex *)fftw_malloc(numFull*sizeof(complex));
       else
-	Vks=NULL;
-      runs     = new RunDescriptor[numRuns];
-      k_x = (int *)fftw_malloc(numPoints*sizeof(int));
-      k_y = (int *)fftw_malloc(numPoints*sizeof(int));
-      k_z = (int *)fftw_malloc(numPoints*sizeof(int));
+	Vks       = NULL;
+      runs = new RunDescriptor[numRuns];
+      k_x  = (int *)fftw_malloc(numPoints*sizeof(int));
+      k_y  = (int *)fftw_malloc(numPoints*sizeof(int));
+      k_z  = (int *)fftw_malloc(numPoints*sizeof(int));
 
-    }
-  if(RhoMake)
-    PUParray(p,Rho,numFull);
-  if(divRhoXMake)
-    PUParray(p,divRhoX,numFull);
-  if(divRhoYMake)
-    PUParray(p,divRhoY,numFull);
-  if(divRhoZMake)
-    PUParray(p, divRhoZ,numFull);
-  if(packedRhoMake)
-    PUParray(p, packedRho,nPacked);
-  if(packedVksMake)
-    PUParray(p, packedVks,nPacked);
-  if(VksMake)
-    PUParray(p,Vks,numFull);
+  }//endif : unpacking malloc
+
+  if(RhoMake)       PUParray(p,Rho,numFull);
+  if(divRhoXMake)   PUParray(p,divRhoX,numFull);
+  if(divRhoYMake)   PUParray(p,divRhoY,numFull);
+  if(divRhoZMake)   PUParray(p,divRhoZ,numFull);
+  if(packedRhoMake) PUParray(p,packedRho,nPacked);
+  if(packedVksMake) PUParray(p,packedVks,nPacked);
+  if(VksMake)       PUParray(p,Vks,numFull);
+
+  PUParray(p,runs,numRuns);
   PUParray(p,k_x,numPoints);
   PUParray(p,k_y,numPoints);
   PUParray(p,k_z,numPoints);
-  PUParray(p,runs,numRuns);
 
-}
+//------------------------------------------------------------------------------
+  }//end intense pupping experience
 //==============================================================================
 
 
@@ -407,139 +388,102 @@ void RhoGSlab::setKVectors(int *n){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RhoRealSlab::pup(PUP::er &p) {
-  p|sizeZ;
-  p|sizeY;
-  p|sizeZ;
-  p|exc_ret;
+  p|sizeZ;   // fftX size
+  p|sizeY;   // fftYZ size
+  p|sizeZ;   // fftZ size
+  p|size;    // plane size for fftw : bigger
+  p|trueSize;// the real plane size
+  p|exc_ret; // energies
   p|muxc_ret;
   p|exc_gga_ret;
-  p|size;
-  p|trueSize;
-  p|xdim;
-  p|ydim;
-  p|zdim;
-  p|startx;
-  p|starty;
-  p|startz; 
-  int csize    = size/2;
-  if(p.isUnpacking())
-    {
-	Vks     =  (double *)fftw_malloc(size*sizeof(double));
-	bzero(Vks, size*sizeof(double));
-	density =  (double *)fftw_malloc(size*sizeof(double));
-	bzero(density, size*sizeof(double));
-        complex *dummy;
-	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
-	doFFTonThis = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRX      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRY      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
-	rhoIRZ      = reinterpret_cast<double*> (dummy);
-	dummy               = (complex*) fftw_malloc(csize*sizeof(complex));
-	gradientCorrection = reinterpret_cast<double*> (dummy);
+  if(p.isUnpacking()){
+        int csize  = size/2;
+	VksC       = (complex*) fftw_malloc(csize*sizeof(complex));
+	Vks        =  reinterpret_cast<double*> (VksC);
+	densityC   = (complex*) fftw_malloc(csize*sizeof(complex));
+	density    =  reinterpret_cast<double*> (densityC);
+	rhoIRXC    = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRX     = reinterpret_cast<double*> (rhoIRXC);
+	rhoIRYC    = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRY     = reinterpret_cast<double*> (rhoIRYC);
+	rhoIRZC    = (complex*) fftw_malloc(csize*sizeof(complex));
+	rhoIRZ     = reinterpret_cast<double*> (rhoIRZC);
+	VksHartC   = (complex*) fftw_malloc(csize*sizeof(complex));
+	VksHart    = reinterpret_cast<double*> (VksHartC);
     }
-  PUParray(p,Vks, size);
+  PUParray(p,Vks,    size);
   PUParray(p,density,size);
-  PUParray(p, doFFTonThis,size);
-  PUParray(p, rhoIRX,size);
-  PUParray(p, rhoIRY,size);
-  PUParray(p, rhoIRZ,size);
-  PUParray(p, gradientCorrection,size);
+  PUParray(p,rhoIRX, size);
+  PUParray(p,rhoIRY, size);
+  PUParray(p,rhoIRZ, size);
+  PUParray(p,VksHart,size);
 }
 //==============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void RhoRealSlab::uPackScale(double *uPackData, double *PackData,double scale){
 
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void RhoRealSlab::doFwFFTGtoR(int iopt,double probScale){
-//==============================================================================
+ for(int i=0;i<size;i++){uPackData[i] = PackData[i]*scale;}
 
-   FFTcache *fsc             = fftCacheProxy.ckLocalBranch();
-   fftw_plan    fwdZ1DdpPlan = fsc->fwdZ1DdpPlan; 
-   rfftwnd_plan fwdX1DdpPlan = fsc->fwdX1DdpPlan; 
+}//end routine
+//============================================================================
 
-   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
-   int nplane_x           = sim->nplane_rho_x;
-   int pSize              = (sizeX+2) * sizeY;
-   int stride             = sizeX/2+1;
-
-   double *data;
-   switch(iopt){
-     case 0: data = Vks; break;
-     case 1: data = rhoIRX; break;
-     case 2: data = rhoIRY; break;
-     case 3: data = rhoIRZ; break;
-     case 4: data = doFFTonThis; break;
-   }//endif
-  complex *planeArr = reinterpret_cast<complex*> (data);
-
-//==============================================================================
-// FFT along Y direction : Y moves with stride sizex/2+1 through memory
-
-   fft_split(fwdZ1DdpPlan,    // y-plan (label lies)
-	nplane_x,        // how many < sizeX/2 + 1
-        (fftw_complex *)(planeArr),//input data
- 	stride,          // stride betwen elements (x is inner)
-  	1,               // array separation (nffty elements)
-        NULL,0,0,        // output data is input data
-        config.fftprogresssplitReal);
-
-#ifdef CMK_VERSION_BLUEGENE
-   CmiNetworkProgress();
-#endif
-
-  // fftw only gives you one sign for real to complex : so do it yourself
-  for(int i=0;i<stride*sizeY;i++){planeArr[i].im = -planeArr[i].im;}
-
-//==============================================================================
-// FFT along X direction : X moves with stride 1 through memory
-
-  rfftwnd_complex_to_real_split(fwdX1DdpPlan,
-		          sizeY,    // how many
-			  (fftw_complex *)planeArr, 
-                          1,               // stride (x is inner)
-                          stride,          // array separation
-  			  NULL,0,0,       // output array is real 
-                          config.fftprogresssplitReal); 
-
-//==============================================================================
-// copy out to a nice stride in memory
-
-  double *temp = gradientCorrection;
-  memcpy(temp,data,pSize*sizeof(double));
-
-  for(int i=0,i2=0;i<sizeY;i++,i2+=2){
-    for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-      data[j] = temp[(j+i2)]*probScale;
-    }//endfor
-  }//endfor
-
-//==============================================================================
-  }//end if
-//==============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void RhoRealSlab::uPackAndScale(double *uPackData, double *PackData, 
-                                double scale)
-//============================================================================
-   {//begin routine
+void RhoRealSlab::scale(double *uPackData,double scale){
+
+  for(int i=0;i<size;i++){uPackData[i] *= scale;}
+
+}//end routine
 //============================================================================
 
-   for(int i=0,i2=0;i<sizeZ;i++,i2+=2){
-     for(int j=i*sizeX;j<(i+1)*sizeX;j++){
-       uPackData[(j+i2)] = PackData[j]*scale;
-     }//endfor
-     uPackData[sizeX]   = 0.0;
-     uPackData[sizeX+1] = 0.0;
-   }//endfor
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void RhoRealSlab::uPackScaleShrink(double *uPackData,double *PackData,double scale){
+
+  for(int i=0,i2=0;i<sizeY;i++,i2+=2){
+    for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+      uPackData[j] =PackData[(j+i2)]*scale;
+    }//endfor
+  }//endfor
+
+}//end routine
+//============================================================================
+
 
 //============================================================================
-   }
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void RhoRealSlab::uPackShrink(double *uPackData,double *PackData){
+
+  for(int i=0,i2=0;i<sizeY;i++,i2+=2){
+    for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+      uPackData[j] =PackData[(j+i2)];
+    }//endfor
+  }//endfor
+
+}//end routine
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void RhoRealSlab::uPackScaleGrow(double *uPackData,double *PackData,double scale){
+
+  for(int i=0,i2=0;i<sizeY;i++,i2+=2){
+    for(int j=i*sizeX;j<(i+1)*sizeX;j++){
+      uPackData[(j+i2)] =PackData[j]*scale;
+    }//endfor
+    int k = (i+1)*sizeX+i2;
+    uPackData[k]    =0.0;
+    uPackData[(k+1)]=0.0;
+  }//endfor
+
+}//end routine
+//============================================================================

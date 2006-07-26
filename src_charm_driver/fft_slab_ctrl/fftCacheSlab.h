@@ -161,37 +161,47 @@ public:
 //==============================================================================
 class RhoRealSlab {
 public:
-   int sizeX, sizeY, sizeZ;
-
-   double *Vks;            // energy/potential  : packed
-   double *density;        // rho(r) : packed
-   double *doFFTonThis;    // fft sized guy
-   double *rhoIRX, *rhoIRY, *rhoIRZ, *gradientCorrection; // fft sized guys
-
-   /* return values from rhoRSubroutine in subroutine.C */
-   double exc_ret, muxc_ret, exc_gga_ret;
-
-   /* used in the subroutines doDensitySum and doRhoRSubroutine */
-   int size;
+   int size;    //plane size
    int trueSize;
-   int xdim, ydim, zdim;
-   int startx, starty, startz; 
+   int sizeX, sizeY, sizeZ; //fft size
+   double exc_ret, muxc_ret, exc_gga_ret;  //energy
+
+   double *Vks;      // we have to keep him around
+   double *density;  // we have to keep him around     
+   double *rhoIRX,*rhoIRY,*rhoIRZ; //needed to receive stuff as it comes in
+   double *VksHart;   //needed to receive stuff as it comes in
+
+   // complex pointers to the same memory as the corresponding double array
+   complex *VksC;     
+   complex *densityC; 
+   complex *rhoIRXC,*rhoIRYC,*rhoIRZC; 
+   complex *VksHartC; 
  
    RhoRealSlab() {
-       sizeX= sizeY= sizeZ= size= trueSize=xdim= ydim= zdim= startx= starty= startz=0 ;
-       Vks=NULL;
-       density=NULL;
-       doFFTonThis=NULL; 
-       rhoIRX=NULL;
-       rhoIRY=NULL;
-       rhoIRZ=NULL;
-       gradientCorrection=NULL; // fft sized guys
-
+       sizeX=sizeY=sizeZ=size=trueSize=0;
+       exc_ret=muxc_ret=exc_gga_ret=0.0;
+       Vks       = NULL;
+       VksC      = NULL;
+       density   = NULL;
+       densityC  = NULL;
+       rhoIRX    = NULL;
+       rhoIRXC   = NULL;
+       rhoIRY    = NULL;
+       rhoIRYC   = NULL;
+       rhoIRZ    = NULL;
+       rhoIRZC   = NULL;
+       Vks       = NULL;
+       VksHartC  = NULL;
    }
    ~RhoRealSlab();
-   void doFwFFTGtoR(int,double);
-   void uPackAndScale(double *, double *,double );
-   void pup(PUP::er &);
+
+    void uPackScaleGrow(double *,double *,double );   // dest bigger  src : cp+scale
+    void uPackScaleShrink(double *,double *,double ); // dest smaller src : cp+scale
+    void uPackShrink(double *,double *);              // dest smaller src : cp only
+    void uPackScale(double *, double *,double );      // dest size=   src : scale
+    void scale(double *,double );                     // dest = src       : scale
+
+    void pup(PUP::er &);
 
 //-----------------------------------------------------------------------------
  };
@@ -262,19 +272,25 @@ class RhoGSlab {
 //==============================================================================
 class FFTcache: public Group {
  public:
-     size2d planeSize;  // sizes for state/rho methods
-     int ngridaEext;    // sizes for ees methods
+    //-----------------------------------------------------------
+    // FFT-Sizes and Ees method Options
+     size2d planeSize;  
+     int ngridaEext;    
      int ngridbEext;
      int ngridcEext;
-     int ees_eext_on;
      int ngridaNL;
      int ngridbNL;
      int ngridcNL;
+     int ees_eext_on;
      int ees_NL_on;
 
-     complex *tmpData;  // temporary for Ees methods
+    //-----------------------------------------------------------
+    // Generic plane temporaries used everywhere possible to avoid memcpys
+     complex *tmpData; 
      double  *tmpDataR;
 
+    //-----------------------------------------------------------
+    // Da Plans
      fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
      fftw_plan    fwdYPlan,     bwdYPlan;            // double pack plans
      rfftwnd_plan fwdX1DdpPlan, bwdX1DdpPlan;
@@ -289,12 +305,10 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // The constructor 
-
      FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int );
 
     //-----------------------------------------------------------
-    // Generic puppies
-
+    // Generic G-space expanders and contractors
      void expandGSpace(complex* data, complex *packedData, 
                        RunDescriptor *runs, int numRuns, int numFull,
  		       int numPoints, int nfftz);
@@ -303,16 +317,18 @@ class FFTcache: public Group {
 	             int numPoints, int nfftz);
 
     //-----------------------------------------------------------
-    // State and Density FFTs
-
+    // Density FFTs
      void doHartFFTGtoR_Gchare(complex *,complex *,int , int ,int , int , 
 				RunDescriptor *, int );
-     void doRhoRealtoRhoG(double *realArr);
      void doRhoFFTRtoG_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
                               int ,int );
      void doRhoFFTGtoR_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
                               int ,int );
+     void doRhoFFTRtoG_Rchare(complex *,double *,int , int ,int );
+     void doRhoFFTGtoR_Rchare(complex *,double *,int , int ,int );
 
+    //-----------------------------------------------------------
+    // State FFTs
      void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int );
@@ -320,7 +336,6 @@ class FFTcache: public Group {
 
    //-----------------------------------------------------------
    // non-local fft
-
      void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
@@ -328,7 +343,6 @@ class FFTcache: public Group {
 
    //-----------------------------------------------------------
    // eext fft
-
      void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
      void doEextFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
      void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int );
@@ -372,10 +386,10 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
 void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
                        int realSpaceUnits, int stateIndex, int thisPlane);
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim, 
-                     int numRealSpace, int numRhoG, int myIndexX,int myIndexY);
+                     int myIndexX,int myIndexY);
 
 //==============================================================================
-// Eric's BG/L progress callers
+// Eric's really cool BG/L progress callers
 
 void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
 	       int idist, fftw_complex *out, int ostride, int odist, int split);

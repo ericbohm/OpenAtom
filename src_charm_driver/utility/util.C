@@ -1897,7 +1897,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.gExpandFact<1.0){
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      CkPrintf("Chare array expansion factor out of range %d\n",config.gExpandFact);
+      CkPrintf("Chare array expansion factor out of range %g\n",config.gExpandFact);
       CkPrintf("This probably could work but I'd check first.\n");
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       if(config.gExpandFact<=0.0){
@@ -1908,7 +1908,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.gExpandFactRho<1.0){
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      CkPrintf("RhoChare array expansion factor out of range %d\n",config.gExpandFactRho);
+      CkPrintf("RhoChare array expansion factor out of range %g\n",config.gExpandFactRho);
       CkPrintf("This probably could work but I'd check first.\n");
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       if(config.gExpandFactRho<=0.0){

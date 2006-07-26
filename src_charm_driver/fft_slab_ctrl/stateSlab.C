@@ -447,15 +447,6 @@ void RealStateSlab::pup(PUP::er &p) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void RealStateSlab::zeroOutPlanes() {    
-  bzero(planeArr,size*sizeof(complex));
-}
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
 void RealStateSlab::allocate() {
   if(planeArr == NULL) {
      planeArr = (complex *) fftw_malloc(size*sizeof(complex));

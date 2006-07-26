@@ -10,10 +10,9 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===========================================================================
 
-void
-CPXCFNCTS::CP_exc_calc(
-      const int npts, const int nf1, const int nf2, const int nf3,
-      double *density,double *result,double *exc_ret,double *muxc_ret)
+void CPXCFNCTS::CP_exc_calc(
+              const int npts, const int nf1, const int nf2, const int nf3,
+              double *density,double *result,double *exc_ret,double *muxc_ret)
 
 //============================================================================
 // Function:  Exchange-correlation functional
@@ -90,12 +89,18 @@ CPXCFNCTS::CP_exc_calc(
 //-------------------------------------------------------------------------
 // II.  Start loop over FFT grid and evaluate terms in the functional
 
+   for(int y=0 ; y< nf2; y++){
+     int i = y*(nf1+2) + nf1; 
+     result[i]    =0.0;
+     result[(i+1)]=0.0;
+   }//endfor
+
    int nfreq_cmi_update = 8;
-   for(int i=0 ; i< npts; i++){
+   for(int y=0 ; y< nf2; y++){
+   for(int x=0 ; x< nf1; x++){
+      int i = y*(nf1+2) + x;
 #ifdef CMK_VERSION_BLUEGENE
-      if((i+1)%nfreq_cmi_update==0){
-        CmiNetworkProgress();
-      }
+      if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif   
 //-------------------------------------------------------------------------
 // III. Exchange part
@@ -136,13 +141,13 @@ CPXCFNCTS::CP_exc_calc(
 // VI. Potential contributions
 
 
-    result[i] += (xfact + mufact);
+    result[i] = (xfact + mufact);
 
 
     vxc += (xfact + mufact)*rho_r_val;
 
 
-  }/* endfor */
+  }}/* endfor */
 
 //-------------------------------------------------------------------------
 // VII. Finish the energies
@@ -158,5 +163,5 @@ CPXCFNCTS::CP_exc_calc(
    (*muxc_ret) = vxc*vscale;
   
 //============================================================================
-} /* End */
+  } /* End */
 //============================================================================

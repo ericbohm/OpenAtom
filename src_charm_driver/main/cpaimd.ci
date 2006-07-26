@@ -231,7 +231,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, size2d, int, int, bool,int,int);
+		entry CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
 		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
