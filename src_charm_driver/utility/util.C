@@ -1405,6 +1405,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
+     fprintf(fp,"lambdaGrainSize: %d\n",lambdaGrainSize);
      fprintf(fp,"pesPerState: %d\n",pesPerState);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
      fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
@@ -1518,6 +1519,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     config.sGrainSize           = nstates_in;
     config.orthoGrainSize           =     config.sGrainSize;
+    config.lambdaGrainSize           =     config.sGrainSize;
     config.rhoGHelpers          = 1;
     config.pesPerState          = 1;
     config.RpesPerState         = 0; 
@@ -1636,6 +1638,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.sGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoGrainSize"))
             config.orthoGrainSize = atoi(parameterValue);
+        else if (!strcmp(parameterName, "lambdaGrainSize"))
+            config.lambdaGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))
             config.useCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairEtoM"))
@@ -1829,6 +1833,9 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.numChunks>config.numChunksAsym)
       config.numChunksAsym=config.numChunks;
 
+    if(config.lambdaGrainSize==config.nstates && config.orthoGrainSize!=config.nstates)
+      config.lambdaGrainSize=config.orthoGrainSize;
+
     config.guesstimateParms(natm_nl);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
@@ -1968,6 +1975,13 @@ void Config::readConfig(const char* fileName, Config &config,
     if (config.sGrainSize %config.orthoGrainSize != 0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("S matrix grain-size should be divisible by orthoGrainSize\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
+    if (config.sGrainSize %config.lambdaGrainSize != 0){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("S matrix grain-size should be divisible by lambdaGrainSize\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -2170,6 +2184,13 @@ void Config::guesstimateParms(int natm_nl){
       // this is lame and should be replace with something which finds
       // an even mod of any sGrainSize
       orthoGrainSize=sGrainSize/4;
+    }
+
+    if(sGrainSize%lambdaGrainSize !=0)
+    {
+      // this is lame and should be replace with something which finds
+      // an even mod of any (non prime) sGrainSize
+      lambdaGrainSize=sGrainSize/4;
     }
 
     if(gExpandFact==1.0) 

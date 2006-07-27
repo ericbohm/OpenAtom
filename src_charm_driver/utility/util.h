@@ -173,6 +173,7 @@ class Config {
 	int PCstreamFWblock;
 	int sGrainSize;
 	int orthoGrainSize;
+	int lambdaGrainSize;
 	int rhoGHelpers;
 	int useCommlib;
 	int useGHartInsRhoRP;

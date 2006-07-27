@@ -175,7 +175,7 @@ int RhoRHartMap::procNum(int arrayHdl, const CkArrayIndex &idx)
       CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &idx;
       if(maptable==NULL)
       {
-	CkPrintf("Warning! RhoGHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
+	CkPrintf("Warning! RhoRHartMap::Procnum had to assign maptable on %d!\n",CkMyPe() );
         maptable= &RhoRHartmaptable;
 
       }  

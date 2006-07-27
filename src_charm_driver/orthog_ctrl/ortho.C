@@ -552,8 +552,11 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     {
       pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
     }
-    pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false);
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
+  if(config.lambdaGrainSize==config.orthoGrainSize)
+    { //no point in having a different chare if you won't have more of them
+      pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false);
+      pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
+    }
 
 //----------------------------------------------------------------------------
   }// end routine

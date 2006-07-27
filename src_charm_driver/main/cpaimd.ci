@@ -40,6 +40,7 @@ mainmodule cpaimd {
 	readonly CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 	readonly CProxy_CP_Rho_RHartExt rhoRHartExtProxy;
 	readonly CProxy_Ortho orthoProxy;
+	readonly CProxy_Lambda lambdaProxy;
 	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_EnergyGroup egroupProxy;
@@ -292,6 +293,19 @@ mainmodule cpaimd {
 	group OrthoMap : CkArrayMap {
 		entry OrthoMap(int M,int nOrtho);
 	};
+
+	array [2D] Lambda{
+		entry void Lambda(int lgrain, int ograin, int sgrain);
+		entry Lambda();
+		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void acceptSectionLambda(CkReductionMsg *msg);
+		entry void makeSections(int indexSize, int indexZ[indexSize]);
+	      };
+
+	group LambdaMap : CkArrayMap {
+		entry LambdaMap(int M,int nLambda);
+	};
+
 
 	group RhoGSMap : CkArrayMap {
 		entry RhoGSMap();

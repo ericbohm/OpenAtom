@@ -50,7 +50,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
          CP_State_RealParticlePlane.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o \
-         util.o ortho.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
+         util.o ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
          groups.o TopoMap.o MapTable.o PeList.o para_grp_parse.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
@@ -138,7 +138,7 @@ cpaimd:    $(OBJS_DECL) $(OBJS)
 #---------------------------------------------------------------------------
 cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/ReductionClients.h \
-	$(ORTHO)/ortho.h $(FFTSLAB)/fftCacheSlab.h \
+	$(ORTHO)/ortho.h $(ORTHO)/lambda.h $(FFTSLAB)/fftCacheSlab.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
 	$(TOPINC)/CPcharmParaInfo.h \
 	$(TOPINC)/eesDataClass.h \
@@ -321,6 +321,13 @@ ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
          $(TOPINC)/CPcharmParaInfo.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(ORTHO)/ortho.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+lambda.o: $(ORTHO)/lambda.C $(ORTHO)/lambda.h $(MAIN)/cpaimd.decl.h \
+	 $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+         $(TOPINC)/CPcharmParaInfo.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(ORTHO)/lambda.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 StructureFactor.o: $(STRUCTFACT)/StructureFactor.h \
 	$(STRUCTFACT)/StructureFactor.C \

@@ -98,6 +98,7 @@
 #include "cpaimd.h"
 #include "groups.h"
 #include "ortho.h"
+#include "lambda.h"
 #include "fftCacheSlab.h"
 #include "eesCache.h"
 #include "StructFactorCache.h"
@@ -168,6 +169,7 @@ CProxy_CP_Rho_GSpacePlane         rhoGProxy;
 CProxy_CP_Rho_RHartExt            rhoRHartExtProxy;
 CProxy_CP_Rho_GHartExt            rhoGHartExtProxy;
 CProxy_Ortho                      orthoProxy;
+CProxy_Lambda                     lambdaProxy;
 CProxy_CPcharmParaInfoGrp         scProxy;
 CProxy_AtomsGrp                   atomsGrpProxy;
 CProxy_EnergyGroup                egroupProxy;
@@ -620,10 +622,9 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     CkVec <CkGroupID> mCastGrpIdsA;
     for(int i=0; i< nchareG ;i++)
       mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
-    //mCastGrpIdsA.push_back(symMcast);
-
-    //asymmetric AKA Lambda AKA Gamma
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, mCastGrpId, config.numChunksAsym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false);
+      //asymmetric AKA Lambda AKA Gamma
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, mCastGrpId, config.numChunksAsym, config.lambdaGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false);
+    
 
 //============================================================================ 
    }//end routine
@@ -1076,6 +1077,25 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
       }
     orthoProxy.doneInserting();
     orthoProxy.makeSections(indexSize, indexZ);
+    if(config.lambdaGrainSize!=config.orthoGrainSize)
+      {
+	int chunks = (nstates + config.lambdaGrainSize - 1) / config.lambdaGrainSize;
+	int nLambda= (nstates/config.lambdaGrainSize);
+	nLambda*=nLambda;
+	CProxy_LambdaMap lambdaMap = CProxy_LambdaMap::ckNew(chunks,nLambda);
+	CkArrayOptions lambdaOpts;
+	lambdaOpts.setMap(lambdaMap);
+	lambdaProxy = CProxy_Lambda::ckNew(lambdaOpts);
+	for (int s1 = 0; s1 < nstates; s1 += config.lambdaGrainSize)
+	  for (int s2 = 0; s2 < nstates; s2 += config.lambdaGrainSize) {
+	    int indX = s1 / config.lambdaGrainSize;
+	    int indY = s2 / config.lambdaGrainSize;
+	    lambdaProxy(indX, indY).insert(config.lambdaGrainSize, config.orthoGrainSize, config.sGrainSize);
+	  }
+	lambdaProxy.doneInserting();
+	lambdaProxy.makeSections(indexSize, indexZ);
+
+      }
 
 //============================================================================
    }//end routine 
