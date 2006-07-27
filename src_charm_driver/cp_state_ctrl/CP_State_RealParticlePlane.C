@@ -436,8 +436,15 @@ void CP_State_RealParticlePlane::computeZmatEes(){
     CkPrintf("HI, I am rPP %d %d in computeZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
    CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,zmat,igrid,mn,
                              plane_index,thisIndex.x,myPlane);
+#ifndef CMK_OPTIMIZE
+   traceUserBracketEvent(eesZmatR_, StartTime, CmiWallTimer());    
+#endif
 
 //============================================================================
 // Launch section reduction : 
@@ -635,8 +642,16 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 
    // projPsiR     comes in with info for atoms
    // projPsiRSsr leaves with info for psiforces
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
                        projPsiR,projPsiRScr,plane_index,myPlane,thisIndex.x,fastAtoms);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesEnergyAtmForcR_, StartTime, CmiWallTimer());    
+#endif
 
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast

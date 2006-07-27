@@ -273,8 +273,16 @@ void CP_Rho_RHartExt::FFTSFBck(){
 #endif
 
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_rho_x;
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
   fftCacheProxy.ckLocalBranch()->doEextFFTRtoG_Rchare(atmSFC,atmSFR,nplane_x,
                                                       ngrida,ngridb);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doEextFFTRtoG_, StartTime, CmiWallTimer());    
+#endif
+
   SendAtmSFRhoGHart();
 }
 //============================================================================
@@ -423,9 +431,17 @@ void CP_Rho_RHartExt::FFTAtmForcFwd(int flagEwd){
   double *dataR;   if(flagEwd==0){dataR=atmSFR;}else{dataR=atmEwdSFR;}
   complex *dataC;  if(flagEwd==0){dataC=atmSFC;}else{dataC=atmEwdSFC;}
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_rho_x;
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
   
   fftCacheProxy.ckLocalBranch()->doEextFFTGtoR_Rchare(dataC,dataR,nplane_x,
                                                       ngrida,ngridb);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doEextFFTGtoR_, StartTime, CmiWallTimer());    
+#endif
+
   computeAtmForc(flagEwd);
 
 }
@@ -483,9 +499,15 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   FastAtoms *fastAtoms = &(ag->fastAtoms);
   int natm             = ag->natm;
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
 
   CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
                              plane_index,data,myPlane,flagEwd);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesAtmForcR_, StartTime, CmiWallTimer());    
+#endif
 
 //============================================================================
 // If you aren't done, start another round otherwise reset yourself

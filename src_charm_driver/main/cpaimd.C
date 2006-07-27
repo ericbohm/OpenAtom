@@ -378,6 +378,21 @@ main::main(CkArgMsg *msg) {
      traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
      traceRegisterUserEvent("OrthoDGEMM2", OrthoDGEMM2_);
      traceRegisterUserEvent("ByrdanddoFwFFTGtoR",ByrdanddoFwFFTGtoR_);
+     traceRegisterUserEvent("eesHartExcG",eesHartExcG_);
+     traceRegisterUserEvent("eesEwaldG",eesEwaldG_);
+     traceRegisterUserEvent("eesAtmForcR",eesAtmForcR_);
+     traceRegisterUserEvent("eesAtmBspline",eesAtmBspline_);
+     traceRegisterUserEvent("eesZmatR",eesZmatR_);
+     traceRegisterUserEvent("eesEnergyAtmForcR",eesEnergyAtmForcR_);
+     traceRegisterUserEvent("eesProjG",eesProjG_);
+     traceRegisterUserEvent("doNlFFTGtoR",doNlFFTGtoR_);
+     traceRegisterUserEvent("doNlFFTRtoG",doNlFFTRtoG_);
+     traceRegisterUserEvent("eesPsiForcGspace",eesPsiForcGspace_);
+     traceRegisterUserEvent("enlMatrixCalc",enlMatrixCalc_);
+     traceRegisterUserEvent("enlAtmForcCalc",enlAtmForcCalc_);
+     traceRegisterUserEvent("enlForcCalc",enlForcCalc_);
+     traceRegisterUserEvent("doEextFFTRtoG",doEextFFTRtoG_);
+     traceRegisterUserEvent("doEextFFTGtoR",doEextFFTGtoR_);
 
      traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
      traceRegisterUserEvent("divRhoVksGspace",divRhoVksGspace_);

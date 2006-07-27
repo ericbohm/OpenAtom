@@ -626,9 +626,15 @@ void CP_Rho_GHartExt::getHartEextEes(){
      eext_ret  = 0.0;
      ewd_ret   = 0.0;
   }//endif
-
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
   CPLOCAL::eesHartEextGchare(ncoef,iterAtmTyp,rho,vks,atmSF,atmSFtot,
                              b_re,b_im,&ehart_ret,&eext_ret,k_x,k_y,k_z,myChareG);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesHartExcG_, StartTime, CmiWallTimer());    
+#endif
+
 #ifdef _CP_GHART_VERBOSE_
   CkPrintf("Ghart %d Here in hartees: EHart %.10g Eext %.10g at %d\n",
 	   thisIndex.x,ehart_ret,eext_ret,iterAtmTyp);
@@ -638,7 +644,13 @@ void CP_Rho_GHartExt::getHartEextEes(){
 // If you have SFtot get the ewald energy and FFT SFtot to real space
 
   if(iterAtmTyp==natmTyp){
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
     CPLOCAL::eesEwaldGchare(ncoef,atmSFtot,b_re,b_im,&ewd_ret,k_x,k_y,k_z,myChareG);
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
+#endif
 #ifdef _CP_GHART_VERBOSE_
     CkPrintf("Ghart %d iter %d Here in hartees: EwaldRecip : %.10g\n",
 	   thisIndex.x,iterAtmTyp,ewd_ret);

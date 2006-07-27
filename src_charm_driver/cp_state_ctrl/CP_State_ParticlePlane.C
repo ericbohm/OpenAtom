@@ -467,10 +467,18 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       // get zmat
       int mydoublePack = config.doublePack;
       int zoffset      = natm_nl_grp_max * atmIndex;
+
+#ifndef CMK_OPTIMIZE
+      double  StartTime=CmiWallTimer();
+#endif    
+
       CPNONLOCAL::CP_enl_matrix_calc(gSpaceNumPoints,gss->packedPlaneData, k_x,k_y,k_z, 
 	     structureFactor,structureFactor_fx,structureFactor_fy,
 	     structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
 	     &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
+#ifndef CMK_OPTIMIZE
+      traceUserBracketEvent(enlMatrixCalc_, StartTime, CmiWallTimer());    
+#endif
 
       // reduce zmatrices over the planes of each state
       thisProxy(thisIndex.x, reductionPlaneNum).reduceZ(natm_nl_grp_max, atmIndex, 
@@ -565,9 +573,18 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
     FastAtoms *fastAtoms = &(ag->fastAtoms);
     int mydoublePack = config.doublePack;
     double myenl     = 0.0;
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
     CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,fastAtoms,&zmatrixSum[zoffset],
                &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],
                &myenl,mydoublePack);
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(enlAtmForcCalc_, StartTime, CmiWallTimer());    
+#endif
+
     enl+=myenl;
 
 #ifdef _CP_DEBUG_NLMAT_
@@ -650,9 +667,18 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
                          &structureFactor_fy, &structureFactor_fz);
 
   if (gSpaceNumPoints != 0){
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
     CPNONLOCAL::CP_enl_force_calc(zmatrixSum_loc,gSpaceNumPoints, k_x, k_y, k_z,
                                   structureFactor,myForces,state_ind,mydoublePack,
                                   numSfGrps, atmIndex);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(enlForcCalc_, StartTime, CmiWallTimer());    
+#endif
+
   }//endif
 
 //============================================================================
@@ -839,9 +865,17 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 #endif
 
    complex *projPsiGTmp = fftcache->tmpData; // store in tmp
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
    CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
                               d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
                               thisIndex.x,thisIndex.y);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
+#endif
 
    FFTNLEesFwd();
 
@@ -880,8 +914,17 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
   complex *projPsiGTmp = fftcache->tmpData;
+#ifndef CMK_OPTIMIZE
+  double StartTime=CmiWallTimer();
+#endif
+
   fftcache->doNlFFTGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
+#endif
+
   sendToEesRPP();
 
 //---------------------------------------------------------------------------
@@ -1045,8 +1088,17 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
   complex *projPsiGTmp = fftcache->tmpData;
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
   fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
+#endif
+
   computeNLEesForces();
 
 //---------------------------------------------------------------------------
@@ -1081,8 +1133,18 @@ void CP_State_ParticlePlane::computeNLEesForces(){
    CkPrintf("HI, I am gPP %d %d in computeNLeesForc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
   complex *projPsiGTmp = fftcache->tmpData;
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
   CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
                                k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
+
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesPsiForcGspace_, StartTime, CmiWallTimer());    
+#endif    
 
 //============================================================================
 

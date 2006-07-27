@@ -350,7 +350,16 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
 
     AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
+
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
+
     CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData);
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
+#endif
 
   }//endif : time to update the B-splines
 
@@ -387,7 +396,15 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 
     AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
+#ifndef CMK_OPTIMIZE
+    double  StartTime=CmiWallTimer();
+#endif    
+
     CPLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRhoRHartChares,RhoRHartData);
+
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
+#endif
 
   }//endif : time to update the B-splines
 

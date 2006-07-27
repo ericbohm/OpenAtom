@@ -341,12 +341,27 @@ class CPcharmParaInfoGrp: public Group {
 #define HartExcVksG_         160
 #define divRhoVksGspace_     161
 #define AcceptStructFact_    162
+#define eesHartExcG_         163
+#define eesEwaldG_           164
+#define eesAtmForcR_         165
+#define eesAtmBspline_       166
+#define eesZmatR_            167
+#define eesEnergyAtmForcR_   168
+#define eesProjG_            169
 #define fwFFTGtoR0_          170
 #define fwFFTGtoRnot0_       171
+#define doNlFFTGtoR_         172
+#define doNlFFTRtoG_         173
+#define eesPsiForcGspace_    174
 #define GradCorrGGA_         180
 #define WhiteByrdFFTX_       181
 #define WhiteByrdFFTY_       182
 #define WhiteByrdFFTZ_       183
+#define enlMatrixCalc_       300
+#define enlAtmForcCalc_      301
+#define enlForcCalc_         302
+#define doEextFFTRtoG_       303
+#define doEextFFTGtoR_       304
 #define OrthoDGEMM1_         401
 #define OrthoDGEMM2_         402
 //200-300 reserved for paircalculator
