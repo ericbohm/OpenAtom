@@ -615,7 +615,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
    */
   bool streamready;
 
-  if(symmetric)
+  if(symmetric && thisIndex.x==thisIndex.y) //only left
     streamready=((streamCaughtL>=streamFW) && (streamFW>0));
   else 
     {
@@ -745,26 +745,34 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	int Krem     = (k_in % Ksplit);
 	int Kloop    = k_in/Ksplit-1;
-	DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
-	CmiNetworkProgress();
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-
-	for(int i=1;i<=Kloop;i++){
-	  int off = i*Ksplit;
-	  if(i==Kloop){Ksplit+=Krem;}
-	  
+	int Msplit_m = PC_FWD_DGEMM_SPLIT;
+	int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
+	int Mrem     = (m_in % Msplit);
+	int Mloop    = m_in/Msplit;
+	for(int ms=1;ms<=Mloop;ms++){
+	  int moff    = (ms-1)*k_in*Msplit;
+	  int moffc   = (ms-1)*Msplit;
+	  int MsplitU = (ms==Mloop ? Msplit+Mrem : Msplit);
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
-	  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(allCaughtRight[off]), &lda, &(leftNewTemp[off]), &ldb, &betap, outData1, &ldc);
-	  CmiNetworkProgress();
-	  
+	  DGEMM(&transformT, &transform, &MsplitU, &n_in, &Ksplit, &alpha, &(allCaughtRight[moff]), &lda, leftNewTemp, &ldb, &beta, &(outData1[moffc]), &ldc);
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-
+	  CmiNetworkProgress();
+	  for(int ks=1;ks<=Kloop;ks++){
+	    int koff    = ks*Ksplit;
+	    int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+	    DGEMM(&transformT, &transform, &MsplitU, &n_in, &KsplitU, &alpha, &(allCaughtRight[koff+moff]), &lda, &(leftNewTemp[koff]), &ldb, &betap, &(outData1[moffc]), &ldc);
+#ifndef CMK_OPTIMIZE
+	    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+	    CmiNetworkProgress();
+	  }//endfor
 	}//endfor
 
 #else  // not SPLIT 
@@ -804,30 +812,39 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
       int Krem     = (k_in % Ksplit);
       int Kloop    = k_in/Ksplit-1;
+      int Nsplit_m = PC_FWD_DGEMM_SPLIT;
+      int Nsplit   = ( (n_in > Nsplit_m) ? Nsplit_m : n_in);
+      int Nrem     = (n_in % Nsplit);
+      int Nloop    = n_in/Nsplit;
 
-      DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);      
-      CmiNetworkProgress();
-
-#ifndef CMK_OPTIMIZE
-      traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-
-      for(int i=1;i<=Kloop;i++){
-	int off = i*Ksplit;
-	if(i==Kloop){Ksplit+=Krem;}
-
+      for(int ns=1;ns<=Nloop;ns++){
+	int noff    = (ns-1)*k_in*Nsplit;
+	int noffc   = (ns-1)*ldc*Nsplit;
+	int NsplitU = (ns==Nloop ? Nsplit+Nrem : Nsplit);
 #ifndef CMK_OPTIMIZE
 	StartTime=CmiWallTimer();
 #endif
-	DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(rightNewTemp[off]), &lda, &(allCaughtLeft[off]), &ldb, &betap, outData2, &ldc);      
-	CmiNetworkProgress();
-	
+	DGEMM(&transformT, &transform, &m_in, &NsplitU, &Ksplit, &alpha, rightNewTemp, &lda, &(allCaughtLeft[noff]), &ldb, &beta, &(outData2[noffc]), &ldc);      
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-	
+	CmiNetworkProgress();
+	for(int ks=1;ks<=Kloop;ks++){
+	  int koff    = ks*Ksplit;
+	  int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
+
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+
+	  DGEMM(&transformT, &transform, &m_in, &NsplitU, &KsplitU, &alpha, &(rightNewTemp[koff]), &lda, &(allCaughtLeft[koff+noff]), &ldb, &betap, &(outData2[noffc]), &ldc);      
+
+#ifndef CMK_OPTIMIZE
+	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+	  CmiNetworkProgress();
+	}//endfor
       }//endfor
-      
 #else  // not SPLIT  
 
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
@@ -862,27 +879,34 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	int Krem     = (k_in % Ksplit);
 	int Kloop    = k_in/Ksplit-1;
-
-	DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
-
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-	CmiNetworkProgress();
-	for(int i=1;i<=Kloop;i++){
-	  int off = i*Ksplit;
-	  if(i==Kloop){Ksplit+=Krem;}
-	  
+	int Msplit_m = PC_FWD_DGEMM_SPLIT;
+	int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
+	int Mrem     = (m_in % Msplit);
+	int Mloop    = m_in/Msplit;
+	for(int ms=1;ms<=Mloop;ms++){
+	  int moff    = (ms-1)*k_in*Msplit;
+	  int moffc   = (ms-1)*Msplit;
+	  int MsplitU = (ms==Mloop ? Msplit+Mrem : Msplit);
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
-	  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(allCaughtLeft[off]), &lda, &(leftNewTemp[off]), &ldb, &betap, outData1, &ldc);
-	  CmiNetworkProgress();
-	  
+	  DGEMM(&transformT, &transform, &MsplitU, &n_in, &Ksplit, &alpha, &(allCaughtLeft[moff]), &lda, leftNewTemp, &ldb, &beta, &(outData1[moffc]), &ldc);
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-
+	  CmiNetworkProgress();
+	  for(int ks=1;ks<=Kloop;ks++){
+	    int koff    = ks*Ksplit;
+	    int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+	    DGEMM(&transformT, &transform, &MsplitU, &n_in, &KsplitU, &alpha, &(allCaughtLeft[koff+moff]), &lda, &(leftNewTemp[koff]), &ldb, &betap, &(outData1[moffc]), &ldc);
+#ifndef CMK_OPTIMIZE
+	    traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+	    CmiNetworkProgress();
+	  }//endfor
 	}//endfor
 
 #else  // not split
@@ -919,28 +943,40 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	  int Krem     = (k_in % Ksplit);
 	  int Kloop    = k_in/Ksplit-1;
-	  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);      
-	  CmiNetworkProgress();
+	  int Nsplit_m = PC_FWD_DGEMM_SPLIT;
+	  int Nsplit   = ( (n_in > Nsplit_m) ? Nsplit_m : n_in);
+	  int Nrem     = (n_in % Nsplit);
+	  int Nloop    = n_in/Nsplit;
 
-#ifndef CMK_OPTIMIZE
-	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-
-	  for(int i=1;i<=Kloop;i++){
-	    int off = i*Ksplit;
-	    if(i==Kloop){Ksplit+=Krem;}
-
+	  for(int ns=1;ns<=Nloop;ns++){
+	    int noff    = (ns-1)*k_in*Nsplit;
+	    int noffc   = (ns-1)*ldc*Nsplit;
+	    int NsplitU = (ns==Nloop ? Nsplit+Nrem : Nsplit);
 #ifndef CMK_OPTIMIZE
 	    StartTime=CmiWallTimer();
 #endif
-	    DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &(leftNewTemp[off]), &lda, &(allCaughtLeft[off]), &ldb, &betap, outData2, &ldc);      
-	    CmiNetworkProgress();
-	
+	    DGEMM(&transformT, &transform, &m_in, &NsplitU, &Ksplit, &alpha, leftNewTemp, &lda, &(allCaughtLeft[noff]), &ldb, &beta, &(outData2[noffc]), &ldc);      
 #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-	
+	    CmiNetworkProgress();
+	    for(int ks=1;ks<=Kloop;ks++){
+	      int koff    = ks*Ksplit;
+	      int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
+
+#ifndef CMK_OPTIMIZE
+	      StartTime=CmiWallTimer();
+#endif
+
+	      DGEMM(&transformT, &transform, &m_in, &NsplitU, &KsplitU, &alpha, &(leftNewTemp[koff]), &lda, &(allCaughtLeft[koff+noff]), &ldb, &betap, &(outData2[noffc]), &ldc);      
+
+#ifndef CMK_OPTIMIZE
+	      traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+	      CmiNetworkProgress();
+	    }//endfor
 	  }//endfor
+
       
 #else  // not SPLIT  
 
