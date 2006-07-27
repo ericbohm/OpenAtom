@@ -223,7 +223,7 @@ void GStateSlab::pup(PUP::er &p) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void GStateSlab::addForces(const complex *points, const int *k_x){
+void GStateSlab::addForces(complex *points, const int *k_x){
 //==============================================================================
     int i;
     double wght;
@@ -238,11 +238,8 @@ void GStateSlab::addForces(const complex *points, const int *k_x){
 
       int nfreq=1000;
       for(i = 0; i < nkx0; i++){
-#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
-	packedForceData[i] = 0.0; 
-#endif
-#ifdef _CP_DEBUG_VKS_ONLY_
-	packedForceData[i] = 0.0; 
+#ifdef _CP_DEBUG_VKS_OFF_  // only non-local, no vks forces
+	packedForceData[i].re = 0.0; packedForceData[i].im = 0.0; 
 #endif
 	packedForceData[i] += points[i];
 #ifdef CMK_VERSION_BLUEGENE
@@ -251,11 +248,8 @@ void GStateSlab::addForces(const complex *points, const int *k_x){
       }//endfor
 
       for(i = nkx0; i < numPoints; i++){
-#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
-	packedForceData[i] = 0.0; 
-#endif
-#ifdef _CP_DEBUG_VKS_ONLY_
-	packedForceData[i] = 0.0; 
+#ifdef _CP_DEBUG_VKS_OFF_       // only non-local, no vks forces
+	packedForceData[i].re = 0.0; packedForceData[i].im = 0.0; 
 #endif
 	packedForceData[i] *= 2.0; 
 	packedForceData[i] += points[i];

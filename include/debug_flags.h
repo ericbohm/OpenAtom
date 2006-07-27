@@ -5,13 +5,41 @@
 //=============================================================================
 
 //=============================================================================
+// Major League Debug Controllers
+
+//-----------------------------------------------------------------------
+//#define  _CP_DEBUG_SCALC_ONLY_  // REALLY scalc only NOTHING ELSE
+#ifdef _CP_DEBUG_SCALC_ONLY_
+#define _CP_DEBUG_SFNL_OFF_
+#define _CP_DEBUG_VKS_OFF_
+#define _CP_DEBUG_RHO_OFF_  // not really necesary as no path to rho
+#endif
+
+//-----------------------------------------------------------------------
+//#define  _CP_DEBUG_VKS_ONLY_  //what we called scalc only : states make rho but don't send
+#ifdef _CP_DEBUG_VKS_ONLY_
+#define _CP_DEBUG_SFNL_OFF_
+#define _CP_DEBUG_RHO_OFF_     // blocks send to rho from state chares
+#endif
+
+//-----------------------------------------------------------------------
+//#define  _CP_DEBUG_NON_LOCAL_ONLY_  // SFNL + scalc, no density creation 
+#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
+#define _CP_DEBUG_VKS_OFF_
+#define _CP_DEBUG_RHO_OFF_  // not really necessary as there is no path to rho
+#endif
+
+//-----------------------------------------------------------------------
+//#define _CP_DEBUG_HARTEEXT_OFF_   // this leaves everything on but eext/hartree
+
+
+//=============================================================================
 // src_charm_driver/main/groups.C
 //#define _CP_DEBUG_PSI_OFF_
 
 //=============================================================================
-// src_charm_driver/misc/sim_subroutines.C
+// src_charm_driver/fft_slab_ctrl
 //#define _CP_DEBUG_NON_LOCAL_ONLY_
-//#define _CP_DEBUG_VKS_ONLY_
 //#define _CP_DEBUG_FFTR_VKSR_
 
 //=============================================================================
@@ -45,6 +73,7 @@
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_GSpacePlane.C    
+//#define _CP_DEBUG_NON_LOCAL_ONLY_
 //#define _CP_DEBUG_OLDFORCE_
 //#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_LMAT_

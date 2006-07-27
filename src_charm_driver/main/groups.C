@@ -168,6 +168,7 @@ void AtomsGrp::StartRealspaceForces(){
 //==========================================================================
 // Get the real space atom forces
 
+
    int myid   = CkMyPe();
    int nproc  = CkNumPes();
    pot_ewd_rs = 0.0;

@@ -256,6 +256,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
   int ngrid_c    = nonlocal->ngrid_c;
   int *map_nl    = nonlocal->map_nl;
 
+  int n_interp2  = n_interp*n_interp;
+
   double *aj     = nonlocal->aj;
   double *rn     = nonlocal->rn;
   double *rn1    = nonlocal->rn1;
@@ -470,7 +472,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
        igrid_at[j] = igrid_a[j][i]; index_a[j] = j;  
        igrid_bt[j] = igrid_b[j][i]; index_b[j] = j;
      }//endfor
-#define _CP_CACHE_BETTER_
+#define _CP_CACHE_BETTER_OFF
 #ifdef _CP_CACHE_BETTER_
      sort_commence_piny(n_interp,igrid_at,index_a);
      sort_commence_piny(n_interp,igrid_bt,index_b);
@@ -503,19 +505,28 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
          }//endfor : ja
          jj += n_interp;
         }//endfor : jb
-#ifdef JUNK
-        int *nBreakJ, *strBreakJ;
-        nBreakJ       = RPPData[ip].nBreakJ;
-        sBreakJ       = RPPData[ip].sBreakJ;
+#define _CP_BRK_BETTER_OFF // must flip cp_ees_nonlocal.h too
+#ifdef _CP_BRK_BETTER_
+        int *nBreakJ  = RPPData[ip].nBreakJ;
+        int **sBreakJ = RPPData[ip].sBreakJ;
         nBreakJ[i]    = 1;   // length natm
-        sBreakJ[i][1] = 1;   // length [natm][n_interp2]
+        sBreakJ[i][1] = 1;   // length [natm][n_interp2+1]
         for(int jj=2;jj<=n_interp2;jj++){
-          if(igrid[i][jj]!=igrid[i][(jj-1)]){
-	    nBreakJ[i]++;
-            strtBreakJ[i][nBreakJ[i]] = jj;
+          if(igrid[i][jj]!=igrid[i][(jj-1)]+1){
+	    nBreakJ[i]            += 1;
+            sBreakJ[i][nBreakJ[i]] = jj;
 	  }//endif
 	}//endfor
-        strtBreakJ[i][(nBreakJ[i]+1)] = n_interp2;
+        sBreakJ[i][(nBreakJ[i]+1)] = n_interp2+1;
+#endif
+#define _CP_TEST_BREAK_OFF
+#ifdef _CP_TEST_BREAK_
+        int num = 0;
+        for(int ib=1;ib<=nBreakJ[i];ib++){
+          num += sBreakJ[i][(ib+1)]-sBreakJ[i][ib];
+          if(sBreakJ[i][(ib+1)]!=num+1){PRINTF("Help.1 %d\n",num); EXIT(1);}
+        }//endif
+        if(num!=n_interp2){PRINTF("Help %d\n",num); EXIT(1);}
 #endif
 #ifdef CMK_VERSION_BLUEGENE
         CmiNetworkProgress();
@@ -986,6 +997,7 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
 void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double *zmat, 
                 int **igrid,double **mn,double **dmn_x,double **dmn_y,double **dmn_z,
 		double *projPsiR, double *projPsiRScr, int *plane_index, 
+		int *nBreak, int **sBreak,
                 int plane, int state, FastAtoms *atoms)
 //==========================================================================
    {//Begin Routine 
@@ -1081,6 +1093,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
        zmat[jatm] *= (2.0*vnormVol); 
        double fxx=0.0,fyy=0.0,fzz=0.0;
+#ifndef _CP_BRK_BETTER_
       //could use a pragma ivep because igrid does not have duplicate values in this loop
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
@@ -1117,16 +1130,45 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          fzz      += (pz*dmn_z[iatm][j]);
          projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
        }//endfor
-#ifdef JUNK
-       for(int ib=1;ib<=nBreakJ[iatm];ib++){
-         joff = igrid[iatm][sBreakJ[ib]];
-	 for(int k = sBreakJ[ib],j=joff; k<=sBreakJ[(ib+1)];k++,j++){
-           double pz = projPsiR[j];           // psi
+#else
+       for(int ib=1;ib<=nBreak[iatm];ib++){
+         int koff = igrid[iatm][sBreak[iatm][ib]];
+         int joff = sBreak[iatm][ib];
+         int nn   = sBreak[iatm][(ib+1)]-joff;  
+         nrem     = (nn % nroll);
+         jend     = nn-nrem+joff-1;
+         jstrt    = jend+1;
+         int kstrt= jstrt-joff+koff;
+         for(int j=joff,k=koff;j<=jend;j+=5,k+=5){
+           double p0 = projPsiR[k];           // psi
+           double p1 = projPsiR[k+1];           // psi
+           double p2 = projPsiR[k+2];           // psi
+           double p3 = projPsiR[k+3];           // psi
+           double p4 = projPsiR[k+4];           // psi
+           fxx      += (p0*dmn_x[iatm][j]   + p1*dmn_x[iatm][j+1] + p2*dmn_x[iatm][j+2] 
+		       +p3*dmn_x[iatm][j+3] + p4*dmn_x[iatm][j+4]);
+           fyy      += (p0*dmn_y[iatm][j]   + p1*dmn_y[iatm][j+1] + p2*dmn_y[iatm][j+2] 
+		       +p3*dmn_y[iatm][j+3] + p4*dmn_y[iatm][j+4]);
+           fzz      += (p0*dmn_z[iatm][j]   + p1*dmn_z[iatm][j+1] + p2*dmn_z[iatm][j+2] 
+		       +p3*dmn_z[iatm][j+3] + p4*dmn_z[iatm][j+4]);
+           double q0  = zmat[jatm]*mn[iatm][j];  
+           double q1  = zmat[jatm]*mn[iatm][j+1];  
+           double q2  = zmat[jatm]*mn[iatm][j+2];  
+           double q3  = zmat[jatm]*mn[iatm][j+3];  
+           double q4  = zmat[jatm]*mn[iatm][j+4];  
+           projPsiRScr[k]   += q0;               // add contrib into total
+           projPsiRScr[k+1] += q1;
+           projPsiRScr[k+2] += q2;
+           projPsiRScr[k+3] += q3;
+           projPsiRScr[k+4] += q4;
+	 }//endfor
+         for(int j=jstrt,k=kstrt;j<sBreak[iatm][(ib+1)];j++,k++){
+           double p = projPsiR[k];           // psi
+           fxx      += (p*dmn_x[iatm][j]);
+           fyy      += (p*dmn_y[iatm][j]);
+           fzz      += (p*dmn_z[iatm][j]);
            double q  = zmat[jatm]*mn[iatm][j];  
-           fxx      += (pz*dmn_x[iatm][j]);
-           fyy      += (pz*dmn_y[iatm][j]);
-           fzz      += (pz*dmn_z[iatm][j]);
-           projPsiRScr[j] += q;               // add contrib into total
+           projPsiRScr[k] += q;               // add contrib into total
 	 }//endfor
        }//endfor
 #endif

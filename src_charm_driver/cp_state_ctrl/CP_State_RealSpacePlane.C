@@ -261,9 +261,7 @@ void CP_State_RealSpacePlane::doFFT(){
 //============================================================================
 // Send off the reduction unless you are skipping rho, whence you call doproduct
 
-#ifndef _CP_DEBUG_RHO_OFF_
-    doReduction();
-#else
+#ifdef _CP_DEBUG_RHO_OFF_
   if(thisIndex.x==0 && thisIndex.y==0){
     CkPrintf("EHART       = OFF FOR DEBUGGING\n");
     CkPrintf("EExt        = OFF FOR DEBUGGING\n");
@@ -274,6 +272,8 @@ void CP_State_RealSpacePlane::doFFT(){
   }//endif
   bzero(data,ngrida*ngridb*sizeof(double));
   doProductThenFFT();
+#else
+  doReduction();
 #endif
 
 //---------------------------------------------------------------------------
@@ -379,7 +379,7 @@ void CP_State_RealSpacePlane::doProductThenFFT() {
              thisIndex.x, thisIndex.y,CmiMemoryUsage());
 #endif
 
-#ifdef _CP_DEBUG_RHO_OFF_  
+#ifndef _CP_DEBUG_RHO_OFF_  
 #ifdef _CP_DEBUG_VKS_RSPACE_
   if(thisIndex.x==0 && thisIndex.y == 0){
      FILE *fp = fopen("vks_real_y0_state0.out","w");

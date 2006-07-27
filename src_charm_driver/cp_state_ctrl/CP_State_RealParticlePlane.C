@@ -626,6 +626,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();  
    int *plane_index    = eesData->RppData[myPlane].plane_index;
    int **igrid         = eesData->RppData[myPlane].igrid;
+   int *nBreakJ        = eesData->RppData[myPlane].nBreakJ;
+   int **sBreakJ       = eesData->RppData[myPlane].sBreakJ;
    double **dmn_x      = eesData->RppData[myPlane].dmn_x;
    double **dmn_y      = eesData->RppData[myPlane].dmn_y;
    double **dmn_z      = eesData->RppData[myPlane].dmn_z;
@@ -648,7 +650,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 #endif    
 
    CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
-                       projPsiR,projPsiRScr,plane_index,myPlane,thisIndex.x,fastAtoms);
+ 		      projPsiR,projPsiRScr,plane_index,nBreakJ,sBreakJ,
+                      myPlane,thisIndex.x,fastAtoms);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesEnergyAtmForcR_, StartTime, CmiWallTimer());    
 #endif

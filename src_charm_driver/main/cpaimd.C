@@ -111,6 +111,7 @@
 #include "bgltorus.h"
 #endif
 //============================================================================
+#include "../include/debug_flags.h"
 #include "../include/CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
 #include "../../src_piny_physics_v1.0/include/charm_defs/Interface_ctrl.decl.h"
@@ -312,6 +313,60 @@ main::main(CkArgMsg *msg) {
     CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
 
     CkPrintf("---------------------------------------------------\n\n");
+
+//============================================================================    
+// check the debug flags for consistency
+
+#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
+#ifdef _CP_DEBUG_SFNL_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test non-local by itself and turn it off\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#endif
+
+#ifdef _CP_DEBUG_NON_LOCAL_ONLY_
+#ifndef _CP_DEBUG_VKS_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test non-local by itself with vks on\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#endif
+
+#ifdef _CP_DEBUG_VKS_ONLY_
+#ifdef _CP_DEBUG_VKS_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test vks by itself and turn it off\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#endif
+
+#ifdef _CP_DEBUG_VKS_ONLY_
+#ifndef _CP_DEBUG_SFNL_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test vks by itself with SNFL on\n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#endif
+
+#ifdef _CP_DEBUG_NON_LOCAL_VKS_ONLY_
+#ifdef _CP_DEBUG_SFNL_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test vks and SNFL only without sfnl \n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#ifdef _CP_DEBUG_VKS_OFF_
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("You can't test vks and SNFL only without vks \n");
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+#endif
+#endif
 
 //============================================================================    
 /* Invoke PINY input class */

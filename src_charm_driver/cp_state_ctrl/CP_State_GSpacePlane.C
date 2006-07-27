@@ -146,8 +146,10 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #endif               //end pause
     //------------------------------------------------------------------------
     // (D) FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real, 
+#ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed
        c->doFFT(); 
        c->sendFFTData();
+#endif
     //------------------------------------------------------------------------
     // (E) Start the non-local computation with done using EES
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
@@ -156,13 +158,19 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        }//endif
 #endif
     //------------------------------------------------------------------------
-    // (F) Chill out until Psi forces come back to us and then do back FFT
+    // (F) When Psi forces come back to us, do back FFT
+#ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
        c->doIFFT();    // Message from realspace arrives : doifft(msg) resumes
+#else
+       c->doneDoingIFFT = true;
+#endif
     //------------------------------------------------------------------------
     // (G) If NL-pseudo forces are not done, wait for them.
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
+       c->isuspendNLForces = 0;
        if(!c->doneNLForces()){
+         c->isuspendNLForces = 1;
          RTH_Suspend(); // resume called in acceptNLforces or acceptNLForcesEes
                         // when NL forces are ALL done (all channels/atm types).
                         // The latter invoked by CP_State_ParticlePlane.
@@ -596,7 +604,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   doneDoingIFFT       = false;
   allgdoneifft        = false;
   acceptedPsi         = true;    // we start out with a psi
-  allAcceptedPsi         = true;    // we start out with a psi
+  allAcceptedPsi      = true;    // we start out with a psi
   acceptedVPsi        = true;    // we start out with a vpsi
   acceptedLambda      = false;   // no forces yet
   needPsiV            = false;   // don't need tolerance check in first step
@@ -764,6 +772,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|istate_ind;
   p|iplane_ind;
   p|registrationFlag;
+  p|isuspendNLForces;
   p|initialized;
   p|istart_typ_cp;
   p|iteration;
@@ -1559,7 +1568,14 @@ void CP_State_GSpacePlane::acceptNLForces(){
 //  I. If the fft forces finished first, you need to resume(they are waiting).
 // II. If the fft forces are not done, hang loose till they finish.
 #ifndef _CP_DEBUG_NONLOC_BARRIER_
-  if(doneDoingIFFT){RTH_Runtime_resume(run_thread);}
+  if(doneDoingIFFT){
+    if(isuspendNLForces == 0){
+      CkPrintf("I never suspended NL forces %d %d\n",istate_ind,iplane_ind);     
+      CkExit();
+    }//endif
+    isuspendNLForces = 0;
+    RTH_Runtime_resume(run_thread);
+  }//endif
 #endif
 //-------------------------------------------------------------------------------
   }//end routine   
@@ -1590,11 +1606,25 @@ void CP_State_GSpacePlane::acceptNLForcesEes(){
 //==============================================================================
 void CP_State_GSpacePlane::combineForcesGetEke(){
 //================================================================================
+
+#ifdef _CP_DEBUG_VKS_OFF_
+  if(thisIndex.x==0 && thisIndex.y==0){
+    CkPrintf("EHART       = OFF FOR DEBUGGING\n");
+    CkPrintf("EExt        = OFF FOR DEBUGGING\n");
+    CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
+    CkPrintf("EEXC        = OFF FOR DEBUGGING\n");
+    CkPrintf("EGGA        = OFF FOR DEBUGGING\n");
+    CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
+  }//endif
+#endif
+
+//================================================================================
 // Check stuff from the gsplane data cache and particle plane
 
   CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
   eesCache *eesData          = eesCacheProxy.ckLocalBranch ();
   complex *ppForces = pp->myForces;
+  int ncoef       = gs.numPoints;
   int *k_x          = eesData->GspData[iplane_ind].ka;
   int *k_y          = eesData->GspData[iplane_ind].kb;
   int *k_z          = eesData->GspData[iplane_ind].kc;
@@ -1616,6 +1646,15 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   }//endif
 #endif
 
+  complex *forces = gs.packedForceData;
+#ifdef _CP_DEBUG_SFNL_OFF_
+  bzero(ppForces,ncoef*sizeof(complex));
+#endif
+#ifdef _CP_DEBUG_VKS_OFF_ 
+  bzero(forces,ncoef*sizeof(complex));
+  bzero(ppForces,ncoef*sizeof(complex));
+#endif
+
   gs.addForces(ppForces,k_x);
   bzero(ppForces,gs.numPoints*sizeof(complex));
   CmiNetworkProgress();
@@ -1625,10 +1664,8 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 // Reduce quantum kinetic energy or eke
 
   int istate        = gs.istate_ind;
-  int ncoef         = gs.numPoints;
   int nkx0          = gs.nkx0;
   complex *psi_g    = gs.packedPlaneData;
-  complex *forces   = gs.packedForceData;
   double *eke_ret   = &(gs.eke_ret);
 
   CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,
@@ -1757,6 +1794,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 // Get the modified forces
 
   countLambda++;//lambda arrives in as many as 2 * numChunks reductions
+
 //=============================================================================
 // (II) Add it in to our forces
 
@@ -1929,7 +1967,6 @@ void CP_State_GSpacePlane::doLambda() {
   if(thisIndex.x==0)
    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-
   RTH_Runtime_resume(run_thread);
 //==============================================================================
   }//end routine

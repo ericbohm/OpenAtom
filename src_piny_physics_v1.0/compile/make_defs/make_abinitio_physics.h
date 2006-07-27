@@ -5,7 +5,7 @@
 
 #=================================================================
 cp_eke.o    :  $(STANDARD) $(FFTW) \
-               $(COMPLEX)   \
+               $(COMPLEX)  $(DBG_FLAGS) \
                $(CLASS_CP_NONLOC) \
                $(CODE)/abinito_physics/cp_nonlocal/cp_eke.C
 	$(ECHO) $@
@@ -34,7 +34,7 @@ cp_ees_nonlocal.o  :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C
 #------------------------------------------------------------------
 cp_hart_ext.o :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) \
-               $(CLASS_CP) $(FFTW) \
+               $(CLASS_CP) $(FFTW)   $(DBG_FLAGS) \
                $(COMPLEX)   \
                $(CLASS_CP_LOC) \
                $(CODE)/abinito_physics/cp_local/cp_hart_ext.C
@@ -119,7 +119,7 @@ cp_rspace_ion.o :  $(STANDARD) $(FFTW) \
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_ions/cp_rspace_ion.C
 #------------------------------------------------------------------
 cp_min_std.o :  $(STANDARD) $(FFTW) \
-               $(COMPLEX)  \
+               $(COMPLEX)  $(DBG_FLAGS) \
                $(CLASS_CP_INTEGRATE) \
                $(CODE)/abinito_physics/cp_integrate/cp_min_std.C
 	$(ECHO) $@

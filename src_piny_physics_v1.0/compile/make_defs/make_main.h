@@ -43,7 +43,7 @@ vx_smpl.o     :          $(STANDARD) $(DEFINES) \
                                                                                
 #==========================================================================
 ParaInfoInit.o     :      $(STANDARD) $(DEFINES) \
-                         $(CLASS_GEN) $(CLASS_CP) \
+                         $(CLASS_GEN) $(CLASS_CP) $(DBG_FLAGS) \
                          $(CLASS_PARAINIT) \
                          $(CODE)/piny_to_driver/Parainfoinit.C
 	$(ECHO) $@

@@ -336,9 +336,10 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
 
 //============================================================================
 // II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
+//     or print out that you are taking the day off
 
-#ifndef _CP_DEBUG_HARTEEXT_OFF_
-   
+#ifndef _CP_DEBUG_HARTEEXT_OFF_  // hartree is cooking
+
      for(int i=0;i<rhoGHelpers;i++){
   
        RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
@@ -359,12 +360,14 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
 #endif
      }//endfor
 
-#else
+#else //hartree is sitting this one out
+
     if(thisIndex.x==0 && thisIndex.y==0){
        CkPrintf("EHART       = OFF FOR DEBUGGING\n");
        CkPrintf("EExt        = OFF FOR DEBUGGING\n");
        CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
      }//endif
+
 #endif
 
 //============================================================================

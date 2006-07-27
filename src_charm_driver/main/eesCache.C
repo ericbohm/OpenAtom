@@ -224,21 +224,29 @@ void eesCache::registerCacheGSP(int is ,int ip){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RPPDATA::init(int index_in){
+#define _CP_BRK_BETTER_OFF  // must flip cp_ees_nonlocal.h too
 
    CPNONLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
 
-   index          = index_in;
+   index         = index_in;
    int n_interp2 = n_interp*n_interp;
 
    plane_index    = (int *)fftw_malloc(natm*sizeof(int));
+   nBreakJ        = (int *)fftw_malloc(natm*sizeof(int));
 
-   igrid = (int **)fftw_malloc(natm*sizeof(int*));
+   igrid   = (int **)fftw_malloc(natm*sizeof(int*));
+#ifdef _CP_BRK_BETTER_
+   sBreakJ = (int **)fftw_malloc(natm*sizeof(int*));
+#endif
    mn    = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_x = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
    dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
    for(int i=0;i<natm;i++){
      igrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
+#ifdef _CP_BRK_BETTER_
+     sBreakJ[i]  = (int *)fftw_malloc((n_interp2+1)*sizeof(int))-1;    
+#endif
      double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
      int ioff    = 0;
      mn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;

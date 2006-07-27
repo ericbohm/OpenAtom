@@ -354,6 +354,7 @@ void CP_Rho_RealSpacePlane::acceptDensity() {
 //============================================================================
 // Launch the external energy computation in r-space
  
+#ifndef _CP_DEBUG_HARTEEXT_OFF_
   if(ees_eext_on==1){
     int div    = (ngridcEext / ngridc);
     int rem    = (ngridcEext % ngridc);
@@ -376,6 +377,7 @@ void CP_Rho_RealSpacePlane::acceptDensity() {
       rhoRHartExtProxy(ind,0).startEextIter();
     }//endif
   }//endif
+#endif
 
 //============================================================================
 // Compute the exchange correlation energy (density no-grad part)

@@ -69,7 +69,8 @@ static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,i
 
 static void eesEnergyAtmForcRchare(int , double *, double *, 
                                    int **,double **,double **,double **,double **,
-                                   double *, double *, int *, int , int , FastAtoms *);
+                                   double *, double *, int *, int *,int **,
+                                   int , int , FastAtoms *);
 
 static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
                              int *,int *, int *,int , int, int);

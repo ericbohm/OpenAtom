@@ -252,6 +252,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int numChunks;
         int ees_nonlocal;
         int cleanExitCalled;
+        int isuspendNLForces;
+	bool doneDoingIFFT;
 	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
@@ -334,7 +336,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int jtemp;
 	bool needPsiV;
 	bool allgdoneifft;
-	bool doneDoingIFFT;
 	bool initialized;
 	bool allAcceptedPsi;
 	bool acceptedPsi;

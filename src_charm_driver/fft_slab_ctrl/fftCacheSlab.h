@@ -121,7 +121,7 @@ public:
    }//end routine
 
    void setKRange(int , int *, int *, int *);
-   void addForces(const complex *,const int *);
+   void addForces(complex *,const int *);
 
 //-----------------------------------------------------------------------------
   };

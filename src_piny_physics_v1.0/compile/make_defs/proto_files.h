@@ -25,6 +25,7 @@ CLASS_MDINTRA = $(CODE)/include/class_defs/allclass_mdintra.h
 CLASS_CP      = $(CODE)/include/class_defs/allclass_cp.h
 TYP_STAT      = $(CODE)/include/class_defs/typedefs_stat.h
 TYP_PAR       = $(CODE)/include/class_defs/typedefs_par.h
+DBG_FLAGS     = $(CODE)/../include/debug_flags.h
 
 CLASS_PhysicsAtomPosinit = $(CODE)/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h
 CLASS_PARAINIT  = $(CODE)/include/class_defs/PINY_INIT/PhysicsParamTrans.h

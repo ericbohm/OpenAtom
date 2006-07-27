@@ -128,6 +128,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   totalEnergy          = 0.0;
   sendDone             = 0;
 
+  doneGettingForces    = false;
   numSfGrps            = numSfGrps_in;
   natm_nl              = natm_nl_in;
   natm_nl_grp_max      = natm_nl_grp_max_in;

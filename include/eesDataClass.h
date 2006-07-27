@@ -14,8 +14,10 @@ class RPPDATA {
    int natm;                      // non-local atms
    int *plane_index;              // lth: natm : atm is on plane? 1/0
    int **igrid;                   // lth: natm*ninterp^2 : where is atm
+   int *nBreakJ, **sBreakJ;
    double **mn;                   // lth: natm*ninterp^2 : b-spline
    double **dmn_x,**dmn_y,**dmn_z;// lth: natm*ninterp^2 : nabla (b-spline)
+
    RPPDATA(){};   
   ~RPPDATA(){};
    void init(int );
