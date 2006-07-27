@@ -653,7 +653,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 #endif
   }//endfor
 #ifdef CMK_VERSION_BLUEGENE
-    if(i%nfreq==0){CmiNetworkProgress();}
+  CmiNetworkProgress();
 #endif
   for(int i=ii+1;i<ncoef;i++){
     int ind_now = ind_off + ind_gspl[i];
