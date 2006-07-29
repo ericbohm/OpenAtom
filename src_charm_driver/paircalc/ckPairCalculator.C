@@ -203,24 +203,14 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   //  int progcount=0;
   for(int i=1; i<nMsg;i++)
     {
+
       inmatrix=(double *) msgs[i]->getData();
-#pragma disjoint(ret,inmatrix);
-      //unrolling
-      if(size>4)
-	{
-	  int d=0;
-	  for(;d<size-4;d+=4) //we're hoping that this software pipelines
-	    {
-	      ret[d]+=inmatrix[d];
-	      ret[d+1]+=inmatrix[d+1];
-	      ret[d+2]+=inmatrix[d+2];
-	      ret[d+3]+=inmatrix[d+3];
-	    }
-	  // leftovers
-	  for(;d<size;d++)
-	    ret[d]+=inmatrix[d];
-	}
-      else
+#ifdef CMK_VERSION_BLUEGENE
+#pragma disjoint(*ret,*inmatrix);
+      __alignx(16,ret);
+      __alignx(16,inmatrix);
+#pragma unroll(10)
+#endif
 	for(int d=0;d<size;d++)
 	  ret[d]+=inmatrix[d];
     }
