@@ -204,14 +204,25 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   for(int i=1; i<nMsg;i++)
     {
       inmatrix=(double *) msgs[i]->getData();
-      for(int d=0;d<size;d++)
-	ret[d]+=inmatrix[d];
-      /*      if(progcount++==8)
+#pragma disjoint(ret,inmatrix);
+      //unrolling
+      if(size>4)
 	{
-
-	  progcount=0;
+	  int d=0;
+	  for(;d<size-4;d+=4) //we're hoping that this software pipelines
+	    {
+	      ret[d]+=inmatrix[d];
+	      ret[d+1]+=inmatrix[d+1];
+	      ret[d+2]+=inmatrix[d+2];
+	      ret[d+3]+=inmatrix[d+3];
+	    }
+	  // leftovers
+	  for(;d<size;d++)
+	    ret[d]+=inmatrix[d];
 	}
-      */
+      else
+	for(int d=0;d<size;d++)
+	  ret[d]+=inmatrix[d];
     }
   //  CmiNetworkProgress();
   return CkReductionMsg::buildNew(size*sizeof(double),ret);
@@ -619,7 +630,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     streamready=((streamCaughtL>=streamFW) && (streamFW>0));
   else 
     {
-      streamready=((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) && ((numRecLeft>0) && (numRecRight>0) && (streamFW>0));
+      streamready=((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) && ((numRecLeft>=streamFW) && (numRecRight>=streamFW) && (streamFW>0));
       //      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
 
     }
