@@ -30,6 +30,11 @@ class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
 };
 //============================================================================
 
+class NLDummyMsg: public CMessage_NLDummyMsg {
+ public:
+  int iteration;
+};
+
 //============================================================================
 class GHartDummyMsg: public CMessage_GHartDummyMsg {
 };
@@ -615,14 +620,13 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
                                int ,int ,int ,int ,int );
 	~CP_State_ParticlePlane();
 	void pup(PUP::er &);
-
+	void lPrioStartNLEes(NLDummyMsg *m);
 	void computeZ(PPDummyMsg *m);
 	void setEnlCookie(EnlCookieMsg *m);
 	void ResumeFromSync();
 	void reduceZ(int, int, complex *,complex *,complex *,complex *);
 	void getForces(int, int, complex *);
 
-        void startNLEes(int );
         void createNLEesFFTdata();
         void FFTNLEesFwd();
         void sendToEesRPP();

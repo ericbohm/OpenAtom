@@ -758,10 +758,11 @@ void CP_State_ParticlePlane::ResumeFromSync(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_ParticlePlane::startNLEes(int iteration_in){
+void CP_State_ParticlePlane::lPrioStartNLEes(NLDummyMsg *msg){
 //==============================================================================
 //  Increment counters, Check for inconsistancies
-
+  int iteration_in=msg->iteration;
+  delete msg;
   iterNL++;  if(iterNL==1){iteration++;}
 
   doneGettingForces = false;   // If you are here, you are not done.
@@ -1159,7 +1160,11 @@ void CP_State_ParticlePlane::computeNLEesForces(){
     gsp->acceptNLForcesEes(); // Let the lads in gsp know you are done
                               // Gsp zeros myForces so it is ready next time
   }else{
-    startNLEes(iteration);    // do another iteration
+    NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
+    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+    *(int*)CkPriorityPtr(msg) = config.sfpriority;
+    msg->iteration=iteration;
+    thisProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
   }//endif
 
 //----------------------------------------------------------------------------

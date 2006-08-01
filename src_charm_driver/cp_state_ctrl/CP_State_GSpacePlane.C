@@ -3508,10 +3508,14 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::startNLEes(){
 
-  CP_State_ParticlePlane *pp = 
-    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-
-  pp->startNLEes(iteration);
+  //  CP_State_ParticlePlane *pp = 
+  //    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  //  pp->startNLEes(iteration);
+  NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
+  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+  *(int*)CkPriorityPtr(msg) = config.sfpriority;
+  msg->iteration=iteration;
+  particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
 
 }
 //==============================================================================

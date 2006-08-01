@@ -95,6 +95,7 @@ mainmodule cpaimd {
         readonly CP           readonly_cp; 
 
 	message PPDummyMsg;
+	message NLDummyMsg;
 	message SFDummyMsg;
 	message RSDummyResume;
 	message GHartDummyMsg;
@@ -201,9 +202,9 @@ mainmodule cpaimd {
 			complex zmatrix_fx[size], complex zmatrix_fy[size],
                         complex zmatrix_fz[size]);
 		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
+		entry void lPrioStartNLEes(NLDummyMsg *m);
 		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
 		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
-		entry void startNLEes (int);
                 entry void registrationDone(CkReductionMsg *msg);
 	};
 
