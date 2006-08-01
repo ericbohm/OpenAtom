@@ -20,7 +20,9 @@
 #include "ckhashtable.h"
 #include "PeList.h"
 #include "MapTable.h"
-
+#ifdef CMK_VERSION_BLUEGENE
+#include "builtins.h"
+#endif
 
 //#define GPSI_BARRIER 1
 

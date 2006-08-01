@@ -1813,8 +1813,16 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
       CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
     }
   */
+#ifdef CMK_VERSION_BLUEGENE
+#pragma disjoint(*force, *data)
+      __alignx(16,force);
+      __alignx(16,data);
+#endif
   if(config.doublePack==1){
    if(cp_min_opt==1){
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
@@ -1822,12 +1830,21 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
      }//endfor
    }else{
        if(countLambdaO[offset]<1)
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
 	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
        else
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
 	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
    }//endif
  
   }else{
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
@@ -1884,10 +1901,18 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
       CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
     }
   */
-
+#ifdef CMK_VERSION_BLUEGENE
+#pragma disjoint(*force, *data)
+      __alignx(16,force);
+      __alignx(16,data);
+#endif
   if(config.doublePack==1){
 
    if(cp_min_opt==1){
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
+
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
@@ -1895,12 +1920,23 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
      }//endfor
    }else{
      if(countLambdaO[offset]<1)
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
+
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      else
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
+
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
    }//endif : cp_min_on
 
   }else{
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
 
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
        force[idest].re -= 0.5*data[i].re;
@@ -2686,10 +2722,22 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   int chunkoffset=offset*chunksize; // how far into the points this
 				  // contribution lies
   int idest=chunkoffset;
+#ifdef CMK_VERSION_BLUEGENE
+#pragma disjoint(*data,*psi)
+      __alignx(16,data);
+      __alignx(16,psi);
+#endif
+
   if(countPsiO[offset]<1)
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(5)
+#endif
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(5)
+#endif
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
 
   delete msg;
@@ -2736,10 +2784,22 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   int chunkoffset=offset*chunksize; // how far into the points this
 				  // contribution lies
   int idest=chunkoffset;
+#ifdef CMK_VERSION_BLUEGENE
+#pragma disjoint(*psi, *data)
+      __alignx(16,psi);
+      __alignx(16,data);
+#endif
+
   if(countPsiO[offset]<1)
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)
+#endif
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
 
   delete msg;

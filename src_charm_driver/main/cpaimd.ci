@@ -47,7 +47,7 @@ mainmodule cpaimd {
 	readonly CProxy_FFTcache fftCacheProxy;
 	readonly CProxy_StructFactCache sfCacheProxy;
 	readonly CProxy_StructureFactor sfCompProxy;
-	readonly CProxy_eesCache                   eesCacheProxy;
+	readonly CProxy_eesCache  eesCacheProxy;
 	
 	readonly CkGroupID mCastGrpId;
 

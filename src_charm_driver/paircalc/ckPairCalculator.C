@@ -175,9 +175,16 @@
 
 
 #include "ckPairCalculator.h"
+#ifdef CMK_VERSION_BLUEGENE
+#include "builtins.h"
+// void __alignx(int alignment,  const void *address);
+// void _alignx(int alignment,  const void *address);
+// void alignx(int alignment,  const void *address);
+#endif
 
 
 ComlibInstanceHandle mcastInstanceCP;
+ComlibInstanceHandle mcastInstanceACP;
 
 CkReduction::reducerType sumMatrixDoubleType;
 
@@ -206,7 +213,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
       inmatrix=(double *) msgs[i]->getData();
 #ifdef CMK_VERSION_BLUEGENE
-#pragma disjoint(*ret,*inmatrix);
+#pragma disjoint(*ret,*inmatrix)
       __alignx(16,ret);
       __alignx(16,inmatrix);
 #pragma unroll(10)
@@ -1214,6 +1221,8 @@ PairCalculator::sendTiles(bool flag_dp)
   int numOrtho=grainSize/orthoGrainSize;
   //  for(int orthoX=0; orthoX<numOrtho; orthoX++)
   //    for(int orthoY=0; orthoY<numOrtho; orthoY++)
+
+  int progcounter=0;
   for(int orthoIndex=0;orthoIndex<numOrtho*numOrtho;orthoIndex++)
       {
 	// copy into submatrix, contribute
@@ -1239,7 +1248,9 @@ PairCalculator::sendTiles(bool flag_dp)
 #endif
 
 	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
-	  touchedTiles[orthoIndex]=0;
+	    touchedTiles[orthoIndex]=0;
+	    if(++progcounter>8)
+	      {progcounter=0;CmiNetworkProgress();}
 	  }
 	else if(touchedTiles[orthoIndex]>tilesq)
 	  {

@@ -57,6 +57,7 @@
 #include "pairCalculator.h"
 #include <algorithm>
 extern ComlibInstanceHandle mcastInstanceCP;
+extern ComlibInstanceHandle mcastInstanceACP;
 extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
 
@@ -101,8 +102,10 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
-  if(sym)// cheap hack to only do this once 
+  if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
+  else
+    mcastInstanceACP=ComlibRegister(multistrat);
 
   if(sym)
     for(int numX = 0; numX < numZ; numX ++){
@@ -345,6 +348,13 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
       
       // send the message to initialize it with the callback and groupid
       setGredProxy(&sectProxy, pcid->orthomCastGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+    }
+  else
+    {
+      if(pcid->Symmetric)
+	ComlibAssociateProxy(&mcastInstanceCP,sectProxy);
+      else
+      	ComlibAssociateProxy(&mcastInstanceACP,sectProxy);
     }
 
   return sectProxy;

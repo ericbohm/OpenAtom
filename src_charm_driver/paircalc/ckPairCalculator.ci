@@ -4,6 +4,7 @@
 
 module ckPairCalculator {
 	readonly ComlibInstanceHandle mcastInstanceCP;
+	readonly ComlibInstanceHandle mcastInstanceACP;
 
 	initproc registersumMatrixDouble(void);	
 
