@@ -202,20 +202,40 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   double *ret=(double *)msgs[0]->getData();
 
   //  CkAssert ((unsigned int) ret % 8 == 0);
-
+#ifdef CMK_VERSION_BLUEGENE
+      __alignx(16,ret);
+#endif
   int size0=msgs[0]->getSize();
   int size=size0/sizeof(double);
 
   double *inmatrix;
   //  int progcount=0;
+  if(nMsg>3) // switch loops and unroll
+    {  
+      int i=1;
+      // idea here is to have only 1 store for 4 loads
+#ifdef CMK_VERSION_BLUEGENE
+#pragma unroll(10)  
+      // how much doth XLC sucketh?  
+#endif
+      for(int d=0;d<size;d++)
+	{
+	  for(i=1; i<nMsg-3;i+=3)
+	    ret[d]+= ((double *) msgs[i]->getData())[d] + ((double *) msgs[i+1]->getData())[d] + ((double *) msgs[i+2]->getData())[d];
+	  for(; i<nMsg;i++)
+	    {
+	      ret[d]+=((double *) msgs[i]->getData())[d];
+	    }
+	}
+    }
+  else
   for(int i=1; i<nMsg;i++)
     {
-
+      
       inmatrix=(double *) msgs[i]->getData();
 #ifdef CMK_VERSION_BLUEGENE
-#pragma disjoint(*ret,*inmatrix)
-      __alignx(16,ret);
       __alignx(16,inmatrix);
+#pragma disjoint(*ret,*inmatrix)
 #pragma unroll(10)
 #endif
 	for(int d=0;d<size;d++)
