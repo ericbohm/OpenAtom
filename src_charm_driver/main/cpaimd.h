@@ -398,6 +398,9 @@ int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
 
 //============================================================================
 
+
+//============================================================================
+
 // stuff to be include before the decl or else
 #include "../../include/Atoms.h"
 #include "energy.h"

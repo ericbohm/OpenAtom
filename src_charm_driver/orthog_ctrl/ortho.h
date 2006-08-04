@@ -82,6 +82,9 @@ extern  PairCalcID pairCalcID2;
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
+class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
+};
+
 class Ortho : public CBase_Ortho{
  public:
   Ortho(){}
@@ -175,6 +178,7 @@ class Ortho : public CBase_Ortho{
     p | pcLambdaRedProxy;
     p | numGlobalIter;
     p | lbcaught;
+    p | orthoCookie;
     p | toleranceCheckOrthoT;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
       { 
@@ -202,6 +206,8 @@ class Ortho : public CBase_Ortho{
 
 
   void collect_error(CkReductionMsg *msg);
+
+  void orthoCookieinit(initCookieMsg *msg){CkGetSectionInfo(orthoCookie,msg);}
 
   void start_calc(CkReductionMsg *msg);
 
@@ -287,6 +293,7 @@ class Ortho : public CBase_Ortho{
   CProxySection_PairCalculator pcRedProxy;
   CProxySection_PairCalculator pcLambdaProxy;
   CProxySection_PairCalculator pcLambdaRedProxy;
+  CkSectionInfo orthoCookie;
   int num_ready;
   bool got_start;
   int lbcaught;

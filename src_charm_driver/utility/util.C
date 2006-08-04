@@ -1405,6 +1405,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
+     fprintf(fp,"useOrthoSection: %d\n",useOrthoSection);
+     fprintf(fp,"useOrthoSectionRed: %d\n",useOrthoSectionRed);
      fprintf(fp,"lambdaGrainSize: %d\n",lambdaGrainSize);
      fprintf(fp,"pesPerState: %d\n",pesPerState);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
@@ -1519,7 +1521,9 @@ void Config::readConfig(const char* fileName, Config &config,
 
     config.sGrainSize           = nstates_in;
     config.orthoGrainSize           =     config.sGrainSize;
-    config.lambdaGrainSize           =     config.sGrainSize;
+    config.useOrthoSection       = 0;
+    config.useOrthoSectionRed    = 0;
+    config.lambdaGrainSize       =     config.sGrainSize;
     config.rhoGHelpers          = 1;
     config.pesPerState          = 1;
     config.RpesPerState         = 0; 
@@ -1638,6 +1642,10 @@ void Config::readConfig(const char* fileName, Config &config,
             config.sGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoGrainSize"))
             config.orthoGrainSize = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useOrthoSection"))
+            config.useOrthoSection = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useOrthoSectionRed"))
+            config.useOrthoSectionRed = atoi(parameterValue);
         else if (!strcmp(parameterName, "lambdaGrainSize"))
             config.lambdaGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))

@@ -82,10 +82,16 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
     if(error > INVSQR_TOLERANCE && iterations < INVSQR_MAX_ITER){
       //				start_t = CmiWallTimer();
-      thisProxy.do_iteration();
+      if(config.useOrthoSection)
+	multiproxy.do_iteration();
+      else
+	thisProxy.do_iteration();
     }
     else{
-      thisProxy.collect_results();
+      if(config.useOrthoSection)
+	multiproxy.collect_results();
+      else
+	thisProxy.collect_results();
     }
   }
 
@@ -650,7 +656,19 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
-
+  if(config.useOrthoSection || config.useOrthoSectionRed)
+    {
+      int numOrtho=config.nstates/m;
+      multiproxy = 
+      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
+				 0, numOrtho-1,1,
+				 0, numOrtho-1, 1);
+      CProxySection_Ortho rproxy =   multiproxy;
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+      rproxy.ckSectionDelegate(mcastGrp);
+      initCookieMsg *redMsg=new initCookieMsg;
+      rproxy.orthoCookieinit(redMsg);
+    }
 
 //============================================================================
    }//end routine
@@ -740,7 +758,14 @@ void Ortho::tolerance_check(){
   double *tmp = B;
   B = tmp_arr;
   tmp_arr = tmp;
-  contribute(sizeof(double), &ret, CkReduction::sum_double);
+  if(config.useOrthoSectionRed)
+    {
+      CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+      mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
+    }
+  else
+    contribute(sizeof(double), &ret, CkReduction::sum_double);
 }
 //============================================================================
 

@@ -104,6 +104,7 @@ mainmodule cpaimd {
 	message AtomMsg {double data[];};	
 	
 	message EnlCookieMsg;
+	message initCookieMsg;
 
 	message StructFactorMsg {
 		complex structFactor[];
@@ -280,7 +281,8 @@ mainmodule cpaimd {
 		entry void lbresume(CkReductionMsg *msg);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);
 		entry void setPCproxy(CProxySection_PairCalculator inproxy);
-		entry void start_calc(CkReductionMsg *msg);
+		entry void start_calc(CkReductionMsg *msg);	
+		entry void orthoCookieinit(initCookieMsg *msg);
 		entry void do_iteration();
 		entry void step_2();
 		entry void step_3();
