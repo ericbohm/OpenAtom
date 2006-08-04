@@ -1100,8 +1100,11 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 
     int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
     int nOrtho= (nstates/config.orthoGrainSize);
+    int stride= CkNumPes()/(nOrtho*nOrtho+1); 
+    if(stride<1)
+      stride=1;
     nOrtho*=nOrtho;
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks,nOrtho);
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks,nOrtho, stride);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
@@ -1151,8 +1154,12 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
       {
 	int chunks = (nstates + config.lambdaGrainSize - 1) / config.lambdaGrainSize;
 	int nLambda= (nstates/config.lambdaGrainSize);
+	int stride= CkNumPes()/(nOrtho*nOrtho+1); 
+	if(stride<1)
+	  stride=1;
+
 	nLambda*=nLambda;
-	CProxy_LambdaMap lambdaMap = CProxy_LambdaMap::ckNew(chunks,nLambda);
+	CProxy_LambdaMap lambdaMap = CProxy_LambdaMap::ckNew(chunks,nLambda, stride);
 	CkArrayOptions lambdaOpts;
 	lambdaOpts.setMap(lambdaMap);
 	lambdaProxy = CProxy_Lambda::ckNew(lambdaOpts);

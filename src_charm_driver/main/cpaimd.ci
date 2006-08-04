@@ -292,7 +292,7 @@ mainmodule cpaimd {
       };
 
 	group OrthoMap : CkArrayMap {
-		entry OrthoMap(int M,int nOrtho);
+		entry OrthoMap(int M,int nOrtho, int stride);
 	};
 
 	array [2D] Lambda{
@@ -304,7 +304,7 @@ mainmodule cpaimd {
 	      };
 
 	group LambdaMap : CkArrayMap {
-		entry LambdaMap(int M,int nLambda);
+		entry LambdaMap(int M,int nLambda, int stride);
 	};
 
 

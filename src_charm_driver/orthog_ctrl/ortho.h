@@ -311,7 +311,7 @@ class Ortho : public CBase_Ortho{
  */
 class OrthoMap : public CkArrayMap {
   public:
-    OrthoMap(int NN,int _nOrtho):N(NN), nOrtho(_nOrtho)
+  OrthoMap(int NN,int _nOrtho, int _stride):N(NN), nOrtho(_nOrtho), stride(_stride)
       {
 	offset=0;
 	if(nOrtho<CkNumPes())
@@ -319,12 +319,13 @@ class OrthoMap : public CkArrayMap {
       }
     virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
-      return (N * index[0] + index[1] + offset) % CkNumPes();
+      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
     }
   private:
     int N;
     int nOrtho;
     int offset;
+    int stride;
 };
 
 #endif // #ifndef _ortho_h_

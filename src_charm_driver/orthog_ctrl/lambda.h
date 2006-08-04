@@ -62,11 +62,11 @@ class Lambda : public CBase_Lambda{
 };
 
 /**
- * provide procnum mapping for Lambda
+ * provide procnum mapping for Ortho
  */
 class LambdaMap : public CkArrayMap {
   public:
-    LambdaMap(int NN,int _nLambda):N(NN), nLambda(_nLambda)
+  LambdaMap(int NN,int _nLambda, int _stride):N(NN), nLambda(_nLambda), stride(_stride)
       {
 	offset=0;
 	if(nLambda<CkNumPes())
@@ -74,12 +74,13 @@ class LambdaMap : public CkArrayMap {
       }
     virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
-      return (N * index[0] + index[1] + offset) % CkNumPes();
+      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
     }
   private:
     int N;
     int nLambda;
     int offset;
+    int stride;
 };
 
 #endif // #ifndef _lambda_h_
