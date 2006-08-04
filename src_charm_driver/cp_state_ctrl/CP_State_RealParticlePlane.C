@@ -455,7 +455,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
          thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
 #endif
 
-#define _FANCY_RED_METHOD_OFF_
+#define _FANCY_RED_METHOD
 #ifdef _FANCY_RED_METHOD_
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),

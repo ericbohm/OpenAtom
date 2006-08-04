@@ -269,7 +269,11 @@ class PairCalculator: public CBase_PairCalculator {
 	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
 					    // than non prioritized
 	}
-      thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+      if(gSpaceSum)
+	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+	else
+	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+
 
     }
   void multiplyForwardStream(bool flag_dp);

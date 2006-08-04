@@ -1785,8 +1785,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
 #endif
     }
-
-
+  //#define PC_BARRIER_BW
+#ifndef PC_BARRIER_BW
   if(PCstreamBWout && !collectAllTiles)  // send results which are
 					// complete and not yet sent
     
@@ -1861,9 +1861,15 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       
       
     }
-  else if(orthoGrainSize==grainSize || numRecdBW==numOrtho) // we have all the results
+#endif
+
+#ifndef PC_BARRIER_BW
+  if((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho) )
+#else
+    if(orthoGrainSize==grainSize || numRecdBW==numOrtho) // we have all the results
+#endif
     {
-      //#define PC_BARRIER_BW
+
 #ifdef PC_BARRIER_BW
       int wehaveours=1;
       contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
@@ -1920,6 +1926,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       inResult2=NULL;
       numRecdBW=0;
     }
+
 }
 
 void
