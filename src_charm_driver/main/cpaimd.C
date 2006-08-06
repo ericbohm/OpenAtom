@@ -1098,6 +1098,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
   PRINTF("Building Ortho Chares\n");
   PRINT_LINE_DASH;printf("\n");
 
+
     int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
     int nOrtho= (nstates/config.orthoGrainSize);
     int stride= CkNumPes()/(nOrtho*nOrtho+1); 
@@ -1108,6 +1109,9 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+    CharmStrategy *multistrat = new DirectMulticastStrategy(orthoProxy.ckGetArrayID());
+    orthoInstance=ComlibRegister(multistrat);
+
     CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
     orthoProxy.ckSetReductionClient(&ocb);
     

@@ -676,8 +676,6 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
 	{
 	  if( config.useCommlib)
 	    {
-	      CharmStrategy *multistrat = new DirectMulticastStrategy(thisProxy.ckGetArrayID());
-	      orthoInstance=ComlibRegister(multistrat);
 	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
 	    }
 	  else
