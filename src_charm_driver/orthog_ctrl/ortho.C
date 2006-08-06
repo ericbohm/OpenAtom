@@ -65,7 +65,7 @@ extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
-
+extern ComlibInstanceHandle orthoInstance;
 
 //============================================================================
 
@@ -83,13 +83,19 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     if(error > INVSQR_TOLERANCE && iterations < INVSQR_MAX_ITER){
       //				start_t = CmiWallTimer();
       if(config.useOrthoSection)
-	multiproxy.do_iteration();
+	{
+	  orthoMtrigger *tmsg= new orthoMtrigger;
+	  multiproxy.do_iteration(tmsg);
+	}
       else
 	thisProxy.do_iteration();
     }
     else{
       if(config.useOrthoSection)
-	multiproxy.collect_results();
+	{
+	  orthoMtrigger *tmsg= new orthoMtrigger;
+	  multiproxy.collect_results(tmsg);
+	}
       else
 	thisProxy.collect_results();
     }
@@ -647,6 +653,39 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   ortho=NULL;
   orthoT=NULL;
   wallTimeArr=NULL;
+  if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
+    {
+      int numOrtho=config.nstates/m;
+      multiproxy = 
+      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
+				 0, numOrtho-1,1,
+				 0, numOrtho-1, 1);
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+
+
+      if(config.useOrthoSectionRed)
+	{
+	  CProxySection_Ortho rproxy =   multiproxy;
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+	  rproxy.ckSectionDelegate(mcastGrp);
+	  initCookieMsg *redMsg=new initCookieMsg;
+	  rproxy.orthoCookieinit(redMsg);
+
+	}
+      if(config.useOrthoSection)
+	{
+	  if( config.useCommlib)
+	    {
+	      CharmStrategy *multistrat = new DirectMulticastStrategy(thisProxy.ckGetArrayID());
+	      orthoInstance=ComlibRegister(multistrat);
+	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+	    }
+	  else
+	    {
+	      multiproxy.ckSectionDelegate(mcastGrp);
+	    }
+	}
+  }
   if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
     wallTimeArr = new double[config.maxIter+2];
   }else{
@@ -656,19 +695,6 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
-  if(config.useOrthoSection || config.useOrthoSectionRed)
-    {
-      int numOrtho=config.nstates/m;
-      multiproxy = 
-      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
-				 0, numOrtho-1,1,
-				 0, numOrtho-1, 1);
-      CProxySection_Ortho rproxy =   multiproxy;
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
-      rproxy.ckSectionDelegate(mcastGrp);
-      initCookieMsg *redMsg=new initCookieMsg;
-      rproxy.orthoCookieinit(redMsg);
-    }
 
 //============================================================================
    }//end routine

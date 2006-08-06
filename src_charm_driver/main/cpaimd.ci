@@ -63,6 +63,9 @@ mainmodule cpaimd {
 	readonly ComlibInstanceHandle commRealIGYInstance;
 	readonly ComlibInstanceHandle commRealIGZInstance;
 
+	//ortho to itself
+	readonly ComlibInstanceHandle orthoInstance;
+
         // pc communication
 	readonly ComlibInstanceHandle gAsymInstance;
 	readonly ComlibInstanceHandle gSymInstance;
@@ -104,6 +107,8 @@ mainmodule cpaimd {
 	message AtomMsg {double data[];};	
 	
 	message EnlCookieMsg;
+	message orthoMtrigger;
+
 	message initCookieMsg;
 
 	message StructFactorMsg {
@@ -284,9 +289,11 @@ mainmodule cpaimd {
 		entry void start_calc(CkReductionMsg *msg);	
 		entry void orthoCookieinit(initCookieMsg *msg);
 		entry void do_iteration();
+		entry [nokeep] void do_iteration(orthoMtrigger *msg);
 		entry void step_2();
 		entry void step_3();
 		entry void collect_results();
+		entry [nokeep] void collect_results(orthoMtrigger *msg);
 		entry void print_results();
   		entry void collect_error(CkReductionMsg *msg);
 		entry void ready();

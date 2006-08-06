@@ -85,6 +85,9 @@ extern  PairCalcID pairCalcID2;
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
+class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
+};
+
 class Ortho : public CBase_Ortho{
  public:
   Ortho(){}
@@ -127,6 +130,10 @@ class Ortho : public CBase_Ortho{
    */
   void do_iteration(void);
 
+  void do_iteration(orthoMtrigger *m){
+    do_iteration();
+  }
+
   void ResumeFromSync() {
     /*
     if(thisIndex.x <= thisIndex.y)
@@ -159,6 +166,11 @@ class Ortho : public CBase_Ortho{
 	}
 	fclose(outfile);
   }
+
+  void collect_results(orthoMtrigger *m){
+    collect_results();
+  }
+
 
   void collect_results(void);
 

@@ -215,7 +215,7 @@ BGLTorusManager *bgltm;
 // For using the multicast library :  Set some reduction clients
 
 CkGroupID            mCastGrpId; 
-
+ComlibInstanceHandle orthoInstance;
 ComlibInstanceHandle commGHartInstance;
 ComlibInstanceHandle commGInstance0;
 ComlibInstanceHandle commGInstance1;
