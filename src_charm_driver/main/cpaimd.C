@@ -597,7 +597,7 @@ main::main(CkArgMsg *msg) {
     delete msg;
     delete sim;
     delete [] indexZ;
-    delete [] foo;
+    delete foo;
 //============================================================================
 
     newtime=CmiWallTimer();
