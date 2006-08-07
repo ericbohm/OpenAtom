@@ -56,24 +56,15 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 		{
 			if(xchunk==(pl-srem)*l)
 				l=l+1;
-			if(xchunk==0 && ychunk==0) {}
-			else
-			  { // shift to next proc
-			    srcpe=destpe;
-			    destpe=availprocs->findNext();
-
-			  }
 			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
 			{
 				for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
 				{
-				  if(xchunk==0 && ychunk==0) {
-				    maptable->put(intdual(state, plane))=0;
-				  }
-				  else
-				    maptable->put(intdual(state, plane))=destpe;
+				  maptable->put(intdual(state, plane))=destpe;
 				}
 			}
+			srcpe=destpe;
+			destpe=availprocs->findNext();
                 }
         }
 
