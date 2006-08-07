@@ -21,7 +21,7 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
       sortIdx= new int[size];
       for(int x=0; x<maxX; x+=boxX) // new box  in X
 	for(int y=0; y<maxY; y+=boxY) // new box in Y 
-	  for(int z=0; z<maxZ; x+=boxZ) // new box in Z
+	  for(int z=0; z<maxZ; z+=boxZ) // new box in Z
 	    {
 	      // fill out this box
 	      for(int bx=0;bx<boxX;bx++)
