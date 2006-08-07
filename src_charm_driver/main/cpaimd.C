@@ -536,11 +536,11 @@ main::main(CkArgMsg *msg) {
 	    foo= new PeList(bx,by,bz);  // heap it
 	  }
 	else
-#else
 	  {
-
 	    foo= new PeList;  // heap it
 	  }
+#else
+	foo= new PeList;  // heap it
 #endif
       }
     else
