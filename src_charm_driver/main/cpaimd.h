@@ -395,7 +395,7 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex);
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
-
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume);
 //============================================================================
 
 

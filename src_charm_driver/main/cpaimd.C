@@ -517,8 +517,30 @@ main::main(CkArgMsg *msg) {
              bgltm->isVnodeMode());
 #endif
     CkPrintf("Initializing PeList\n");
-    PeList *foo=  new PeList [1];  // heap it
-    availGlob=&(foo[0]);
+    
+    PeList *foo;
+    if(config.useCuboidMap)
+      {
+	int l=config.Gstates_per_pe;
+	int m, pl, pm;
+	pl = nstates / l;
+	pm = CkNumPes() / pl;
+	if(pm==0){CkAbort("Choose a smaller Gstates_per_pe \n");}
+	m = config.nchareG / pm;
+	int bx,by,bz;
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pm))
+	  {
+	    CkPrintf("Using %d,%d,%d dimensions for box mapping\n",bx,by,bz);
+	    foo= new PeList(bx,by,bz);  // heap it
+	  }
+	else
+	  {
+	    foo= new PeList;  // heap it
+	  }
+      }
+    else
+      foo= new PeList;  // heap it
+    availGlob=foo;
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
@@ -1845,6 +1867,34 @@ void mapOutput()
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
+// return the cuboid x,y,z of a subpartition exactly matching that volume
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume)
+    {
+      double cubert= cbrt((double) volume);
+      int cubetrunc= (int) cubert;
+      x=y=z=cubetrunc;
+      if(cubetrunc>maxX)
+	cubetrunc=maxX;
+      if(cubetrunc>maxY)
+	cubetrunc=maxY;
+      if(cubetrunc>maxZ)
+	cubetrunc=maxZ;
+      if(volume==x*y*z)
+	return true;
+      int start=cubetrunc-1;
+      for(x=cubetrunc; x<=maxX;x++)
+	{
+	  for(y=start; y<=maxY;y++)
+	    {
+	      for(z=start; z<=maxZ;z++)
+		{
+		  if(volume==x*y*z)
+		    return true;
+		}
+	    }
+	}
+      return false;
+    }
 
 
 //============================================================================

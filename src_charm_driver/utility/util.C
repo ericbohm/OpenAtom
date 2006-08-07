@@ -1487,6 +1487,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"rStreamPeriod: %g\n",rStreamPeriod);
      fprintf(fp,"gBucketSize: %d\n",gBucketSize);
      fprintf(fp,"rBucketSize: %d\n",rBucketSize);
+     fprintf(fp,"useCuboidMap: %d\n",useCuboidMap);
+
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
@@ -1537,7 +1539,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useCommlib           = 1;
     config.usePairEtoM           = 0;
     config.usePairDirectSend     = 0;
-
+    config.useCuboidMap           = 0;
     config.PCCollectTiles       = 1;
     config.PCstreamBWout       = 0;
     config.PCstreamFWblock       = 0;
@@ -1650,6 +1652,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.lambdaGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlib"))
             config.useCommlib = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useCuboidMap"))
+            config.useCuboidMap = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairEtoM"))
             config.usePairEtoM = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairDirectSend"))
@@ -1815,7 +1819,8 @@ void Config::readConfig(const char* fileName, Config &config,
     }//end while reading
     configFile.close();
     CkPrintf("   Closing cpaimd config file : %s\n\n",fileName);
-    
+
+      
 //===================================================================================
 // Set FFT and g-space size from state file
 
@@ -1897,12 +1902,21 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.numChunks,"numChunks;",0);
     rangeExit(config.gSpaceSum,"gSpaceSum;",1);
     rangeExit(config.gSpaceSum,"phantomSym;",1);
+    rangeExit(config.useCuboidMap,"useCuboidMap;",1);
     rangeExit(config.numChunksAsym,"numChunksAsym;",0);
     rangeExit(config.numChunksSym,"numChunksSym;",0);
 
 //===================================================================================
 // Consistency Checks on the input
-
+#ifndef CMK_VERSION_BLUEGENE
+    if(config.useCuboidMap)
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("useCuboidMap requires CMK_VERSION_BLUEGENE\n");
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+#endif
     if(config.gSpaceSum && !config.usePairDirectSend){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("gSpaceSum requires usePairDirectSend\n");

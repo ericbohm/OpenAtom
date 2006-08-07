@@ -173,6 +173,7 @@ class Config {
 	int PCstreamFWblock;
 	int sGrainSize;
 	int orthoGrainSize;
+	int useCuboidMap;
 	int useOrthoSection;
 	int useOrthoSectionRed;
 	int lambdaGrainSize;

@@ -24,9 +24,9 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
 	  for(int z=0; z<maxZ; x+=boxZ) // new box in Z
 	    {
 	      // fill out this box
-	      for(int bx=0;x<boxX;bx++)
-		for(int by=0;y<boxY;by++)
-		  for(int bz=0;z<boxZ;bz++)
+	      for(int bx=0;bx<boxX;bx++)
+		for(int by=0;by<boxY;by++)
+		  for(int bz=0;bz<boxZ;bz++)
 		    {
 		      TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
 		    }

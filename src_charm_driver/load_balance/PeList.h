@@ -23,6 +23,7 @@
 #endif
 #include "cklists.h"
 
+
 class PeList 
 {
  public:
@@ -61,35 +62,6 @@ class PeList
     };	 // use an array to construct
   
   // given the max grid/torus dimenions and the volume of a desired subpartition
-  // return the cuboid x,y,z of a subpartition exactly matching that volume
-  bool cuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume)
-    {
-      double cubert= cbrt((double) volume);
-      int cubetrunc= (int) cubert;
-      x=y=z=cubetrunc;
-      if(cubetrunc>maxX)
-	cubetrunc=maxX;
-      if(cubetrunc>maxY)
-	cubetrunc=maxY;
-      if(cubetrunc>maxZ)
-	cubetrunc=maxZ;
-      if(volume==x*y*z)
-	return true;
-      int start=cubetrunc-1;
-      for(x=cubetrunc; x<=maxX;x++)
-	{
-	  for(y=start; y<=maxY;y++)
-	    {
-	      for(z=start; z<=maxZ;z++)
-		{
-		  if(volume==x*y*z)
-		    return true;
-		}
-	    }
-	}
-      return false;
-    }
-
 
   inline bool noPes() 
     {
