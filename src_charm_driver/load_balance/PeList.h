@@ -33,7 +33,8 @@ class PeList
   PeList();  //default constructor
 
 #ifdef CMK_VERSION_BLUEGENE
-  PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
+ //! boxy constructor for BG/L
+  PeList(int boxX, int boxY, int boxZ);
 #endif
   PeList(CkVec <int> inlist)
     {
