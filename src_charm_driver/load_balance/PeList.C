@@ -5,6 +5,35 @@
 extern 	BGLTorusManager *bgltm;
 #endif
 
+#ifdef CMK_VERSION_BLUEGENE
+//! construct the list by iterating through boxes which are sub
+//! partitions 
+PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
+    {
+
+      current=0;
+      size=CkNumPes();
+      int i=0;
+      int maxX=bgltm->getXSize();
+      int maxY=bgltm->getYSize();
+      int maxZ=bgltm->getZSize();
+      TheList= new int[size];
+      sortIdx= new int[size];
+      for(int x=0; x<maxX; x+=boxX) // new box  in X
+	for(int y=0; y<maxY; y+=boxY) // new box in Y 
+	  for(int z=0; z<maxZ; x+=boxZ) // new box in Z
+	    {
+	      // fill out this box
+	      for(int bx=0;x<boxX;bx++)
+		for(int by=0;y<boxY;by++)
+		  for(int bz=0;z<boxZ;bz++)
+		    {
+		      TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+		    }
+	    }
+    }
+
+#endif
 
 PeList::PeList() // default constructor
     {
