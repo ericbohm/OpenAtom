@@ -519,6 +519,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Initializing PeList\n");
     
     PeList *foo;
+
     if(config.useCuboidMap)
       {
 	int l=config.Gstates_per_pe;
@@ -528,15 +529,19 @@ main::main(CkArgMsg *msg) {
 	if(pm==0){CkAbort("Choose a smaller Gstates_per_pe \n");}
 	m = config.nchareG / pm;
 	int bx,by,bz;
+#ifdef CMK_VERSION_BLUEGENE
 	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pm))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box mapping\n",bx,by,bz);
 	    foo= new PeList(bx,by,bz);  // heap it
 	  }
 	else
+#else
 	  {
+
 	    foo= new PeList;  // heap it
 	  }
+#endif
       }
     else
       foo= new PeList;  // heap it
