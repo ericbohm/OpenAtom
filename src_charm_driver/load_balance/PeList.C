@@ -28,6 +28,7 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
 		for(int by=0;by<boxY;by++)
 		  for(int bz=0;bz<boxZ;bz++)
 		    {
+		      sortIdx[i]=i;
 		      TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
 		    }
 	    }

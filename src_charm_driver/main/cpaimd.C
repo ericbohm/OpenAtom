@@ -1812,7 +1812,7 @@ void get_grp_params(int natm_nl, int numSfDups, int indexSfGrp, int planeIndex,
 	 CkPrintf("Redundant DupSF for chare-G %d\n",planeIndex);
          CkPrintf("At present this hangs, so out you go\n");
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@\n");
-         CkExit();
+	 //         CkExit();
        }
   
    (*n_ret)     = n;

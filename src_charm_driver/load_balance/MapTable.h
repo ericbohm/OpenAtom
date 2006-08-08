@@ -15,6 +15,7 @@
  */
 
 #define  _VERBOSE_MAP_OFF_
+#define  _VERBOSE_MAP_
 
 class intdual {
  private:
