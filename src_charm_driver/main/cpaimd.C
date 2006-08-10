@@ -1128,9 +1128,19 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 
     int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
     int nOrtho= (nstates/config.orthoGrainSize);
-    int stride= CkNumPes()/(nOrtho*nOrtho+1); 
-    if(stride<1)
-      stride=1;
+    
+    int stride= 1;
+    if(config.orthoStride>0)
+      {
+	if(config.orthoStride==1)
+	  {
+	    CkNumPes()/(nOrtho*nOrtho+1); 
+	    if(stride<1)
+	      stride=1;
+	  }
+	else
+	  stride=config.orthoStride;
+      }
     nOrtho*=nOrtho;
     CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks,nOrtho, stride);
     CkArrayOptions orthoOpts;
