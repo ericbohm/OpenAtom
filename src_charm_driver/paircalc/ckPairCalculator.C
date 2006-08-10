@@ -248,7 +248,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -262,6 +262,7 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   this->cb_aid = cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
+  useBWBarrier=_useBWBarrier;
   PCstreamBWout=_PCstreamBWout;
   PCdelayBWSend=_PCdelayBWSend;
   orthoGrainSize=_orthoGrainSize;
@@ -372,6 +373,7 @@ PairCalculator::pup(PUP::er &p)
   p|gpriority;
   p|phantomSym;
   p|amPhantom;
+  p|useBWBarrier;
   int numOrthoCol=grainSize/orthoGrainSize;
   int numOrtho=numOrthoCol*numOrthoCol;
   if (p.isUnpacking()) 
@@ -1785,9 +1787,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       CkPrintf("[PAIRCALC] [%d %d %d %d %d] backward gemm out %.10g %.10g %.10g %.10g \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, mynewDatad[0],mynewDatad[1],mynewData[numPoints*grainSize-1].re,mynewData[numPoints*grainSize-1].im);
 #endif
     }
-  //#define PC_BARRIER_BW
-#ifndef PC_BARRIER_BW
-  if(PCstreamBWout && !collectAllTiles)  // send results which are
+
+  if(PCstreamBWout && !collectAllTiles && !useBWBarrier)  // send results which are
 					// complete and not yet sent
     
     {
@@ -1861,45 +1862,42 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       
       
     }
-#endif
 
-#ifndef PC_BARRIER_BW
-  if((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho) )
-#else
-    if(orthoGrainSize==grainSize || numRecdBW==numOrtho) // we have all the results
-#endif
+  if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))) 
     {
 
-#ifdef PC_BARRIER_BW
-      int wehaveours=1;
-      contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-		 CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
+      if(useBWBarrier){
 
-#else      
-      sendBWsignalMsg *sigmsg;
-      if(PCdelayBWSend)
-	sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+	int wehaveours=1;
+	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		   CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
+      }
       else
-	sigmsg= new  sendBWsignalMsg;
-      //collapse this into 1 flag
-      if(amPhantom)
-	sigmsg->otherdata= true;
-      else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
-	sigmsg->otherdata=true;       
-      else
-	sigmsg->otherdata= false;
-
-      if(PCdelayBWSend)
 	{
-	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-					    // than non prioritized
+	  sendBWsignalMsg *sigmsg;
+	  if(PCdelayBWSend)
+	    sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+	  else
+	    sigmsg= new  sendBWsignalMsg;
+	  //collapse this into 1 flag
+	  if(amPhantom)
+	    sigmsg->otherdata= true;
+	  else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
+	    sigmsg->otherdata=true;       
+	  else
+	    sigmsg->otherdata= false;
+
+	  if(PCdelayBWSend)
+	    {
+	      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+	      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+	      // than non prioritized
+	    }
+	  if(gSpaceSum)
+	    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+	  else
+	    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
 	}
-      if(gSpaceSum)
-	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-      else
-	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-#endif
       if(conserveMemory)
 	{
 	  // clear the right and left they'll get reallocated on the next pass

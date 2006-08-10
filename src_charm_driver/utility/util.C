@@ -1406,6 +1406,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoStride: %d\n",orthoStride);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
+     fprintf(fp,"useBWBarrier: %d\n",useBWBarrier);
      fprintf(fp,"useOrthoDirect: %d\n",useOrthoDirect);
      fprintf(fp,"useOrthoSection: %d\n",useOrthoSection);
      fprintf(fp,"useOrthoSectionRed: %d\n",useOrthoSectionRed);
@@ -1530,6 +1531,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.sGrainSize           = nstates_in;
     config.orthoGrainSize           =     config.sGrainSize;
     config.orthoStride           = 0;
+    config.useBWBarrier           = 0;
     config.useOrthoSection       = 0;
     config.useOrthoDirect       = 0;
     config.useOrthoSectionRed    = 0;
@@ -1656,6 +1658,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.orthoGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoStride"))
             config.orthoStride = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useBWBarrier"))
+            config.useBWBarrier = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoDirect"))
             config.useOrthoDirect = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSection"))

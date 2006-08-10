@@ -175,6 +175,7 @@ class Config {
 	int orthoGrainSize;
 	int orthoStride;
 	int useCuboidMap;
+	int useBWBarrier;
 	int useOrthoSection;
 	int useOrthoDirect;
 	int useOrthoSectionRed;

@@ -67,7 +67,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -92,7 +92,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   }
   else {
     options.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, options);
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, options);
   }
 
   int proc = 0;
@@ -119,7 +119,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 	      pairCalculatorProxy(z[numX],s1,s2,c).
-		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym );
+		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier  );
 	    }
 	    else
 	      {
@@ -127,7 +127,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, proc);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier , proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -146,14 +146,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier );
 	      }
 	      else{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, proc);
+		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier , proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }

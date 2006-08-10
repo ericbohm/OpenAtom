@@ -236,7 +236,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -335,7 +335,8 @@ class PairCalculator: public CBase_PairCalculator {
 
   bool amPhantom;            //! consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
   
-
+  bool useBWBarrier;
+  
   bool collectAllTiles;      //! If true, don't stream compute on tiles in the backward path.
    
   redtypes cpreduce;         //! which reducer we're using (defunct)
