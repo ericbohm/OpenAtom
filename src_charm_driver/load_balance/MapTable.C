@@ -55,8 +55,20 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	      for(int state=0;state<nstates;state+=Gstates_per_pe)
 		{
 		  for(int stateperpe=0;stateperpe<Gstates_per_pe;stateperpe++)
-		    maptable->put(intdual(state+stateperpe, plane))=destpe;
+		    {
+		      maptable->put(intdual(state+stateperpe, plane))=destpe;
+		    }
 		  destpe=availprocs->findNext();
+		  if(availprocs->count()==0)
+		    availprocs->reset();
+		  /*		  if(availprocs->count()==0)
+		    {
+		      CkPrintf("GSMap created on processor %d\n", CkMyPe());
+		      dump();
+		      CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
+		      CkExit();
+		    }
+		  */
 		}
 	  }
 	else

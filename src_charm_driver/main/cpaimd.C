@@ -1388,7 +1388,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   availGlob->reset();
   GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, Gstates_per_pe, config.useCuboidMap);
+				   nstates, config.Gstates_per_pe, config.useCuboidMap);
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n",newtime-Timer);
