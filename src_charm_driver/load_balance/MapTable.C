@@ -7,7 +7,7 @@
 
 GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, 
 		       int _nchareG, double *_lines_per_chareG, double *_pts_per_chareG, 
-		       int _nstates,  int _Gstates_per_pe)    : 
+		       int _nstates,  int _Gstates_per_pe, bool useCuboidMap)    : 
       nchareG(_nchareG), 
     lines_per_chareG(_lines_per_chareG),  pts_per_chareG(_pts_per_chareG), 
     nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
@@ -48,26 +48,46 @@ GSMapTable::GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 	// Initialize pelist
 	int srcpe=0;
 	int destpe=availprocs->findNext();
-        for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
-        {
-                if(ychunk==(pm-rem)*m)
-		    m=m+1;
-                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		{
-			if(xchunk==(pl-srem)*l)
-				l=l+1;
-			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
-				{
-				  maptable->put(intdual(state, plane))=destpe;
-				}
-			}
-			srcpe=destpe;
-			destpe=availprocs->findNext();
-                }
-        }
 
+	if(useCuboidMap)
+	  {
+	    for(int plane=0;plane<nchareG;plane++)
+	      for(int state=0;state<nstates;state+=Gstates_per_pe)
+		{
+		  for(int stateperpe=0;stateperpe<Gstates_per_pe;stateperpe++)
+		    maptable->put(intdual(state+stateperpe, plane))=destpe;
+		  destpe=availprocs->findNext();
+		}
+	  }
+	else
+	  {
+	    // foreach statechunk 
+	    //         foreach state in chunk
+	    //              map it
+	    //         new pe
+	    // done
+	    //}
+	    //else old way 
+	    for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
+	      {
+                if(ychunk==(pm-rem)*m)
+		  m=m+1;
+                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+		  {
+		    if(xchunk==(pl-srem)*l)
+		      l=l+1;
+		    for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+		      {
+			for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
+			  {
+			    maptable->put(intdual(state, plane))=destpe;
+			  }
+		      }
+		    srcpe=destpe;
+		    destpe=availprocs->findNext();
+		  }
+	      }
+	  }
 #ifdef MAP_DEBUG
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 	dump();
@@ -78,7 +98,10 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			     int _nstates, int _nchareG,  int _grainsize, CmiBool _flag, 
 			     int _nplanes,  double *_lines_per_chareG, 
 			     double *_pts_per_chareG, int _scalc_per_plane,  
-			     int _planes_per_pe, int _numChunksA, int _numChunksS) : 
+			     int _planes_per_pe, 
+			     int _numChunksA, 
+			     int _numChunksS, 
+			     CkHashtableT <intdual, int > *gsmap, bool useCuboidMap) : 
   max_states(_nstates), nchareG(_nchareG),  
   grainsize(_grainsize), symmetric(_flag), max_planes(_nplanes), 
   lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
@@ -167,39 +190,81 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
       int srcpe=0,destpe=availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
-			
-      for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-	for(int newdim=0; newdim<numChunksAsym; newdim++)
-	  for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-	    for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
-	      for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
-		{
-		  CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+      if(useCuboidMap)
+	{
+	  // in the cuboid map case we place all planes box by box
 
-		  if(count<scobjs_per_pe)
-		    {
-		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
-		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-		      count++;
-		    }
-		  else
-		    {  // new partition
-		      procno++;
-		      srcpe=destpe;
-		      if(availprocs->noPes())
-			availprocs->rebuild();
-		      //			  availprocs->sortSource(srcpe);
-		      destpe=availprocs->findNext();
-		      if(rem!=0)
-			if(procno==rem)
-			  scobjs_per_pe-=1;
-		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-		      count=0;
-		      count++;
-		    }
+	  CkAssert(scobjs_per_pe==1); //for simplicity can be fixed later
+	  for(int plane=0; plane<nchareG; plane++)
+	    for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
+	      for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+		{ // could find centroid here
+		for(int newdim=0; newdim<numChunksAsym; newdim++)
+		  {
+		    CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+		    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+		    if(count<scobjs_per_pe)
+		      {
+			//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+			count++;
+		      }
+		    else
+		      {  // new partition
+			procno++;
+			srcpe=destpe;
+			if(availprocs->noPes())
+			  availprocs->rebuild();
+			//			  availprocs->sortSource(srcpe);
+			destpe=availprocs->findNext();
+			if(rem!=0)
+			  if(procno==rem)
+			    scobjs_per_pe-=1;
+			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+			count=0;
+			count++;
+		      }
 
+		  }
 		}
+
+	}
+      else
+	{
+	  for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
+	    for(int newdim=0; newdim<numChunksAsym; newdim++)
+	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
+		for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
+		    {
+		      CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+		      CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+
+		      if(count<scobjs_per_pe)
+			{
+			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+			  count++;
+			}
+		      else
+			{  // new partition
+			  procno++;
+			  srcpe=destpe;
+			  if(availprocs->noPes())
+			    availprocs->rebuild();
+			  //			  availprocs->sortSource(srcpe);
+			  destpe=availprocs->findNext();
+			  if(rem!=0)
+			    if(procno==rem)
+			      scobjs_per_pe-=1;
+			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+			  count=0;
+			  count++;
+			}
+
+		
+		    }
+	}
 #ifdef MAP_DEBUG
       CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
       dump();

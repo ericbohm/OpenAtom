@@ -666,7 +666,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
-		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym);
+		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap);
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
 
   double newtime=CmiWallTimer();
@@ -679,7 +679,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
-                   planes_per_pe, config.numChunksAsym, config.numChunksSym);
+                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap);
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
   CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
@@ -1388,7 +1388,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   availGlob->reset();
   GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, Gstates_per_pe);
+				   nstates, Gstates_per_pe, config.useCuboidMap);
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n",newtime-Timer);

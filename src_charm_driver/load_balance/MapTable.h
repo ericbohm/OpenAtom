@@ -116,7 +116,7 @@ class GSMapTable : public MapTable
 
   GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareG,
 	       double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,  
-	       int _Gstates_per_pe);
+	       int _Gstates_per_pe, bool useCuboidMap);
 
   GSMapTable()
     {
@@ -142,7 +142,7 @@ class SCalcMapTable : public MapTable
     SCalcMapTable(CkHashtableT <intdual, int> *_map, PeList *_availprocs, int _nstates, 
 	     int _nchareG,  int gs, CmiBool _flag, int _nplanes,
 	     double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,
-	     int _planes_per_pe, int _numChunksA, int _numChunksS);
+	     int _planes_per_pe, int _numChunksA, int _numChunksS, CkHashtableT <intdual, int> *_gmap, bool useCuboidMap);
 
   void dump()
     {
