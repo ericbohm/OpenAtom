@@ -29,7 +29,7 @@
 int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #ifndef CMK_OPTIMIZE
-	double StartTime=CmiWallTimer();
+  //	double StartTime=CmiWallTimer();
 #endif
 
 	int *index=(int *) iIndex.data();
@@ -40,7 +40,7 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	}
 	int retval=maptable->get(intdual(index[0],index[1]));
 #ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(10000, StartTime, CmiWallTimer());
+	//	traceUserBracketEvent(10000, StartTime, CmiWallTimer());
 #endif
 
 	return retval;
@@ -56,7 +56,7 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #ifndef CMK_OPTIMIZE
-	double StartTime=CmiWallTimer();
+  //	double StartTime=CmiWallTimer();
 #endif
 
 	int *index=(int *) iIndex.data();
@@ -72,7 +72,7 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 	}
 	int retval=maptable->get(intdual(index[0], index[1]));
 #ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(30000, StartTime, CmiWallTimer());
+	//	traceUserBracketEvent(30000, StartTime, CmiWallTimer());
 #endif
 	return retval;
 }
@@ -84,7 +84,7 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 {
 #ifndef CMK_OPTIMIZE
-	double StartTime=CmiWallTimer();
+  //	double StartTime=CmiWallTimer();
 #endif
 
 	int *index=(int *) iIndex.data();
@@ -95,7 +95,7 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	}
 	int retval=maptable->get(intdual(index[0], index[1]));
 #ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(20000, StartTime, CmiWallTimer());
+	//	traceUserBracketEvent(20000, StartTime, CmiWallTimer());
 #endif
 
 	return retval;

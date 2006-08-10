@@ -67,7 +67,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
-			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym) {
+			  int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId, int numChunks, int orthoGrainSize, int useEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym) {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -99,6 +99,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useEtoM, useDirectSend);
   pcid->orthomCastGrpId=orthomCastGrpId;
+  pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
@@ -301,7 +302,7 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct)
+CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
@@ -343,18 +344,27 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
   delete [] elems;
   if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
     {
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();       
       sectProxy.ckSectionDelegate(mcastGrp);
       
       // send the message to initialize it with the callback and groupid
-      setGredProxy(&sectProxy, pcid->orthomCastGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+      setGredProxy(&sectProxy, pcid->orthoRedGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
     }
   else
     {
-      if(pcid->Symmetric)
-	ComlibAssociateProxy(&mcastInstanceCP,sectProxy);
+      if(commlib)
+	{
+	  if(pcid->Symmetric)
+	    ComlibAssociateProxy(&mcastInstanceCP,sectProxy);
+	  else
+	    ComlibAssociateProxy(&mcastInstanceACP,sectProxy);
+	}
       else
-      	ComlibAssociateProxy(&mcastInstanceACP,sectProxy);
+	{
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
+	  sectProxy.ckSectionDelegate(mcastGrp);
+
+	}
     }
 
   return sectProxy;

@@ -34,6 +34,7 @@ class PairCalcID {
   bool existsRproxy;
   CkVec <CkGroupID> mCastGrpId;
   CkGroupID orthomCastGrpId;
+  CkGroupID orthoRedGrpId;
   int priority;
   CProxySection_PairCalculator *proxyLFrom;
   CProxySection_PairCalculator *proxyLNotFrom;
@@ -122,6 +123,7 @@ class PairCalcID {
     priority=pid.priority;
     mCastGrpId=pid.mCastGrpId;
     orthomCastGrpId=pid.orthomCastGrpId;
+    orthoRedGrpId=pid.orthoRedGrpId;
     cproxy=pid.cproxy;
     // everyone has to make their own proxies
     return *this;
@@ -145,6 +147,7 @@ class PairCalcID {
     p|existsRproxy;
     p|mCastGrpId;
     p|orthomCastGrpId;
+    p|orthoRedGrpId;
     p|priority;
     if(p.isUnpacking())
       {
@@ -185,7 +188,7 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
@@ -198,7 +201,7 @@ extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalcu
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct);
+CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 
 void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 

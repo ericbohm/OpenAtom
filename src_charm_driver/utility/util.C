@@ -1406,6 +1406,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoStride: %d\n",orthoStride);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
+     fprintf(fp,"useOrthoDirect: %d\n",useOrthoDirect);
      fprintf(fp,"useOrthoSection: %d\n",useOrthoSection);
      fprintf(fp,"useOrthoSectionRed: %d\n",useOrthoSectionRed);
      fprintf(fp,"lambdaGrainSize: %d\n",lambdaGrainSize);
@@ -1449,6 +1450,10 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useGMulticast: %d\n",useGMulticast);
      fprintf(fp,"useCommlibMulticast: %d\n",useCommlibMulticast);
      fprintf(fp,"numMulticastMsgs: %d\n",numMulticastMsgs);
+     fprintf(fp,"PCSpanFactor: %d\n",PCSpanFactor);
+     fprintf(fp,"OrthoRedSpanFactor: %d\n",OrthoRedSpanFactor);
+     fprintf(fp,"OrthoMcastSpanFactor: %d\n",OrthoMcastSpanFactor);
+
      fprintf(fp,"fftprogresssplit: %d\n",fftprogresssplit);
      fprintf(fp,"fftprogresssplitReal: %d\n",fftprogresssplitReal);
      fprintf(fp,"RpesPerState: %d\n",RpesPerState);
@@ -1526,6 +1531,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.orthoGrainSize           =     config.sGrainSize;
     config.orthoStride           = 0;
     config.useOrthoSection       = 0;
+    config.useOrthoDirect       = 0;
     config.useOrthoSectionRed    = 0;
     config.lambdaGrainSize       =     config.sGrainSize;
     config.rhoGHelpers          = 1;
@@ -1536,6 +1542,8 @@ void Config::readConfig(const char* fileName, Config &config,
     config.conserveMemory       = 0;
     config.numMulticastMsgs     = 10;
     config.PCSpanFactor         = 2;
+    config.OrthoRedSpanFactor   = 2;
+    config.OrthoMcastSpanFactor = 16;
     config.useGMulticast        = 0;
     config.useCommlibMulticast  = 1;
     config.useCommlib           = 1;
@@ -1648,6 +1656,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.orthoGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoStride"))
             config.orthoStride = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useOrthoDirect"))
+            config.useOrthoDirect = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSection"))
             config.useOrthoSection = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSectionRed"))
@@ -1708,6 +1718,10 @@ void Config::readConfig(const char* fileName, Config &config,
             config.numMulticastMsgs = atoi(parameterValue);
         else if (!strcmp(parameterName, "PCSpanFactor"))
             config.PCSpanFactor = atoi(parameterValue);
+        else if (!strcmp(parameterName, "OrthoRedSpanFactor"))
+            config.OrthoRedSpanFactor = atoi(parameterValue);
+        else if (!strcmp(parameterName, "OrthoMcastSpanFactor"))
+            config.OrthoMcastSpanFactor = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCommlibMulticast"))
             config.useCommlibMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhoGHelpers"))

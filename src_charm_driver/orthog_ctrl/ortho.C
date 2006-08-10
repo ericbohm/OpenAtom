@@ -546,10 +546,10 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 
   if(s1 <= s2)   //we get the reduction
     {
-      pcRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false);
+      pcRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
       if(config.phantomSym)
 	{
-	  pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true);
+	  pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
 	  //	if(s1!=s2)
 	  //	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
 	}
@@ -562,12 +562,12 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     }
   else if(config.phantomSym)
     {
-      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
+      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
     }
   if(config.lambdaGrainSize==config.orthoGrainSize)
     { //no point in having a different chare if you won't have more of them
-      pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false);
-      pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true);
+      pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
+      pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
     }
 
 //----------------------------------------------------------------------------
@@ -666,7 +666,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
       if(config.useOrthoSectionRed)
 	{
 	  CProxySection_Ortho rproxy =   multiproxy;
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthoRedGrpId).ckLocalBranch();               
 	  rproxy.ckSectionDelegate(mcastGrp);
 	  initCookieMsg *redMsg=new initCookieMsg;
 	  rproxy.orthoCookieinit(redMsg);
@@ -674,12 +674,13 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
 	}
       if(config.useOrthoSection)
 	{
-	  if( config.useCommlib)
+	  if( config.useCommlib && config.useOrthoDirect)
 	    {
 	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
 	    }
 	  else
 	    {
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
 	      multiproxy.ckSectionDelegate(mcastGrp);
 	    }
 	}

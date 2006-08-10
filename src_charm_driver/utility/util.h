@@ -176,6 +176,7 @@ class Config {
 	int orthoStride;
 	int useCuboidMap;
 	int useOrthoSection;
+	int useOrthoDirect;
 	int useOrthoSectionRed;
 	int lambdaGrainSize;
 	int rhoGHelpers;
@@ -203,6 +204,9 @@ class Config {
 
 	int numMulticastMsgs;
 	int PCSpanFactor;
+	int OrthoRedSpanFactor;
+	int OrthoMcastSpanFactor;
+	int useOrthoDirectMcast;
 	int useGMulticast;
 	int useCommlibMulticast;
 	int pesPerState;
