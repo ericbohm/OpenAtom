@@ -566,6 +566,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     }
   if(config.lambdaGrainSize==config.orthoGrainSize)
     { //no point in having a different chare if you won't have more of them
+      // in the != case this will happen in the lambda chare
       pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
       pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
     }
@@ -660,8 +661,6 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
       CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
 				 0, numOrtho-1,1,
 				 0, numOrtho-1, 1);
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
-
 
       if(config.useOrthoSectionRed)
 	{
