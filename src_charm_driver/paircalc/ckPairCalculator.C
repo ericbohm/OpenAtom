@@ -1923,6 +1923,11 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       inResult1=NULL;
       inResult2=NULL;
       numRecdBW=0;
+      if(PCstreamBWout)
+	{
+	  bzero(columnCount, sizeof(int) * numOrthoCol);
+	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
+	}
     }
 
 }
