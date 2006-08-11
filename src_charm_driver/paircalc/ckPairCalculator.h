@@ -260,8 +260,14 @@ class PairCalculator: public CBase_PairCalculator {
 	sigmsg= new  sendBWsignalMsg;
       //collapse this into 1 flag
       bool unitcoef=true;  //cheap hack for minimzation only
-      sigmsg->otherdata= 
-	((!unitcoef || symmetric) &&(thisIndex.x !=thisIndex.y)) ? true : false;
+      //collapse this into 1 flag
+      if(amPhantom)
+	sigmsg->otherdata= true;
+      else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
+	sigmsg->otherdata=true;       
+      else
+	sigmsg->otherdata= false;
+
 
       if(PCdelayBWSend)
 	{

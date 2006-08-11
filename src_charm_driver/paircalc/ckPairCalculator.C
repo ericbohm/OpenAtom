@@ -1436,7 +1436,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     { //our mirror data is delayed
       collectAllTiles=true;
       PCstreamBWout=false;
-      //      CkPrintf("[%d,%d,%d,%d,%d] Warning! phantom got bw before fw, forcing tile collection\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      CkPrintf("[%d,%d,%d,%d,%d] Warning! phantom got bw before fw, forcing tile collection\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
     }
   int matrixSize=grainSize*grainSize;
 
@@ -1788,9 +1788,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
     }
 
-  if(PCstreamBWout && !collectAllTiles && !useBWBarrier)  // send results which are
-					// complete and not yet sent
-    
+  if(PCstreamBWout && !collectAllTiles && !useBWBarrier)  // send results which are complete and not yet sent
     {
       // not supported in dynamics until we figure out to stream that
       // computation.
@@ -1864,7 +1862,19 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 
   if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))) 
-    {
+    { // clean up
+      if(inResult2!=NULL)
+	delete [] inResult2;
+      if(inResult1!=NULL)
+	delete [] inResult1;
+      inResult1=NULL;
+      inResult2=NULL;
+      numRecdBW=0;
+      if(PCstreamBWout)
+	{
+	  bzero(columnCount, sizeof(int) * numOrthoCol);
+	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
+	}
 
       if(useBWBarrier){
 
@@ -1915,18 +1925,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	      outData = NULL;
 	      existsOut=false;
 	    }
-	}
-      if(inResult2!=NULL)
-	delete [] inResult2;
-      if(inResult1!=NULL)
-	delete [] inResult1;
-      inResult1=NULL;
-      inResult2=NULL;
-      numRecdBW=0;
-      if(PCstreamBWout)
-	{
-	  bzero(columnCount, sizeof(int) * numOrthoCol);
-	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
 	}
     }
 
