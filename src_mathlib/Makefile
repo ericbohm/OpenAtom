@@ -18,9 +18,10 @@ MATH   = .
 #===========================================================================
 
 #===========================================================================
-OBJS_REQ = random_num_gen.o genmatmul.o
+OBJS_REQ = random_num_gen.o genmatmul.o fastadd.o
 include $(BLAS_FORT)
 include $(LAPACK_FORT)
+include $(EISPACK_FORT)
 include $(EISPACK_FORT)
 OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) lst_sort_clean.o
 TARGET_LIB = ../binary/libMyMathLib.a
@@ -39,6 +40,11 @@ mymathlib: $(OBJS)
 lst_sort_clean.o: $(MATH)/lst_sort_clean.C $(MATH)/mathlib.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MATH)/lst_sort_clean.C
+
+#---------------------------------------------------------------------------
+fastadd.o: $(MATH)/fastadd.C $(MATH)/mathlib.h
+	$(ECHO) $@
+	$(CHARMC) -seq -c $(MATH_OPTS) $(MATH)/fastadd.C
 
 #---------------------------------------------------------------------------
 math_rs.o: $(MATH)/math_rs.f
