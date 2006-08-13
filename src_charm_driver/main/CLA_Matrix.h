@@ -3,7 +3,7 @@
 
 #include "CLA_Matrix.decl.h"
 #include "ckmulticast.h"
-
+CkReduction::reducerType sumFastDoubleType;
 /* Class definitions */
 
 /* The CLA_Matrix class should not be used directy by the user. See comments

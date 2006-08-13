@@ -12,6 +12,8 @@ mainmodule cpaimd {
 	readonly int Ortho_UE_error;
 	readonly bool Ortho_use_local_cb;
 
+	initproc registersumFastDouble(void);	
+
         extern module ckPairCalculator;
 	extern module CLA_Matrix; 
 

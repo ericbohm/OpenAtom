@@ -1754,7 +1754,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	// diagonal looks like a sticky correctness killer
 
 	// for now, force no streaming "all matrixes arrived" condition
-	CkAssert(collectAllTiles);
+	//	CkAssert(collectAllTiles);
 	// C = alpha*A*B + beta*C
 	// C= -1 * inRight * orthoT + C
 	double *othernewDatad;

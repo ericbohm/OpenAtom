@@ -309,7 +309,7 @@ void CP_State_RealSpacePlane::doReduction(){
 
     FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
     double *data        = fftcache->tmpDataR;
-    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
+    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
                          cookie,cb);
     CmiNetworkProgress();
 

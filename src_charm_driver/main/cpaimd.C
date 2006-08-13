@@ -1915,6 +1915,41 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     }
 
 
+
+
+void registersumFastDouble(void)
+{ 
+  sumFastDoubleType=CkReduction::addReducer(sumFastDouble);
+}
+
+
+// sum together matrices of doubles
+// possibly faster than sum_double due to minimizing copies
+// and using sameer's fastadd
+inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs)
+{
+
+  int size0=msgs[0]->getSize();
+  int size=size0/sizeof(double);
+
+  double *inmatrix;
+  //  int progcount=0;
+
+  double *ret=(double *)msgs[0]->getData();
+
+  for(int i=1; i<nMsg;i++)
+    {
+#ifdef CMK_VERSION_BLUEGENE
+      fastAdd(ret, (double *) msgs[i]->getData(), size);
+#else
+      inmatrix=(double *) msgs[i]->getData();
+	for(int d=0;d<size;d++)
+	  ret[d]+=inmatrix[d];
+#endif
+    }
+  return CkReductionMsg::buildNew(size0,ret);
+}
+
 //============================================================================
 #include "cpaimd.def.h"
 //============================================================================

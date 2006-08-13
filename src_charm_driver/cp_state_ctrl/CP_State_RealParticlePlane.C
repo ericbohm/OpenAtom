@@ -461,7 +461,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
                  CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
                  realParticlePlaneProxy.ckGetArrayID());
-   mcastGrp->contribute((nZmat*sizeof(double)),zmat,CkReduction::sum_double,
+   mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
                          rPlaneRedCookie,cb);
 #else
    thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,

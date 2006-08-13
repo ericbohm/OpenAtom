@@ -509,7 +509,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
 
   /* multiply */
-  int Ksplit_m=8;  //this could be a config param
+  int Ksplit_m=32;  //this could be a config param
   char trans = 't';
   double betap = 1.0;
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
@@ -653,7 +653,8 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
-  redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
+  //  redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
+  redGrp->contribute(m * n * sizeof(double), C, sumFastDoubleType,
    sectionCookie, reduce_CB);
   delete [] C;
 }
