@@ -20,7 +20,7 @@ extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 #define MULTARG_A	0
 #define MULTARG_B	1
 #define MULTARG_C	2
-
+CkReduction::reducerType sumFastDoubleType;
 /******************************************************************************/
 /* helper functions */
 
