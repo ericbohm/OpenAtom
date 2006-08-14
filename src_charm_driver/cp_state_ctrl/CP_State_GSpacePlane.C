@@ -151,13 +151,6 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->sendFFTData();
 #endif
     //------------------------------------------------------------------------
-    // (E) Start the non-local computation with done using EES
-#ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed
-       if(c->ees_nonlocal==1){
-         c->startNLEes();   //invokes controller in cp_state_particle_plane
-       }//endif
-#endif
-    //------------------------------------------------------------------------
     // (F) When Psi forces come back to us, do back FFT
 #ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
@@ -2631,16 +2624,7 @@ void CP_State_GSpacePlane::sendPsi() {
 
   complex *data=gs.packedPlaneData;
 
-  /*  if(tpsi==NULL)
-    tpsi  = new complex[gs.numPoints];
-  CmiMemcpy(tpsi,data,sizeof(complex)*gs.numPoints);
-  */
   if(cp_min_opt==0){
-    //#ifdef  _CP_DEBUG_UPDATE_OFF_
-    //    CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-    //                sizeof(complex)*gs.numPoints);
-    //    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-    //#endif      
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
      CmiMemcpy(scr,data,sizeof(complex)*ncoef);
@@ -3508,14 +3492,23 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::startNLEes(){
 
-  //  CP_State_ParticlePlane *pp = 
-  //    particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  //  pp->startNLEes(iteration);
+#define _NLEES_PRIO_START_OFF_
+#ifdef _NLEES_PRIO_START_OFF_
+
+  CP_State_ParticlePlane *pp = 
+  particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  pp->startNLEes(iteration);
+
+#else
+
   NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
   CkSetQueueing(msg, CK_QUEUEING_IFIFO);
   *(int*)CkPriorityPtr(msg) = config.sfpriority;
   msg->iteration=iteration;
   particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
 
-}
+#endif
+
+//-----------------------------------------------------------------------------
+  }//end routine
 //==============================================================================

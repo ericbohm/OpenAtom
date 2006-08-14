@@ -259,6 +259,20 @@ void CP_State_RealSpacePlane::doFFT(){
 #endif    
 
 //============================================================================
+// If non-local itself is on and the ees method is to be used, launch
+
+#ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
+  int nchareG      = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
+  int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
+  if(ees_nonlocal==1){
+    CkAssert(nchareG<=ngridc);
+    if(thisIndex.y<=nchareG){
+      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes();
+    }//endif
+  }//endif
+#endif
+
+//============================================================================
 // Send off the reduction unless you are skipping rho, whence you call doproduct
 
 #ifdef _CP_DEBUG_RHO_OFF_
@@ -279,6 +293,8 @@ void CP_State_RealSpacePlane::doFFT(){
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
+
+
 
 
 //============================================================================

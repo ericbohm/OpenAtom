@@ -751,18 +751,28 @@ void CP_State_ParticlePlane::ResumeFromSync(){
 //============================================================================
 
 
-
 //==============================================================================
 // The entry point to the Euler Exponential Spline non-local method.
-// It is invoked serially by its friend, stateGspacePlane so its not an entry.
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_ParticlePlane::lPrioStartNLEes(NLDummyMsg *msg){
+void CP_State_ParticlePlane::lPrioStartNLEes(NLDummyMsg *msg){ 
+ int iteration_in=msg->iteration;
+ delete msg;
+ startNLEes(iteration);
+}
+//==============================================================================
+
+
+//==============================================================================
+// The entry point to the Euler Exponential Spline non-local method.
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_ParticlePlane::startNLEes(int iteration_in){
 //==============================================================================
 //  Increment counters, Check for inconsistancies
-  int iteration_in=msg->iteration;
-  delete msg;
+
   iterNL++;  if(iterNL==1){iteration++;}
 
   doneGettingForces = false;   // If you are here, you are not done.

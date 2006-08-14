@@ -620,6 +620,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
                                int ,int ,int ,int ,int );
 	~CP_State_ParticlePlane();
 	void pup(PUP::er &);
+	void startNLEes(int);
 	void lPrioStartNLEes(NLDummyMsg *m);
 	void computeZ(PPDummyMsg *m);
 	void setEnlCookie(EnlCookieMsg *m);
