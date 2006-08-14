@@ -146,9 +146,14 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
 #endif               //end pause
     //------------------------------------------------------------------------
     // (D) FFT psi(gx,gy,gz)->psi(gx,gy,z), Send psi to real, 
-#ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed
+#ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed do the following and
+                           // EES-NL launch is in realstate
        c->doFFT(); 
        c->sendFFTData();
+#else
+#ifndef _CP_DEBUG_SFNL_OFF_
+       if(c->ees_nonlocal==1){c->startNLEes();}  // EES-NL launch must be here
+#endif
 #endif
     //------------------------------------------------------------------------
     // (F) When Psi forces come back to us, do back FFT
