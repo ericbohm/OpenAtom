@@ -183,7 +183,8 @@ class RSPMapTable  : public MapTable
   int sizeZNL;
   int Rstates_per_pe;
   RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
-	int _nstates, int _sizeZNL, int _Rstates_per_pe) ;
+	      PeList *exclude, 	int _nstates, int _sizeZNL, 
+	      int _Rstates_per_pe, int boxSize, bool useCuboidMap) ;
   RSPMapTable(){}
 };
 

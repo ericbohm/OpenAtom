@@ -170,7 +170,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 		      procno++;
 		      srcpe=destpe;
 		      if(availprocs->noPes())
-			availprocs->rebuild();
+			availprocs->reset();
 		      //			  availprocs->sortSource(srcpe);
 		      destpe=availprocs->findNext();
 		      if(rem!=0)
@@ -226,7 +226,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			procno++;
 			srcpe=destpe;
 			if(availprocs->noPes())
-			  availprocs->rebuild();
+			  availprocs->reset();
 			//			  availprocs->sortSource(srcpe);
 			destpe=availprocs->findNext();
 			if(rem!=0)
@@ -263,7 +263,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			  procno++;
 			  srcpe=destpe;
 			  if(availprocs->noPes())
-			    availprocs->rebuild();
+			    availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
 			  if(rem!=0)
@@ -352,7 +352,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			  procno++;
 			  srcpe=destpe;
 			  if(availprocs->noPes())
-			    availprocs->rebuild();
+			    availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
 			  if(rem!=0)
@@ -405,7 +405,7 @@ SCalcMapTable::SCalcMapTable(CkHashtableT <intdual, int > *_map, PeList *_availp
 			  procno++;
 			  srcpe=destpe;
 			  if(availprocs->noPes())
-			      availprocs->rebuild();
+			      availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
 			  if(rem!=0)
@@ -506,21 +506,27 @@ RSMapTable::RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
 #endif
 }
 
-RSPMapTable::RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
-	int _nstates, int _sizeZNL, int _Rstates_per_pe) :
-   nstates(_nstates), sizeZNL(_sizeZNL),
+
+RSPMapTable::RSPMapTable(CkHashtableT <intdual, int > *_map, 
+			 PeList *_availprocs, PeList *exclusion,
+			 int _nstates, int _sizeZNL, int _Rstates_per_pe,
+			 int boxSize, bool useCuboidMap) :
+  nstates(_nstates), sizeZNL(_sizeZNL),
   Rstates_per_pe(_Rstates_per_pe)
 {
         int c = 0;
-	
-	int l, m, pl, pm, srem, rem, i=0;
+	int bSize=boxSize;
+	int states_per_pe, m, pl, pm, srem, rem, i=0;
+	int destpe;
 	reverseMap=NULL;
 	maptable=_map;
 	availprocs=_availprocs;
-        
-        l=Rstates_per_pe;		// no of states in one chunk
-        pl = nstates / l;
-        if(nstates % l == 0)
+	//        if(useCuboidMap)
+	//	  states_per_pe=nstates/boxSize;		// no of states in one chunk
+	//	else
+	  states_per_pe=Rstates_per_pe;		// no of states in one chunk
+        pl = nstates / states_per_pe;
+        if(nstates % states_per_pe == 0)
 		srem = 0;
 	else
 	{
@@ -541,43 +547,83 @@ RSPMapTable::RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs
 	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
 	//pl, pm, srem, rem);
 	int srcpe=0;
-	int destpe=availprocs->findNext();
-	
-        for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
-        {
+
+	/*  RPP isn't planewise with GPP.  Need different cuboid code
+	  if(useCuboidMap)
+	  {
+	    CkPrintf("nstates %d sizeZNL %d Pes %d states_per_pe %d boxSize %d\n", nstates, sizeZNL, availprocs->count(), states_per_pe, boxSize);	
+	    for(int plane=0;plane<sizeZNL;plane++)
+	      {
+		// get the cube for this plane
+		PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+		// try a subtraction from the exclusion
+		if(exclusion->count()>0)
+		  *thisPlaneBox-*exclusion;
+		if(thisPlaneBox->count()<nstates/states_per_pe)
+		  {
+		    CkPrintf("RSP ignoring exclusion map for plane %d count %d\n",plane,thisPlaneBox->count());
+		    // if not enough ignore the exclusion map
+		    delete thisPlaneBox;
+		    thisPlaneBox= new PeList(availprocs,plane*bSize,bSize);
+		  }
+		else
+		  { // repair the index
+		    thisPlaneBox->reindex();
+		  }
+		destpe=thisPlaneBox->findNext();
+		for(int state=0;state<nstates;state+=states_per_pe)
+		  {
+		    for(int stateperpe=0;stateperpe<states_per_pe;stateperpe++)
+		      {
+			maptable->put(intdual(state+stateperpe, plane))=destpe;
+		      }
+		    destpe=thisPlaneBox->findNext();
+		    if(thisPlaneBox->count()==0)
+		      thisPlaneBox->reset();
+		  }
+		delete thisPlaneBox;
+	      }
+	  }
+	else
+	*/
+	  {	  
+	    int destpe=availprocs->findNext();
+	    for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+	      {
                 if(ychunk==(pm-rem)*m)
-              		m=m+1;
-        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		{
-                	if(xchunk==(pl-srem)*l)
-				l=l+1;
-			if(xchunk==0 && ychunk==0) {}
-			else
-			{
-			    srcpe=destpe;
-			    //			    availprocs->sortSource(srcpe);
-			    destpe=availprocs->findNext();
-			}
-                        c=0;
-			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
-				{
-					if(xchunk==0 && ychunk==0)
-					{
-                                                c++;
-						maptable->put(intdual(state, plane))=0;
-						//CkPrintf("%d %d on 0\n", state, plane);
-					}
-					else
-					{
-                                                c++;
-						maptable->put(intdual(state, plane))=destpe;
-					}
-				}
-			}
-                }
-        }
+		  m=m+1;
+        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
+		  {
+		    if(xchunk==(pl-srem)*states_per_pe)
+		      states_per_pe=states_per_pe+1;
+		    if(xchunk==0 && ychunk==0) {}
+		    else
+		      {
+			srcpe=destpe;
+			//			    availprocs->sortSource(srcpe);
+			destpe=availprocs->findNext();
+		      }
+		    c=0;
+		    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
+		      {
+			for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
+			  {
+			    if(xchunk==0 && ychunk==0)
+			      {
+				c++;
+				maptable->put(intdual(state, plane))=0;
+				//CkPrintf("%d %d on 0\n", state, plane);
+			      }
+			    else
+			      {
+				c++;
+				maptable->put(intdual(state, plane))=destpe;
+			      }
+			  }
+		      }
+		  }
+	      }
+	  }
 #ifdef MAP_DEBUG
 	CkPrintf("RSPMap created on processor %d\n", CkMyPe());
 	dump();

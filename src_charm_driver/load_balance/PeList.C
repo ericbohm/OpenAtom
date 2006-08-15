@@ -62,6 +62,8 @@ void PeList::rebuild() // default constructor
 
 }
 
+
+
 #ifdef CMK_VERSION_BLUEGENE
 // BG/L specific PeList implementations
 

@@ -51,6 +51,20 @@ class PeList
       sortSource(TheList[0]);
     }
 
+  PeList(PeList &inlist)
+    {
+      current=0;
+      size=inlist.size;
+      TheList = new int [size];
+      sortIdx = new int [size];
+      for(int i=0;i<inlist.size;i++)
+	{
+	  TheList[i]=inlist.TheList[i];
+	  sortIdx[i]=inlist.sortIdx[i];
+	}
+    }
+
+
   PeList(int _size, int *a)
     {
       current=0;
@@ -59,7 +73,19 @@ class PeList
       sortIdx=new int [size];
       memcpy(TheList,a,size*sizeof(int));
       sortSource(TheList[0]);
-    };	 // use an array to construct
+    }	 // use an array to construct
+
+  PeList(PeList *a, int start, int _size)
+    {
+      CkAssert(start<a->size);
+      CkAssert(_size<=a->size);
+      size=_size;
+      current=0;
+      TheList=new int [size];
+      sortIdx=new int [size];
+      memcpy(TheList,&(a->TheList[start]),size*sizeof(int));
+      memcpy(sortIdx,&(a->sortIdx[start]),size*sizeof(int));
+    };	 // make a copy of a sublist
   
   // given the max grid/torus dimenions and the volume of a desired subpartition
 
@@ -70,6 +96,12 @@ class PeList
   
   inline int count() { return(size-current);  }
   
+  void reindex(){
+      for(int i=0;i<size;i++)
+	{
+	  sortIdx[i]=TheList[i];
+	}
+  } 
 
   void rebuild(); 
 
@@ -95,12 +127,21 @@ class PeList
 
   void sortSource(int srcPe); // implementation depends on BG/L or not
 
+
+  PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}   
+
+
   // need to rebuild your sortIdx
-  PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}
-  //  PeList &operator+(PeList &inlist) { CkAbort("not implemented");}
-  /*    for(int i=0; i< inlist.TheList.size();i++)
-	TheList.push_back(inlist.TheList[i]);
-	return *this; }*/
+  PeList &operator+(PeList &inlist) { 
+    // make array large enough for both, paste together
+    int newsize=inlist.size+size;
+    int *newlist= new int [newsize];
+    int i=0;
+    for(; i< size ; i++)
+      newlist[i]=TheList[i];
+    for(; i< newsize ; i++)
+      newlist[i]=inlist.TheList[i];
+    return *this; }
 
 
   // need to rebuild your sortIdx

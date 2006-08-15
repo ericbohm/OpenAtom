@@ -389,6 +389,8 @@ void init_ortho_chares(int, int, int *);
 void init_commlib_strategies(int, int,int);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(size2d,int,int,int,int,CPcharmParaInfo *);
+void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
+                       int doublePack, PeList *exclusion, CPcharmParaInfo *sim);
 void init_rho_chares(size2d ,CPcharmParaInfo*);
 void control_physics_to_driver();
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,

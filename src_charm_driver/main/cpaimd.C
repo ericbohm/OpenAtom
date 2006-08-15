@@ -198,10 +198,13 @@ bool Ortho_use_local_cb;
 int done_init=0;
 int planes_per_pe;
 
+
+
 CkVec <int> peUsedBySF;
 CkVec <int> peUsedByNLZ;
 PeList *availGlob;
-
+PeList *excludePes;
+int boxSize;
 #ifdef USE_TOPOMAP
 #if CMK_VERSION_BLUEGENE
 BGLTorusManager *bgltm;
@@ -532,6 +535,7 @@ main::main(CkArgMsg *msg) {
 	m = config.nchareG / pm;
 	int bx,by,bz;
 #ifdef CMK_VERSION_BLUEGENE
+	boxSize=pm;
 	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pm))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box mapping\n",bx,by,bz);
@@ -548,6 +552,7 @@ main::main(CkArgMsg *msg) {
     else
       foo= new PeList;  // heap it
     availGlob=foo;
+    excludePes= new PeList();
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
@@ -590,6 +595,10 @@ main::main(CkArgMsg *msg) {
 
 //============================================================================ 
 // Initialize commlib strategies for later association and delegation
+    if(sim->ees_nloc_on)
+      init_eesNL_chares(sizeYZ, natm_nl, natm_nl_grp_max, doublePack, excludePes, sim);
+
+
 
     init_commlib_strategies(sim->nchareRhoG, sizeYZ[1],nchareRhoRHart);
 
@@ -1358,18 +1367,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  // state r-particleplane
 
   availGlob->reset();
-  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlob,nstates,
-				    nchareRPP, Rstates_per_pe);
-  CProxy_RSPMap rspMap= CProxy_RSPMap::ckNew();
-  newtime=CmiWallTimer();
-  CkPrintf("RSPMap created in %g\n",newtime-Timer);
-  Timer=newtime;
-  CkArrayOptions pRealSpaceOpts;
-  pRealSpaceOpts.setMap(rspMap);
-  realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
-                                ngridaNl,ngridbNl,ngridcNl,
-                                numIterNL,zmatSizeMax,Rstates_per_pe,
-		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
 
  //--------------------------------------------------------------------------------
  // Groups : no placement required 
@@ -1436,101 +1433,92 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       }//endfor
     }//endfor
     realSpacePlaneProxy.doneInserting();
-
-    for (int s = 0;  s < nstates; s++){
-      for (int y = 0; y < ngridcNl; y += 1){
-        realParticlePlaneProxy(s, y).insert(ngridaNl,ngridbNl,ngridcNl,
-                                            numIterNL,zmatSizeMax,Rstates_per_pe,
-		                            nchareG,ees_nonlocal_on);
-      }//endfor
-    }//endfor
-    realParticlePlaneProxy.doneInserting();
-
   //--------------------------------------------------------------------------------
   // Do a fancy dance to determine placement of structure factors
-
-    int *nsend       = new int[nchareG];
-    int **listpe     = new int * [nchareG];
-    int numproc      = CkNumPes();
-    int *gspace_proc = new int [numproc];
+    if(!ees_nonlocal_on)
+      {
+	int *nsend       = new int[nchareG];
+	int **listpe     = new int * [nchareG];
+	int numproc      = CkNumPes();
+	int *gspace_proc = new int [numproc];
    
-    for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
-    for(int j=0;j<nchareG;j++){   
-      listpe[j]= new int[nstates];
-      nsend[j]=0;
-      for(int i=0;i<nstates;i++){
-	listpe[j][i]=gsprocNum(sim, i,j);
-	gspace_proc[listpe[j][i]]+=1;
-      }//endfor
-      lst_sort_clean(nstates, &nsend[j], listpe[j]);
-    }//endfor
-    
-    FILE *fp = fopen("gspplane_proc_distrib.out","w");
-    for(int i=0;i<numproc;i++){
-      fprintf(fp,"%d %d\n",i,gspace_proc[i]);
-    }//endfor
-    fclose(fp);
-    delete [] gspace_proc;
-
-    int minsend=nstates;
-    int maxsend=0;
-    double avgsend=0.0;
-    int chareG_use=0;
-    CkPrintf("============================\n");
-    CkPrintf("Structure factor chareG dests\n");
-    CkPrintf("Number of g-space chares : %d\n",nchareG);    
-    CkPrintf("---------------------------\n");
-    for(int lsi=0;lsi<nchareG;lsi++){
-        chareG_use++;
-	CkPrintf("chareG [%d] nsend %d\n",lsi,nsend[lsi]);
-	if(nsend[lsi]>maxsend)
-	    maxsend=nsend[lsi];
-	if(nsend[lsi]<minsend)
-	    minsend=nsend[lsi];
-	avgsend+=(double) nsend[lsi];
-#ifdef SF_SEND_LIST_OUT
-        for(int lsj=0;lsj<nsend[lsi];lsj++){
-	  CkPrintf("[%d %d] pe %d\n",lsi,lsj,listpe[lsi][lsj]);
+	for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
+	for(int j=0;j<nchareG;j++){   
+	  listpe[j]= new int[nstates];
+	  nsend[j]=0;
+	  for(int i=0;i<nstates;i++){
+	    listpe[j][i]=gsprocNum(sim, i,j);
+	    gspace_proc[listpe[j][i]]+=1;
+	  }//endfor
+	  lst_sort_clean(nstates, &nsend[j], listpe[j]);
 	}//endfor
+    
+	FILE *fp = fopen("gspplane_proc_distrib.out","w");
+	for(int i=0;i<numproc;i++){
+	  fprintf(fp,"%d %d\n",i,gspace_proc[i]);
+	}//endfor
+	fclose(fp);
+	delete [] gspace_proc;
+
+	int minsend=nstates;
+	int maxsend=0;
+	double avgsend=0.0;
+	int chareG_use=0;
+	CkPrintf("============================\n");
+	CkPrintf("Structure factor chareG dests\n");
+	CkPrintf("Number of g-space chares : %d\n",nchareG);    
+	CkPrintf("---------------------------\n");
+	for(int lsi=0;lsi<nchareG;lsi++){
+	  chareG_use++;
+	  CkPrintf("chareG [%d] nsend %d\n",lsi,nsend[lsi]);
+	  if(nsend[lsi]>maxsend)
+	    maxsend=nsend[lsi];
+	  if(nsend[lsi]<minsend)
+	    minsend=nsend[lsi];
+	  avgsend+=(double) nsend[lsi];
+#ifdef SF_SEND_LIST_OUT
+	  for(int lsj=0;lsj<nsend[lsi];lsj++){
+	    CkPrintf("[%d %d] pe %d\n",lsi,lsj,listpe[lsi][lsj]);
+	  }//endfor
 #endif
-    }//endfor
-    CkPrintf("---------------------------\n");
-    CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)chareG_use);
-    CkPrintf("============================\n");
+	}//endfor
+	CkPrintf("---------------------------\n");
+	CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)chareG_use);
+	CkPrintf("============================\n");
 
-  //--------------------------------------------------------------------------------
-  // Insert the objects into the StructureFactor array
+	//--------------------------------------------------------------------------------
+	// Insert the objects into the StructureFactor array
 
-    int dupmax=maxsend;  // there is no point in ever having more than that
-    if(config.numSfDups<dupmax){dupmax=config.numSfDups;}
-    config.numSfDups = dupmax;
-    int numSfDups    = dupmax;
-    CkPrintf("real numSfdups is %d based on maxsend of %d\n",numSfDups, maxsend);
+	int dupmax=maxsend;  // there is no point in ever having more than that
+	if(config.numSfDups<dupmax){dupmax=config.numSfDups;}
+	config.numSfDups = dupmax;
+	int numSfDups    = dupmax;
+	CkPrintf("real numSfdups is %d based on maxsend of %d\n",numSfDups, maxsend);
 
-    for (int dup=0; dup<dupmax; dup++){
-      for (int x = 0; x < nchareG; x += 1){
-	  int num_dup, istart, iend;
-	  get_grp_params( nsend[x],  numSfDups,  dup, x ,&num_dup,  &istart, &iend);
-	  int pe_ind=istart;
-	  if(x%2==0)
+	for (int dup=0; dup<dupmax; dup++){
+	  for (int x = 0; x < nchareG; x += 1){
+	    int num_dup, istart, iend;
+	    get_grp_params( nsend[x],  numSfDups,  dup, x ,&num_dup,  &istart, &iend);
+	    int pe_ind=istart;
+	    if(x%2==0)
 	      pe_ind=iend;
-	  for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++){
+	    for (int AtmGrp=0; AtmGrp<numSfGrps; AtmGrp++){
 	      sfCompProxy(AtmGrp, x, dup).insert(numSfGrps,numSfDups, 
-                      natm_nl_grp_max,  num_dup, &(listpe[x][istart]),
-                      atmGrpMap(istart, num_dup, nsend[x], listpe[x],AtmGrp,dup,x));
+						 natm_nl_grp_max,  num_dup, &(listpe[x][istart]),
+						 atmGrpMap(istart, num_dup, nsend[x], listpe[x],AtmGrp,dup,x));
 	      peUsedBySF.push_back(atmGrpMap(istart, num_dup, nsend[x], listpe[x], 
                                              AtmGrp, dup,x));	      
 	      pe_ind++;
 	      if(pe_ind>nsend[x]){ pe_ind=0;}
-	  }//endfor : AtmGrp
-      }//endfor : chareG
-    }//endfor : Dups
-    sfCompProxy.doneInserting();
+	    }//endfor : AtmGrp
+	  }//endfor : chareG
+	}//endfor : Dups
+	sfCompProxy.doneInserting();
 
-    for(int j=0;j<nchareG;j++){delete [] listpe[j];}
-    delete [] listpe;
-    delete [] nsend;
-
+	for(int j=0;j<nchareG;j++){delete [] listpe[j];}
+	delete [] listpe;
+	delete [] nsend;
+      }
 //============================================================================
 // Set some com strategy of Sameer
 
@@ -1567,6 +1555,69 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     }//end routine
 //============================================================================
 
+//============================================================================
+// Creating arrays CP_StateRealParticlePlane
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
+                       int doublePack, PeList *exclusion, CPcharmParaInfo *sim)
+//============================================================================
+   { //begin routine 
+//============================================================================
+/*
+ * Set up the map variables used to control the location of the
+ * 2d-array elements over processors   
+*/
+//============================================================================
+// Useful Local variables
+
+  int nstate          = sim->nstates;
+
+  int ngridaNl        = sim->ngrid_nloc_a;
+  int ngridbNl        = sim->ngrid_nloc_b;
+  int ngridcNl        = sim->ngrid_nloc_c;
+  int ees_nonlocal_on = sim->ees_nloc_on;
+
+  int nchareG         = sim->nchareG;
+  int nchareRPP       = ngridcNl;
+
+  int numIterNL       = sim->nlIters;
+  int zmatSizeMax     = sim->nmem_zmat_max;
+
+
+  int Rstates_per_pe  = config.Rstates_per_pe;
+
+  double newtime=CmiWallTimer();
+  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlob, exclusion, 
+				    nstates,  nchareRPP, Rstates_per_pe,
+				    boxSize, config.useCuboidMap);
+  CProxy_RSPMap rspMap= CProxy_RSPMap::ckNew();
+  newtime=CmiWallTimer();
+  CkPrintf("RSPMap created in %g\n",newtime-Timer);
+  Timer=newtime;
+  CkArrayOptions pRealSpaceOpts;
+  pRealSpaceOpts.setMap(rspMap);
+  realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
+                                ngridaNl,ngridbNl,ngridcNl,
+                                numIterNL,zmatSizeMax,Rstates_per_pe,
+		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
+
+  for (int s = 0;  s < nstates; s++){
+    for (int y = 0; y < ngridcNl; y += 1){
+      realParticlePlaneProxy(s, y).insert(ngridaNl,ngridbNl,ngridcNl,
+					  numIterNL,zmatSizeMax,Rstates_per_pe,
+					  nchareG,ees_nonlocal_on);
+    }//endfor
+  }//endfor
+  realParticlePlaneProxy.doneInserting();
+  printf("\n");
+  PRINT_LINE_DASH;
+  PRINTF("Completed RealParticle chare array build\n");
+  PRINT_LINE_STAR;printf("\n");
+
+
+}
 
 //============================================================================
 // Creating arrays CP_Rho_GSpacePlane, CP_Rho_GSpacePlaneHelper 
@@ -1611,68 +1662,72 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 // Nuke some procs from the list : reset, nuke, reset if you run out
 
    availGlob->reset();
-
+   PeList *RhoAvail= new PeList(*availGlob);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
-   if(nchareRhoR+peUsedByNLZ.size()<availGlob->count()){
+   if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
-                 peUsedByNLZ.size(),availGlob->count());
+                 peUsedByNLZ.size(),RhoAvail->count());
        PeList nlz(peUsedByNLZ);
-       *availGlob-nlz; //unary minus
+       *RhoAvail-nlz; //unary minus
    }//endif
 
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares
    if(ees_nonlocal_on==0){
-     if(nchareRhoR+peUsedBySF.size()<availGlob->count()){
+     if(nchareRhoR+peUsedBySF.size()<RhoAvail->count()){
        CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
-                  peUsedBySF.size(),availGlob->count());
+                  peUsedBySF.size(),RhoAvail->count());
        PeList sf(peUsedBySF);
-       *availGlob-sf;
+       *RhoAvail-sf;
      }//endif
-   }else{
-     CkPrintf("We need new exclusions based on realPP\n");
-   }//endif
+   }
 
-   if(availGlob->count()>2){availGlob->resort();}
+   if(RhoAvail->count()>2){RhoAvail->resort();}
 
 //============================================================================
 // Maps and options
 
-    RhoRSMapTable RhoRStable(&RhoRSmaptable, availGlob, nchareRhoR);
+    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR);
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
 
-    // if there aren't enough free procs refresh the availGlob list;
-    if(nchareRhoG>availGlob->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoG);
-	availGlob->rebuild();
+    // if there aren't enough free procs refresh the RhoAvail list;
+    
+    if(nchareRhoG>RhoAvail->count()){
+	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
+	RhoAvail->rebuild();
     }//endif
 
-    RhoGSMapTable RhoGStable(&RhoGSmaptable, availGlob,nchareRhoG);
+    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG);
     CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
 
     // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoGHart>availGlob->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoGHart);
-	availGlob->rebuild();
+    if(nchareRhoGHart>RhoAvail->count()){
+	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoGHart);
+	RhoAvail->rebuild();
     }//endif
 
-    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, availGlob, nchareRhoGHart);
+    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart);
     CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
 
     // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoRHart > availGlob->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",availGlob->count(),nchareRhoRHart);
-	availGlob->rebuild();
+    if(nchareRhoRHart > RhoAvail->count()){
+	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
+	RhoAvail->rebuild();
     }//endif
+    if(RhoAvail->count()>0)
+      { 
+	// make the exclusion list
+	excludePes= new PeList(RhoAvail, 0, RhoAvail->current);
+      }
 
-    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, availGlob, nchareRhoRHart);
+    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail, nchareRhoRHart);
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
     CkArrayOptions rhorhartOpts;
     rhorhartOpts.setMap(rhorHartMap);
@@ -1727,7 +1782,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
-
+  delete RhoAvail;
+  RhoAvail=NULL;
 //===========================================================================
   }//end routine
 //============================================================================
