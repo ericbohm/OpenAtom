@@ -587,6 +587,8 @@ RSPMapTable::RSPMapTable(CkHashtableT <intdual, int > *_map,
 	else
 	*/
 	  {	  
+	    if(exclusion->count() > sizeZNL*states_per_pe)
+	      *availprocs-*exclusion;
 	    int destpe=availprocs->findNext();
 	    for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
 	      {
