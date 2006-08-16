@@ -759,7 +759,7 @@ void CP_State_ParticlePlane::ResumeFromSync(){
 void CP_State_ParticlePlane::lPrioStartNLEes(NLDummyMsg *msg){ 
  int iteration_in=msg->iteration;
  delete msg;
- startNLEes(iteration);
+ startNLEes(iteration_in);
 }
 //==============================================================================
 
