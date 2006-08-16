@@ -259,6 +259,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int cleanExitCalled;
         int isuspendNLForces;
 	bool doneDoingIFFT;
+	bool triggerNL;
 	friend class CP_State_ParticlePlane;
 	CP_State_GSpacePlane(int, size2d, int, int, int, int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);

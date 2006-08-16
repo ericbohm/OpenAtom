@@ -37,7 +37,7 @@
 
 
 //============================================================================
-
+extern CProxy_AtomsGrp                atomsGrpProxy;
 extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
 extern CProxy_CP_Rho_RealSpacePlane   rhoRealProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;

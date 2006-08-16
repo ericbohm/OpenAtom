@@ -601,6 +601,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   if(cp_min_opt==0){finishedCpIntegrate = 1;}// alternate entry point
   doneDoingIFFT       = false;
   allgdoneifft        = false;
+  triggerNL           = false;
   acceptedPsi         = true;    // we start out with a psi
   allAcceptedPsi      = true;    // we start out with a psi
   acceptedVPsi        = true;    // we start out with a vpsi
@@ -796,6 +797,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|numRecvRedPsi;
   p|AllPsiExpected;
   p|needPsiV;
+  p|triggerNL;
   p|doneDoingIFFT;
   p|doneNewIter;
   p|allgdoneifft;
@@ -2711,23 +2713,13 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   int chunkoffset=offset*chunksize; // how far into the points this
 				  // contribution lies
   int idest=chunkoffset;
-#ifdef CMK_VERSION_BLUEGENE
-#pragma disjoint(*data,*psi)
-      __alignx(16,data);
-      __alignx(16,psi);
-#endif
 
   if(countPsiO[offset]<1)
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
-#ifdef CMK_VERSION_BLUEGENE
-#pragma unroll(5)
-#endif
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
-#ifdef CMK_VERSION_BLUEGENE
-#pragma unroll(5)
-#endif
-    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
+    fastAdd((double *) psi,(double *)data,N*2);
+
 
   delete msg;
   /*
@@ -2773,23 +2765,12 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   int chunkoffset=offset*chunksize; // how far into the points this
 				  // contribution lies
   int idest=chunkoffset;
-#ifdef CMK_VERSION_BLUEGENE
-#pragma disjoint(*psi, *data)
-      __alignx(16,psi);
-      __alignx(16,data);
-#endif
 
   if(countPsiO[offset]<1)
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
-#ifdef CMK_VERSION_BLUEGENE
-#pragma unroll(10)
-#endif
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
-#ifdef CMK_VERSION_BLUEGENE
-#pragma unroll(10)
-#endif
-    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
+    fastAdd((double *) psi,(double *)data,N*2);
 
   delete msg;
   /*
@@ -2820,7 +2801,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-  void CP_State_GSpacePlane::doNewPsi(){
+void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (I) If you have got it all : Rescale it, produce some output
 
@@ -2877,7 +2858,8 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
 #endif      
-
+  if(triggerNL) // we were asked to NL but weren't ready
+    startNLEes();
   RTH_Runtime_resume(run_thread);
 
 //----------------------------------------------------------------------------
@@ -3497,23 +3479,29 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::startNLEes(){
 
-#define _NLEES_PRIO_START_OFF_
+  //make sure we don't start this before we're ready
+  if(acceptedPsi)
+    {
+#define _NLEES_PRIO_START_
 #ifdef _NLEES_PRIO_START_OFF_
 
-  CP_State_ParticlePlane *pp = 
-  particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-  pp->startNLEes(iteration);
+      CP_State_ParticlePlane *pp = 
+	particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+      pp->startNLEes(iteration);
 
 #else
-
-  NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
-  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-  *(int*)CkPriorityPtr(msg) = config.sfpriority;
-  msg->iteration=iteration;
-  particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
-
+      NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = config.sfpriority;
+      msg->iteration=iteration;
+      particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
 #endif
-
+      triggerNL=false;
+    }
+  else
+    {
+      triggerNL=true;
+    }
 //-----------------------------------------------------------------------------
   }//end routine
 //==============================================================================
