@@ -34,7 +34,7 @@ class IntMap4 {
  public:
 
     IntMap4(int keyW, int keyX, int keyY, int keyZ, int step) 
-           : keyWmax(keyW), keyXmax(keyX) keyYmax(keyY), keyZmax(keyZ), keyStep(step)
+           : keyWmax(keyW), keyXmax(keyX), keyYmax(keyY), keyZmax(keyZ), keyStep(step)
       {
 	Map=new int***[keyWmax];
 	for(int w=0;w<keyWmax;w++)
