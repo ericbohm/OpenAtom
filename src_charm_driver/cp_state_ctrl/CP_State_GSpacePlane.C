@@ -1272,8 +1272,11 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 
+  if(triggerNL) // we were asked to NL but weren't ready
+    startNLEes();
+
 //---------------------------------------------------------------------------
-    }//end routine
+}//end routine
 //============================================================================
 
 //==============================================================================
@@ -2858,8 +2861,6 @@ void CP_State_GSpacePlane::doNewPsi(){
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
 #endif      
-  if(triggerNL) // we were asked to NL but weren't ready
-    startNLEes();
   RTH_Runtime_resume(run_thread);
 
 //----------------------------------------------------------------------------
