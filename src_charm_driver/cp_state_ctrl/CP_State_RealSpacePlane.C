@@ -266,7 +266,7 @@ void CP_State_RealSpacePlane::doFFT(){
   int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
   if(ees_nonlocal==1){
     CkAssert(nchareG<=ngridc);
-    if(thisIndex.y<=nchareG){
+    if(thisIndex.y<nchareG){
       gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes();
     }//endif
   }//endif
