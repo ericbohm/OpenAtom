@@ -192,6 +192,9 @@ void registersumMatrixDouble(void)
 { 
   sumMatrixDoubleType=CkReduction::addReducer(sumMatrixDouble);
 }
+CkReduction::reducerType sumFastDoubleType;
+CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);
+void fastAdd (double *a, double *b, int nelem);
 
 
 // sum together matrices of doubles
@@ -1269,7 +1272,7 @@ PairCalculator::sendTiles(bool flag_dp)
 	    dumpMatrixDouble(filename, outTiles[orthoIndex], orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
 
-	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
+	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumFastDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
 	    touchedTiles[orthoIndex]=0;
 	    if(++progcounter>8)
 	      {progcounter=0;CmiNetworkProgress();}
@@ -1324,7 +1327,7 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 	dumpMatrixDouble(filename, outTile, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
 
-	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumFastDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
 
       }
   delete [] outTile;
@@ -2041,7 +2044,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumFastDoubleType, otherResultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2067,7 +2070,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumFastDoubleType, resultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2210,7 +2213,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #endif
 	*/
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumFastDoubleType, otherResultCookies[j], mycb, outOffset);
 	/*
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2234,7 +2237,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	    #endif
 	  */
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumFastDoubleType, resultCookies[j], mycb, outOffset);
 	  /*
 	    #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(220, StartTime, CmiWallTimer());
