@@ -19,10 +19,32 @@
 #include "pairCalculator.h"
 #include "ckhashtable.h"
 #include "PeList.h"
+#define USE_INT_MAP
+#ifndef USE_INT_MAP
+class IntMap
+{
+ public:
+      void pup(PUP::er &p)
+      {
+      }
+};
+typedef IntMap IntMap2;
+typedef IntMap IntMap4;
+#else
+#include "IntMap.h"
+typedef IntMap2 IntMap;
+typedef IntMap2 MapType;
+typedef IntMap2 MapType2;
+typedef IntMap4 MapType4;
+
+#endif
+
 #include "MapTable.h"
+
 #ifdef CMK_VERSION_BLUEGENE
 #include "builtins.h"
 #endif
+
 
 //#define GPSI_BARRIER 1
 
@@ -40,6 +62,16 @@
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
+
+extern IntMap GSImaptable;
+extern IntMap RSImaptable;
+extern IntMap RSPImaptable;
+extern IntMap RhoGSImaptable;
+extern IntMap RhoRSImaptable;
+extern IntMap RhoGHartImaptable;
+extern IntMap RhoRHartImaptable;
+extern IntMap4 AsymScalcImaptable;
+extern IntMap4 SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
@@ -91,7 +123,7 @@ class main : public Chare {
 class CkArrayMapTable : public CkArrayMap
 {
  public:
-  CkHashtableT<intdual, int> *maptable;
+  MapType2 *maptable;
 
 
   CkArrayMapTable() {}
@@ -101,6 +133,22 @@ class CkArrayMapTable : public CkArrayMap
       CkArrayMap::pup(p);
     }
   ~CkArrayMapTable(){}
+  
+};
+
+class CkArrayMapTable4 : public CkArrayMap
+{
+ public:
+  MapType4 *maptable;
+
+
+  CkArrayMapTable4() {}
+  int procNum(int, const CkArrayIndex &){CkAbort("do not call the base procnum");return(0);}
+  void pup(PUP::er &p)
+    {
+      CkArrayMap::pup(p);
+    }
+  ~CkArrayMapTable4(){}
   
 };
 
@@ -120,12 +168,20 @@ class GSMap: public CkArrayMapTable {
  public:
   GSMap()
       { 
+#ifdef USE_INT_MAP	
+	maptable= &GSImaptable;
+#else
 	maptable= &GSmaptable;
+#endif
       }
   void pup(PUP::er &p)
 	{
 	    CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP	
+	    maptable= &GSImaptable;
+#else
 	    maptable= &GSmaptable;
+#endif
 	}
   int procNum(int, const CkArrayIndex &);
   ~GSMap(){
@@ -147,12 +203,20 @@ class RSMap: public CkArrayMapTable {
  public:
   RSMap()
       { 
+#ifdef USE_INT_MAP
+	maptable= &RSImaptable;
+#else
 	maptable= &RSmaptable;
+#endif
       }
   void pup(PUP::er &p)
 	{
 	    CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+	    maptable= &RSImaptable;
+#else
 	    maptable= &RSmaptable;
+#endif
 	}
   int procNum(int, const CkArrayIndex &);
   ~RSMap(){
@@ -165,12 +229,21 @@ class RSPMap: public CkArrayMapTable {
  public:
   RSPMap()
       { 
+#ifdef USE_INT_MAP
+	maptable= &RSPImaptable;
+#else
 	maptable= &RSPmaptable;
+#endif
       }
   void pup(PUP::er &p)
 	{
 	    CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+	    maptable= &RSPImaptable;
+#else
 	    maptable= &RSPmaptable;
+#endif
+
 	}
   int procNum(int, const CkArrayIndex &);
   ~RSPMap(){
@@ -189,23 +262,37 @@ class RSPMap: public CkArrayMapTable {
  */
 //============================================================================
 
-class SCalcMap : public CkArrayMapTable {
+class SCalcMap : public CkArrayMapTable4 {
   bool symmetric;
  public:
     SCalcMap(bool _symmetric): symmetric(_symmetric){
+#ifdef USE_INT_MAP
+	if(symmetric)
+	  maptable= &SymScalcImaptable;
+	else
+	  maptable= &AsymScalcImaptable;
+#else
 	if(symmetric)
 	  maptable= &SymScalcmaptable;
 	else
 	  maptable= &AsymScalcmaptable;
+#endif
     }
     void pup(PUP::er &p)
 	{
-	    CkArrayMapTable::pup(p);
+	    CkArrayMapTable4::pup(p);
 	    p|symmetric;
+#ifdef USE_INT_MAP
+	    if(symmetric)
+	      maptable= &SymScalcImaptable;
+	    else
+	      maptable= &AsymScalcImaptable;
+#else
 	    if(symmetric)
 	      maptable= &SymScalcmaptable;
 	    else
 	      maptable= &AsymScalcmaptable;
+#endif
 	}
   int procNum(int, const CkArrayIndex &);
 };
@@ -218,7 +305,11 @@ class RhoRSMap : public CkArrayMapTable {
     int nchareRhoR;
     RhoRSMap()
     {
+#ifdef USE_INT_MAP
+      maptable= &RhoRSImaptable;
+#else
       maptable= &RhoRSmaptable;
+#endif
     }
     
     ~RhoRSMap() {
@@ -227,7 +318,11 @@ class RhoRSMap : public CkArrayMapTable {
     void pup(PUP::er &p)
       {
 	CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+	maptable= &RhoRSImaptable;
+#else
 	maptable= &RhoRSmaptable;
+#endif
       }
     
     int procNum(int arrayHdl, const CkArrayIndex &idx);
@@ -242,7 +337,11 @@ class RhoGSMap : public CkArrayMapTable {
   public:
     RhoGSMap()
     {
+#ifdef USE_INT_MAP
+      maptable= &RhoGSImaptable;
+#else
       maptable= &RhoGSmaptable;
+#endif
     }
     
     ~RhoGSMap() {
@@ -261,7 +360,11 @@ class RhoGHartMap : public CkArrayMapTable {
   public:
   RhoGHartMap()
   {
+#ifdef USE_INT_MAP
+    maptable= &RhoGHartImaptable;
+#else
     maptable= &RhoGHartmaptable;
+#endif
   }
   
   ~RhoGHartMap()
@@ -273,7 +376,11 @@ class RhoGHartMap : public CkArrayMapTable {
   void pup(PUP::er &p)
       {
 	CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+	maptable= &RhoGHartImaptable;
+#else
 	maptable= &RhoGHartmaptable;
+#endif
       }
 
 };
@@ -282,7 +389,11 @@ class RhoRHartMap : public CkArrayMapTable {
   public:
   RhoRHartMap()
   {
+#ifdef USE_INT_MAP
+    maptable= &RhoRHartImaptable;
+#else
     maptable= &RhoRHartmaptable;
+#endif
   }
   
   ~RhoRHartMap()
@@ -294,7 +405,11 @@ class RhoRHartMap : public CkArrayMapTable {
   void pup(PUP::er &p)
       {
 	CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+	maptable= &RhoRHartImaptable;
+#else
 	maptable= &RhoRHartmaptable;
+#endif
       }
 
 };

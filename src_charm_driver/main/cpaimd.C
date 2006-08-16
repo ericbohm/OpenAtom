@@ -147,15 +147,33 @@ extern CP           readonly_cp;
  */
 //============================================================================
 
+IntMap GSImaptable;
+IntMap RSImaptable;
+IntMap RSPImaptable;
+IntMap RhoGSImaptable;
+IntMap RhoRSImaptable;
+IntMap RhoGHartImaptable;
+IntMap RhoRHartImaptable;
+IntMap4 AsymScalcImaptable;
+IntMap4 SymScalcImaptable;
+
+#ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSPmaptable(10000,0.25);
+CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
+CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
+#else
+CkHashtableT<intdual, int> GSmaptable;
+CkHashtableT<intdual, int> RSmaptable;
+CkHashtableT<intdual, int> RSPmaptable;
+CkHashtableT<intdual, int> AsymScalcmaptable;
+CkHashtableT<intdual, int> SymScalcmaptable;
+#endif
 CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
 CkHashtableT<intdual, int> RhoRHartmaptable;
-CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
-CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
 
 PairCalcID pairCalcID1;
 PairCalcID pairCalcID2;
@@ -671,11 +689,22 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       achunks=config.numChunksSym; 
       
     }//endif
+#ifdef USE_INT_MAP
+  SymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, achunks, config.sGrainSize);
+  SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable, 
+					 availGlob, config.nstates,
+                   config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
+                   sim->lines_per_chareG, sim->pts_per_chareG, 
+		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable, config.useCuboidMap);
+#else
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
+
 		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap);
+#endif
+
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
 
   double newtime=CmiWallTimer();
@@ -685,10 +714,18 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   // Populate maptables for Paircalculators
   Timer=newtime;
   availGlob->reset();
+#ifdef USE_INT_MAP
+  AsymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize,config.nstates/config.sGrainSize, config.numChunksAsym, config.sGrainSize);
+  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlob,config.nstates,
+  	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
+                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
+                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable, config.useCuboidMap);
+#else
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
                    planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap);
+#endif
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
   CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
@@ -1351,9 +1388,14 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  // state r-space
 
   availGlob->reset();
+#ifdef USE_INT_MAP
+  RSImaptable.buildMap(nstates,nchareR);
+  RSMapTable RStable= RSMapTable(&RSImaptable, availGlob, nstates, nchareR, 
+                                 Rstates_per_pe);
+#else
   RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, nstates, nchareR, 
                                  Rstates_per_pe);
-
+#endif
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   double newtime=CmiWallTimer();
   CkPrintf("RSMap created in %g\n",newtime-Timer);
@@ -1383,9 +1425,16 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  // state g-space
 
   availGlob->reset();
+#ifdef USE_INT_MAP
+  GSImaptable.buildMap(nstates,nchareG);
+  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlob,nchareG,
+				   sim->lines_per_chareG, sim->pts_per_chareG,
+				   nstates, Gstates_per_pe, config.useCuboidMap);
+#else
   GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
 				   nstates, config.Gstates_per_pe, config.useCuboidMap);
+#endif
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n",newtime-Timer);
@@ -1589,9 +1638,17 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   int Rstates_per_pe  = config.Rstates_per_pe;
 
   double newtime=CmiWallTimer();
+#ifdef USE_INT_MAP
+  RSPImaptable.buildMap(nstates,nchareRPP);
+  RSPMapTable RSPtable= RSPMapTable(&RSPImaptable, availGlob, exclusion, 
+				    nstates,  nchareRPP, Rstates_per_pe,
+				    boxSize, config.useCuboidMap);
+#else
   RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlob, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap);
+#endif
+
   CProxy_RSPMap rspMap= CProxy_RSPMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("RSPMap created in %g\n",newtime-Timer);
@@ -1688,7 +1745,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 // Maps and options
 
+#ifdef USE_INT_MAP
+   RhoRSImaptable.buildMap(nchareRhoR,1);
+   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR);
+#else
     RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR);
+#endif
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
     rhorsOpts.setMap(rhorsMap);
@@ -1699,8 +1761,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
 	RhoAvail->rebuild();
     }//endif
-
+#ifdef USE_INT_MAP
+    RhoGSImaptable.buildMap(nchareRhoG,1);
+    RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG);
+#else
     RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG);
+#endif
     CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
     CkArrayOptions rhogsOpts;
     rhogsOpts.setMap(rhogsMap);
@@ -1711,7 +1777,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	RhoAvail->rebuild();
     }//endif
 
+#ifdef USE_INT_MAP
+    RhoGHartImaptable.buildMap(nchareRhoGHart,1);
+    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, nchareRhoGHart);
+#else
     RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart);
+#endif
     CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
     rhoghartOpts.setMap(rhogHartMap);
@@ -1726,8 +1797,13 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	// make the exclusion list
 	excludePes= new PeList(RhoAvail, 0, RhoAvail->current);
       }
-
+#ifdef USE_INT_MAP
+    if(ees_eext_on)
+      RhoRHartImaptable.buildMap(nchareRhoRHart,1);
+    RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, nchareRhoRHart);
+#else
     RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail, nchareRhoRHart);
+#endif
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
     CkArrayOptions rhorhartOpts;
     rhorhartOpts.setMap(rhorHartMap);
@@ -1738,6 +1814,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     bool dummy = true;
 
   //---------------------------------------------------------------------------
+    
   // insert rhoreal
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
                                           ees_eext_on,ngrid_eext_c,rhorsOpts);
@@ -1767,14 +1844,16 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhoGHartExtProxy.doneInserting();
   //---------------------------------------------------------------------------
   // insert rhoRhart
-    rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
+    if(ees_eext_on)
+      {
+	rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
                                  ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
-    for (int i = 0; i < nchareRhoRHart; i++){
-      rhoRHartExtProxy(i,0).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
-                                   ees_eext_on,natmTyp);
-    }//endfor
-    rhoRHartExtProxy.doneInserting();
-
+	for (int i = 0; i < nchareRhoRHart; i++){
+	  rhoRHartExtProxy(i,0).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
+				       ees_eext_on,natmTyp);
+	}//endfor
+	rhoRHartExtProxy.doneInserting();
+      }
 //===========================================================================
 // Output to the screen
 
@@ -1925,7 +2004,11 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane){
+#ifdef USE_INT_MAP
+	return GSImaptable.get(state, plane);
+#else
 	return GSmaptable.get(intdual(state, plane));
+#endif
 }
 //============================================================================
 
@@ -2005,6 +2088,7 @@ inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs)
     }
   return CkReductionMsg::buildNew(size0,ret);
 }
+
 
 //============================================================================
 #include "cpaimd.def.h"

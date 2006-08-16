@@ -13,8 +13,9 @@
  *  CkHashtable <intdual, int> maps for use by CkArrayMap::procnum
  *  functions.
  */
-
-#define  _VERBOSE_MAP_OFF_
+#ifndef _MAPTABLE_H_
+#define _MAPTABLE_H_
+//#define  _VERBOSE_MAP_OFF_
 #define  _VERBOSE_MAP_
 
 class intdual {
@@ -45,6 +46,15 @@ class intdual {
     }
    
 };
+
+#ifndef USE_INT_MAP
+typedef CkHashtableT <intdual, int > MapType; 
+typedef CkHashtableT <intdual, int > MapType2;
+typedef CkHashtableT <intdual, int > MapType4;
+#else
+#endif
+
+
 /**
  * Abstract base class.
  *  
@@ -52,10 +62,11 @@ class intdual {
 class MapTable 
 {
  public:
-  CkHashtableT <intdual, int > *maptable;
+  MapType2 *maptable;
   PeList *availprocs;
   void dump()
     {
+#ifndef USE_INT_MAP
       CkHashtableIterator *it=maptable->iterator();
       it->seekStart();
       CkPrintf("Map dump\n");
@@ -69,6 +80,9 @@ class MapTable
 #endif
 	}
       delete it;
+#else
+      maptable->dump();
+#endif
     }
 
  protected:
@@ -101,6 +115,67 @@ class MapTable
 
 };
 
+/**
+ * Abstract base class.
+ *  
+ */
+class MapTable4 
+{
+ public:
+  MapType4 *maptable;
+  PeList *availprocs;
+  void dump()
+    {
+#ifndef USE_INT_MAP
+      CkHashtableIterator *it=maptable->iterator();
+      it->seekStart();
+      CkPrintf("Map dump\n");
+      intdual *key;
+      while(it->hasNext())
+	{
+	  it->next((void **) &key);
+	  int proc =maptable->get(key[0]);
+#ifdef _VERBOSE_MAP_
+	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
+#endif
+	}
+      delete it;
+#else
+      maptable->dump();
+#endif
+    }
+
+ protected:
+   CkVec <intdual> *reverseMap;
+
+  MapTable4()
+    {
+      availprocs=NULL;
+      maptable=NULL;
+      reverseMap=NULL;
+    }
+  ~MapTable4()
+    {
+      if(reverseMap!=NULL)
+	delete [] reverseMap;
+    }
+  void makeReverseMap();
+  
+  /**
+   * return ckvec containing the  reverse map of  all elements on
+   *  given proc 
+   */
+  inline CkVec <intdual>  ProcByArrIndex(int proc) 
+    { 
+      if(reverseMap==NULL)
+	makeReverseMap();
+      return(reverseMap[proc]); 
+    }
+
+
+};
+
+
 class GSMapTable : public MapTable
 {
  public:
@@ -114,7 +189,7 @@ class GSMapTable : public MapTable
   double state_load;
   int planes_per_pe;
 
-  GSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs, int _nchareG,
+  GSMapTable(MapType  *_map, PeList *_availprocs, int _nchareG,
 	       double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,  
 	       int _Gstates_per_pe, bool useCuboidMap);
 
@@ -124,7 +199,7 @@ class GSMapTable : public MapTable
     
 };
 
-class SCalcMapTable : public MapTable
+class SCalcMapTable : public MapTable4
 {
 
   int max_states,nchareG, grainsize;
@@ -139,13 +214,14 @@ class SCalcMapTable : public MapTable
   double totalload;
     
  public:
-    SCalcMapTable(CkHashtableT <intdual, int> *_map, PeList *_availprocs, int _nstates, 
+    SCalcMapTable(MapType4  *_map, PeList *_availprocs, int _nstates, 
 	     int _nchareG,  int gs, CmiBool _flag, int _nplanes,
 	     double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,
-	     int _planes_per_pe, int _numChunksA, int _numChunksS, CkHashtableT <intdual, int> *_gmap, bool useCuboidMap);
+	     int _planes_per_pe, int _numChunksA, int _numChunksS, MapType2  *_gmap, bool useCuboidMap);
 
   void dump()
     {
+#ifndef USE_INT_MAP
       CkHashtableIterator *it=maptable->iterator();
       it->seekStart();
       CkPrintf("Map dump\n");
@@ -160,6 +236,9 @@ class SCalcMapTable : public MapTable
 #endif
 	}
       delete it;
+#else
+      maptable->dump();
+#endif
     }
 
 };
@@ -170,7 +249,7 @@ class RSMapTable  : public MapTable
   int nstates;
   int sizeZ;
   int Rstates_per_pe;
-  RSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RSMapTable(MapType  *_map, PeList *_availprocs,
 	int _nstates, int _sizeZ, int _Rstates_per_pe) ;
   RSMapTable(){}
 };
@@ -182,7 +261,7 @@ class RSPMapTable  : public MapTable
   int nstates;
   int sizeZNL;
   int Rstates_per_pe;
-  RSPMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RSPMapTable(MapType  *_map, PeList *_availprocs,
 	      PeList *exclude, 	int _nstates, int _sizeZNL, 
 	      int _Rstates_per_pe, int boxSize, bool useCuboidMap) ;
   RSPMapTable(){}
@@ -193,7 +272,7 @@ class RhoRSMapTable  : public MapTable
 {
  public:
   int nchareRhoR;
-  RhoRSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RhoRSMapTable(MapType  *_map, PeList *_availprocs,
 	int _nchareRhoR);
   RhoRSMapTable(){}
 };
@@ -203,7 +282,7 @@ class RhoRHartMapTable  : public MapTable
 {
  public:
   int nchareRhoRHart;
-  RhoRHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RhoRHartMapTable(MapType  *_map, PeList *_availprocs,
 	int _nchareRhoRHart);
   RhoRHartMapTable(){}
 };
@@ -212,7 +291,7 @@ class RhoGHartMapTable  : public MapTable
 {
  public:
   int nchareRhoGHart;
-  RhoGHartMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RhoGHartMapTable(MapType  *_map, PeList *_availprocs,
 	int _nchareRhoGHart);
   RhoGHartMapTable(){}
 };
@@ -221,9 +300,10 @@ class RhoGSMapTable  : public MapTable
 {
  public:
   int nchareRhoG;
-  RhoGSMapTable(CkHashtableT <intdual, int > *_map, PeList *_availprocs,
+  RhoGSMapTable(MapType  *_map, PeList *_availprocs,
 	int _nchareRhoG);
   RhoGSMapTable(){}
 };
 
 
+#endif

@@ -51,7 +51,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o \
          util.o ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
-         groups.o TopoMap.o MapTable.o PeList.o para_grp_parse.o
+         groups.o TopoMap.o MapTable.o  PeList.o para_grp_parse.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
 OBJS_DEF = ../main/cpaimd.decl.h
@@ -146,6 +146,7 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(TOPINC)/RunDescriptor.h \
 	$(LOADB)/PeList.h \
 	$(LOADB)/MapTable.h \
+	$(LOADB)/IntMap.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS) $(OPT_FORT)
@@ -305,13 +306,14 @@ PeList.o:  $(LOADB)/PeList.C $(LOADB)/PeList.h $(TOPINC)/debug_flags.h \
 	$(CHARMC) -c $(LOADB)/PeList.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 MapTable.o:  $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h \
-             $(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h 
+             $(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h \
+		$(LOADB)/IntMap.h
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/MapTable.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/PeList.h \
-            $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h $(LOADB)/MapTable.h \
-            $(TOPINC)/CPcharmParaInfo.h 
+TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/PeList.h $(LOADB)/IntMap.h \
+            $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	    $(LOADB)/MapTable.h  $(TOPINC)/CPcharmParaInfo.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/TopoMap.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
