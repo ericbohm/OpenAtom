@@ -48,7 +48,6 @@ class intdual {
 };
 
 #ifndef USE_INT_MAP
-typedef CkHashtableT <intdual, int > MapType; 
 typedef CkHashtableT <intdual, int > MapType2;
 typedef CkHashtableT <intdual, int > MapType4;
 #else
@@ -189,7 +188,7 @@ class GSMapTable : public MapTable
   double state_load;
   int planes_per_pe;
 
-  GSMapTable(MapType  *_map, PeList *_availprocs, int _nchareG,
+  GSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareG,
 	       double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,  
 	       int _Gstates_per_pe, bool useCuboidMap);
 
@@ -249,7 +248,7 @@ class RSMapTable  : public MapTable
   int nstates;
   int sizeZ;
   int Rstates_per_pe;
-  RSMapTable(MapType  *_map, PeList *_availprocs,
+  RSMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nstates, int _sizeZ, int _Rstates_per_pe) ;
   RSMapTable(){}
 };
@@ -261,7 +260,7 @@ class RSPMapTable  : public MapTable
   int nstates;
   int sizeZNL;
   int Rstates_per_pe;
-  RSPMapTable(MapType  *_map, PeList *_availprocs,
+  RSPMapTable(MapType2  *_map, PeList *_availprocs,
 	      PeList *exclude, 	int _nstates, int _sizeZNL, 
 	      int _Rstates_per_pe, int boxSize, bool useCuboidMap) ;
   RSPMapTable(){}
@@ -272,7 +271,7 @@ class RhoRSMapTable  : public MapTable
 {
  public:
   int nchareRhoR;
-  RhoRSMapTable(MapType  *_map, PeList *_availprocs,
+  RhoRSMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nchareRhoR);
   RhoRSMapTable(){}
 };
@@ -282,7 +281,7 @@ class RhoRHartMapTable  : public MapTable
 {
  public:
   int nchareRhoRHart;
-  RhoRHartMapTable(MapType  *_map, PeList *_availprocs,
+  RhoRHartMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nchareRhoRHart);
   RhoRHartMapTable(){}
 };
@@ -291,7 +290,7 @@ class RhoGHartMapTable  : public MapTable
 {
  public:
   int nchareRhoGHart;
-  RhoGHartMapTable(MapType  *_map, PeList *_availprocs,
+  RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nchareRhoGHart);
   RhoGHartMapTable(){}
 };
@@ -300,7 +299,7 @@ class RhoGSMapTable  : public MapTable
 {
  public:
   int nchareRhoG;
-  RhoGSMapTable(MapType  *_map, PeList *_availprocs,
+  RhoGSMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nchareRhoG);
   RhoGSMapTable(){}
 };

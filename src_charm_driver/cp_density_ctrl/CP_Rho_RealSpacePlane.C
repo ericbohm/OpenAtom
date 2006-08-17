@@ -42,6 +42,7 @@ extern CProxy_CP_Rho_GSpacePlane      rhoGProxy;
 extern CProxy_CPcharmParaInfoGrp      scProxy;
 extern CProxy_FFTcache                fftCacheProxy;
 extern CProxy_CP_Rho_RHartExt         rhoRHartExtProxy;
+extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
 
 extern ComlibInstanceHandle commRealInstance;
 extern ComlibInstanceHandle commRealIGXInstance;
@@ -376,6 +377,16 @@ void CP_Rho_RealSpacePlane::acceptDensity() {
 #endif
       rhoRHartExtProxy(ind,0).startEextIter();
     }//endif
+    CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    if(sim->ees_nloc_on==1 && config.launchNLeesFromRho)
+      { // kick off the NLees from here
+	if(thisIndex.x<config.nchareG)
+	  for(int ns=0;ns<config.nstates;ns++)
+	    {
+	      //	    CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",thisIndex.x, thisIndex.y, thisIndex.x, nchg);
+	      gSpacePlaneProxy(ns,thisIndex.x).startNLEes();
+	    }
+      }
   }//endif
 #endif
 

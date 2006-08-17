@@ -27,15 +27,15 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
 
-	readonly IntMap GSImaptable;
-	readonly IntMap RSImaptable;
-	readonly IntMap RSPImaptable;
-	readonly IntMap RhoGSImaptable;
-	readonly IntMap RhoRSImaptable;
-	readonly IntMap RhoGHartImaptable;
-	readonly IntMap RhoRHartImaptable;
-	readonly IntMap4 AsymScalcImaptable;
-	readonly IntMap4 SymScalcImaptable;
+	readonly MapType2 GSImaptable;
+	readonly MapType2 RSImaptable;
+	readonly MapType2 RSPImaptable;
+	readonly MapType2 RhoGSImaptable;
+	readonly MapType2 RhoRSImaptable;
+	readonly MapType2 RhoGHartImaptable;
+	readonly MapType2 RhoRHartImaptable;
+	readonly MapType4 AsymScalcImaptable;
+	readonly MapType4 SymScalcImaptable;
 
 
 	readonly Config config;

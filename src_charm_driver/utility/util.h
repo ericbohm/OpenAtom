@@ -174,6 +174,7 @@ class Config {
 	int sGrainSize;
 	int orthoGrainSize;
 	int orthoStride;
+	int launchNLeesFromRho;
 	int useCuboidMap;
 	int useBWBarrier;
 	int useOrthoSection;

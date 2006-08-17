@@ -53,6 +53,25 @@ class IntMap4 {
 	for(int s=0;s<keyXmax*keyStep;s++)
 	  stepTable[s]=s/keyStep;
       }
+    ~IntMap4(){
+      if(Map!=NULL)
+	{
+	  for(int w=0;w<keyWmax;w++)
+	    {
+	      for(int x=0;x<keyXmax;x++)
+		{
+		  for(int y=0;y<keyYmax;y++)
+		    delete [] Map[w][x][y];
+		  delete [] Map[w][x];
+		}
+	      delete [] Map[w];
+	    }
+	  delete [] Map;
+	  Map=NULL;
+	}
+      
+    }
+
     void buildMap(int keyW=1, int keyX=1, int keyY=1, int keyZ=1, int step=1)
       {
 	CkAssert(keyW>0);
@@ -147,15 +166,23 @@ class IntMap4 {
     IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL;}
 };
 
-class IntMap2 {
+class IntMap2on2 {
  private:
   int **Map;
   int keyXmax;
   int keyYmax;
-  int keyStep;
  public:
-    IntMap2(){keyXmax=0; keyYmax=0; Map=NULL;}
-    IntMap2(int keyX, int keyY): keyXmax(keyX), keyYmax(keyY) 
+    IntMap2on2(){keyXmax=0; keyYmax=0; Map=NULL;}
+    ~IntMap2on2(){
+      if(Map!=NULL)
+	{
+	  for(int x=0;x<keyXmax;x++)
+	    delete [] Map[x];
+	  delete [] Map;
+	  Map=NULL;
+	}
+    }
+    IntMap2on2(int keyX, int keyY): keyXmax(keyX), keyYmax(keyY) 
       {
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
@@ -200,6 +227,75 @@ class IntMap2 {
       CkAssert(X<keyXmax);
       CkAssert(Y<keyYmax);
       Map[X][Y]=value;
+    }
+    void dump()
+      {
+	  for(int x=0;x<keyXmax;x++)
+	    for(int y=0;y<keyYmax;y++)
+		CkPrintf("%d %d %d \n",x,y, get(x,y));
+      }
+};
+
+
+class IntMap2on1 {
+ private:
+  int *Map;
+  int keyXmax;
+  int keyYmax;
+  int keymax;
+ public:
+    ~IntMap2on1(){
+      if(keymax>0 && Map!=NULL)
+	{
+	  delete [] Map;
+	  Map=NULL;
+	}
+    }
+    IntMap2on1(){keyXmax=0; keyYmax=0; keymax=0;Map=NULL;}
+    IntMap2on1(int keyX, int keyY): keyXmax(keyX), keyYmax(keyY) 
+      {
+	CkAssert(keyXmax>0);
+	CkAssert(keyYmax>0);
+	CkAssert(keyXmax>keyYmax);
+	keymax=keyXmax*keyYmax;
+	Map= new int[keymax];
+      }
+    void buildMap(int keyX=1, int keyY=1)
+      {
+	CkAssert(keyX>0);
+	CkAssert(keyY>0);
+	keyXmax=keyX;
+	keyYmax=keyY;
+	CkAssert(keyXmax>keyYmax);
+	keymax=keyXmax*keyYmax;
+	Map= new int[keyXmax];
+      }
+    void pup(PUP::er &p)
+      {
+	  p|keyXmax;
+	  p|keyYmax;
+	  p|keymax;
+	  if(p.isUnpacking())
+	    Map=new int[keymax];
+	  PUParray(p,Map,keymax);
+
+      }
+    inline int getXmax(){return(keyXmax);}
+    inline int getYmax(){return(keyYmax);}
+    inline int getmax(){return(keymax);}
+    inline int get(int X, int Y)  {
+      /*
+      CkAssert(X<keyXmax);
+      CkAssert(Y<keyYmax);
+      */
+      return(Map[Y*keyXmax +X]);
+    }
+    //    inline &int put(int X, int Y){&(Map[X][Y]);}
+    inline void set(int X, int Y, int value){
+      CkAssert(CkNumPes()>value);
+      CkAssert(X<keyXmax);
+      CkAssert(Y<keyYmax);
+      Map[Y*keyXmax +X]=value;
     }
     void dump()
       {

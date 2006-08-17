@@ -147,15 +147,15 @@ extern CP           readonly_cp;
  */
 //============================================================================
 
-IntMap GSImaptable;
-IntMap RSImaptable;
-IntMap RSPImaptable;
-IntMap RhoGSImaptable;
-IntMap RhoRSImaptable;
-IntMap RhoGHartImaptable;
-IntMap RhoRHartImaptable;
-IntMap4 AsymScalcImaptable;
-IntMap4 SymScalcImaptable;
+MapType2 GSImaptable;
+MapType2 RSImaptable;
+MapType2 RSPImaptable;
+MapType2 RhoGSImaptable;
+MapType2 RhoRSImaptable;
+MapType2 RhoGHartImaptable;
+MapType2 RhoRHartImaptable;
+MapType4 AsymScalcImaptable;
+MapType4 SymScalcImaptable;
 
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);

@@ -4,9 +4,12 @@
 #define USE_INT_MAP
 #ifdef USE_INT_MAP
 #include "IntMap.h"
-typedef IntMap2 IntMap;
-typedef IntMap2 MapType;
-typedef IntMap2 MapType2;
+//#define USE_INT_2on1
+#ifdef USE_INT_2on1
+typedef IntMap2on1 MapType2;
+#else
+typedef IntMap2on2 MapType2;
+#endif
 typedef IntMap4 MapType4;
 #endif
 #include "MapTable.h"
@@ -14,7 +17,7 @@ typedef IntMap4 MapType4;
 #define MAP_DEBUG
 
 
-GSMapTable::GSMapTable(MapType  *_map, PeList *_availprocs, 
+GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
 		       int _nchareG, double *_lines_per_chareG, double *_pts_per_chareG, 
 		       int _nstates,  int _Gstates_per_pe, bool useCuboidMap)    : 
       nchareG(_nchareG), 
@@ -327,7 +330,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
 }
 
-RSMapTable::RSMapTable(MapType  *_map, PeList *_availprocs,
+RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nstates, int _sizeZ, int _Rstates_per_pe) :
    nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
@@ -418,7 +421,7 @@ RSMapTable::RSMapTable(MapType  *_map, PeList *_availprocs,
 }
 
 
-RSPMapTable::RSPMapTable(MapType  *_map, 
+RSPMapTable::RSPMapTable(MapType2  *_map, 
 			 PeList *_availprocs, PeList *exclusion,
 			 int _nstates, int _sizeZNL, int _Rstates_per_pe,
 			 int boxSize, bool useCuboidMap) :
@@ -552,7 +555,7 @@ RSPMapTable::RSPMapTable(MapType  *_map,
 }
 
 
-RhoRSMapTable::RhoRSMapTable(MapType  *_map, PeList *_availprocs, int _nchareRhoR): nchareRhoR(_nchareRhoR)
+RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR): nchareRhoR(_nchareRhoR)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -617,7 +620,7 @@ RhoRSMapTable::RhoRSMapTable(MapType  *_map, PeList *_availprocs, int _nchareRho
 
 }
 
-RhoGSMapTable::RhoGSMapTable(MapType  *_map, PeList *_availprocs, int _nchareRhoG): nchareRhoG(_nchareRhoG)
+RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG): nchareRhoG(_nchareRhoG)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -666,7 +669,7 @@ RhoGSMapTable::RhoGSMapTable(MapType  *_map, PeList *_availprocs, int _nchareRho
 }
 
 
-RhoRHartMapTable::RhoRHartMapTable(MapType  *_map, PeList *_availprocs, int _nchareRhoRHart): nchareRhoRHart(_nchareRhoRHart)
+RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart): nchareRhoRHart(_nchareRhoRHart)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -719,7 +722,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType  *_map, PeList *_availprocs, int _nch
 
 }
 
-RhoGHartMapTable::RhoGHartMapTable(MapType  *_map, PeList *_availprocs, int _nchareRhoGHart): nchareRhoGHart(_nchareRhoGHart)
+RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart): nchareRhoGHart(_nchareRhoGHart)
 {
   int npes, procno=2, normal=0;
   int srcpe=0;

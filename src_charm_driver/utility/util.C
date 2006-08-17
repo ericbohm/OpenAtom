@@ -1406,6 +1406,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoStride: %d\n",orthoStride);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
+     fprintf(fp,"launchNLeesFromRho: %d\n",launchNLeesFromRho);
      fprintf(fp,"useBWBarrier: %d\n",useBWBarrier);
      fprintf(fp,"useOrthoDirect: %d\n",useOrthoDirect);
      fprintf(fp,"useOrthoSection: %d\n",useOrthoSection);
@@ -1532,6 +1533,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.orthoGrainSize           =     config.sGrainSize;
     config.orthoStride           = 0;
     config.useBWBarrier           = 0;
+    config.launchNLeesFromRho           = 0;
     config.useOrthoSection       = 0;
     config.useOrthoDirect       = 0;
     config.useOrthoSectionRed    = 0;
@@ -1602,8 +1604,8 @@ void Config::readConfig(const char* fileName, Config &config,
     // ees method prios
     config.prioNLFFTMsg         = 1; 
     config.prioEextFFTMsg       = 1; 
-    config.rsNLfftpriority      = 1000000;
-    config.gsNLfftpriority      = 1500000;
+    config.rsNLfftpriority      = 2300000;
+    config.gsNLfftpriority      = 2500000;
     config.rhorHartpriority     = 2000000;
     config.rhogHartpriority     = 2000000;
 
@@ -1660,6 +1662,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.orthoStride = atoi(parameterValue);
         else if (!strcmp(parameterName, "useBWBarrier"))
             config.useBWBarrier = atoi(parameterValue);
+        else if (!strcmp(parameterName, "launchNLeesFromRho"))
+            config.launchNLeesFromRho = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoDirect"))
             config.useOrthoDirect = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSection"))
@@ -1894,7 +1898,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
 //===================================================================================
 // Check the parameter ranges 
-
+    rangeExit(config.launchNLeesFromRho,"launchNLeesFromRho",1);
     rangeExit(config.prioFFTMsg,"prioFFTMsg",1);
     rangeExit(config.stateOutputOn,"stateOutputOn",1);
     rangeExit(config.localAtomBarrier,"localAtomBarrier",1);

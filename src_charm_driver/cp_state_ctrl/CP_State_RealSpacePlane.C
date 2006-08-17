@@ -264,7 +264,7 @@ void CP_State_RealSpacePlane::doFFT(){
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
   int nchareG      = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
   int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
-  if(ees_nonlocal==1){
+  if(ees_nonlocal==1 && !config.launchNLeesFromRho){
     CkAssert(nchareG<=ngridc);
     if(thisIndex.y<nchareG){
       gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes();

@@ -21,22 +21,24 @@
 #include "PeList.h"
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
-class IntMap
+class IntMap2
 {
  public:
       void pup(PUP::er &p)
       {
       }
 };
-typedef IntMap IntMap2;
-typedef IntMap IntMap4;
+
+typedef IntMap2 IntMap4;
 #else
 #include "IntMap.h"
-typedef IntMap2 IntMap;
-typedef IntMap2 MapType;
-typedef IntMap2 MapType2;
+//#define USE_INT_2on1
+#ifdef USE_INT_2on1
+typedef IntMap2on1 MapType2;
+#else
+typedef IntMap2on2 MapType2;
+#endif
 typedef IntMap4 MapType4;
-
 #endif
 
 #include "MapTable.h"
@@ -63,15 +65,15 @@ typedef IntMap4 MapType4;
 #define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
 #endif
 
-extern IntMap GSImaptable;
-extern IntMap RSImaptable;
-extern IntMap RSPImaptable;
-extern IntMap RhoGSImaptable;
-extern IntMap RhoRSImaptable;
-extern IntMap RhoGHartImaptable;
-extern IntMap RhoRHartImaptable;
-extern IntMap4 AsymScalcImaptable;
-extern IntMap4 SymScalcImaptable;
+extern MapType2 GSImaptable;
+extern MapType2 RSImaptable;
+extern MapType2 RSPImaptable;
+extern MapType2 RhoGSImaptable;
+extern MapType2 RhoRSImaptable;
+extern MapType2 RhoGHartImaptable;
+extern MapType2 RhoRHartImaptable;
+extern MapType4 AsymScalcImaptable;
+extern MapType4 SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
