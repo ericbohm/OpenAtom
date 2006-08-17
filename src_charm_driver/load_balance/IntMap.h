@@ -31,6 +31,7 @@ class IntMap4 {
   int keyYmax;
   int keyZmax;
   int keyStep;
+  int *stepTable;
  public:
 
     IntMap4(int keyW, int keyX, int keyY, int keyZ, int step) 
@@ -48,6 +49,9 @@ class IntMap4 {
 	      }
 	
 	  }
+	stepTable= new int [keyXmax*keyStep];
+	for(int s=0;s<keyXmax*keyStep;s++)
+	  stepTable[s]=s/keyStep;
       }
     void buildMap(int keyW=1, int keyX=1, int keyY=1, int keyZ=1, int step=1)
       {
@@ -71,6 +75,9 @@ class IntMap4 {
 		  Map[w][x][y]= new int[keyZmax];
 	      }
 	  }
+	stepTable= new int [keyXmax*keyStep];
+	for(int s=0;s<keyXmax*keyStep;s++)
+	  stepTable[s]=s/keyStep;
       }
     void pup(PUP::er &p)
       {
@@ -97,6 +104,10 @@ class IntMap4 {
 		    }
 		}
 	    }
+	  if(p.isUnpacking())
+	    stepTable= new int[keyXmax*keyStep];
+	  PUParray(p,stepTable,keyXmax*keyStep);
+
       }
     inline int getWmax(){return(keyWmax);}
     inline int getXmax(){return(keyXmax);}
@@ -109,7 +120,12 @@ class IntMap4 {
       CkAssert(Y/keyStep<keyYmax);
       CkAssert(Z<keyZmax);
       */
-      return(Map[W][X/keyStep][Y/keyStep][Z]);
+#define USE_INT_MAP_MATH
+#ifdef USE_INT_MAP_MATH
+       return(Map[W][X/keyStep][Y/keyStep][Z]);
+#else
+       return(Map[W][stepTable[X]][stepTable[Y]][Z]);
+#endif
     }
     //    inline int &put(int W, int X, int Y, int Z){return(&(Map[W][X/keyStep][Y/keyStep][Z]));}
     inline void set(int W, int X, int Y, int Z, int value){

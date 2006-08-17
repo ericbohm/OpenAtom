@@ -1024,7 +1024,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  int Nsplit   = ( (n_in > Nsplit_m) ? Nsplit_m : n_in);
 	  int Nrem     = (n_in % Nsplit);
 	  int Nloop    = n_in/Nsplit;
-
+#ifndef CMK_OPTIMIZE
+	    StartTime=CmiWallTimer();
+#endif
 	  for(int ns=1;ns<=Nloop;ns++){
 	    int noff    = (ns-1)*k_in*Nsplit;
 	    int noffc   = (ns-1)*ldc*Nsplit;
