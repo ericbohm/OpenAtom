@@ -6,6 +6,13 @@
  *  and also for the density objects - RhoR, RhoG, RhoGHart.
  *
  *  Heavily refactored by EJB 2006/5/31 to accelerate map creation
+ *
+ *  !!!!!!   THIS CODE IS NOW DEFUNCT  !!!!!!!
+ *  !!!!!!   THIS CODE IS NOW DEFUNCT  !!!!!!!
+ *  !!!!!!   THIS CODE IS NOW DEFUNCT  !!!!!!!
+
+ *  Look in MapTable.[Ch] for actual maps
+
  */
 
 #include "charm++.h"
@@ -33,6 +40,7 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 #endif
 
 	int *index=(int *) iIndex.data();
+#if 0
 	if(maptable==NULL)
 	{
 	  CkPrintf("Warning! GSMap::procnum had to assign maptable on pe %d!\n",CkMyPe());
@@ -42,6 +50,8 @@ int GSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	  maptable= &GSmaptable;
 #endif
 	}
+#endif
+
 #ifdef USE_INT_MAP
 	int retval=maptable->get(index[0],index[1]);
 #else
@@ -67,8 +77,8 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
   //	double StartTime=CmiWallTimer();
 #endif
 
-	int *index=(int *) iIndex.data();
 
+#if 0
 	/* this works due to 4D being stored as 2 ints */
 	if(maptable==NULL)
 	{
@@ -85,10 +95,12 @@ int SCalcMap::procNum(int handle, const CkArrayIndex &iIndex)
 	    maptable= &AsymScalcmaptable;
 #endif
 	}
+#endif
 #ifdef USE_INT_MAP
-	short *sindex=(short *) index;
-	int retval=maptable->get(sindex[0], sindex[1 ], sindex[2], sindex[3]);
+	short *sindex=(short *) iIndex.data();
+	int retval=maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]);
 #else
+	int *index=(int *) iIndex.data();
 	int retval=maptable->get(intdual(index[0], index[1]));
 #endif
 #ifndef CMK_OPTIMIZE
@@ -108,6 +120,7 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 #endif
 
 	int *index=(int *) iIndex.data();
+#if 0
 	if(maptable==NULL)
 	{
 	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
@@ -117,6 +130,8 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 	  maptable= &RSmaptable;
 #endif
 	}
+#endif
+
 #ifdef USE_INT_MAP
 	int retval=maptable->get(index[0], index[1]);
 #else
@@ -133,6 +148,8 @@ int RSMap::procNum(int handle, const CkArrayIndex &iIndex)
 int RSPMap::procNum(int handle, const CkArrayIndex &index)
 {
 	CkArrayIndex2D idx2d = *(CkArrayIndex2D *) &index;
+
+#if 0
 	if(maptable==NULL)
 	{
 	  CkPrintf("Warning! RSMap::Procnum had to assign maptable on %d!\n",CkMyPe());
@@ -142,6 +159,8 @@ int RSPMap::procNum(int handle, const CkArrayIndex &index)
 	  maptable= &RSPmaptable;
 #endif
 	}
+#endif 
+
 #ifdef USE_INT_MAP
 	int retval=maptable->get(idx2d.index[0], idx2d.index[1]);
 #else
@@ -175,8 +194,6 @@ int RhoRSMap::procNum(int arrayHdl, const CkArrayIndex &iIndex)
 #else
 	int retval=maptable->get(intdual(index[0], 0));
 #endif
-	CkAssert(retval>=0);
-	CkAssert(retval<CkNumPes());
 	return retval;
 
 }

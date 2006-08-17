@@ -127,7 +127,14 @@ class CkArrayMapTable : public CkArrayMap
 
 
   CkArrayMapTable() {}
-  int procNum(int, const CkArrayIndex &){CkAbort("do not call the base procnum");return(0);}
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
@@ -143,7 +150,15 @@ class CkArrayMapTable4 : public CkArrayMap
 
 
   CkArrayMapTable4() {}
-  int procNum(int, const CkArrayIndex &){CkAbort("do not call the base procnum");return(0);}
+  inline int procNum(int, const CkArrayIndex &iIndex){
+#ifdef USE_INT_MAP
+	short *sindex=(short *) iIndex.data();
+	return(maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]));
+#else
+	int *index=(int *) iIndex.data();
+	return(maptable->get(intdual(index[0], index[1])));
+#endif
+  }
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
@@ -183,7 +198,16 @@ class GSMap: public CkArrayMapTable {
 	    maptable= &GSmaptable;
 #endif
 	}
-  int procNum(int, const CkArrayIndex &);
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
+
+  //  int procNum(int, const CkArrayIndex &);
   ~GSMap(){
   }
 };
@@ -218,7 +242,16 @@ class RSMap: public CkArrayMapTable {
 	    maptable= &RSmaptable;
 #endif
 	}
-  int procNum(int, const CkArrayIndex &);
+  //  int procNum(int, const CkArrayIndex &);
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
+
   ~RSMap(){
   }
 };
@@ -245,9 +278,19 @@ class RSPMap: public CkArrayMapTable {
 #endif
 
 	}
-  int procNum(int, const CkArrayIndex &);
+  //  int procNum(int, const CkArrayIndex &);
   ~RSPMap(){
+
   }
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
+
 };
 //============================================================================
 
@@ -294,7 +337,17 @@ class SCalcMap : public CkArrayMapTable4 {
 	      maptable= &AsymScalcmaptable;
 #endif
 	}
-  int procNum(int, const CkArrayIndex &);
+    //  int procNum(int, const CkArrayIndex &);
+  inline int procNum(int, const CkArrayIndex &iIndex){
+#ifdef USE_INT_MAP
+	short *sindex=(short *) iIndex.data();
+	return(maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]));
+#else
+	int *index=(int *) iIndex.data();
+	return(maptable->get(intdual(index[0], index[1])));
+#endif
+  }
+
 };
 //============================================================================
 /**
@@ -325,7 +378,15 @@ class RhoRSMap : public CkArrayMapTable {
 #endif
       }
     
-    int procNum(int arrayHdl, const CkArrayIndex &idx);
+    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
 
 };
 
@@ -347,7 +408,15 @@ class RhoGSMap : public CkArrayMapTable {
     ~RhoGSMap() {
     }
     
-    int procNum(int arrayHdl, const CkArrayIndex &idx);
+    //    int procNum(int arrayHdl, const CkArrayIndex &idx);
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
     
     void pup(PUP::er &p)
       {
@@ -371,7 +440,7 @@ class RhoGHartMap : public CkArrayMapTable {
   {
   }
   
-  int procNum(int arrayHdl, const CkArrayIndex &idx);
+  //  int procNum(int arrayHdl, const CkArrayIndex &idx);
     
   void pup(PUP::er &p)
       {
@@ -382,6 +451,15 @@ class RhoGHartMap : public CkArrayMapTable {
 	maptable= &RhoGHartmaptable;
 #endif
       }
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
+
 
 };
 
@@ -400,7 +478,7 @@ class RhoRHartMap : public CkArrayMapTable {
   {
   }
   
-  int procNum(int arrayHdl, const CkArrayIndex &idx);
+  //  int procNum(int arrayHdl, const CkArrayIndex &idx);
     
   void pup(PUP::er &p)
       {
@@ -411,6 +489,14 @@ class RhoRHartMap : public CkArrayMapTable {
 	maptable= &RhoRHartmaptable;
 #endif
       }
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1]));
+#else
+	return(maptable->get(intdual(index[0],index[1])));
+#endif
+  }
 
 };
 

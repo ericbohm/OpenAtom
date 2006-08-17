@@ -516,6 +516,7 @@ void CLA_Matrix::multiply(){
   int Krem     = (K % Ksplit);
   int Kloop    = K/Ksplit-1;
 #define ORTHO_DGEMM_SPLIT 
+#define BUNDLE_USER_EVENTS
 #ifdef ORTHO_DGEMM_SPLIT 
 
 #ifndef CMK_OPTIMIZE
@@ -524,8 +525,10 @@ void CLA_Matrix::multiply(){
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
 
+#ifndef BUNDLE_USER_EVENTS
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
 #endif
 
   CmiNetworkProgress();
@@ -534,16 +537,26 @@ void CLA_Matrix::multiply(){
     int aoff = Ksplit*i;
     int boff = n*i*Ksplit;
     if(i==Kloop){Ksplit+=Krem;}
+#ifndef BUNDLE_USER_EVENTS
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
 #endif
+#endif
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap,dest, &m);
+#ifndef BUNDLE_USER_EVENTS
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
+#endif
     CmiNetworkProgress();
   }//endfor
+#ifdef BUNDLE_USER_EVENTS
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(401, StartTime, CmiWallTimer());
+#endif
+#endif
+
 #else
   /* old unsplit version */
 #ifndef CMK_OPTIMIZE

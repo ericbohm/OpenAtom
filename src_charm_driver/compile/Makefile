@@ -51,7 +51,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o \
          util.o ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
-         groups.o TopoMap.o MapTable.o  PeList.o para_grp_parse.o
+         groups.o MapTable.o  PeList.o para_grp_parse.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
 OBJS_DEF = ../main/cpaimd.decl.h

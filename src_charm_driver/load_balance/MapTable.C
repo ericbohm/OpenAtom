@@ -232,7 +232,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	{
 	  // in the cuboid map case we place all planes box by box
 
-	  CkAssert(scobjs_per_pe==1); //for simplicity can be fixed later
+	  //	  CkAssert(scobjs_per_pe==1); //for simplicity can be fixed later
 	  for(int plane=0; plane<nchareG; plane++)
 	    for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 	      for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
