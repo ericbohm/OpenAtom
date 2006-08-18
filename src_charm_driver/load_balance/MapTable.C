@@ -444,7 +444,8 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
   int afterExclusion=exclusion->count();
-  
+  //  CkPrintf("exclusion now has\n");
+  //  exclusion->dump();  
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to stay within %d processors\n",exclusion->count());
@@ -540,11 +541,13 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 		for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
 		  {
 		    c++;
+		    //		    CkPrintf("RSP mapping %d %d to %d\n",state,plane,destpe);
 #ifdef USE_INT_MAP
 		    maptable->set(state, plane,destpe);
 #else
 		    maptable->put(intdual(state, plane))=destpe;
 #endif
+		    
 		  }
 	      }
 	    srcpe=destpe;

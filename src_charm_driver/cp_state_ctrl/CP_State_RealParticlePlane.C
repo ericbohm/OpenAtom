@@ -172,10 +172,9 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 #ifdef USE_TOPOMAP
   //foreach state, try to find a new proc for each state's reduction plane
   CkVec <int> usedVec;
-  CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   for(int state=0; state<nstates;state++){
     int plane=0;
-    while(plane<sim->ngrid_nloc_c)
+    while(plane<nChareR)
       {
 	bool used=false;
 	int thisstateplaneproc=RSPImaptable.get(state,plane);
@@ -184,11 +183,12 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 	    if(usedVec[i]==thisstateplaneproc)
 	      used=true;
 	  }
-	if(!used || plane+1==sim->ngrid_nloc_c)
+	if(!used || plane+1==nChareR)
 	  {
-	    usedVec.push_back(thisstateplaneproc);
+	    if(!used)
+	      usedVec.push_back(thisstateplaneproc);
 	    red_pl[state]=plane;
-	    plane=sim->ngrid_nloc_c;
+	    plane=nChareR;
 	  }
 	plane++;
       }

@@ -551,7 +551,7 @@ main::main(CkArgMsg *msg) {
     else
       foo= new PeList;  // heap it
     availGlob=foo;
-    excludePes= new PeList();
+    excludePes=new PeList();
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
@@ -651,6 +651,9 @@ main::main(CkArgMsg *msg) {
     delete sim;
     delete [] indexZ;
     delete foo;
+    delete availGlob;
+    if(excludePes!=NULL)
+      delete excludePes;
 //============================================================================
 
     newtime=CmiWallTimer();
@@ -1819,7 +1822,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     
     // make the exclusion list which is whats left after 
     excludePes= RhoAvail;
+    //    CkPrintf("exclusion was has\n");
+    //    excludePes->dump();
     excludePes->trimUsed();
+
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);
@@ -1884,8 +1890,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
-  delete RhoAvail;
-  RhoAvail=NULL;
+  //  delete RhoAvail;
+  //  RhoAvail=NULL;
 //===========================================================================
   }//end routine
 //============================================================================
