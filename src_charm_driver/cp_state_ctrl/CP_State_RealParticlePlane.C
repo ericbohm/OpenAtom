@@ -32,7 +32,7 @@ extern CProxy_eesCache                   eesCacheProxy;
 extern CProxy_FFTcache                   fftCacheProxy;
 extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
 extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
-
+extern MapType2                          RSPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;
 
@@ -141,7 +141,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   registrationFlag = 0;
   recvBlock        = 0;
 
-  countZ = 0.0;      // Zmat communication counter
+  countZ = 0;      // Zmat communication counter
 
 //============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache
@@ -170,14 +170,29 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 
   int *red_pl       = new int[nstates];
 #ifdef USE_TOPOMAP
-  int l             = Rstates_per_pe;
-  int pl            = (nstates / l);
-  int pm            = (CkNumPes() / pl);
-  if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
-  int planes_per_pe = (nChareR / pm);
-  for(int i=0; i<nstates;i++){
-    red_pl[i]= (  ((i % Rstates_per_pe)*planes_per_pe)% nChareR);
-  }//endif
+  //foreach state, try to find a new proc for each state's reduction plane
+  CkVec <int> usedVec;
+  CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  for(int state=0; state<nstates;state++){
+    int plane=0;
+    while(plane<sim->ngrid_nloc_c)
+      {
+	bool used=false;
+	int thisstateplaneproc=RSPImaptable.get(state,plane);
+	for(int i=0;i<usedVec.size();i++)
+	  {
+	    if(usedVec[i]==thisstateplaneproc)
+	      used=true;
+	  }
+	if(!used || plane+1==sim->ngrid_nloc_c)
+	  {
+	    usedVec.push_back(thisstateplaneproc);
+	    red_pl[state]=plane;
+	    plane=sim->ngrid_nloc_c;
+	  }
+	plane++;
+      }
+  }
   reductionPlaneNum = red_pl[thisIndex.x];
 #else
   for(int i=0; i<nstates;i++){

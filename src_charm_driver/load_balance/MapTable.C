@@ -447,7 +447,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
-      CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
+      CkPrintf("RPP using density exclusion to stay within %d processors\n",exclusion->count());
       RPPlist=exclusion;
     }
   else
@@ -534,41 +534,25 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	  {
 	    if(xchunk==(pl-srem)*states_per_pe)
 	      states_per_pe=states_per_pe+1;
-	    if(xchunk==0 && ychunk==0) {}
-	    else
-	      {
-		srcpe=destpe;
-		//			    RPPlist->sortSource(srcpe);
-		destpe=RPPlist->findNext();
-		if(RPPlist->count()==0)
-		  RPPlist->reset();
-	      }
 	    c=0;
 	    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
 	      {
 		for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
 		  {
-		    if(xchunk==0 && ychunk==0)
-		      {
-			c++;
+		    c++;
 #ifdef USE_INT_MAP
-			maptable->set(state, plane,0);
+		    maptable->set(state, plane,destpe);
 #else
-			maptable->put(intdual(state, plane))=0;
+		    maptable->put(intdual(state, plane))=destpe;
 #endif
-			//CkPrintf("%d %d on 0\n", state, plane);
-		      }
-		    else
-		      {
-			c++;
-#ifdef USE_INT_MAP
-			maptable->set(state, plane,destpe);
-#else
-			maptable->put(intdual(state, plane))=destpe;
-#endif
-		      }
 		  }
 	      }
+	    srcpe=destpe;
+	    //			    RPPlist->sortSource(srcpe);
+	    destpe=RPPlist->findNext();
+	    if(RPPlist->count()==0)
+	      RPPlist->reset();
+
 	  }
       }
   }
