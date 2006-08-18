@@ -155,7 +155,17 @@ class PeList
 	  }
     return *this;
   }
+  void trimUsed()
+    {
+      if(!noPes()){
+	for(int i=0;i<current;i++)
+	  remove(0);
+	current=0;
+	reindex();
+      }
+    }
 
+  
   void remove(int pos)
     {
       if(pos < size)

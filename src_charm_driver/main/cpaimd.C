@@ -1795,7 +1795,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     
     // make the exclusion list which is whats left after 
     excludePes= RhoAvail;
-
+    excludePes->trimUsed();
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);

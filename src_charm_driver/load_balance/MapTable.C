@@ -444,6 +444,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
   int afterExclusion=exclusion->count();
+  
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
@@ -455,7 +456,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	{ // set states_per_pe to fit the exclusion
 
 	  states_per_pe=totalChares/afterExclusion/2;
-	  CkPrintf("RPP adjusting states per pe from %d to %d to use density exclusion to avoid %d processors\n",Rstates_per_pe, states_per_pe, exclusion->count());
+	  CkPrintf("RPP adjusting states per pe from %d to %d to use density exclusion to stay within %d processors\n",Rstates_per_pe, states_per_pe, exclusion->count());
 	  RPPlist=exclusion;
 	}
       else
@@ -539,6 +540,8 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 		srcpe=destpe;
 		//			    RPPlist->sortSource(srcpe);
 		destpe=RPPlist->findNext();
+		if(RPPlist->count()==0)
+		  RPPlist->reset();
 	      }
 	    c=0;
 	    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
@@ -681,7 +684,8 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 #endif
 	} 
       srcpe=destpe;
-      destpe=availprocs->findNext();
+      if(chunk+1<nchareRhoG)
+	destpe=availprocs->findNext();
     }
 #ifdef MAP_DEBUG
   CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
@@ -733,7 +737,8 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	}
       srcpe=destpe;
       //	  availprocs->sortSource(srcpe);
-      destpe=availprocs->findNext();
+      if(chunk+1<nchareRhoRHart)
+	destpe=availprocs->findNext();
 
     }
 #ifdef MAP_DEBUG
@@ -784,7 +789,8 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	} 
       srcpe=destpe;
       //	  availprocs->sortSource(srcpe);
-      destpe=availprocs->findNext();
+      if(chunk+1<nchareRhoGHart)
+	destpe=availprocs->findNext();
     }
 #ifdef MAP_DEBUG
   CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
