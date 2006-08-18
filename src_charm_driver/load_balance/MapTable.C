@@ -461,7 +461,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	}
       else
 	{
-	  CkPrintf("RPP with %d chares ignoring density exclusion of %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
+	  CkPrintf("RPP with %d chares ignoring density exclusion which left too few: %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
 	}
     }
   if(nstates % states_per_pe == 0)

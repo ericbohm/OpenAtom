@@ -158,7 +158,7 @@ class PeList
   void trimUsed()
     {
       if(!noPes()){
-	memcpy(&(TheList[0]),&(TheList[current]),size-current);
+	memcpy(&(TheList[0]),&(TheList[current]),count());
 	size-=current;
 	current=0;
 	reindex();
