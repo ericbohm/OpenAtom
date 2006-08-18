@@ -1792,11 +1792,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
 	RhoAvail->rebuild();
     }//endif
-    if(RhoAvail->count()>0)
-      { 
-	// make the exclusion list
-	excludePes= new PeList(RhoAvail, 0, RhoAvail->current);
-      }
+    
+    // make the exclusion list which is whats left after 
+    excludePes= RhoAvail;
+
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);

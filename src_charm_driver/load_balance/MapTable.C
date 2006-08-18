@@ -440,14 +440,14 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   //        if(useCuboidMap)
   //	  states_per_pe=nstates/boxSize;		// no of states in one chunk
   //	else
-  
+  PeList *RPPlist=availprocs;
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
-  int afterExclusion=availprocs->count()-exclusion->count();
+  int afterExclusion=exclusion->count();
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
-      *availprocs-*exclusion;
+      RPPlist=exclusion;
     }
   else
     {// so an rstates_per_pe chosen for realstate might be too big
@@ -456,7 +456,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 
 	  states_per_pe=totalChares/afterExclusion/2;
 	  CkPrintf("RPP adjusting states per pe from %d to %d to use density exclusion to avoid %d processors\n",Rstates_per_pe, states_per_pe, exclusion->count());
-	  *availprocs-*exclusion;
+	  RPPlist=exclusion;
 	}
       else
 	{
@@ -472,7 +472,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
       pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
       srem = nstates % pl;
     }
-  pm = availprocs->count() / pl;
+  pm = RPPlist->count() / pl;
         
   if(pm==0)
     CkAbort("Choose a larger Rstates_per_pe\n");
@@ -480,7 +480,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   m = sizeZNL / pm;
   rem = sizeZNL % pm;
 
-  //CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, availprocs->count());	
+  //CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
   //CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
   //pl, pm, srem, rem);
   int srcpe=0;
@@ -488,11 +488,11 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   /*  RPP isn't planewise with GPP.  Need different cuboid code
       if(useCuboidMap)
       {
-      CkPrintf("nstates %d sizeZNL %d Pes %d states_per_pe %d boxSize %d\n", nstates, sizeZNL, availprocs->count(), states_per_pe, boxSize);	
+      CkPrintf("nstates %d sizeZNL %d Pes %d states_per_pe %d boxSize %d\n", nstates, sizeZNL, RPPlist->count(), states_per_pe, boxSize);	
       for(int plane=0;plane<sizeZNL;plane++)
       {
       // get the cube for this plane
-      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+      PeList *thisPlaneBox= new PeList(RPPlist, plane*boxSize, boxSize);
       // try a subtraction from the exclusion
       if(exclusion->count()>0)
       *thisPlaneBox-*exclusion;
@@ -501,7 +501,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
       CkPrintf("RSP ignoring exclusion map for plane %d count %d\n",plane,thisPlaneBox->count());
       // if not enough ignore the exclusion map
       delete thisPlaneBox;
-      thisPlaneBox= new PeList(availprocs,plane*bSize,bSize);
+      thisPlaneBox= new PeList(RPPlist,plane*bSize,bSize);
       }
       else
       { // repair the index
@@ -524,7 +524,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
       else
   */
   {	  
-    int destpe=availprocs->findNext();
+    int destpe=RPPlist->findNext();
     for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
       {
 	if(ychunk==(pm-rem)*m)
@@ -537,8 +537,8 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	    else
 	      {
 		srcpe=destpe;
-		//			    availprocs->sortSource(srcpe);
-		destpe=availprocs->findNext();
+		//			    RPPlist->sortSource(srcpe);
+		destpe=RPPlist->findNext();
 	      }
 	    c=0;
 	    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
