@@ -509,7 +509,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
 
   /* multiply */
-  int Ksplit_m=32;  //this could be a config param
+  int Ksplit_m=30;  //this could be a config param, should be multiple of 6
   char trans = 't';
   double betap = 1.0;
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;

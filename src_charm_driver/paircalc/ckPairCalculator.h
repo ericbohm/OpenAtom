@@ -20,9 +20,9 @@
 // Debugging flag for Verbose output
 //#define _PAIRCALC_DEBUG_
 #ifdef CMK_VERSION_BLUEGENE
-#define BUNDLE_USER_EVENT
-#define PC_FWD_DGEMM_SPLIT 16
-#define PC_BWD_DGEMM_SPLIT 8
+#define BUNDLE_USER_EVENT  
+#define PC_FWD_DGEMM_SPLIT 18   //multiple of 6 for BG/L
+#define PC_BWD_DGEMM_SPLIT 12
 #else
 #define PC_FWD_DGEMM_SPLIT 0
 #define PC_BWD_DGEMM_SPLIT 0
