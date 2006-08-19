@@ -57,7 +57,7 @@ extern CProxy_StructFactCache            sfCacheProxy;
 extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
 extern CProxy_eesCache                   eesCacheProxy;
 extern CProxy_FFTcache                   fftCacheProxy;
-extern MapType2                          GSImaptable;
+
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle gssPInstance;
 
@@ -183,23 +183,38 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
     int plane=0;
     while(plane<nchareG)
       {
-	bool used=false;
-	int thisstateplaneproc=GSImaptable.get(state,plane);
-	for(int i=0;i<usedVec.size();i++)
-	  {
-	    if(usedVec[i]==thisstateplaneproc)
-	      used=true;
-	  }
-	if(!used || plane+1==nchareG)
-	  {
-	    usedVec.push_back(thisstateplaneproc);
-	    red_pl[state]=plane;
-	    plane=nchareG;
-	  }
-	plane++;
+        bool used=false;
+        int thisstateplaneproc=GSImaptable.get(state,plane);
+        for(int i=0;i<usedVec.size();i++)
+          {
+            if(usedVec[i]==thisstateplaneproc)
+              used=true;
+          }
+        if(!used || (plane+1==nchareG))
+          {
+            usedVec.push_back(thisstateplaneproc);
+            red_pl[state]=plane;
+            plane=nchareG;
+          }
+        plane++;
       }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
+
+  /*
+  int *red_pl = new int[nstates];
+  int l       = Gstates_per_pe;
+
+  int pl = nstates / l;
+  int pm = CkNumPes() / pl; if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
+  int m  = (nchareG / pm);
+
+  int planes_per_pe = m;
+  for(int i=0; i<nstates;i++){
+    red_pl[i]=((i % Gstates_per_pe)*planes_per_pe)%nchareG;
+  }//endfor
+  reductionPlaneNum    = red_pl[thisIndex.x];
+  */
 #else
   reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
 #endif

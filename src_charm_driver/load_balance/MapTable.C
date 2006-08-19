@@ -428,7 +428,6 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   nstates(_nstates), sizeZNL(_sizeZNL),
   Rstates_per_pe(_Rstates_per_pe)
 {
-  int c = 0;
   int bSize=boxSize;
   int states_per_pe;
   int totalChares=nstates*sizeZNL;
@@ -444,11 +443,10 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
   int afterExclusion=exclusion->count();
-  //  CkPrintf("exclusion now has\n");
-  //  exclusion->dump();  
+  
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
-      CkPrintf("RPP using density exclusion to stay within %d processors\n",exclusion->count());
+      CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
       RPPlist=exclusion;
     }
   else
@@ -462,7 +460,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	}
       else
 	{
-	  CkPrintf("RPP with %d chares ignoring density exclusion which left too few: %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
+	  CkPrintf("RPP with %d chares ignoring density exclusion of %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
 	}
     }
   if(nstates % states_per_pe == 0)
@@ -535,27 +533,23 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	  {
 	    if(xchunk==(pl-srem)*states_per_pe)
 	      states_per_pe=states_per_pe+1;
-	    c=0;
+	    srcpe=destpe;
+		//			    RPPlist->sortSource(srcpe);
 	    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
 	      {
 		for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
 		  {
-		    c++;
-		    //		    CkPrintf("RSP mapping %d %d to %d\n",state,plane,destpe);
 #ifdef USE_INT_MAP
-		    maptable->set(state, plane,destpe);
+			maptable->set(state, plane,destpe);
 #else
-		    maptable->put(intdual(state, plane))=destpe;
+			maptable->put(intdual(state, plane))=destpe;
 #endif
-		    
+
 		  }
 	      }
-	    srcpe=destpe;
-	    //			    RPPlist->sortSource(srcpe);
 	    destpe=RPPlist->findNext();
 	    if(RPPlist->count()==0)
 	      RPPlist->reset();
-
 	  }
       }
   }

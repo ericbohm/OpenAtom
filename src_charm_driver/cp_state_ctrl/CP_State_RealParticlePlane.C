@@ -141,7 +141,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   registrationFlag = 0;
   recvBlock        = 0;
 
-  countZ = 0;      // Zmat communication counter
+  countZ = 0.0;      // Zmat communication counter
 
 //============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache
@@ -176,24 +176,36 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
     int plane=0;
     while(plane<nChareR)
       {
-	bool used=false;
-	int thisstateplaneproc=RSPImaptable.get(state,plane);
-	for(int i=0;i<usedVec.size();i++)
-	  {
-	    if(usedVec[i]==thisstateplaneproc)
-	      used=true;
-	  }
-	if(!used || plane+1==nChareR)
-	  {
-	    if(!used)
-	      usedVec.push_back(thisstateplaneproc);
-	    red_pl[state]=plane;
-	    plane=nChareR;
-	  }
-	plane++;
+        bool used=false;
+        int thisstateplaneproc=RSPImaptable.get(state,plane);
+        for(int i=0;i<usedVec.size()&&i<nstates;i++)
+          {
+            if(usedVec[i]==thisstateplaneproc)
+              used=true;
+          }
+        if(!used || (plane+1==nChareR))
+          {
+            if(!used)
+              usedVec.push_back(thisstateplaneproc);
+            red_pl[state]=plane;
+            plane=nChareR;
+          }
+        plane++;
       }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
+
+	    /* old less reliable method
+  int l             = Rstates_per_pe;
+  int pl            = (nstates / l);
+  int pm            = (CkNumPes() / pl);
+  if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
+  int planes_per_pe = (nChareR / pm);
+  for(int i=0; i<nstates;i++){
+    red_pl[i]= (  ((i % Rstates_per_pe)*planes_per_pe)% nChareR);
+  }//endif
+  reductionPlaneNum = red_pl[thisIndex.x];
+	    */
 #else
   for(int i=0; i<nstates;i++){
     red_pl[i] = calcReductionPlaneNum(thisIndex.x);
