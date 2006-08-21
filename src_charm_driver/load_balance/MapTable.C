@@ -133,7 +133,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			     int _planes_per_pe, 
 			     int _numChunksA, 
 			     int _numChunksS, 
-			     MapType2  *gsmap, bool useCuboidMap, bool useCentroid) : 
+			     MapType2  *gsmap, bool useCuboidMap, bool useCentroid, int boxSize) : 
   max_states(_nstates), nchareG(_nchareG),  
   grainsize(_grainsize), symmetric(_flag), max_planes(_nplanes), 
   lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
@@ -229,66 +229,66 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 #endif
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
       int srcpe=0,destpe=0;
-      if(!useCentroid)
+      if(!useCentroid && !useCuboidMap)
 	destpe=availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
       if(useCuboidMap)
-	{
-	  // in the cuboid map case we place all planes box by box
-
-	  //	  CkAssert(scobjs_per_pe==1); //for simplicity can be fixed later
+	{ // in the cuboid map case we place all planes box by box
 	  for(int plane=0; plane<nchareG; plane++)
 	    { // could restrict list to the gs box here
-	      //      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
-	    for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-	      for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
-		{ // could find centroid here
-		  if(useCentroid)
-		    {
-		      sortByCentroid(availprocs, plane, xchunk, ychunk, grainsize, gsmap);
-		      destpe=availprocs->findNext();
-		      if(availprocs->noPes())
-			availprocs->reset();
-		      count=0;
-		    }
-		for(int newdim=0; newdim<numChunksAsym; newdim++)
-		  {
-		    CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-		    CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-		    if(count<scobjs_per_pe)
+	      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+	      //	      PeList *thisPlaneBox= availprocs;
+	      if(!useCentroid)
+		destpe=thisPlaneBox->findNext();
+	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
+		for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+		  { // could find centroid here
+		    if(useCentroid)
 		      {
-			//if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
-#ifdef USE_INT_MAP		      
-			maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
-			count++;
-		      }
-		    else
-		      {  // new partition
-			procno++;
-			srcpe=destpe;
-			if(availprocs->noPes())
-			  availprocs->reset();
-
-			//			  availprocs->sortSource(srcpe);
-			destpe=availprocs->findNext();
-			if(rem!=0)
-			  if(procno==rem)
-			    scobjs_per_pe-=1;
-#ifdef USE_INT_MAP		      
-		      maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
+			sortByCentroid(thisPlaneBox, plane, xchunk, ychunk, grainsize, gsmap);
+			destpe=thisPlaneBox->findNext();
+			if(thisPlaneBox->noPes())
+			  thisPlaneBox->reset();
 			count=0;
-			count++;
 		      }
+		    for(int newdim=0; newdim<numChunksAsym; newdim++)
+		      {
+			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+			if(count<scobjs_per_pe)
+			  {
+			    //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+#ifdef USE_INT_MAP		      
+			    maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			    maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
+			    count++;
+			  }
+			else
+			  {  // new partition
+			    procno++;
+			    srcpe=destpe;
+			    if(thisPlaneBox->noPes())
+			      thisPlaneBox->reset();
 
+			    destpe=thisPlaneBox->findNext();
+			    if(rem!=0)
+			      if(procno==rem)
+				scobjs_per_pe-=1;
+#ifdef USE_INT_MAP		      
+			    maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			    maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
+			    count=0;
+			    count++;
+			  }
+
+		      }
 		  }
-		}
+	      //	      delete thisPlaneBox;
 	    }
 
 	}

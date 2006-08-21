@@ -622,7 +622,7 @@ main::main(CkArgMsg *msg) {
 //============================================================================ 
 // Initialize paircalculators for Psi and Lambda
 
-    init_pair_calculators( nstates,indexSize,indexZ,doublePack,sim);
+    init_pair_calculators( nstates,indexSize,indexZ,doublePack,sim, boxSize);
 
 //============================================================================ 
 // initialize Ortho
@@ -690,7 +690,7 @@ main::~main()
  */
 //============================================================================    
 void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
-                           int doublePack, CPcharmParaInfo *sim)
+                           int doublePack, CPcharmParaInfo *sim, int boxSize)
 //============================================================================    
   {// begin routine
 //============================================================================    
@@ -718,14 +718,14 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
-		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap);
+		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
 					 availGlob, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
 
-		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap);
+		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #endif
 
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
@@ -742,12 +742,12 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
-                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCuboidMap);
+                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
   SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
-                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap);
+                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap,boxSize);
 #endif
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
