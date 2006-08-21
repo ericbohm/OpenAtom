@@ -216,7 +216,7 @@ class SCalcMapTable : public MapTable4
     SCalcMapTable(MapType4  *_map, PeList *_availprocs, int _nstates, 
 	     int _nchareG,  int gs, CmiBool _flag, int _nplanes,
 	     double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,
-	     int _planes_per_pe, int _numChunksA, int _numChunksS, MapType2  *_gmap, bool useCuboidMap);
+	     int _planes_per_pe, int _numChunksA, int _numChunksS, MapType2  *_gmap, bool useCuboidMap, bool useCentroid);
 
   void dump()
     {
@@ -239,7 +239,8 @@ class SCalcMapTable : public MapTable4
       maptable->dump();
 #endif
     }
-
+  void sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap);
+  
 };
 
 class RSMapTable  : public MapTable

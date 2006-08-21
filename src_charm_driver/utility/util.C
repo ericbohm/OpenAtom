@@ -1496,6 +1496,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"gBucketSize: %d\n",gBucketSize);
      fprintf(fp,"rBucketSize: %d\n",rBucketSize);
      fprintf(fp,"useCuboidMap: %d\n",useCuboidMap);
+     fprintf(fp,"useCentroidMap: %d\n",useCentroidMap);
 
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
@@ -1554,6 +1555,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.usePairEtoM           = 0;
     config.usePairDirectSend     = 0;
     config.useCuboidMap           = 0;
+    config.useCentroidMap        = 0;
     config.PCCollectTiles       = 1;
     config.PCstreamBWout       = 0;
     config.PCstreamFWblock       = 0;
@@ -1676,6 +1678,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.useCommlib = atoi(parameterValue);
         else if (!strcmp(parameterName, "useCuboidMap"))
             config.useCuboidMap = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useCentroidMap"))
+            config.useCentroidMap = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairEtoM"))
             config.usePairEtoM = atoi(parameterValue);
         else if (!strcmp(parameterName, "usePairDirectSend"))
@@ -1929,6 +1933,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.gSpaceSum,"gSpaceSum;",1);
     rangeExit(config.gSpaceSum,"phantomSym;",1);
     rangeExit(config.useCuboidMap,"useCuboidMap;",1);
+    rangeExit(config.useCentroidMap,"useCentroidMap;",1);
     rangeExit(config.numChunksAsym,"numChunksAsym;",0);
     rangeExit(config.numChunksSym,"numChunksSym;",0);
 

@@ -133,7 +133,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			     int _planes_per_pe, 
 			     int _numChunksA, 
 			     int _numChunksS, 
-			     MapType2  *gsmap, bool useCuboidMap) : 
+			     MapType2  *gsmap, bool useCuboidMap, bool useCentroid) : 
   max_states(_nstates), nchareG(_nchareG),  
   grainsize(_grainsize), symmetric(_flag), max_planes(_nplanes), 
   lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
@@ -228,7 +228,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
       CkPrintf(" scalc_per_plane %d *nchareG %d *numChunksAsym %d %% availprocs->count() %d = rem %d and scobjs_per_pe is %d\n", scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe);
 #endif
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
-      int srcpe=0,destpe=availprocs->findNext();
+      int srcpe=0,destpe=0;
+      if(!useCentroid)
+	availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
       if(useCuboidMap)
@@ -237,9 +239,19 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
 	  //	  CkAssert(scobjs_per_pe==1); //for simplicity can be fixed later
 	  for(int plane=0; plane<nchareG; plane++)
+	    { // could restrict list to the gs box here
+	      //      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
 	    for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 	      for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
 		{ // could find centroid here
+		  if(useCentroid)
+		    {
+		      sortByCentroid(availprocs, plane, xchunk, ychunk, grainsize, gsmap);
+		      destpe=availprocs->findNext();
+		      if(availprocs->noPes())
+			availprocs->reset();
+		      count=0;
+		    }
 		for(int newdim=0; newdim<numChunksAsym; newdim++)
 		  {
 		    CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
@@ -260,6 +272,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			srcpe=destpe;
 			if(availprocs->noPes())
 			  availprocs->reset();
+
 			//			  availprocs->sortSource(srcpe);
 			destpe=availprocs->findNext();
 			if(rem!=0)
@@ -276,6 +289,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
 		  }
 		}
+	    }
 
 	}
       else
@@ -428,10 +442,8 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   nstates(_nstates), sizeZNL(_sizeZNL),
   Rstates_per_pe(_Rstates_per_pe)
 {
-  int bSize=boxSize;
   int states_per_pe;
   int totalChares=nstates*sizeZNL;
-  int destpe;
   int m, pl, pm, srem, rem, i=0;
   reverseMap=NULL;
   maptable=_map;
@@ -731,7 +743,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
 RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart): nchareRhoGHart(_nchareRhoGHart)
 {
-  int npes, procno=2, normal=0;
+  int npes;
   int srcpe=0;
   reverseMap=NULL;
   maptable=_map;
@@ -780,6 +792,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
 }
 
+
 void MapTable::makeReverseMap()
 {
 #ifndef USE_INT_MAP
@@ -796,3 +809,56 @@ void MapTable::makeReverseMap()
     delete it;
 #endif
   }
+
+#ifdef CMK_VERSION_BLUEGENE
+extern 	BGLTorusManager *bgltm;
+
+void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
+{
+      int sumX=0, sumY=0, sumZ=0;
+      int points=0;
+      
+      for(int state=stateX;state<stateX+grainsize;state++)
+	{
+	  int X, Y, Z;
+	  bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+	  sumX+=X;
+	  sumY+=Y;
+	  sumZ+=Z;
+	  points++;
+	}
+      for(int state=stateY;state<stateY+grainsize;state++)
+	{
+	  int X, Y, Z;
+	  bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+	  sumX+=X;
+	  sumY+=Y;
+	  sumZ+=Z;
+	  points++;
+	}
+      int avgX=sumX/points;
+      int avgY=sumY/points;
+      int avgZ=sumZ/points;
+      int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+      avail->sortSource(bestPe);
+    }
+#else
+// arguably meaningless in non torus case but it was easy to implement
+void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
+    {
+      int sumPe=0;
+      int points=0;
+      for(int state=stateX;state<stateX+grainsize;state++)
+	{
+	  sumPe=gsmap->get(state,plane);
+	  points++;
+	}
+      for(int state=stateY;state<stateY+grainsize;state++)
+	{
+	  sumPe=gsmap->get(state,plane);
+	  points++;
+	}
+      int bestPe=sumPe/points;
+      avail->sortSource(bestPe);
+    }
+#endif
