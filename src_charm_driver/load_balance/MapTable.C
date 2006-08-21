@@ -230,7 +230,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
       int srcpe=0,destpe=0;
       if(!useCentroid)
-	availprocs->findNext();
+	destpe=availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
       if(useCuboidMap)
