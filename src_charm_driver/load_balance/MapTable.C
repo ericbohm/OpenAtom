@@ -225,7 +225,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
       if(rem!=0)
 	scobjs_per_pe+=1;
 #ifdef MAP_DEBUG
-      CkPrintf(" scalc_per_plane %d *nchareG %d *numChunksAsym %d %% availprocs->count() %d = rem %d and scobjs_per_pe is %d\n", scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe);
+      CkPrintf(" scalc_per_plane %d *nchareG %d *numChunksAsym %d  availprocs->count() %d = rem %d and scobjs_per_pe is %d boxSize %d\n", scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe, boxSize);
 #endif
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
       int srcpe=0,destpe=0;
@@ -237,8 +237,11 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	{ // in the cuboid map case we place all planes box by box
 	  for(int plane=0; plane<nchareG; plane++)
 	    { // could restrict list to the gs box here
+	      //	      CkPrintf("plane %d making pelist from boxSize %d\n",plane,boxSize);
+	      
 	      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
 	      //	      PeList *thisPlaneBox= availprocs;
+	      //	      thisPlaneBox->dump();
 	      if(!useCentroid)
 		destpe=thisPlaneBox->findNext();
 	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
@@ -258,12 +261,14 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 			if(count<scobjs_per_pe)
 			  {
-			    //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
+
+			    //			    CkPrintf("%d %d %d %d mapped to %d\n",plane,xchunk,ychunk,newdim, destpe);
 #ifdef USE_INT_MAP		      
 			    maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else
 			    maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
+
 			    count++;
 			  }
 			else

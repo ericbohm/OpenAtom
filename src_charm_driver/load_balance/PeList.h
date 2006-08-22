@@ -83,8 +83,11 @@ class PeList
       current=0;
       TheList=new int [size];
       sortIdx=new int [size];
-      memcpy(TheList,&(a->TheList[start]),size*sizeof(int));
-      memcpy(sortIdx,&(a->sortIdx[start]),size*sizeof(int));
+      for(int i=0;i<size;i++)
+	{
+	  TheList[i]=a->TheList[a->sortIdx[i+start]];
+	}
+      reindex();
     };	 // make a copy of a sublist
   
   // given the max grid/torus dimenions and the volume of a desired subpartition
@@ -99,7 +102,7 @@ class PeList
   void reindex(){
       for(int i=0;i<size;i++)
 	{
-	  sortIdx[i]=TheList[i];
+	  sortIdx[i]=i;
 	}
   } 
 

@@ -553,8 +553,8 @@ main::main(CkArgMsg *msg) {
 	m = config.nchareG / pm;
 	int bx,by,bz;
 #ifdef CMK_VERSION_BLUEGENE
-	boxSize=pm;
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pm))
+	boxSize=pl;
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box mapping\n",bx,by,bz);
 	    foo= new PeList(bx,by,bz);  // heap it
