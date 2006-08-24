@@ -16,6 +16,7 @@
 #include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 
+#define TEST_ALIGN
 //==============================================================================
 
 extern CProxy_FFTcache fftCacheProxy;
@@ -932,6 +933,7 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
        odist);       //array separation (0 inplace)
 
 
+
   fftw_complex *scratch2=(fftw_complex *) fftw_malloc(sizefft*sizeof(complex));
   memcpy(scratch2,in,sizeof(complex)*sizefft);
 */
@@ -956,6 +958,10 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
       if(inleft<split)
 	{thismany=inleft;}
       //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+#ifdef TEST_ALIGN
+      CkAssert((unsigned int) &(myin[inoff]) % 16 ==0);
+      CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
+#endif
       fftw(plan,           // da plan
 	   thismany,       // how many 
 	   &(myin[inoff]), //input data
@@ -1021,8 +1027,13 @@ void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex 
       thismany=split;
       if(inleft<split)
 	{thismany=inleft;}
+#ifdef TEST_ALIGN
+      CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
+      CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
+#endif
       rfftwnd_complex_to_real(plan,// da plan
 	   thismany,               // how many 
+
 	   &(in[inoff]),           //input data
 	   istride,                // stride betwen elements 
 	   idist,                  // array separation
@@ -1073,6 +1084,10 @@ void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *i
       if(inleft<split)
 	{thismany=inleft;}
       //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+#ifdef TEST_ALIGN
+      CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
+      CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
+#endif
       rfftwnd_real_to_complex(plan,         // da plan
 	   thismany,     // how many 
 	   &(in[inoff]), //input data

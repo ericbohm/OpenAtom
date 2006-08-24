@@ -240,6 +240,7 @@ class SCalcMapTable : public MapTable4
 #endif
     }
   void sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap);
+  PeList *subListPlane(int plane, int nstates, MapType2 *gsmap);
   
 };
 

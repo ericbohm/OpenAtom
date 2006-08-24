@@ -2721,7 +2721,8 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
-    fastAdd((double *) psi,(double *)data,N*2);
+    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
+    //    fastAdd((double *) psi,(double *)data,N*2);
 
 
   delete msg;
@@ -2773,7 +2774,8 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
     //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
-    fastAdd((double *) psi,(double *)data,N*2);
+    for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
+    //    fastAdd((double *) psi,(double *)data,N*2);
 
   delete msg;
   /*

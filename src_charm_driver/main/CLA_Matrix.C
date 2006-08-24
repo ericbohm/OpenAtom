@@ -509,7 +509,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
 
   /* multiply */
-  int Ksplit_m=30;  //this could be a config param, should be multiple of 6
+  int Ksplit_m=32;  //this could be a config param, should be multiple of 6
   char trans = 't';
   double betap = 1.0;
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
@@ -521,6 +521,11 @@ void CLA_Matrix::multiply(){
 
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
+#endif
+#ifdef TEST_ALIGN
+  CkAssert((unsigned int) tmpA %16==0);
+  CkAssert((unsigned int) tmpB %16==0);
+  CkAssert((unsigned int) dest %16==0);
 #endif
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
@@ -541,6 +546,11 @@ void CLA_Matrix::multiply(){
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
 #endif
+#endif
+#ifdef TEST_ALIGN
+    CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
+    CkAssert((unsigned int) &(tmpB[boff]) %16==0);
+    CkAssert((unsigned int) dest %16==0);
 #endif
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap,dest, &m);
@@ -563,11 +573,11 @@ void CLA_Matrix::multiply(){
     double StartTime=CmiWallTimer();
 #endif
      DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
+   dest, &m);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
 
-   dest, &m);
 #endif
   /* transpose result */
   transpose(dest, n, m);
@@ -661,12 +671,17 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
 #ifndef CMK_OPTIMIZE
   double  StartTime=CmiWallTimer();
 #endif
+#ifdef TEST_ALIGN
+  CkAssert((unsigned int) A %16==0);
+  CkAssert((unsigned int) B %16==0);
+  CkAssert((unsigned int) C %16==0);
+#endif
   DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
-  //  redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
+  //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
   redGrp->contribute(m * n * sizeof(double), C, sumFastDoubleType,
    sectionCookie, reduce_CB);
   delete [] C;

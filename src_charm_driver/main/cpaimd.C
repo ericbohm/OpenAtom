@@ -556,11 +556,13 @@ main::main(CkArgMsg *msg) {
 	boxSize=pl;
 	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
 	  {
-	    CkPrintf("Using %d,%d,%d dimensions for box mapping\n",bx,by,bz);
+	    CkPrintf("Using %d,%d,%d dimensions for box %d  mapping\n",bx,by,bz, boxSize);
 	    foo= new PeList(bx,by,bz);  // heap it
 	  }
 	else
 	  {
+	    CkPrintf("no box for %d\n",boxSize);
+	    config.useCuboidMap=0;
 	    foo= new PeList;  // heap it
 	  }
 #else
@@ -1816,9 +1818,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	RhoAvail->rebuild();
     }//endif
     
-    // make the exclusion list which is whats left after 
-    excludePes= RhoAvail;
-    excludePes->trimUsed();
+
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);
@@ -1826,6 +1826,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail, nchareRhoRHart);
 #endif
+    // make the exclusion list which is whats left after 
+    excludePes= RhoAvail;
+    excludePes->trimUsed();
+    //    CkPrintf("rho leaves us with \n");
+    //    excludePes->dump();
+
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
     CkArrayOptions rhorhartOpts;
     rhorhartOpts.setMap(rhorHartMap);
@@ -1883,7 +1889,6 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
-  delete RhoAvail;
   RhoAvail=NULL;
 //===========================================================================
   }//end routine

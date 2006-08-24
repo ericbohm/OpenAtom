@@ -239,7 +239,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 #ifdef CMK_VERSION_BLUEGENE
       __alignx(16,inmatrix);
 #pragma disjoint(*ret,*inmatrix)
-#pragma unroll(10)
+#pragma unroll(16)
 #endif
 	for(int d=0;d<size;d++)
 	  ret[d]+=inmatrix[d];
@@ -791,7 +791,15 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int) &(allCaughtRight[moff] )%16==0);
+	  CkAssert((unsigned int)leftNewTemp %16==0);
+	  CkAssert((unsigned int)&(outData1[moffc] )%16==0);
+#endif
+
 	  DGEMM(&transformT, &transform, &MsplitU, &n_in, &Ksplit, &alpha, &(allCaughtRight[moff]), &lda, leftNewTemp, &ldb, &beta, &(outData1[moffc]), &ldc);
+
+
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -803,17 +811,22 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	    int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
-	  StartTime=CmiWallTimer();
+	    StartTime=CmiWallTimer();
 #endif
+#endif
+#ifdef TEST_ALIGN
+	    CkAssert((unsigned int)&(allCaughtRight[koff+moff] )%16==0);
+	    CkAssert((unsigned int)&(leftNewTemp[koff]) %16==0);
+	    CkAssert((unsigned int)&(outData1[moffc] )%16==0);
 #endif
 	    DGEMM(&transformT, &transform, &MsplitU, &n_in, &KsplitU, &alpha, &(allCaughtRight[koff+moff]), &lda, &(leftNewTemp[koff]), &ldb, &betap, &(outData1[moffc]), &ldc);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
-
+	  
 	    traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
-	    CmiNetworkProgress();
+	  CmiNetworkProgress();
 	  }//endfor
 	}//endfor
 
@@ -876,6 +889,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	CkAssert((unsigned int)rightNewTemp%16==0);
+	CkAssert((unsigned int)&(allCaughtLeft[noff]) %16==0);
+	CkAssert((unsigned int)&(outData2[noffc] )%16==0);
+#endif
 	DGEMM(&transformT, &transform, &m_in, &NsplitU, &Ksplit, &alpha, rightNewTemp, &lda, &(allCaughtLeft[noff]), &ldb, &beta, &(outData2[noffc]), &ldc);      
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -890,6 +908,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
+#endif
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int)&(rightNewTemp[koff])%16==0);
+	  CkAssert((unsigned int)&(allCaughtLeft[koff+noff]) %16==0);
+	  CkAssert((unsigned int)&(outData2[noffc] )%16==0);
 #endif
 	  DGEMM(&transformT, &transform, &m_in, &NsplitU, &KsplitU, &alpha, &(rightNewTemp[koff]), &lda, &(allCaughtLeft[koff+noff]), &ldb, &betap, &(outData2[noffc]), &ldc);      
 #ifndef BUNDLE_USER_EVENT
@@ -956,6 +979,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int)&(allCaughtLeft[moff]) %16==0);
+	  CkAssert((unsigned int)leftNewTemp%16==0);
+	  CkAssert((unsigned int)&(outData1[moffc] )%16==0);
+#endif
 	  DGEMM(&transformT, &transform, &MsplitU, &n_in, &Ksplit, &alpha, &(allCaughtLeft[moff]), &lda, leftNewTemp, &ldb, &beta, &(outData1[moffc]), &ldc);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -970,6 +998,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
+#endif
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int)&(allCaughtLeft[koff+moff]) %16==0);
+	  CkAssert((unsigned int)&(leftNewTemp[koff])%16==0);
+	  CkAssert((unsigned int)&(outData1[moffc] )%16==0);
 #endif
 	    DGEMM(&transformT, &transform, &MsplitU, &n_in, &KsplitU, &alpha, &(allCaughtLeft[koff+moff]), &lda, &(leftNewTemp[koff]), &ldb, &betap, &(outData1[moffc]), &ldc);
 #ifndef BUNDLE_USER_EVENT
@@ -1036,6 +1069,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	    StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int)leftNewTemp%16==0);
+	  CkAssert((unsigned int)&(allCaughtLeft[noff]) %16==0);
+	  CkAssert((unsigned int)&(outData2[noffc] )%16==0);
+#endif
 	    DGEMM(&transformT, &transform, &m_in, &NsplitU, &Ksplit, &alpha, leftNewTemp, &lda, &(allCaughtLeft[noff]), &ldb, &beta, &(outData2[noffc]), &ldc);      
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -1050,6 +1088,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
 	      StartTime=CmiWallTimer();
 #endif
+#endif
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int)&(leftNewTemp[koff])%16==0);
+	      CkAssert((unsigned int)&(allCaughtLeft[koff+noff]) %16==0);
+	      CkAssert((unsigned int)&(outData2[noffc] )%16==0);
 #endif
 	      DGEMM(&transformT, &transform, &m_in, &NsplitU, &KsplitU, &alpha, &(leftNewTemp[koff]), &lda, &(allCaughtLeft[koff+noff]), &ldb, &betap, &(outData2[noffc]), &ldc);      
 
@@ -1203,6 +1246,11 @@ PairCalculator::multiplyForward(bool flag_dp)
   int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
   int Krem     = (k_in % Ksplit);
   int Kloop    = k_in/Ksplit-1;
+#ifdef TEST_ALIGN
+  CkAssert((unsigned int)matrixA%16==0);
+  CkAssert((unsigned int)inDataLeft %16==0);
+  CkAssert((unsigned int)outData%16==0);
+#endif
 
   DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta,  outData,&ldc);
   CmiNetworkProgress();
@@ -1217,6 +1265,11 @@ PairCalculator::multiplyForward(bool flag_dp)
 
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
+#endif
+#ifdef TEST_ALIGN
+    CkAssert((unsigned int)&(matrixA[off])%16==0);
+    CkAssert((unsigned int)&(inDataLeft[off]) %16==0);
+    CkAssert((unsigned int)outData%16==0);
 #endif
 
     DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
@@ -1329,7 +1382,7 @@ PairCalculator::sendTiles(bool flag_dp)
 	    dumpMatrixDouble(filename, outTiles[orthoIndex], orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
 
-	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumFastDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
+	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
 	    touchedTiles[orthoIndex]=0;
 	    if(++progcounter>8)
 	      {progcounter=0;CmiNetworkProgress();}
@@ -1384,7 +1437,7 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 	dumpMatrixDouble(filename, outTile, orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
 
-	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumFastDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
 
       }
   delete [] outTile;
@@ -1471,6 +1524,14 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   int size2=msg->size2;
   double *matrix1=msg->matrix1;
   double *matrix2=msg->matrix2;
+#ifdef TEST_ALIGN
+  if((unsigned int) msg->matrix1 %16 !=0)
+    {
+      CkPrintf("msg->matrix1 is %p\n",msg->matrix1);
+    }
+  CkAssert((unsigned int) msg->matrix1 %16 ==0);
+  CkAssert((unsigned int) msg->matrix2 %16 ==0);
+#endif
   actionType=msg->actionType;
   bool unitcoef = false;
   int numOrtho=grainSize/orthoGrainSize;
@@ -1689,7 +1750,11 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	      int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	      int Mrem     = (m_in % Msplit);
 	      int Mloop    = m_in/Msplit-1;
-	  
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(mynewDatad[BNCoffset] )%16==0);
+#endif	  
 	      DGEMM(&transform, &transform, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]),  &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]),&m_in);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -1706,6 +1771,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 		StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataLeft[BNAoffset+off] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(mynewDatad[BNCoffset+off] )%16==0);
+#endif	  
+
 		DGEMM(&transform, &transform, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset+off]),  &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset+off]),&m_in);
 
 #ifndef BUNDLE_USER_EVENT
@@ -1723,6 +1794,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	      int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	      int Mrem     = (m_in % Msplit);
 	      int Mloop    = m_in/Msplit-1;
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataLeft[BTAoffset] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(mynewDatad[BTCoffset] )%16==0);
+#endif	  
+
 	      DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in, amatrix, &k_in, &beta,&(mynewDatad[BTCoffset]),&m_in);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -1740,6 +1817,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 		StartTime=CmiWallTimer();
 #endif
 #endif
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataLeft [BTAoffset+off])%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(mynewDatad[BTCoffset+off] )%16==0);
+#endif	  
+
 
 		DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset+off]), &m_in, amatrix, &k_in, &beta,&(mynewDatad[BTCoffset+off]),&m_in);
 
@@ -1754,6 +1837,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  
 	    }
 #else // no SPLIT
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      CkAssert((unsigned int)&(mynewDatad[BNCoffset] )%16==0);
+#endif	  
+
 	  if(symmetric)
 	    DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
 	  else
@@ -1782,6 +1871,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataRight[BTAoffset] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
+#endif	  
+
 	  DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in, amatrix, &k_in, &beta,&(othernewDatad[BTCoffset]),&m_in);
 
 #ifndef BUNDLE_USER_EVENT
@@ -1797,7 +1892,14 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifndef CMK_OPTIMIZE
 	    StartTime=CmiWallTimer();
 #endif
+	    
 #endif
+#ifdef TEST_ALIGN
+	      CkAssert((unsigned int) &(inDataRight[BTAoffset+off] )%16==0);
+	      CkAssert((unsigned int) amatrix %16==0);
+	      //	      CkAssert((unsigned int)&(othernewDatad[BTCoffset+off] )%16==0);
+#endif	  
+
 	    DGEMM(&transform, &transformT, &Msplit, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset+off]), &m_in, amatrix, &k_in, &beta,&(othernewDatad[BTCoffset+off]),&m_in);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -1809,7 +1911,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #else  // no SPLIt
 	  CmiNetworkProgress();
 	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
-	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(BTCoffset[othernewDatad]), &m_in);
+#ifdef TEST_ALIGN
+	  CkAssert((unsigned int) &(inDataRigh[BTAoffset] )%16==0);
+	  CkAssert((unsigned int) amatrix %16==0);
+	  CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
+#endif	  
+
+	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
 
 
 #endif  // SPLIT
@@ -2122,7 +2230,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumFastDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2148,7 +2256,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumFastDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2291,7 +2399,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #endif
 	*/
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumFastDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 	/*
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2315,7 +2423,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	    #endif
 	  */
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumFastDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 	  /*
 	    #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(220, StartTime, CmiWallTimer());

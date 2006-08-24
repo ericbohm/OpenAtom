@@ -37,6 +37,16 @@ class PeList
  //! boxy constructor for BG/L
   PeList(int boxX, int boxY, int boxZ);
 #endif
+  PeList(int _size): size(_size)
+    {
+      TheList = new int [size];
+      sortIdx = new int [size];
+      for(int i=0;i<size;i++)
+	{
+	  TheList[i]=i;
+	  sortIdx[i]=i;
+	}
+    }
   PeList(CkVec <int> inlist)
     {
       current=0;
@@ -160,21 +170,47 @@ class PeList
   }
   void trimUsed()
     {
-      if(!noPes()){
-	memcpy(&(TheList[0]),&(TheList[current]),count());
-	size-=current;
-	current=0;
-	reindex();
-      }
+      // build a new array that doesn't include used elements
+      // theoretically this could be done in place, but haste makes waste
+      if(current>0)
+	{
+	  int newSize= size-current;
+	  int *newList = new int[newSize];
+	  int *newSortIdx = new int[newSize];
+	  for(int i=0; i<newSize;i++)
+	    {
+	      // if we just copy in sorted order we end up with a sorted list
+	      newSortIdx[i]=i;
+	      newList[i]=TheList[sortIdx[i+current]];
+	    }
+	  delete [] TheList;
+	  delete [] sortIdx;
+	  TheList=newList;
+	  sortIdx=newSortIdx;
+	  current=0;
+	  size=newSize;
+	}
     }
 
-  
+  void removeIdx(int pos)
+    {
+      if(pos < size)
+	{
+	  for (int i=pos; i<size-1; i++)
+	    {
+	      sortIdx[i] = sortIdx[i+1];
+	    }
+	  size--;
+	}
+    }
   void remove(int pos)
     {
       if(pos < size)
 	{
 	  for (int i=pos; i<size-1; i++)
-	    TheList[i] = TheList[i+1];
+	    {
+	      TheList[i] = TheList[i+1];
+	    }
 	  size--;
 	}
     }

@@ -194,7 +194,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		      // new partition
 		      procno++;
 		      srcpe=destpe;
-		      if(availprocs->noPes())
+		      if(availprocs->count()==0)
 			availprocs->reset();
 		      //			  availprocs->sortSource(srcpe);
 		      destpe=availprocs->findNext();
@@ -233,13 +233,23 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	destpe=availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
-      if(useCuboidMap)
+      if(useCuboidMap|| useCentroid)
 	{ // in the cuboid map case we place all planes box by box
 	  for(int plane=0; plane<nchareG; plane++)
 	    { // could restrict list to the gs box here
-	      //	      CkPrintf("plane %d making pelist from boxSize %d\n",plane,boxSize);
-	      
-	      PeList *thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+
+	      PeList *thisPlaneBox;
+	      if(useCentroid)
+		{
+		  //		  CkPrintf("plane %d making pelist from plane's pes\n",plane);
+		  thisPlaneBox= subListPlane(plane, max_states, gsmap);
+		}
+	      else
+		{
+		  //		  CkPrintf("plane %d making pelist from boxSize %d\n",plane,boxSize);
+		  thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+		}
+
 	      //	      PeList *thisPlaneBox= availprocs;
 	      //	      thisPlaneBox->dump();
 	      if(!useCentroid)
@@ -249,51 +259,50 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		  { // could find centroid here
 		    if(useCentroid)
 		      {
+			thisPlaneBox->trimUsed();
+			//			CkPrintf("trimmed list for %d %d %d\n", plane, xchunk, ychunk);
+			//			thisPlaneBox->dump();
 			sortByCentroid(thisPlaneBox, plane, xchunk, ychunk, grainsize, gsmap);
+			//			CkPrintf("sorted by centroid\n");
+			//			thisPlaneBox->dump();
 			destpe=thisPlaneBox->findNext();
-			if(thisPlaneBox->noPes())
+			if(thisPlaneBox->count()==0)
 			  thisPlaneBox->reset();
 			count=0;
 		      }
 		    for(int newdim=0; newdim<numChunksAsym; newdim++)
 		      {
-			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 			if(count<scobjs_per_pe)
 			  {
-
-			    //			    CkPrintf("%d %d %d %d mapped to %d\n",plane,xchunk,ychunk,newdim, destpe);
-#ifdef USE_INT_MAP		      
-			    maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-			    maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
-
-			    count++;
+			    // nothing to see here
 			  }
 			else
 			  {  // new partition
 			    procno++;
-			    srcpe=destpe;
-			    if(thisPlaneBox->noPes())
+			    if(thisPlaneBox->count()==0)
 			      thisPlaneBox->reset();
 
 			    destpe=thisPlaneBox->findNext();
 			    if(rem!=0)
 			      if(procno==rem)
 				scobjs_per_pe-=1;
-#ifdef USE_INT_MAP		      
-			    maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-			    maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
 			    count=0;
-			    count++;
+
 			  }
+			//			CkPrintf("%d %d %d %d mapped to %d\n",plane,xchunk,ychunk,newdim, destpe);
+#ifdef USE_INT_MAP		      
+			maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
+			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
+
+			count++;
 
 		      }
 		  }
-	      //	      delete thisPlaneBox;
+	      delete thisPlaneBox;
 	    }
 
 	}
@@ -322,7 +331,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			{  // new partition
 			  procno++;
 			  srcpe=destpe;
-			  if(availprocs->noPes())
+			  if(availprocs->count()==0)
 			    availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
@@ -460,7 +469,8 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
   int afterExclusion=exclusion->count();
-  
+  //  CkPrintf("RPP excluded list\n");
+  //  exclusion->dump();
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
@@ -497,79 +507,41 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   m = sizeZNL / pm;
   rem = sizeZNL % pm;
 
-  //CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
+  CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
   //CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
   //pl, pm, srem, rem);
   int srcpe=0;
-
-  /*  RPP isn't planewise with GPP.  Need different cuboid code
-      if(useCuboidMap)
-      {
-      CkPrintf("nstates %d sizeZNL %d Pes %d states_per_pe %d boxSize %d\n", nstates, sizeZNL, RPPlist->count(), states_per_pe, boxSize);	
-      for(int plane=0;plane<sizeZNL;plane++)
-      {
-      // get the cube for this plane
-      PeList *thisPlaneBox= new PeList(RPPlist, plane*boxSize, boxSize);
-      // try a subtraction from the exclusion
-      if(exclusion->count()>0)
-      *thisPlaneBox-*exclusion;
-      if(thisPlaneBox->count()<nstates/states_per_pe)
-      {
-      CkPrintf("RSP ignoring exclusion map for plane %d count %d\n",plane,thisPlaneBox->count());
-      // if not enough ignore the exclusion map
-      delete thisPlaneBox;
-      thisPlaneBox= new PeList(RPPlist,plane*bSize,bSize);
-      }
-      else
-      { // repair the index
-      thisPlaneBox->reindex();
-      }
-      destpe=thisPlaneBox->findNext();
-      for(int state=0;state<nstates;state+=states_per_pe)
-      {
-      for(int stateperpe=0;stateperpe<states_per_pe;stateperpe++)
-      {
-      maptable->put(intdual(state+stateperpe, plane))=destpe;
-      }
-      destpe=thisPlaneBox->findNext();
-      if(thisPlaneBox->count()==0)
-      thisPlaneBox->reset();
-      }
-      delete thisPlaneBox;
-      }
-      }
-      else
-  */
-  {	  
-    int destpe=RPPlist->findNext();
-    for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
-      {
-	if(ychunk==(pm-rem)*m)
-	  m=m+1;
-	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
-	  {
-	    if(xchunk==(pl-srem)*states_per_pe)
-	      states_per_pe=states_per_pe+1;
-	    srcpe=destpe;
-		//			    RPPlist->sortSource(srcpe);
-	    for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
-	      {
-		for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
-		  {
+  CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
+  //  CkPrintf("using list\n");
+  //  RPPlist->dump();
+  int destpe=RPPlist->findNext();
+  for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+    {
+      if(ychunk==(pm-rem)*m)
+	m=m+1;
+      for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
+	{
+	  if(xchunk==(pl-srem)*states_per_pe)
+	    states_per_pe=states_per_pe+1;
+	  for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
+	    {
+	      for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
+		{
+		  //		  CkPrintf("RPP setting %d %d to pe %d\n",state,plane,destpe);		    
 #ifdef USE_INT_MAP
-			maptable->set(state, plane,destpe);
+		  maptable->set(state, plane,destpe);
 #else
-			maptable->put(intdual(state, plane))=destpe;
+		  maptable->put(intdual(state, plane))=destpe;
 #endif
 
-		  }
-	      }
-	    destpe=RPPlist->findNext();
-	    if(RPPlist->count()==0)
-	      RPPlist->reset();
-	  }
-      }
-  }
+		}
+	    }
+	  if(RPPlist->count()==0)
+	    RPPlist->reset();
+	  destpe=RPPlist->findNext();
+	}
+    }
+
 #ifdef MAP_DEBUG
   CkPrintf("RSPMap created on processor %d\n", CkMyPe());
   dump();
@@ -815,6 +787,34 @@ void MapTable::makeReverseMap()
 #endif
   }
 
+
+
+PeList *SCalcMapTable::subListPlane(int plane, int nstates, MapType2 *gsmap)
+{
+
+      PeList *thisPlane= new PeList(nstates);
+      int count=0;
+      for(int state=0;state<nstates;state++)
+	{
+	  bool newPe=true;
+	  int pe=gsmap->get(state,plane);
+	  for(int i=0;i<count;i++)
+	    {
+	      if(thisPlane->TheList[i]==pe)
+		newPe=false;
+	    }
+	  if(newPe)
+	    {
+	      thisPlane->sortIdx[count]=count;
+	      thisPlane->TheList[count]=pe;
+	      count++;
+	    }
+	}
+      thisPlane->size=count;
+      thisPlane->current=0;
+      return(thisPlane);
+    }
+
 #ifdef CMK_VERSION_BLUEGENE
 extern 	BGLTorusManager *bgltm;
 
@@ -846,7 +846,11 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
       int avgZ=sumZ/points;
       int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
       avail->sortSource(bestPe);
+      avail->reset();
     }
+
+
+
 #else
 // arguably meaningless in non torus case but it was easy to implement
 void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)

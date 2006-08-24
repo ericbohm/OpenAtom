@@ -161,7 +161,7 @@ class IntMap4 {
 	  for(int x=0;x<keyXmax;x++)
 	    for(int y=0;y<keyYmax;y++)
 	      for(int z=0;z<keyZmax;z++)
-		CkPrintf("%d %d %d %d %d \n",w,x,y,z, get(w,x,y,z));
+		CkPrintf("%d %d %d %d %d \n",w,x,y,z, get(w,x*keyStep,y*keyStep,z));
       }
     IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL;}
 };

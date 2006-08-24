@@ -20,9 +20,11 @@
 // Debugging flag for Verbose output
 //#define _PAIRCALC_DEBUG_
 #ifdef CMK_VERSION_BLUEGENE
+#define ALIGN16(x)        (int)((~15)&((x)+15))
+//#define TEST_ALIGN
 #define BUNDLE_USER_EVENT  
-#define PC_FWD_DGEMM_SPLIT 18   //multiple of 6 for BG/L
-#define PC_BWD_DGEMM_SPLIT 12
+#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
+#define PC_BWD_DGEMM_SPLIT 16
 #else
 #define PC_FWD_DGEMM_SPLIT 0
 #define PC_BWD_DGEMM_SPLIT 0
@@ -117,6 +119,20 @@ class partialResultMsg : public CMessage_partialResultMsg {
   int N;
   int myoffset;
   friend class CMessage_partialResultMsg;
+#ifdef CMK_VERSION_BLUEGENE
+static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
+  int offsets[2];
+  offsets[0] = ALIGN16(sz);
+  if(sizes==0)
+    offsets[1] = offsets[0];
+  else
+    offsets[1] = offsets[0] + ALIGN16(sizeof(complex)*sizes[0]);
+  partialResultMsg *newmsg = (partialResultMsg *) CkAllocMsg(msgnum, offsets[1], pb);
+  newmsg->result = (complex *) ((char *)newmsg + offsets[0]);
+  return (void *) newmsg;
+}
+
+#endif  
 };
 
 class priorSumMsg : public CMessage_priorSumMsg {
@@ -199,6 +215,27 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
       // this field does nothing in minimization
       matrix2=NULL;
     }
+#ifdef CMK_VERSION_BLUEGENE
+  // if we use our own allocator we can get 16 byte alignment
+  // to please BGL
+ static  void *alloc(int msgnum, size_t sz, int *sizes, int pb) {
+    int offsets[3];
+    offsets[0] = ALIGN16(sz);
+    if(sizes==0)
+      offsets[1] = offsets[0];
+    else
+      offsets[1] = offsets[0] + ALIGN16(sizeof(double)*sizes[0]);
+    if(sizes==0)
+      offsets[2] = offsets[0];
+    else
+      offsets[2] = offsets[1] + ALIGN16(sizeof(double)*sizes[1]);
+    multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
+    newmsg->matrix1 = (double *) ((char *)newmsg + offsets[0]);
+    newmsg->matrix2 = (double *) ((char *)newmsg + offsets[1]);
+    return (void *) newmsg;
+  }
+
+#endif
   friend class CMessage_multiplyResultMsg;
 };
 
