@@ -461,20 +461,25 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
              thisIndex.x,flagEwd,iterAtmTyp,nAtmTypRecv,natmTyp);
 #endif
 
-  if( (flagEwd==1) && (iterAtmTyp!=natmTyp) && (nAtmTypRecv!=natmTyp+1)){
+  // Ewald total SF  arrives on the last iteration only .
+  // In parallel it can arrive before the last atmtyp SF
+  if( (flagEwd==1) && (iterAtmTyp!=natmTyp)){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("You can't have flagEwd==1 unless you are on the last step\n");
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
 
-  if( (flagEwd==0) && (iterAtmTyp!=nAtmTypRecv) ){
+  // If we are not on the last iteration when ewald can show up
+  // the iteration # must match the number of SF received  
+  if( (flagEwd==0) && (iterAtmTyp!=nAtmTypRecv) && (iterAtmTyp!=natmTyp)){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Atm SF Recv and atm SF calc out of sync %d\n",thisIndex.x);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
 
+  // the number of iteration <=natmTyp and you recieve natmtyp SF plus Ewald total
   if( iterAtmTyp>natmTyp || nAtmTypRecv>natmTyp+1 ){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Too much action for rhoRhart\n");
