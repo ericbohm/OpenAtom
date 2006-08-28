@@ -220,7 +220,8 @@ int planes_per_pe;
 
 CkVec <int> peUsedBySF;
 CkVec <int> peUsedByNLZ;
-PeList *availGlob;
+PeList *availGlobR;
+PeList *availGlobG;
 PeList *excludePes;
 int boxSize;
 #ifdef USE_TOPOMAP
@@ -541,7 +542,8 @@ main::main(CkArgMsg *msg) {
 #endif
     CkPrintf("Initializing PeList\n");
     
-    PeList *foo;
+    PeList *gfoo;
+    PeList *rfoo;
 
     if(config.useCuboidMap)
       {
@@ -557,21 +559,51 @@ main::main(CkArgMsg *msg) {
 	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d  mapping\n",bx,by,bz, boxSize);
-	    foo= new PeList(bx,by,bz);  // heap it
+	    gfoo= new PeList(bx,by,bz);  // heap it
 	  }
 	else
 	  {
 	    CkPrintf("no box for %d\n",boxSize);
 	    config.useCuboidMap=0;
-	    foo= new PeList;  // heap it
+	    gfoo= new PeList;  // heap it
 	  }
 #else
-	foo= new PeList;  // heap it
+	gfoo= new PeList;  // heap it
 #endif
       }
     else
-      foo= new PeList;  // heap it
-    availGlob=foo;
+      gfoo= new PeList;  // heap it
+    if(config.useCuboidMapRS)
+      {
+	int l=config.Rstates_per_pe;
+	int m, pl, pm;
+	pl = nstates / l;
+	pm = CkNumPes() / pl;
+	if(pm==0){CkAbort("Choose a smaller Rstates_per_pe \n");}
+	m = sim->sizeZ / pm;
+	int bx,by,bz;
+#ifdef CMK_VERSION_BLUEGENE
+	boxSize=pl;
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
+	  {
+	    CkPrintf("Using %d,%d,%d dimensions for RS box %d  mapping\n",bx,by,bz, boxSize);
+	    rfoo= new PeList(bx,by,bz);  // heap it
+	  }
+	else
+	  {
+	    CkPrintf("no box for %d\n",boxSize);
+	    config.useCuboidMap=0;
+	    rfoo= new PeList;  // heap it
+	  }
+#else
+	rfoo= new PeList;  // heap it
+#endif
+      }
+    else
+      rfoo= new PeList;  // heap it
+
+    availGlobG=rfoo;
+    availGlobR=gfoo;
     excludePes= new PeList();
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
@@ -651,7 +683,8 @@ main::main(CkArgMsg *msg) {
     delete msg;
     delete sim;
     delete [] indexZ;
-    delete foo;
+    delete rfoo;
+    delete gfoo;
 //============================================================================
 
     newtime=CmiWallTimer();
@@ -705,7 +738,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   //-------------------------------------------------------------
   // Populate maptables for Paircalculators
   Timer =CmiWallTimer();
-  availGlob->reset();
+  availGlobG->reset();
   bool maptype=true;
   int achunks=config.numChunksAsym;
   if(config.phantomSym)
@@ -717,13 +750,13 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #ifdef USE_INT_MAP
   SymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, achunks, config.sGrainSize);
   SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable, 
-					 availGlob, config.nstates,
+					 availGlobG, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
 		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
   SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
-					 availGlob, config.nstates,
+					 availGlobG, config.nstates,
                    config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, 
 
@@ -738,15 +771,15 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   //-------------------------------------------------------------
   // Populate maptables for Paircalculators
   Timer=newtime;
-  availGlob->reset();
+  availGlobG->reset();
 #ifdef USE_INT_MAP
   AsymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize,config.nstates/config.sGrainSize, config.numChunksAsym, config.sGrainSize);
-  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlob,config.nstates,
+  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlobG,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
                    planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
-  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlob,config.nstates,
+  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlobG,config.nstates,
   	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
                    sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
                    planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap,boxSize);
@@ -1412,14 +1445,14 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  //---------------------------------------------------------------------------
  // state r-space
 
-  availGlob->reset();
+  availGlobR->reset();
 #ifdef USE_INT_MAP
   RSImaptable.buildMap(nstates,nchareR);
-  RSMapTable RStable= RSMapTable(&RSImaptable, availGlob, nstates, nchareR, 
-                                 Rstates_per_pe);
+  RSMapTable RStable= RSMapTable(&RSImaptable, availGlobR, nstates, nchareR, 
+                                 Rstates_per_pe, config.useCuboidMapRS);
 #else
-  RSMapTable RStable= RSMapTable(&RSmaptable, availGlob, nstates, nchareR, 
-                                 Rstates_per_pe);
+  RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
+                                 Rstates_per_pe, config.useCuboidMapRS);
 #endif
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   double newtime=CmiWallTimer();
@@ -1433,7 +1466,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  //--------------------------------------------------------------------------------
  // state r-particleplane
 
-  availGlob->reset();
+  availGlobR->reset();
 
  //--------------------------------------------------------------------------------
  // Groups : no placement required 
@@ -1449,14 +1482,14 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  //--------------------------------------------------------------------------------
  // state g-space
 
-  availGlob->reset();
+  availGlobG->reset();
 #ifdef USE_INT_MAP
   GSImaptable.buildMap(nstates,nchareG);
-  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlob,nchareG,
+  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
 				   nstates, Gstates_per_pe, config.useCuboidMap);
 #else
-  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlob,nchareG,
+  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlobG,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
 				   nstates, config.Gstates_per_pe, config.useCuboidMap);
 #endif
@@ -1661,15 +1694,15 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 
 
   int Rstates_per_pe  = config.Rstates_per_pe;
-
+  availGlobG->reset();
   double newtime=CmiWallTimer();
 #ifdef USE_INT_MAP
   RSPImaptable.buildMap(nstates,nchareRPP);
-  RSPMapTable RSPtable= RSPMapTable(&RSPImaptable, availGlob, exclusion, 
+  RSPMapTable RSPtable= RSPMapTable(&RSPImaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap);
 #else
-  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlob, exclusion, 
+  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap);
 #endif
@@ -1743,8 +1776,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 // Nuke some procs from the list : reset, nuke, reset if you run out
 
-   availGlob->reset();
-   PeList *RhoAvail= new PeList(*availGlob);
+   availGlobR->reset();
+   PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
    if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
@@ -1772,9 +1805,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR,1);
-   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR);
+   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable);
 #else
-    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR);
+    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable);
 #endif
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;

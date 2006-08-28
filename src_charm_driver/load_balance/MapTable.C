@@ -359,7 +359,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 }
 
 RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nstates, int _sizeZ, int _Rstates_per_pe) :
+	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboidMap) :
    nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
 {
@@ -397,52 +397,82 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 
 	if(availprocs->count()==0)
 	  availprocs->reset();	
-
-        for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
-        {
-                if(ychunk==(pm-rem)*m)
-              		m=m+1;
-        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+	if(useCuboidMap)
+	  {
+	    for(int plane=0;plane<sizeZ;plane++)
+	      for(int state=0;state<nstates;state+=Rstates_per_pe)
 		{
-                	if(xchunk==(pl-srem)*l)
-				l=l+1;
-			if(xchunk==0 && ychunk==0) {}
-			else
-			{
-			    srcpe=destpe;
-			    //			    availprocs->sortSource(srcpe);
-			    destpe=availprocs->findNext();
-			}
-                        c=0;
-			for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-			{
-				for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
-				{
-					if(xchunk==0 && ychunk==0)
-					{
-                                                c++;
+		  for(int stateperpe=0;stateperpe<Rstates_per_pe;stateperpe++)
+		    {
 #ifdef USE_INT_MAP
-						maptable->set(state, plane,0);
+		      maptable->set(state+stateperpe, plane,destpe);
 #else
-						maptable->put(intdual(state, plane))=0;
+		      maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
-						//CkPrintf("%d %d on 0\n", state, plane);
-					}
-					else
-					{
-                                                c++;
+		    }
+		  destpe=availprocs->findNext();
+		  if(availprocs->count()==0)
+		    availprocs->reset();
+		  /*		  if(availprocs->count()==0)
+		    {
+		      CkPrintf("RSMap created on processor %d\n", CkMyPe());
+		      dump();
+		      CkPrintf("RSMap ran out of nodes on plane %d state %d\n", plane, state);
+		      CkExit();
+		    }
+		  */
+		}
+	  }
+	else
+	  {
+
+	    for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
+	      {
+                if(ychunk==(pm-rem)*m)
+		  m=m+1;
+        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+		  {
+		    if(xchunk==(pl-srem)*l)
+		      l=l+1;
+		    if(xchunk==0 && ychunk==0) {}
+		    else
+		      {
+			srcpe=destpe;
+			//			    availprocs->sortSource(srcpe);
+			destpe=availprocs->findNext();
+		      }
+		    c=0;
+		    for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+		      {
+			for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
+			  {
+			    if(xchunk==0 && ychunk==0)
+			      {
+				c++;
 #ifdef USE_INT_MAP
-						maptable->set(state, plane, destpe);
+				maptable->set(state, plane,0);
+#else
+				maptable->put(intdual(state, plane))=0;
+#endif
+				//CkPrintf("%d %d on 0\n", state, plane);
+			      }
+			    else
+			      {
+				c++;
+#ifdef USE_INT_MAP
+				maptable->set(state, plane, destpe);
 
 #else						
-						maptable->put(intdual(state, plane))=destpe;
+				maptable->put(intdual(state, plane))=destpe;
 #endif
-					}
-				}
-			}
-                }
-        }
+			      }
+			  }
+		      }
+		  }
+	      }
+	  }
 #ifdef MAP_DEBUG
+
 	CkPrintf("RSMap created on processor %d\n", CkMyPe());
 	dump();
 #endif
@@ -487,7 +517,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 	}
       else
 	{
-	  CkPrintf("RPP with %d chares ignoring density exclusion of %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
+	  CkPrintf("RPP with %d chares ignoring density exclusion which left %d out of %d processors\n",totalChares, exclusion->count(), availprocs->count());
 	}
     }
   if(nstates % states_per_pe == 0)
@@ -549,7 +579,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 }
 
 
-RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR): nchareRhoR(_nchareRhoR)
+RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR, int max_states, bool useCentroid, MapType2 *rsmap): nchareRhoR(_nchareRhoR)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -576,6 +606,12 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
     {
+      PeList *ourList=availprocs;
+      if(useCentroid)
+	{
+	  ourList= subListPlane(chunk, max_states, rsmap);
+	  sortByCentroid(ourList, chunk, max_states, rsmap);
+	}
       if(rem!=0)
 	if(chunk==rem*rrsobjs_per_pe)
 	  rrsobjs_per_pe -= 1;
@@ -789,7 +825,7 @@ void MapTable::makeReverseMap()
 
 
 
-PeList *SCalcMapTable::subListPlane(int plane, int nstates, MapType2 *gsmap)
+PeList *subListPlane(int plane, int nstates, MapType2 *smap)
 {
 
       PeList *thisPlane= new PeList(nstates);
@@ -797,7 +833,7 @@ PeList *SCalcMapTable::subListPlane(int plane, int nstates, MapType2 *gsmap)
       for(int state=0;state<nstates;state++)
 	{
 	  bool newPe=true;
-	  int pe=gsmap->get(state,plane);
+	  int pe=smap->get(state,plane);
 	  for(int i=0;i<count;i++)
 	    {
 	      if(thisPlane->TheList[i]==pe)
@@ -818,56 +854,94 @@ PeList *SCalcMapTable::subListPlane(int plane, int nstates, MapType2 *gsmap)
 #ifdef CMK_VERSION_BLUEGENE
 extern 	BGLTorusManager *bgltm;
 
+void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)
+{
+  int sumX=0, sumY=0, sumZ=0;
+  int points=0;
+      
+  for(int state=0;state<nstates;state++)
+    {
+      int X, Y, Z;
+      bgltm->getCoordinatesByRank(rsmap->get(state,plane),X, Y, Z);
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
+    }
+  int avgX=sumX/points;
+  int avgY=sumY/points;
+  int avgZ=sumZ/points;
+  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  avail->sortSource(bestPe);
+  avail->reset();
+}
+
 void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
 {
-      int sumX=0, sumY=0, sumZ=0;
-      int points=0;
+  int sumX=0, sumY=0, sumZ=0;
+  int points=0;
       
-      for(int state=stateX;state<stateX+grainsize;state++)
-	{
-	  int X, Y, Z;
-	  bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
-	  sumX+=X;
-	  sumY+=Y;
-	  sumZ+=Z;
-	  points++;
-	}
-      for(int state=stateY;state<stateY+grainsize;state++)
-	{
-	  int X, Y, Z;
-	  bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
-	  sumX+=X;
-	  sumY+=Y;
-	  sumZ+=Z;
-	  points++;
-	}
-      int avgX=sumX/points;
-      int avgY=sumY/points;
-      int avgZ=sumZ/points;
-      int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
-      avail->sortSource(bestPe);
-      avail->reset();
+  for(int state=stateX;state<stateX+grainsize;state++)
+    {
+      int X, Y, Z;
+      bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
     }
+  for(int state=stateY;state<stateY+grainsize;state++)
+    {
+      int X, Y, Z;
+      bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
+    }
+  int avgX=sumX/points;
+  int avgY=sumY/points;
+  int avgZ=sumZ/points;
+  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  avail->sortSource(bestPe);
+  avail->reset();
+}
 
 
 
 #else
 // arguably meaningless in non torus case but it was easy to implement
 void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
+{
+  int sumPe=0;
+  int points=0;
+  for(int state=stateX;state<stateX+grainsize;state++)
     {
-      int sumPe=0;
-      int points=0;
-      for(int state=stateX;state<stateX+grainsize;state++)
-	{
-	  sumPe=gsmap->get(state,plane);
-	  points++;
-	}
-      for(int state=stateY;state<stateY+grainsize;state++)
-	{
-	  sumPe=gsmap->get(state,plane);
-	  points++;
-	}
-      int bestPe=sumPe/points;
-      avail->sortSource(bestPe);
+      sumPe+=gsmap->get(state,plane);
+      points++;
     }
+  for(int state=stateY;state<stateY+grainsize;state++)
+    {
+      sumPe+=gsmap->get(state,plane);
+      points++;
+    }
+  int bestPe=sumPe/points;
+  avail->sortSource(bestPe);
+}
+
+
+void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)
+{
+  int sumPe=0;
+  int points=0;
+  for(int state=0;state<nstates;state++)
+    {
+      sumPe+=rsmap->get(state,plane);
+      points++;
+    }
+  int bestPe=sumPe/points;
+  avail->sortSource(bestPe);
+  avail->reset();
+}
+
 #endif

@@ -176,7 +176,9 @@ class Config {
 	int orthoStride;
 	int launchNLeesFromRho;
 	int useCuboidMap;
+	int useCuboidMapRS;
 	int useCentroidMap;
+	int useCentroidMapRho;
 	int useBWBarrier;
 	int useOrthoSection;
 	int useOrthoDirect;

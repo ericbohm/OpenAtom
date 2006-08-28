@@ -172,23 +172,31 @@ class PeList
     {
       // build a new array that doesn't include used elements
       // theoretically this could be done in place, but haste makes waste
-      if(current>0)
+      if(current>0 && size>0)
 	{
-	  int newSize= size-current;
-	  int *newList = new int[newSize];
-	  int *newSortIdx = new int[newSize];
-	  for(int i=0; i<newSize;i++)
+	  if(noPes())
 	    {
-	      // if we just copy in sorted order we end up with a sorted list
-	      newSortIdx[i]=i;
-	      newList[i]=TheList[sortIdx[i+current]];
+	      size=0;
+	      current=0;
 	    }
-	  delete [] TheList;
-	  delete [] sortIdx;
-	  TheList=newList;
-	  sortIdx=newSortIdx;
-	  current=0;
-	  size=newSize;
+	  else
+	    {
+	      int newSize= size-current;
+	      int *newList = new int[newSize];
+	      int *newSortIdx = new int[newSize];
+	      for(int i=0; i<newSize;i++)
+		{
+		  // if we just copy in sorted order we end up with a sorted list
+		  newSortIdx[i]=i;
+		  newList[i]=TheList[sortIdx[i+current]];
+		}
+	      delete [] TheList;
+	      delete [] sortIdx;
+	      TheList=newList;
+	      sortIdx=newSortIdx;
+	      current=0;
+	      size=newSize;
+	    }
 	}
     }
 

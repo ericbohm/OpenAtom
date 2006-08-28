@@ -174,6 +174,7 @@ class MapTable4
 
 };
 
+PeList *subListPlane(int plane, int nstates, MapType2 *smap);
 
 class GSMapTable : public MapTable
 {
@@ -240,7 +241,6 @@ class SCalcMapTable : public MapTable4
 #endif
     }
   void sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap);
-  PeList *subListPlane(int plane, int nstates, MapType2 *gsmap);
   
 };
 
@@ -251,7 +251,7 @@ class RSMapTable  : public MapTable
   int sizeZ;
   int Rstates_per_pe;
   RSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nstates, int _sizeZ, int _Rstates_per_pe) ;
+	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboid) ;
   RSMapTable(){}
 };
 
@@ -274,7 +274,8 @@ class RhoRSMapTable  : public MapTable
  public:
   int nchareRhoR;
   RhoRSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoR);
+	int _nchareRhoR, int maxstates, bool useCentroid, MapType2 *rsmap);
+  void sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap);
   RhoRSMapTable(){}
 };
 
