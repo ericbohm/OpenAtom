@@ -2160,12 +2160,24 @@ void Config::rangeExit(int param, char *name, int iopt){
  * Guesses decent values for configuration parameters based on user
  * set values, system size, and the number of processes available.
  *
+ * For large pe runs, scheme is thus: 
+ *    1. find power2 nchareG. (typically 32 or 64)
+ *    2. determine numchunks and grainsize
+ *      a. find numPes()/nchareG.
+ *      b. set sGrainsize to nstates, set numchunks to 1
+ *      c. set numgrains to (nstates/sGrainSize)^2
+ *      
+ *    3. if phantoms are in use, numchunks is same for asym and sym
+ *    4. set rstates_per_pe and gstates_per_pe as high as they will
+ *       go for numPes and this system (constrained by nstates,
+ *       nplanes, nchareg
+ *    5. if numPes is large enable gSpaceSum, cuboid mapping,
+ *       centroid mapping, useDirectSend and probably a few other things
+ *
  * Supported parameters: sGrainSize, gExpandFact, gExpandFactRho,
  * fftprogresssplit, fftprogresssplitReal, numSfGrps, numSfDups,
  * pesPerState, rhoGHelpers, numMulticastMsgs
 
- * TODO: set numChunks and sGrainSize to give us fairly square
- * multiplies.
  */
 //=============================================================================
 void Config::guesstimateParms(int natm_nl){
@@ -2189,38 +2201,63 @@ void Config::guesstimateParms(int natm_nl){
     int numPes=CkNumPes();  //cache this
     int sqrtpes=(int) sqrt((double)numPes);
     int sqrtstates=(int) sqrt((double)nstates);
-    if(pesPerState==1)
-    {
-	// is best as even mod
-	// should grow towards nstates
-	if(numPes>nstates)
+    if(gExpandFact==1.0) 
+    { 
+      //gives us more gspace chares
+      //only worth expanding if we have enough pes
+      // suitable range is 1.0 to 2.0
+
+      if(numPes>low_x_size)
 	{
-	    pesPerState=8*numPes/nstates;
-	}
-	else if(numPes>sqrtstates)
-	{// worth consideration should grow towards sqrtstates
-	    pesPerState=numPes/sqrtstates;
-	}
-	else
-	{// makes little difference as we're in fiddly small numbers of PEs
-	    pesPerState=sqrtpes;
+	  int i=1;
+	  double mypow=1;
+	  while((mypow=pow(2.0, (double)i)) < low_x_size)
+	    i++;
+	  //	  CkPrintf("i is %d from low_x_size %d\n");
+	  gExpandFact= mypow / (double) low_x_size;
+	  nchareG=(int)( gExpandFact * (double) low_x_size);
 	}
     }
+
+    if(numChunks==1)
+      {
+
+	int numGrains = nstates/sGrainSize;
+	numGrains*=numGrains;
+	numChunks=numPes/(nchareG*numGrains);
+	if(numChunks<1)
+	  numChunks=1;
+	while(numChunks>16)
+	  {
+	    sGrainSize=sGrainSize/2;
+	    numGrains = nstates/sGrainSize;
+	    numGrains*=numGrains;
+	    numChunks=numPes/(nchareG*numGrains);
+	  }
+	if(numPes>=nstates)
+	  {
+	    phantomSym=1;
+	    numChunksSym=numChunks;
+	    numChunksAsym=numChunks;
+	  }
+      }
     
     if(numPes!=1 && Gstates_per_pe==nstates)
     {
+
       if(numPes<=128)
 	Gstates_per_pe=nstates/4;
-      if(numPes>128 && numPes<=512)
+      else if(numPes>128 && numPes<=512)
 	Gstates_per_pe=nstates/16;
-      if(numPes>512 && numPes<=2048)
-	Gstates_per_pe=nstates/64;
-      if(numPes>2048 && numPes<=8192)
-	Gstates_per_pe=nstates/256;
+      else 
+	Gstates_per_pe= nchareG*nstates/numPes;
+
     }
 
     if(numPes!=1 && Rstates_per_pe==nstates)
     {
+      //Rstates_per_pe= low_x_size*nstates/numPes;
+
       if(numPes<=128)
 	Rstates_per_pe=nstates/4;
       if(numPes>128 && numPes<=512)
@@ -2229,24 +2266,16 @@ void Config::guesstimateParms(int natm_nl){
 	Rstates_per_pe=nstates/64;
       if(numPes>2048 && numPes<=8192)
 	Rstates_per_pe=nstates/256;
+
     }
 
-    if(sGrainSize==nstates)
-    {
-	if(numPes>sqrtstates)
-	{
-	    sGrainSize=nstates/2;
-	}
-	if(numPes>nstates)
-	{
-	    sGrainSize=nstates/4;
-	}
-    }
     if(sGrainSize%orthoGrainSize !=0)
     {
       // this is lame and should be replace with something which finds
       // an even mod of any sGrainSize
       orthoGrainSize=sGrainSize/4;
+      if(orthoGrainSize<32)
+	orthoGrainSize=32;
     }
 
     if(sGrainSize%lambdaGrainSize !=0)
@@ -2254,22 +2283,11 @@ void Config::guesstimateParms(int natm_nl){
       // this is lame and should be replace with something which finds
       // an even mod of any (non prime) sGrainSize
       lambdaGrainSize=sGrainSize/4;
+      if(lambdaGrainSize<32)
+	lambdaGrainSize=32;
+
     }
 
-    if(gExpandFact==1.0) 
-    { //gives us more gspace chares
-      //only worth expanding if we have enough pes
-      // suitable range is 1.0 to 2.0
-	if(numPes>low_x_size*4)
-	{
-	    gExpandFact+=fabs((double) (numPes/2-low_x_size*4)/ (double)( numPes));
-	  
-	}
-	else if(numPes>low_x_size)
-	{
-	    gExpandFact+=(double) sqrtpes/ (double)( numPes);
-	}
-    }
 
     if(gExpandFactRho==1.0) 
     { //gives us more gspace chares
