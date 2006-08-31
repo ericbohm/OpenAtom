@@ -344,6 +344,10 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 // II) Using current fraction, find the grid points on which M_n is non-zero 
 
    for(j=1;j<=n_interp;j++){
+#ifdef CMK_VERSION_BLUEGENE
+     if(j%100==0)
+       CmiNetworkProgress();
+#endif
      for(i=0;i<natm;i++){
        ua[j][i] = frac_a[i] + aj[j];
        ub[j][i] = frac_b[i] + aj[j];
@@ -364,7 +368,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      }//endfor
    }//endfor
 #ifdef CMK_VERSION_BLUEGENE
-        CmiNetworkProgress();
+   CmiNetworkProgress();
 #endif
   
 //==========================================================================
@@ -381,7 +385,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      mn_c[2][i] = 1.0 - fabs(uc[2][i]-1.0);
    }//endfor
 #ifdef CMK_VERSION_BLUEGENE
-        CmiNetworkProgress();
+   CmiNetworkProgress();
 #endif
    for(j=3;j<=n_interp;j++){
      for(i=0;i<natm;i++){
@@ -407,7 +411,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
          mn_c[j][i] = mn_c_tmp;
        }//end for: i
 #ifdef CMK_VERSION_BLUEGENE
-        CmiNetworkProgress();
+       CmiNetworkProgress();
 #endif
      }//end for: j
      for(i=0;i<natm;i++){
@@ -1076,7 +1080,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    }//endfor
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
    cp_enl_tot[0] += (cp_enl*vnormVol);
-
+#ifdef CMK_VERSION_BLUEGENE
+       CmiNetworkProgress();
+#endif
 //==========================================================================
 // Atom forces
 
