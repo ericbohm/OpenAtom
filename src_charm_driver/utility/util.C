@@ -1887,7 +1887,7 @@ void Config::readConfig(const char* fileName, Config &config,
     if(config.lambdaGrainSize==config.nstates && config.orthoGrainSize!=config.nstates)
       config.lambdaGrainSize=config.orthoGrainSize;
 
-    config.guesstimateParms(natm_nl);
+    config.guesstimateParms(natm_nl, sizez);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
       config.RpesPerState=config.pesPerState;
@@ -2100,7 +2100,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.Gstates_per_pe<1 || config.Gstates_per_pe>config.nstates){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The number of states per pe must be >=1 < num states\n");
+      CkPrintf("The number of Gstates per pe must be >=1 < num states\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -2114,7 +2114,7 @@ void Config::readConfig(const char* fileName, Config &config,
       }
     if(config.Rstates_per_pe<1 || config.Rstates_per_pe>config.nstates){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The number of states per pe must be >=1 < num states\n");
+      CkPrintf("The number of Rstates per pe must be >=1 < num states\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -2180,7 +2180,7 @@ void Config::rangeExit(int param, char *name, int iopt){
 
  */
 //=============================================================================
-void Config::guesstimateParms(int natm_nl){
+void Config::guesstimateParms(int natm_nl, int sizez){
 //=============================================================================
     // If the user hasn't set a value in the config, try to come up with
     // something suitable for the system size and number of processes
@@ -2211,17 +2211,20 @@ void Config::guesstimateParms(int natm_nl){
 	{
 	  int i=1;
 	  double mypow=1;
-	  while((mypow=pow(2.0, (double)i)) < low_x_size)
-	    i++;
+	  while((mypow=pow(2.0, (double)i)) <= low_x_size)
+	    {
+	      i++;
+	    }
 	  //	  CkPrintf("i is %d from low_x_size %d\n");
 	  gExpandFact= mypow / (double) low_x_size;
 	  nchareG=(int)( gExpandFact * (double) low_x_size);
 	}
     }
 
-    if(numChunks==1)
+    if(numChunks==1&&numChunksSym==1&&numChunksAsym==1)
       {
-
+	//	if(numPes>nstates)
+	//	  sGrainSize/2;
 	int numGrains = nstates/sGrainSize;
 	numGrains*=numGrains;
 	numChunks=numPes/(nchareG*numGrains);
@@ -2234,12 +2237,13 @@ void Config::guesstimateParms(int natm_nl){
 	    numGrains*=numGrains;
 	    numChunks=numPes/(nchareG*numGrains);
 	  }
-	if(numPes>=nstates)
-	  {
+	//	if(numPes>=nstates)
+	//	  {
 	    phantomSym=1;
 	    numChunksSym=numChunks;
 	    numChunksAsym=numChunks;
-	  }
+	    //	  }
+	
       }
     
     if(numPes!=1 && Gstates_per_pe==nstates)
@@ -2251,40 +2255,38 @@ void Config::guesstimateParms(int natm_nl){
 	Gstates_per_pe=nstates/16;
       else 
 	Gstates_per_pe= nchareG*nstates/numPes;
-
+      if (Gstates_per_pe==0)
+	Gstates_per_pe=1;
     }
 
     if(numPes!=1 && Rstates_per_pe==nstates)
     {
-      //Rstates_per_pe= low_x_size*nstates/numPes;
 
       if(numPes<=128)
 	Rstates_per_pe=nstates/4;
-      if(numPes>128 && numPes<=512)
-	Rstates_per_pe=nstates/16;
-      if(numPes>512 && numPes<=2048)
-	Rstates_per_pe=nstates/64;
-      if(numPes>2048 && numPes<=8192)
-	Rstates_per_pe=nstates/256;
-
+      else 
+	Rstates_per_pe= sizez*nstates/numPes;
+      if (Rstates_per_pe==0)
+	Rstates_per_pe=1;
+			 
     }
 
-    if(sGrainSize%orthoGrainSize !=0)
+    if((sGrainSize%orthoGrainSize !=0)|| (sGrainSize==orthoGrainSize))
     {
       // this is lame and should be replace with something which finds
       // an even mod of any sGrainSize
-      orthoGrainSize=sGrainSize/4;
+      orthoGrainSize=32;
       if(orthoGrainSize<32)
 	orthoGrainSize=32;
     }
 
-    if(sGrainSize%lambdaGrainSize !=0)
+    if((sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize))
     {
       // this is lame and should be replace with something which finds
       // an even mod of any (non prime) sGrainSize
-      lambdaGrainSize=sGrainSize/4;
-      if(lambdaGrainSize<32)
-	lambdaGrainSize=32;
+      lambdaGrainSize=orthoGrainSize;
+      //      if(lambdaGrainSize<32)
+      //	lambdaGrainSize=32;
 
     }
 

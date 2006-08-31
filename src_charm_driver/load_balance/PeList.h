@@ -58,7 +58,6 @@ class PeList
 	  TheList[i]=inlist[i];
 	  sortIdx[i]=i;
 	}
-      sortSource(TheList[0]);
     }
 
   PeList(PeList &inlist)
@@ -82,7 +81,7 @@ class PeList
       TheList=new int [size];
       sortIdx=new int [size];
       memcpy(TheList,a,size*sizeof(int));
-      sortSource(TheList[0]);
+      reindex();
     }	 // use an array to construct
 
   PeList(PeList *a, int start, int _size)
@@ -149,25 +148,60 @@ class PeList
     // make array large enough for both, paste together
     int newsize=inlist.size+size;
     int *newlist= new int [newsize];
+    int *newIndex= new int [newsize];
     int i=0;
     for(; i< size ; i++)
-      newlist[i]=TheList[i];
+      {
+	newlist[i]=TheList[i];
+	newIndex[i]=sortIdx[i];
+      }
     for(; i< newsize ; i++)
-      newlist[i]=inlist.TheList[i];
-    return *this; }
+      {
+	newlist[i]=inlist.TheList[i];
+	newIndex[i]=i;
+      }
+    size=newsize;
+    delete TheList;
+    delete sortIdx;
+    TheList=newlist;
+    sortIdx=newIndex;
+    return *this; 
+  }
 
 
   // need to rebuild your sortIdx
   PeList &operator-(PeList &inlist) {
     for(int i=0; i< inlist.size;i++)
-      for(int j=0; j< size;j++)
-	if(TheList[j]==inlist.TheList[i])
-	  {
-	    remove(j);
-	    j--; //j is moving target
-	  }
+      {
+	int j=0;
+	while(j< size)
+	  if(TheList[j]==inlist.TheList[i])
+	    {
+	      remove(j);
+	      //	      CkPrintf("removed %d containing %d leaving %d\n",i,inlist.TheList[i], size);
+
+	    }
+	  else
+	    {
+	      j++;
+	    }
+      }
+    current=0;  // your index is useless now anyway
     return *this;
   }
+
+  void remove(int pos)
+    {
+      if(pos < size)
+	{
+	  for (int i=pos; i<size-1; i++)
+	    {
+	      TheList[i] = TheList[i+1];
+	    }
+	  size--;
+	}
+    }
+
   void trimUsed()
     {
       // build a new array that doesn't include used elements
@@ -207,17 +241,6 @@ class PeList
 	  for (int i=pos; i<size-1; i++)
 	    {
 	      sortIdx[i] = sortIdx[i+1];
-	    }
-	  size--;
-	}
-    }
-  void remove(int pos)
-    {
-      if(pos < size)
-	{
-	  for (int i=pos; i<size-1; i++)
-	    {
-	      TheList[i] = TheList[i+1];
 	    }
 	  size--;
 	}

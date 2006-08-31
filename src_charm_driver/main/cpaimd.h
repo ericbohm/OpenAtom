@@ -8,6 +8,7 @@
  * documentation on the structure of the program.
  */
 //============================================================================
+//#define _NAN_CHECK_
 
 #ifndef _CPAIMD_H
 #define _CPAIMD_H

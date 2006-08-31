@@ -220,6 +220,7 @@ int planes_per_pe;
 
 CkVec <int> peUsedBySF;
 CkVec <int> peUsedByNLZ;
+CkVec <int> planeUsedByNLZ;
 PeList *availGlobR;
 PeList *availGlobG;
 PeList *excludePes;
@@ -583,10 +584,10 @@ main::main(CkArgMsg *msg) {
 	m = sim->sizeZ / pm;
 	int bx,by,bz;
 #ifdef CMK_VERSION_BLUEGENE
-	boxSize=pl;
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
+
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pl))
 	  {
-	    CkPrintf("Using %d,%d,%d dimensions for RS box %d  mapping\n",bx,by,bz, boxSize);
+	    CkPrintf("Using %d,%d,%d dimensions for RS box %d  mapping\n",bx,by,bz, pl);
 	    rfoo= new PeList(bx,by,bz);  // heap it
 	  }
 	else
@@ -599,6 +600,8 @@ main::main(CkArgMsg *msg) {
 	rfoo= new PeList;  // heap it
 #endif
       }
+    else if(config.useCuboidMap)
+	rfoo=new PeList(*gfoo);
     else
       rfoo= new PeList;  // heap it
 
@@ -626,7 +629,8 @@ main::main(CkArgMsg *msg) {
 	    }
 	  if(!used || plane+1==nchareG)
 	    {
-	      peUsedByNLZ.push_back(plane);
+	      peUsedByNLZ.push_back(thisstateplaneproc);
+	      planeUsedByNLZ.push_back(plane);
 	      usedVec.push_back(thisstateplaneproc);
 	      plane=nchareG;
 	    }
@@ -1355,7 +1359,7 @@ void main::doneInit(CkReductionMsg *msg){
       CkPrintf("Initiating import of states\n");
 #ifdef USE_TOPOMAP
   for(int s=0;s<nstates;s++){
-    gSpacePlaneProxy(s,peUsedByNLZ[s]).readFile();
+    gSpacePlaneProxy(s,planeUsedByNLZ[s]).readFile();
   }//endfor
 
 #else
@@ -1780,11 +1784,14 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
    PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
+   PeList nlz(peUsedByNLZ);
    if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
-       PeList nlz(peUsedByNLZ);
+       nlz.dump();
        *RhoAvail-nlz; //unary minus
+       RhoAvail->reindex();
+       CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
    }//endif
 
   //------------------------------------------------------------------------
@@ -1795,19 +1802,20 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
                   peUsedBySF.size(),RhoAvail->count());
        PeList sf(peUsedBySF);
        *RhoAvail-sf;
+       RhoAvail->reindex();
      }//endif
    }
 
-   if(RhoAvail->count()>2){RhoAvail->resort();}
+   if(RhoAvail->count()>2){RhoAvail->reindex();}
 
 //============================================================================
 // Maps and options
 
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR,1);
-   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable);
+   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable, &nlz);
 #else
-    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable);
+   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable, &nlz);
 #endif
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
@@ -1819,6 +1827,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
 	RhoAvail->rebuild();
     }//endif
+    CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGSImaptable.buildMap(nchareRhoG,1);
     RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG);
@@ -1834,7 +1843,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoGHart);
 	RhoAvail->rebuild();
     }//endif
-
+    CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGHartImaptable.buildMap(nchareRhoGHart,1);
     RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, nchareRhoGHart);
@@ -1851,7 +1860,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	RhoAvail->rebuild();
     }//endif
     
-
+    CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);
@@ -1860,9 +1869,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail, nchareRhoRHart);
 #endif
     // make the exclusion list which is whats left after 
-    excludePes= RhoAvail;
+    excludePes= new PeList(*RhoAvail);
     excludePes->trimUsed();
-    //    CkPrintf("rho leaves us with \n");
+    CkPrintf("rho G and S leaves us with %d\n", excludePes->count());
     //    excludePes->dump();
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
@@ -1922,6 +1931,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
+  delete RhoAvail;
   RhoAvail=NULL;
 //===========================================================================
   }//end routine

@@ -579,7 +579,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 }
 
 
-RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR, int max_states, bool useCentroid, MapType2 *rsmap): nchareRhoR(_nchareRhoR)
+RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR, int max_states, bool useCentroid, MapType2 *rsmap, PeList *exclude): nchareRhoR(_nchareRhoR)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -599,49 +599,80 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
-  int destpe=availprocs->findNext(); 
+
   if(availprocs->count()==0)
     availprocs->reset();
+  int destpe;
+     
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
-  for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
+  if(useCentroid) 
     {
-      PeList *ourList=availprocs;
-      if(useCentroid)
+      CkVec <int> usedPes;
+      CkAssert(nchareRhoR<availprocs->count());
+      //otherwise you're just being silly
+      for(int chunk=0; chunk<nchareRhoR; chunk++)
 	{
-	  ourList= subListPlane(chunk, max_states, rsmap);
+	  //	  CkPrintf("Rho RS using centroid\n");
+	  PeList *ourList= subListPlane(chunk, max_states, rsmap);
+	  *ourList-*exclude;
+	  PeList usedList(usedPes);
+	  *ourList-usedList;
 	  sortByCentroid(ourList, chunk, max_states, rsmap);
-	}
-      if(rem!=0)
-	if(chunk==rem*rrsobjs_per_pe)
-	  rrsobjs_per_pe -= 1;
-      if(chunk==0) {}
-      else
-	{
-	  srcpe=destpe;
-	  //	  availprocs->sortSource(srcpe);
-	  destpe=availprocs->findNext();
-	}
-      for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
-	{
-	  if(chunk==0)
-            {
+	  //	  ourList->dump();
+	  if(rem!=0)
+	    if(chunk==rem*rrsobjs_per_pe)
+	      rrsobjs_per_pe -= 1;
+	  destpe=ourList->findNext(); 
 #ifdef USE_INT_MAP
-              maptable->set(i, 0,0);
+	  maptable->set(chunk, 0, destpe);
 #else
-              maptable->put(intdual(i, 0))=0;
+	  maptable->put(intdual(chunk, 0))=destpe;
 #endif
-              //CkPrintf("%d on %d\n", i, 0);
-            }
+	  delete ourList;
+	  usedPes.push_back(destpe);
+	}
+      PeList usedList(usedPes);
+      *availprocs-usedList;
+      availprocs->reindex();
+    }
+  else
+    {
+      destpe=availprocs->findNext();
+      for(int chunk=0; chunk<nchareRhoR; chunk+=rrsobjs_per_pe)
+	{
+	  if(rem!=0)
+	    if(chunk==rem*rrsobjs_per_pe)
+	      rrsobjs_per_pe -= 1;
+	  if(chunk==0) {}
 	  else
-            {
+	    {
+	      srcpe=destpe;
+	      //	  availprocs->sortSource(srcpe);
+	      destpe=availprocs->findNext();
+	    }
+	  for(int i=chunk;i<chunk+rrsobjs_per_pe;i++)
+	    {
+	      if(chunk==0)
+		{
 #ifdef USE_INT_MAP
-	      maptable->set(i, 0, destpe);
+		  maptable->set(i, 0,0);
 #else
-	      maptable->put(intdual(i, 0))=destpe;
+		  maptable->put(intdual(i, 0))=0;
 #endif
+		  //CkPrintf("%d on %d\n", i, 0);
+		}
+	      else
+		{
+#ifdef USE_INT_MAP
+		  maptable->set(i, 0,destpe);
+#else
+		  maptable->put(intdual(i, 0))=destpe;
+#endif
+		}
 	    }
 	}
+
     }
 #ifdef MAP_DEBUG
 	CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());

@@ -313,6 +313,13 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 
 //============================================================================
 //  Unpack the message, get some local variables and increment counters
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
     int size               = msg->size; 
     int iterNLNow          = msg->step; 
@@ -593,6 +600,12 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
     if(thisIndex.x==0)
      CkPrintf("HI, I am rPP %d %d in recvZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+    {
+      CkAssert(isnan(((double*) msg->getData())[i])==0);
+    }
+#endif
 
     CkAssert(msg->getSize() ==  nZmat* sizeof(double));
     double *realValues = (double *) msg->getData(); 
@@ -740,7 +753,16 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   FFTcache *fftcache   = fftCacheProxy.ckLocalBranch();  
   double  *projPsiRScr = fftcache->tmpDataR;
   complex *projPsiCScr = fftcache->tmpData;
+
+#ifndef CMK_OPTIMIZE
+  double StartTime= CmiWallTimer();    
+#endif
+
   fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
+
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
+#endif
 
   sendToEesGPP();
 

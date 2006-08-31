@@ -156,6 +156,13 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 //============================================================================
 void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 //============================================================================
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
     int size               = msg->size; 
     int Index              = msg->senderIndex;
@@ -325,7 +332,22 @@ void CP_State_RealSpacePlane::doReduction(){
 
     FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
     double *data        = fftcache->tmpDataR;
-    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<ngrida*ngridb ;i++)
+    {
+      if(isnan(data[i])!=0)
+      {
+	CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",thisIndex.x, thisIndex.y, i, ngridb*ngrida);
+	CkAbort("RS nan in the fftcache");
+      }
+
+    }
+#endif
+
+
+    //    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
+    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
                          cookie,cb);
     CmiNetworkProgress();
 
@@ -358,6 +380,12 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 //============================================================================
 // Unpack and check size, copy to cache temp, resume which calls doProduct
 // without relinquishing control to other chares
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->datalen ;i++)
+    {
+      CkAssert(isnan(msg->data[i])==0);
+    }
+#endif
 
   double *vks_in = msg->data;
   int mysize     = msg->datalen;

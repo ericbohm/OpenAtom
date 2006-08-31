@@ -563,6 +563,13 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     {
       ResumeFromSync();
     }
+#ifdef _PAIRCALC_NAN_CHECK_
+  for(int i=0;i<msg->size;i++)
+    {
+      CkAssert(isnan(msg->points[i].re)==0);
+      CkAssert(isnan(msg->points[i].im)==0);
+    }
+#endif
   blkSize=msg->blkSize;
   numRecd++;   // increment the number of received counts
   int offset = -1;
@@ -1520,6 +1527,13 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
 #endif
   numRecdBW++; 
+#ifdef _PAIRCALC_NAN_CHECK_
+  for(int i=0;i<msg->size;i++)
+    {
+      CkAssert(isnan(msg->matrix1[i])==0);
+    }
+#endif
+
   int size=msg->size;
   int size2=msg->size2;
   double *matrix1=msg->matrix1;

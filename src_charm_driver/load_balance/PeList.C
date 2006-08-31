@@ -12,6 +12,7 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
     {
 
       current=0;
+
       size=CkNumPes();
       int i=0;
       int maxX=bgltm->getXSize();
@@ -19,11 +20,13 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
       int maxZ=bgltm->getZSize();
       TheList= new int[size];
       sortIdx= new int[size];
+      int numBoxes=0;
       for(int x=0; x<maxX; x+=boxX) // new box  in X
 	for(int y=0; y<maxY; y+=boxY) // new box in Y 
 	  for(int z=0; z<maxZ; z+=boxZ) // new box in Z
 	    {
 	      // fill out this box
+	      numBoxes++;
 	      for(int bx=0;bx<boxX;bx++)
 		for(int by=0;by<boxY;by++)
 		  for(int bz=0;bz<boxZ;bz++)
@@ -32,6 +35,35 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
 		      TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
 		    }
 	    }
+      // size is actually boxsize times the number of whole boxes
+      // that fit in the mesh
+      int end=numBoxes* boxX*boxY*boxZ;
+      // fill out remainder 
+      if(i<CkNumPes())
+	{
+	  PeList remainder(CkNumPes());
+	  for(int i=0; i< size;i++)
+	    {
+	      int j=0;
+	      while(j< size)
+		if(remainder.TheList[j]==TheList[i])
+		  {
+		    remainder.remove(j);
+		  }
+		else
+		  {
+		    j++;
+		  }
+	    }
+	  remainder.reindex();
+	  // now we just plunk these at the end
+	  int i=0;
+	  for(; i< remainder.size ; i++)
+	    {
+	      TheList[i+end]=remainder.TheList[i];
+	      sortIdx[i+end]=i+end;
+	    }
+	}
     }
 
 #endif

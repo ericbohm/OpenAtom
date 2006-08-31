@@ -313,6 +313,15 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
     doneHartVks    = true;
 #endif
 
+
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+    {
+      CkAssert(isnan(((double*) msg->getData())[i])==0);
+    }
+#endif
+
 //============================================================================
 // Unpack into spread out form and delete the message
 
@@ -611,6 +620,14 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
   int nchareG            = sim->nchareRhoG;
   int **tranUnpack       = sim->index_tran_upack_rho;
   int *nlines_per_chareG = sim->nlines_per_chareRhoG;
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
    
   int size               = msg->size; 
   int Index              = msg->senderIndex;

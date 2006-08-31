@@ -1448,6 +1448,13 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     CkPrintf("doIfft %d.%d \n",thisIndex.x,thisIndex.y);
 #endif
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
   int size             = msg->size;
   int offset           = msg->offset;
@@ -1973,6 +1980,14 @@ void CP_State_GSpacePlane::doLambda() {
   CkAssert(countLambda==AllLambdaExpected);
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   complex *force = gs.packedForceData;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<gs.numPoints ;i++)
+    {
+      CkAssert(isnan(force[i].re)==0);
+      CkAssert(isnan(force[i].im)==0);
+    }
+#endif
+
   if(cp_min_opt==0){
     // dynamics scale it out
     if(gs.ihave_kx0==1){
@@ -2815,10 +2830,19 @@ void CP_State_GSpacePlane::doNewPsi(){
     CkPrintf("donewpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
+
   CkAssert(countPsi==AllPsiExpected); 
   //--------------------------------------------------------------------
   // (A) Reset counters and rescale the kx=0 stuff
   complex *psi  = gs.packedPlaneData;
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<gs.numPoints ;i++)
+    {
+      CkAssert(isnan(psi[i].re)==0);
+      CkAssert(isnan(psi[i].im)==0);
+    }
+#endif
 
 #ifdef GPSI_BARRIER
   int wehaveours=1;
