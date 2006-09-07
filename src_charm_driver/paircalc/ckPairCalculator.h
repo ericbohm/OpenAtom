@@ -366,6 +366,9 @@ class PairCalculator: public CBase_PairCalculator {
   int *LeftOffsets;           //! index numbers of caught stream elements
   int *RightOffsets;           //! index numbers of caught stream elements
 
+  int *LeftRev;           //! reverse index numbers of caught stream elements
+  int *RightRev;           //! reverse index numbers of caught stream elements
+
   double **outTiles;         //! in output streaming we populate the
 			     //! tiles directly
 

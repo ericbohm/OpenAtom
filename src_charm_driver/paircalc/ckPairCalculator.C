@@ -330,6 +330,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
     {
       LeftOffsets= new int[numExpected];
       RightOffsets= new int[numExpected];
+      LeftRev = new int[numExpected];
+      RightRev = new int[numExpected];
       touchedTiles= new int[numOrtho];
       bzero(touchedTiles,numOrtho*sizeof(int));
       outTiles = new double *[numOrtho];
@@ -580,6 +582,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 	CkAssert(inDataLeft==NULL);
 	existsLeft=true;
 	numPoints = msg->size; // numPoints is init here with the size of the data chunk.
+	
 	inDataLeft = new double[numExpected*numPoints*2];
 	bzero(inDataLeft,numExpected*numPoints*2*sizeof(double));
 #ifdef _PAIRCALC_DEBUG_
@@ -591,17 +594,20 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
       {
 	numRecLeft=0;
 	streamCaughtL=0;
-	allCaughtLeft=new double[numExpected*numPoints*2];
+	allCaughtLeft=inDataLeft;
       }
-
     CkAssert(numPoints==msg->size);
     CkAssert(offset<numExpected);
-    memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
     if(streamFW>0)
       { //record offset, copy data
 	memcpy(&(allCaughtLeft[numRecLeft *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
-	LeftOffsets[numRecLeft++]=offset;
+	LeftOffsets[numRecLeft]=offset;
+	LeftRev[offset]=numRecLeft++;
 	streamCaughtL++;
+      }
+    else
+      {
+	memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
       }
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
@@ -626,15 +632,20 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
       {
 	numRecRight=0;
 	streamCaughtR=0;
-	allCaughtRight=new double[numExpected*numPoints*2];
+	allCaughtRight=inDataRight;
       }
 
-    memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+
     if(streamFW>0)
       { //record offset, copy data
 	memcpy(&(allCaughtRight[numRecRight *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
-	RightOffsets[numRecRight++]=offset;
+	RightOffsets[numRecRight]=offset;
+	RightRev[offset]=numRecRight++;
 	streamCaughtR++;
+      }
+    else
+      {
+	memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
       }
 
 #ifdef _PAIRCALC_DEBUG_
@@ -1148,16 +1159,84 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
   streamCaughtR=0;
   if((numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)))
     { // we are done
-      numRecLeft= numRecRight=numRecd=0;
+
       int numOrtho=grainSize/orthoGrainSize;
       numOrtho*=numOrtho;
       // no point in keeping these around
-      if(allCaughtLeft!=NULL)
-	delete [] allCaughtLeft;
-      allCaughtLeft=NULL;
-      if(allCaughtRight!=NULL)
-	delete [] allCaughtRight;
-      allCaughtRight=NULL;
+      if(streamFW>0)
+	{ // switch to sorted order
+	  // rather ugly, but each iteration correctly places 2 rows
+	  double *scratch= new double[actualPoints];
+	  int datasize=actualPoints*sizeof(double);
+	  if(existsLeft)
+	    for(int off=0;off<numExpected;off++)
+	      {
+		if(off!=LeftOffsets[off])
+		  {  // gotta move
+		    int want = LeftRev[off];
+		    int found = LeftOffsets[off];
+		    int currentOffset = off * actualPoints;
+		    int wantOffset = want * actualPoints;
+		    
+		    memcpy(scratch, &(allCaughtLeft[currentOffset]), datasize);
+		    memcpy(&(allCaughtLeft[currentOffset]), &(allCaughtLeft[wantOffset]), datasize);
+		    if(want==found) //simple exchange
+		      {
+			memcpy(&(allCaughtLeft[wantOffset]),scratch, datasize);
+		      }
+		    else  // three card shuffle
+		      {
+			int foundOffset = found * actualPoints;
+			memcpy(&(allCaughtLeft[wantOffset]), &(allCaughtLeft[foundOffset]), datasize);
+			memcpy(&(allCaughtLeft[foundOffset]),scratch, datasize);
+			// 1 more entry is changed
+			LeftOffsets[want]=LeftOffsets[found];
+			LeftRev[LeftOffsets[found]]=want;
+			
+		      }
+		    LeftRev[off]=off;
+		    LeftOffsets[off]=off;
+		    LeftOffsets[found]=found;
+		    LeftRev[found]=found;
+		  }
+	      }
+	  if(existsRight)
+	    for(int off=0;off<numExpected;off++)
+	      {
+		if(off!=RightOffsets[off])
+		  {  // gotta move
+		    int want = RightRev[off];
+		    int found = RightOffsets[off];
+		    int currentOffset = off * actualPoints;
+		    int wantOffset = want * actualPoints;
+		    
+		    memcpy(scratch, &(allCaughtRight[currentOffset]), datasize);
+		    memcpy(&(allCaughtRight[currentOffset]), &(allCaughtRight[wantOffset]), datasize);
+		    if(want==found) //simple exchange
+		      {
+			memcpy(&(allCaughtRight[wantOffset]),scratch, datasize);
+		      }
+		    else  // three card shuffle
+		      {
+			int foundOffset = found * actualPoints;
+			memcpy(&(allCaughtRight[wantOffset]), &(allCaughtRight[foundOffset]), datasize);
+			memcpy(&(allCaughtRight[foundOffset]),scratch, datasize);
+			// 1 more entry is changed
+			RightOffsets[want]=RightOffsets[found];
+			RightRev[RightOffsets[found]]=want;
+
+			
+		      }
+		    RightRev[off]=off;
+		    RightOffsets[off]=off;
+		    RightOffsets[found]=found;
+		    RightRev[found]=found;
+		  }
+
+	      }
+	  delete [] scratch;
+	}
+      numRecLeft= numRecRight=numRecd=0;
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
       for(int i=0 ; i<numOrtho ; i++)
 	{
