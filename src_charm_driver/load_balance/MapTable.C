@@ -363,7 +363,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
    nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
 {
-        int c = 0;
+
 	
 	int l, m, pl, pm, srem, rem, i=0;
 	reverseMap=NULL;
@@ -389,9 +389,9 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
         m = sizeZ / pm;
         rem = sizeZ % pm;
 
-        //CkPrintf("nstates %d sizeZ %d Pes %d\n", nstates, sizeZ, availprocs->count());	
-	//CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-	//pl, pm, srem, rem);
+        CkPrintf("nstates %d sizeZ %d Pes %d\n", nstates, sizeZ, availprocs->count());	
+	CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
+	pl, pm, srem, rem);
 	int srcpe=0;
 	int destpe=availprocs->findNext();
 
@@ -399,33 +399,59 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  availprocs->reset();	
 	if(useCuboidMap)
 	  {
+	    // is there a remainder for states
+	    //	    int stateRem= (nstates*sizeZ /availprocs->count()) % Rstates_per_pe;
+	    // first determine if our box is an even mod
+	    // if box is an even mod then we just have chare remainder issues
+	    // within each plane
+	    // else 
+	    // we have remainder issues of extra processors to distribute
+	    // across the box partitions
+	    int stateRem= srem;
+	    /* stateRem is the remainder, and therefore the number of
+	     * maptable assignments
+	     */
 	    for(int plane=0;plane<sizeZ;plane++)
-	      for(int state=0;state<nstates;state+=Rstates_per_pe)
-		{
-		  for(int stateperpe=0;stateperpe<Rstates_per_pe;stateperpe++)
-		    {
+	    {
+		int stateRemLeft=stateRem;
+		int prem = ( stateRemLeft>0) ? 1 : 0;
+		int state=0;
+		for(;state<nstates;state+=Rstates_per_pe)
+		  {
+		    int stateperpe=0;
+		    for(;stateperpe<Rstates_per_pe+prem && state+stateperpe<nstates;stateperpe++)
+		      {
 #ifdef USE_INT_MAP
-		      maptable->set(state+stateperpe, plane,destpe);
+			CkPrintf("RS with stateRem %d and stateRemLeft %d assign %d %d to pe %d\n",stateRem, stateRemLeft, state +stateperpe,plane, destpe);
+			maptable->set(state+stateperpe, plane,destpe);
 #else
-		      maptable->put(intdual(state+stateperpe, plane))=destpe;
+			maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
-		    }
-		  destpe=availprocs->findNext();
-		  if(availprocs->count()==0)
-		    availprocs->reset();
-		  /*		  if(availprocs->count()==0)
-		    {
-		      CkPrintf("RSMap created on processor %d\n", CkMyPe());
-		      dump();
-		      CkPrintf("RSMap ran out of nodes on plane %d state %d\n", plane, state);
-		      CkExit();
-		    }
-		  */
-		}
+		      }
+		    state+=prem;
+		    destpe=availprocs->findNext();
+		    if(availprocs->count()==0)
+		      availprocs->reset();
+		    /*		  if(availprocs->count()==0)
+				  {
+				  CkPrintf("RSMap created on processor %d\n", CkMyPe());
+				  dump();
+				  CkPrintf("RSMap ran out of nodes on plane %d state %d\n", plane, state);
+				  CkExit();
+				  }
+		    */
+		    stateRemLeft--;
+		    prem = ( stateRemLeft >0) ? 1 : 0;
+
+		  }
+	      }
 	  }
 	else
 	  {
 
+	    // this remainder scheme is odd, creates imbalance.
+	    // doesn't use all processors
+	    destpe=availprocs->findNext();
 	    for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
 	      {
                 if(ychunk==(pm-rem)*m)
@@ -434,42 +460,26 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		  {
 		    if(xchunk==(pl-srem)*l)
 		      l=l+1;
-		    if(xchunk==0 && ychunk==0) {}
-		    else
-		      {
-			srcpe=destpe;
-			//			    availprocs->sortSource(srcpe);
-			destpe=availprocs->findNext();
-		      }
-		    c=0;
 		    for(int state=xchunk; state<xchunk+l && state<nstates; state++)
 		      {
 			for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
 			  {
-			    if(xchunk==0 && ychunk==0)
-			      {
-				c++;
-#ifdef USE_INT_MAP
-				maptable->set(state, plane,0);
-#else
-				maptable->put(intdual(state, plane))=0;
-#endif
-				//CkPrintf("%d %d on 0\n", state, plane);
-			      }
-			    else
-			      {
-				c++;
 #ifdef USE_INT_MAP
 				maptable->set(state, plane, destpe);
 
 #else						
 				maptable->put(intdual(state, plane))=destpe;
 #endif
-			      }
 			  }
 		      }
+		    destpe=availprocs->findNext();
+		    if(availprocs->count()==0)
+		      availprocs->reset();	
+
 		  }
 	      }
+
+	    
 	  }
 #ifdef MAP_DEBUG
 
