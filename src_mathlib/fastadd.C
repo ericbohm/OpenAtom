@@ -32,8 +32,21 @@ void fastAdd (double *a, double *b, int nelem) {
 // this is just to simplify our compilation life
 // users of this code should probably do this inline
 void fastAdd (double *a, double *b, int nelem) {
+#define _UNROLLING_OFF_
+#ifdef _UNROLLING_OFF_
     register int i=0;
-    for ( ; i < nelem; i ++)
-      a[i] += b[i];
+    for ( ; i < nelem; i ++){a[i] += b[i];}
+#else
+   int nrem  = (nelem % 5);
+   int istrt = (nelem-nrem);
+   for(int i=0;i<istrt;i+=5){
+     a[i]   += b[i];
+     a[i+1] += b[i+1];
+     a[i+2] += b[i+2];
+     a[i+3] += b[i+3];
+     a[i+4] += b[i+4];
+   }//endfor
+   for(int i=istrt;i<nelem;i++){a[i] += b[i];}
+#endif
 }
 #endif

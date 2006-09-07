@@ -14,7 +14,7 @@ typedef IntMap4 MapType4;
 #endif
 #include "MapTable.h"
 
-#define MAP_DEBUG
+#define MAP_DEBUG_OFF
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 

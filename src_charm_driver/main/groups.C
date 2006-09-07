@@ -299,6 +299,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
 //============================================================
 // Integrate the atoms
+
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
 #endif
@@ -308,6 +309,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    double potNhc_loc     = 0.0;
    int iwrite_atm        = 0;
    int myoutput_on       = output_on;
+
+   CkPrintf("entering atom integrate!\n");
    if(iteration+1>config.maxIter){myoutput_on = 0;}
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,

@@ -56,6 +56,7 @@ public:
    double eke_ret;            // kinetic energy
    double fictEke_ret;        // fictitious kinetic energy
    double ekeNhc_ret;         // NHC energies
+   double potNHC_ret;
    double degfree;            // Degrees of freedom (ncoef_true+num_nhc-1)
    double degfreeNHC;         // Degrees of freedom (num_nhc-1)*len_nhc
    double gammaNHC;           // Degrees of freedom degfree/(degfree+1.0)
@@ -70,39 +71,60 @@ public:
    int     num_nhc_cp;
    double  kTCP;
    double  tauNHCCP;
-   double  xNHC;
-   double  mNHC;
+   double  **xNHC;
+   double  **xNHCP;
+   double  *mNHC;
    double **vNHC;
    double **vNHC_scr;
+   double **xNHC_scr;
+   double **xNHCP_scr;
    double **fNHC;
+   double *v0NHC,*a2NHC,*a4NHC;
 
 //==============================================================================
 // Constuctor, Destructor and utilities
 
    GStateSlab() {packedPlaneData=NULL; packedPlaneDataTemp=NULL; 
                  packedForceData=NULL; packedPlaneDataScr=NULL; 
-		 xNHC=0.0;
                  packedVelData=NULL;}
    ~GStateSlab();
 
-   void copyVNHC(){
+   void copyNHC(){
      for(int i=0;i<num_nhc_cp;i++){
      for(int j=0;j<len_nhc_cp;j++){
-       vNHC_scr[i][j] = vNHC[i][j];
+       vNHC_scr[i][j]  = vNHC[i][j];
+       xNHC_scr[i][j]  = xNHC[i][j];
+       xNHCP_scr[i][j] = xNHCP[i][j];
      }}//endfor
    }//end routine
 
    void initNHC(){
-     vNHC     = new double *[20];
-     vNHC_scr = new double *[20];
-     fNHC     = new double *[20];
+     xNHC      = new double *[20];
+     xNHCP     = new double *[20];
+     vNHC      = new double *[20];
+     xNHC_scr  = new double *[20];
+     xNHCP_scr = new double *[20];
+     vNHC_scr  = new double *[20];
+     fNHC      = new double *[20];
      for(int i=0;i<20;i++){
-       vNHC[i]    =new double[4];
-       vNHC_scr[i]=new double[4];
-       fNHC[i]    =new double[4];
+       xNHC[i]     = new double[4];
+       xNHC_scr[i] = new double[4];
+       xNHCP[i]     = new double[4];
+       xNHCP_scr[i] = new double[4];
+       vNHC[i]     = new double[4];
+       vNHC_scr[i] = new double[4];
+       fNHC[i]     = new double[4];
      }//endfor
+     mNHC  = new double[4];
+     v0NHC = new double[20];
+     a2NHC = new double[20];
+     a4NHC = new double[20];
      for(int i=0;i<20;i++){
      for(int j=0;j<4;j++){
+       xNHC[i][j]     = 0.0;
+       xNHC_scr[i][j] = 0.0;
+       xNHCP[i][j]     = 0.0;
+       xNHCP_scr[i][j] = 0.0;
        vNHC[i][j]     = 0.0;
        vNHC_scr[i][j] = 0.0;
        fNHC[i][j]     = 0.0;
@@ -110,14 +132,26 @@ public:
    }//end routine
 
    void destroyNHC(){
-     for(int i=0;i<20;i++){
+     for(int i=0;i<num_nhc_cp;i++){
+       delete []xNHC[i];
+       delete []xNHC_scr[i];
+       delete []xNHCP[i];
+       delete []xNHCP_scr[i];
        delete []vNHC[i];
        delete []vNHC_scr[i];
        delete []fNHC[i];
      }//endfor
+     delete []xNHC;
+     delete []xNHC_scr;
+     delete []xNHCP;
+     delete []xNHCP_scr;
      delete []vNHC;
      delete []vNHC_scr;
      delete []fNHC;
+     delete []mNHC;
+     delete []v0NHC;
+     delete []a2NHC;
+     delete []a4NHC;
    }//end routine
 
    void setKRange(int , int *, int *, int *);

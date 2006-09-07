@@ -212,7 +212,7 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 //  VII) Setup intermolecular potential stuff: interspline mallocing      
 //                (interface/inter_params/control_inter_params.c)         
 
-//  printf("Before inter_params \n");  DEBUG_READ_INT
+//  printf("Before inter_params \n");  //DEBUG_READ_INT
 
   control_inter_params(mdinteract,&spline_parse,
                        &filename_parse,genewald->alp_ewd,
@@ -237,16 +237,14 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 //    IX) Setup pseudopotential stuff: pseudospline mallocing            
 //                (interface/interparams/control_vps_params.c)            
 
-//  printf("Before vps_params \n");  DEBUG_READ_INT
+//  printf("Before vps_params \n");  //DEBUG_READ_INT
 
   if(cp_on==1){
 
     set_ylm_cons(&(cp->cpylm_cons));
-
     make_cp_atom_list(cpatom_maps, cppseudo, mdclatoms_info->natm_tot,
                       mdatom_maps->natm_typ,mdclatoms_info->q,
                       mdatom_maps->iatm_atm_typ);
-
     control_vps_params(cppseudo,gencell,&filename_parse,
                        &spline_parse,mdatom_maps->iatm_atm_typ,
                        mdatom_maps->natm_typ,

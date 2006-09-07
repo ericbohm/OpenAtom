@@ -14,7 +14,8 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
-                            double mNHC,double **vNHC,double kT,int istart_typ_cp,
+                            double *mNHC,double **vNHC,double **xNHC, double **xNHCP,
+                            double *a2NHC, double kT,int istart_typ_cp,
                             int nkx0_red,int nkx0_uni,int nkx0_zero,
                             double degfree,double degfreeNHC,double gammaNHC)
 //============================================================================
@@ -30,7 +31,7 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
        for(int i=0;i<n;i++){v[i].im = vtmp[i];}
      delete [] vtmp;
   }//endif
-  cpSamplNHC(len_nhc,num_nhc,vNHC,mNHC,kT);
+  cpSamplNHC(len_nhc,num_nhc,vNHC,xNHC,xNHCP,mNHC,a2NHC,kT);
 
 //============================================================================
 // Scale the velocities
@@ -42,14 +43,11 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
   for(int i=istrt0;i<istrt;i++){v[i].im=0.0;} // zero imaginary part of g=0
 
   double temp = 0.0;
-  for(int i=0;i<num_nhc;i++)   {temp += gammaNHC*mNHC*vNHC[i][0]*vNHC[i][0];}
   for(int i=istrt0;i<istrt;i++){temp += v[i].getMagSqr()*m[i];}
   for(int i=istrt;i<iend;i++)  {temp += v[i].getMagSqr()*(2.0*m[i]);}
   for(int i=iend;i<n;i++)      {temp += v[i].getMagSqr()*m[i];}
 
   double scale = sqrt( (degfree*kT)/temp );
-
-  for(int i=0;i<num_nhc;i++){vNHC[i][0] *= scale;}
   for(int i=0;i<n;i++){v[i].re *= scale;  v[i].im *= scale;}
 
 //============================================================================
@@ -100,8 +98,8 @@ void CPINTEGRATE::sampl1DVelOneT(int n, double* v,double* mass,
 //==================================================================== 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
-void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double mass,
-                                   double  kT)
+void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double **x,double **xp,
+                             double *mass, double *a2,  double  kT)
 //=================================================================== 
    {//begin routine 
 //===================================================================
@@ -118,6 +116,7 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double mass,
    int n = num*len;
    double *temp  = new double[n];
    double *ptemp = temp-1;
+
    gaussran(n,iseed,iseed2,qseed,ptemp);
    int iii=0;
    for(int i=0;i<num;i++){
@@ -126,17 +125,47 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double mass,
      iii++;
    }}//endfor
 
+   gaussran(n,iseed,iseed2,qseed,ptemp);
+   iii=0;
+   for(int i=0;i<num;i++){
+   for(int j=0;j<len;j++){
+     xp[i][j]=temp[iii];
+     iii++;
+   }}//endfor
+
    delete []temp;
 
 //===================================================================
 // Add the width
 
-   double width = sqrt(kT/mass); //kT has boltz
-   for(int i=0;i<num;i++){
    for(int j=0;j<len;j++){
-     v[i][j] *= width;
-   }}
+     double width = sqrt(kT/mass[j]); //kT has boltz
+     for(int i=0;i<num;i++){
+       v[i][j]  *= width;
+       xp[i][j] *= sqrt(a2[i]);
+     }//endfor
+   }//endfor
+
+//===================================================================
+// Apply isokinetic constraint to each dimer
+
+   if(len!=2){
+     PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
+     PRINTF("Deprecated len_nhc_cp %d \n",len);
+     PRINTF("len_nhc_cp must be equal to 2 now\n");
+     PRINTF("@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
+
+   for(int i=0;i<num;i++){
+     double ekin = mass[0]*v[i][0]*v[i][0]
+                 + mass[1]*v[i][1]*v[i][1];
+     double sc   = sqrt(kT/ekin);
+     x[i][0] = 0.0;
+     v[i][0] *= sc;
+     v[i][1] *= sc;
+   }//endfor
 
 //------------------------------------------------------------------
- } //end routine 
+  } //end routine 
 //=================================================================== 

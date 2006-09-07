@@ -1897,8 +1897,9 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       sscanf(dict[4].keyarg,"%lg",&real_key_arg);
       cptherm_info->len_c_nhc = (int)(real_key_arg);
       index=4;
-      if(cptherm_info->len_c_nhc <= 1) 
-      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      if(cptherm_info->len_c_nhc != 2) {
+        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      }
   /*-----------------------------------------------------------------------*/ 
   /* 5)\resmpl_frq_cp_nhc{ #} */
     sscanf(dict[5].keyarg,"%lg",&real_key_arg);

@@ -373,13 +373,17 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
   double d0   = ((double *)m->getData())[0];
   double d1   = ((double *)m->getData())[1];
   double d2   = ((double *)m->getData())[2];
+  double d3   = ((double *)m->getData())[3];
+  double d4   = ((double *)m->getData())[4];
   delete m;
 
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-    CkPrintf("Fict Temp   =  %.10g K\n", d0); // constant=kT
-    CkPrintf("Fict NhcTemp=  %.10g K\n", d1);
-    CkPrintf("Fict PotNhc =  %.10g K\n", d2);
-    CkPrintf("Fict EConv  =  %.10g K\n", d0+d1+d2);
+    CkPrintf("Fict Temp   =  %.10g K\n", d0); // per g-chare temp
+    CkPrintf("Fict Eke    =  %.10g K\n", d2); // total kinetic energy
+    CkPrintf("Fict TempNHC=  %.10g K\n", d1); // per g-chare tempNHC
+    CkPrintf("Fict EkeNHC =  %.10g K\n", d3); // total NHC kinetic energy
+    CkPrintf("Fict PotNHC =  %.10g K\n", d4); // total potNHC
+    CkPrintf("Fict EConv  =  %.10g K\n", d2+d3+d4);
   }//endif
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
@@ -1116,24 +1120,24 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   int maxLenNHC = LEN_NHC_CP;
   int maxNumNHC = NUM_NHC_CP;
   CPINTEGRATE::initCPNHC(ncoef,maxLenNHC,maxNumNHC,&gs.len_nhc_cp,&gs.num_nhc_cp,
-                         &gs.kTCP,&gs.tauNHCCP,&gs.mNHC,&gs.degfree,&gs.degfreeNHC,
-                         &gs.gammaNHC,ncoef_use,gs.nkx0_zero);
-
+                         &gs.kTCP,&gs.tauNHCCP,gs.mNHC,&gs.degfree,&gs.degfreeNHC,
+                         &gs.gammaNHC,ncoef_use,gs.nkx0_zero,gs.v0NHC,gs.a2NHC,gs.a4NHC);
 
   if(cp_min_opt==0){
-   gs.xNHC=0.0;
    CPINTEGRATE::CPSmplVel(gs.numPoints,coef_mass,gs.packedVelData,
-                         gs.len_nhc_cp,gs.num_nhc_cp,gs.mNHC,gs.vNHC,gs.kTCP,
-                         istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,gs.nkx0_zero,
-                         gs.degfree,gs.degfreeNHC,gs.gammaNHC);
+                          gs.len_nhc_cp,gs.num_nhc_cp,gs.mNHC,gs.vNHC,gs.xNHC,gs.xNHCP,
+                          gs.a2NHC,gs.kTCP,istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,
+                          gs.nkx0_zero,gs.degfree,gs.degfreeNHC,gs.gammaNHC);
   }//endif
 
 #ifdef _CP_DEBUG_PSI_OFF_
   memset(gs.packedPlaneData, 0, sizeof(complex)*gs.numPoints);
 #endif
-//#ifdef _CP_DEBUG_DYNAMICS_
+
+#define _CP_DEBUG_DYNAMICS_ZVEL_OFF_
+#ifdef _CP_DEBUG_DYNAMICS_ZVEL_
   bzero(gs.packedVelData,sizeof(complex)*gs.numPoints);
-//#endif
+#endif
 
 //============================================================================
 // Send the k's to the structure factor 
@@ -2104,16 +2108,17 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   complex *vpsi     = gs.packedPlaneDataScr;  // switch definitions
   complex *vpsi_old = gs.packedVelData;       // to evolve psi to time, t.
   complex *forces   = gs.packedForceData;
+  double **xNHC     = gs.xNHC_scr;            // switch to evolve to time,t.
+  double **xNHCP    = gs.xNHCP_scr;           // switch to evolve to time,t.
   double **vNHC     = gs.vNHC_scr;            // switch to evolve to time,t.
   double **fNHC     = gs.fNHC;          
-  double mNHC       = gs.mNHC;          
+  double *mNHC      = gs.mNHC;          
   int len_nhc_cp    = gs.len_nhc_cp;
   int num_nhc_cp    = gs.num_nhc_cp;
   int nkx0_red      = gs.nkx0_red;
   int nkx0_uni      = gs.nkx0_uni;
   int nkx0_zero     = gs.nkx0_zero;
   double kTCP       = gs.kTCP;
-  double xNHC       = 0.0;
 
   if(!acceptedPsi || !acceptedLambda || !acceptedVPsi){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2143,12 +2148,12 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
     // Update the velocities into scratch as we are between steps
       if(cp_min_opt==0){
         CmiMemcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
-        gs.copyVNHC();
+        gs.copyNHC();
         if(iteration>1){
           CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
-                       len_nhc_cp,num_nhc_cp,fNHC,vNHC,&xNHC,mNHC,kTCP,
-                       nkx0_red,nkx0_uni,nkx0_zero,2,iteration,
-                       gs.degfree,gs.degfreeNHC,gs.gammaNHC);
+                       len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                       gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+                       2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC);
 	}//endif
       }//endif
     //------------------------------------------------------------------
@@ -2318,11 +2323,16 @@ void CP_State_GSpacePlane::integrateModForce() {
   int num_nhc        = gs.num_nhc_cp;
   complex *psi_g     = gs.packedPlaneData; 
   complex *forces    = gs.packedForceData; 
-  complex *forcesold = gs.packedVelData; // for miniziation not cp
+  complex *forcesold = gs.packedVelData; // for minimization not cp
+  complex *vpsi_g    = gs.packedVelData; // for cp not minimization
   double **fNHC      = gs.fNHC;
   double **vNHC      = gs.vNHC;
-  double *xNHC       = &gs.xNHC;
-  double mNHC        = gs.mNHC;
+  double **xNHC      = gs.xNHC;
+  double **xNHCP     = gs.xNHCP;
+  double *mNHC       = gs.mNHC;
+  double *v0NHC      = gs.v0NHC;
+  double *a2NHC      = gs.a2NHC;
+  double *a4NHC      = gs.a4NHC;
   double kTCP        = gs.kTCP;
   int nkx0_red       = gs.nkx0_red;
   int nkx0_uni       = gs.nkx0_uni;
@@ -2330,8 +2340,9 @@ void CP_State_GSpacePlane::integrateModForce() {
   double degfree     = gs.degfree;
   double degfreeNHC  = gs.degfreeNHC;
   double gammaNHC    = gs.gammaNHC;
-  double fictEke=0.0;
-  double ekeNhc=0.0;
+  double fictEke = 0.0;
+  double ekeNhc  = 0.0;
+  double potNHC  = 0.0;
 
 //==========================================================================
 // III. Set conjugate gradient parameter : Don't reset too often
@@ -2364,6 +2375,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 //---------------------------------------------------------------
 // (A) Debug output before integration
 
+#define _CP_DEBUG_DYNAMICS_OFF
 #ifdef _CP_DEBUG_DYNAMICS_
   if(cp_min_opt!=1){
     if(istate<3){
@@ -2388,11 +2400,11 @@ void CP_State_GSpacePlane::integrateModForce() {
       double StartTime=CmiWallTimer();
 #endif
 
-  fictEke = 0.0; ekeNhc=0.0;
+  fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
-               coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,mNHC,kTCP,
-               gamma_conj_grad,&fictEke,nkx0_red,nkx0_uni,nkx0_zero,
-               &ekeNhc,degfree,degfreeNHC,gammaNHC);
+               coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+   	       mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
+               nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,gammaNHC);
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());
@@ -2416,18 +2428,21 @@ void CP_State_GSpacePlane::integrateModForce() {
       fclose(fp);
     }//endif
   }//endif
+  if(iteration==2){CkPrintf("later debugging dyn\n");CkExit();}
 #endif
+
 
 //==========================================================================
 // V. Contribute FictKe : Output and store in energy group
 
   double redSize = ((double) (nchareG*nstates));
-  double sendme[3];
+  double sendme[5];
   sendme[0] = 2.0*BOLTZ*(fictEke/degfree)/redSize;
   sendme[1] = 2.0*BOLTZ*(ekeNhc/degfreeNHC)/redSize;
-  sendme[2] = 2.0*BOLTZ*((*xNHC)/degfreeNHC)/redSize;
-//  sendme[0] = fictEke;
-  contribute(3*sizeof(double),sendme,CkReduction::sum_double, 
+  sendme[2] = fictEke;
+  sendme[3] = ekeNhc;
+  sendme[4] = potNHC;
+  contribute(5*sizeof(double),sendme,CkReduction::sum_double, 
              CkCallback(printFictEke, NULL));
 
 //==========================================================================
@@ -2435,6 +2450,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   gs.fictEke_ret      = fictEke;
   gs.ekeNhc_ret       = ekeNhc;
+  gs.potNHC_ret       = potNHC;
   finishedCpIntegrate = 1;
 
 //------------------------------------------------------------------------------

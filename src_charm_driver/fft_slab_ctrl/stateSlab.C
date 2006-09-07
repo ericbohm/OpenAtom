@@ -75,7 +75,6 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
    gs->xdim = 1;                // may need some love
    gs->ydim = gs->planeSize[0];
    gs->zdim = gs->planeSize[1];
-   gs->xNHC=0.0;   //to satisfy valgrind
    gs->iplane_ind   = iplane_ind;
    gs->istate_ind   = istate_ind; 
    gs->initNHC();
@@ -148,6 +147,7 @@ void GStateSlab::pup(PUP::er &p) {
         p|eke_ret;
         p|fictEke_ret;
         p|ekeNhc_ret;
+        p|potNHC_ret;
         p|degfree;
         p|degfreeNHC;
         p|gammaNHC;
@@ -183,35 +183,50 @@ void GStateSlab::pup(PUP::er &p) {
         p|num_nhc_cp;
         p|kTCP;
         p|tauNHCCP;
-        p|xNHC;
-        p|mNHC;
-        int nsize  = num_nhc_cp*len_nhc_cp;
-        double *vt = new double[nsize];
-        double *ft = new double[nsize];
+        int nsize   = num_nhc_cp*len_nhc_cp;
+        double *xt  = new double[nsize];
+        double *xtp = new double[nsize];
+        double *vt  = new double[nsize];
+        double *ft  = new double[nsize];
 	if (!p.isUnpacking()) {
           int iii=0;
           for(int i =0;i<num_nhc_cp;i++){
           for(int j =0;j<len_nhc_cp;j++){
-            vt[iii] = vNHC[i][j];
-            ft[iii] = fNHC[i][j];
+            xt[iii]  = xNHC[i][j];
+            xtp[iii] = xNHCP[i][j];
+            vt[iii]  = vNHC[i][j];
+            ft[iii]  = fNHC[i][j];
             iii++;
           }}
+          mNHC  = new double[len_nhc_cp];
+          v0NHC = new double[num_nhc_cp];
+          a2NHC = new double[num_nhc_cp];
+          a4NHC = new double[num_nhc_cp];
 	}//endif sending
+        p(xt,nsize);
+        p(xtp,nsize);
         p(vt,nsize);
         p(ft,nsize);
+        p(mNHC,len_nhc_cp);
+        p(v0NHC,num_nhc_cp);
+        p(a2NHC,num_nhc_cp);
+        p(a4NHC,num_nhc_cp);
 	if (p.isUnpacking()) {
           initNHC();
           int iii=0;
           for(int i =0;i<num_nhc_cp;i++){
           for(int j =0;j<len_nhc_cp;j++){
-            vNHC[i][j] = vt[iii];
-            fNHC[i][j] = ft[iii];
+            xNHC[i][j]  = xt[iii];
+            xNHCP[i][j] = xtp[iii];
+            vNHC[i][j]  = vt[iii];
+            fNHC[i][j]  = ft[iii];
             iii++;
           }}
 	}//endif receiving 
+        delete []xt;
+        delete []xtp;
         delete []vt;
         delete []ft;
-	//  CkPrintf("end gs pup\n:");
 
 //==============================================================================
   }//end routine

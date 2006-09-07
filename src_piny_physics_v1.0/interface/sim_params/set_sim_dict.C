@@ -1117,9 +1117,9 @@ void set_sim_dict_nhc(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[3].keyarg,"1000");
   /*-----------------------------------------------------------------------*/ 
   /*  4)\cp_nhc_len{#} */
-        strcpy((*dict)[4].error_mes,"a number > 0 ");
+        strcpy((*dict)[4].error_mes,"a number = 2 ");
         strcpy((*dict)[4].keyword,"cp_nhc_len");
-        strcpy((*dict)[4].keyarg,"3");
+        strcpy((*dict)[4].keyarg,"2");
   /*-----------------------------------------------------------------------*/ 
   /*  5)\resmpl_frq_cp_nhc{ #} */
         strcpy((*dict)[5].error_mes,"on,off");

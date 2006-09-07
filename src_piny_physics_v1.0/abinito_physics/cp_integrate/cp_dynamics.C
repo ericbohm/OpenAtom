@@ -18,9 +18,10 @@
 void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
               complex *forces,complex *vpsi,complex *psi,double *cmass, 
               int *k_x, int *k_y,int *k_z,int len_nhc, int num_nhc,
-              double **fNHC,double **vNHC,double *xNHC,double mNHC,double kTCP,
+              double **fNHC,double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
+              double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
               double *fictEke,int nkx0_red,int nkx0_uni,int nkx0_zero,
-              double *ekeNhc, double degfree,double degfreeNHC,
+              double *ekeNhc, double *potNHC,double degfree,double degfreeNHC,
               double gammaNHC)
 //============================================================================
     { // Begin Function 
@@ -43,21 +44,21 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 
    if(iteration>1){
      applyorder = 2;
-     cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,
-                   xNHC,mNHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,applyorder,iteration,
-                   degfree,degfreeNHC,gammaNHC);
+     cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+                   mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+                   applyorder,iteration,degfree,degfreeNHC,gammaNHC);
    }//endif
 
-   get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,vNHC,mNHC,nkx0_red,nkx0_uni,nkx0_zero,
-              fictEke,ekeNhc,gammaNHC);
+   get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,vNHC,xNHC,xNHCP,mNHC,
+              nkx0_red,nkx0_uni,nkx0_zero,fictEke,ekeNhc,gammaNHC,potNHC);
 
 //============================================================================
 // Update the velocities from time, t, to time, t+dt/2. 
 
    applyorder = 1;
-   cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,
-                 xNHC,mNHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,applyorder,iteration,
-                 degfree,degfreeNHC,gammaNHC);
+   cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+                 mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+                 applyorder,iteration,degfree,degfreeNHC,gammaNHC);
 
 //============================================================================
 // Update the positions to the next step (t+dt)
@@ -78,7 +79,8 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 //============================================================================
 void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
                     double *cmass,int len_nhc, int num_nhc, double **fNHC,
-                    double **vNHC,double *xNHC,double mNHC,double kTCP,
+                    double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
+                    double *v0, double *a2, double *a4, double kTCP,
                     int nkx0_red,int nkx0_uni,int nkx0_zero,
                     int applyorder,int iteration,double degfree,
                     double degfreeNHC,double gammaNHC)
@@ -97,12 +99,18 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
    int istrt0     = nkx0_red;
    int istrt1     = nkx0_red+nkx0_zero;
    int iend       = nkx0_uni+nkx0_red;
-   int igo        = 1;
    int ncoef      = ncoef_full-istrt0;
-   if(applyorder==2 && iteration==1){igo=0;}
+
+   if(applyorder==2 && iteration==1){
+     PRINTF("@@@@@@@@@_ERROR_@@@@@@@@@@@\n");
+     PRINTF("applyorder==2 when iteration==1 !\n");
+     PRINTF("Internal error in cp_dynamics.C.\n");
+     PRINTF("@@@@@@@@@_ERROR_@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
 
 //============================================================================
-// Make life simple
+// Make life simple for gx=0 and g=0
 
    for(int i=istrt0;i<istrt1;i++){forces[i].im=0.0;vpsi[i].im=0.0;}
    for(int i=istrt1;i<iend;i++){
@@ -112,38 +120,32 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
    }//endif
 
 //============================================================================
-// Isokin-NHC apply first
+// Isokin-NHC apply first : start a new step
 
    if(applyorder==1 && ISOKIN_OPT==1){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
-                      len_nhc,num_nhc,xNHC,vNHC,fNHC,mNHC,kTCP,
-                      degfree,degfreeNHC,gammaNHC);
+                      len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC);
    }//endif
 
 //============================================================================
-// Evolve velocity with forces : isokinetically or newtonianalyy
+// Evolve velocity with forces : apply==1 its a new step : apply==2 finish old step
 
-   if(ISOKIN_OPT==0 && igo==1){
-     for(int i=istrt0;i<ncoef_full;i++){
-       vpsi[i] += forces[i]*(dt2/cmass[i]);     
-     }//endfor
-   }//endif
-
-   if(ISOKIN_OPT==1 && igo==1){
-     cp_isoVel_update(ncoef,&vpsi[istrt0],&forces[istrt0],&cmass[istrt0],
-                      num_nhc,vNHC,mNHC,kTCP,degfree,degfreeNHC,gammaNHC);
-   }//endif
+   for(int i=istrt0;i<ncoef_full;i++){
+     vpsi[i] += forces[i]*(dt2/cmass[i]);     
+   }//endfor
 
 //============================================================================
-// Isokin-NHC apply second
+// Isokin-NHC apply second : finish old step
 
-   if(ISOKIN_OPT==1 && applyorder==2 && igo==1){
+   if(ISOKIN_OPT==1 && applyorder==2){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
-                      len_nhc,num_nhc,xNHC,vNHC,fNHC,mNHC,kTCP,
-                      degfree,degfreeNHC,gammaNHC);
+                      len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC);
    }//endif
 
 //============================================================================
+// fix up gx=0 ; g=0
 
    for(int i=istrt0;i<istrt1;i++){forces[i].im=0.0;vpsi[i].im=0.0;}
    for(int i=istrt1;i<iend;i++){
@@ -161,8 +163,9 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::get_fictKE(int n,complex *v, double *m,int len, int num,
-          double **vNHC,double mNHC,int nkx0_red,int nkx0_uni,int nkx0_zero,
-          double *ekin_ret,double *ekinNHC_ret,double gamma)
+          double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
+          int nkx0_red,int nkx0_uni,int nkx0_zero,
+          double *ekin_ret,double *ekinNHC_ret,double gamma,double *potNHC_ret)
 //============================================================================
   {// Begin Function 
 //============================================================================
@@ -171,25 +174,27 @@ void CPINTEGRATE::get_fictKE(int n,complex *v, double *m,int len, int num,
   int istrt      = nkx0_red+nkx0_zero;
   int iend       = nkx0_red+nkx0_uni;
 
-  double ekin = 0.0;
+  double ekin    = 0.0;
   double ekinNHC = 0.0;
+  double potNHC  = 0.0;
+
   if(ISOKIN_OPT==1){
+    for(int j=0;j<len;j++){
     for(int i=0;i<num;i++){
-    for(int j=1;j<len;j++){
-      ekinNHC += mNHC*vNHC[i][j]*vNHC[i][j];
+      ekinNHC += mNHC[j]*vNHC[i][j]*vNHC[i][j];
+      potNHC  += xNHC[i][j];
     }}//endfor
-    for(int i=0;i<num;i++){
-      ekin += gamma*mNHC*vNHC[i][0]*vNHC[i][0];
-    }//endfor
   }//endif
-  for(int i=istrt0;i<istrt;i++){ekin += v[i].getMagSqr()*m[i];}
-  for(int i=istrt;i<iend;i++)  {ekin += v[i].getMagSqr()*(2.0*m[i]);}
-  for(int i=iend;i<n;i++)      {ekin += v[i].getMagSqr()*m[i];}
+
+  for(int i=istrt0;i<istrt;i++){ekin += v[i].getMagSqr()*m[i];}       // g=0
+  for(int i=istrt;i<iend;i++)  {ekin += v[i].getMagSqr()*(2.0*m[i]);} // gx=0
+  for(int i=iend;i<n;i++)      {ekin += v[i].getMagSqr()*m[i];}       // gx!=0
   ekin     *=0.5;
   ekinNHC  *=0.5;
 
-  (*ekin_ret)    = ekin;
-  (*ekinNHC_ret) = ekinNHC;
+  ekin_ret[0]    = ekin;
+  ekinNHC_ret[0] = ekinNHC;
+  potNHC_ret[0]  = potNHC;
 
 //============================================================================
   }//end routine

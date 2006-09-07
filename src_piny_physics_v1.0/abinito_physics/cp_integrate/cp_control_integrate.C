@@ -14,9 +14,10 @@
 void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
              complex *forces,complex *forcesold,complex *psi_g,double *cmass,
              int *k_x,int *k_y, int *k_z, int len_nhc, int num_nhc,
-             double **fNHC,double**vNHC,double *xNHC,double mNHC,double kTCP,
+             double **fNHC,double**vNHC,double **xNHC,double **xNHCP,double *mNHC,
+             double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
              double gamma_conj_grad,double *fictEke,int nkx0_red,int nkx0_uni,
-             int nkx0_zero,double *ekeNhc,double degfree,double degfreeNHC,
+             int nkx0_zero,double *ekeNHC,double *potNHC, double degfree,double degfreeNHC,
              double gammaNHC)
 //============================================================================
    { /* Begin Function */
@@ -84,9 +85,9 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
   if(cp_on==1){
     ifound++;
     CP_integrate_dyn(ncoef,istate,iteration,forces,vpsi_g,psi_g,cmass,
-                     k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,
-                     mNHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero,
-                     ekeNhc,degfree,degfreeNHC,gammaNHC);
+                     k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                     v0NHC,a2NHC,a4NHC,kTCP,fictEke,nkx0_red,nkx0_uni,nkx0_zero,
+                     ekeNHC,potNHC,degfree,degfreeNHC,gammaNHC);
   }//endif
 
 //============================================================================
