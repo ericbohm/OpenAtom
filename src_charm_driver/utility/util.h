@@ -247,6 +247,7 @@ class Config {
 	int fftprogresssplit;
 	int fftprogresssplitReal;
         int stateOutputOn;
+        int atmOutputOn;
 	int toleranceInterval;
 	int localAtomBarrier;
 	int localEnergyBarrier;

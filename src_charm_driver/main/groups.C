@@ -231,7 +231,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   EnergyGroup *eg   = egroupProxy.ckLocalBranch();
 
   int myid          = CkMyPe();
-  int output_on     = config.stateOutputOn;
+  int output_on     = config.atmOutputOn;
 
 //============================================================
 // Copy out the reduction of energy and forces

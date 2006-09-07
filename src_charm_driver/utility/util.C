@@ -1403,6 +1403,7 @@ void Config::print(char *fname_in) {
    FILE *fp = fopen(fname,"w");
      fprintf(fp,"dataPath: %s\n",dataPath);
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
+     fprintf(fp,"atmOutputOn: %d\n",atmOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
      fprintf(fp,"orthoStride: %d\n",orthoStride);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
@@ -1620,6 +1621,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.fftprogresssplit     = 20;
     config.fftprogresssplitReal = 5;
     config.stateOutputOn        = 0;
+    config.atmOutputOn          = 0;
     config.localAtomBarrier     = 1;
     config.localEnergyBarrier   = 1;
     config.toleranceInterval    = 1;
@@ -1813,6 +1815,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.localAtomBarrier = atoi(parameterValue);
         else if (!strcmp(parameterName, "localEnergyBarrier"))
             config.localEnergyBarrier = atoi(parameterValue);
+        else if (!strcmp(parameterName, "atmOutputOn"))
+            config.atmOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "stateOutputOn"))
             config.stateOutputOn = atoi(parameterValue);
         else if (!strcmp(parameterName, "toleranceInterval"))
@@ -1913,6 +1917,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.launchNLeesFromRho,"launchNLeesFromRho",1);
     rangeExit(config.prioFFTMsg,"prioFFTMsg",1);
     rangeExit(config.stateOutputOn,"stateOutputOn",1);
+    rangeExit(config.atmOutputOn,"atmOutputOn",1);
     rangeExit(config.localAtomBarrier,"localAtomBarrier",1);
     rangeExit(config.localEnergyBarrier,"localEnergyBarrier",1);
     rangeExit(config.lbpaircalc,"lbpaircalc",1);
