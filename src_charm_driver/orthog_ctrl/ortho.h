@@ -1,4 +1,3 @@
-
 /********************************************************************************/
 /* Ortho is currently decomposed by sGrainSize.  Which makes sense for
  * the old statewise only decomposition of the paircalculator.  For
@@ -56,9 +55,18 @@
  * subsections for all orthograin elements within the sGrain.  The
  * forward path of the PC will contribute its orthograin tile (via a
  * strided contribute) which will end up at the correct ortho object.
- * 
+ *
  * Note: these PC sections must include all 4th dim blocks.  
  *
+ * OrthoHelper can be used to perform the 2nd of the multiplies in the
+ * 3 step S->T process in parallel with the 3rd multiply.  If used,
+ * the results of multiply 1 are sent from ortho[x,y] to
+ * orthoHelper[x,y].  The results are then returned to ortho[x,y].
+ * The last of step2 or step3 will then trigger step4.  Due to the
+ * copy and communication overhead this is only worth doing if the
+ * number of processors is greater than 2 * the number of ortho
+ * chares.
+ * 
  * 
 ********************************************************************************/
 
@@ -74,11 +82,7 @@
 #define _ortho_h_
 
 #include "CLA_Matrix.h"
-#include "ckPairCalculator.h"
-extern Config config;
-extern int nstates;
-extern  PairCalcID pairCalcID1;
-extern  PairCalcID pairCalcID2;
+
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
@@ -109,6 +113,10 @@ class Ortho : public CBase_Ortho{
 
   // catch lbresume reduction
   void lbresume(CkReductionMsg *msg); 
+
+  void step_2_send(void);
+
+  void recvStep2(double *step2result, int size);
 
   // get our copy of the pcproxy
   void setPCproxy(CProxySection_PairCalculator inproxy){pcProxy=inproxy;}
@@ -174,48 +182,7 @@ class Ortho : public CBase_Ortho{
 
   void collect_results(void);
 
-  virtual void pup(PUP::er &p){
-//    CBase_Ortho::pup(p);
-    ArrayElement2D::pup(p);
-    p | m;
-    p | n;
-    p | step;
-    p | iterations;
-    p | num_ready;
-    p | got_start;
-    p | multiproxy;
-    p | pcProxy;
-    p | pcRedProxy;
-    p | pcLambdaProxy;
-    p | pcLambdaRedProxy;
-    p | numGlobalIter;
-    p | lbcaught;
-    p | orthoCookie;
-    p | toleranceCheckOrthoT;
-    if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
-      { 
-	ortho = new double[nstates * nstates];
-	orthoT = new double[nstates * nstates];
-	wallTimeArr = new double[config.maxIter];
-      }
-    if(thisIndex.x==0 && thisIndex.y==0)
-      {
-	p(ortho,nstates*nstates);
-	p(orthoT,nstates*nstates);
-	p(wallTimeArr,config.maxIter);
-      }
-    if(p.isUnpacking()){
-      A = new double[m * n];
-      B = new double[m * n];
-      C = new double[m * n];
-      tmp_arr = new double[m * n];
-    }
-    p(A, m * n);
-    p(B, m * n);
-    p(C, m * n);
-    p(tmp_arr, m * n);
-  }
-
+  virtual void pup(PUP::er &p);
 
   void collect_error(CkReductionMsg *msg);
 
@@ -284,14 +251,28 @@ class Ortho : public CBase_Ortho{
     ((Ortho*) obj)->step_3();
   }
 
-  static inline void tol_cb(void *obj){
-    ((Ortho*) obj)->tolerance_check();
-  }
+  static inline void tol_cb(void *obj)
+    {
+      ((Ortho*) obj)->step3done=true;
+      if(((Ortho*) obj)->parallelStep2)
+	{ 
+	  if(((Ortho*) obj)->step2done)
+	    {	//if step2 is done do this now, otherwise step2 will trigger
+	      ((Ortho*) obj)->tolerance_check();
+	    }
+	}
+      else
+	{
+	  ((Ortho*) obj)->tolerance_check();
+	}
+    }
 
   static inline void gamma_done_cb(void *obj){
     ((Ortho*) obj)->gamma_done();
   }
-
+  bool parallelStep2;
+  bool step2done;
+  bool step3done;
  private:
   double *orthoT; // only used on [0,0]
   double *ortho; //only used on [0,0]
@@ -311,8 +292,6 @@ class Ortho : public CBase_Ortho{
   int lbcaught;
 
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
-  
-
   double *A, *B, *C, *tmp_arr;
   int step;
   /* Note, for now m and n are always equal. When we move to chunks not all

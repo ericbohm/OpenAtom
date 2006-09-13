@@ -48,6 +48,7 @@
 #include "groups.h"
 #include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
+#include "orthoHelper.h"
 #include "ortho.h"
 #include <unistd.h>
 #include "../../src_mathlib/mathlib.h"
@@ -65,8 +66,9 @@ extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
 extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
+extern CProxy_OrthoHelper orthoHelperProxy;
 extern ComlibInstanceHandle orthoInstance;
-
+extern CProxy_Ortho orthoProxy;
 //============================================================================
 
 //============================================================================
@@ -634,7 +636,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
  CLA_Matrix_interface matB3, CLA_Matrix_interface matC3){
 //============================================================================
 /* do basic initialization */
-
+  parallelStep2=config.useOrthoHelpers;
   this->m = m;
   this->n = n;
   this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
@@ -644,6 +646,8 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   B = new double[m * n];
   C = new double[m * n];
   tmp_arr = new double[m * n];
+  step2done=false;
+  step3done=false;
   step = 0;
   lbcaught=0;
   num_ready = 0;
@@ -729,21 +733,66 @@ void Ortho::do_iteration(void){
 //============================================================================
 /* S1 = 0.5 * S3 * S2 (on proxy 2)
  * currently A has T, B has S1, C has S2
+ * Multiply tmp_arr = B*C
+ * tmp_arr not used in step3, therefore no data dependence
  */
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::step_2(void){
-  step = 2;
-  matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
-   thisIndex.x, thisIndex.y);
-  matB2.multiply(0.5, 0, C, Ortho::step_3_cb, (void*) this,
-   thisIndex.x, thisIndex.y);
-  matC2.multiply(0.5, 0, tmp_arr, Ortho::step_3_cb, (void*) this,
-   thisIndex.x, thisIndex.y);
+
+  if(config.useOrthoHelpers)
+    {
+      step_2_send();
+      step_3();
+    }
+  else
+    {
+      step = 2;
+      matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
+		     thisIndex.x, thisIndex.y);
+      matB2.multiply(0.5, 0, C, Ortho::step_3_cb, (void*) this,
+		     thisIndex.x, thisIndex.y);
+      matC2.multiply(0.5, 0, tmp_arr, Ortho::step_3_cb, (void*) this,
+		     thisIndex.x, thisIndex.y);
+    }
 }
 //============================================================================
 
+
+//============================================================================
+/** S1 = 0.5 * S3 * S2 (on proxy 2)
+ * currently A has T, B has S1, C has S2
+ * Multiply tmp_arr = B*C
+ * tmp_arr not used in step3, therefore no data dependence
+ */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::step_2_send(void){
+  step = 2;
+  // copy our data to the helper
+  OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
+  omsg->init(m*n, B,C,0.5, 0.5, 0.5);
+  orthoHelperProxy(thisIndex.x,thisIndex.y).recvAB(omsg);
+  // will come back in recvStep2
+}
+//============================================================================
+
+//============================================================================
+/** result of 0.5 * S3 * S2 arrives from helper
+ *
+ */
+void Ortho::recvStep2(double *step2result, int size){
+  // copy our data into the tmp_arr
+  
+    memcpy(tmp_arr, step2result, m * n * sizeof(double));
+    step2done=true;
+    if(step3done) //end of iteration check
+      { 
+	tolerance_check();
+      }
+}
 
 //============================================================================
 /* T = 0.5 * S2 * S3 (do S3 = T before) (on proxy 3)
@@ -774,6 +823,9 @@ void Ortho::step_3(){
 //============================================================================
 void Ortho::tolerance_check(){
   step = 4;
+  step2done=false;
+  step3done=false;
+    
   double ret = 0;
   for(int i = 0; i < m * n; i++){
     double tmp = B[i] - A[i];
@@ -791,6 +843,61 @@ void Ortho::tolerance_check(){
   else
     contribute(sizeof(double), &ret, CkReduction::sum_double);
 }
+
+
 //============================================================================
 
+
+
+void Ortho::pup(PUP::er &p){
+//    CBase_Ortho::pup(p);
+    ArrayElement2D::pup(p);
+    p | m;
+    p | n;
+    p | step;
+    p | iterations;
+    p | num_ready;
+    p | got_start;
+    p | multiproxy;
+    p | pcProxy;
+    p | pcRedProxy;
+    p | pcLambdaProxy;
+    p | pcLambdaRedProxy;
+    p | numGlobalIter;
+    p | lbcaught;
+    p | orthoCookie;
+    p | toleranceCheckOrthoT;
+    p | step2done;
+    p | step3done;
+    if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
+      { 
+	ortho = new double[nstates * nstates];
+	orthoT = new double[nstates * nstates];
+	wallTimeArr = new double[config.maxIter];
+      }
+    if(thisIndex.x==0 && thisIndex.y==0)
+      {
+	p(ortho,nstates*nstates);
+	p(orthoT,nstates*nstates);
+	p(wallTimeArr,config.maxIter);
+      }
+    if(p.isUnpacking()){
+      A = new double[m * n];
+      B = new double[m * n];
+      C = new double[m * n];
+      tmp_arr = new double[m * n];
+    }
+    p(A, m * n);
+    p(B, m * n);
+    p(C, m * n);
+    p(tmp_arr, m * n);
+  }
+
+
+void OrthoHelper::sendMatrix()
+{
+
+  delete trigger;
+  orthoProxy(thisIndex.x, thisIndex.y).recvStep2(C, m*n);
+}
 

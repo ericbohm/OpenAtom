@@ -183,6 +183,7 @@ class Config {
 	int useOrthoSection;
 	int useOrthoDirect;
 	int useOrthoSectionRed;
+	int useOrthoHelpers;
 	int lambdaGrainSize;
 	int rhoGHelpers;
 	int useCommlib;

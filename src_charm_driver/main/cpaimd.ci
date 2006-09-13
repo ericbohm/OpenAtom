@@ -52,6 +52,7 @@ mainmodule cpaimd {
 	readonly CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
 	readonly CProxy_CP_Rho_RHartExt rhoRHartExtProxy;
 	readonly CProxy_Ortho orthoProxy;
+	readonly CProxy_OrthoHelper orthoHelperProxy;
 	readonly CProxy_Lambda lambdaProxy;
 	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
@@ -162,6 +163,10 @@ mainmodule cpaimd {
 		int k_z[];
 	};
 
+	message OrthoHelperMsg {
+		double A[];
+		double B[];
+        };
 	message NLFFTMsg {complex data[];};
 
 	mainchare main {
@@ -303,7 +308,8 @@ mainmodule cpaimd {
 		entry void do_iteration();
 		entry [nokeep] void do_iteration(orthoMtrigger *msg);
 		entry void step_2();
-		entry void step_3();
+		entry void step_3();	
+		entry void recvStep2(double result[size], int size);
 		entry void collect_results();
 		entry [nokeep] void collect_results(orthoMtrigger *msg);
 		entry void print_results();
@@ -315,6 +321,14 @@ mainmodule cpaimd {
 	group OrthoMap : CkArrayMap {
 		entry OrthoMap(int M,int nOrtho, int stride);
 	};
+
+	array [2D] OrthoHelper {
+		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,
+		 CLA_Matrix_interface matB2, CLA_Matrix_interface matC2);
+		entry OrthoHelper();
+	        entry void recvAB(OrthoHelperMsg *msg);
+
+	}
 
 	array [2D] Lambda{
 		entry void Lambda(int lgrain, int ograin, int sgrain);

@@ -1412,6 +1412,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useOrthoDirect: %d\n",useOrthoDirect);
      fprintf(fp,"useOrthoSection: %d\n",useOrthoSection);
      fprintf(fp,"useOrthoSectionRed: %d\n",useOrthoSectionRed);
+     fprintf(fp,"useOrthoHelpers: %d\n",useOrthoHelpers);
      fprintf(fp,"lambdaGrainSize: %d\n",lambdaGrainSize);
      fprintf(fp,"pesPerState: %d\n",pesPerState);
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
@@ -1542,6 +1543,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.useOrthoDirect       = 0;
     config.useOrthoSectionRed    = 0;
     config.lambdaGrainSize       =     config.sGrainSize;
+    config.useOrthoHelpers       = 0;
     config.rhoGHelpers          = 1;
     config.pesPerState          = 1;
     config.RpesPerState         = 0; 
@@ -1674,6 +1676,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.launchNLeesFromRho = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoDirect"))
             config.useOrthoDirect = atoi(parameterValue);
+        else if (!strcmp(parameterName, "useOrthoHelpers"))
+            config.useOrthoHelpers = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSection"))
             config.useOrthoSection = atoi(parameterValue);
         else if (!strcmp(parameterName, "useOrthoSectionRed"))

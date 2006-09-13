@@ -96,7 +96,9 @@
 #include "util.h"
 //============================================================================
 #include "cpaimd.h"
+#include "ckPairCalculator.h"
 #include "groups.h"
+#include "orthoHelper.h"
 #include "ortho.h"
 #include "lambda.h"
 #include "fftCacheSlab.h"
@@ -196,7 +198,7 @@ CProxy_FFTcache                   fftCacheProxy;
 CProxy_StructFactCache            sfCacheProxy;
 CProxy_StructureFactor            sfCompProxy;
 CProxy_eesCache                   eesCacheProxy;
-
+CProxy_OrthoHelper                orthoHelperProxy;
 Config     config;
 
 //============================================================================
@@ -1279,14 +1281,32 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 
     CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
      orthoProxy(0, 0));
+
     make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
      mCastGrpId, MM_ALG_2D);
-    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     mCastGrpId, MM_ALG_2D);
+    CProxy_OrthoMap orthoHMap = CProxy_OrthoMap::ckNew(chunks,nOrtho, stride+1);
+    CkArrayOptions orthoHOpts;
+    orthoHOpts.setMap(orthoHMap);
+
+    if(config.useOrthoHelpers)
+      {
+	orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
+	make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
+			nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+			config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
+			ortho_ready_cb,	mCastGrpId, MM_ALG_2D);
+      }
+    else
+      {
+	make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
+			nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+			config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+			mCastGrpId, MM_ALG_2D);
+
+      }
+
     make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
@@ -1299,8 +1319,18 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 	int indY = s2 / config.orthoGrainSize;
 	orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
          matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
+	if(config.useOrthoHelpers)
+	  {
+	    orthoHelperProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
+					   matA2, matB2, matC2);
+
+	  }
       }
     orthoProxy.doneInserting();
+    if(config.useOrthoHelpers)
+      {
+	orthoHelperProxy.doneInserting();
+      }
     orthoProxy.makeSections(indexSize, indexZ);
     if(config.lambdaGrainSize!=config.orthoGrainSize)
       {
