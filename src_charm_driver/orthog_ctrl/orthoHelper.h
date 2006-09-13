@@ -64,7 +64,7 @@ public:
       offsets[2] = offsets[0];
     else
       offsets[2] = offsets[1] + ALIGN16(sizeof(double)*sizes[1]);
-    multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
+    OrthoHelperMsg *newmsg = (OrthoHelperMsg *) CkAllocMsg(msgnum, offsets[2], pb);
     newmsg->A = (double *) ((char *)newmsg + offsets[0]);
     newmsg->B = (double *) ((char *)newmsg + offsets[1]);
     return (void *) newmsg;

@@ -310,7 +310,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    int iwrite_atm        = 0;
    int myoutput_on       = output_on;
 
-   CkPrintf("entering atom integrate!\n");
+   //   CkPrintf("entering atom integrate!\n");
    if(iteration+1>config.maxIter){myoutput_on = 0;}
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,

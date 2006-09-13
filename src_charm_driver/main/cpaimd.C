@@ -2126,112 +2126,115 @@ void mapOutput()
 //============================================================================
 // return the cuboid x,y,z of a subpartition exactly matching that volume
 bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume)
+{
+  double cubert= cbrt((double) volume);
+  int cubetrunc= (int) cubert;
+  x=y=z=cubetrunc;
+  if(cubetrunc>maxX)
+    cubetrunc=maxX;
+  if(cubetrunc>maxY)
+    cubetrunc=maxY;
+  if(cubetrunc>maxZ)
+    cubetrunc=maxZ;
+  if(volume==x*y*z)
+    return true;
+  CkAssert(volume>0);
+  switch (volume) // for the common values we just pick cuboids
     {
-      double cubert= cbrt((double) volume);
-      int cubetrunc= (int) cubert;
-      x=y=z=cubetrunc;
-      if(cubetrunc>maxX)
-	cubetrunc=maxX;
-      if(cubetrunc>maxY)
-	cubetrunc=maxY;
-      if(cubetrunc>maxZ)
-	cubetrunc=maxZ;
-      if(volume==x*y*z)
-	return true;
-      CkAssert(volume>0);
-      if(volume<=64)
-	switch (volume) // for the common values we just pick cuboids
-	  {
-	  case 1: 
-	    x=1; y=1; z=1; return true;
-	  case 2: 
-	    x=2; y=1; z=1; return true;
-	  case 3:
-	    x=3; y=1; z=1; return true;
-	  case 4:
-	    x=2; y=2; z=1; return true;
-	  case 5:
-	    x=5; y=1; z=1; return true;
-	  case 6:
-	    x=3; y=2; z=1; return true;
-	  case 7:
-	    x=7; y=1; z=1; return true;
-	  case 8:
-	    x=2; y=2; z=2; return true;
-	  case 9:
-	    x=3; y=3; z=1; return true;
-	  case 10:
-	    x=5; y=2; z=1; return true;
-	  case 12:
-	    x=2; y=3; z=2; return true;
-	  case 14:
-	    x=7; y=2; z=1; return true;
-	  case 15:
-	    x=5; y=3; z=1; return true;
-	  case 16:
-	    x=4; y=2; z=2; return true;
-	  case 18:
-	    x=3; y=3; z=2; return true;
-	  case 20:
-	    x=5; y=2; z=2; return true;
-	  case 21:
-	    x=7; y=3; z=1; return true;
-	  case 24:
-	    x=4; y=3; z=2; return true;
-	  case 25:
-	    x=5; y=5; z=1; return true;
-	  case 27:
-	    x=3; y=3; z=3; return true;
-	  case 28:
-	    x=7; y=2; z=2; return true;
-	  case 30:
-	    x=5; y=2; z=2; return true;
-	  case 32:
-	    x=4; y=2; z=4; return true;
-	  case 35:
-	    x=7; y=5; z=1; return true;
-	  case 36:
-	    x=4; y=3; z=3; return true;
-	  case 40:
-	    x=5; y=4; z=2; return true;
-	  case 42:
-	    x=7; y=3; z=2; return true;
-	  case 43:
-	    x=7; y=3; z=2; return true;
-	  case 45:
-	    x=5; y=3; y=3; return true;
-	  case 48:
-	    x=4; y=3; z=4; return true;
-	  case 50:
-	    x=5; y=5; z=2; return true;
-	  case 54:
-	    x=6; y=3; z=3; return true;
-	  case 56:
-	    x=7; y=4; z=2; return true;
-	  case 60:
-	    x=5; y= 4; z=3; return true;
-	  case 64:
-	    x=4; y=4; z=4; return true;
-	  default:
-	    break;
-	  }
-      // its something weird or big so try a best fit
-      int start=cubetrunc-1;
-      for(x=cubetrunc; x<=maxX;x++)
+    case 1: 
+      x=1; y=1; z=1; return true;
+    case 2: 
+      x=2; y=1; z=1; return true;
+    case 3:
+      x=3; y=1; z=1; return true;
+    case 4:
+      x=2; y=2; z=1; return true;
+    case 5:
+      x=5; y=1; z=1; return true;
+    case 6:
+      x=3; y=2; z=1; return true;
+    case 7:
+      x=7; y=1; z=1; return true;
+    case 8:
+      x=2; y=2; z=2; return true;
+    case 9:
+      x=3; y=3; z=1; return true;
+    case 10:
+      x=5; y=2; z=1; return true;
+    case 12:
+      x=2; y=3; z=2; return true;
+    case 14:
+      x=7; y=2; z=1; return true;
+    case 15:
+      x=5; y=3; z=1; return true;
+    case 16:
+      x=4; y=2; z=2; return true;
+    case 18:
+      x=3; y=3; z=2; return true;
+    case 20:
+      x=5; y=2; z=2; return true;
+    case 21:
+      x=7; y=3; z=1; return true;
+    case 24:
+      x=4; y=3; z=2; return true;
+    case 25:
+      x=5; y=5; z=1; return true;
+    case 27:
+      x=3; y=3; z=3; return true;
+    case 28:
+      x=7; y=2; z=2; return true;
+    case 30:
+      x=5; y=2; z=2; return true;
+    case 32:
+      x=4; y=2; z=4; return true;
+    case 35:
+      x=7; y=5; z=1; return true;
+    case 36:
+      x=4; y=3; z=3; return true;
+    case 40:
+      x=5; y=4; z=2; return true;
+    case 42:
+      x=7; y=3; z=2; return true;
+    case 43:
+      x=7; y=3; z=2; return true;
+    case 45:
+      x=5; y=3; y=3; return true;
+    case 48:
+      x=4; y=3; z=4; return true;
+    case 50:
+      x=5; y=5; z=2; return true;
+    case 54:
+      x=6; y=3; z=3; return true;
+    case 56:
+      x=7; y=4; z=2; return true;
+    case 60:
+      x=5; y= 4; z=3; return true;
+    case 64:
+      x=4; y=4; z=4; return true;
+    case 128:
+      x=8; y=4; z=4; return true;
+    case 256:
+      x=8; y=8; z=4; return true;
+    default:
+      break;
+    }
+  // its something weird or big so try a best fit
+  int start=cubetrunc-1;
+  for(x=cubetrunc; x<=maxX;x++)
+    {
+      for(y=start; y<=maxY;y++)
 	{
-	  for(y=start; y<=maxY;y++)
+	  for(z=start; z<=maxZ;z++)
 	    {
-	      for(z=start; z<=maxZ;z++)
-		{
-		  if(volume==x*y*z)
-		    return true;
-		}
+	      if(volume==x*y*z)
+		return true;
 	    }
 	}
-      return false;
     }
+  return false;
 
 
+}
 
 
 void registersumFastDouble(void)
