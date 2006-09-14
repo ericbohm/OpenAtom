@@ -4,23 +4,25 @@
 # Compile options and Fortran underscore convention
 #-----------------------------------------------------------------
 DBG_FLAG         =
-OPTS             = -O3 -qstrict -qarch=440 -qtune=440 -qinitauto=FF 
+OPTS             = -O3 -qstrict  -qtune=440 -DDUAL_FFTW
+MATH_OPTS        = -qarch=440d
 LNK_OPTS         = -memory gnu -lz
 F_COMPILER       = xlf $(OPTS) 
 F_COMPILER_NOPT  = xlf $(DBG_FLAG)
 OPT_FORT         = 
-DUAL_FFTW        = -DDUAL_FFTW_OFF
 RUNCOMMAND       = ../cpaimd.x	
 #-----------------------------------------------------------------
 # Directories :  (fftw must be the full path)
 #-----------------------------------------------------------------
 CPAIMD      = ../
-FFT_HOME    = $(HOME)/fftw_dh
+#FFT_HOME    = $(HOME)/fftw_dh
+#FFT_HOME    = /bgl/local/lib/FFTW2_1_5
+FFT_HOME    = /bgl/local/lib/fftw
 MYMATH_HOME = ../src_mathlib
 VALID_DIR   = ../binary/water_32M_10Ry
 VALID_EXEC  = ../autotest
 AUTOTEST    = ../$(VALID_EXEC)
-LOCAL_LIB_PATHS = -L$(HOME)/mylibs -L/bgl/local/lib
+LOCAL_LIB_PATHS = -L/bgl/local/lib -L$(HOME)/mylibs
 #-----------------------------------------------------------------
 #==================================================================
 
@@ -33,11 +35,11 @@ LOCAL_LIB_PATHS = -L$(HOME)/mylibs -L/bgl/local/lib
 #BLAS_FORT    = $(MYMATH_HOME)/blas_routines.h
 #LAPACK_FORT  = $(MYMATH_HOME)/lapack_routines.h
 EISPACK_FORT = $(MYMATH_HOME)/eispack_routines.h
-#MATH_LIB     = 
+MATH_LIB     = 
 #-----------------------------------------------------------------
 #        Optimized Libraries
 #-----------------------------------------------------------------
-BLAS_FORT    = $(MYMATH_HOME)/xerbla_routine.h
+#BLAS_FORT    = $(MYMATH_HOME)/xerbla_routine.h
 #BLAS_FORT    = $(MYMATH_HOME)/no_blas_routines.h
 LAPACK_FORT   = $(MYMATH_HOME)/no_lapack_routines.h
 #EISPACK_FORT  = $(MYMATH_HOME)/no_eispack_routines.h
