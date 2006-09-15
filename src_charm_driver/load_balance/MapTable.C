@@ -321,7 +321,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			{
 			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d= proc %d\n", plane, xchunk, ychunk, newdim, assign[0]*x*y+assign[1]*x+assign[2]);
 #ifdef USE_INT_MAP		      
-			  maptable->set(plane, xchunk, ychunk, newdim,destpe);
+			  maptable->set(plane, xchunk, ychunk, newdim, destpe);
 #else
 			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
@@ -451,11 +451,11 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 
 	    // this remainder scheme is odd, creates imbalance.
 	    // doesn't use all processors
-	    destpe=availprocs->findNext();
-	    for(int ychunk=0; ychunk<sizeZ; ychunk=ychunk+m)
+	    //destpe=availprocs->findNext();
+	    for(int ychunk=0; ychunk<sizeZ-rem; ychunk=ychunk+m)
 	      {
-                if(ychunk==(pm-rem)*m)
-		  m=m+1;
+                /*if(ychunk==(pm-rem)*m)
+		  m=m+1;*/
         	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
 		  {
 		    if(xchunk==(pl-srem)*l)
@@ -466,7 +466,6 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 			  {
 #ifdef USE_INT_MAP
 				maptable->set(state, plane, destpe);
-
 #else						
 				maptable->put(intdual(state, plane))=destpe;
 #endif
@@ -478,8 +477,21 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 
 		  }
 	      }
-
-	    
+              if(rem!=0)
+                for(int state=0; state<nstates; state++)
+                {
+                  for(int plane=sizeZ-rem; plane<sizeZ; plane++)
+                  {
+                    if(availprocs->count()==0)
+	              availprocs->reset();
+	            destpe=availprocs->findNext();
+#ifdef USE_INT_MAP
+		    maptable->set(state, plane, destpe);
+#else						
+		    maptable->put(intdual(state, plane)) = destpe;
+#endif
+                  }
+                }
 	  }
 #ifdef MAP_DEBUG
 
