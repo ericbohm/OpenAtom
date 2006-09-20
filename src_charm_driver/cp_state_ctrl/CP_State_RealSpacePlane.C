@@ -274,7 +274,7 @@ void CP_State_RealSpacePlane::doFFT(){
   if(ees_nonlocal==1 && !config.launchNLeesFromRho){
     CkAssert(nchareG<=ngridc);
     if(thisIndex.y<nchareG){
-      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes();
+      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false);
     }//endif
   }//endif
 #endif

@@ -175,6 +175,7 @@ class MapTable4
 };
 
 PeList *subListPlane(int plane, int nstates, MapType2 *smap);
+PeList *subListState(int state, int nplanes, MapType2 *smap);
 
 class GSMapTable : public MapTable
 {
@@ -251,7 +252,7 @@ class RSMapTable  : public MapTable
   int sizeZ;
   int Rstates_per_pe;
   RSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboid) ;
+	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboid, MapType2 *gsmap, int nchareG);
   RSMapTable(){}
 };
 

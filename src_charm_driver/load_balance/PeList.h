@@ -46,6 +46,7 @@ class PeList
 	  TheList[i]=i;
 	  sortIdx[i]=i;
 	}
+      current=0;
     }
   PeList(CkVec <int> inlist)
     {
@@ -80,8 +81,11 @@ class PeList
       size=_size;
       TheList=new int [size];
       sortIdx=new int [size];
-      memcpy(TheList,a,size*sizeof(int));
-      reindex();
+      for(int i=0;i<size;i++)
+	{
+	  TheList[i]=a[i];
+	  sortIdx[i]=i;
+	}
     }	 // use an array to construct
 
   PeList(PeList *a, int start, int _size)
@@ -120,6 +124,65 @@ class PeList
   void reset(){current=0;} 
 
   void resort(){   sortSource(TheList[0]);   }; 
+
+  void append(PeList &inlist)
+  {
+    // make array large enough for both, paste together
+    int newsize=inlist.size+size;
+    int *newlist= new int [newsize];
+    int *newIndex= new int [newsize];
+    int i=0;
+    for(; i< size ; i++)
+      {
+	newlist[i]=TheList[i];
+	newIndex[i]=sortIdx[i];
+      }
+    for(; i< newsize ; i++)
+      {
+	newlist[i]=inlist.TheList[i];
+	newIndex[i]=i;
+      }
+    size=newsize;
+    delete TheList;
+    delete sortIdx;
+    TheList=newlist;
+    sortIdx=newIndex;
+  }
+
+  void mergeOne(int pe)
+  {
+    // make array large enough for both, paste together
+    int i=0;
+    bool found=false;
+    for(; i< size ; i++)
+      {
+	if(TheList[i]==pe)
+	  found=true;
+      }
+    if(!found)
+      {
+	int newsize=size+1;
+	int *newlist= new int [newsize];
+	int *newIndex= new int [newsize];
+	i=0;
+	for(; i< size ; i++)
+	  {
+	    newlist[i]=TheList[i];
+	    newIndex[i]=sortIdx[i];
+	  }
+	for(; i< newsize ; i++)
+	  {
+	    newlist[i]=pe;
+	    newIndex[i]=i;
+	  }
+	size=newsize;
+	delete TheList;
+	delete sortIdx;
+	TheList=newlist;
+	sortIdx=newIndex;
+      }
+  }
+
 
   inline int findNext()        // return next available, increment liststart
   {
@@ -167,8 +230,7 @@ class PeList
     sortIdx=newIndex;
     return *this; 
   }
-
-
+  
   // need to rebuild your sortIdx
   PeList &operator-(PeList &inlist) {
     for(int i=0; i< inlist.size;i++)

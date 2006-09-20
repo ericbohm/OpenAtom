@@ -283,6 +283,14 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 
   int ncoef  = rho_gs.numPoints;
   CkAssert(ncoef==msg->size);
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
+
   memcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
   delete msg;  
 
@@ -519,6 +527,13 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
   int offset           = msg->offset;
   int iter             = msg->iter;
   complex *partlyIFFTd = msg->data;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
   if(iter!= (iterAtmTyp+1) ){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

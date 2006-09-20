@@ -354,6 +354,13 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
   int iopt               = msg->iopt;
   int iter               = msg->iter;
   complex *partiallyFFTd = msg->data;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
 
 //============================================================================

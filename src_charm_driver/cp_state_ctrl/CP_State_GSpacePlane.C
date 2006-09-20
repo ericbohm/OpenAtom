@@ -152,7 +152,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->sendFFTData();
 #else
 #ifndef _CP_DEBUG_SFNL_OFF_
-       if(c->ees_nonlocal==1){c->startNLEes();}  // EES-NL launch must be here
+       if(c->ees_nonlocal==1){c->startNLEes(true);}  // EES-NL launch must be here or later
 #endif
 #endif
     //------------------------------------------------------------------------
@@ -606,6 +606,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   doneDoingIFFT       = false;
   allgdoneifft        = false;
   triggerNL           = false;
+  NLready             = false;
   acceptedPsi         = true;    // we start out with a psi
   allAcceptedPsi      = true;    // we start out with a psi
   acceptedVPsi        = true;    // we start out with a vpsi
@@ -802,6 +803,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|AllPsiExpected;
   p|needPsiV;
   p|triggerNL;
+  p|NLready;
   p|doneDoingIFFT;
   p|doneNewIter;
   p|allgdoneifft;
@@ -1251,7 +1253,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   iteration++;   // my iteration # : not exactly in sync with other chares
                  //                  but should agree when chares meet.
-
+  //  if(!config.launchNLeesFromRho)
+  //    triggerNL=true;
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   CkPrintf("GSP [%d,%d] StartNewIter : %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
@@ -1276,8 +1279,6 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 
-  if(triggerNL) // we were asked to NL but weren't ready
-    startNLEes();
 
 //---------------------------------------------------------------------------
 }//end routine
@@ -1366,6 +1367,7 @@ void CP_State_GSpacePlane::doFFT() {
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
 #endif   
+  NLready=true;  
  
 }
 //============================================================================
@@ -1424,7 +1426,6 @@ void CP_State_GSpacePlane::sendFFTData () {
 // Finish up 
 
   if (config.useGssInsRealP){gssInstance.endIteration();}
-    
 //----------------------------------------------------------------------
   }//end routine 
 //============================================================================
@@ -1802,6 +1803,12 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   complex *data  = (complex *)msg->getData();
   int       N    = msg->getSize()/sizeof(complex);
   complex *force = gs.packedForceData;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+    {
+      CkAssert(isnan(((double*) msg->getData())[i])==0);
+    }
+#endif
 
 
 //==============================================================================
@@ -2739,6 +2746,13 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 
   int N         = msg->getSize()/sizeof(complex);
   complex *data = (complex *)msg->getData();
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+    {
+      CkAssert(isnan(((double*) msg->getData())[i])==0);
+    }
+#endif
+
   complex *psi  = gs.packedPlaneData;
   int offset=msg->getUserFlag();
   if(offset<0)
@@ -2792,6 +2806,18 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //  CkPrintf("GSP [%d,%d] acceptNewPsi\n",thisIndex.x,thisIndex.y);
   int N         = msg->N;
   complex *data = msg->result;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<N ;i++)
+    {
+      if((isnan(data[i].re)!=0)|| (isnan(data[i].im)!=0))
+	{
+	  CkPrintf("GSP [%d,%d] acceptNewPsi offset %d %d of %d is nan\n",thisIndex.x,thisIndex.y, msg->myoffset, i,N);
+	}
+      CkAssert(isnan(data[i].re)==0);
+      CkAssert(isnan(data[i].im)==0);
+    }
+#endif
+
   complex *psi  = gs.packedPlaneData;
   int offset=msg->myoffset;
   if(offset<0)
@@ -3520,11 +3546,14 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::startNLEes(){
+void CP_State_GSpacePlane::startNLEes(bool local){
+  if(!local)
+    triggerNL=true;
 
   //make sure we don't start this before we're ready
-  if(acceptedPsi)
+  if(NLready && triggerNL)
     {
+      //      CkPrintf("GS[%d,%d] triggering NL\n");
 #define _NLEES_PRIO_START_
 #ifdef _NLEES_PRIO_START_OFF_
 
@@ -3540,11 +3569,9 @@ void CP_State_GSpacePlane::startNLEes(){
       particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
 #endif
       triggerNL=false;
+      NLready=false;
     }
-  else
-    {
-      triggerNL=true;
-    }
+
 //-----------------------------------------------------------------------------
   }//end routine
 //==============================================================================

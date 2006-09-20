@@ -576,33 +576,7 @@ main::main(CkArgMsg *msg) {
       }
     else
       gfoo= new PeList;  // heap it
-    if(config.useCuboidMapRS)
-      {
-	int l=config.Rstates_per_pe;
-	int m, pl, pm;
-	pl = nstates / l;
-	pm = CkNumPes() / pl;
-	if(pm==0){CkAbort("Choose a smaller Rstates_per_pe \n");}
-	m = sim->sizeZ / pm;
-	int bx,by,bz;
-#ifdef CMK_VERSION_BLUEGENE
-
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),pl))
-	  {
-	    CkPrintf("Using %d,%d,%d dimensions for RS box %d  mapping\n",bx,by,bz, pl);
-	    rfoo= new PeList(bx,by,bz);  // heap it
-	  }
-	else
-	  {
-	    CkPrintf("no box for %d\n",boxSize);
-	    config.useCuboidMap=0;
-	    rfoo= new PeList;  // heap it
-	  }
-#else
-	rfoo= new PeList;  // heap it
-#endif
-      }
-    else if(config.useCuboidMap)
+    if(config.useCuboidMap)
 	rfoo=new PeList(*gfoo);
     else
       rfoo= new PeList;  // heap it
@@ -1476,6 +1450,29 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 //============================================================================
 // Instantiate the Chares with placement determined by the maps
 
+  //--------------------------------------------------------------------------------
+ // state g-space
+
+  availGlobG->reset();
+#ifdef USE_INT_MAP
+  GSImaptable.buildMap(nstates,nchareG);
+  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
+				   sim->lines_per_chareG, sim->pts_per_chareG,
+				   nstates, Gstates_per_pe, config.useCuboidMap);
+#else
+  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlobG,nchareG,
+				   sim->lines_per_chareG, sim->pts_per_chareG,
+				   nstates, config.Gstates_per_pe, config.useCuboidMap);
+#endif
+  CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
+  double newtime=CmiWallTimer();
+  CkPrintf("GSMap created in %g\n",newtime-Timer);
+  Timer=newtime;
+  CkArrayOptions gSpaceOpts;
+  gSpaceOpts.setMap(gsMap);
+  gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
+                     sizeX, sizeYZ,1, 1,sGrainSize,numChunks,gSpaceOpts);
+
  //---------------------------------------------------------------------------
  // state r-space
 
@@ -1483,13 +1480,13 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 #ifdef USE_INT_MAP
   RSImaptable.buildMap(nstates,nchareR);
   RSMapTable RStable= RSMapTable(&RSImaptable, availGlobR, nstates, nchareR, 
-                                 Rstates_per_pe, config.useCuboidMapRS);
+                                 Rstates_per_pe, config.useCuboidMapRS, &GSImaptable, config.nchareG);
 #else
   RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
-                                 Rstates_per_pe, config.useCuboidMapRS);
+                                 Rstates_per_pe, config.useCuboidMapRS, &GSImaptable, config.nchareG);
 #endif
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
-  double newtime=CmiWallTimer();
+  newtime=CmiWallTimer();
   CkPrintf("RSMap created in %g\n",newtime-Timer);
   Timer=newtime;
   CkArrayOptions realSpaceOpts;
@@ -1513,28 +1510,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
                                          nstates,nchareRhoG);
 
- //--------------------------------------------------------------------------------
- // state g-space
-
-  availGlobG->reset();
-#ifdef USE_INT_MAP
-  GSImaptable.buildMap(nstates,nchareG);
-  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
-				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, Gstates_per_pe, config.useCuboidMap);
-#else
-  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlobG,nchareG,
-				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, config.Gstates_per_pe, config.useCuboidMap);
-#endif
-  CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
-  newtime=CmiWallTimer();
-  CkPrintf("GSMap created in %g\n",newtime-Timer);
-  Timer=newtime;
-  CkArrayOptions gSpaceOpts;
-  gSpaceOpts.setMap(gsMap);
-  gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX, sizeYZ,1, 1,sGrainSize,numChunks,gSpaceOpts);
 
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
@@ -1818,7 +1793,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
    if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
-       nlz.dump();
+       //       nlz.dump();
        *RhoAvail-nlz; //unary minus
        RhoAvail->reindex();
        CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
@@ -2127,6 +2102,7 @@ void mapOutput()
 // return the cuboid x,y,z of a subpartition exactly matching that volume
 bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume)
 {
+  CkPrintf("maxX %d\n",maxX);
   double cubert= cbrt((double) volume);
   int cubetrunc= (int) cubert;
   x=y=z=cubetrunc;
@@ -2186,6 +2162,11 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 30:
       x=5; y=2; z=2; return true;
     case 32:
+      if(config.useCuboidMapRS)
+	{
+	  if(maxX>=8)
+	    { x=8; y=2; z=2; return true;}
+	}
       x=4; y=2; z=4; return true;
     case 35:
       x=7; y=5; z=1; return true;
@@ -2210,17 +2191,42 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 60:
       x=5; y= 4; z=3; return true;
     case 64:
+      if(config.useCuboidMapRS)
+	{
+	  if(maxX==8)
+	    { x=8; y=4; z=2; return true;}
+	  if(maxX>=16)
+	    { x=16; y=2; z=2; return true;}
+	}
       x=4; y=4; z=4; return true;
     case 128:
+      if(config.useCuboidMapRS)
+	{
+	  if(maxX==16)
+	    {x=16; y=4; z=2; return true;}
+	  if(maxX>=32)
+	    {  x=32; y=2; z=2; return true;	}
+	}
       x=8; y=4; z=4; return true;
     case 256:
+      if(config.useCuboidMapRS)
+	{
+	  if(maxX==16)
+	    { x=16; y=4; z=4; return true;}
+	  if(maxX>=32)
+	    { x=16; y=4; z=4; return true;}
+	}
       x=8; y=8; z=4; return true;
     default:
       break;
     }
   // its something weird or big so try a best fit
   int start=cubetrunc-1;
-  for(x=cubetrunc; x<=maxX;x++)
+  if(config.useCuboidMapRS)
+    x=(volume>=maxX)? maxX: cubetrunc;
+  else
+    x=cubetrunc;
+  for(; x<=maxX;x++)
     {
       for(y=start; y<=maxY;y++)
 	{

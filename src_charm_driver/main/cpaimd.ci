@@ -206,7 +206,7 @@ mainmodule cpaimd {
 		entry void makePCproxies();
 		entry void isAtSync(int);
 		entry void startNewIter ();
-		entry void startNLEes ();
+		entry void startNLEes (bool );
 		entry void gdoneIFFT(CkReductionMsg *msg);
 
 		entry void psiWriteComplete(CkReductionMsg *msg);

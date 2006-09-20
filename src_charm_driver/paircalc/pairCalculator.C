@@ -459,6 +459,14 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 		  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 		  idx=pcid->listLFrom[elem];
 		  idx.index[3]=chunk;
+#ifdef _NAN_CHECK_
+		  for(int i=0;i<outsize ;i++)
+		    {
+		      CkAssert(isnan(msgfromrow->points[i].re)==0);
+		      CkAssert(isnan(msgfromrow->points[i].im)==0);
+		    }
+#endif
+
 		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msgfromrow);
 		}
 	    }
@@ -472,6 +480,13 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	      if(pcid->Symmetric && myPlane==0)
 		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,pcid->Symmetric);
+#endif
+#ifdef _NAN_CHECK_
+		  for(int i=0;i<outsize ;i++)
+		    {
+		      CkAssert(isnan(msgfromrow->points[i].re)==0);
+		      CkAssert(isnan(msgfromrow->points[i].im)==0);
+		    }
 #endif
 
 	      pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);
@@ -503,6 +518,14 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
 		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+#ifdef _NAN_CHECK_
+		  for(int i=0;i<outsize ;i++)
+		    {
+		      CkAssert(isnan(msg->points[i].re)==0);
+		      CkAssert(isnan(msg->points[i].im)==0);
+		    }
+#endif
+
 
 		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
 		}
@@ -513,6 +536,13 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
 	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+#ifdef _NAN_CHECK_
+	      for(int i=0;i<outsize ;i++)
+		{
+		  CkAssert(isnan(msg->points[i].re)==0);
+		  CkAssert(isnan(msg->points[i].im)==0);
+		}
+#endif
 	      pcid->proxyLNotFrom[chunk].acceptPairData(msg);
 	    }
 	}
@@ -722,6 +752,13 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
 		  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
+#ifdef _NAN_CHECK_
+		  for(int i=0;i<outsize ;i++)
+		    {
+		      CkAssert(isnan(msg->points[i].re)==0);
+		      CkAssert(isnan(msg->points[i].im)==0);
+		    }
+#endif
 
 		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
 		}
@@ -732,6 +769,13 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
 	      msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
+#ifdef _NAN_CHECK_
+		  for(int i=0;i<outsize ;i++)
+		    {
+		      CkAssert(isnan(msg->points[i].re)==0);
+		      CkAssert(isnan(msg->points[i].im)==0);
+		    }
+#endif
 
 	      pcid->proxyRNotFrom[chunk].acceptPairData(msg);
 	    }
@@ -829,6 +873,13 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
 	omsg=new ( n,0,0 ) multiplyResultMsg;
       }
     omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+#ifdef _NAN_CHECK_
+  for(int i=0;i<n ;i++)
+    {
+      CkAssert(isnan(omsg->matrix1[i])==0);
+    }
+#endif
+
     sectionProxy.multiplyResult(omsg);
   }
   else {

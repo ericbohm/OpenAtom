@@ -129,6 +129,13 @@ void Ortho::start_calc(CkReductionMsg *msg){
   got_start = true;
   int chunksize = m;
   double *S = (double*) msg->getData();
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+    {
+      CkAssert(isnan(((double*) msg->getData())[i])==0);
+    }
+#endif
+
   step = 0;
   iterations = 0;
   int s1=thisIndex.x*m;

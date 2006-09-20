@@ -259,6 +259,13 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
   int numLines         = rho_gs.numLines;
   int sizeZ            = rho_gs.sizeZ;
   int expandedDataSize = numLines*sizeZ;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
   if(size!=numLines){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -566,6 +573,13 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
   int offset           = msg->offset;
   int iopt             = msg->iopt;
   complex *partlyIFFTd = msg->data;
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++)
+    {
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
 
   int numLines         = rho_gs.numLines;
   int sizeZ            = rho_gs.sizeZ;

@@ -389,12 +389,14 @@ void CP_Rho_RealSpacePlane::acceptDensity() {
     CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
     if(sim->ees_nloc_on==1 && config.launchNLeesFromRho)
       { // kick off the NLees from here
+
 	if(thisIndex.x<config.nchareG)
 	  for(int ns=0;ns<config.nstates;ns++)
 	    {
 	      //	    CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",thisIndex.x, thisIndex.y, thisIndex.x, nchg);
-	      gSpacePlaneProxy(ns,thisIndex.x).startNLEes();
+	      gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
 	    }
+
       }
   }//endif
 #endif

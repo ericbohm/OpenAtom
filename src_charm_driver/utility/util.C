@@ -1947,8 +1947,8 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.RpesPerState,"RpesPerState;",0);
     rangeExit(config.toleranceInterval,"toleranceInterval;",0);
     rangeExit(config.numChunks,"numChunks;",0);
+    rangeExit(config.phantomSym,"phantomSym;",1);
     rangeExit(config.gSpaceSum,"gSpaceSum;",1);
-    rangeExit(config.gSpaceSum,"phantomSym;",1);
     rangeExit(config.useCuboidMap,"useCuboidMap;",1);
     rangeExit(config.useCuboidMapRS,"useCuboidMapRS;",1);
     rangeExit(config.useCentroidMap,"useCentroidMap;",1);

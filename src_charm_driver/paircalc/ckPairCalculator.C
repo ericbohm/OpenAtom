@@ -2251,8 +2251,18 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
+#ifdef _NAN_CHECK_
+	for(int i=0;i<msg->N ;i++)
+	  {
+	    if(isnan(msg->result[i].re)!=0 || isnan(msg->result[i].im)!=0)
+	      {
+		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+	      }
+	    CkAssert(isnan(msg->result[i].re)==0);
+	    CkAssert(isnan(msg->result[i].im)==0);
+	  }
+#endif
 	mycb.send(msg);
-
       }
   }
   else
@@ -2276,6 +2286,17 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	  }
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+#endif
+#ifdef _NAN_CHECK_
+	for(int i=0;i<msg->N ;i++)
+	  {
+	    if(isnan(msg->result[i].re)!=0 || isnan(msg->result[i].im)!=0)
+	      {
+		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+	      }
+	    CkAssert(isnan(msg->result[i].re)==0);
+	    CkAssert(isnan(msg->result[i].im)==0);
+	  }
 #endif
 	mycb.send(msg);
 	}
@@ -2409,6 +2430,18 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,index+j,thisIndex.w);
 #endif
+#ifdef _NAN_CHECK_
+	for(int i=0;i<omsg->N ;i++)
+	  {
+	    if(isnan(omsg->result[i].re)!=0 || isnan(omsg->result[i].im)!=0)
+	      {
+		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+	      }
+	    CkAssert(isnan(omsg->result[i].re)==0);
+	    CkAssert(isnan(omsg->result[i].im)==0);
+	  }
+#endif
+
 	mycb.send(omsg);
 
       }
@@ -2439,6 +2472,18 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 	  CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
+#ifdef _NAN_CHECK_
+	for(int i=0;i<omsg->N ;i++)
+	  {
+	    if(isnan(omsg->result[i].re)!=0 || isnan(omsg->result[i].im)!=0)
+	      {
+		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+	      }
+	    CkAssert(isnan(omsg->result[i].re)==0);
+	    CkAssert(isnan(omsg->result[i].im)==0);
+	  }
+#endif
+
 	  mycb.send(omsg);
 	}
       if(mynewData!=NULL)
