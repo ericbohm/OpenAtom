@@ -151,7 +151,7 @@ extern CP           readonly_cp;
 
 MapType2 GSImaptable;
 MapType2 RSImaptable;
-MapType2 RSPImaptable;
+MapType2 RPPImaptable;
 MapType2 RhoGSImaptable;
 MapType2 RhoRSImaptable;
 MapType2 RhoGHartImaptable;
@@ -162,13 +162,13 @@ MapType4 SymScalcImaptable;
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
-CkHashtableT<intdual, int> RSPmaptable(10000,0.25);
+CkHashtableT<intdual, int> RPPmaptable(10000,0.25);
 CkHashtableT<intdual, int> AsymScalcmaptable(10000,0.25);
 CkHashtableT<intdual, int> SymScalcmaptable(10000,0.25);
 #else
 CkHashtableT<intdual, int> GSmaptable;
 CkHashtableT<intdual, int> RSmaptable;
-CkHashtableT<intdual, int> RSPmaptable;
+CkHashtableT<intdual, int> RPPmaptable;
 CkHashtableT<intdual, int> AsymScalcmaptable;
 CkHashtableT<intdual, int> SymScalcmaptable;
 #endif
@@ -583,7 +583,6 @@ main::main(CkArgMsg *msg) {
 
     availGlobG=rfoo;
     availGlobR=gfoo;
-    excludePes= new PeList();
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
@@ -665,6 +664,7 @@ main::main(CkArgMsg *msg) {
     delete [] indexZ;
     delete rfoo;
     delete gfoo;
+    delete excludePes;
 //============================================================================
 
     newtime=CmiWallTimer();
@@ -1706,19 +1706,21 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   availGlobG->reset();
   double newtime=CmiWallTimer();
 #ifdef USE_INT_MAP
-  RSPImaptable.buildMap(nstates,nchareRPP);
-  RSPMapTable RSPtable= RSPMapTable(&RSPImaptable, availGlobG, exclusion, 
+  RPPImaptable.buildMap(nstates,nchareRPP);
+  RPPMapTable RPPtable= RPPMapTable(&RPPImaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
-				    boxSize, config.useCuboidMap);
+				    boxSize, config.useCuboidMap, 
+				    config.nchareG, &GSImaptable);
 #else
-  RSPMapTable RSPtable= RSPMapTable(&RSPmaptable, availGlobG, exclusion, 
+  RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
-				    boxSize, config.useCuboidMap);
+				    boxSize, config.useCuboidMap, 
+				    config.nchareG, &GSImaptable);
 #endif
 
-  CProxy_RSPMap rspMap= CProxy_RSPMap::ckNew();
+  CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew();
   newtime=CmiWallTimer();
-  CkPrintf("RSPMap created in %g\n",newtime-Timer);
+  CkPrintf("RPPMap created in %g\n",newtime-Timer);
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts;
   pRealSpaceOpts.setMap(rspMap);
@@ -1789,12 +1791,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
    PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
-   PeList nlz(peUsedByNLZ);
+   excludePes= new PeList(peUsedByNLZ);
    if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
        //       nlz.dump();
-       *RhoAvail-nlz; //unary minus
+       *RhoAvail-*excludePes; //unary minus
        RhoAvail->reindex();
        CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
    }//endif
@@ -1818,9 +1820,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR,1);
-   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable, &nlz);
+   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
 #else
-   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable, &nlz);
+   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
 #endif
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;
@@ -1835,9 +1837,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGSImaptable.buildMap(nchareRhoG,1);
-    RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG);
+    RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG, excludePes);
 #else
-    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG);
+    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG, excludePes);
 #endif
     CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
     CkArrayOptions rhogsOpts;
@@ -1851,9 +1853,11 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGHartImaptable.buildMap(nchareRhoGHart,1);
-    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, nchareRhoGHart);
+    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
+				   nchareRhoGHart, excludePes);
 #else
-    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart);
+    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
+				   excludePes);
 #endif
     CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
     CkArrayOptions rhoghartOpts;
@@ -1869,14 +1873,14 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #ifdef USE_INT_MAP
     if(ees_eext_on)
       RhoRHartImaptable.buildMap(nchareRhoRHart,1);
-    RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, nchareRhoRHart);
+    RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
+				   nchareRhoRHart, excludePes);
 #else
-    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail, nchareRhoRHart);
+    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
+				   nchareRhoRHart, excludePes);
 #endif
-    // make the exclusion list which is whats left after 
-    excludePes= new PeList(*RhoAvail);
-    excludePes->trimUsed();
-    CkPrintf("rho G and S leaves us with %d\n", excludePes->count());
+    CkPrintf("availProcs %d\n",RhoAvail->count());
+    CkPrintf("rho G and S consumed %d\n", excludePes->count());
     //    excludePes->dump();
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
@@ -1937,7 +1941,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
   delete RhoAvail;
-  RhoAvail=NULL;
+
 //===========================================================================
   }//end routine
 //============================================================================
@@ -2112,10 +2116,10 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     cubetrunc=maxY;
   if(cubetrunc>maxZ)
     cubetrunc=maxZ;
-  if(volume==x*y*z)
+  if(volume==x*y*z && !config.useCuboidMapRS)
     return true;
   CkAssert(volume>0);
-  switch (volume) // for the common values we just pick cuboids
+  switch (volume) // for the common values we just pick cuboids we like
     {
     case 1: 
       x=1; y=1; z=1; return true;

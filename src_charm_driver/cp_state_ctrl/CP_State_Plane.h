@@ -209,7 +209,7 @@ public:
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class RSPPFFTMsg: public CMessage_RSPPFFTMsg {
+class RPPPFFTMsg: public CMessage_RPPPFFTMsg {
 public:
     int size; 
     int senderIndex;

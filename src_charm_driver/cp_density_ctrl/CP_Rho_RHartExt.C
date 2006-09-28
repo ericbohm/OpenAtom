@@ -42,6 +42,7 @@ extern Config config;
 
 
 #define _CP_RHART_VERBOSE_OFF_
+//#define _CP_RHART_VERBOSE_
 
 
 //============================================================================
@@ -533,12 +534,13 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 
  // we're done here
  if(iterAtmTyp==natmTyp && nAtmTypRecv==(natmTyp+1)){
-   iterAtmTyp  = 0;
-   nAtmTypRecv = 0;
 #ifdef _CP_RHART_VERBOSE_
    CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d done\n",
              thisIndex.x,flagEwd,iterAtmTyp);
 #endif
+   iterAtmTyp  = 0;
+   nAtmTypRecv = 0;
+
  }//endif
 
 #else

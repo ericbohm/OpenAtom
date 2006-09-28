@@ -257,16 +257,17 @@ class RSMapTable  : public MapTable
 };
 
 
-class RSPMapTable  : public MapTable
+class RPPMapTable  : public MapTable
 {
  public:
   int nstates;
   int sizeZNL;
   int Rstates_per_pe;
-  RSPMapTable(MapType2  *_map, PeList *_availprocs,
+  RPPMapTable(MapType2  *_map, PeList *_availprocs,
 	      PeList *exclude, 	int _nstates, int _sizeZNL, 
-	      int _Rstates_per_pe, int boxSize, bool useCuboidMap) ;
-  RSPMapTable(){}
+	      int _Rstates_per_pe, int boxSize, bool useCuboidMap, 
+	      int nchareG, MapType2 *ppmap) ;
+  RPPMapTable(){}
 };
 
 
@@ -286,7 +287,7 @@ class RhoRHartMapTable  : public MapTable
  public:
   int nchareRhoRHart;
   RhoRHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoRHart);
+	int _nchareRhoRHart, PeList *exclude);
   RhoRHartMapTable(){}
 };
 
@@ -295,7 +296,7 @@ class RhoGHartMapTable  : public MapTable
  public:
   int nchareRhoGHart;
   RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoGHart);
+	int _nchareRhoGHart, PeList *exclude);
   RhoGHartMapTable(){}
 };
 
@@ -304,7 +305,7 @@ class RhoGSMapTable  : public MapTable
  public:
   int nchareRhoG;
   RhoGSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoG);
+	int _nchareRhoG, PeList *exclude);
   RhoGSMapTable(){}
 };
 

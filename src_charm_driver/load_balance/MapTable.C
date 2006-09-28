@@ -418,39 +418,43 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 
 	      destpe = thisStateBox->findNext();
 	      for(int plane=0; plane < sizeZ; plane++)
-	      {
+		{
 	 	
 #ifdef USE_INT_MAP
-		maptable->set(state, plane, destpe);
+		  maptable->set(state, plane, destpe);
 #else						
-		maptable->put(intdual(state, plane))= destpe;
+		  maptable->put(intdual(state, plane))= destpe;
 #endif
-		//		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
-		Pecount[destpe]++;
-		if(Pecount[destpe]>=rsobjs_per_pe+1)
-		{
-		  if(exclusionList==NULL)
+		  //		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
+		  Pecount[destpe]++;
+		  if(Pecount[destpe]>=rsobjs_per_pe+1)
 		    {
-		      exclusionList=new PeList(1);
-		      exclusionList->TheList[0]=destpe;
+		      if(exclusionList==NULL)
+			{
+			  exclusionList=new PeList(1);
+			  exclusionList->TheList[0]=destpe;
+			}
+		      else
+			exclusionList->mergeOne(destpe);
+		      *thisStateBox - *exclusionList;
+		      thisStateBox->reindex();
 		    }
-		  else
-		    exclusionList->mergeOne(destpe);
-		  *thisStateBox - *exclusionList;
-		  thisStateBox->reindex();
+		  if(Pecount[destpe]>rsobjs_per_pe+1)
+		    {
+		      CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
+		      exclusionList->dump();
+		      thisStateBox->dump();
+		      CkAbort("too many chares\n");
+		    }
+		  if(thisStateBox->count()==0)
+		    thisStateBox->reset();
+		  destpe = thisStateBox->findNext();
 		}
-		if(Pecount[destpe]>rsobjs_per_pe+1)
-		{
-		  CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
-		  exclusionList->dump();
-		  thisStateBox->dump();
-		  CkAbort("too many chares\n");
-		}
-		if(thisStateBox->count()==0)
-		  thisStateBox->reset();
-	        destpe = thisStateBox->findNext();
-              }
+	      delete thisStateBox;
 	    }
+	    if(exclusionList!=NULL)
+	      delete exclusionList;
+
 	  }
 	else
 	  {
@@ -507,10 +511,11 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 }
 
 
-RSPMapTable::RSPMapTable(MapType2  *_map, 
+RPPMapTable::RPPMapTable(MapType2  *_map, 
 			 PeList *_availprocs, PeList *exclusion,
 			 int _nstates, int _sizeZNL, int _Rstates_per_pe,
-			 int boxSize, bool useCuboidMap) :
+			 int boxSize, bool usePPmap, int nchareG,
+			 MapType2 *pp_map) :
   nstates(_nstates), sizeZNL(_sizeZNL),
   Rstates_per_pe(_Rstates_per_pe)
 {
@@ -528,13 +533,13 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   PeList *RPPlist=availprocs;
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
-  int afterExclusion=exclusion->count();
+  int afterExclusion=availprocs->count() - exclusion->count();
   //  CkPrintf("RPP excluded list\n");
   //  exclusion->dump();
   if(afterExclusion > pl*sizeZNL)
     { // we can fit the exclusion without blinking
       CkPrintf("RPP using density exclusion to avoid %d processors\n",exclusion->count());
-      RPPlist=exclusion;
+      RPPlist-exclusion;
     }
   else
     {// so an rstates_per_pe chosen for realstate might be too big
@@ -543,7 +548,7 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
 
 	  states_per_pe=totalChares/afterExclusion/2;
 	  CkPrintf("RPP adjusting states per pe from %d to %d to use density exclusion to stay within %d processors\n",Rstates_per_pe, states_per_pe, exclusion->count());
-	  RPPlist=exclusion;
+	  RPPlist-exclusion;
 	}
       else
 	{
@@ -574,37 +579,117 @@ RSPMapTable::RSPMapTable(MapType2  *_map,
   CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
   //  CkPrintf("using list\n");
   //  RPPlist->dump();
-  int destpe=RPPlist->findNext();
-  for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+  if(usePPmap)
     {
-      if(ychunk==(pm-rem)*m)
-	m=m+1;
-      for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
-	{
-	  if(xchunk==(pl-srem)*states_per_pe)
-	    states_per_pe=states_per_pe+1;
-	  for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
-	    {
-	      for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
-		{
-		  //		  CkPrintf("RPP setting %d %d to pe %d\n",state,plane,destpe);		    
-#ifdef USE_INT_MAP
-		  maptable->set(state, plane, destpe);
-#else
-		  maptable->put(intdual(state, plane))=destpe;
-#endif
+      /*  
+       * RPP(s,*) <-> PP(s,*)  
+       */
 
+      // make all the maps
+      // subtract the exclusion from each 
+      // keep the smallest count as the max charesperpe
+      PeList **maps= new PeList* [nstates];
+      int maxcharesperpe=0;
+      int *usedPes= new int[CkNumPes()];
+      bzero(usedPes, CkNumPes() * sizeof(int));
+      for(int state=0; state < nstates ; state++)
+	{
+	  // have variable number of exclusions per list
+	  // need to figure out what the max should be
+	  // for the border cases
+	  maps[state]= subListState( state, nchareG, pp_map);
+	  //	  *maps[state]-*exclusion;
+	  //	  maps[state]->reindex();
+	  int thischaresperpe=sizeZNL/maps[state]->count() + 1;
+	  //	  CkPrintf("state %d has %d charesperpe in %d pemap \n",state,thischaresperpe,maps[state]->count());
+	  //	  maxcharesperpe=(thischaresperpe>maxcharesperpe) ? thischaresperpe : maxcharesperpe;
+	  maxcharesperpe=sizeZNL*nstates/CkNumPes();
+	}
+      PeList *usedbyRPP=NULL;
+      //      CkPrintf("maxcharesperpe is %d\n",maxcharesperpe);
+      for(int state=0; state < nstates ; state++)
+	{
+	  if(usedbyRPP!=NULL)
+	    {
+	      *(maps[state])-*usedbyRPP;
+	      maps[state]->reindex();
+	    }
+	  for(int plane=0; plane < sizeZNL; plane++)
+	    {
+	      if(maps[state]->count()==0)
+		maps[state]->reset();
+	      int destpe=maps[state]->findNext(); 
+#ifdef USE_INT_MAP
+	      maptable->set(state, plane, destpe);
+#else
+	      maptable->put(intdual(state, plane))=destpe;
+#endif
+	      usedPes[destpe]++;
+	      if(usedPes[destpe]>maxcharesperpe)
+		{
+		  if(usedbyRPP==NULL)
+		    { 
+		      usedbyRPP= new PeList(1);
+		      usedbyRPP->TheList[0]=destpe;
+		    }
+		  else
+		    usedbyRPP->mergeOne(destpe);
+		  exclusion->mergeOne(destpe);
+		  exclusion->reindex();
+		  //		  maps[state]->dump();
+		  *(maps[state]) - *usedbyRPP;
+		  //		  maps[state]->dump();
+		  maps[state]->reindex();
+		  maps[state]->reset();
+		  //		  maps[state]->dump();
+		  //		  CkPrintf("removed %d\n",destpe);
+		  
 		}
 	    }
-	  if(RPPlist->count()==0)
-	    RPPlist->reset();
-	  destpe=RPPlist->findNext();
+	}
+      delete usedbyRPP;
+      delete [] usedPes;
+      for(int state=0;state<nstates;state++)
+	{
+	  delete maps[state];
+	  maps[state]=NULL;
+	}
+      delete [] maps;
+    }
+  else
+    {
+      int destpe=RPPlist->findNext();
+      for(int ychunk=0; ychunk<sizeZNL; ychunk=ychunk+m)
+	{
+	  if(ychunk==(pm-rem)*m)
+	    m=m+1;
+	  for(int xchunk=0; xchunk<nstates; xchunk=xchunk+states_per_pe)
+	    {
+	      if(xchunk==(pl-srem)*states_per_pe)
+		states_per_pe=states_per_pe+1;
+	      for(int state=xchunk; state<xchunk+states_per_pe && state<nstates; state++)
+		{
+		  for(int plane=ychunk; plane<ychunk+m && plane<sizeZNL; plane++)
+		    {
+		      //		  CkPrintf("RPP setting %d %d to pe %d\n",state,plane,destpe);		    
+#ifdef USE_INT_MAP
+		      maptable->set(state, plane, destpe);
+#else
+		      maptable->put(intdual(state, plane))=destpe;
+#endif
+
+		    }
+		}
+	      if(RPPlist->count()==0)
+		RPPlist->reset();
+	      destpe=RPPlist->findNext();
+	    }
 	}
     }
-
-#ifdef MAP_DEBUG
-  CkPrintf("RSPMap created on processor %d\n", CkMyPe());
   dump();
+#ifdef MAP_DEBUG
+  CkPrintf("RPPMap created on processor %d\n", CkMyPe());
+
 #endif
 }
 
@@ -646,8 +731,6 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  //	  CkPrintf("Rho RS using centroid\n");
 	  PeList *ourList= subListPlane(chunk, max_states, rsmap);
 	  *ourList-*exclude;
-	  PeList usedList(usedPes);
-	  *ourList-usedList;
 	  sortByCentroid(ourList, chunk, max_states, rsmap);
 	  //	  ourList->dump();
 	  if(rem!=0)
@@ -659,11 +742,10 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 #else
 	  maptable->put(intdual(chunk, 0))=destpe;
 #endif
+	  exclude->mergeOne(destpe);
 	  delete ourList;
-	  usedPes.push_back(destpe);
 	}
-      PeList usedList(usedPes);
-      *availprocs-usedList;
+      *availprocs-*exclude;
       availprocs->reindex();
     }
   else
@@ -711,7 +793,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 
 }
 
-RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG): nchareRhoG(_nchareRhoG)
+RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG, PeList *exclude): nchareRhoG(_nchareRhoG)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -750,6 +832,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  maptable->put(intdual(i, 0))=destpe;
 #endif
 	} 
+      exclude->mergeOne(destpe);
       srcpe=destpe;
       if(chunk+1<nchareRhoG)
 	destpe=availprocs->findNext();
@@ -761,7 +844,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 }
 
 
-RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart): nchareRhoRHart(_nchareRhoRHart)
+RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart, PeList *exclude ): nchareRhoRHart(_nchareRhoRHart)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -802,6 +885,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	  maptable->put(intdual(i, 0))=destpe;
 #endif
 	}
+      exclude->mergeOne(destpe);
       srcpe=destpe;
       //	  availprocs->sortSource(srcpe);
       if(chunk+1<nchareRhoRHart)
@@ -815,7 +899,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
 }
 
-RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart): nchareRhoGHart(_nchareRhoGHart)
+RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart, PeList *exclude): nchareRhoGHart(_nchareRhoGHart)
 {
   int npes;
   int srcpe=0;
@@ -854,6 +938,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	  maptable->put(intdual(i, 0))=destpe;
 #endif
 	} 
+      exclude->mergeOne(destpe);
       srcpe=destpe;
       //	  availprocs->sortSource(srcpe);
       if(chunk+1<nchareRhoGHart)

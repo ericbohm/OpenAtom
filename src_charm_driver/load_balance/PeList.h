@@ -63,7 +63,6 @@ class PeList
 
   PeList(PeList &inlist)
     {
-      current=0;
       size=inlist.size;
       TheList = new int [size];
       sortIdx = new int [size];
@@ -72,6 +71,7 @@ class PeList
 	  TheList[i]=inlist.TheList[i];
 	  sortIdx[i]=inlist.sortIdx[i];
 	}
+      current=inlist.current;
     }
 
 
@@ -314,8 +314,10 @@ class PeList
 	CkPrintf("%d list %d sortidx %d \n",j,TheList[j], sortIdx[j]);
     }
   ~PeList(){
-    delete [] TheList;
-    delete [] sortIdx;
+    if(TheList !=NULL)
+      delete [] TheList;
+    if(sortIdx !=NULL)
+      delete [] sortIdx;
 
   }
 

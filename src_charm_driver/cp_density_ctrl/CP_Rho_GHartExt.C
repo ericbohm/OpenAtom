@@ -57,6 +57,7 @@ extern ComlibInstanceHandle         commGHartRHartIns0;
 extern ComlibInstanceHandle         commGHartRHartIns1;
 
 #define _CP_GHART_VERBOSE_OFF_
+//#define _CP_GHART_VERBOSE_
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -346,8 +346,8 @@ void CP_State_RealSpacePlane::doReduction(){
 #endif
 
 
-    //    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
-    mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
+  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
+		       //  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
                          cookie,cb);
     CmiNetworkProgress();
 

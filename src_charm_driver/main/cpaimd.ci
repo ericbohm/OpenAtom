@@ -19,7 +19,7 @@ mainmodule cpaimd {
 
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
-	readonly CkHashtableT<intdual, int> RSPmaptable;
+	readonly CkHashtableT<intdual, int> RPPmaptable;
 	readonly CkHashtableT<intdual, int> RhoGSmaptable;
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
@@ -29,7 +29,7 @@ mainmodule cpaimd {
 
 	readonly MapType2 GSImaptable;
 	readonly MapType2 RSImaptable;
-	readonly MapType2 RSPImaptable;
+	readonly MapType2 RPPImaptable;
 	readonly MapType2 RhoGSImaptable;
 	readonly MapType2 RhoRSImaptable;
 	readonly MapType2 RhoGHartImaptable;
@@ -139,7 +139,7 @@ mainmodule cpaimd {
 
 	message RSFFTMsg {complex data[];};
 
-	message RSPPFFTMsg {complex data[];};
+	message RPPPFFTMsg {complex data[];};
 
 	message RhoGSFFTMsg {complex data[];};
 
@@ -363,8 +363,8 @@ mainmodule cpaimd {
 		entry GSMap();
 	};
 	
-	group RSPMap : CkArrayMap {
-		entry RSPMap();
+	group RPPMap : CkArrayMap {
+		entry RPPMap();
 	};
 
 

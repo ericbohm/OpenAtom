@@ -68,7 +68,7 @@ typedef IntMap4 MapType4;
 
 extern MapType2 GSImaptable;
 extern MapType2 RSImaptable;
-extern MapType2 RSPImaptable;
+extern MapType2 RPPImaptable;
 extern MapType2 RhoGSImaptable;
 extern MapType2 RhoRSImaptable;
 extern MapType2 RhoGHartImaptable;
@@ -78,7 +78,7 @@ extern MapType4 SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
-extern CkHashtableT <intdual, int> RSPmaptable;
+extern CkHashtableT <intdual, int> RPPmaptable;
 extern CkHashtableT <intdual, int> RhoGSmaptable;
 extern CkHashtableT <intdual, int> RhoRSmaptable;
 extern CkHashtableT <intdual, int> RhoGHartmaptable;
@@ -260,29 +260,29 @@ class RSMap: public CkArrayMapTable {
 };
 //============================================================================
 
-class RSPMap: public CkArrayMapTable {
+class RPPMap: public CkArrayMapTable {
 
  public:
-  RSPMap()
+  RPPMap()
       { 
 #ifdef USE_INT_MAP
-	maptable= &RSPImaptable;
+	maptable= &RPPImaptable;
 #else
-	maptable= &RSPmaptable;
+	maptable= &RPPmaptable;
 #endif
       }
   void pup(PUP::er &p)
 	{
 	    CkArrayMapTable::pup(p);
 #ifdef USE_INT_MAP
-	    maptable= &RSPImaptable;
+	    maptable= &RPPImaptable;
 #else
-	    maptable= &RSPmaptable;
+	    maptable= &RPPmaptable;
 #endif
 
 	}
   //  int procNum(int, const CkArrayIndex &);
-  ~RSPMap(){
+  ~RPPMap(){
 
   }
   inline int procNum(int, const CkArrayIndex &iIndex){

@@ -32,7 +32,7 @@ extern CProxy_eesCache                   eesCacheProxy;
 extern CProxy_FFTcache                   fftCacheProxy;
 extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
 extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
-extern MapType2                          RSPImaptable;
+extern MapType2                          RPPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;
 
@@ -177,7 +177,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
     while(plane<nChareR)
       {
         bool used=false;
-        int thisstateplaneproc=RSPImaptable.get(state,plane);
+        int thisstateplaneproc=RPPImaptable.get(state,plane);
         for(int i=0;i<usedVec.size()&&i<nstates;i++)
           {
             if(usedVec[i]==thisstateplaneproc)
