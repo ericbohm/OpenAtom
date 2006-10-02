@@ -22,14 +22,14 @@ class CLA_Matrix : public CBase_CLA_Matrix{
     /* For 2D algorihtm */
     CLA_Matrix(int M, int K, int N, int m, int k, int n, int strideM,
      int strideN, int strideK, int part,
-     CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2, CkCallback ready);
+     CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2, CkCallback ready, int gemmSplitOrtho);
     void receiveA(CLA_Matrix_msg *m);
     void receiveB(CLA_Matrix_msg *m);
 
     /* For 3D algorithm */
     CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N, int m, int k,
      int n, int strideM, int strideK, int strideN, int part, CkCallback cb,
-     CkGroupID gid);
+     CkGroupID gid, int gemmSplitOrtho);
     void ready(CkReductionMsg *m);
     void readyC(CkReductionMsg *m);
     void mult_done(CkReductionMsg *m);
@@ -44,6 +44,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
     int M_stride, K_stride, N_stride;
     int part;
     int algorithm;
+    int gemmSplitOrtho;
     void (*fcb) (void *obj);
     void *user_data;
     double alpha, beta;
@@ -88,7 +89,7 @@ class CLA_Matrix_interface {
    CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
    int M, int K, int N, int m, int k, int n, int strideM, int strideK,
    int strideN, CkCallback cbA, CkCallback cbB,
-   CkCallback cbC, CkGroupID gid, int algorithm);
+   CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
 };
 
 class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg {
@@ -190,7 +191,7 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
  CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
  int M, int K, int N, int m, int k, int n, int strideM, int strideK,
  int strideZ, CkCallback cbA, CkCallback cbB,
- CkCallback cbC, CkGroupID gid, int algorithm);
+ CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
 
 /* Error codes */
 #define SUCCESS			0

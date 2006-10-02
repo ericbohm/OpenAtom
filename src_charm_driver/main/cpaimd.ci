@@ -244,6 +244,7 @@ mainmodule cpaimd {
 		entry void printEnlRSimp(double ,int,int);
                 entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
                                            int index, int iterNL_in);
+	        entry void launchFFTControl();
 	};
 
 	array [2D] CP_State_RealSpacePlane {
@@ -261,6 +262,7 @@ mainmodule cpaimd {
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
 		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
+	        entry void RHartReport();
 		entry void isAtSync(int);
 	};
        array [2D] CP_Rho_RHartExt {

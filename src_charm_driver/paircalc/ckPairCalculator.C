@@ -251,7 +251,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier)
+PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, CkCallback cb, CkArrayID cb_aid, int _cb_ep, int _cb_ep_tol, bool conserveMemory, bool lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -274,6 +274,9 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   gSpaceSum=_gSpaceSum;
   gpriority=_gpriority;
   phantomSym=_phantomSym;
+  gemmSplitFWk=_gemmSplitFWk;
+  gemmSplitFWm=_gemmSplitFWm;
+  gemmSplitBW=_gemmSplitBW;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -792,11 +795,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 
 #if PC_FWD_DGEMM_SPLIT > 0
 	double betap = 1.0;
-	int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+	int Ksplit_m =  gemmSplitFWk;
 	int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	int Krem     = (k_in % Ksplit);
 	int Kloop    = k_in/Ksplit-1;
-	int Msplit_m = PC_FWD_DGEMM_SPLIT;
+	int Msplit_m = gemmSplitFWm;
 	int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	int Mrem     = (m_in % Msplit);
 	int Mloop    = m_in/Msplit;
@@ -889,11 +892,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #endif
 #if PC_FWD_DGEMM_SPLIT > 0
       double betap = 1.0;
-      int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+      int Ksplit_m =  gemmSplitFWk;
       int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
       int Krem     = (k_in % Ksplit);
       int Kloop    = k_in/Ksplit-1;
-      int Nsplit_m = PC_FWD_DGEMM_SPLIT;
+      int Nsplit_m = gemmSplitFWm;
       int Nsplit   = ( (n_in > Nsplit_m) ? Nsplit_m : n_in);
       int Nrem     = (n_in % Nsplit);
       int Nloop    = n_in/Nsplit;
@@ -980,11 +983,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #endif
 
 	double betap = 1.0;
-	int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+	int Ksplit_m =  gemmSplitFWk;
 	int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	int Krem     = (k_in % Ksplit);
 	int Kloop    = k_in/Ksplit-1;
-	int Msplit_m = PC_FWD_DGEMM_SPLIT;
+	int Msplit_m = gemmSplitFWm;
 	int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	int Mrem     = (m_in % Msplit);
 	int Mloop    = m_in/Msplit;
@@ -1067,11 +1070,11 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 #if PC_FWD_DGEMM_SPLIT > 0
 	  double betap = 1.0;
-	  int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+	  int Ksplit_m =  gemmSplitFWk;
 	  int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
 	  int Krem     = (k_in % Ksplit);
 	  int Kloop    = k_in/Ksplit-1;
-	  int Nsplit_m = PC_FWD_DGEMM_SPLIT;
+	  int Nsplit_m = gemmSplitFWm;
 	  int Nsplit   = ( (n_in > Nsplit_m) ? Nsplit_m : n_in);
 	  int Nrem     = (n_in % Nsplit);
 	  int Nloop    = n_in/Nsplit;
@@ -1328,7 +1331,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 
 #if PC_FWD_DGEMM_SPLIT > 0
   double betap = 1.0;
-  int Ksplit_m =  PC_FWD_DGEMM_SPLIT;
+  int Ksplit_m =  gemmSplitFWk;
   int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
   int Krem     = (k_in % Ksplit);
   int Kloop    = k_in/Ksplit-1;
@@ -1839,7 +1842,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 	  if(symmetric)
 	    {
-	      int Msplit_m = PC_BWD_DGEMM_SPLIT;
+	      int Msplit_m = gemmSplitBW;
 	      int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	      int Mrem     = (m_in % Msplit);
 	      int Mloop    = m_in/Msplit-1;
@@ -1883,7 +1886,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    }
 	  else 
 	    {
-	      int Msplit_m = PC_BWD_DGEMM_SPLIT;
+	      int Msplit_m = gemmSplitBW;
 	      int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	      int Mrem     = (m_in % Msplit);
 	      int Mloop    = m_in/Msplit-1;
@@ -1960,7 +1963,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  //for off diagonal need to handle the offrow with this multiply
 	  
 	  double *othernewDatad= reinterpret_cast <double *> (othernewData);
-	  int Msplit_m = PC_BWD_DGEMM_SPLIT;
+	  int Msplit_m = gemmSplitBW;
 	  int Msplit   = ( (m_in > Msplit_m) ? Msplit_m : m_in);
 	  int Mrem     = (m_in % Msplit);
 	  int Mloop    = m_in/Msplit-1;

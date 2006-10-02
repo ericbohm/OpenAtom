@@ -538,6 +538,9 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d done\n",
              thisIndex.x,flagEwd,iterAtmTyp);
 #endif
+  CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   int index= thisIndex.x % sim->sizeZ;
+   rhoRealProxy(index,0).RHartReport();
    iterAtmTyp  = 0;
    nAtmTypRecv = 0;
 

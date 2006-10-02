@@ -48,14 +48,14 @@ module CLA_Matrix{
     entry void CLA_Matrix(int M, int K, int N, int m, int k, int n,
      int strideM, int strideK, int strideN, int part,
      CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2,
-     CkCallback ready);
+     CkCallback ready, int gemmSplit);
     entry void receiveA(CLA_Matrix_msg *m);
     entry void receiveB(CLA_Matrix_msg *m);
 
     /* for 3D algorithm */
     entry void CLA_Matrix(CProxy_CLA_MM3D_multiplier p, int M, int K, int N,
      int m, int k, int n, int strideM, int strideK, int strideN, int part,
-     CkCallback cb, CkGroupID gid);
+     CkCallback cb, CkGroupID gid, int gemmSplit);
     entry void ready(CkReductionMsg *m);
     entry void readyC(CkReductionMsg *m);
     entry void mult_done(CkReductionMsg *m);

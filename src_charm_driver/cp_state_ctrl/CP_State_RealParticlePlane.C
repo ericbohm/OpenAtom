@@ -140,7 +140,8 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   itime            = 0;                  // time step;
   registrationFlag = 0;
   recvBlock        = 0;
-
+  fftDataDone      = false;
+  launchFFT        = false;
   countZ = 0.0;      // Zmat communication counter
 
 //============================================================================
@@ -397,7 +398,9 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
       if(thisIndex.x==0)
        CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-      FFTNLEesFwdR();
+      fftDataDone=true;
+      if(launchFFT)
+	FFTNLEesFwdR();
     }//endif
 
 //----------------------------------------------------------------------------
@@ -411,7 +414,7 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::FFTNLEesFwdR(){
-
+  fftDataDone=false;
   int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
@@ -699,6 +702,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast
 
+
+
    if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
      if(thisIndex.x==0)
@@ -722,7 +727,10 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
    }//endif
 
    // zero the total enl energy if we are done.
-   if(iterNL==numIterNl){cp_enl = 0.0;}
+   if(iterNL==numIterNl){
+     cp_enl = 0.0;
+     launchFFT=false;
+   }
 
 //============================================================================
 // Time to make the Psiforces (donuts!)
@@ -731,6 +739,20 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 
 //----------------------------------------------------------------------------
   }//end routine
+//============================================================================
+
+//============================================================================
+// Control launch of FFT based on Rho having more of its act together
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+
+void CP_State_RealParticlePlane::launchFFTControl(){
+  launchFFT=true;
+  if(fftDataDone)
+    FFTNLEesFwdR();
+//----------------------------------------------------------------------------
+}
 //============================================================================
 
 

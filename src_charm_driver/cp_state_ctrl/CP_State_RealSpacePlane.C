@@ -344,7 +344,11 @@ void CP_State_RealSpacePlane::doReduction(){
 
     }
 #endif
+  
+  // Need loop of contribute calls, one for each nchareRhoSplit
+  // offset into data with smaller size
 
+  // vector of cookies and callback functions
 
   mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
 		       //  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
@@ -538,6 +542,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 //============================================================================
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
     int i=1; 
+    // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie, msg);
     contribute(sizeof(int), &i, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));

@@ -274,7 +274,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -342,6 +342,7 @@ class PairCalculator: public CBase_PairCalculator {
   void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
 
  private:
+
   int numRecd;               //! number of messages received
   int numRecdBW;               //! number of messages received BW
   int numExpected;           //! number of messages expected
@@ -361,7 +362,11 @@ class PairCalculator: public CBase_PairCalculator {
   
   int numRecLeft;           //! number of rows so far total left
   int numRecRight;          //! number of rows so far total right
-  
+
+  int gemmSplitFWk;        //! number of rows in split FW dgemm
+  int gemmSplitFWm;        //! number of columns in split FW dgemm
+  int gemmSplitBW;        //! number of rows in split BW dgemm
+
 
   int *LeftOffsets;           //! index numbers of caught stream elements
   int *RightOffsets;           //! index numbers of caught stream elements

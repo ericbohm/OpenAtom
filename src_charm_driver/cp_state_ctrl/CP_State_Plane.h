@@ -433,6 +433,9 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         int ngridc;
         int nptsExpnd;
         int npts;
+	bool doneRhoReal;
+	bool doneRHart;
+	void launchNLRealFFT();
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
 	CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
        ~CP_Rho_RealSpacePlane();
@@ -451,10 +454,13 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void isAtSync(int iter){AtSync();};
 	void ResumeFromSync();
 	void pup(PUP::er &);
+	void RHartReport();
  private:
         int rhoGHelpers;
         int countGradVks[5]; // number of collections that have arrived
         int countWhiteByrd;  // number of collections that have arrived
+	int countRHart;
+	int countRHartValue;
         int doneGradRhoVks; // count 1,2,3 = x,y,z all done
 	bool doneWhiteByrd;
 	bool doneHartVks;
@@ -718,6 +724,9 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
 
    int registrationFlag;
 
+   bool launchFFT; 
+   bool fftDataDone;
+
    double cp_enl;         // Non-local energy
    double cp_enlTot;      // Reduced Non-local energy
    double *projPsiR;      // real/final form of projector (after gx,gy FFTs)
@@ -739,6 +748,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    CP_State_RealParticlePlane(CkMigrateMessage *m) {}
    CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
   ~CP_State_RealParticlePlane();
+   void launchFFTControl();
    void pup(PUP::er &);
    void printEnlR(CkReductionMsg *m);
    void printEnlRSimp(double,int,int);

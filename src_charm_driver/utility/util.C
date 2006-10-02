@@ -1405,6 +1405,10 @@ void Config::print(char *fname_in) {
      fprintf(fp,"stateOutputOn: %d\n",stateOutputOn);
      fprintf(fp,"atmOutputOn: %d\n",atmOutputOn);
      fprintf(fp,"sGrainSize: %d\n",sGrainSize);
+     fprintf(fp,"gemmSplitFWk: %d\n",gemmSplitFWk);
+     fprintf(fp,"gemmSplitFWm: %d\n",gemmSplitFWm);
+     fprintf(fp,"gemmSplitBW: %d\n",gemmSplitBW);
+     fprintf(fp,"gemmSplitOrtho: %d\n",gemmSplitOrtho);
      fprintf(fp,"orthoStride: %d\n",orthoStride);
      fprintf(fp,"orthoGrainSize: %d\n",orthoGrainSize);
      fprintf(fp,"launchNLeesFromRho: %d\n",launchNLeesFromRho);
@@ -1535,10 +1539,15 @@ void Config::readConfig(const char* fileName, Config &config,
     config.maxIter         = maxIter_in;
 
     config.sGrainSize           = nstates_in;
+
     config.orthoGrainSize           =     config.sGrainSize;
-    config.orthoStride           = 0;
+    config.orthoStride            = 0;
+    config.gemmSplitFWk           = 16;
+    config.gemmSplitFWm           = 16;
+    config.gemmSplitBW            = 16;
+    config.gemmSplitOrtho         = 16;
     config.useBWBarrier           = 0;
-    config.launchNLeesFromRho           = 0;
+    config.launchNLeesFromRho     = 0;
     config.useOrthoSection       = 0;
     config.useOrthoDirect       = 0;
     config.useOrthoSectionRed    = 0;
@@ -1666,6 +1675,14 @@ void Config::readConfig(const char* fileName, Config &config,
             strcpy(config.dataPath, parameterValue);
         else if (!strcmp(parameterName, "sGrainSize"))
             config.sGrainSize = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gemmSplitFWk"))
+            config.gemmSplitFWk = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gemmSplitFWm"))
+            config.gemmSplitFWm = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gemmSplitBW"))
+            config.gemmSplitBW = atoi(parameterValue);
+        else if (!strcmp(parameterName, "gemmSplitOrtho"))
+            config.gemmSplitOrtho = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoGrainSize"))
             config.orthoGrainSize = atoi(parameterValue);
         else if (!strcmp(parameterName, "orthoStride"))
@@ -1958,6 +1975,7 @@ void Config::readConfig(const char* fileName, Config &config,
 
 //===================================================================================
 // Consistency Checks on the input
+
 #ifndef CMK_VERSION_BLUEGENE
     if(config.useCuboidMap || config.useCuboidMapRS)
       {
@@ -2127,6 +2145,39 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
+    if( config.gemmSplitOrtho > config.orthoGrainSize)
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("gemmSplitOrtho %d must not be greater than orthoGrainSize %d !\n",
+		 config.gemmSplitOrtho, config.orthoGrainSize);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+    if(config.gemmSplitFWk > config.sGrainSize)
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("gemmSplitFWk %d must not be greater than sGrainSize %d !\n",
+		 config.gemmSplitFWk, config.sGrainSize);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+
+    if(config.gemmSplitFWm > config.sGrainSize)
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("gemmSplitFWm %d must not be greater than sGrainSize %d !\n",
+		 config.gemmSplitFWm, config.sGrainSize);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
+    if(config.gemmSplitBW > config.sGrainSize)
+      {
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkPrintf("gemmSplitBW %d must not be greater than sGrainSize %d !\n",
+		 config.gemmSplitBW, config.sGrainSize);
+	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	CkExit();
+      }
 
 //----------------------------------------------------------------------------------
   }//end routine
