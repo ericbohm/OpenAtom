@@ -848,6 +848,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
   if(iterNL==numIterNl){
     iterNL = 0;
     cp_enl = 0;
+    launchFFT=false;
   }//endif
    
 //----------------------------------------------------------------------------
