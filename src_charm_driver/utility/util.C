@@ -2287,6 +2287,7 @@ void Config::guesstimateParms(int natm_nl, int sizez){
 	//	  sGrainSize/2;
 	int numGrains = nstates/sGrainSize;
 	numGrains*=numGrains;
+	nchareG = gExpandFact*(double)low_x_size;
 	numChunks=numPes/(nchareG*numGrains);
 	if(numChunks<1)
 	  numChunks=1;
@@ -2299,7 +2300,7 @@ void Config::guesstimateParms(int natm_nl, int sizez){
 	  }
 	//	if(numPes>=nstates)
 	//	  {
-	    phantomSym=1;
+	    //phantomSym=1;
 	    numChunksSym=numChunks;
 	    numChunksAsym=numChunks;
 	    //	  }
