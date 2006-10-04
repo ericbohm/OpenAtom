@@ -904,253 +904,284 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
       gSymInstance= ComlibRegister(csymstrat);    
 */
      //================================================================
-      CkPrintf("Making real_strategy with :");
-      CkPrintf("src numReal %d dest numRhoG %d and numHartG %d numHartR %d\n",
-	       numReal,numRhoG,numRhoGHart,numRhoRhart);
-      //--------------------------------------------------------------
-      //  For rho(r) to rho(g)
-      CkArrayIndexMax *rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	CkArrayIndex2D idx2d(i,0);
-	rhoGElements[i] = idx2d;
-      }//endfor
+       CkArrayIndexMax *rhoGElements=NULL;
+       CkArrayIndexMax *rhoRealElements = NULL;
+     if(config.useRInsRhoGP)
+       {
+	 CkPrintf("Making real_strategy with :");
+	 CkPrintf("src numReal %d dest numRhoG %d and numHartG %d numHartR %d\n",
+		  numReal,numRhoG,numRhoGHart,numRhoRhart);
+	 //--------------------------------------------------------------
+	 //  For rho(r) to rho(g)
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   CkArrayIndex2D idx2d(i,0);
+	   rhoGElements[i] = idx2d;
+	 }//endfor
 
-      CkArrayIndexMax *rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	CkArrayIndex2D idx2d(i,0);
-	rhoRealElements[i] = idx2d; 
-      }//endfor
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   CkArrayIndex2D idx2d(i,0);
+	   rhoRealElements[i] = idx2d; 
+	 }//endfor
 
-      CharmStrategy *real_strat = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
-	 numReal, rhoRealElements, numRhoG, rhoGElements);
+	 CharmStrategy *real_strat = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+	    numReal, rhoRealElements, numRhoG, rhoGElements);
       
-      commRealInstance= ComlibRegister(real_strat);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
+	 commRealInstance= ComlibRegister(real_strat);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       //  For drho(r)/dx to igx*rho(g)
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+     if(config.useRInsIGXRhoGP)
+      {
+	rhoGElements = new CkArrayIndexMax[numRhoG];
+	for (i = 0; i < numRhoG; i++) {
+	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	}//endfor
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	rhoRealElements = new  CkArrayIndexMax[numReal];
+	for(i = 0; i < numReal; i++) {
+	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	}//endfor
         
-      CharmStrategy *real_strat_igx = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
-	 numReal, rhoRealElements, numRhoG,rhoGElements);
-      commRealIGXInstance= ComlibRegister(real_strat_igx);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-      //--------------------------------------------------------------
-      //  For drho(r)/dy to igy*rho(g)
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	CharmStrategy *real_strat_igx = new EachToManyMulticastStrategy
+	  (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+	   numReal, rhoRealElements, numRhoG,rhoGElements);
+	commRealIGXInstance= ComlibRegister(real_strat_igx);
+	delete [] rhoGElements;
+	delete [] rhoRealElements;
+      }
+     if(config.useRInsIGYRhoGP)
+       {
+	 //--------------------------------------------------------------
+	 //  For drho(r)/dy to igy*rho(g)
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
         
-      CharmStrategy *real_strat_igy = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
-	 numReal, rhoRealElements, numRhoG,rhoGElements);
-      commRealIGYInstance= ComlibRegister(real_strat_igy);
+	 CharmStrategy *real_strat_igy = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+	    numReal, rhoRealElements, numRhoG,rhoGElements);
+	 commRealIGYInstance= ComlibRegister(real_strat_igy);
 
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       //  For drho(r)/dz to igz*rho(g)
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+     if(config.useRInsIGZRhoGP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
         
-      CharmStrategy *real_strat_igz = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
-	 numReal, rhoRealElements, numRhoG,rhoGElements);
-      commRealIGZInstance= ComlibRegister(real_strat_igz);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *real_strat_igz = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoRealProxy.ckGetArrayID(), rhoGProxy.ckGetArrayID(),
+	    numReal, rhoRealElements, numRhoG,rhoGElements);
+	 commRealIGZInstance= ComlibRegister(real_strat_igz);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // For hartree-Ext(g) to vks(r)
-      rhoGElements = new CkArrayIndexMax[numRhoGHart];
-      for (i = 0; i < numRhoGHart; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+     if(config.useGHartInsRhoRP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoGHart];
+	 for (i = 0; i < numRhoGHart; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
-      CharmStrategy *gstrathart = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoGHart, rhoGElements, numReal, rhoRealElements);
-      commGHartInstance = ComlibRegister(gstrathart);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *gstrathart = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoGHart, rhoGElements, numReal, rhoRealElements);
+	 commGHartInstance = ComlibRegister(gstrathart);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // vks(g), igxrho igyrho igzrho and white byrd to g-space
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+     if(config.useGIns0RhoRP)
+       {
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
-      CharmStrategy *gstrat0 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoG, rhoGElements, numReal, rhoRealElements);
-      commGInstance0 = ComlibRegister(gstrat0);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }//endfor
 
+	 CharmStrategy *gstrat0 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoG, rhoGElements, numReal, rhoRealElements);
+	 commGInstance0 = ComlibRegister(gstrat0);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // rhog sends to rhor : div_x rho
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGIns1RhoRP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstrat1 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoG, rhoGElements, numReal, rhoRealElements);
-      commGInstance1 = ComlibRegister(gstrat1);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *gstrat1 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoG, rhoGElements, numReal, rhoRealElements);
+	 commGInstance1 = ComlibRegister(gstrat1);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // rhog sends to rhor : div_y rho
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGIns2RhoRP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstrat2 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoG, rhoGElements, numReal, rhoRealElements);
-      commGInstance2 = ComlibRegister(gstrat2);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *gstrat2 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoG, rhoGElements, numReal, rhoRealElements);
+	 commGInstance2 = ComlibRegister(gstrat2);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // rhog sends to rhor : div_z rho
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGIns3RhoRP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstrat3 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoG, rhoGElements, numReal, rhoRealElements);
-      commGInstance3 = ComlibRegister(gstrat3);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *gstrat3 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoG, rhoGElements, numReal, rhoRealElements);
+	 commGInstance3 = ComlibRegister(gstrat3);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // For white-byrd :  rhog sends to rhor : white byrd
-      rhoGElements = new CkArrayIndexMax[numRhoG];
-      for (i = 0; i < numRhoG; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGByrdInsRhoRBP)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoG];
+	 for (i = 0; i < numRhoG; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numReal];
-      for(i = 0; i < numReal; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numReal];
+	 for(i = 0; i < numReal; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstratByrd = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
-	 numRhoG, rhoGElements, numReal, rhoRealElements);
-      commGByrdInstance = ComlibRegister(gstratByrd);
-      delete [] rhoGElements;
-      delete [] rhoRealElements;
-
+	 CharmStrategy *gstratByrd = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGProxy.ckGetArrayID(), rhoRealProxy.ckGetArrayID(), 
+	    numRhoG, rhoGElements, numReal, rhoRealElements);
+	 commGByrdInstance = ComlibRegister(gstratByrd);
+	 delete [] rhoGElements;
+	 delete [] rhoRealElements;
+       }
       //--------------------------------------------------------------
       // For rhogHart send to rhorHart SF atmtyp
-      rhoGElements = new CkArrayIndexMax[numRhoGHart];
-      for (i = 0; i < numRhoGHart; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGHartInsRHart)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoGHart];
+	 for (i = 0; i < numRhoGHart; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
-      for(i = 0; i < numRhoRhart; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+	 for(i = 0; i < numRhoRhart; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstratEext0 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
-	 numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
+	 CharmStrategy *gstratEext0 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
+	    numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
 
-      commGHartRHartIns0 = ComlibRegister(gstratEext0);
-
+	 commGHartRHartIns0 = ComlibRegister(gstratEext0);
+       }
       //--------------------------------------------------------------
       // For rhogHart send to rhoRHart SF tot
-      rhoGElements = new CkArrayIndexMax[numRhoGHart];
-      for (i = 0; i < numRhoGHart; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }
+     if(config.useGHartInsRHart)
+       {
+	 rhoGElements = new CkArrayIndexMax[numRhoGHart];
+	 for (i = 0; i < numRhoGHart; i++) {
+	   rhoGElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
-      for(i = 0; i < numRhoRhart; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }
+	 rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+	 for(i = 0; i < numRhoRhart; i++) {
+	   rhoRealElements[i] = CkArrayIndex2D(i,0);
+	 }
 
-      CharmStrategy *gstratEext1 = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
-	 numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
+	 CharmStrategy *gstratEext1 = new EachToManyMulticastStrategy
+	   (USE_DIRECT, rhoGHartExtProxy.ckGetArrayID(), rhoRHartExtProxy.ckGetArrayID(), 
+	    numRhoGHart, rhoGElements, numRhoRhart, rhoRealElements);
 
-      commGHartRHartIns1 = ComlibRegister(gstratEext1);
-
+	 commGHartRHartIns1 = ComlibRegister(gstratEext1);
+       }
       //--------------------------------------------------------------
       // For rhoRHart send to rhoGHart SF
-      rhoGElements = new CkArrayIndexMax[numRhoGHart];
-      for (i = 0; i < numRhoGHart; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+     if(config.useRHartInsGHart){
+       rhoGElements = new CkArrayIndexMax[numRhoGHart];
+       for (i = 0; i < numRhoGHart; i++) {
+	 rhoGElements[i] = CkArrayIndex2D(i,0);
+       }//endfor
 
-      rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
-      for(i = 0; i < numRhoRhart; i++) {
-	rhoRealElements[i] = CkArrayIndex2D(i,0);
-      }//endfor
+       rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
+       for(i = 0; i < numRhoRhart; i++) {
+	 rhoRealElements[i] = CkArrayIndex2D(i,0);
+       }//endfor
         
-      CharmStrategy *real_strat_eext = new EachToManyMulticastStrategy
-	(USE_DIRECT, rhoRHartExtProxy.ckGetArrayID(), rhoGHartExtProxy.ckGetArrayID(),
-	 numRhoRhart, rhoRealElements, numRhoGHart,rhoGElements);
-      commRHartGHartIns  = ComlibRegister(real_strat_eext);
+       CharmStrategy *real_strat_eext = new EachToManyMulticastStrategy
+	 (USE_DIRECT, rhoRHartExtProxy.ckGetArrayID(), rhoGHartExtProxy.ckGetArrayID(),
+	  numRhoRhart, rhoRealElements, numRhoGHart,rhoGElements);
+       commRHartGHartIns  = ComlibRegister(real_strat_eext);
+     }
 
   }//endif : use commlib
 
