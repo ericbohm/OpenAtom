@@ -1788,11 +1788,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 // Nuke some procs from the list : reset, nuke, reset if you run out
 
    availGlobR->reset();
+   
    PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
    excludePes= new PeList(peUsedByNLZ);
-   if(nchareRhoR+peUsedByNLZ.size()<RhoAvail->count()){
+   if(nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
        //       nlz.dump();
@@ -1804,7 +1805,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares
    if(ees_nonlocal_on==0){
-     if(nchareRhoR+peUsedBySF.size()<RhoAvail->count()){
+     if(nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
        CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
                   peUsedBySF.size(),RhoAvail->count());
        PeList sf(peUsedBySF);
@@ -1819,10 +1820,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 // Maps and options
 
 #ifdef USE_INT_MAP
-   RhoRSImaptable.buildMap(nchareRhoR,1);
-   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
+   RhoRSImaptable.buildMap(nchareRhoR,config.rhoRsubplanes);
+   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
 #else
-   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
+   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
 #endif
     CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
     CkArrayOptions rhorsOpts;

@@ -186,6 +186,7 @@ class Config {
 	int useOrthoHelpers;
 	int lambdaGrainSize;
 	int rhoGHelpers;
+	int rhoRsubplanes;
 	int useCommlib;
 	int useGHartInsRhoRP;
 	int useGIns0RhoRP;

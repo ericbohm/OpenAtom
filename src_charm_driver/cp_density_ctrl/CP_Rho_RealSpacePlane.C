@@ -205,6 +205,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 
     ProductMsg *dummyProductMessage = new (0) ProductMsg;    
     // inform realspace element of this section proxy.
+    dummyProductMessage->subplane=thisIndex.y;
     realSpaceSectionProxy.init(dummyProductMessage);
 
     rhoGProxy_com    = rhoGProxy;
@@ -1204,6 +1205,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
       msg->idx        = thisIndex.x;
       msg->datalen    = dataSize;
       msg->hops       = 0;
+      msg->subplane   = thisIndex.y;
       double *dataR    = msg->data;
 
       rho_rs.uPackShrink(dataR,Vks); // down pack Vks for the send

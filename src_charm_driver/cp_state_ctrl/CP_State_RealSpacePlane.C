@@ -115,7 +115,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     }//endif
 
     setMigratable(false);
-
+    cookie= new CkSectionInfo[config.rhoRsubplanes];
     run();
 
 }
@@ -133,14 +133,13 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   p|count;
   p|csize;
   p|rsize;
-  p|cookie;
+  PUParray(p,cookie,config.rhoRsubplanes);
   p|gproxy;
 
   rs.pup(p); // pup your plane, now, honey.
 
 }
 //============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -323,8 +322,6 @@ void CP_State_RealSpacePlane::doReduction(){
 // Return values for vks cannot hit this chare until the reduciton is complete.
 
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-   CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                 CkArrayIndex2D(thisIndex.y,0),rhoRealProxy.ckGetArrayID());
 
 #ifndef CMK_OPTIMIZE    
    double StartTime=CmiWallTimer();
@@ -349,10 +346,20 @@ void CP_State_RealSpacePlane::doReduction(){
   // offset into data with smaller size
 
   // vector of cookies and callback functions
-
-  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,sumFastDoubleType,
+  int dataSize=ngrida*ngridb/config.rhoRsubplanes;
+  int dataOffset=dataSize;
+  int dataSizeRem=ngrida*ngridb%config.rhoRsubplanes;
+  // remainder gets chunked into last plane
+  for(int subplane=0; subplane<config.rhoRsubplanes; subplane++)
+    {
+      CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
+		    CkArrayIndex2D(thisIndex.y,subplane),rhoRealProxy.ckGetArrayID());
+      if(dataSizeRem>0 && subplane+1==config.rhoRsubplanes)
+	dataSize+=dataSizeRem;
+      mcastGrp->contribute(dataSize*sizeof(double),&(data[dataOffset*subplane]),sumFastDoubleType,
 		       //  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
-                         cookie,cb);
+			   cookie[subplane],cb);
+    }
     CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
@@ -543,7 +550,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
     int i=1; 
     // based on where this came from, put it in the cookie vector
-    CkGetSectionInfo(cookie, msg);
+    CkGetSectionInfo(cookie[msg->subplane], msg);
     contribute(sizeof(int), &i, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
     // do not delete nokeep message

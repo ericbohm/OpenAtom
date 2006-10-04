@@ -25,6 +25,7 @@ void getSplitDecomp(int *,int *,int *,int , int ,int );
 class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
  public:
 	int datalen, hops;
+	int subplane;
 	double *data;
 	int idx;
 };
@@ -391,7 +392,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
 	CP_State_RealSpacePlane(size2d, int, int,int,int,int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
-	~CP_State_RealSpacePlane() { };
+	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void doFFT(RSFFTMsg *);
 	void doFFT();
 	void doProduct(ProductMsg *);
@@ -412,7 +413,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int rsize;
 	int csize;
 	RealStateSlab rs;
-	CkSectionInfo cookie;
+	CkSectionInfo *cookie;
 	CProxy_CP_State_GSpacePlane gproxy;
 	RTH_Runtime* run_thread;
 };

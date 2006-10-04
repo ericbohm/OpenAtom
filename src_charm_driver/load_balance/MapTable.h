@@ -275,8 +275,9 @@ class RhoRSMapTable  : public MapTable
 {
  public:
   int nchareRhoR;
+  int rhoRsubplanes;
   RhoRSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoR, int maxstates, bool useCentroid, MapType2 *rsmap, PeList *exclude);
+	int _nchareRhoR, int _rhoRsubplanes, int maxstates, bool useCentroid, MapType2 *rsmap, PeList *exclude);
   void sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap);
   RhoRSMapTable(){}
 };

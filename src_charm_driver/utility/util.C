@@ -1422,6 +1422,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"gExpandFact: %g\n",gExpandFact);
      fprintf(fp,"gExpandFactRho: %g\n",gExpandFactRho);
      fprintf(fp,"rhoGHelpers: %d\n",rhoGHelpers);
+     fprintf(fp,"rhoRsubplanes: %d\n",rhoRsubplanes);
      fprintf(fp,"numSfGrps: %d\n",numSfGrps);
      fprintf(fp,"numSfDups: %d\n",numSfDups);
      fprintf(fp,"toleranceInterval: %d\n",toleranceInterval);
@@ -1554,6 +1555,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.lambdaGrainSize       =     config.sGrainSize;
     config.useOrthoHelpers       = 0;
     config.rhoGHelpers          = 1;
+    config.rhoRsubplanes         = 1;
     config.pesPerState          = 1;
     config.RpesPerState         = 0; 
     config.GpesPerState         = 0; 
@@ -1769,6 +1771,8 @@ void Config::readConfig(const char* fileName, Config &config,
             config.useCommlibMulticast = atoi(parameterValue);
         else if (!strcmp(parameterName, "rhoGHelpers"))
             config.rhoGHelpers = atoi(parameterValue);
+        else if (!strcmp(parameterName, "rhoRsubplanes"))
+            config.rhoRsubplanes = atoi(parameterValue);
         else if (!strcmp(parameterName, "pesPerState"))
             config.pesPerState = atoi(parameterValue);
         else if (!strcmp(parameterName, "RpesPerState"))
@@ -1911,7 +1915,21 @@ void Config::readConfig(const char* fileName, Config &config,
 
     if(config.lambdaGrainSize==config.nstates && config.orthoGrainSize!=config.nstates)
       config.lambdaGrainSize=config.orthoGrainSize;
-
+    if(config.rhoRsubplanes>1)
+      {
+	CkPrintf("rhoRsubplanes %d >1 Disabling rho rs commlib strategies\n",
+		 config.rhoRsubplanes);
+        config.useGHartInsRhoRP	= 0;
+	config.useGIns0RhoRP	= 0;
+	config.useGIns1RhoRP	= 0;
+	config.useGIns2RhoRP	= 0;
+	config.useGIns3RhoRP	= 0;
+	config.useGByrdInsRhoRBP	= 0;
+	config.useRInsRhoGP		= 0;
+	config.useRInsIGXRhoGP	= 0;
+	config.useRInsIGYRhoGP	= 0;
+	config.useRInsIGZRhoGP	= 0;
+      }
     config.guesstimateParms(natm_nl, sizez);
 
     if(config.pesPerState>0 && config.RpesPerState <1){
@@ -1957,6 +1975,7 @@ void Config::readConfig(const char* fileName, Config &config,
     rangeExit(config.fftprogresssplit,"fftprogresssplit",0);
     rangeExit(config.fftprogresssplitReal,"fftprogresssplitReal",0);
     rangeExit(config.rhoGHelpers,"rhoGHelpers",0);
+    rangeExit(config.rhoRsubplanes,"rhoRsubplanes",0);
     rangeExit(config.numMulticastMsgs,"numMulticastMsgs",0);
     rangeExit(config.PCSpanFactor,"numMulticastMsgs",0);
     rangeExit(config.pesPerState,"pesPerState;",0);
