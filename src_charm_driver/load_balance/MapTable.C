@@ -369,7 +369,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	reverseMap=NULL;
 	maptable=_map;
 	availprocs=_availprocs;
-	int Pecount[availprocs->count()];
+	int *Pecount=(int *)malloc(sizeof(int)*(availprocs->count()));
 
 	bzero(Pecount, availprocs->count() *sizeof(int));
 
