@@ -737,7 +737,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     if(ibinary_opt>1)
       {
 	CkPrintf("Attempt to use ZLIB Failed! Please review compilation\n");
-	CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
+	//CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
 	CkExit();
       }
 #endif
@@ -1204,7 +1204,7 @@ void  readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz
       {
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
 	CkPrintf("Attempt to use ZLIB Failed! Please review compilation\n");
-	CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
+	//CkPrintf("Macro cmk-projections-use-zlib  is %d \n", CMK_PROJECTIONS_USE_ZLIB);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
 	CkExit();
       }
