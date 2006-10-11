@@ -192,8 +192,8 @@ void registersumMatrixDouble(void)
 { 
   sumMatrixDoubleType=CkReduction::addReducer(sumMatrixDouble);
 }
-CkReduction::reducerType sumFastDoubleType;
-CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);
+/*CkReduction::reducerType sumFastDoubleType;
+CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);*/
 void fastAdd (double *a, double *b, int nelem);
 
 
