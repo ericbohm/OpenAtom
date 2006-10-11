@@ -85,7 +85,6 @@ extern CkHashtableT <intdual, int> RhoGHartmaptable;
 extern CkHashtableT <intdual, int> RhoRHartmaptable;
 extern CkHashtableT <intdual, int> AsymScalcmaptable;
 extern CkHashtableT <intdual, int> SymScalcmaptable;
-CkReduction::reducerType sumFastDoubleType;
 CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);
 void fastAdd (double *a, double *b, int nelem);
 //============================================================================

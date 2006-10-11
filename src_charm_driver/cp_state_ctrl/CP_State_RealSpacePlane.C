@@ -51,7 +51,7 @@ extern ComlibInstanceHandle mssInstance;
 
 extern int    sizeX;
 extern Config config;
-
+extern CkReduction::reducerType sumFastDoubleType;
 //============================================================================
 
 //#define _CP_DEBUG_STATER_VERBOSE_

@@ -2278,7 +2278,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 
 }
 
-
+CkReduction::reducerType sumFastDoubleType;
 void registersumFastDouble(void)
 { 
   sumFastDoubleType=CkReduction::addReducer(sumFastDouble);
