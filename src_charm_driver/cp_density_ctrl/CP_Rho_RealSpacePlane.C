@@ -325,9 +325,13 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
      doneWhiteByrd  = true;
    }//endif
    doneHartVks      = false;
+   doneRHart        = false;
+   doneRhoReal      = false;
 
+   if(ees_eext_on==1){doneRhart = true;}
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
-    doneHartVks    = true;
+   doneHartVks    = true;
+   doneRhart      = true;
 #endif
 
 
@@ -1184,8 +1188,10 @@ void CP_Rho_RealSpacePlane::doMulticast(){
     CkExit();
   }//endif
   countRHart=0;
-  doneRhoReal=false;
-  doneRHart  =false;
+  doneWhiteByrd    = false;
+  doneHartVks      = false;
+  doneRhoReal      = false;
+  doneRHart        = false;
     
 //============================================================================
 // Send vks back to the states in real space
