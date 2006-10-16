@@ -319,16 +319,13 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 //============================================================================
 // Set the flags
 
-   if(cp_grad_corr_on!=0){
-     doneWhiteByrd  = false;
-   }else{
-     doneWhiteByrd  = true;
-   }//endif
-   doneHartVks      = false;
-   doneRHart        = false;
-   doneRhoReal      = false;
+   doneWhiteByrd  = false;
+   doneHartVks    = false;
+   doneRHart      = false;
+   doneRhoReal    = false;
 
-   if(ees_eext_on==0){doneRhart = true;}
+   if(ees_eext_on==0)    {doneRhart     = true;}
+   if(cp_grad_corr_on==0){doneWhiteByrd = true;}
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
    doneHartVks    = true;
    doneRhart      = true;
