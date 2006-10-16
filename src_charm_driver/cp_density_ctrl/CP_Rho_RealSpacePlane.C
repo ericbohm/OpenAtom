@@ -328,7 +328,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
    doneRHart        = false;
    doneRhoReal      = false;
 
-   if(ees_eext_on==1){doneRhart = true;}
+   if(ees_eext_on==0){doneRhart = true;}
 #ifdef _CP_DEBUG_HARTEEXT_OFF_
    doneHartVks    = true;
    doneRhart      = true;
