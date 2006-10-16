@@ -763,28 +763,32 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
     }
   else
     {
+      int nprocs, objs;
       destpe=availprocs->findNext();
+      if(availprocs->count()==0)
+        availprocs->reset();
       for(int chunk=0; chunk<nchareRhoR; chunk++)
 	{
-	  for(int subplane=0 ; subplane<rhoRsubplanes ; subplane+=rrsobjs_per_pe)
-	    {
-	      if(rem!=0)
-		if(chunk*subplane==rem*rrsobjs_per_pe)
-		  rrsobjs_per_pe -= 1;
-	      for(int objs=0; objs<rrsobjs_per_pe; objs++)
-		{
-		  //	  availprocs->sortSource(srcpe);
-		  destpe=availprocs->findNext();
-		  if(availprocs->count()==0)
-		    availprocs->reset();
+	  for(int subplane=0; subplane<rhoRsubplanes; subplane++)
+	  {
+	    if(rem!=0)
+	      if(nprocs==rem)
+	        rrsobjs_per_pe -= 1;
 #ifdef USE_INT_MAP
-		  maptable->set(chunk, subplane+objs,destpe);
+		  maptable->set(chunk, subplane, destpe);
 #else
-		  maptable->put(intdual(chunk, subplane+objs))=destpe;
+		  maptable->put(intdual(chunk, subplane))=destpe;
 #endif
-		}
+	    objs++;
+	    if(objs==rrsobjs_per_pe)
+	    {
+	      destpe=availprocs->findNext();
+	      if(availprocs->count()==0)
+	        availprocs->reset();
+	      objs=0;
+	      nprocs++;
 	    }
-
+	  }
 	}
     }
 #ifdef MAP_DEBUG
