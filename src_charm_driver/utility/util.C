@@ -2315,6 +2315,7 @@ void Config::guesstimateParms(int natm_nl, int sizez){
 	    sGrainSize=sGrainSize/2;
 	    numGrains = nstates/sGrainSize;
 	    numGrains*=numGrains;
+	    nchareG=(int)(gExpandFact*(double)low_x_size);
 	    numChunks=numPes/(nchareG*numGrains);
 	  }
 	//	if(numPes>=nstates)
