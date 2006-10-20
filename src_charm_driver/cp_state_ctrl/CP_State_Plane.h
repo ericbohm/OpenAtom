@@ -406,12 +406,14 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void ResumeFromSync();	
 	void pup(PUP::er &);
  private:
+        int rhoRsubplanes;
         int ngrida;
         int ngridb;
         int ngridc;
 	int count;
 	int rsize;
 	int csize;
+	int numCookies;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
 	CProxy_CP_State_GSpacePlane gproxy;
