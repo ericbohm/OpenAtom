@@ -100,7 +100,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 //============================================================================
 
     count = 0;
-
+    numCookies=0;
     ngrida = _ngrida;
     ngridb = _ngridb;
     ngridc = _ngridc;
@@ -135,7 +135,7 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   p|rsize;
   PUParray(p,cookie,config.rhoRsubplanes);
   p|gproxy;
-
+  p|numCookies;
   rs.pup(p); // pup your plane, now, honey.
 
 }
@@ -548,12 +548,11 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 */
 //============================================================================
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
-    int i=1; 
     numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);
     if(numCookies == rhoRsubplanes)
-      contribute(sizeof(int), &i, CkReduction::sum_int, 
+      contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
     // do not delete nokeep message
 }
