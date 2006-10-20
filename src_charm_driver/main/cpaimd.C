@@ -1930,7 +1930,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
                                           ees_eext_on,ngrid_eext_c,rhorsOpts);
     for (int i = 0; i < nchareRhoR; i++) {
-      rhoRealProxy(i,0).insert(sizeX,sizeYZ,dummy,ees_eext_on,ngrid_eext_c);
+      for(int j = 0; j < config.rhoRsubplanes; j++)
+        rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy,ees_eext_on,ngrid_eext_c);
     }//endfor
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
