@@ -549,9 +549,11 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 //============================================================================
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
     int i=1; 
+    numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);
-    contribute(sizeof(int), &i, CkReduction::sum_int, 
+    if(numCookies == rhoRsubplanes)
+      contribute(sizeof(int), &i, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
     // do not delete nokeep message
 }
