@@ -551,7 +551,7 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
     numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);
-    if(numCookies == rhoRsubplanes)
+    if(numCookies == config.rhoRsubplanes)
       contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
 	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
     // do not delete nokeep message
