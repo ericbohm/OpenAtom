@@ -337,7 +337,10 @@ class PairCalculator: public CBase_PairCalculator {
   void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
-
+  void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
+  void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *bt, double *C, int *ldc);
+  void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *bt, double *C, int *ldc);
+ 
   void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0 );
   void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
 
