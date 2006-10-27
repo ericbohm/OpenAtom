@@ -65,7 +65,8 @@
  * acceptnewpsi, just a different entry method.  
  *
  * Fourth dimension decomposition is along the axis of the nonzero
- * values in gspace.  Therefore it is fundamentally different from the
+ * values in gspace.  Therefore it 
+is fundamentally different from the
  * 2nd and 3rd dimensions which divide the states up into
  * (states/grainsize)^2 pieces.  The fourth dimension divides along
  * the nonzeros of gspace.  A X,0,0,N division will have the entirety
@@ -1056,8 +1057,6 @@ PairCalculator::multiplyForward(bool flag_dp)
       matrixA=inDataLeft;
     }
 
-
-
 #if PC_FWD_DGEMM_SPLIT > 0
   double betap = 1.0;
   int Ksplit_m =  gemmSplitFWk;
@@ -1099,7 +1098,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   }//endfor
 
-#else  // not SPLIT 
+#else  // not split
 
   int lda=doubleN;   //leading dimension A
   int ldb=doubleN;   //leading dimension B
@@ -1120,17 +1119,16 @@ PairCalculator::multiplyForward(bool flag_dp)
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
-#endif  // SPLIT
+#endif  // end of split
+
   if( (numRecd == numExpected * 2 )|| (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))
     {
       numRecd = 0; 
     }
-
       
 #ifdef _PAIRCALC_DEBUG_PARANOID_
   dumpMatrixDouble("fwgmodata",outData,grainSize, grainSize);
 #endif
-
 
 #ifndef CMK_OPTIMIZE
   StartTime=CmiWallTimer();
@@ -1583,12 +1581,15 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
 	  else
 	    DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
-#endif	// end of split
-
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
+#endif	// end of split
 	}
+
+#ifndef CMK_OPTIMIZE
+      StartTime=CmiWallTimer();
+#endif
 
       if((amPhantom) || (!phantomSym && symmetric && (thisIndex.x !=thisIndex.y)) && existsRight)
 	{
@@ -1604,11 +1605,10 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
 #endif	  
 	  DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
-#endif  // end of split
-
 #ifndef CMK_OPTIMIZE
 	  traceUserBracketEvent(250, StartTime, CmiWallTimer());
 #endif
+#endif  // end of split
 	}
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
@@ -2417,6 +2417,11 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
 #endif
 	CmiNetworkProgress();
       } //endfor
+#ifdef BUNDLE_USER_EVENT
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(230, StartTime, CmiWallTimer());
+#endif
+#endif
 }
 
 #include "ckPairCalculator.def.h"
