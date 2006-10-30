@@ -559,10 +559,11 @@ main::main(CkArgMsg *msg) {
 	int bx,by,bz;
 #ifdef CMK_VERSION_BLUEGENE
 	boxSize=pl;
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize))
+	int order;
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize, order))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d  mapping\n",bx,by,bz, boxSize);
-	    gfoo= new PeList(bx,by,bz);  // heap it
+	    gfoo= new PeList(bx,by,bz, order);  // heap it
 	  }
 	else
 	  {
@@ -2135,11 +2136,14 @@ void mapOutput()
 
 //----------------------------------------------------------------------------
   }//end routine
+
+
 //============================================================================
 // return the cuboid x,y,z of a subpartition exactly matching that volume
-bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume)
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order)
 {
   CkPrintf("maxX %d\n",maxX);
+  order=0;
   double cubert= cbrt((double) volume);
   int cubetrunc= (int) cubert;
   x=y=z=cubetrunc;
@@ -2151,113 +2155,158 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     cubetrunc=maxZ;
   if(volume==x*y*z && !config.useCuboidMapRS)
     return true;
+  bool switchSet=false;
   CkAssert(volume>0);
   switch (volume) // for the common values we just pick cuboids we like
     {
     case 1: 
-      x=1; y=1; z=1; return true;
+      x=1; y=1; z=1; switchSet=true; break;
     case 2: 
-      x=2; y=1; z=1; return true;
+      x=2; y=1; z=1; switchSet=true; break;
     case 3:
-      x=3; y=1; z=1; return true;
+      x=3; y=1; z=1; switchSet=true; break;
     case 4:
-      x=2; y=2; z=1; return true;
+      x=2; y=2; z=1; switchSet=true; break;
     case 5:
-      x=5; y=1; z=1; return true;
+      x=5; y=1; z=1; switchSet=true; break;
     case 6:
-      x=3; y=2; z=1; return true;
+      x=3; y=2; z=1; switchSet=true; break;
     case 7:
-      x=7; y=1; z=1; return true;
+      x=7; y=1; z=1; switchSet=true; break;
     case 8:
-      x=2; y=2; z=2; return true;
+      x=2; y=2; z=2; switchSet=true; break;
     case 9:
-      x=3; y=3; z=1; return true;
+      x=3; y=3; z=1; switchSet=true; break;
     case 10:
-      x=5; y=2; z=1; return true;
+      x=5; y=2; z=1; switchSet=true; break;
     case 12:
-      x=2; y=3; z=2; return true;
+      x=2; y=3; z=2; switchSet=true; break;
     case 14:
-      x=7; y=2; z=1; return true;
+      x=7; y=2; z=1; switchSet=true; break;
     case 15:
-      x=5; y=3; z=1; return true;
+      x=5; y=3; z=1; switchSet=true; break;
     case 16:
-      x=4; y=2; z=2; return true;
+      x=4; y=2; z=2; switchSet=true; break;
     case 18:
-      x=3; y=3; z=2; return true;
+      x=3; y=3; z=2; switchSet=true; break;
     case 20:
-      x=5; y=2; z=2; return true;
+      x=5; y=2; z=2; switchSet=true; break;
     case 21:
-      x=7; y=3; z=1; return true;
+      x=7; y=3; z=1; switchSet=true; break;
     case 24:
-      x=4; y=3; z=2; return true;
+      x=4; y=3; z=2; switchSet=true; break;
     case 25:
-      x=5; y=5; z=1; return true;
+      x=5; y=5; z=1; switchSet=true; break;
     case 27:
-      x=3; y=3; z=3; return true;
+      x=3; y=3; z=3; switchSet=true; break;
     case 28:
-      x=7; y=2; z=2; return true;
+      x=7; y=2; z=2; switchSet=true; break;
     case 30:
-      x=5; y=2; z=2; return true;
+      x=5; y=2; z=2; switchSet=true; break;
     case 32:
       if(config.useCuboidMapRS)
 	{
 	  if(maxX>=8)
-	    { x=8; y=2; z=2; return true;}
+	    { x=8; y=2; z=2; switchSet=true; break;}
 	}
-      x=4; y=2; z=4; return true;
+      x=4; y=2; z=4; switchSet=true; break;
     case 35:
-      x=7; y=5; z=1; return true;
+      x=7; y=5; z=1; switchSet=true; break;
     case 36:
-      x=4; y=3; z=3; return true;
+      x=4; y=3; z=3; switchSet=true; break;
     case 40:
-      x=5; y=4; z=2; return true;
+      x=5; y=4; z=2; switchSet=true; break;
     case 42:
-      x=7; y=3; z=2; return true;
+      x=7; y=3; z=2; switchSet=true; break;
     case 43:
-      x=7; y=3; z=2; return true;
+      x=7; y=3; z=2; switchSet=true; break;
     case 45:
-      x=5; y=3; y=3; return true;
+      x=5; y=3; y=3; switchSet=true; break;
     case 48:
-      x=4; y=3; z=4; return true;
+      x=4; y=3; z=4; switchSet=true; break;
     case 50:
-      x=5; y=5; z=2; return true;
+      x=5; y=5; z=2; switchSet=true; break;
     case 54:
-      x=6; y=3; z=3; return true;
+      x=6; y=3; z=3; switchSet=true; break;
     case 56:
-      x=7; y=4; z=2; return true;
+      x=7; y=4; z=2; switchSet=true; break;
     case 60:
-      x=5; y= 4; z=3; return true;
+      x=5; y= 4; z=3; switchSet=true; break;
     case 64:
       if(config.useCuboidMapRS)
 	{
 	  if(maxX==8)
-	    { x=8; y=4; z=2; return true;}
+	    { x=8; y=4; z=2; switchSet=true; break;}
 	  if(maxX>=16)
-	    { x=16; y=2; z=2; return true;}
+	    { x=16; y=2; z=2; switchSet=true; break;}
 	}
-      x=4; y=4; z=4; return true;
+      x=4; y=4; z=4; switchSet=true; break;
     case 128:
       if(config.useCuboidMapRS)
 	{
 	  if(maxX==16)
-	    {x=16; y=4; z=2; return true;}
+	    {x=16; y=4; z=2; switchSet=true; break;}
 	  if(maxX>=32)
-	    {  x=32; y=2; z=2; return true;	}
+	    {  x=32; y=2; z=2; switchSet=true; break;	}
 	}
-      x=8; y=4; z=4; return true;
+      x=8; y=4; z=4; switchSet=true; break;
     case 256:
       if(config.useCuboidMapRS)
 	{
 	  if(maxX==16)
-	    { x=16; y=4; z=4; return true;}
+	    { x=16; y=4; z=4; switchSet=true; break;}
 	  if(maxX>=32)
-	    { x=16; y=4; z=4; return true;}
+	    { x=16; y=4; z=4; switchSet=true; break;}
 	}
-      x=8; y=8; z=4; return true;
+      x=8; y=8; z=4; switchSet=true; break;
     default:
       break;
     }
-  // its something weird or big so try a best fit
+
+  if(switchSet && config.useCuboidMapRS)
+    {
+      // now correct the x,y,z to put long prism axis along the
+      // smallest torus dimension which will fit.
+      if(x==maxX)
+	return true;
+      if(x==maxY)
+	{ // change to Y
+	  order=1; //YXZ
+	  int swap=x;
+	  x=y;
+	  y=swap;
+	  return true;
+	}
+      if(x==maxZ)
+	{ // change to Z
+	  order=2; //ZXY
+	  int swap=x;
+	  x=z;
+	  z=swap;
+	  return true;
+	}
+      // if we're here then we don't have a spanning prism
+      // just pick the smallest which will fit.
+      if(x<maxX)
+	return true;
+      if(x<maxY)
+	{ // change to Y
+	  order=1; //YXZ
+	  int swap=x;
+	  x=y;
+	  y=swap;
+	  return true;
+	}
+      if(x<maxZ)
+	{ // change to Z
+	  order=2; //ZXY
+	  int swap=x;
+	  x=z;
+	  z=swap;
+	  return true;
+	}
+    }
+  // its something weird so try a best fit
   int start=cubetrunc-1;
   if(config.useCuboidMapRS)
     x=(volume>=maxX)? maxX: cubetrunc;
