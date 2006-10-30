@@ -794,7 +794,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	outData1= new double[m_in*n_in];
 
 #if PC_FWD_DGEMM_SPLIT > 0
-        dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, &(allCaughtRight), &lda, leftNewTemp, &ldb, &beta, &(outData1), &ldc)
+        dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, &(allCaughtRight), &lda, leftNewTemp, &ldb, &beta, &(outData1), &ldc);
 #else  // not split
 
 #ifndef CMK_OPTIMIZE
