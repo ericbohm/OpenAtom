@@ -8,7 +8,7 @@ extern 	BGLTorusManager *bgltm;
 #ifdef CMK_VERSION_BLUEGENE
 //! construct the list by iterating through boxes which are sub
 //! partitions 
-PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
+PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
     {
 
       current=0;
@@ -21,21 +21,65 @@ PeList::PeList(int boxX, int boxY, int boxZ) // boxy constructor
       TheList= new int[size];
       sortIdx= new int[size];
       int numBoxes=0;
-      for(int x=0; x<maxX; x+=boxX) // new box  in X
-	for(int y=0; y<maxY; y+=boxY) // new box in Y 
-	  for(int z=0; z<maxZ; z+=boxZ) // new box in Z
-	    {
-	      // fill out this box
-	      numBoxes++;
+      if(order==0)  // long axis along X
+	{
+	  for(int x=0; x<maxX; x+=boxX) // new box  in X
+	    for(int y=0; y<maxY; y+=boxY) // new box in Y 
+	      for(int z=0; z<maxZ; z+=boxZ) // new box in Z
+		{
+		  // fill out this box
+		  numBoxes++;
 
-		for(int bz=0;bz<boxZ;bz++)
+		  for(int bz=0;bz<boxZ;bz++)
+		    for(int by=0;by<boxY;by++)
+		      for(int bx=0;bx<boxX;bx++)
+			{
+			  sortIdx[i]=i;
+			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			}
+		}
+	}
+      else if(order ==1) // long axis is along Y
+	{
+	  for(int y=0; y<maxY; y+=boxY) // new box in Y 
+	    for(int x=0; x<maxX; x+=boxX) // new box  in X
+	      for(int z=0; z<maxZ; z+=boxZ) // new box in Z
+		{
+		  // fill out this box
+		  numBoxes++;
+
+		  for(int bz=0;bz<boxZ;bz++)
+		    for(int bx=0;bx<boxX;bx++)
+		      for(int by=0;by<boxY;by++)
+			{
+			  sortIdx[i]=i;
+			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			}
+		}
+
+	}
+      else if(order ==2) // long axis is along Z
+	{
+	  for(int z=0; z<maxZ; z+=boxZ) // new box in Z
+	    for(int x=0; x<maxX; x+=boxX) // new box  in X
+	      for(int y=0; y<maxY; y+=boxY) // new box in Y 
+		{
+		  // fill out this box
+		  numBoxes++;
 		  for(int by=0;by<boxY;by++)
 		    for(int bx=0;bx<boxX;bx++)
-		    {
-		      sortIdx[i]=i;
-		      TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
-		    }
-	    }
+			for(int bz=0;bz<boxZ;bz++)
+			{
+			  sortIdx[i]=i;
+			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			}
+		}
+
+	}
+      else
+	{
+	  CkAbort("unknown order");
+	}
       // size is actually boxsize times the number of whole boxes
       // that fit in the mesh
       int end=numBoxes* boxX*boxY*boxZ;

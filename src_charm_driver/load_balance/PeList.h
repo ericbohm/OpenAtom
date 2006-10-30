@@ -35,7 +35,7 @@ class PeList
 
 #ifdef CMK_VERSION_BLUEGENE
  //! boxy constructor for BG/L
-  PeList(int boxX, int boxY, int boxZ);
+  PeList(int boxX, int boxY, int boxZ, int order);
 #endif
   PeList(int _size): size(_size)
     {
