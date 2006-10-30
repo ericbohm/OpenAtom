@@ -874,7 +874,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  outData2= new double[m_in*n_in];
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 #if PC_FWD_DGEMM_SPLIT > 0
-    dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, &(allCaughtLeft), &ldb, &beta, &(outData2), &ldc)
+    dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, &(allCaughtLeft), &ldb, &beta, &(outData2), &ldc);
 #endif // split 
 
 	  copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
