@@ -70,7 +70,7 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
 #endif
-    c->doProductThenFFT(); // vks(r) arrives in doproduct(msg) which resumes
+    c->doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
     c->sendFPsiToGSP();
   } //end while not done
 
@@ -99,7 +99,9 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
+    countProduct=0;
     count = 0;
+    rhoRsubplanes = config.rhoRsubplanes;
     numCookies=0;
     ngrida = _ngrida;
     ngridb = _ngridb;
@@ -115,7 +117,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     }//endif
 
     setMigratable(false);
-    cookie= new CkSectionInfo[config.rhoRsubplanes];
+    cookie= new CkSectionInfo[rhoRsubplanes];
     run();
 
 }
@@ -127,13 +129,15 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 void CP_State_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
 
+  p|rhoRsubplanes;
   p|ngrida;
   p|ngridb;
   p|ngridc;
   p|count;
+  p|countProduct;
   p|csize;
   p|rsize;
-  PUParray(p,cookie,config.rhoRsubplanes);
+  PUParray(p,cookie,rhoRsubplanes);
   p|gproxy;
   p|numCookies;
   rs.pup(p); // pup your plane, now, honey.
@@ -290,8 +294,7 @@ void CP_State_RealSpacePlane::doFFT(){
     CkPrintf("EGGA        = OFF FOR DEBUGGING\n");
     CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
   }//endif
-  bzero(data,ngrida*ngridb*sizeof(double));
-  doProductThenFFT();
+  bzero(planeArrR,(ngrida+2)*ngridb*sizeof(double));
 #else
   doReduction();
 #endif
@@ -299,7 +302,6 @@ void CP_State_RealSpacePlane::doFFT(){
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
-
 
 
 
@@ -311,60 +313,59 @@ void CP_State_RealSpacePlane::doFFT(){
 //============================================================================
 void CP_State_RealSpacePlane::doReduction(){
 //============================================================================
+// Grab some local pointer and do some checking.
+
+   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+   FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+   double *data        = fftcache->tmpDataR;
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
     CkPrintf("In StateRSpacePlane[%d %d] doReduction %d\n", thisIndex.x, thisIndex.y,
                 CmiMemoryUsage());
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<ngrida*ngridb ;i++){
+      if(isnan(data[i])!=0){
+	CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",
+           thisIndex.x, thisIndex.y, i, ngridb*ngrida);
+	CkAbort("RS nan in the fftcache");
+      }
+  }//endif
+#endif
+
 //============================================================================
 // Perform the Reduction to get the density : vks holds psi^2 for us
 // Return values for vks cannot hit this chare until the reduciton is complete.
 
-   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-
 #ifndef CMK_OPTIMIZE    
    double StartTime=CmiWallTimer();
 #endif
-
-    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
-    double *data        = fftcache->tmpDataR;
-
-#ifdef _NAN_CHECK_
-  for(int i=0;i<ngrida*ngridb ;i++)
-    {
-      if(isnan(data[i])!=0)
-      {
-	CkPrintf("RS [%d %d] issuing nan at %d out of %d\n",thisIndex.x, thisIndex.y, i, ngridb*ngrida);
-	CkAbort("RS nan in the fftcache");
-      }
-
-    }
-#endif
   
-  // Need loop of contribute calls, one for each nchareRhoSplit
-  // offset into data with smaller size
+  // Need loop of contribute calls, one for each nchareRhoSplit offset 
+  // into data. Need a vector of cookies and callback functions
 
-  // vector of cookies and callback functions
-  int dataSize=ngrida*ngridb/config.rhoRsubplanes;
-  int dataOffset=dataSize;
-  int dataSizeRem=ngrida*ngridb%config.rhoRsubplanes;
-  // remainder gets chunked into last plane
-  for(int subplane=0; subplane<config.rhoRsubplanes; subplane++)
-    {
-      CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-		    CkArrayIndex2D(thisIndex.y,subplane),rhoRealProxy.ckGetArrayID());
-      if(dataSizeRem>0 && subplane+1==config.rhoRsubplanes)
-	dataSize+=dataSizeRem;
-      mcastGrp->contribute(dataSize*sizeof(double),&(data[dataOffset*subplane]),sumFastDoubleType,
-		       //  mcastGrp->contribute(ngrida*ngridb*sizeof(double),data,CkReduction::sum_double,
-			   cookie[subplane],cb);
-    }
-    CmiNetworkProgress();
+  int subSize = (ngridb/rhoRsubplanes);
+  int subRem  = (ngridb % rhoRsubplanes);
+
+  int off = 0;
+  for(int subplane=0; subplane<rhoRsubplanes; subplane++){
+    int dataSize = subSize*ngrida;
+    if(subplane < subRem){dataSize += ngrida;}
+    CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
+                  CkArrayIndex2D(thisIndex.y,subplane),rhoRealProxy.ckGetArrayID());
+    mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
+                         sumFastDoubleType,cookie[subplane],cb);
+    off += dataSize;
+  }//endfor : subplanes
+  CkAssert(off==ngrida*ngridb);
+
+  CmiNetworkProgress(); // yuck!
 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    
+
 //============================================================================
     }//end routine
 //============================================================================
@@ -388,28 +389,53 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
   CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->datalen ;i++){
+      CkAssert(isnan(msg->data[i])==0);
+  }
+#endif
+
 //============================================================================
 // Unpack and check size, copy to cache temp, resume which calls doProduct
 // without relinquishing control to other chares
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->datalen ;i++)
-    {
-      CkAssert(isnan(msg->data[i])==0);
-    }
-#endif
 
-  double *vks_in = msg->data;
+  double *vks_tmp = msg->data;
+  int mychare    = msg->idx;
   int mysize     = msg->datalen;
-  CkAssert(mysize == ngrida*ngridb);
-	
-  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
-  double *Vks         = fftcache->tmpDataR;
+  int myindex    = msg->subplane; // subplaneindex of rhor
+  CkAssert(mychare==thisIndex.y);
 
-  CmiMemcpy(Vks,vks_in,sizeof(double)*mysize);
+  int subSize    = (ngridb/rhoRsubplanes);
+  int subRem     = (ngridb % rhoRsubplanes);
+  int subAdd     = (myindex < subRem ? 1 : 0);
+  int subMax     = (myindex < subRem ? myindex : subRem);
+  int off        = (subSize*myindex + subMax)*(ngrida+2);
+  int myNgridb   = subSize+subAdd;
+  int size       = ngrida*myNgridb;
+  CkAssert(mysize == size);
+
+//============================================================================	
+
+  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+  double *psiVks      = rs.planeArrR;
+  double *Vks         = fftcache->tmpDataR;
+  CmiMemcpy(Vks,vks_tmp,sizeof(double)*size); // avoid the charm++ memory
+
+  // multiply psi by vks to form psiVks
+  for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
+    for(int j=i*ngrida;j<(i+1)*ngrida;j++){
+      psiVks[(j+i2)] *= Vks[j];
+    }//endfor
+  }//endfor
   CmiNetworkProgress();
-  
-  RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
-                                  // as threaded loops calls working doproduct
+
+//============================================================================	
+  countProduct++;
+  if(countProduct==rhoRsubplanes){
+    countProduct=0;
+    RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
+                                    // as threaded loops calls do vksfft
+  }//endif
 
 //---------------------------------------------------------------------------
   }//endroutine
@@ -419,13 +445,11 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/**
-* Really doing the product : called directly from the doProduct(msg) : I don't 
-*                             give way to another chare so I can use the scratch 
-*                             space in the Cache group
-*/
+/*
+ *        Do the fft of psi*vks stored in rho_rs.planeArrayR
+ */
 //============================================================================
-void CP_State_RealSpacePlane::doProductThenFFT() {
+void CP_State_RealSpacePlane::doVksFFT() {
 //============================================================================
 // A little output under some circumstances
 
@@ -437,9 +461,9 @@ void CP_State_RealSpacePlane::doProductThenFFT() {
 #ifndef _CP_DEBUG_RHO_OFF_  
 #ifdef _CP_DEBUG_VKS_RSPACE_
   if(thisIndex.x==0 && thisIndex.y == 0){
-     FILE *fp = fopen("vks_real_y0_state0.out","w");
-      for(int i=0;i<size;i++){
-        fprintf(fp,"%g\n",vks[i]);
+     FILE *fp = fopen("psivks_real_y0_state0.out","w");
+      for(int i=0;i<(ngrida+2)*ngridb;i++){
+        fprintf(fp,"%g\n",rho_rs.planeArrayR[i]);
       }//endfor
      fclose(fp);
   }//endif
@@ -447,7 +471,7 @@ void CP_State_RealSpacePlane::doProductThenFFT() {
 #endif
 
 //===================================================================
-// Do the product and then the FFT
+// Do the FFT of psi*vks
 
  //------------------------------------------------------------------
  // Start the timer
@@ -456,23 +480,11 @@ void CP_State_RealSpacePlane::doProductThenFFT() {
 #endif
 
  //------------------------------------------------------------------
- // The product psi*vks
-  double  *planeArrR  = rs.planeArrR;
-  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
-  double *Vks         = fftcache->tmpDataR;
-
-  int stride = sizeX/2+1;
-  for(int i=0,i2=0;i<ngridb;i++,i2+=2){
-    for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-      planeArrR[(j+i2)] *= Vks[j];
-    }//endfor
-  }//endfor
-  CmiNetworkProgress();
-
- //------------------------------------------------------------------
  // The FFT
-  int nplane_x      = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
-  complex *planeArr = rs.planeArr;
+  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+  int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  complex *planeArr   = rs.planeArr;
+  double *planeArrR   = rs.planeArrR;
   fftcache->doStpFFTRtoG_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
 
  //------------------------------------------------------------------
@@ -480,9 +492,6 @@ void CP_State_RealSpacePlane::doProductThenFFT() {
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(doRealBwFFT_, StartTime, CmiWallTimer());
 #endif
-
-//===================================================================
-// Return to threaded loop which invokes the send routine
 
 //---------------------------------------------------------------------------
    }//end routine
@@ -533,10 +542,8 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
      rs.destroy();
   }//endif
 
-//===================================================================
-//  CkPrintf("RSP [%d %d] sent back to GSP \n",thisIndex.x,thisIndex.y);
 //============================================================================
-   }//end routine : CP_State_RealSpacePlane::doProduct()
+   }//end routine : CP_State_RealSpacePlane::sendFPsiToGSP
 //============================================================================
 
 

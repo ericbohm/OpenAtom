@@ -1931,8 +1931,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
                                           ees_eext_on,ngrid_eext_c,rhorsOpts);
     for (int i = 0; i < nchareRhoR; i++) {
-      for(int j = 0; j < config.rhoRsubplanes; j++)
+      for(int j = 0; j < config.rhoRsubplanes; j++){
         rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy,ees_eext_on,ngrid_eext_c);
+      }//endfor
     }//endfor
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
@@ -1962,8 +1963,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
                                  ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
 	for (int i = 0; i < nchareRhoRHart; i++){
+ 	 for (int j = 0; j < config.rhoRsubplanes; j++){
 	  rhoRHartExtProxy(i,0).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
 				       ees_eext_on,natmTyp);
+         }//endfor
 	}//endfor
 	rhoRHartExtProxy.doneInserting();
       }

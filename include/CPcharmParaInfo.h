@@ -130,6 +130,7 @@ class CPcharmParaInfo {
    int cp_min_cg;
    int cp_min_std;
    int sizeX, sizeY, sizeZ;
+   int rhoRsubplanes;
    int ees_eext_on;         //Opt: EES option on for external energy
    int ees_nloc_on;         //Opt: EES option on for non-local energy
    int ngrid_nloc_a, ngrid_nloc_b, ngrid_nloc_c; 
@@ -166,21 +167,33 @@ class CPcharmParaInfo {
    int nlines_tot_rho; // total number of lines in rhog-space
    int nlines_max_rho; // maximum number of lines in any rho collection
    int npts_tot_rho;   // total number of pts in rhog-space
+   int nlines_max_eext;// rhoghelpers subdivided g-collections
 
    int nplane_rho_x;   // # of non-zero planes of rho gx
    int nchareRhoG;    // # of collections of lines in rhog-space
    int nchareRhoGEext;  // # of collections of lines in rhog-space for eext
    double *lines_per_chareRhoG;  // lines in each collection (rhog-space)
    double *pts_per_chareRhoG;    // pts in each collection   (rhog-space)
+
    int *nlines_per_chareRhoG;   // lines in each collection (rhog-space)
    int *nlines_per_chareRhoGEext;  // lines in each collection (rhog-space)
    int *npts_per_chareRhoG;     // pts in each collection   (rhog-space)
    int **index_tran_upack_rho;   // unpack indicies for each chareRhoG
    int **index_tran_upack_eext;   // unpack indicies for each chareRhoG
+
+   int **nline_send_eext_y;       // g-collections send/recv R to G in Rsubplane decomp
+   int **nline_send_rho_y;        // g-collections send/recv R to G in Rsubplane decomp
+   int ***index_tran_upack_rho_y; // fancy indices to pack/upack collections
+   int ***index_tran_upack_eext_y;// in Rsubplane decomp.
+   int ***index_tran_upack_eext_ys;// in Rsubplane decomp.
+   int ***index_tran_pack_rho_y;
+   int ***index_tran_pack_eext_y;
+   int ***index_tran_pack_eext_ys;
+
    CkVec<RunDescriptor> *RhosortedRunDescriptors; // description of collection
    RedundantCommPkg *RCommPkg;  // communication of redundant elements
-//=============================================================================
 
+//=============================================================================
 
 //=============================================================================
    CPcharmParaInfo(CPcharmParaInfo &s){
@@ -202,6 +215,7 @@ class CPcharmParaInfo {
      cp_min_opt   = s.cp_min_opt;
      cp_min_cg    = s.cp_min_cg;
      cp_min_std   = s.cp_min_std;
+     rhoRsubplanes= s.rhoRsubplanes;
      sizeX        = s.sizeX;
      sizeY        = s.sizeY;
      sizeZ        = s.sizeZ;
@@ -242,6 +256,7 @@ class CPcharmParaInfo {
      nlines_tot_rho  = s.nlines_tot_rho;
      npts_tot_rho    = s.npts_tot_rho;
      nlines_max_rho  = s.nlines_max_rho;
+     nlines_max_eext = s.nlines_max_eext;
      nplane_rho_x    = s.nplane_rho_x;
      nchareRhoG      = s.nchareRhoG;
      nchareRhoGEext  = s.nchareRhoGEext;
@@ -337,6 +352,42 @@ class CPcharmParaInfo {
        nmem_zmat[i] = s.nmem_zmat[i];
      }//endif
 
+     if(rhoRsubplanes>1){
+       index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                              0,nlines_max_rho,"util.C");
+       index_tran_pack_rho_y   = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                              0,nlines_max_rho,"util.C");
+       nline_send_rho_y        = cmall_int_mat(0,nchareRhoG,0,rhoRsubplanes,"util.C");
+       index_tran_upack_eext_y = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_upack_eext_ys= cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_pack_eext_y  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_pack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       nline_send_eext_y       = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,"util.C");
+       for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            nline_send_rho_y[igrp][ic] = s.nline_send_rho_y[igrp][ic];
+            for(int jc=0;jc<nline_send_rho_y[igrp][ic];jc++){
+              index_tran_upack_rho_y[igrp][ic][jc] = s.index_tran_upack_rho_y[igrp][ic][jc];
+              index_tran_pack_rho_y[igrp][ic][jc] = s.index_tran_pack_rho_y[igrp][ic][jc];
+	    }//endfor
+	  }//endfor
+       }//endfor
+       for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+        for(int ic=0;ic<rhoRsubplanes;ic++){
+         nline_send_eext_y[igrp][ic] = s.nline_send_eext_y[igrp][ic];
+         for(int jc=0;jc<nline_send_eext_y[igrp][ic];jc++){
+          index_tran_upack_eext_y[igrp][ic][jc]= s.index_tran_upack_eext_y[igrp][ic][jc];
+          index_tran_upack_eext_ys[igrp][ic][jc]= s.index_tran_upack_eext_ys[igrp][ic][jc];
+          index_tran_pack_eext_y[igrp][ic][jc] = s.index_tran_pack_eext_y[igrp][ic][jc];
+          index_tran_pack_eext_ys[igrp][ic][jc] = s.index_tran_pack_eext_ys[igrp][ic][jc];
+         }//endfor
+	}//endfor
+       }//endfor
+     }//endif
 
      LBTurnInstrumentOff();
    }//end constructor
@@ -348,6 +399,7 @@ class CPcharmParaInfo {
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
    CkPrintf("CPcharmParaInfo constructor\n");
 #endif
+       rhoRsubplanes = 1;
        lines_per_chareG=NULL; 
        pts_per_chareG=NULL;
        nlines_per_chareG=NULL; 
@@ -363,6 +415,15 @@ class CPcharmParaInfo {
 
        ioff_zmat = NULL;
        nmem_zmat = NULL;
+
+       index_tran_upack_rho_y   = NULL;
+       index_tran_pack_rho_y    = NULL;
+       nline_send_rho_y         = NULL;
+       index_tran_upack_eext_y  = NULL;
+       index_tran_upack_eext_ys = NULL;
+       index_tran_pack_eext_y   = NULL;
+       index_tran_pack_eext_ys  = NULL;
+       nline_send_eext_y        = NULL;
 
    }
 //=============================================================================
@@ -388,6 +449,21 @@ class CPcharmParaInfo {
       cfree_int_mat(index_tran_upackNL,0,nchareG,0,nlines_max);
       cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
       cfree_int_mat(index_tran_upack_eext,0,nchareRhoGEext,0,nlines_max_rho);
+
+     if(rhoRsubplanes>1){
+      cfree_itens3(index_tran_upack_rho_y,0,nchareRhoG,0,rhoRsubplanes,0,nlines_max_rho);
+      cfree_itens3(index_tran_pack_rho_y,0,nchareRhoG,0,rhoRsubplanes,0,nlines_max_rho);
+      cfree_itens3(index_tran_upack_eext_y,0,nchareRhoGEext,0,rhoRsubplanes,
+		                           0,nlines_max_eext);
+      cfree_itens3(index_tran_upack_eext_ys,0,nchareRhoGEext,0,rhoRsubplanes,
+		                           0,nlines_max_eext);
+      cfree_itens3(index_tran_pack_eext_y,0,nchareRhoGEext,0,rhoRsubplanes,
+  		                          0,nlines_max_eext);
+      cfree_itens3(index_tran_pack_eext_ys,0,nchareRhoGEext,0,rhoRsubplanes,
+  		                          0,nlines_max_eext);
+      cfree_int_mat(nline_send_rho_y,0,nchareRhoG,0,rhoRsubplanes);
+      cfree_int_mat(nline_send_eext_y,0,nchareRhoGEext,0,rhoRsubplanes);
+     }//endif
       
   }//end destructor
 //=============================================================================
@@ -401,7 +477,7 @@ class CPcharmParaInfo {
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
-      p|cp_min_opt; p|cp_min_std; p|cp_min_cg;
+      p|cp_min_opt; p|cp_min_std; p|cp_min_cg; p|rhoRsubplanes;
       p|sizeX;      p|sizeY;      p|sizeZ;  
       p|ees_eext_on;    p|ees_nloc_on;
       p|ngrid_nloc_a;  p|ngrid_nloc_b;   p|ngrid_nloc_c;
@@ -411,7 +487,7 @@ class CPcharmParaInfo {
       p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; 
       p|nmem_zmat_tot; p|nmem_zmat_max;
       p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;
-      p|nlines_max;
+      p|nlines_max; p|nlines_max_eext;
       p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 
       p|nlines_max_rho; p|nlines_tot_rho; p|npts_tot_rho;
       if(p.isUnpacking()) {
@@ -429,6 +505,24 @@ class CPcharmParaInfo {
         index_tran_upack_eext= cmall_int_mat(0,nchareRhoGEext,0,nlines_max_rho,
                                              "cpcharmparainfo.h");
         RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
+        if(rhoRsubplanes>1){
+          index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                                 0,nlines_max_rho,"cpcharmparainfo.h");
+          index_tran_pack_rho_y   = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                                 0,nlines_max_rho,"cpcharmparainfo.h");
+          nline_send_rho_y        = cmall_int_mat(0,nchareRhoG,0,rhoRsubplanes,
+                                                  "cpcharmparainfo.h");
+          index_tran_upack_eext_y = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                                 0,nlines_max_eext,"cpcharmparainfo.h");
+          index_tran_upack_eext_ys= cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                                 0,nlines_max_eext,"cpcharmparainfo.h");
+          index_tran_pack_eext_y  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                                 0,nlines_max_eext,"cpcharmparainfo.h");
+          index_tran_pack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                                 0,nlines_max_eext,"cpcharmparainfo.h");
+          nline_send_eext_y       = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,
+                                                  "cpcharmparainfo.h");
+        }//endif
       }//enddif : unpacking
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 2 \n");
@@ -447,6 +541,28 @@ class CPcharmParaInfo {
       for(int igrp=0;igrp<nchareRhoGEext;igrp++){
 	PUParray(p,index_tran_upack_eext[igrp],nlines_per_chareRhoGEext[igrp]);
       }
+      if(rhoRsubplanes>1){
+        for(int igrp=0;igrp<nchareRhoG;igrp++){
+          PUParray(p,nline_send_rho_y[igrp],rhoRsubplanes);
+	}
+        for(int igrp=0;igrp<nchareRhoGEext;igrp++){
+          PUParray(p,nline_send_eext_y[igrp],rhoRsubplanes);
+	}
+        for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            PUParray(p,index_tran_pack_rho_y[igrp][ic],nline_send_rho_y[igrp][ic]);
+            PUParray(p,index_tran_upack_rho_y[igrp][ic],nline_send_rho_y[igrp][ic]);
+	  }
+	}
+        for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            PUParray(p,index_tran_pack_eext_y[igrp][ic],nline_send_eext_y[igrp][ic]);
+            PUParray(p,index_tran_pack_eext_ys[igrp][ic],nline_send_eext_y[igrp][ic]);
+            PUParray(p,index_tran_upack_eext_y[igrp][ic],nline_send_eext_y[igrp][ic]);
+            PUParray(p,index_tran_upack_eext_ys[igrp][ic],nline_send_eext_y[igrp][ic]);
+	  }
+	}
+      }//endif : subplanes are in use.
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 3 \n");
 #endif
@@ -499,6 +615,7 @@ class CPcharmParaInfo {
          RCommPkg = new RedundantCommPkg [nchareG]; 
       }//endif
       PUParray(p,RCommPkg,nchareG);
+
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("end CPcharmParaInfo pup\n");
 #endif

@@ -1344,7 +1344,8 @@ void CP_State_GSpacePlane::doFFT() {
   // If there is no data to send, return immediately
   if (gs.numNonZeroPlanes == 0 || gs.fftReqd == false){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Dude, no data to send : Why launch the stategpsaceplane\n");
+     CkPrintf("Dude, no data to send : Why launch the stategpsaceplane %d %d %d\n",
+               thisIndex.x,thisIndex.y, gs.numNonZeroPlanes);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
@@ -1984,9 +1985,8 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::doLambda() {
-  //==============================================================================
-
-  // (I) If you have got it all : Rescale it and resume
+//==============================================================================
+// (I) If you have got it all : Rescale it and resume
 
   CkAssert(countLambda==AllLambdaExpected);
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
@@ -2007,8 +2007,8 @@ void CP_State_GSpacePlane::doLambda() {
     }//endif
   }//endif
 
-  //==============================================================================
-  // Retrieve Non-orthog psi
+//==============================================================================
+// Retrieve Non-orthog psi
 
   if(cp_min_opt==0){
     int ncoef          = gs.numPoints;
@@ -2017,8 +2017,8 @@ void CP_State_GSpacePlane::doLambda() {
     CmiMemcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
   }//endif
     
-  //==============================================================================
-  // Resume 
+//==============================================================================
+// Resume 
 
   acceptedLambda=true;
   countLambda=0;

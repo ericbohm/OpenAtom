@@ -46,18 +46,21 @@ RhoRealSlab::~RhoRealSlab(){
 //==============================================================================
 /* This gets called at the end of the RealSpaceDensity Constructor */
 //==============================================================================
-void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
-                     int myIndexX, int myIndexY)
+void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim, 
+                     int xdimA, int ydimA,  int myIndexX, int myIndexY,
+                     int rhoRsubplanes)
 //==============================================================================
    {//begin routine
 //==============================================================================
 
+   rho_rs->rhoRsubplanes = rhoRsubplanes;
    rho_rs->sizeX = xdim;
    rho_rs->sizeY = ydim;
    rho_rs->sizeZ = zdim;
 
    rho_rs->size     = (rho_rs->sizeX+2) * (rho_rs->sizeY);
    rho_rs->trueSize = (rho_rs->sizeX) * (rho_rs->sizeY);
+
    int sizenow      = rho_rs->size;
    int csizenow     = sizenow/2;
 
@@ -85,6 +88,35 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
    dummy            = (complex*) fftw_malloc(csizenow*sizeof(complex));
    rho_rs->VksHartC = dummy;
    rho_rs->VksHart  = reinterpret_cast<double*> (dummy);
+
+   // if you have an extra transpose, you need a little more memory
+   // to receive messages asynchronously from other elements
+
+   rho_rs->csizeInt = 0;
+   rho_rs->rsizeInt = 0;
+   if(rhoRsubplanes>1){
+
+     csizenow = xdimA*ydimA;
+     rho_rs->csizeInt = csizenow;
+     rho_rs->rsizeInt = 2*csizenow;
+
+     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+     rho_rs->rhoIRXCint  = dummy;
+     rho_rs->rhoIRXint   = reinterpret_cast<double*> (dummy);
+
+     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+     rho_rs->rhoIRYCint  = dummy;
+     rho_rs->rhoIRYint   = reinterpret_cast<double*> (dummy);
+
+     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+     rho_rs->rhoIRZCint  = dummy;
+     rho_rs->rhoIRZint   = reinterpret_cast<double*> (dummy);
+
+     dummy               = (complex*) fftw_malloc(csizenow*sizeof(complex));
+     rho_rs->VksHartCint = dummy;
+     rho_rs->VksHartint  = reinterpret_cast<double*> (dummy);
+
+   }//endif
 
 //==============================================================================
    }//end routine
@@ -388,6 +420,7 @@ void RhoGSlab::setKVectors(int *n){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RhoRealSlab::pup(PUP::er &p) {
+
   p|sizeZ;   // fftX size
   p|sizeY;   // fftYZ size
   p|sizeZ;   // fftZ size
@@ -396,6 +429,10 @@ void RhoRealSlab::pup(PUP::er &p) {
   p|exc_ret; // energies
   p|muxc_ret;
   p|exc_gga_ret;
+  p|rhoRsubplanes;
+  p|csizeInt;
+  p|rsizeInt;
+
   if(p.isUnpacking()){
         int csize  = size/2;
 	VksC       = (complex*) fftw_malloc(csize*sizeof(complex));
@@ -410,6 +447,16 @@ void RhoRealSlab::pup(PUP::er &p) {
 	rhoIRZ     = reinterpret_cast<double*> (rhoIRZC);
 	VksHartC   = (complex*) fftw_malloc(csize*sizeof(complex));
 	VksHart    = reinterpret_cast<double*> (VksHartC);
+        if(rhoRsubplanes>1){
+	  rhoIRXCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+	  rhoIRXint     = reinterpret_cast<double*> (rhoIRXCint);
+	  rhoIRYCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+	  rhoIRYint     = reinterpret_cast<double*> (rhoIRYCint);
+	  rhoIRZCint    = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+	  rhoIRZint     = reinterpret_cast<double*> (rhoIRZCint);
+	  VksHartCint   = (complex*) fftw_malloc(csizeInt*sizeof(complex));
+	  VksHartint    = reinterpret_cast<double*> (VksHartCint);
+	}
     }
   PUParray(p,Vks,    size);
   PUParray(p,density,size);
@@ -417,6 +464,14 @@ void RhoRealSlab::pup(PUP::er &p) {
   PUParray(p,rhoIRY, size);
   PUParray(p,rhoIRZ, size);
   PUParray(p,VksHart,size);
+
+  if(rhoRsubplanes==1){
+    PUParray(p,rhoIRXint, rsizeInt);
+    PUParray(p,rhoIRYint, rsizeInt);
+    PUParray(p,rhoIRZint, rsizeInt);
+    PUParray(p,VksHartint,rsizeInt);
+  }//endif
+
 }
 //==============================================================================
 
@@ -475,7 +530,6 @@ void RhoRealSlab::uPackShrink(double *uPackData,double *PackData){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void RhoRealSlab::uPackScaleGrow(double *uPackData,double *PackData,double scale){
-
   for(int i=0,i2=0;i<sizeY;i++,i2+=2){
     for(int j=i*sizeX;j<(i+1)*sizeX;j++){
       uPackData[(j+i2)] =PackData[j]*scale;

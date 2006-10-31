@@ -46,13 +46,18 @@ void make_rho_runs(CPcharmParaInfo *sim){
    int *kz;
    int nline_tot; 
    int nPacked;
-   int rhoGHelpers = config.rhoGHelpers;
-   int sizeXEext = sim->ngrid_eext_a;
-   int sizeX     = sim->sizeX;
-   int sizeY     = sim->sizeY;
-   int sizeZ     = sim->sizeZ;
-   double *hmati = gencell->hmati;
-   double ecut4  = 8.0*cpcoeffs_info->ecut; // convert to Ryd extra factor of 2.0
+   int rhoRsubplanes = config.rhoRsubplanes;
+   int rhoGHelpers   = config.rhoGHelpers;
+
+   int sizeXEext     = sim->ngrid_eext_a;
+   int sizeYEext     = sim->ngrid_eext_b;
+   int sizeZEext     = sim->ngrid_eext_c;
+   int sizeX         = sim->sizeX;
+   int sizeY         = sim->sizeY;
+   int sizeZ         = sim->sizeZ;
+
+   double *hmati     = gencell->hmati;
+   double ecut4      = 8.0*cpcoeffs_info->ecut; // convert to Ryd extra factor of 2.0
 
    get_rho_kvectors(ecut4,hmati,&kx,&ky,&kz,&nline_tot,&nPacked,sizeX,sizeY,sizeZ);
 
@@ -314,6 +319,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       }//endfor
     }//endfor
 
+    int nlines_max_eext = 0;
     int yspaceEext=sizeXEext/2+1;
     for(int igrp=0,jgrp=0;igrp<nchareRhoG;igrp++){
       int nlTot = nline_lgrp[igrp];
@@ -323,6 +329,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
         getSplitDecomp(&kstrt,&kend,&nl,nlTot,rhoGHelpers,k);
         kstrt += istrt;
         nline_lgrp_eext[jgrp] = nl;
+        nlines_max_eext = MAX(nlines_max_eext,nl);
         for(int j=0,i=kstrt;j<nl;j++,i++){
           index_tran_upack_eext[jgrp][j] = kx_line_ext[i] + ky_line_ext[i]*yspaceEext;
         }//endfor
@@ -376,6 +383,106 @@ void make_rho_runs(CPcharmParaInfo *sim){
      CkExit(); 
   }//endif
 
+  if(rhoRsubplanes > nplane_x){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("RhoGsubplanes parameter, %d, must be <= number\n",rhoRsubplanes);
+     CkPrintf("number of gx values which span 0<=gx <=%d.\n",nplane_x);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit(); 
+  }//endif
+
+//============================================================================
+// Rejigger the stuff for subplane parallelization : RHOG
+
+    int ***index_tran_upack_rho_y  = NULL;
+    int ***index_tran_pack_rho_y   = NULL;
+    int **nline_send_rho_y         = NULL;
+    int ***index_tran_upack_eext_y = NULL;
+    int ***index_tran_upack_eext_ys= NULL;
+    int ***index_tran_pack_eext_y  = NULL;
+    int ***index_tran_pack_eext_ys = NULL;
+    int **nline_send_eext_y        = NULL;
+
+    if(rhoRsubplanes>1){
+      // for normal rho work
+      index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                             0,nlines_max,"util.C");
+      index_tran_pack_rho_y   = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                             0,nlines_max,"util.C");
+      nline_send_rho_y        = cmall_int_mat(0,nchareRhoG,0,rhoRsubplanes,"util.C");
+      // for eext-ees rho work
+      index_tran_upack_eext_y  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+      index_tran_upack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+      index_tran_pack_eext_y   = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+      index_tran_pack_eext_ys  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+      nline_send_eext_y        = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,"util.C");
+
+      // RhoR(gx,gy,z) parallelized by gx,  0=<gx<=nplane_x  : same for ees/rho
+      int div       = (nplane_x/rhoRsubplanes);
+      int rem       = (nplane_x % rhoRsubplanes);
+      int *strGx  = new int[rhoRsubplanes];
+      int *endGx  = new int[rhoRsubplanes];
+      for(int ic = 0; ic < rhoRsubplanes; ic ++) {
+        int add     = (ic < rem ? 1 : 0);
+        int max     = (ic < rem ? ic : rem);
+        strGx[ic]  = div*ic + max;
+        endGx[ic]  = strGx[ic] + div + add;
+      }//endfor
+
+      // RhoR(gx,gy,z) parallelized by gx(subPlane) and z
+      // RhoG(gx,gy,z) parallelized by collections of {gx,gy}
+      // pack and upack indicies for rhoG(gx,gy,z) <-> rhoR(gx,gy,z)
+      for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+      for(int ic=0;ic<rhoRsubplanes;ic++){
+        nline_send_rho_y[igrp][ic]=0;
+      }}//endfor
+
+      for(int igrp=0;igrp<nchareRhoG;igrp++){
+        for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            if(strGx[ic]<=kx_line[i] && kx_line[i]< endGx[ic]){
+              int jc = nline_send_rho_y[igrp][ic];
+              nline_send_rho_y[igrp][ic]++;
+              index_tran_pack_rho_y[igrp][ic][jc]  = j*sizeZ;
+              index_tran_upack_rho_y[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeY
+   		                                   +  ky_line[i];
+	    }//endif
+          }//endfor
+        }//endfor
+      }//endfor
+
+      // EextR(gx,gy,z) parallelized by gx(subPlane) and z : bigger Z than rho
+      // EextG(gx,gy,z) parallelized by collections of {gx,gy} (subdivided)
+      // pack and upack indicies for EextG(gx,gy,z) <-> EextR(gx,gy,z)
+      for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+      for(int ic=0;ic<rhoRsubplanes;ic++){
+        nline_send_eext_y[igrp][ic]=0;
+      }}//endfor
+      for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+        for(int j=0;j<nline_lgrp_eext[igrp];j++,i++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            if(strGx[ic]<=kx_line[i] && kx_line[i]< endGx[ic]){
+              int jc = nline_send_eext_y[igrp][ic];
+              nline_send_eext_y[igrp][ic]++;
+              index_tran_pack_eext_y[igrp][ic][jc]  = j*sizeZEext;
+              index_tran_pack_eext_ys[igrp][ic][jc] = j*sizeZ;
+              index_tran_upack_eext_y[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeYEext
+   		                                    +  ky_line[i];
+              index_tran_upack_eext_ys[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeY
+   		                                    +  ky_line[i];
+	    }//endif
+          }//endfor
+        }//endfor
+      }//endfor
+
+      delete [] strGx;
+      delete [] endGx;
+    }//endif
+
 //============================================================================
 // Pack up the stuff
 
@@ -393,6 +500,17 @@ void make_rho_runs(CPcharmParaInfo *sim){
     sim->nlines_tot_rho          = nline_tot;
     sim->lines_per_chareRhoG     = lines_per_chare;
     sim->pts_per_chareRhoG       = pts_per_chare;
+
+    sim->rhoRsubplanes           = config.rhoRsubplanes;
+    sim->nlines_max_eext         = nlines_max_eext;
+    sim->nline_send_eext_y       = nline_send_eext_y;
+    sim->nline_send_rho_y        = nline_send_rho_y;
+    sim->index_tran_upack_rho_y  = index_tran_upack_rho_y;
+    sim->index_tran_upack_eext_y = index_tran_upack_eext_y;
+    sim->index_tran_upack_eext_ys= index_tran_upack_eext_ys;
+    sim->index_tran_pack_rho_y   = index_tran_pack_rho_y;
+    sim->index_tran_pack_eext_y  = index_tran_pack_eext_y;
+    sim->index_tran_pack_eext_ys = index_tran_pack_eext_ys;
 
 //============================================================================
 // Clean up the memory

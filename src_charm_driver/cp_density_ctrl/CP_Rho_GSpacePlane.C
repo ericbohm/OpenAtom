@@ -76,9 +76,11 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
     cp_grad_corr_on = sim->cp_grad_corr_on;
 
+    rhoRsubplanes = config.rhoRsubplanes;
     count = 0;
     doneWhiteByrd = 0;
     for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
+    countDebug=0;
 
 //============================================================================
 // Deal with the run descriptors then malloc
@@ -203,6 +205,7 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
   PUParray(p,countWhiteByrd,4);
   p|doneWhiteByrd;
   p|rhoGHelpers;
+  p|rhoRsubplanes;
   rho_gs.pup(p);  // I pup my data class
   if(p.isUnpacking()){
       numSplit   = new int[rhoGHelpers];
@@ -251,22 +254,33 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
              thisIndex.x,thisIndex.y,msg->size,msg->offset,rho_gs.numLines);
 #endif
 //============================================================================
+// Set local pointers, constants,
 
   int size             = msg->size;
-  int offset           = msg->offset;
+  int offset           = msg->offset;   // z index
+  int isub             = msg->offsetGx; // subplane index
   complex *partlyIFFTd = msg->data;
 
-  int numLines         = rho_gs.numLines;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int ix               = thisIndex.x;   // chare array index
   int sizeZ            = rho_gs.sizeZ;
-  int expandedDataSize = numLines*sizeZ;
+  int numLines         = rho_gs.numLines;
+  int ***index_pack;
+  if(rhoRsubplanes>1){
+    int **nline_send = sim->nline_send_rho_y;
+    index_pack       = sim->index_tran_pack_rho_y;
+    numLines         = nline_send[ix][isub];
+  }//endif
+
+//============================================================================
+// Check for errors
+
 #ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++)
-    {
+  for(int i=0;i<msg->size ;i++){
       CkAssert(isnan(msg->data[i].re)==0);
       CkAssert(isnan(msg->data[i].im)==0);
-    }
+  }
 #endif
-
   if(size!=numLines){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("size %d != numLines %d\n",size,numLines);
@@ -277,16 +291,46 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
   }//endif
 
 //============================================================================
-// No need to zero, every value is set
+// upack the message : No need to zero, every value is set
 
   complex *chunk = rho_gs.divRhoX;
-  for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j] = partlyIFFTd[i];}
+
+  if(rhoRsubplanes==1){
+    for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j] = partlyIFFTd[i];}
+  }else{
+    for(int i=0; i< size; i++){
+      chunk[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
+    }//endif
+  }//endif
+
   delete msg;
 
+  if(count==0){count_stuff=0;}
+  count_stuff += size;
+
   count++;
-  if(count==sizeZ){
+  if(count==sizeZ*rhoRsubplanes){
+    if(count_stuff!=rho_gs.numLines*sizeZ){
+      CkPrintf("Not enough stuff %d %d on %d\n",count_stuff,rho_gs.numLines,thisIndex.x);
+      CkExit();
+    }//endif
     count=0;
+#ifndef DEBUG_INT_TRANS_FWD
     acceptRhoData();
+#else   
+    char name[100];
+    sprintf(name,"partFFTGxGyZT%d.out.%d",rhoRsubplanes,thisIndex.x);
+    FILE *fp = fopen(name,"w");
+    numLines = rho_gs.numLines;
+    for(int ix =0;ix<numLines;ix++){
+     for(int iy =0;iy<sizeZ;iy++){
+       int i = ix*sizeZ + iy;
+       fprintf(fp,"%d %d : %g %g\n",iy,ix,chunk[i].re,chunk[i].im);
+     }//endfor
+    }//endof
+    fclose(fp);
+    rhoGProxy(0,0).exitForDebugging();
+#endif
   }//endif
 
 //============================================================================
@@ -425,10 +469,10 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //--------------------------------------------------------------------------
 // I)   fft_gz(divRhoX), launch transpose to R-space
 
-  fftcache->doRhoFFTGtoR_Gchare(divRhoX,divRhoX,rho_gs.numFull,rho_gs.numPoints,
-                                rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                rho_gs.sizeZ,0);
-  RhoGSendRhoR(ioptx);
+   fftcache->doRhoFFTGtoR_Gchare(divRhoX,divRhoX,rho_gs.numFull,rho_gs.numPoints,
+                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
+                                 rho_gs.sizeZ,0);
+   RhoGSendRhoR(ioptx);
 
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
@@ -437,22 +481,23 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //--------------------------------------------------------------------------
 // II)  fft_gz(divRhoY), launch transpose to R-space
 
-  fftcache->doRhoFFTGtoR_Gchare(divRhoY,divRhoY,rho_gs.numFull,rho_gs.numPoints,
-                                rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                rho_gs.sizeZ,0);
-  RhoGSendRhoR(iopty);
+   fftcache->doRhoFFTGtoR_Gchare(divRhoY,divRhoY,rho_gs.numFull,rho_gs.numPoints,
+                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
+                                 rho_gs.sizeZ,0);
+   RhoGSendRhoR(iopty);
+
 
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
 #endif
 
 //--------------------------------------------------------------------------
-// III)  fft_gz(divRhoZ), launch transpose  to R-space
+// III)  fft_gz(divRhoZ),  launch transpose to R-space
 
-  fftcache->doRhoFFTGtoR_Gchare(divRhoZ,divRhoZ,rho_gs.numFull,rho_gs.numPoints,
+   fftcache->doRhoFFTGtoR_Gchare(divRhoZ,divRhoZ,rho_gs.numFull,rho_gs.numPoints,
                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                 rho_gs.sizeZ,0);
-  RhoGSendRhoR(ioptz);
+   RhoGSendRhoR(ioptz);
 
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();
@@ -461,6 +506,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
+
 
 
 //============================================================================
@@ -475,9 +521,18 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 #endif
 
 //============================================================================
+// Local Pointers and Variables
 
-  int numLines         = rho_gs.numLines; // same amount of data to each Rspace chare
-  int sizeZ            = rho_gs.sizeZ;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int sizeZ    = rho_gs.sizeZ;
+  int ix       = thisIndex.x;
+  int numLines = rho_gs.numLines;
+  int ***index_pack;
+  int **nline_send;
+  if(rhoRsubplanes>1){
+    nline_send  = sim->nline_send_rho_y;
+    index_pack  = sim->index_tran_pack_rho_y;
+  }//endif
 
   complex *ffttempdata;
   switch(iopt){
@@ -491,19 +546,23 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Do a Comlib Dance
 
-  switch(iopt){
+  if(rhoRsubplanes==1){
+   switch(iopt){
     case 1 : if(config.useGIns1RhoRP)     commGInstance1.beginIteration();   break;
     case 2 : if(config.useGIns2RhoRP)     commGInstance2.beginIteration();   break;
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.beginIteration();   break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.beginIteration();break;
     default: CkAbort("impossible iopt"); break;
-  }//end switc
+   }//end switc
+  }//endif
 
 //============================================================================
 // Send the message
 
-  for(int z=0; z < sizeZ; z++) {
+  for(int z=0;z<sizeZ;z++) {
+  for(int s=0;s<rhoRsubplanes;s++){
 
+    if(rhoRsubplanes>1){numLines = nline_send[ix][s];}
     RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;
     msg->size        = numLines;     // number of z-lines in this batch
     msg->senderIndex = thisIndex.x;  // line batch index
@@ -516,31 +575,50 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 
     // beam out all points with same z to chare array index z
     complex *data = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
+    if(rhoRsubplanes==1){
+      for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
+    }else{
+      for(int i=0; i< numLines; i++){
+        data[i] = ffttempdata[(z+index_pack[ix][s][i])];
+      }//endif
+    }//endif
 
-    switch(iopt){
+    if(rhoRsubplanes==1){    
+     switch(iopt){
       case 1 : rhoRealProxy1_com(z,0).acceptGradRhoVks(msg); break;
       case 2 : rhoRealProxy2_com(z,0).acceptGradRhoVks(msg); break;
       case 3 : rhoRealProxy3_com(z,0).acceptGradRhoVks(msg); break;
       case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
       default: CkAbort("impossible iopt"); break;
-    }//end switch
+     }//end switch
+    }else{
+     switch(iopt){
+      case 1 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+      case 2 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+      case 3 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+      case 4 : rhoRealProxy(z,s).acceptWhiteByrd(msg); break;
+      default: CkAbort("impossible iopt"); break;
+     }//end switch
+    }//endif
 
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
+  }//endif
   }//endfor
 
 //============================================================================
 // Complete the commlib dance
-    
-  switch(iopt){
+
+  if(rhoRsubplanes==1){    
+   switch(iopt){
     case 1 : if(config.useGIns1RhoRP)     commGInstance1.endIteration();break;
     case 2 : if(config.useGIns2RhoRP)     commGInstance2.endIteration();break;
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.endIteration();break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.endIteration();break;
     default: CkAbort("impossible iopt"); break;
-  }//end switc
+   }//end switc
+  }//endif
 
 //---------------------------------------------------------------------------
    }//end routine
@@ -569,27 +647,32 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
 
 //============================================================================
 
-  int size             = msg->size;
-  int offset           = msg->offset;
   int iopt             = msg->iopt;
+  int size             = msg->size;
+  int offset           = msg->offset;   // z index
+  int isub             = msg->offsetGx; // subplane index
   complex *partlyIFFTd = msg->data;
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++)
-    {
-      CkAssert(isnan(msg->data[i].re)==0);
-      CkAssert(isnan(msg->data[i].im)==0);
-    }
-#endif
 
-  int numLines         = rho_gs.numLines;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int ix               = thisIndex.x;   // chare array index
   int sizeZ            = rho_gs.sizeZ;
-  int expandedDataSize = numLines*sizeZ;
+  int numLines         = rho_gs.numLines;
+  int ***index_pack;
+  if(rhoRsubplanes>1){
+    int **nline_send = sim->nline_send_rho_y;
+    index_pack       = sim->index_tran_pack_rho_y;
+    numLines         = nline_send[ix][isub];
+  }//endif
 
 //============================================================================
 // Error checking
 
-  countWhiteByrd[iopt]++;
-
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++){
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+    }
+#endif
   if(size!=numLines){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("size %d != numLines %d\n",size,numLines);
@@ -610,45 +693,52 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
     default: CkAbort("impossible iopt"); break;
   }//end switch
 
-  for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j]=partlyIFFTd[i];}
+  if(rhoRsubplanes==1){
+    for(int i=0,j=offset; i< size; i++,j+=sizeZ){chunk[j] = partlyIFFTd[i];}
+  }else{
+    for(int i=0; i< size; i++){
+      chunk[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
+    }//endif
+  }//endif
+
   delete msg;
 
 //============================================================================
-// If all chares for a gradient report, perform final FFT. Don't unpack.
-// If all gradient are complete, construct whitebyrd.
+// If all chares for a gradient report, perform final FFT.
 
-  if(countWhiteByrd[iopt]==sizeZ){
+  countWhiteByrd[iopt]++;
+  if(countWhiteByrd[iopt]==sizeZ*rhoRsubplanes){
     countWhiteByrd[iopt]=0;
     doneWhiteByrd++;
 
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif    
-
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
     fftcache->doRhoFFTRtoG_Gchare(chunk,chunk,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                   rho_gs.sizeZ,0);
-
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
   }//endif
 
+//============================================================================
+// When all 3 gradients are in g-space, then you will ready for the next step.
+
   if(doneWhiteByrd==3){
     doneWhiteByrd=0;
-
 #ifdef CMK_VERSION_BLUEGENE
     CmiNetworkProgress();    
 #endif
-
     acceptWhiteByrd();
   }//endif
 
 //============================================================================
   }//end routine
 //============================================================================
+
 
 
 //============================================================================
@@ -723,3 +813,19 @@ void CP_Rho_GSpacePlane::ResumeFromSync(){
 
 
 
+//============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+// Glenn's RhoReal exit 
+//============================================================================
+void CP_Rho_GSpacePlane::exitForDebugging(){
+  countDebug++;  
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int nchareG          = sim->nchareRhoG;
+  if(countDebug==nchareG){
+    countDebug=0;
+    CkPrintf("I am in the exitfordebuging rhoG puppy. Bye-bye\n");
+    CkExit();
+  }//endif
+}
+//============================================================================

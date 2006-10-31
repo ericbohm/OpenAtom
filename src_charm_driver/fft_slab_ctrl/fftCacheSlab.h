@@ -198,18 +198,29 @@ public:
    int size;    //plane size
    int trueSize;
    int sizeX, sizeY, sizeZ; //fft size
+   int rhoRsubplanes;
+   int csizeInt;
+   int rsizeInt;
    double exc_ret, muxc_ret, exc_gga_ret;  //energy
 
    double *Vks;      // we have to keep him around
    double *density;  // we have to keep him around     
    double *rhoIRX,*rhoIRY,*rhoIRZ; //needed to receive stuff as it comes in
    double *VksHart;   //needed to receive stuff as it comes in
+   double *rhoIRXint; 
+   double *rhoIRYint; 
+   double *rhoIRZint; 
+   double *VksHartint; 
 
    // complex pointers to the same memory as the corresponding double array
    complex *VksC;     
    complex *densityC; 
    complex *rhoIRXC,*rhoIRYC,*rhoIRZC; 
    complex *VksHartC; 
+   complex *rhoIRXCint; 
+   complex *rhoIRYCint; 
+   complex *rhoIRZCint; 
+   complex *VksHartCint; 
  
    RhoRealSlab() {
        sizeX=sizeY=sizeZ=size=trueSize=0;
@@ -304,6 +315,31 @@ class RhoGSlab {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+//    Holder classes for the plans : Allows many fft libaries to be used
+//==============================================================================
+
+#ifdef JUNK
+typedef struct fftplanholder {
+  int option;             // 0= fftw, 1=essl : use switch statment in routine
+  fftw_plan ffwPlan;      // fftw stuff
+  int nwork1, nwork2;     // eesl stuff
+  double *work1, *work2;
+} FFTplanHolder;
+
+typedef struct rfftplanholder {
+  int option;             // 0= fftw, 1=essl : use switch statment in routine
+  rfftwnd_plan rfftwPlan; // fftw stuff
+  int nwork1, nwork2;     // eesl stuff
+  double *work1, *work2;
+} rFFTplanHolder;
+#endif
+
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
 class FFTcache: public Group {
  public:
     //-----------------------------------------------------------
@@ -324,7 +360,7 @@ class FFTcache: public Group {
      double  *tmpDataR;
 
     //-----------------------------------------------------------
-    // Da Plans
+    // Da Plans : Use the holder class to allow other fft libs
      fftw_plan    fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
      fftw_plan    fwdYPlan,     bwdYPlan;            // double pack plans
      rfftwnd_plan fwdX1DdpPlan, bwdX1DdpPlan;
@@ -361,6 +397,11 @@ class FFTcache: public Group {
      void doRhoFFTRtoG_Rchare(complex *,double *,int , int ,int );
      void doRhoFFTGtoR_Rchare(complex *,double *,int , int ,int );
 
+     void doRhoFFTRxToGx_Rchare(complex *,double *,int , int ,int );
+     void doRhoFFTRyToGy_Rchare(complex *,double *,int , int ,int );
+     void doRhoFFTGxToRx_Rchare(complex *,double *,int , int ,int );
+     void doRhoFFTGyToRy_Rchare(complex *,double *,int , int ,int );
+
     //-----------------------------------------------------------
     // State FFTs
      void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
@@ -379,8 +420,14 @@ class FFTcache: public Group {
    // eext fft
      void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
      void doEextFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+
      void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int );
      void doEextFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+
+     void doEextFFTRxToGx_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTRyToGy_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTGxToRx_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTGyToRy_Rchare(complex *,double *,int ,int ,int );
 
 //-----------------------------------------------------------------------------
   };
@@ -419,8 +466,9 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
                     int realSpaceUnits, int s_grain,int iplane_ind,int istate_ind);
 void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
                        int realSpaceUnits, int stateIndex, int thisPlane);
-void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim, 
-                     int myIndexX,int myIndexY);
+void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
+                     int xdimA, int ydimA, int myIndexX,int myIndexY,
+                     int rhoRsubplanes);
 
 //==============================================================================
 // Eric's really cool BG/L progress callers

@@ -10,12 +10,14 @@
 #define _PLANE_H_
 
 //============================================================================
+
 #include "charm++.h"
 #include "ckmulticast.h"
 #include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
 void getSplitDecomp(int *,int *,int *,int , int ,int );
+
 //============================================================================
 
 
@@ -31,15 +33,24 @@ class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
 };
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 class NLDummyMsg: public CMessage_NLDummyMsg {
  public:
   int iteration;
 };
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 class GHartDummyMsg: public CMessage_GHartDummyMsg {
 };
 //============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -57,6 +68,7 @@ class EnlCookieMsg : public CkMcastBaseMsg, public CMessage_EnlCookieMsg {
 class RSDummyResume: public CMessage_RSDummyResume {
 };
 //============================================================================
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -108,8 +120,10 @@ public:
 class RhoGSFFTMsg: public CMessage_RhoGSFFTMsg {
 public:
 	int size;
-	int offset;
+	int offset;   
+	int offsetGx; 
 	int iopt;
+        int num;
 	complex *data;
 };
 //============================================================================
@@ -122,7 +136,10 @@ public:
 	int size;
         int senderIndex;
         int offset;
+	int offsetGx; 
         int iter;
+        int iopt;
+        int num;
 	complex *data;
 };
 //============================================================================
@@ -175,6 +192,7 @@ public:
 class RhoHartRSFFTMsg: public CMessage_RhoHartRSFFTMsg {
 public:
     int size; 
+    int index;
     int senderBigIndex;
     int senderStrtLine;
     int iopt;
@@ -395,6 +413,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void doFFT(RSFFTMsg *);
 	void doFFT();
+        void doVksFFT();
 	void doProduct(ProductMsg *);
 	void doProductThenFFT();
         void sendFPsiToGSP();
@@ -413,6 +432,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int count;
 	int rsize;
 	int csize;
+        int countProduct;
 	int numCookies;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
@@ -434,33 +454,51 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int ngrida;
         int ngridb;
         int ngridc;
-        int nptsExpnd;
-        int npts;
+        int myNgridb;      // I don't have all ngridb lines of x now
+        int myNplane_rho;  // I don't have all nplane_rho_x lines of y now
+        int nptsExpndA;
+        int nptsExpndB;
+        int nptsA;
+        int nptsB;
+        int myBoff;
+        int myAoff;
+        int countDebug;
+        int rhoRsubplanes;
 	bool doneRhoReal;
 	bool doneRHart;
-	void launchNLRealFFT();
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
 	CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
        ~CP_Rho_RealSpacePlane();
-	void run();
+	void pup(PUP::er &);
 	void acceptDensity(CkReductionMsg *);
-	void acceptDensity();
+        void launchEextRNlG();
 	void energyComputation();
 	void fftRhoRtoRhoG();
+        void launchNLRealFFT();
+        void sendPartlyFFTRyToGy(int iopt);
+        void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
+        void fftRhoRyToGy(int iopt);
+        void sendPartlyFFTtoRhoG(int );
         void acceptGradRhoVks(RhoRSFFTMsg *);
-        void acceptHartVks(RhoHartRSFFTMsg *);
+        void sendPartlyFFTGxToRx(int );
+        void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
         void GradCorr();
         void whiteByrdFFT();
         void acceptWhiteByrd(RhoRSFFTMsg *msg);
-        void sendPartlyFFTtoRhoG(int );
+        void addWhiteByrdVks();
+        void acceptHartVks(RhoHartRSFFTMsg *);
+        void addHartEextVks();
+	void RHartReport();
+        void doMulticastCheck();
 	void doMulticast();
+        void exitForDebugging();
 	void isAtSync(int iter){AtSync();};
 	void ResumeFromSync();
-	void pup(PUP::er &);
-	void RHartReport();
  private:
         int rhoGHelpers;
         int countGradVks[5]; // number of collections that have arrived
+        int countIntRtoG[5]; // our internal transpose friends.
+        int countIntGtoR[5]; // our internal transpose friends.
         int countWhiteByrd;  // number of collections that have arrived
 	int countRHart;
 	int countRHartValue;
@@ -504,8 +542,12 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int cp_grad_corr_on;
         int ees_eext_on;
         int ngridcEext;
+        int rhoRsubplanes;
+        int countDebug;
+        void exitForDebugging();
  private:
         int nPacked;
+        int count_stuff;
 	int count;
         int countWhiteByrd[4];
         int doneWhiteByrd;
@@ -528,6 +570,8 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 //============================================================================
 class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
  public:
+        int nplane_rho_x;
+        int rhoRsubplanes;
         int registrationFlag;
         int launchFlag;
         int ngrida;
@@ -536,10 +580,22 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         int ees_eext_on;
         int natmTyp;
         int countFFT[2];
+        int countIntRtoG;
+        int countIntGtoR[2];
         int iteration;
         int iterAtmTyp;
         int csize;
         int nAtmTypRecv;
+        int csizeInt;
+        int myNgridb;
+        int myBoff;
+        int nptsB;
+        int nptsExpndB;
+        int myNplane_rho;
+        int myAoff;
+        int nptsA;
+        int nptsExpndA;
+
         complex *atmSFC;
         double  *atmSFR;
         complex *atmForcC;
@@ -549,21 +605,37 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         double  *atmEwdSFR;
         complex *atmEwdForcC;
         double  *atmEwdForcR;
-        CProxy_CP_Rho_GHartExt rhoGHartProxy_com;
 
+        complex *atmSFCint;
+        double  *atmSFRint;
+        complex *atmForcCint;
+        double  *atmForcRint;
+
+        complex *atmEwdSFCint;
+        double  *atmEwdSFRint;
+        complex *atmEwdForcCint;
+        double  *atmEwdForcRint;
+
+        CProxy_CP_Rho_GHartExt rhoGHartProxy_com;
 	CP_Rho_RHartExt(CkMigrateMessage *m) {}
 	CP_Rho_RHartExt(int , int , int , int , int );
 	~CP_Rho_RHartExt();
+
 	void pup(PUP::er &p);
         void startEextIter();
 	void computeAtmSF();
-	void FFTSFBck();
-	void SendAtmSFRhoGHart();
-	void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
-	void FFTAtmForcFwd(int);
-	void computeAtmForc(int);
         void registrationDone(CkReductionMsg *msg);
+        void fftAtmSfRtoG();
+        void sendAtmSfRyToGy();
+        void recvAtmSfRyToGy(RhoGHartMsg *msg);
+	void sendAtmSfRhoGHart();
+        void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
+	void fftAtmForcGtoR(int flagEwd);
+        void sendAtmForcGxToRx(int iopt);
+        void recvAtmForcGxToRx(RhoGHartMsg *msg);
+	void computeAtmForc(int);
 };
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -584,6 +656,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         void FFTEesFwd(int );
         void sendAtmSF(int );
 	void isAtSync(int iter){AtSync();};
+        int rhoRsubplanes;
         int ngridaEext;
         int ngridbEext;
         int ngridcEext;

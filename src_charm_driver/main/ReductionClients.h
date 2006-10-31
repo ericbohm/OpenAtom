@@ -58,6 +58,12 @@ void printEnergyEexc(void *param, int dataSize, void *data){
   
   gSpacePlaneProxy(0, 0).computeEnergies(ENERGY_EEXC, eexc);
   gSpacePlaneProxy(0, 0).computeEnergies(ENERGY_EGGA, egga);
+
+#define _GLENN_STUFF_OFF_
+#ifdef _GLENN_STUFF_
+  CkPrintf("exiting in reductclients.h\n");CkExit();
+#endif
+
 }
 //============================================================================
 

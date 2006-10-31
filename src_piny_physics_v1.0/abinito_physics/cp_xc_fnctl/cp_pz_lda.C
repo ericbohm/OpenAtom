@@ -11,7 +11,7 @@
 //===========================================================================
 
 void CPXCFNCTS::CP_exc_calc(
-              const int npts, const int nf1, const int nf2, const int nf3,
+              const int numFFT, const int nf1, const int nf2, const int nf3,
               double *density,double *result,double *exc_ret,double *muxc_ret)
 
 //============================================================================
@@ -154,7 +154,7 @@ void CPXCFNCTS::CP_exc_calc(
 
    ex *= 0.75;
 
-   vscale = vol/(nf1*nf2*nf3);
+   vscale = vol/((double)numFFT);
 
 //-------------------------------------------------------------------------
 // VIII.  Return Values

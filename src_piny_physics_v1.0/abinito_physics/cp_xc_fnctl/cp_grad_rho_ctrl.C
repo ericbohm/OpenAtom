@@ -49,7 +49,7 @@ void CPXCFNCTS::CP_getGGAFunctional(
     double unit_gx,unit_gy,unit_gz;
 
     double vol    = gencell->vol;
-    double vscale = vol/((double)(nf1*nf2*nf3));
+    double vscale = vol/((double)npts);
     
 //============================================================================
 // Initialization and useful costants

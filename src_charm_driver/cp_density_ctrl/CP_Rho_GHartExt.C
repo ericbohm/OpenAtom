@@ -79,11 +79,12 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
 
 //============================================================================
 
-  ngridaEext  = _ngridaEext; 
-  ngridbEext  = _ngridbEext; 
-  ngridcEext  = _ngridcEext; 
-  ees_eext_on = _ees_eext_on;
-  natmTyp     = _natmTyp;
+  rhoRsubplanes = config.rhoRsubplanes;
+  ngridaEext    = _ngridaEext; 
+  ngridbEext    = _ngridbEext; 
+  ngridcEext    = _ngridcEext; 
+  ees_eext_on   = _ees_eext_on;
+  natmTyp       = _natmTyp;
 
   iopt            = 0;
   iteration       = 0;
@@ -219,6 +220,7 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   ArrayElement2D::pup(p);
   rho_gs.pup(p);
 
+  p|rhoRsubplanes;
   p|ngridaEext;
   p|ngridbEext;
   p|ngridcEext;
@@ -430,34 +432,49 @@ void CP_Rho_GHartExt::FFTVks() {
 //============================================================================
 void CP_Rho_GHartExt::sendVks() { 
 //============================================================================
-
 #ifdef _CP_GHART_VERBOSE_
   CkPrintf("Ghart %d Here in sendvks at %d\n",thisIndex.x,iterAtmTyp);
 #endif
-
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
   CkPrintf("Communicating data from RhoGHart to RhoR : %d %d\n",
 	   thisIndex.x,thisIndex.y);
 #endif
+//============================================================================
 
-   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();
-   complex *vksScr    = fftcache->tmpData; // scratch from the cache has FFT output
+   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+   FFTcache *fftcache   = fftCacheProxy.ckLocalBranch();
+   complex *vksScr      = fftcache->tmpData; // scratch from the cache has FFT output
+
+   int ix               = thisIndex.x;
+   int sendLines        = numLines;
+
+   int ***index_pack;
+   int **nline_send;
+   if(rhoRsubplanes>1){
+     nline_send  = sim->nline_send_eext_y;
+     index_pack  = sim->index_tran_pack_eext_ys;
+   }//endif
 
 //============================================================================
 // Do a Comlib Dance
 
-  if(config.useGHartInsRhoRP){commGHartInstance.beginIteration();}
+   if(rhoRsubplanes==1){
+    if(config.useGHartInsRhoRP){commGHartInstance.beginIteration();}
+   }//endif
   
 //============================================================================
 
   int sizeZ=rho_gs.sizeZ;
   for(int z=0; z < sizeZ; z++) {
+  for(int s=0;s<rhoRsubplanes;s++){
 
-    RhoHartRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoHartRSFFTMsg;
-    msg->size           = numLines;   // number of z-lines in this batch
-    msg->senderBigIndex = ind_xdiv;   // big line batch index
-    msg->senderStrtLine = istrt_lines;// where my lines start in big batch
-    msg->iopt           = 0;          // iopt always 0 for us
+   if(rhoRsubplanes>1){sendLines = nline_send[ix][s];} 
+   RhoHartRSFFTMsg *msg = new (sendLines,8*sizeof(int)) RhoHartRSFFTMsg;
+    msg->size           = sendLines;   // number of z-lines in this batch
+    msg->index          = thisIndex.x;  // regular old index
+    msg->senderBigIndex = ind_xdiv;     // big line batch index
+    msg->senderStrtLine = istrt_lines;  // where my lines start in big batch
+    msg->iopt           = 0;            // iopt always 0 for us
     if(config.prioFFTMsg){
        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
        *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x + thisIndex.y;
@@ -465,17 +482,31 @@ void CP_Rho_GHartExt::sendVks() {
 
     // beam out all points with same z to chare array index z
     complex *data = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = vksScr[j];}
-    rhoRealProxy_com(z,0).acceptHartVks(msg);
+    if(rhoRsubplanes==1){
+      for (int i=0,j=z; i<sendLines; i++,j+=sizeZ){data[i] = vksScr[j];}
+    }else{
+      for(int i=0; i< sendLines; i++){
+        data[i] = vksScr[(z+index_pack[ix][s][i])];
+      }//endif
+    }//endif
+
+    if(rhoRsubplanes==1){
+      rhoRealProxy_com(z,0).acceptHartVks(msg);
+    }else{
+      rhoRealProxy(z,s).acceptHartVks(msg);
+    }//endif
+
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
-  }//endfor
+  }}//endfor
 
 //============================================================================
 // Complete the commlib dance and hang out.
     
-  if (config.useGHartInsRhoRP){commGHartInstance.endIteration();}
+  if(rhoRsubplanes==1){
+   if (config.useGHartInsRhoRP){commGHartInstance.endIteration();}
+  }//endif
 
 //---------------------------------------------------------------------------
   }// end routine
