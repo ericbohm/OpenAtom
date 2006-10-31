@@ -718,52 +718,59 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(availprocs->count()==0)
     availprocs->reset();
   int destpe;
-     
+  int *Pecount=(int *)malloc(sizeof(int)*(availprocs->count()));
+  bzero(Pecount, availprocs->count()*sizeof(int)); 
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   if(useCentroid) 
     {
-      CkVec <int> usedPes;
-      CkAssert(numChares<availprocs->count());
-      //otherwise you're just being silly
-      for(int chunk=0; chunk<nchareRhoR; chunk++)
-	{
-	  //	  CkPrintf("Rho RS using centroid\n");
+      PeList *exclusionList = NULL;
+      //CkAssert(numChares<availprocs->count());
 
-	  // all subplanes have the same list of destinations
-	  PeList *ourList= subListPlane(chunk, max_states, rsmap);
-	  *ourList-*exclude;
-	  sortByCentroid(ourList, chunk, max_states, rsmap);
-	  //	  ourList->dump();
-	  if(rem!=0)
-	    if(chunk==rem*rrsobjs_per_pe)
-	      rrsobjs_per_pe -= 1;
-	  destpe=ourList->findNext();
-	  if(ourList->count()==0)
-	    ourList->reset();
-	  for(int subplane=0 ; subplane<rhoRsubplanes ; subplane+=rrsobjs_per_pe)
-	    {
-	      for(int objs=0; objs<rrsobjs_per_pe; objs++)
-		{
-#ifdef USE_INT_MAP
-		  maptable->set(chunk, subplane+objs, destpe);
-#else
-		  maptable->put(intdual(chunk, subplane+objs))=destpe;
-#endif
-		}
-	      exclude->mergeOne(destpe);
-	      destpe=ourList->findNext();
-	      if(ourList->count()==0)
-		ourList->reset();
-	    }
-	  delete ourList;
+      for(int chunk=0; chunk<nchareRhoR; chunk++)
+      {
+	PeList *thisPlaneBox = subListPlane(chunk, max_states, rsmap);
+	if(exclusionList!=NULL) {
+	  *thisPlaneBox - *exclusionList;
+	  thisPlaneBox->reindex();
 	}
-      *availprocs-*exclude;
-      availprocs->reindex();
+	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
+	  
+	destpe=thisPlaneBox->findNext();
+	if(thisPlaneBox->count()==0)
+	  thisPlaneBox->reset();
+	for(int subplane=0 ; subplane<rhoRsubplanes ; subplane++)
+        {
+#ifdef USE_INT_MAP
+  	  maptable->set(chunk, subplane, destpe);
+#else
+	  maptable->put(intdual(chunk, subplane))=destpe;
+#endif
+	  Pecount[destpe]++;	
+	  if(Pecount[destpe]>=rrsobjs_per_pe+1)
+	  {
+	    if(exclusionList==NULL)
+	    {
+	      exclusionList=new PeList(1);
+	      exclusionList->TheList[0]=destpe;
+            }
+            else
+	      exclusionList->mergeOne(destpe);
+	    *thisPlaneBox - *exclusionList;
+	    thisPlaneBox->reindex();
+          }
+          destpe=thisPlaneBox->findNext();
+          if(thisPlaneBox->count()==0)
+           thisPlaneBox->reset();
+	}
+	delete thisPlaneBox;
+      }
+      if(exclusionList!=NULL)
+	delete exclusionList;
     }
   else
     {
-      int nprocs, objs;
+      int nprocs=0, objs=0;
       destpe=availprocs->findNext();
       if(availprocs->count()==0)
         availprocs->reset();
