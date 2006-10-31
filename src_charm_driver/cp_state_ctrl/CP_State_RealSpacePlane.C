@@ -272,11 +272,16 @@ void CP_State_RealSpacePlane::doFFT(){
 // If non-local itself is on and the ees method is to be used, launch
 
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
-  int nchareG      = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
   int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
   if(ees_nonlocal==1 && !config.launchNLeesFromRho){
-    CkAssert(nchareG<=ngridc);
-    if(thisIndex.y<nchareG){
+    /*    if(config.nchareG>32)
+      {
+	fprintf(stderr,"[%d,%d]on %d nchareG is %d\n",thisIndex.x, thisIndex.y, CkMyPe(),config.nchareG);
+	} */
+    CkAssert(config.nchareG<=ngridc);
+    //    CkAssert(config.nchareG<=32);
+    CkAssert(config.nchareG==scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG);
+    if(thisIndex.y<config.nchareG){
       gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false);
     }//endif
   }//endif

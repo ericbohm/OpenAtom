@@ -766,7 +766,10 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	delete thisPlaneBox;
       }
       if(exclusionList!=NULL)
-	delete exclusionList;
+	{
+	  exclude->append(*exclusionList);
+	  delete exclusionList;
+	}
     }
   else
     {

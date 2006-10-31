@@ -180,6 +180,26 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   int *red_pl = new int[nstates];
   CkVec <int> usedVec;
   for(int state=0; state<nstates;state++){
+    int plane=nchareG-1;
+    while(plane>=0)
+      {
+	bool used=false;
+	int thisstateplaneproc=GSImaptable.get(state,plane);
+	for(int i=0;i<usedVec.size();i++)
+	  {
+	    if(usedVec[i]==thisstateplaneproc)
+	      used=true;
+	  }
+	if(!used || plane==0)
+	  {
+	    red_pl[state]=plane;
+	    usedVec.push_back(thisstateplaneproc);
+	    plane=-1;
+	  }
+	plane--;
+      }
+  }
+  for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nchareG)
       {
@@ -199,6 +219,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
         plane++;
       }
   }
+
   reductionPlaneNum = red_pl[thisIndex.x];
 
   /*

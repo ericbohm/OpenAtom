@@ -593,8 +593,8 @@ main::main(CkArgMsg *msg) {
 
     CkVec <int> usedVec;
     for(int state=0; state<nstates;state++){
-      int plane=0;
-      while(plane<nchareG)
+      int plane=nchareG-1;
+      while(plane>=0)
         {
           bool used=false;
           int thisstateplaneproc=GSImaptable.get(state,plane);
@@ -603,14 +603,14 @@ main::main(CkArgMsg *msg) {
               if(usedVec[i]==thisstateplaneproc)
                 used=true;
 	    }
-	  if(!used || plane+1==nchareG)
+	  if(!used || plane==0)
 	    {
 	      peUsedByNLZ.push_back(thisstateplaneproc);
 	      planeUsedByNLZ.push_back(plane);
 	      usedVec.push_back(thisstateplaneproc);
-	      plane=nchareG;
+	      plane=-1;
 	    }
-	  plane++;
+	  plane--;
 	}
     }
 
@@ -1824,8 +1824,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
    PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
-   excludePes= new PeList(peUsedByNLZ);
-   if(nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
+   
+   excludePes= new PeList(peUsedByNLZ);   
+   if(!config.useCentroidMapRho && nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
+
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
        //       nlz.dump();
@@ -1837,7 +1839,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares
    if(ees_nonlocal_on==0){
-     if(nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
+     if(!config.useCentroidMapRho && nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
        CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
                   peUsedBySF.size(),RhoAvail->count());
        PeList sf(peUsedBySF);

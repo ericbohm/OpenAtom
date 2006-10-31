@@ -417,6 +417,8 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
  	 for(int ns=ist;ns<iend;ns++){
             //CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
  	    //             thisIndex.x, thisIndex.y, thisIndex.x, ns);
+	   CkAssert(ns<config.nstates);
+	   //	   CkAssert(thisIndex.x<32);
 	   gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
 	 }//endfor
       }//endif
