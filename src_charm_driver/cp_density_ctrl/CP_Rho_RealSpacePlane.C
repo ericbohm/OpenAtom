@@ -405,6 +405,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   if(sim->ees_nloc_on==1 && config.launchNLeesFromRho){ 
 
+      CkAssert(rho_rs.sizeZ>=config.nchareG);
       if(thisIndex.x<config.nchareG)
  	 int nstates = config.nstates; 
          int div     = (nstates/rhoRsubplanes);
@@ -579,7 +580,8 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   if(sim->ees_nloc_on==1){ 
-    if(thisIndex.x< sim->ngrid_nloc_c){
+    CkAssert(rho_rs.sizeZ>=sim->ngrid_nloc_c);;
+    if(thisIndex.x < sim->ngrid_nloc_c){
         int nstates =  config.nstates; 
         int div     = (nstates/rhoRsubplanes);
         int rem     = (nstates % rhoRsubplanes);
