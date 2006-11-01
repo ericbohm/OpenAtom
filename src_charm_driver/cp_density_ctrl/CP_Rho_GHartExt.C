@@ -165,6 +165,12 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
+  if(ees_eext_on==1 && rhoRsubplanes>1){
+    if(thisIndex.y==0&&thisIndex.x==0){
+       CkPrintf("Warning GHart: ees_eext_on under development\n");
+    }//endif
+  }//endif
+
 //==================================================================================
 // Set some proxies, set the migratable flag
 
@@ -281,18 +287,18 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
      }//endif
   }//endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0;i<msg->size ;i++){
+      CkAssert(isnan(msg->data[i].re)==0);
+      CkAssert(isnan(msg->data[i].im)==0);
+  }
+#endif
+
 //============================================================================
 // Copy out the data and flip arrival flag
 
   int ncoef  = rho_gs.numPoints;
   CkAssert(ncoef==msg->size);
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++)
-    {
-      CkAssert(isnan(msg->data[i].re)==0);
-      CkAssert(isnan(msg->data[i].im)==0);
-    }
-#endif
 
   memcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
   delete msg;  
@@ -555,16 +561,30 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 //  atmSFT: numLines collections of lines of lth ngridcEext each with constant (gx,gy) 
 //          Each message contains 1 pt on each line
 
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
   int size             = msg->size;
-  int offset           = msg->offset;
+  int offset           = msg->offset;   // z index
+  int isub             = msg->offsetGx; // subplane index
   int iter             = msg->iter;
   complex *partlyIFFTd = msg->data;
+ 
+  int ix              = thisIndex.x;
+  int numLinesNow     = numLines;
+  int ***index_pack;
+  if(rhoRsubplanes>1){
+    int **nline_send = sim->nline_send_eext_y;
+    index_pack       = sim->index_tran_pack_eext_y;
+    numLinesNow      = nline_send[ix][isub];
+  }//endif
+
+//============================================================================
+// Check for errors
+
 #ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size ;i++)
-    {
+  for(int i=0;i<msg->size ;i++){
       CkAssert(isnan(msg->data[i].re)==0);
       CkAssert(isnan(msg->data[i].im)==0);
-    }
+  }//endfor
 #endif
 
   if(iter!= (iterAtmTyp+1) ){
@@ -573,10 +593,18 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
-  CkAssert(numLines == size);
+  CkAssert(numLinesNow == size);
 
-  if(countEextFFT==0){memset(atmSF, 0, sizeof(complex)*numFullEext);}
-  for(int i=0,j=offset; i< numLines; i++,j+=ngridcEext){atmSF[j] = partlyIFFTd[i];}
+//============================================================================
+// No need to zero : Every value is set.
+
+  if(rhoRsubplanes==1){
+    for(int i=0,j=offset; i< numLines; i++,j+=ngridcEext){atmSF[j] = partlyIFFTd[i];}
+  }else{
+    for(int i=0; i< numLinesNow; i++){
+      atmSF[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
+    }//endif
+  }//endif
 
   delete msg;
 
@@ -584,7 +612,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 // You must receive 1 message from each R-chare before continuing
 
   countEextFFT++;
-  if (countEextFFT == ngridcEext) {
+  if (countEextFFT == ngridcEext*rhoRsubplanes) {
     countEextFFT = 0;
     launchFlag   = 1;
     if(registrationFlag==1){launchFlag=0; FFTEesBck();} 
@@ -596,7 +624,8 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 
 
 //============================================================================
-// Finish FFting to G-space atmSF(gx,gy,z) -> atmSF(gx,gy,gz)
+// Finish FFting to G-space  ::
+//         2D)  atmSF(gx,gy,z) -> atmSF(gx,gy,gz)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -626,6 +655,7 @@ void CP_Rho_GHartExt::FFTEesBck(){
                                  numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext);
 
 //============================================================================
+// If you are in g-space, get the energy otherwise tranpose
 
   if(densityHere==1){getHartEextEes();}
 
@@ -774,24 +804,37 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
          thisIndex.x,flag,iterAtmTyp,natmTyp);
 #endif
 
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
   complex *senddata  = fftcache->tmpData;
+  int ix             = thisIndex.x;
+  int numLinesNow    = numLines;
+  int ***index_pack;
+  int **nline_send;
+  if(rhoRsubplanes>1){
+    nline_send  = sim->nline_send_eext_y;
+    index_pack  = sim->index_tran_pack_eext_y;
+  }//endif
 
 //============================================================================
 // start commlib
 
-   switch(flag){
-     case 0 : if(config.useGHartInsRHart) commGHartRHartIns0.beginIteration();break;
-     case 1 : if(config.useGHartInsRHart) commGHartRHartIns1.beginIteration();break;
-   }//endif
+  if(rhoRsubplanes==1){
+    switch(flag){
+      case 0 : if(config.useGHartInsRHart) commGHartRHartIns0.beginIteration();break;
+      case 1 : if(config.useGHartInsRHart) commGHartRHartIns1.beginIteration();break;
+    }//endif
+  }//endif
 
 //============================================================================
 // Send the message : 1 pt from each line to each chareR
 
   for(int z=0; z < ngridcEext; z++) {
+  for(int s=0;s<rhoRsubplanes;s++){
 
-    RhoRHartMsg *msg = new (numLines,8*sizeof(int)) RhoRHartMsg;
-    msg->size        = numLines;     // number of z-lines in this batch
+    if(rhoRsubplanes>1){numLinesNow = nline_send[ix][s];}
+    RhoRHartMsg *msg = new (numLinesNow,8*sizeof(int)) RhoRHartMsg;
+    msg->size        = numLinesNow;     // number of z-lines in this batch
     msg->senderIndex = thisIndex.x;  // line batch index
     msg->iopt        = flag;         // iopt
     msg->iter        = iterAtmTyp;
@@ -803,24 +846,39 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
     // beam out all points with same z to chare array index z
     complex *data = msg->data;
-    for (int i=0,j=z; i<numLines; i++,j+=ngridcEext){data[i] = senddata[j];}
+    if(rhoRsubplanes==1){
+      for (int i=0,j=z; i<numLines; i++,j+=ngridcEext){data[i] = senddata[j];}
+    }else{
+      for(int i=0; i< numLinesNow; i++){
+        data[i] = senddata[(z+index_pack[ix][s][i])];
+      }//endif
+    }//endif
 
-    switch(iopt){
-      case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
-      case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
-    }//end switch
+    if(rhoRsubplanes==1){
+      switch(iopt){
+        case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
+        case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
+      }//end switch
+    }else{
+      switch(iopt){
+        case 0 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
+        case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
+      }//end switch
+    }//endif
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
-  }//endfor
+  }}//endfor
 
 //============================================================================
 // end commlib
 
+  if(rhoRsubplanes==1){
    switch(flag){
      case 0 : if(config.useGHartInsRHart) commGHartRHartIns0.endIteration();break;
      case 1 : if(config.useGHartInsRHart) commGHartRHartIns1.endIteration();break;
-   }//endif
+   }//end switch
+  }//endif
 
 //============================================================================
 // We are done when when have sent out all SFs and the Ewald total SF
@@ -836,4 +894,3 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 //============================================================================
    }//end routine
 //============================================================================
-

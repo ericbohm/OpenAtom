@@ -275,6 +275,7 @@ mainmodule cpaimd {
                 entry void registrationDone(CkReductionMsg *msg);
                 entry void recvAtmSfRyToGy(RhoGHartMsg *msg);
                 entry void recvAtmForcGxToRx(RhoGHartMsg *msg);
+                entry void exitForDebugging();
         }
 
 	array [2D] CP_Rho_GSpacePlane {

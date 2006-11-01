@@ -595,6 +595,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         int myAoff;
         int nptsA;
         int nptsExpndA;
+        int countDebug;
 
         complex *atmSFC;
         double  *atmSFR;
@@ -634,6 +635,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         void sendAtmForcGxToRx(int iopt);
         void recvAtmForcGxToRx(RhoGHartMsg *msg);
 	void computeAtmForc(int);
+        void exitForDebugging();
 };
 //============================================================================
 

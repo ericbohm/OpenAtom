@@ -41,6 +41,7 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
     int size[3];
     int sizeZ;
+    int iopt = 0;
 
 //==============================================================================
 // Copy out
@@ -86,61 +87,99 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
    //------------------------------------------------
    // Double Pack Plans
-    size[0] = planeSize[1]; size[1] = planeSize[0]; size[2] = 1;
-    sizeZ   = planeSize[0];
 
-    // really y plans
-    fwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_FORWARD, 
-                    FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdZ1DdpPlan = fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
-                    FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    // x is correct!
-    fwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-                    FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdX1DdpPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
-                    FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    // really z plans
-    fwdYPlan = fftw_create_plan(sizeZ,FFTW_FORWARD, 
-                    FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdYPlan = fftw_create_plan(sizeZ,FFTW_BACKWARD, 
-                    FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM); 
+    fwdZ1DdpPlan.option  = iopt;
+    bwdZ1DdpPlan.option  = iopt;
+    fwdX1DdpPlan.option  = iopt;
+    bwdX1DdpPlan.option  = iopt;
+    fwdYPlan.option      = iopt; 
+    bwdYPlan.option      = iopt; 
+
+    size[0] = planeSize[1]; size[1] = planeSize[0]; size[2] = 1; sizeZ = planeSize[0];
+    switch(iopt){
+      case 0:
+        // really y plans
+        fwdZ1DdpPlan.fftwPlan  =  fftw_create_plan(planeSize[0], FFTW_FORWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdZ1DdpPlan.fftwPlan  =  fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        // x is correct!
+        fwdX1DdpPlan.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+        bwdX1DdpPlan.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_REAL_TO_COMPLEX,
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        // really z plans
+        fwdYPlan.fftwPlan      =  fftw_create_plan(sizeZ,FFTW_FORWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdYPlan.fftwPlan      =  fftw_create_plan(sizeZ,FFTW_BACKWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
+      break;
+      default : CkAbort("impossible fft iopt");  break;
+    }//end switch
 
 //==============================================================================
 // Euler spline plans : better names : non-cubic broken
 
    //-----------------------------------
    // Double Pack Plan NL : 
-    size[0] = ngridaNL; size[1] = ngridbNL; size[2] = 1;
 
-    fwdY1DdpPlanNL = fftw_create_plan(ngridbNL, FFTW_FORWARD, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdY1DdpPlanNL = fftw_create_plan(ngridbNL, FFTW_BACKWARD, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    fwdX1DdpPlanNL = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdX1DdpPlanNL = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    fwdZPlanNL = fftw_create_plan(ngridcNL,FFTW_FORWARD, 
-                       FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdZPlanNL = fftw_create_plan(ngridcNL,FFTW_BACKWARD, 
-                       FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
+    fwdY1DdpPlanNL.option = iopt;
+    bwdY1DdpPlanNL.option = iopt;
+    fwdX1DdpPlanNL.option = iopt;
+    bwdX1DdpPlanNL.option = iopt;
+    fwdZPlanNL.option     = iopt;
+    bwdZPlanNL.option     = iopt;
+
+    size[0] = ngridaNL; size[1] = ngridbNL; size[2] = 1;
+    switch(iopt){
+      case 0:
+        fwdY1DdpPlanNL.fftwPlan  =  fftw_create_plan(ngridbNL, FFTW_FORWARD, 
+                                     FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdY1DdpPlanNL.fftwPlan  =  fftw_create_plan(ngridbNL, FFTW_BACKWARD, 
+                                     FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdX1DdpPlanNL.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
+                                     FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+        bwdX1DdpPlanNL.rfftwPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
+                                     FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdZPlanNL.fftwPlan      =  fftw_create_plan(ngridcNL,FFTW_FORWARD, 
+                                     FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdZPlanNL.fftwPlan      =  fftw_create_plan(ngridcNL,FFTW_BACKWARD, 
+                                     FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      break;
+      default : CkAbort("impossible fft iopt");  break;
+    }//end switch
+
+//==============================================================================
+// Euler spline plans : better names : non-cubic broken
 
    //-----------------------------------
    // Double Pack Plan Eext : 
-    size[0] = ngridaEext; size[1] = ngridbEext; size[2] = 1;
 
-    fwdY1DdpPlanEext = fftw_create_plan(ngridbEext, FFTW_FORWARD, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdY1DdpPlanEext = fftw_create_plan(ngridbEext, FFTW_BACKWARD, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    fwdX1DdpPlanEext = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdX1DdpPlanEext = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
-                       FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    fwdZPlanEext = fftw_create_plan(ngridcEext,FFTW_FORWARD, 
-                       FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
-    bwdZPlanEext = fftw_create_plan(ngridcEext,FFTW_BACKWARD, 
-                       FFTW_MEASURE|FFTW_IN_PLACE|FFTW_USE_WISDOM);
+    fwdY1DdpPlanEext.option = iopt;
+    bwdY1DdpPlanEext.option = iopt;
+    fwdX1DdpPlanEext.option = iopt;
+    bwdX1DdpPlanEext.option = iopt;
+    fwdZPlanEext.option     = iopt;
+    bwdZPlanEext.option     = iopt;
+
+    size[0] = ngridaEext; size[1] = ngridbEext; size[2] = 1;
+    switch(iopt){
+      case 0:
+        fwdY1DdpPlanEext.fftwPlan  =  fftw_create_plan(ngridbEext, FFTW_FORWARD, 
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdY1DdpPlanEext.fftwPlan  =  fftw_create_plan(ngridbEext, FFTW_BACKWARD, 
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdX1DdpPlanEext.rfftwPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_COMPLEX_TO_REAL,
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdX1DdpPlanEext.rfftwPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_REAL_TO_COMPLEX,
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdZPlanEext.fftwPlan      =  fftw_create_plan(ngridcEext,FFTW_FORWARD, 
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdZPlanEext.fftwPlan      =  fftw_create_plan(ngridcEext,FFTW_BACKWARD, 
+                                       FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      break;
+      default : CkAbort("impossible fft iopt");  break;
+    }//end switch
 
 //------------------------------------------------------------------------------
    }//end routine
@@ -283,7 +322,7 @@ void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          bwdZPlanNL,             // Z-direction backward plan
+          &bwdZPlanNL,             // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_in,   //input data
 	  1,                      //stride
@@ -320,7 +359,7 @@ void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          fwdZPlanNL,               // Z-direction forward plan
+          &fwdZPlanNL,               // Z-direction forward plan
           numLines,                 // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out, // data
 	  1,                        //stride
@@ -351,7 +390,7 @@ void FFTcache::doHartFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          fwdYPlan,                 // Z-direction forward plan (label lies)
+          &fwdYPlan,                 // Z-direction forward plan (label lies)
           numLines,                 // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out, // data
 	  1,                        //stride
@@ -376,7 +415,7 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlanNL,             // backward plan
+   	     &bwdX1DdpPlanNL,             // backward plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -392,7 +431,7 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            bwdY1DdpPlanNL,            // backward plan
+            &bwdY1DdpPlanNL,            // backward plan
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             stride,                    // stride
@@ -419,7 +458,7 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 
   int stride = sizeX/2+1;
   fft_split(
-        fwdY1DdpPlanNL,               // y-plan for NL Ees method
+        &fwdY1DdpPlanNL,               // y-plan for NL Ees method
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
@@ -435,7 +474,7 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlanNL,               // x-plan for NL Ees method
+              &fwdX1DdpPlanNL,               // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -462,7 +501,7 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 // FFT in expanded form
 
   fft_split(
-          bwdZPlanEext,           // Z-direction backward plan
+          &bwdZPlanEext,           // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data,   //input data
 	  1,                      //stride
@@ -500,7 +539,7 @@ void FFTcache::doEextFFTGtoR_Gchare(complex *data_in, complex *data_out,
 // FFT
 
   fft_split(
-          fwdZPlanEext,           // Z-direction forward plan
+          &fwdZPlanEext,           // Z-direction forward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out,//output data
 	  1,                      //stride
@@ -525,7 +564,7 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlanEext,             // backward plan
+   	     &bwdX1DdpPlanEext,             // backward plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -541,7 +580,7 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            bwdY1DdpPlanEext,          // backward plan
+            &bwdY1DdpPlanEext,          // backward plan
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             stride,                    // stride
@@ -566,7 +605,7 @@ void FFTcache::doEextFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first : stride 1
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlanEext,             // backward plan
+   	     &bwdX1DdpPlanEext,             // backward plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -595,7 +634,7 @@ void FFTcache::doEextFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y : stride 1
 
   fft_split(
-            bwdY1DdpPlanEext,          // backward plan
+            &bwdY1DdpPlanEext,          // backward plan
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             1,                         // stride
@@ -623,7 +662,7 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 
   int stride = sizeX/2+1;
   fft_split(
-        fwdY1DdpPlanEext,             // y-plan for NL Ees method
+        &fwdY1DdpPlanEext,             // y-plan for NL Ees method
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
@@ -639,7 +678,7 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlanEext,             // x-plan for NL Ees method
+              &fwdX1DdpPlanEext,             // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -667,7 +706,7 @@ void FFTcache::doEextFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
   for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlanEext,             // x-plan for NL Ees method
+              &fwdX1DdpPlanEext,             // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -693,7 +732,7 @@ void FFTcache::doEextFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
 
   fft_split(
-        fwdY1DdpPlanEext,             // y-plan for NL Ees method
+        &fwdY1DdpPlanEext,             // y-plan for NL Ees method
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	1,                            // stride betwen elements (x is inner)
@@ -722,7 +761,7 @@ void FFTcache::doStpFFTRtoG_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          bwdYPlan,               // Z-direction backward plan
+          &bwdYPlan,               // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_in,//input data
 	  1,                      //stride
@@ -762,7 +801,7 @@ void FFTcache::doStpFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          fwdYPlan,                // Z-direction forward plan
+          &fwdYPlan,                // Z-direction forward plan
           numLines,                // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out,//input data
 	  1,                       //stride
@@ -788,7 +827,7 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 
   int stride = sizeX/2+1;
   fft_split(
-        fwdZ1DdpPlan,                 // y-plan label lies
+        &fwdZ1DdpPlan,                 // y-plan label lies
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
@@ -804,7 +843,7 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlan,                 // x-plan 
+              &fwdX1DdpPlan,                 // x-plan 
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -829,7 +868,7 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlan,               // backward X plan
+   	     &bwdX1DdpPlan,               // backward X plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -845,7 +884,7 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            bwdZ1DdpPlan,              // backward Y plan (label lies)
+            &bwdZ1DdpPlan,              // backward Y plan (label lies)
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             stride,                    // stride
@@ -880,7 +919,7 @@ void FFTcache::doRhoFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          fwdYPlan,                // Z-direction forward plan
+          &fwdYPlan,                // Z-direction forward plan
           numLines,                // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out,//input data
 	  1,                       //stride
@@ -908,7 +947,7 @@ void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          bwdYPlan,               // Z-direction backward plan
+          &bwdYPlan,               // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_in,//input data
 	  1,                      //stride
@@ -943,7 +982,7 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlan,               // backward X plan
+   	     &bwdX1DdpPlan,               // backward X plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -959,7 +998,7 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            bwdZ1DdpPlan,              // backward Y plan (label lies)
+            &bwdZ1DdpPlan,              // backward Y plan (label lies)
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             stride,                    // stride
@@ -984,7 +1023,7 @@ void FFTcache::doRhoFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     bwdX1DdpPlan,               // backward X plan
+   	     &bwdX1DdpPlan,               // backward X plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
@@ -1013,7 +1052,7 @@ void FFTcache::doRhoFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            bwdZ1DdpPlan,              // backward Y plan (label lies)
+            &bwdZ1DdpPlan,              // backward Y plan (label lies)
 	    nplane_x,                  // these many 1D ffts
 	    (fftw_complex *)dataC,     // data set
             1,                         // stride
@@ -1039,7 +1078,7 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 
   int stride = sizeX/2+1;
   fft_split(
-        fwdZ1DdpPlan,                 // y-plan label lies
+        &fwdZ1DdpPlan,                 // y-plan label lies
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
@@ -1055,7 +1094,7 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlan,                 // x-plan 
+              &fwdX1DdpPlan,                 // x-plan 
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -1079,7 +1118,7 @@ void FFTcache::doRhoFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
 
   fft_split(
-        fwdZ1DdpPlan,                 // y-plan label lies
+        &fwdZ1DdpPlan,                 // y-plan label lies
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	1,                            // stride betwen elements (x is inner)
@@ -1105,7 +1144,7 @@ void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
   for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
 
   rfftwnd_complex_to_real_split(
-              fwdX1DdpPlan,                 // x-plan 
+              &fwdX1DdpPlan,                 // x-plan 
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
@@ -1127,87 +1166,56 @@ void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
  * calls between them.
  */
 //============================================================================
-void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
-	       int idist, fftw_complex *out, int ostride, int odist, int split)
+void fft_split(FFTplanHolder *fftplanholder, int howmany, 
+               fftw_complex *in,  int istride, int idist, 
+               fftw_complex *out, int ostride, int odist, int split)
 //============================================================================
   {// begin routine 
 //============================================================================
 
-/*  int sizefft=howmany*idist*istride;
-  CkPrintf("plan n %d, howmany %d istride %d idist %d ostride %d odist %d sizefft %d\n",
-            plan->n,howmany, istride, idist, ostride, odist, sizefft);
-  // for debugging 
-  fftw_complex *scratch1=(fftw_complex *) fftw_malloc(sizefft*sizeof(complex));
-  memcpy(scratch1,in,sizeof(complex)*sizefft);
-  fftw(plan,         // da plan
-       howmany,     // how many 
-       scratch1,           //input data
-       istride,      // stride betwen elements 
-       idist,        // array separation
-       out,          // output data (null if inplace)
-       ostride,      // stride betwen elements  (0 inplace)
-       odist);       //array separation (0 inplace)
-
-
-
-  fftw_complex *scratch2=(fftw_complex *) fftw_malloc(sizefft*sizeof(complex));
-  memcpy(scratch2,in,sizeof(complex)*sizefft);
-*/
+  fftw_plan plan = fftplanholder->fftwPlan;
+  int iopt       = fftplanholder->option;
+  
+  int thismany  = split;
+  int inleft    = howmany;
+  int numsplits = howmany/split;
+  if(numsplits<=0){numsplits=1;}
+  if(howmany>split && howmany%split!=0){numsplits++;}
 
 //============================================================================
-//    fftw_complex *myin=scratch2;
 
-  fftw_complex *myin=in;
-  int thismany=split;
-  int inleft=howmany;
-  int numsplits=howmany/split;
-  if(numsplits<=0)
-    {numsplits=1;}
-  if(howmany>split && howmany%split!=0)
-    {numsplits++;}
-  
   int inoff=0;
   int outoff=0;
-  //  CkPrintf("numsplits %d\n",numsplits);
+
   for(int i=0;i<numsplits;i++){
-      thismany=split;
-      if(inleft<split)
-	{thismany=inleft;}
-      //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+      thismany = split;
+      if(inleft<split){thismany=inleft;}
 #ifdef TEST_ALIGN
-      CkAssert((unsigned int) &(myin[inoff]) % 16 ==0);
+      CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      fftw(plan,           // da plan
-	   thismany,       // how many 
-	   &(myin[inoff]), //input data
-	   istride,        // stride betwen elements 
-	   idist,          // array separation
-	   (out==NULL) ? NULL : &(out[outoff]), // output data (null if inplace)
-	   ostride,        // stride betwen elements  (0 inplace)
-	   odist);         //array separation (0 inplace)
-
-      inoff+=idist*(thismany);  
-      outoff+=odist*(thismany);
-      inleft-=thismany;      
+      fftw_complex *dummy = (out==NULL ? NULL : &(out[outoff]) );
+      switch(iopt){
+        case 0:
+          fftw(
+               plan,          // da plan
+               thismany,      // how many 
+               &(in[inoff]),  // input data
+               istride,       // stride betwen elements 
+               idist,         // array separation
+               dummy,         // output data (null if inplace)
+               ostride,       // stride betwen elements  (0 inplace)
+               odist);        // array separation        (0 inplace)
+	  break;
+        default : CkAbort("impossible fft iopt");  break;
+      }//end switch
+      inoff  += idist*(thismany);  
+      outoff += odist*(thismany);
+      inleft -= thismany;      
 #ifdef CMK_VERSION_BLUEGENE
       CmiNetworkProgress();
 #endif
   }//endfor
-
-//============================================================================
-
-  /*  for(int j=0;j<sizefft;j++)
-    {
-      CkPrintf("%g %g\n",scratch1[j].re,scratch1[j].im);
-    }
-  CkPrintf("----\n");
-  for(int j=0;j<sizefft;j++)
-    {
-      CkPrintf("%g %g\n",scratch2[j].re,scratch2[j].im);
-    }
-  CkAbort("fftd\n");
-  */
 
 //------------------------------------------------------------------------------
   }//end routine
@@ -1222,44 +1230,53 @@ void fft_split(fftw_plan plan, int howmany, fftw_complex *in, int istride,
  * calls between them.
  */
 //============================================================================
-void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex *in, 
-         int istride,int idist, fftw_real *out, int ostride, int odist, int split)
+void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany, 
+         fftw_complex *in, int istride, int idist, 
+         fftw_real   *out, int ostride, int odist, int split)
 //============================================================================
    {//begin routine
 //============================================================================
 
-  int thismany=split;
-  int inleft=howmany;
-  int numsplits=howmany/split;
-  if(numsplits<=0)
-    {numsplits=1;}
-  if(howmany>split && howmany%split!=0)
-    {numsplits++;}
-  
+  rfftwnd_plan plan = rfftplanholder->rfftwPlan;
+  int iopt          = rfftplanholder->option;
+
+  int thismany  = split;
+  int inleft    = howmany;
+  int numsplits = howmany/split;
+  if(numsplits<=0){numsplits=1;}
+  if(howmany>split && howmany%split!=0){numsplits++;}
+
+
+//============================================================================  
+
   int inoff=0;
   int outoff=0;
-  //  CkPrintf("numsplits %d\n",numsplits);
+
   for(int i=0;i<numsplits;i++){
       thismany=split;
-      if(inleft<split)
-	{thismany=inleft;}
+      if(inleft<split){thismany=inleft;}
 #ifdef TEST_ALIGN
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      rfftwnd_complex_to_real(plan,// da plan
-	   thismany,               // how many 
-
-	   &(in[inoff]),           //input data
-	   istride,                // stride betwen elements 
-	   idist,                  // array separation
-	   (out==NULL) ? NULL : &(out[outoff]),          // output data (null if inplace)
-	   ostride,                // stride betwen elements  (0 inplace)
-	   odist);                 //array separation (0 inplace)
-
-      inoff+=idist*(thismany);  
-      outoff+=odist*(thismany);
-      inleft-=thismany;      
+      fftw_real *dummy = (out==NULL ? NULL : &(out[outoff]));
+      switch(iopt){
+        case 0:
+          rfftwnd_complex_to_real(
+              plan,          // da plan
+              thismany,      // how many 
+              &(in[inoff]),  // input data
+              istride,       // stride betwen elements 
+              idist,         // array separation
+              dummy,         // output data (null if inplace)
+              ostride,       // stride betwen elements  (0 inplace)
+              odist);        // array separation        (0 inplace)
+	  break;
+        default : CkAbort("impossible fft iopt");  break;
+      }//end switch
+      inoff  += idist*(thismany);  
+      outoff += odist*(thismany);
+      inleft -= thismany;      
 #ifdef CMK_VERSION_BLUEGENE
       CmiNetworkProgress();
 #endif
@@ -1278,44 +1295,52 @@ void rfftwnd_complex_to_real_split(rfftwnd_plan plan, int howmany, fftw_complex 
  * calls between them.
  */
 //============================================================================
-void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *in, 
-      int istride, int idist, fftw_complex *out, int ostride, int odist, int split)
+void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany, 
+        fftw_real *in,     int istride, int idist, 
+        fftw_complex *out, int ostride, int odist, int split)
 //============================================================================
    {// begin routine
 //============================================================================
 
-  int thismany=split;
-  int inleft=howmany;
-  int numsplits=howmany/split;
-  if(numsplits<=0)
-    {numsplits=1;}
-  if(howmany>split && howmany%split!=0)
-    {numsplits++;}
-  
-  int inoff=0;
-  int outoff=0;
-  //  CkPrintf("numsplits %d\n",numsplits);
+  rfftwnd_plan plan = rfftplanholder->rfftwPlan;
+  int iopt          = rfftplanholder->option;
+
+  int thismany  = split;
+  int inleft    = howmany;
+  int numsplits = howmany/split;
+  if(numsplits<=0){numsplits=1;}
+  if(howmany>split && howmany%split!=0){numsplits++;}
+
+//============================================================================    
+
+  int inoff  = 0;
+  int outoff = 0;
+
   for(int i=0;i<numsplits;i++){
       thismany=split;
-      if(inleft<split)
-	{thismany=inleft;}
-      //      CkPrintf("split %d thismany %d inleft %d\n",i, thismany,inleft);
+      if(inleft<split){thismany=inleft;}
 #ifdef TEST_ALIGN
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      rfftwnd_real_to_complex(plan,         // da plan
-	   thismany,     // how many 
-	   &(in[inoff]), //input data
-	   istride,      // stride betwen elements 
-	   idist,        // array separation
-	   (out==NULL) ? NULL : &(out[outoff]), // output data (null if inplace)
-	   ostride,      // stride betwen elements  (0 inplace)
-	   odist);       //array separation (0 inplace)
-
-      inoff+=idist*(thismany);  
-      outoff+=odist*(thismany);
-      inleft-=thismany;      
+      fftw_complex *dummy = (out==NULL ? NULL : &(out[outoff]));
+      switch(iopt){
+        case 0:
+          rfftwnd_real_to_complex(
+              plan,         // da plan
+              thismany,     // how many 
+              &(in[inoff]), // input data
+              istride,      // stride betwen elements 
+              idist,        // array separation
+              dummy,        // output data (null if inplace)
+              ostride,      // stride betwen elements  (0 inplace)
+              odist);       // array separation (0 inplace)
+	  break;
+        default : CkAbort("impossible fft iopt");  break;
+      }//end switch
+      inoff  += idist*(thismany);  
+      outoff += odist*(thismany);
+      inleft -= thismany;      
 #ifdef CMK_VERSION_BLUEGENE
       CmiNetworkProgress();
 #endif
@@ -1324,5 +1349,4 @@ void  rfftwnd_real_to_complex_split(rfftwnd_plan plan, int howmany, fftw_real *i
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
-
 

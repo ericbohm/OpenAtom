@@ -83,11 +83,11 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   launchFlag       = 0;
   iteration        = 0;
   iterAtmTyp       = 0;
+  countDebug       = 0;
 
   // Parallelization of rho(x,y,z) by (y,z)
   int div      = (ngridb/rhoRsubplanes); 
   int rem      = (ngridb % rhoRsubplanes);
-  int add      = (thisIndex.y < rem ? 1 : 0);
   int max      = (thisIndex.y < rem ? thisIndex.y : rem);
   myNgridb     = (thisIndex.y<rem ? div+1 : div);  // number of y values/lines of x
   myBoff       = div*thisIndex.y + max;            // offset into y 
@@ -97,20 +97,24 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   // Parallelization after transpose : rho(gx,y,z) : parallelize gx and z
   int divb     = (nplane_rho_x/rhoRsubplanes);
   int remb     = (nplane_rho_x % rhoRsubplanes);
-  int addb     = (thisIndex.y < rem ? 1 : 0);
-  int maxb     = (thisIndex.y < rem ? thisIndex.y : rem);
+  int maxb     = (thisIndex.y < remb ? thisIndex.y : remb);
   myNplane_rho = (thisIndex.y<remb ? divb+1 : divb);// number of x values/lines of y
   myAoff       = divb*thisIndex.y + maxb;
-  nptsA        = 2*myNplane_rho*ngridb;            // memory size for real to complex fft
-  nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size for real to complex fft
+  nptsA        = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
+  nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
 
   csize        = 0;
   csizeInt     = 0;
   if(ees_eext_on==1){
     csize        = (ngrida/2+1)*myNgridb;  // complex variable size
 
-    eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-    eesData->registerCacheRHart(thisIndex.x);
+ 
+    if(rhoRsubplanes==1){
+      eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+      eesData->registerCacheRHart(thisIndex.x);
+    }else{
+      CkPrintf("rhart registration broken\n"); CkExit();
+    }
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
     atmSFR      = reinterpret_cast<double*> (atmSFC);
@@ -145,6 +149,12 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
     ComlibAssociateProxy(&commRHartGHartIns,rhoGHartProxy_com);          
   }//endif
 
+  if(ees_eext_on==1 && rhoRsubplanes>1){
+    if(thisIndex.y==0&&thisIndex.x==0){
+       CkPrintf("Warning rhorhart: ees_eext_on under development\n");
+     }//endif
+  }//endif
+
 //---------------------------------------------------------------------------
   }//end routine
 //============================================================================
@@ -166,6 +176,7 @@ void CP_Rho_RHartExt::pup(PUP::er &p){
 
   ArrayElement2D::pup(p);
 
+   p|countDebug;
    p|nplane_rho_x;
    p|rhoRsubplanes;
    p|registrationFlag;
@@ -323,7 +334,13 @@ void CP_Rho_RHartExt::computeAtmSF(){
   int itime        = iteration;
 
   eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-  if(iterAtmTyp==1){eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);}
+  if(iterAtmTyp==1){
+    if(rhoRsubplanes==1){
+      eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);
+    }else{
+      CkPrintf("rhart query broken\n"); CkExit();
+    }//endif
+  }
 
   int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
   int **igrid      = eesData->RhoRHartData[myPlane].igrid;
@@ -332,7 +349,11 @@ void CP_Rho_RHartExt::computeAtmSF(){
   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
 
-  CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,igrid,mn,plane_index);
+  if(rhoRsubplanes==1){
+    CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,igrid,mn,plane_index);
+  }else{
+    CkPrintf("rhart pack broken\n"); CkExit();
+  }//endif
 
 //============================================================================
 // FFT the result to G-space
@@ -408,8 +429,10 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
    // Send the data : I have myNgridB values of y  (gx,y) y=1...myNgridB and all gx
    //                 Send all the `y' I have for the gx range desired after transpose
 
-    int ix = thisIndex.x;
+    int stride = ngrida/2+1;
+    int ix     = thisIndex.x;
     for(int ic = 0; ic < rhoRsubplanes; ic ++) { // chare arrays to which we will send
+
       int div     = (nplane_rho_x/rhoRsubplanes);   //parallelize gx
       int rem     = (nplane_rho_x % rhoRsubplanes);
       int add     = (ic < rem ? 1 : 0);
@@ -432,7 +455,7 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
       }//endif
 
       for(int i=ist,koff=0;i<iend;i++,koff+=myNgridb){
-        for(int k=koff,ii=i;k<myNgridb+koff;k++,ii+=(ngrida+1)){
+        for(int k=koff,ii=i;k<myNgridb+koff;k++,ii+=stride){
           data[k] = atmSFC[ii]; 
 	}//endfor
       }//endfor
@@ -486,7 +509,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
 
 //============================================================================
 
-  for(int js=0,j=offset;js<myNplane_rho;js+=num,j+=ngridb){
+  for(int js=0,j=offset;js<size;js+=num,j+=ngridb){
    for(int is=js,i=j;is<num+js;is++,i++){
      atmSFCint[i] = msgData[is];
    }//endfor
@@ -525,9 +548,11 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 
   CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int nchareG               = sim->nchareRhoGEext;
+
   int **tranpack            = sim->index_tran_upack_eext;
   int *nlines_per_chareG    = sim->nlines_per_chareRhoGEext;
-  int ***tranupack_Y        = sim->index_tran_upack_eext_ys;
+
+  int ***tranupack_Y        = sim->index_tran_upack_eext_y;
   int **nlines_per_chareG_Y = sim->nline_send_eext_y;
 
 //===================================================================
@@ -585,6 +610,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 
  //----------------------------------------------------------------
  // stop commlib
+
   if(rhoRsubplanes==1){
     if(config.useRHartInsGHart){commRHartGHartIns.endIteration();}
   }//endif
@@ -605,10 +631,12 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
   CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int nchareG               = sim->nchareRhoGEext;
+
   int **tranUnpack          = sim->index_tran_upack_eext;
   int *nlines_per_chareG    = sim->nlines_per_chareRhoGEext;
-  int ***tranupack_Y        = sim->index_tran_upack_eext_ys;
-  int **nlines_per_chareG_Y = sim->nline_send_rho_y;
+
+  int ***tranupack_Y        = sim->index_tran_upack_eext_y;
+  int **nlines_per_chareG_Y = sim->nline_send_eext_y;
   int iy                    = thisIndex.y;
    
   int size               = msg->size; 
@@ -620,10 +648,10 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
   int mySize;
   int csizenow;
   if(rhoRsubplanes==1){
-     mySize = nlines_per_chareG[Index];
+     mySize   = nlines_per_chareG[Index];
      csizenow = csize;
   }else{
-     mySize = nlines_per_chareG_Y[Index][iy];
+     mySize   = nlines_per_chareG_Y[Index][iy];
      csizenow = csizeInt;
   }//endif
 
@@ -668,13 +696,15 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
   complex *data;
   if(rhoRsubplanes==1){
     switch(iopt){
-      case 0: data = atmSFC; break;
-      case 1: data = atmEwdSFC; break;
+      case 0 : data = atmSFC; break;
+      case 1 : data = atmEwdSFC; break;
+      default: CkAbort("impossible iopt");      break;
     }//end switch
   }else{
     switch(iopt){
-      case 0: data = atmSFCint; break;
-      case 1: data = atmEwdSFCint; break;
+      case 0 : data = atmSFCint; break;
+      case 1 : data = atmEwdSFCint; break;
+      default: CkAbort("impossible iopt");      break;
     }//end switch
   }//endif
 
@@ -885,8 +915,8 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
-
-  for(int js=0,j=offset;js<myNgridb;js+=num,j+=(ngrida+1)){
+  int stride = (ngrida/2+1);
+  for(int js=0,j=offset;js<myNgridb;js+=num,j+=stride){
    for(int is=js,i=j;is<num+js;is++,i++){
      dataC[i] = msgData[is];
    }//endfor
@@ -974,19 +1004,24 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    double  StartTime=CmiWallTimer();
 #endif    
 
-  CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
-                             plane_index,data,myPlane,flagEwd);
+   if(rhoRsubplanes==1){
+     CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
+                                plane_index,data,myPlane,flagEwd);
+   }else{
+    CkPrintf("rhart atmforc broken\n"); CkExit();
+   }//endif
+
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesAtmForcR_, StartTime, CmiWallTimer());    
 #endif
 
 //============================================================================
-// If you aren't done, start another round otherwise reset yourself
+// If you aren't done, start another round.
 
  if(iterAtmTyp<natmTyp){computeAtmSF();}
 
 //============================================================================
-// If your are done, Tell rho real
+// If your are done, Tell rho real and reset yourself for the next time step
 
 #define _CP_DEBUG_STOP_RHART_OFF
 
@@ -1019,4 +1054,20 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 
 //============================================================================
   }// end routine
+//============================================================================
+
+
+//============================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+// Glenn's Rhart exit 
+//============================================================================
+void CP_Rho_RHartExt::exitForDebugging(){
+  countDebug++;  
+  if(countDebug==(rhoRsubplanes*ngridc)){
+    countDebug=0;
+    CkPrintf("I am in the exitfordebuging rhoreal puppy. Bye-bye\n");
+    CkExit();
+  }//endif
+}
 //============================================================================
