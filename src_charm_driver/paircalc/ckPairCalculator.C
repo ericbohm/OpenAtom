@@ -794,7 +794,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	outData1= new double[m_in*n_in];
 
 #if PC_FWD_DGEMM_SPLIT > 0
-        dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, &(allCaughtRight), &lda, leftNewTemp, &ldb, &beta, &(outData1), &ldc);
+        dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, outData1, &ldc);
 #else  // not split
 
 #ifndef CMK_OPTIMIZE
@@ -824,7 +824,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       outData2= new double[m_in*n_in];
 
 #if PC_FWD_DGEMM_SPLIT > 0
-      dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, rightNewTemp, &lda, &(allCaughtLeft), &ldb, &beta, &(outData2), &ldc)
+      dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, outData2, &ldc);
 #else  // not split
 
 #ifndef CMK_OPTIMIZE
@@ -849,7 +849,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       outData1= new double[m_in*n_in];
       double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
 #if PC_FWD_DGEMM_SPLIT > 0
-      dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, &(allCaughtLeft), &lda, leftNewTemp, &ldb, &beta, &(outData1), &ldc)
+      dgemmSplitFwdStreamMK(m_in, n_in, k_in, &transform, &transformT, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, outData1, &ldc);
 #else  // not split
 
 #ifndef CMK_OPTIMIZE
@@ -874,7 +874,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  outData2= new double[m_in*n_in];
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 #if PC_FWD_DGEMM_SPLIT > 0
-    dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, &(allCaughtLeft), &ldb, &beta, &(outData2), &ldc);
+    dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, outData2, &ldc);
 #endif // split 
 
 	  copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
@@ -2228,7 +2228,7 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
       }
 }
 
-void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *bt, double *C, int *ldc)
+void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc)
 {
 #ifndef CMK_OPTIMIZE
         double StartTime=CmiWallTimer();
@@ -2259,7 +2259,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
           CkAssert((unsigned int) C[moffc] % 16==0);
 #endif
 
-          DGEMM(transT, trans, &MsplitU, &n, &Ksplit, alpha, &A[moff], lda, B, ldb, bt, &C[moffc], ldc);
+          DGEMM(transT, trans, &MsplitU, &n, &Ksplit, alpha, &A[moff], lda, B, ldb, &betap, &C[moffc], ldc);
 
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -2281,7 +2281,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
             CkAssert((unsigned int) B[koff] % 16==0);
             CkAssert((unsigned int) C[moffc] % 16==0);
 #endif
-            DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, bt, &C[moffc], ldc);
+            DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
           
@@ -2299,7 +2299,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 #endif
 }
 
-void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *bt, double *C, int *ldc)
+void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc)
 {
 #ifndef CMK_OPTIMIZE
         double StartTime=CmiWallTimer();
@@ -2331,7 +2331,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
           CkAssert((unsigned int) B[noff] % 16==0);
           CkAssert((unsigned int) C[noffc] % 16==0);
 #endif
-            DGEMM(transT, trans, &m, &NsplitU, &Ksplit, alpha, A, lda, &B[noff], ldb, bt, &C[noffc], ldc);      
+            DGEMM(transT, trans, &m, &NsplitU, &Ksplit, alpha, A, lda, &B[noff], ldb, &betap, &C[noffc], ldc);      
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -2351,7 +2351,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
               CkAssert((unsigned int) B[koff+noff] % 16==0);
               CkAssert((unsigned int) C[noffc] % 16==0);
 #endif
-              DGEMM(transT, trans, &m, &NsplitU, &KsplitU, alpha, &A[koff], lda, &B[koff+noff], ldb, bt, &C[noffc], ldc);      
+              DGEMM(transT, trans, &m, &NsplitU, &KsplitU, alpha, &A[koff], lda, &B[koff+noff], ldb, &betap, &C[noffc], ldc);      
 
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
