@@ -396,6 +396,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
       CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
 #endif
       rhoRHartExtProxy(ind,thisIndex.y).startEextIter();
+    }//endif
   }//endif
 #endif
 
@@ -408,6 +409,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 
       CkAssert(rho_rs.sizeZ>=config.nchareG);
       if(thisIndex.x<config.nchareG)
+	{
  	 int nstates = config.nstates; 
          int div     = (nstates/rhoRsubplanes);
          int rem     = (nstates % rhoRsubplanes);
@@ -416,18 +418,17 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
          int ist     = div*thisIndex.y + max;
          int iend    = ist + div + add;
  	 for(int ns=ist;ns<iend;ns++){
-            //CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
- 	    //             thisIndex.x, thisIndex.y, thisIndex.x, ns);
+	   //	   CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
+	   //		    thisIndex.x, thisIndex.y, ns, thisIndex.x);
 	   CkAssert(ns<config.nstates);
 	   //	   CkAssert(thisIndex.x<32);
 	   gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
 	 }//endfor
-      }//endif
-
+	} //endif
   }//endif
 
 //----------------------------------------------------------------------------
-   }//end routine
+}//end routine
 //============================================================================
 
 
