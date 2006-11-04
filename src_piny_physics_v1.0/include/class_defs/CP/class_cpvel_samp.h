@@ -16,8 +16,8 @@ class CPVEL_SAMP{
   int nvc_smpl;               // Num: Freq of PW coef vel resampl    
   int nvcnhc_smpl;            // Num: Freq of PW coef NHC vel resamp 
   int nvc_scal;               // Num: Freq of PW coef vel recale     
-  int iseed,iseed2;           // Num: Random seeds                   
   int iauto_vc_scal_opt;      // Opt: auto rescale options on/off    
+  long iseed,iseed2;          // Num: Random seeds                   
   double qseed;               // Num: Real seed for essl ran()       
   double vc_scal_tol;         // Num: tol of auto rscale of coef vel 
   double div_scal;

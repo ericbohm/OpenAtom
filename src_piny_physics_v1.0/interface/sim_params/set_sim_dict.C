@@ -644,10 +644,10 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[15].keyword,"iseed2");
         strcpy((*dict)[15].keyarg,"92571");
   /*-----------------------------------------------------------------------*/ 
-  /* 16)\generic_fft_opt{on,off} */
-        strcpy((*dict)[16].error_mes,"on or off");
-        strcpy((*dict)[16].keyword,"generic_fft_opt");
-        strcpy((*dict)[16].keyarg,"off");
+  /* 16)\fft_opt{essl,fftw} */
+        strcpy((*dict)[16].error_mes,"essl or fftw");
+        strcpy((*dict)[16].keyword,"fft_opt");
+        strcpy((*dict)[16].keyarg,"fftw");
   /*-----------------------------------------------------------------------*/ 
   /* 17)\gen_alpha_clus{#}   */
         strcpy((*dict)[17].error_mes,"a number > 0");

@@ -319,17 +319,27 @@ class RhoGSlab {
 //==============================================================================
 
 typedef struct fftplanholder {
-  int option;             // 0= fftw, 1=essl : use switch statment in routine
-  fftw_plan fftwPlan;      // fftw stuff
-  int nwork1, nwork2;     // eesl stuff
-  double *work1, *work2;
+  int option;             // 0= fftw, 1=essl
+  int nfft;               // eesl stuff
+  int ostride;            // eesl stuff
+  int odist;              // eesl stuff
+  int isign;              // eesl stuff
+  int nwork1,    nwork2;  // eesl stuff
+  double scale;           // eesl stuff
+  double *work1, *work2;  // eesl stuff
+  fftw_plan fftwPlan;     // fftw stuff
 } FFTplanHolder;
 
 typedef struct rfftplanholder {
-  int option;             // 0= fftw, 1=essl : use switch statment in routine
+  int option;             // 0= fftw, 1=essl
+  int nfft;               // eesl stuff
+  int ostride;            // eesl stuff
+  int odist;              // eesl stuff
+  int isign;              // eesl stuff
+  int nwork1,    nwork2;  // eesl stuff
+  double scale;           // eesl stuff
+  double *work1, *work2;  // eesl stuff
   rfftwnd_plan rfftwPlan; // fftw stuff
-  int nwork1, nwork2;     // eesl stuff
-  double *work1, *work2;
 } RFFTplanHolder;
 
 //==============================================================================
@@ -359,17 +369,21 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // Da Plans : Use the holder class to allow other fft libs
-     FFTplanHolder  fwdZ1DdpPlan, bwdZ1DdpPlan;        // state and density 
-     FFTplanHolder  fwdYPlan,     bwdYPlan;            // double pack plans
-     RFFTplanHolder fwdX1DdpPlan, bwdX1DdpPlan;
+    //            All plans are double pack plans
 
-     FFTplanHolder  fwdY1DdpPlanNL, bwdY1DdpPlanNL;    // ees NL 
-     FFTplanHolder  fwdZPlanNL,     bwdZPlanNL;        // double pack plans
-     RFFTplanHolder fwdX1DdpPlanNL, bwdX1DdpPlanNL;
+     RFFTplanHolder fwdXPlanRho, bwdXPlanRho;     // state and density 
+     FFTplanHolder  fwdYPlanRho, bwdYPlanRho;     
+     FFTplanHolder  fwdYPlanRhoS, bwdYPlanRhoS;   // special subplane plan
+     FFTplanHolder  fwdZPlanRho, bwdZPlanRho;
 
-     FFTplanHolder  fwdY1DdpPlanEext, bwdY1DdpPlanEext;// ees Eext
-     FFTplanHolder  fwdZPlanEext,     bwdZPlanEext;    // double pack plans
-     RFFTplanHolder fwdX1DdpPlanEext, bwdX1DdpPlanEext;
+     RFFTplanHolder fwdXPlanNL, bwdXPlanNL;       // ees NL 
+     FFTplanHolder  fwdYPlanNL, bwdYPlanNL;  
+     FFTplanHolder  fwdZPlanNL, bwdZPlanNL;    
+
+     RFFTplanHolder fwdXPlanEext, bwdXPlanEext;   // ees Eext
+     FFTplanHolder  fwdYPlanEext, bwdYPlanEext;
+     FFTplanHolder  fwdYPlanEextS, bwdYPlanEextS; // special subplane plan
+     FFTplanHolder  fwdZPlanEext, bwdZPlanEext; 
 
     //-----------------------------------------------------------
     // The constructor 
@@ -482,6 +496,10 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
 void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany, 
     	       fftw_real *in,     int istride, int idist, 
                fftw_complex *out, int ostride, int odist, int split);
+
+void initFFTholder  ( FFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
+void initRCFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
+void initCRFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
 
 //==============================================================================
 #endif

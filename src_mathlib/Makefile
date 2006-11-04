@@ -18,12 +18,14 @@ MATH   = .
 #===========================================================================
 
 #===========================================================================
-OBJS_REQ = random_num_gen.o genmatmul.o fastadd.o
+OBJS_REQ = random_num_gen.o genmatmul.o fastadd.o altRandom.o
 include $(BLAS_FORT)
 include $(LAPACK_FORT)
 include $(EISPACK_FORT)
 include $(EISPACK_FORT)
-OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) lst_sort_clean.o
+include $(IBM_ESSL_DUMMY)
+OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) $(OBJS_IBM_ESSL) \
+       lst_sort_clean.o
 TARGET_LIB = ../binary/libMyMathLib.a
 #===========================================================================
 
@@ -35,6 +37,16 @@ mymathlib: $(OBJS)
 
 #===========================================================================
 
+
+#---------------------------------------------------------------------------
+altRandom.o: $(MATH)/altRandom.C $(MATH)/mathlib.h
+	$(ECHO) $@
+	$(CHARMC) -c $(MATH)/altRandom.C
+
+#---------------------------------------------------------------------------
+ibm_essl_dummy.o: $(MATH)/ibm_essl_dummy.C $(MATH)/mathlib.h
+	$(ECHO) $@
+	$(CHARMC) -c $(MATH)/ibm_essl_dummy.C
 
 #---------------------------------------------------------------------------
 lst_sort_clean.o: $(MATH)/lst_sort_clean.C $(MATH)/mathlib.h

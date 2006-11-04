@@ -218,7 +218,7 @@ void VX_SMPL::ctrlSamplAtomNhcVel(int natm,AtomNHC *atomsNHC){
 //==================================================================== 
 void VX_SMPL::sampl3DVelMultiT(int natm, double* vx, double* vy,
                        double* vz, double* mass, double* t_ext,
-                       int* iseed, int* iseed2, double* qseed)
+                       long* iseed, long* iseed2, double* qseed)
 //=================================================================== 
    {//begin routine 
 //===================================================================
@@ -256,7 +256,7 @@ void VX_SMPL::sampl3DVelMultiT(int natm, double* vx, double* vy,
 // Velocities of Atoms
 //==================================================================== 
 void VX_SMPL::sampl3DVelMultiT(int natm, Atom *atoms, double* t_ext,
-                                      int* iseed, int* iseed2, double* qseed)
+                               long* iseed, long* iseed2, double* qseed)
 //=================================================================== 
    {//begin routine 
 //===================================================================
@@ -297,7 +297,7 @@ void VX_SMPL::sampl3DVelMultiT(int natm, Atom *atoms, double* t_ext,
 //==================================================================== 
 void VX_SMPL::sampl3DVelOneT(int natm, double* vx, double* vy,
                        double* vz,double* mass,double  kT,
-                       int* iseed,int* iseed2, double* qseed)
+                       long* iseed,long* iseed2, double* qseed)
 //=================================================================== 
    {//begin routine 
 //===================================================================

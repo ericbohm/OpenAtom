@@ -42,16 +42,16 @@ class VX_SMPL{
                          double* velz,  
                          double* mass,
                          double* text_atm,
-                         int*    iseed,
-                         int*    iseed2,
+                         long*    iseed,
+                         long*    iseed2,
                          double* qseed
      );
      static void sampl3DVelMultiT(
                          int     natm,
                          Atom *atoms,
                          double* text_atm,
-                         int*    iseed,
-                         int*    iseed2,
+                         long*    iseed,
+                         long*    iseed2,
                          double* qseed
      );
      static void sampl3DVelOneT(
@@ -61,8 +61,8 @@ class VX_SMPL{
                          double* vz,
                          double* mass,
                          double  kT,
-                         int* iseed,
-                         int* iseed2,
+                         long* iseed,
+                         long* iseed2,
                          double* qseed
     );
 };

@@ -31,13 +31,20 @@ class RPPDATA {
 class RHORHARTDATA {
  public:
    int index;
-   int ngrid_a,ngrid_b,ngrid_c;   // fft grid size
-   int n_interp;                  // ees interpolation order
-   int natm;                      // non-local atms
-   int *plane_index;              // lth: natm : atm is on plane? 1/0
-   int **igrid;                   // lth: natm*ninterp^2 : where is atm
-   double **mn;                   // lth: natm*ninterp^2 : b-spline
-   double **dmn_x,**dmn_y,**dmn_z;// lth: natm*ninterp^2 : nabla (b-spline)
+   int rhoRsubplanes;                // subplanes splits
+   int ngrid_a,ngrid_b,ngrid_c;      // fft grid size
+   int n_interp;                     // ees interpolation order
+   int natm;                         // non-local atms
+   int *plane_index;                 // lth: natm : atm is on plane? 1/0
+   int *subStr;                      // lth : rhoRsubPlanes : subplane decomp
+   int *subEnd;                      // lth : rhoRsubPlanes : subplane decomp
+   int *subSiz;                      // lth : rhoRsubPlanes : subplane decomp
+   int *ntemp;                       // lst : rhoRsubPlanes*ninterp;
+   int **itemp;                      // lst : rhoRsubPlanes*ninterp;
+   int **nSub;                       // lth : natm*rhoRsubPlanes          : pts in subplane
+   int ***igrid;                     // lth: natm*rhoRsubPlanes*ninterp^2 : pos in subplane
+   double ***mn;                     // lth: natm*rhoRsubPlanes*ninterp^2 : bspline in subplane
+   double ***dmn_x,***dmn_y,***dmn_z;// lth: natm*rhoRsubPlanes*ninterp^2 : nabla_alpha (b-spline)
    RHORHARTDATA(){};   
   ~RHORHARTDATA(){};   
    void init(int );

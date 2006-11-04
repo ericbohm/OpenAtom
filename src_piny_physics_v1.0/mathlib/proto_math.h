@@ -71,10 +71,11 @@ void cputime(double *);
 
 /*----------------------------------------------------------------------*/
 
-void gaussran(int, int *, int *, double *, double *);
+void gaussran(int, long *, long *, double *, double *);
 
 double ran_essl(double *);
 
+double altRandom(long *);
 
 /*----------------------------------------------------------------------*/
 

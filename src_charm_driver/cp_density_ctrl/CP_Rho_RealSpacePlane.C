@@ -396,11 +396,11 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
       CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
 #endif
       rhoRHartExtProxy(ind,thisIndex.y).startEextIter();
-    }//endif
-  }//endif
+    }//endif : the launch
+  }//endif : Launch is needed
 #endif
 
-//================================================================================
+//============================================================================
 // Launch nonlocal g space if it wasn't done in RS
 //  Spread the launch over all the rhoRchares you can.
 
@@ -408,27 +408,26 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
   if(sim->ees_nloc_on==1 && config.launchNLeesFromRho){ 
 
       CkAssert(rho_rs.sizeZ>=config.nchareG);
-      if(thisIndex.x<config.nchareG)
-	{
- 	 int nstates = config.nstates; 
+      if(thisIndex.x<config.nchareG){
+          int nstates = config.nstates; 
          int div     = (nstates/rhoRsubplanes);
          int rem     = (nstates % rhoRsubplanes);
          int add     = (thisIndex.y < rem ? 1 : 0);
          int max     = (thisIndex.y < rem ? thisIndex.y : rem);
          int ist     = div*thisIndex.y + max;
          int iend    = ist + div + add;
- 	 for(int ns=ist;ns<iend;ns++){
-	   //	   CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
-	   //		    thisIndex.x, thisIndex.y, ns, thisIndex.x);
-	   CkAssert(ns<config.nstates);
-	   //	   CkAssert(thisIndex.x<32);
-	   gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
-	 }//endfor
-	} //endif
+          for(int ns=ist;ns<iend;ns++){
+           //           CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
+           //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
+           CkAssert(ns<config.nstates);
+           //           CkAssert(thisIndex.x<32);
+           gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
+         }//endfor
+       }//endif
   }//endif
 
 //----------------------------------------------------------------------------
-}//end routine
+   }//end routine 
 //============================================================================
 
 
@@ -593,8 +592,9 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         int max     = (thisIndex.y < rem ? thisIndex.y : rem);
         int ist     = div*thisIndex.y + max;
         int iend    = ist + div + add;
-	for(int ns=ist;ns<iend;ns++){
-	  realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl();
+        for(int ns=ist;ns<iend;ns++){
+          CkAssert(ns<config.nstates);
+          realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl();
         }//endfor
     }//endif
   }//endif
@@ -671,14 +671,14 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
       complex *data    = msg->data;   // data
 
       if(config.prioFFTMsg){
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
+          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+          *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
       for(int i=ist,koff=0;i<iend;i++,koff+=myNgridb){
         for(int k=koff,ii=i;k<myNgridb+koff;k++,ii+=stride){
           data[k] = FFTresult[ii]; 
-	}//endfor
+        }//endfor
       }//endfor
 
       switch(iopt){
@@ -910,8 +910,8 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       msg->offsetGx    = thisIndex.y;    // gx parallelization index
       complex *data    = msg->data;
       if(config.prioFFTMsg){
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x;
+          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+          *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x;
       }//endif
 
       if(rhoRsubplanes==1){
@@ -1017,7 +1017,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 #endif
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
-	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
+           thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
 #endif
 
 //============================================================================
@@ -1190,14 +1190,14 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       complex *data    = msg->data;   // data
 
       if(config.prioFFTMsg){
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
+          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+          *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
       for(int i=ist,koff=0;i<iend;i++,koff+=myNplane_rho){ 
         for(int k=koff,ii=i;k<myNplane_rho+koff;k++,ii+=ngridb){
           data[k] = FFTresult[ii]; 
-	}//endfor
+        }//endfor
       }//endfor
 
       switch(iopt){
@@ -1567,7 +1567,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("WhiteByrd Data from RhoG arriving at RhoR : %d %d\n",
-	   thisIndex.x,thisIndex.y);
+           thisIndex.x,thisIndex.y);
 #endif
 
 //============================================================================
@@ -1758,7 +1758,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 
 #ifdef _CP_DEBUG_RHOR_VERBOSE_
   CkPrintf("Data from RhoG arriving at RhoR : %d %d %d %d\n",
-	   thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
+           thisIndex.x,thisIndex.y,iopt,countGradVks[iopt]);
 #endif
 
   CkAssert(iopt==0);
@@ -1975,9 +1975,9 @@ void CP_Rho_RealSpacePlane::exitForDebugging(){
 void CP_Rho_RealSpacePlane::ResumeFromSync(){
 
     if(config.useCommlibMulticast)
-	ComlibResetSectionProxy(&realSpaceSectionCProxy);
+        ComlibResetSectionProxy(&realSpaceSectionCProxy);
     if(config.useRInsRhoGP)
-	ComlibResetProxy(&rhoGProxy_com);
+        ComlibResetProxy(&rhoGProxy_com);
 }
 //============================================================================
 

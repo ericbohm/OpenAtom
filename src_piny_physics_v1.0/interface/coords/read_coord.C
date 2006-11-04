@@ -85,8 +85,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   int natm_tot        = mdclatoms_info->natm_tot;
   int pi_beads        = mdclatoms_info->pi_beads; 
 
-  int iseed           = mdvel_samp->iseed;
-  int iseed2          = mdvel_samp->iseed2;
+  long iseed          = mdvel_samp->iseed;
+  long iseed2         = mdvel_samp->iseed2;
   double qseed        = mdvel_samp->qseed;
 
   int class_num_nhc   = mdtherm_info->num_nhc;

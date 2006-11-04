@@ -804,6 +804,7 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 
   int ifound,index;
   double real_key_arg;
+  int   int_key_arg;
 
 /*========================================================================*/
 /*-----------------------------------------------------------------------*/ 
@@ -976,8 +977,9 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
   /* 14)\rndm_seed{#} */
-     sscanf(dict[14].keyarg,"%d",&(mdvel_samp->iseed));
-     sscanf(dict[14].keyarg,"%d",&(cpvel_samp->iseed));
+     sscanf(dict[14].keyarg,"%d",&(int_key_arg));
+     mdvel_samp->iseed = (long) int_key_arg;
+     cpvel_samp->iseed = (long) int_key_arg;
      mdvel_samp->qseed = (double) mdvel_samp->iseed;
      cpvel_samp->qseed = (double) cpvel_samp->iseed;
   /*-----------------------------------------------------------------------*/ 
@@ -986,6 +988,13 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      sscanf(dict[15].keyarg,"%d",&(cpvel_samp->iseed2));
   /*-----------------------------------------------------------------------*/ 
   /* 16)\generic_fft_opt{on,off} */
+     ifound = 0;
+     if(strcasecmp(dict[16].keyarg,"fftw")==0) {
+      gensimopts->fftopt  = 0; ifound++;}
+     if(strcasecmp(dict[16].keyarg,"essl")==0) {
+      gensimopts->fftopt  = 1; ifound++;}
+     index=16;
+     if(ifound != 1)keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
   /* 17)\alpha_clus{#}   */
     sscanf(dict[17].keyarg,"%lg",&real_key_arg);

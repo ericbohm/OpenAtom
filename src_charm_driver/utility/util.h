@@ -274,9 +274,10 @@ class Config {
 	int gemmSplitFWm;
 	int gemmSplitBW;
 	int gemmSplitOrtho;
+        int fftopt;
 	char dataPath[MAX_CHAR_ARRAY_LENGTH];
 	void print(char *fname_in);
-	static void readConfig(const char *, Config &,int,int,int,int,int,int,int,int);
+	static void readConfig(const char *, Config &,int,int,int,int,int,int,int,int,int);
         static void rangeExit(int , char *, int );
 	void guesstimateParms(int natm_nl, int sizez);
 };

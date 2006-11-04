@@ -330,7 +330,7 @@ void CP_Rho_RHartExt::computeAtmSF(){
 // Look up some constants and fill the r-space grid
 
   int myPlane      =  thisIndex.x;
-  int mySubPlane   =  thisIndex.y;
+  int mySubplane   =  thisIndex.y;
   int itime        = iteration;
 
   eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
@@ -343,14 +343,16 @@ void CP_Rho_RHartExt::computeAtmSF(){
   }
 
   int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
-  int **igrid      = eesData->RhoRHartData[myPlane].igrid;
-  double **mn      = eesData->RhoRHartData[myPlane].mn;
+  int **nSub       = eesData->RhoRHartData[myPlane].nSub;
+  int ***igrid     = eesData->RhoRHartData[myPlane].igrid;
+  double ***mn     = eesData->RhoRHartData[myPlane].mn;
 
   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
 
   if(rhoRsubplanes==1){
-    CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,igrid,mn,plane_index);
+    CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,mySubplane,igrid,mn,
+                               plane_index,nSub,myNgridb);
   }else{
     CkPrintf("rhart pack broken\n"); CkExit();
   }//endif
@@ -984,17 +986,19 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 // set the variables to evaluate atom forces
 
   int myPlane      = thisIndex.x;
+  int mySubplane   = thisIndex.y;
   int itime        = iteration;
   double *data;    
   if(flagEwd==0){data=atmSFR;}else{data=atmEwdSFR;}
 
   // you have already queried for this step:
   eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-  int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
-  int **igrid      = eesData->RhoRHartData[myPlane].igrid;
-  double **dmn_x   = eesData->RhoRHartData[myPlane].dmn_x;
-  double **dmn_y   = eesData->RhoRHartData[myPlane].dmn_y;
-  double **dmn_z   = eesData->RhoRHartData[myPlane].dmn_z;
+  int *plane_index   = eesData->RhoRHartData[myPlane].plane_index;
+  int **nSub         = eesData->RhoRHartData[myPlane].nSub;
+  int ***igrid       = eesData->RhoRHartData[myPlane].igrid;
+  double ***dmn_x    = eesData->RhoRHartData[myPlane].dmn_x;
+  double ***dmn_y    = eesData->RhoRHartData[myPlane].dmn_y;
+  double ***dmn_z    = eesData->RhoRHartData[myPlane].dmn_z;
 
   AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   FastAtoms *fastAtoms = &(ag->fastAtoms);
@@ -1006,7 +1010,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 
    if(rhoRsubplanes==1){
      CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
-                                plane_index,data,myPlane,flagEwd);
+                                plane_index,nSub,data,myPlane,mySubplane,flagEwd);
    }else{
     CkPrintf("rhart atmforc broken\n"); CkExit();
    }//endif

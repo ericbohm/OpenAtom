@@ -1625,6 +1625,8 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useCentroidMap: %d\n",useCentroidMap);
      fprintf(fp,"useCentroidMapRho: %d\n",useCentroidMapRho);
 
+     fprintf(fp,"fftopt: %d\n",fftopt);
+
      //     fprintf(fp,"nstates: %d\n",nstates);
      //     fprintf(fp,"nchareG %d\n",nchareG);
      //     fprintf(fp,"nchareRhoG %d\n",nchareRhoG);
@@ -1648,7 +1650,7 @@ void Config::print(char *fname_in) {
 //===================================================================================
 void Config::readConfig(const char* fileName, Config &config,
 			int nstates_in, int nkf1, int nkf2, int nkf3, int maxIter_in,
-			int ibinary_opt,int natm_nl, int ees_nonlocal_on)
+			int ibinary_opt,int natm_nl, int ees_nonlocal_on, int fftopt_in)
 //===================================================================================
     { // begin routine
 //===================================================================================
@@ -1656,10 +1658,11 @@ void Config::readConfig(const char* fileName, Config &config,
 
     config.nstates         = nstates_in;
     config.maxIter         = maxIter_in;
+    config.fftopt          = fftopt_in;
 
-    config.sGrainSize           = nstates_in;
+    config.sGrainSize      = nstates_in;
 
-    config.orthoGrainSize           =     config.sGrainSize;
+    config.orthoGrainSize         = config.sGrainSize;
     config.orthoStride            = 0;
     config.gemmSplitFWk           = 16;
     config.gemmSplitFWm           = 16;

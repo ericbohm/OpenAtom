@@ -67,9 +67,21 @@
 
 #include "ckcomplex.h"
 
+//========================================================================
+// IBM ESSL FFT STUFF 
+void dcft(int *,complex *,int *,int *,complex *,int *,int *, int *,int *,int *,double *,
+          double *, int *,double *,int *);
+void dcrft(int *,complex *,int *,double *,int *,int *,int *,int *,double *,
+	   double *, int *,double *,int *);
+void drcft(int *,double *,int *,complex *,int *,int *,int *,int *,double *,
+	   double *, int *,double *,int *);
+//========================================================================
+
 void lst_sort_clean(int , int *, int *);
 void sort_commence(int , int *,int *);
 void sort_commence_piny(int , int *,int *);
+
+double altRandom(long *);
 
 extern "C" {void DURAND(double *,int *, double *,int *);}
 

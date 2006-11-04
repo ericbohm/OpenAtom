@@ -39,8 +39,8 @@ class vx_smpl{
                  double* mass,
                  double* text_atm,
                  int     natm_tot,
-                 int*    iseed,
-                 int*    iseed2,
+                 long*    iseed,
+                 long*    iseed2,
                  double* qseed);
   private:
   

@@ -31,6 +31,7 @@ class GENSIMOPTS {
   int initial_spread_opt;     // Opt: Spread coordinates for pimd          
   int anneal_opt;             // Opt: Do simulated annealing (on/off)
   int hess_calc;              // Opt: Calculate the atomic hessian 
+  int fftopt;
 
 
   double ann_rate;            // Num: Annealing rate                       
@@ -60,6 +61,7 @@ class GENSIMOPTS {
      pi_beads         = 0;
      pi_md_typ        = 0;
      initial_spread_opt= 0;
+     fftopt           = 0;
      anneal_opt       = 0;
      hess_calc        = 0;
      ann_rate         = 0;
@@ -95,6 +97,7 @@ class GENSIMOPTS {
         p | initial_spread_opt;
         p | anneal_opt;
         p | hess_calc;
+	p | fftopt;
     //pupping dbles
         p | ann_rate;
         p | ann_start_temp;

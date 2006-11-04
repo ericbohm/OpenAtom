@@ -61,7 +61,7 @@ double ran_essl(double *qseed)
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void gaussran(int nran, int *iseed, int *iseed2, double *qseed, double gauss[])
+void gaussran(int nran, long *iseed, long *iseed2, double *qseed, double gauss[])
 
 /*========================================================================*/
 {/*begin routine*/
@@ -69,6 +69,8 @@ void gaussran(int nran, int *iseed, int *iseed2, double *qseed, double gauss[])
 /*             Local variable declarations                                */
    int i,iii,loop;
    double twopi,rad2,al,r,phi,arg;
+
+   int ran_opt = 1;
 /*========================================================================*/
 /* I) Constants */
     twopi = 2.0*M_PI;
@@ -80,10 +82,16 @@ void gaussran(int nran, int *iseed, int *iseed2, double *qseed, double gauss[])
     for(i=1;i<=loop;i++){
 /*------------------------------------------------------------------------*/
 /* A) uniform random numbers in r and phi */
-       r   = ran_essl(qseed);
+       switch(ran_opt){
+         case 0: r   = ran_essl(qseed); 
+                 phi = ran_essl(qseed); 
+                 break;
+         case 1: r   = altRandom(iseed); 
+                 phi = altRandom(iseed); 
+                 break;
+       }//end switch
        r   = MAX(r,1e-30);
        r   = MIN(r,1.0);
-       phi = ran_essl(qseed);
 /*------------------------------------------------------------------------*/
 /* B) Gaussify in x and y*/
        al  = sqrt(-log(r))*rad2;
@@ -93,18 +101,25 @@ void gaussran(int nran, int *iseed, int *iseed2, double *qseed, double gauss[])
      }/*endfor*/
 /*========================================================================*/
 /* III) Make one more if nran is odd */
+
     if((nran % 2)!=0){
-       r   = ran_essl(qseed);
+       switch(ran_opt){
+         case 0: r   = ran_essl(qseed); 
+                 phi = ran_essl(qseed); 
+                 break;
+         case 1: r   = altRandom(iseed); 
+                 phi = altRandom(iseed); 
+                 break;
+       }//end switch
        r   = MAX(r,1e-30);
        r   = MIN(r,1.0);
-       phi = ran_essl(qseed);
        arg = twopi*phi;
        al  = sqrt(-log(r))*rad2;
        gauss[nran] = al*cos(arg);
      }/*endif*/
 
 /*------------------------------------------------------------------------*/
-}/*end routine*/
+  }/*end routine*/
 /*========================================================================*/
 
 

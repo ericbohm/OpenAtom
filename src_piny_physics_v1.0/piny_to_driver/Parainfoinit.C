@@ -49,6 +49,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
 
+  int fftopt          = gensimopts->fftopt;
+
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
   double tol_norb     = cpconstrnt->c_tolnorb;
@@ -103,6 +105,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ntime          = ntime;
    sim->dt             = dt;
    sim->vol            = vol;
+
+   sim->fftopt         = fftopt;
 
    sim->cp_min_opt     = cp_min_opt;
    sim->cp_min_cg      = cp_min_cg;

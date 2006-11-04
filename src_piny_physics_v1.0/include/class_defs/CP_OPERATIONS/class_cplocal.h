@@ -39,7 +39,8 @@ class CPLOCAL{
 
   static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA *);
 
-  static void eesPackGridRchare(int , int , double *, int ,int **, double **, int *);
+  static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
+                                int **, int );
 
   static void eesHartEextGchare(int , int , complex *, complex *, complex *, complex *,
                                 double *, double *,double *,double *,
@@ -48,9 +49,9 @@ class CPLOCAL{
   static void eesEwaldGchare(int ,complex *,double *, double *,double *,
                              int *, int *, int *,int);
 
-  static void eesAtmForceRchare(int , FastAtoms *,int ,int **, double **, double **, 
-                                double **, int *, double *, int ,int );
-
+  static void eesAtmForceRchare(int , FastAtoms *,int , 
+                                int ***, double ***, double ***, double ***, 
+                                int *, int **,  double *, int ,int ,int );
 //---------------------------------------------------------------------------
    };  //CPLOCAL
 //==========================================================================

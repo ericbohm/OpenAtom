@@ -289,28 +289,65 @@ void GPPDATA::init(int index_in,int ncoef_in, int *ka, int *kb, int *kc){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void RHORHARTDATA::init(int index_in){
+//==============================================================================
+// General intialization : Set parameters
+
+   index          = index_in;
+   rhoRsubplanes  = config.rhoRsubplanes;
 
    CPLOCAL::getEesPrms(&ngrid_a,&ngrid_b,&ngrid_c,&n_interp,&natm);
 
-   index          = index_in;
-   int n_interp21 = n_interp*n_interp+1;
+//====================================================
+// The subplane decomposition vectors
 
-   plane_index    = (int *)fftw_malloc(natm*sizeof(int));
+   subStr = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
+   subEnd = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
+   subSiz = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
+   ntemp  = (int *)fftw_malloc(rhoRsubplanes*sizeof(int));
+   itemp  = (int **)fftw_malloc(rhoRsubplanes*sizeof(int*));
+   for(int s=0;s<rhoRsubplanes;s++){itemp[s] = (int *)fftw_malloc(n_interp*sizeof(int))-1;}
 
-   igrid = (int **)fftw_malloc(natm*sizeof(int*));
-   mn    = (double **)fftw_malloc(natm*sizeof(double*));
-   dmn_x = (double **)fftw_malloc(natm*sizeof(double*));
-   dmn_y = (double **)fftw_malloc(natm*sizeof(double*));
-   dmn_z = (double **)fftw_malloc(natm*sizeof(double*));
-   for(int i=0;i<natm;i++){
-     igrid[i] = (int *)fftw_malloc(n_interp21*sizeof(int))-1;
-     mn[i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_x[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_y[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
-     dmn_z[i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+   for(int s=0; s<rhoRsubplanes; s++){
+     int div   = (ngrid_b / rhoRsubplanes); // parallelize y
+     int rem   = (ngrid_b % rhoRsubplanes);
+     int add   = (s < rem ? 1 : 0);
+     int max   = (s < rem ? s : rem);
+     subStr[s] = div*s + max;              // start of y desired by chare s
+     subSiz[s] = div + add;                // total of y desired by chare s
+     subEnd[s] = subStr[s] + subSiz[s];    // end   of y desired by chare s
    }//endfor
 
-}//end routine
+//====================================================
+// Mallocs 
+
+   plane_index = (int *)fftw_malloc(natm*sizeof(int));
+
+   nSub  = (int     **)fftw_malloc(rhoRsubplanes*sizeof(int    *));
+   igrid = (int    ***)fftw_malloc(rhoRsubplanes*sizeof(int   **));
+   mn    = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
+   dmn_x = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
+   dmn_y = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
+   dmn_z = (double ***)fftw_malloc(rhoRsubplanes*sizeof(double**));
+
+   int n_interp21 = n_interp*n_interp+1;
+   for(int s=0;s<rhoRsubplanes;s++){
+     nSub[s]  = (int    *)fftw_malloc (natm*sizeof(int   *));
+     igrid[s] = (int    **)fftw_malloc(natm*sizeof(int   *));
+     mn[s]    = (double **)fftw_malloc(natm*sizeof(double*));
+     dmn_x[s] = (double **)fftw_malloc(natm*sizeof(double*));
+     dmn_y[s] = (double **)fftw_malloc(natm*sizeof(double*));
+     dmn_z[s] = (double **)fftw_malloc(natm*sizeof(double*));
+     for(int i=0;i<natm;i++){
+       igrid[s][i] = (int    *)fftw_malloc(n_interp21*sizeof(int   ))-1;
+       mn[s][i]    = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+       dmn_x[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+       dmn_y[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+       dmn_z[s][i] = (double *)fftw_malloc(n_interp21*sizeof(double))-1;
+     }//endfor : atoms
+   }//endfor : subplanes
+
+//-----------------------------------------------------------------------------
+  }//end routine
 //==============================================================================
 
 

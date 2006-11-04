@@ -17,8 +17,6 @@
 //============================================================================
 //  N^2 method  : Invoked from gchare
 //============================================================================
-//  N^2 method  : Invoked from gchare
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
@@ -609,7 +607,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 #include "../class_defs/allclass_strip_mdatoms.h"
   PSNONLOCAL *non_local = &(cppseudo->nonlocal);
 
-  int i,j,ja,jb,jc,n;
+  int i,j,ja,jb,jc,kb,n;
   int j1,j2,jj,ia,ib,ic,kkk;
   double grid_a,grid_b,grid_c;
   double atemp,btemp,ctemp;
@@ -719,7 +717,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
        ib       = (ib<=ngrid_b ? ib:ib-ngrid_b);
        ic       = (ic<=ngrid_c ? ic:ic-ngrid_c);
        igrid_a[j][i] = ia-1;
-       igrid_b[j][i] = (ib - 1)*(ngrid_a+2);
+       igrid_b[j][i] = (ib - 1);
        igrid_c[j][i] = (ic - 1);  // use to assign to planes
      }//endfor
 #ifdef CMK_VERSION_BLUEGENE
@@ -804,43 +802,82 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 // IV) put together the separable bits and store 
 
    // Zero array mapping plane index, j, to interpolation index, jc.
+   int    rhoRsubplanes;
+   int    *subStr;
+   int    *subEnd;
+   int    *subSiz;
    int    *plane_index;
-   int    **igrid; 
-   double **mn,**dmn_x,**dmn_y,**dmn_z;
+   int    *ntemp;
+   int    **itemp;
+   int    **nSub;
+   int    ***igrid; 
+   double ***mn,***dmn_x,***dmn_y,***dmn_z;
+  
 
    // Zero array mapping plane index, j, to interpolation index, jc.
    for(j=0;j<ngrid_c;j++){
      if(allowed_planes[j]==1){
-       plane_index = RhoRHartData[j].plane_index;
+       rhoRsubplanes = RhoRHartData[j].rhoRsubplanes;
+       plane_index   = RhoRHartData[j].plane_index;
+       nSub          = RhoRHartData[j].nSub;
        for(i=0;i<natm;i++){plane_index[i] = 0;}
+       for(int s=0;s<rhoRsubplanes;s++){for(i=0;i<natm;i++){nSub[s][i]=0;}}
      }//endif
    }//endfor
 
    for(i=0;i<natm;i++){
    for(jc=1;jc<=n_interp;jc++){
      int ip = igrid_c[jc][i];
+     // plane decomp
      if(allowed_planes[ip]==1){ // if the group wants this plane
-       plane_index = RhoRHartData[ip].plane_index;
-       igrid       = RhoRHartData[ip].igrid;
-       mn          = RhoRHartData[ip].mn;
-       dmn_x       = RhoRHartData[ip].dmn_x;
-       dmn_y       = RhoRHartData[ip].dmn_y;
-       dmn_z       = RhoRHartData[ip].dmn_z;
-       jj = 1;
-       for(jb=1;jb<=n_interp;jb++){
-         for(ja=1,j=jj;ja<=n_interp;ja++,j++){
-           igrid[i][j] = igrid_a[ja][i]+igrid_b[jb][i]; //plane index only
-           atemp           = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
-           btemp           =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
-           ctemp           =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
-           mn[i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
-           dmn_x[i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
-           dmn_y[i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
-           dmn_z[i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
-         }//endfor : ja
-         jj += n_interp;
-       }//endfor : jb
+       
+       rhoRsubplanes = RhoRHartData[ip].rhoRsubplanes;
+       subStr        = RhoRHartData[ip].subStr;
+       subEnd        = RhoRHartData[ip].subEnd;
+       subSiz        = RhoRHartData[ip].subSiz;
+       ntemp         = RhoRHartData[ip].ntemp;
+       itemp         = RhoRHartData[ip].itemp;
+       nSub          = RhoRHartData[ip].nSub;
+       igrid         = RhoRHartData[ip].igrid;
+       mn            = RhoRHartData[ip].mn;
+       dmn_x         = RhoRHartData[ip].dmn_x;
+       dmn_y         = RhoRHartData[ip].dmn_y;
+       dmn_z         = RhoRHartData[ip].dmn_z;
+       plane_index   = RhoRHartData[ip].plane_index;
+
+       // subplane decomp
+       for(int s=0;s<rhoRsubplanes;s++){
+         ntemp[s] = 0;
+         for(jb=1;jb<=n_interp;jb++){
+           if(subStr[s]<=igrid_b[jb][i] && igrid_b[jb][i]<subEnd[s]){
+             ntemp[s]++;
+             itemp[s][ntemp[s]] = jb;
+	   }//endif
+         }//endfor
+       }//endfor
+        
+       // do all the subplanes : only some will be used : fix if too slow later
+       for(int s=0;s<rhoRsubplanes;s++){
+         jj = 1;
+         for(kb=1;kb<=ntemp[s];kb++){
+           jb      = itemp[s][kb];
+           int iii = (igrid_b[jb][i]-subStr[s])*(ngrid_a+2);
+           for(ja=1,j=jj;ja<=n_interp;ja++,j++){
+             igrid[s][i][j] = igrid_a[ja][i]+iii; //plane index only
+             atemp          = dmn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i]*grid_a;
+             btemp          =  mn_a[ja][i]*dmn_b[jb][i]* mn_c[jc][i]*grid_b;
+             ctemp          =  mn_a[ja][i]* mn_b[jb][i]*dmn_c[jc][i]*grid_c;
+             mn[s][i][j]    =  mn_a[ja][i]* mn_b[jb][i]* mn_c[jc][i];
+             dmn_x[s][i][j] = atemp*hmati[1]+btemp*hmati[2]+ctemp*hmati[3];
+             dmn_y[s][i][j] = atemp*hmati[4]+btemp*hmati[5]+ctemp*hmati[6];
+             dmn_z[s][i][j] = atemp*hmati[7]+btemp*hmati[8]+ctemp*hmati[9];
+           }//endfor : ja
+           jj += n_interp;
+         }//endfor : jb
+         nSub[s][i] = jj-1;
+       }//endfor : s
        plane_index[i] = jc; // each jc is a different plane
+
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
@@ -876,7 +913,8 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplane,
-                                int **igrid, double **mn, int *plane_index)
+                                int sIndex, int ***igrid, double ***mn, int *plane_index, 
+                                int **nSub, int ngrid_b)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -887,38 +925,37 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 #include "../class_defs/allclass_strip_mdatoms.h"
 
   int ngrid_a    = cppseudo->ngrid_eext_a;
-  int ngrid_b    = cppseudo->ngrid_eext_b;
-  int n_interp   = cppseudo->n_interp_ps;
   int *natm_eext = cppseudo->natm_eext;
   int **map_eext = cppseudo->map_eext;
-  int n_interp2  = n_interp*n_interp;
+  int s          = sIndex;
 
 //==========================================================================
 
   int nroll = 5; // you can't change this without changing the code below
-  int nrem  = (n_interp2 % nroll);
-  int jstrt = (n_interp2-nrem+1);
-  int jend  = (n_interp2-nrem);
 
   for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){sfAtmTypR[i]=0.0;}
 
   for(int jatm=1;jatm<=natm_eext[ityp];jatm++){
     int iatm = map_eext[ityp][jatm]-1;
     int jc   = plane_index[iatm];  // interpolation pt of plane
-    if(jc>0){
+    int ngo  = nSub[s][iatm];      // subPlane decomp
+    if(jc>0 && ngo>0){
+       int nrem  = (ngo % nroll);
+       int jstrt = (ngo-nrem+1);
+       int jend  = (ngo-nrem);
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-         sfAtmTypR[igrid[iatm][j]]  += mn[iatm][j];  // contribute to zmatrix
-         sfAtmTypR[igrid[iatm][j1]] += mn[iatm][j1]; // contribute to zmatrix
-         sfAtmTypR[igrid[iatm][j2]] += mn[iatm][j2]; // contribute to zmatrix
-         sfAtmTypR[igrid[iatm][j3]] += mn[iatm][j3]; // contribute to zmatrix
-         sfAtmTypR[igrid[iatm][j4]] += mn[iatm][j4]; // contribute to zmatrix
+         sfAtmTypR[igrid[s][iatm][j]]  += mn[s][iatm][j];  // contribute to zmatrix
+         sfAtmTypR[igrid[s][iatm][j1]] += mn[s][iatm][j1]; // contribute to zmatrix
+         sfAtmTypR[igrid[s][iatm][j2]] += mn[s][iatm][j2]; // contribute to zmatrix
+         sfAtmTypR[igrid[s][iatm][j3]] += mn[s][iatm][j3]; // contribute to zmatrix
+         sfAtmTypR[igrid[s][iatm][j4]] += mn[s][iatm][j4]; // contribute to zmatrix
        }//endfor
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
-       for(int j=jstrt;j<=n_interp2;j++){
-         sfAtmTypR[igrid[iatm][j]] += mn[iatm][j]; // contribute to zmatrix
+       for(int j=jstrt;j<=ngo;j++){
+         sfAtmTypR[igrid[s][iatm][j]] += mn[s][iatm][j]; // contribute to zmatrix
        }//endfor
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
@@ -1265,8 +1302,9 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp, 
-                int **igrid, double **dmn_x, double **dmn_y, double **dmn_z, 
-                int *plane_index, double *sfAtmTypR, int iplane,int flag)
+                int ***igrid, double ***dmn_x, double ***dmn_y, double ***dmn_z, 
+		int *plane_index, int **nSub,  double *sfAtmTypR, 
+                int iplane,int sIndex,int flag)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -1276,9 +1314,7 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 
-  int n_interp  = cppseudo->n_interp_ps;
-  int n_interp2 = n_interp*n_interp;
-
+  int s          = sIndex;
   int natm_typ   = cppseudo->natm_typ;
   int *natm_eext = cppseudo->natm_eext;
   int **map_eext = cppseudo->map_eext;
@@ -1307,53 +1343,54 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 // Compute the Ewald forces from the back transformed total SF : flag=1
 
   int nroll = 5; // you can't change this without changing the code
-  int nrem  = (n_interp2 % nroll);
-  int jstrt = (n_interp2-nrem+1);
-  int jend  = (n_interp2-nrem);
 
   int ityp_use = (flag==0 ? ityp : (natm_typ+1));
   for(int jatm=1;jatm<=natm_eext[ityp_use];jatm++){
     int iatm = (flag==0 ? (map_eext[ityp][jatm]-1) : (jatm-1));
     int jc   = plane_index[iatm];  // interpolation pt of plane
-    if(jc>0){
+    int ngo  = nSub[s][iatm];
+    if(jc>0 && ngo>0){
+      int nrem  = (ngo % nroll);
+      int jstrt = (ngo-nrem+1);
+      int jend  = (ngo-nrem);
       double fxx=0.0, fyy=0.0, fzz=0.0;
       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
-        double p0  = sfAtmTypR[igrid[iatm][j]];
-        double p1  = sfAtmTypR[igrid[iatm][j1]];
-        double p2  = sfAtmTypR[igrid[iatm][j2]];
-        double p3  = sfAtmTypR[igrid[iatm][j3]];
-        double p4  = sfAtmTypR[igrid[iatm][j4]];
-        fxx += (dmn_x[iatm][j]*p0  + dmn_x[iatm][j1]*p1
-               +dmn_x[iatm][j2]*p2 + dmn_x[iatm][j3]*p3
-               +dmn_x[iatm][j4]*p4);
-        fyy += (dmn_y[iatm][j]*p0  + dmn_y[iatm][j1]*p1
-               +dmn_y[iatm][j2]*p2 + dmn_y[iatm][j3]*p3
-               +dmn_y[iatm][j4]*p4);
-        fzz += (dmn_z[iatm][j]*p0  + dmn_z[iatm][j1]*p1
-               +dmn_z[iatm][j2]*p2 + dmn_z[iatm][j3]*p3
-               +dmn_z[iatm][j4]*p4);
+        double p0  = sfAtmTypR[igrid[s][iatm][j]];
+        double p1  = sfAtmTypR[igrid[s][iatm][j1]];
+        double p2  = sfAtmTypR[igrid[s][iatm][j2]];
+        double p3  = sfAtmTypR[igrid[s][iatm][j3]];
+        double p4  = sfAtmTypR[igrid[s][iatm][j4]];
+        fxx += (dmn_x[s][iatm][j]*p0  + dmn_x[s][iatm][j1]*p1
+               +dmn_x[s][iatm][j2]*p2 + dmn_x[s][iatm][j3]*p3
+               +dmn_x[s][iatm][j4]*p4);
+        fyy += (dmn_y[s][iatm][j]*p0  + dmn_y[s][iatm][j1]*p1
+               +dmn_y[s][iatm][j2]*p2 + dmn_y[s][iatm][j3]*p3
+               +dmn_y[s][iatm][j4]*p4);
+        fzz += (dmn_z[s][iatm][j]*p0  + dmn_z[s][iatm][j1]*p1
+               +dmn_z[s][iatm][j2]*p2 + dmn_z[s][iatm][j3]*p3
+               +dmn_z[s][iatm][j4]*p4);
       }//endfor
 #ifdef CMK_VERSION_BLUEGENE
       CmiNetworkProgress();
 #endif
-      for(int j=jstrt;j<=n_interp2;j++){
-        double p  = sfAtmTypR[igrid[iatm][j]];
-        fxx += (dmn_x[iatm][j]*p);
-        fyy += (dmn_y[iatm][j]*p);
-        fzz += (dmn_z[iatm][j]*p);
+      for(int j=jstrt;j<=ngo;j++){
+        double p  = sfAtmTypR[igrid[s][iatm][j]];
+        fxx += (dmn_x[s][iatm][j]*p);
+        fyy += (dmn_y[s][iatm][j]*p);
+        fzz += (dmn_z[s][iatm][j]*p);
       }//endfor
       double qnow = (flag==1 ? q[iatm] : 1.0);
       fx[iatm] -= fxx*qnow;
       fy[iatm] -= fyy*qnow;
       fz[iatm] -= fzz*qnow;
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-      for(int j=1;j<=n_interp2;j++){
-        int ind   = igrid[iatm][j];      // index of pt in the plane
+      for(int j=1;j<=ngo;j++){
+        int ind   = igrid[s][iatm][j];      // index of pt in the plane
         double p  = sfAtmTypR[ind]*qnow;
-        fxt[iatm] -=(dmn_x[iatm][j]*p);
-        fyt[iatm] -=(dmn_y[iatm][j]*p);
-        fzt[iatm] -=(dmn_z[iatm][j]*p);
+        fxt[iatm] -=(dmn_x[s][iatm][j]*p);
+        fyt[iatm] -=(dmn_y[s][iatm][j]*p);
+        fzt[iatm] -=(dmn_z[s][iatm][j]*p);
       }//endfor
 #endif
 #ifdef CMK_VERSION_BLUEGENE

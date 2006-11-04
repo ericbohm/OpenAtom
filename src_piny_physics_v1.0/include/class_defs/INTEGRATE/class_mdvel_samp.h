@@ -20,7 +20,7 @@ class MDVEL_SAMP {
   int nvx_smpl;                /* Num: Freq of atm vel resampling     */
   int nvx_scale;               /* Num: Freq of atm vel rescaling      */
   int nvnhc_smpl;              /* Num: Freq of atm NHC vel resamp     */
-  int iseed,iseed2;            /* Num: Random seeds                   */
+  long iseed,iseed2;           /* Num: Random seeds                   */
   double qseed;                /* Num: Real seed for essl ran()       */
 
 //=============================================================================

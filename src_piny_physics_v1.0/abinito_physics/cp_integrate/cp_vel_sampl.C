@@ -69,8 +69,8 @@ void CPINTEGRATE::sampl1DVelOneT(int n, double* v,double* mass,
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
 #include "../class_defs/allclass_strip_mdintegrate.h"
    double *qseed  =  &(mdvel_samp->qseed);
-   int    *iseed  =  &(mdvel_samp->iseed);
-   int    *iseed2 =  &(mdvel_samp->iseed2);
+   long   *iseed  =  &(mdvel_samp->iseed);
+   long   *iseed2 =  &(mdvel_samp->iseed2);
 
 //===================================================================
 // Sample unit gaussian
@@ -107,8 +107,8 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double **x,double **xp,
   MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
 #include "../class_defs/allclass_strip_mdintegrate.h"
    double *qseed  =  &(mdvel_samp->qseed);
-   int    *iseed  =  &(mdvel_samp->iseed);
-   int    *iseed2 =  &(mdvel_samp->iseed2);
+   long   *iseed  =  &(mdvel_samp->iseed);
+   long   *iseed2 =  &(mdvel_samp->iseed2);
 
 //===================================================================
 // Sample unit gaussian
