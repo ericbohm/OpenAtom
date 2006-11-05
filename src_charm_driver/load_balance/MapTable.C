@@ -859,25 +859,26 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 }
 
 
-RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart, PeList *exclude ): nchareRhoRHart(_nchareRhoRHart)
+RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart, int rhoRsubplanes, PeList *exclude ): nchareRhoRHart(_nchareRhoRHart)
 {
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   int rrsobjs_per_pe, rem;
   int srcpe=0;
+  int numChares=nchareRhoRHart*rhoRsubplanes;
   if(availprocs->count()==0)
     availprocs->reset();
 
   if(availprocs->count()==1)
     {
-      rrsobjs_per_pe= nchareRhoRHart;
+      rrsobjs_per_pe= numChares;
       rem=0;
     }
   else
     {
-      rrsobjs_per_pe= nchareRhoRHart/(availprocs->count());
-      rem = nchareRhoRHart % (availprocs->count());
+      rrsobjs_per_pe= numChares/(availprocs->count());
+      rem = numChares % (availprocs->count());
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
@@ -887,6 +888,36 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
     availprocs->reset();
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoRHart, rrsobjs_per_pe, rem);   
+
+      int nprocs=0, objs=0;
+      destpe=availprocs->findNext();
+      if(availprocs->count()==0)
+        availprocs->reset();
+      for(int chunk=0; chunk<nchareRhoRHart; chunk++)
+	{
+	  for(int subplane=0; subplane<rhoRsubplanes; subplane++)
+	  {
+	    if(rem!=0)
+	      if(nprocs==rem)
+	        rrsobjs_per_pe -= 1;
+#ifdef USE_INT_MAP
+		  maptable->set(chunk, subplane, destpe);
+#else
+		  maptable->put(intdual(chunk, subplane))=destpe;
+#endif
+	    objs++;
+	    if(objs==rrsobjs_per_pe)
+	    {
+	      exclude->mergeOne(destpe);
+	      destpe=availprocs->findNext();
+	      if(availprocs->count()==0)
+	        availprocs->reset();
+	      objs=0;
+	      nprocs++;
+	    }
+	  }
+	}
+      /*
   for(int chunk=0; chunk<nchareRhoRHart; chunk+=rrsobjs_per_pe)
     {
       if(rem!=0)
@@ -907,6 +938,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	destpe=availprocs->findNext();
 
     }
+      */
 #ifdef MAP_DEBUG
 	CkPrintf("RhoRHartMap created on processor %d\n", CkMyPe());
 	dump();

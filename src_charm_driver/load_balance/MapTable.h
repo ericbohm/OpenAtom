@@ -288,7 +288,7 @@ class RhoRHartMapTable  : public MapTable
  public:
   int nchareRhoRHart;
   RhoRHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoRHart, PeList *exclude);
+	int _nchareRhoRHart, int rhoRsubplanes, PeList *exclude);
   RhoRHartMapTable(){}
 };
 

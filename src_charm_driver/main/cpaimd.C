@@ -1904,25 +1904,26 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
 	RhoAvail->rebuild();
     }//endif
-    
-    CkPrintf("availProcs %d\n",RhoAvail->count());
-#ifdef USE_INT_MAP
-    if(ees_eext_on)
-      RhoRHartImaptable.buildMap(nchareRhoRHart,1);
-    RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
-				   nchareRhoRHart, excludePes);
-#else
-    RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
-				   nchareRhoRHart, excludePes);
-#endif
-    CkPrintf("availProcs %d\n",RhoAvail->count());
-    CkPrintf("rho G and S consumed %d\n", excludePes->count());
-    //    excludePes->dump();
-
-    CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
     CkArrayOptions rhorhartOpts;
-    rhorhartOpts.setMap(rhorHartMap);
+    CkPrintf("availProcs %d\n",RhoAvail->count());
+    if(ees_eext_on)
+      {
+#ifdef USE_INT_MAP
 
+	RhoRHartImaptable.buildMap(nchareRhoRHart,config.rhoRsubplanes);
+	RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
+				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
+#else
+	RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
+				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
+#endif
+	CkPrintf("availProcs %d\n",RhoAvail->count());
+	CkPrintf("rho G and S consumed %d\n", excludePes->count());
+	//    excludePes->dump();
+
+	CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
+	rhorhartOpts.setMap(rhorHartMap);
+      }
 //============================================================================
 // Instantiate the chares
 
@@ -1967,7 +1968,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
                                  ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
 	for (int i = 0; i < nchareRhoRHart; i++){
  	 for (int j = 0; j < config.rhoRsubplanes; j++){
-	  rhoRHartExtProxy(i,0).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
+	  rhoRHartExtProxy(i,j).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
 				       ees_eext_on,natmTyp);
          }//endfor
 	}//endfor
