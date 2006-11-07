@@ -669,12 +669,14 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         int numFullEext;
         int registrationFlag;
         int launchFlag;
+        int CountDebug;
         complex *atmSF;
         complex *atmSFtot;
         double ehart_ret;
         double eext_ret;
         double ewd_ret;
         void registrationDone(CkReductionMsg *msg);
+        void exitForDebugging();
  private:
 	RhoGSlab rho_gs;
         int atmSFHere;

@@ -471,9 +471,9 @@ void make_rho_runs(CPcharmParaInfo *sim){
               index_tran_pack_eext_y[igrp][ic][jc]  = j*sizeZEext;
               index_tran_pack_eext_ys[igrp][ic][jc] = j*sizeZ;
               index_tran_upack_eext_y[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeYEext
-   		                                    +  ky_line[i];
+   		                                    +  ky_line_ext[i];
               index_tran_upack_eext_ys[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeY
-   		                                    +  ky_line[i];
+   		                                     +  ky_line[i];
 	    }//endif
           }//endfor
         }//endfor

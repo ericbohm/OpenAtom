@@ -315,7 +315,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
       CkExit();
     }//endif
     count=0;
-#ifndef DEBUG_INT_TRANS_FWD
+#ifndef _DEBUG_INT_TRANS_FWD
     acceptRhoData();
 #else   
     char name[100];

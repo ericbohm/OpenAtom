@@ -292,6 +292,7 @@ mainmodule cpaimd {
 		entry void isAtSync(int);
 		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
                 entry void registrationDone(CkReductionMsg *msg);
+                entry void exitForDebugging();
 	};
 
 

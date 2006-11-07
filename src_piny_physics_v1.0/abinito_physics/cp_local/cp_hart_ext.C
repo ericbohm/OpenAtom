@@ -1338,6 +1338,7 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
    }//endfor
 #endif
 
+
 //==========================================================================
 // Compute the Eext forces from the back transformed ityp SF   : flag=0
 // Compute the Ewald forces from the back transformed total SF : flag=1

@@ -17,7 +17,7 @@
 #include "CP_State_Plane.h"
 #include "../../src_mathlib/mathlib.h"
 
-#define TEST_ALIGN
+//#define TEST_ALIGN
 //==============================================================================
 
 extern CProxy_FFTcache fftCacheProxy;

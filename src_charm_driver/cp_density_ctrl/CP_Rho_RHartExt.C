@@ -41,7 +41,6 @@ extern int    sizeX;
 extern Config config;
 
 
-#define _CP_RHART_VERBOSE_OFF_
 //#define _CP_RHART_VERBOSE_
 
 
@@ -109,12 +108,8 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
     csize        = (ngrida/2+1)*myNgridb;  // complex variable size
 
  
-    if(rhoRsubplanes==1){
-      eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-      eesData->registerCacheRHart(thisIndex.x);
-    }else{
-      CkPrintf("rhart registration broken\n"); CkExit();
-    }
+    eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+    eesData->registerCacheRHart(thisIndex.x);
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
     atmSFR      = reinterpret_cast<double*> (atmSFC);
@@ -147,12 +142,6 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   rhoGHartProxy_com    = rhoGHartExtProxy;;
   if (config.useRHartInsGHart){
     ComlibAssociateProxy(&commRHartGHartIns,rhoGHartProxy_com);          
-  }//endif
-
-  if(ees_eext_on==1 && rhoRsubplanes>1){
-    if(thisIndex.y==0&&thisIndex.x==0){
-       CkPrintf("Warning rhorhart: ees_eext_on under development\n");
-     }//endif
   }//endif
 
 //---------------------------------------------------------------------------
@@ -260,7 +249,8 @@ void CP_Rho_RHartExt::startEextIter(){
 //                           Launch if we are ready
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in start : %d\n",thisIndex.x,registrationFlag);
+  CkPrintf("HI, I am rhart chare %d %d in start : %d on %d\n",
+             thisIndex.x,thisIndex.y,registrationFlag,CkMyPe());
 #endif
 
   if(iterAtmTyp==natmTyp){CkPrintf("%d signing off\n",thisIndex.x);CkExit();}
@@ -289,7 +279,8 @@ void CP_Rho_RHartExt::startEextIter(){
   delete msg;
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in reg : %d\n",thisIndex.x,sum);
+  CkPrintf("HI, I am rhart chare %d %d in reg : %d on %d\n",
+             thisIndex.x,thisIndex.y,sum,CkMyPe());
 #endif
 
   // use barrier as a debug tool
@@ -301,7 +292,7 @@ void CP_Rho_RHartExt::startEextIter(){
   registrationFlag=1;
   if(launchFlag==1){computeAtmSF();}
 
-  }
+ }//end routine
 //==========================================================================
 
 
@@ -323,7 +314,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
   }//endif
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in computeatmsf at iter %d\n",thisIndex.x,iterAtmTyp);
+  CkPrintf("HI, I am rhart chare %d %d in computeatmsf at iter %d on %d\n",
+          thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
 //============================================================================
@@ -333,14 +325,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
   int mySubplane   =  thisIndex.y;
   int itime        = iteration;
 
-  eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-  if(iterAtmTyp==1){
-    if(rhoRsubplanes==1){
-      eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);
-    }else{
-      CkPrintf("rhart query broken\n"); CkExit();
-    }//endif
-  }
+  eesCache *eesData= eesCacheProxy.ckLocalBranch ();
+  if(iterAtmTyp==1){eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);}
 
   int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
   int **nSub       = eesData->RhoRHartData[myPlane].nSub;
@@ -350,12 +336,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
 
-  if(rhoRsubplanes==1){
-    CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,mySubplane,igrid,mn,
-                               plane_index,nSub,myNgridb);
-  }else{
-    CkPrintf("rhart pack broken\n"); CkExit();
-  }//endif
+  CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,mySubplane,igrid,mn,
+                             plane_index,nSub,myNgridb);
 
 //============================================================================
 // FFT the result to G-space
@@ -375,7 +357,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
 void CP_Rho_RHartExt::fftAtmSfRtoG(){
 //============================================================================
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in fftsback at %d\n",thisIndex.x,iterAtmTyp);
+  CkPrintf("HI, I am rhart chare %d %d in fftsback at %d on %d\n",
+           thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
 #ifndef CMK_OPTIMIZE
@@ -397,7 +380,21 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
   if(rhoRsubplanes>1){
     sendAtmSfRyToGy();   // double transpose method (yz ---> gx,z)
   }else{
-    sendAtmSfRhoGHart();      // single transpose method (z ---> gx,gy)
+#ifdef DEBUG_INT_TRANS_FWD
+    char name[100];
+    sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
+    FILE *fp = fopen(name,"w");
+    for(int ix =0;ix<nplane_rho_x;ix++){
+      for(int iy =0;iy<ngridb;iy++){
+        int i = iy*(ngrida/2+1) + ix;
+        fprintf(fp,"%d %d : %g %g\n",iy,ix,atmSFC[i].re,atmSFC[i].im);
+      }//endfor
+    }//endof
+    fclose(fp);
+    rhoRHartExtProxy(0,0).exitForDebugging();
+#else
+    sendAtmSfRhoGHart(); // single transpose method (z ---> gx,gy)
+#endif
   }//endif
 
 //============================================================================
@@ -507,7 +504,6 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
 
   CkAssert(size==myNplane_rho*num);
   CkAssert(rhoRsubplanes>1);
-  CkAssert(iter==iterAtmTyp);
 
 //============================================================================
 
@@ -526,8 +522,22 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   if(countIntRtoG==rhoRsubplanes){
     countIntRtoG = 0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
-    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,ngrida,ngridb);
+#ifdef DEBUG_INT_TRANS_FWD
+    char name[100];
+    sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
+    FILE *fp = fopen(name,"w");
+    for(int ix =0;ix<myNplane_rho;ix++){
+      for(int iy =0;iy<ngridb;iy++){
+        int i = ix*ngridb + iy;
+        fprintf(fp,"%d %d : %g %g\n",iy,ix+myAoff,atmSFCint[i].re,atmSFCint[i].im);
+      }//endfor
+    }//endof
+    fclose(fp);
+    rhoRHartExtProxy(0,0).exitForDebugging();
+#else
     sendAtmSfRhoGHart(); 
+#endif
   }//endfor
 
 //============================================================================
@@ -545,7 +555,8 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 //============================================================================
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in sendsf at %d\n",thisIndex.x,iterAtmTyp);
+  CkPrintf("HI, I am rhart chare %d %d in sendsf at %d on %d\n",
+         thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
   CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
@@ -589,6 +600,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
       msg->offset         = thisIndex.x;    // c-plane-index
       msg->offsetGx       = thisIndex.y;    // gx parallelization index
       complex *data       = msg->data;
+
       if(rhoRsubplanes==1){      
         for(int i=0;i<sendFFTDataSize;i++){data[i] = atmSFC[tranpack[ic][i]];}
       }else{
@@ -602,7 +614,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
       if(rhoRsubplanes==1){
         rhoGHartProxy_com(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
       }else{
-        rhoGHartExtProxy(ic,iy).recvAtmSFFromRhoRHart(msg); // send the message
+        rhoGHartExtProxy(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
       }//endif
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -686,11 +698,19 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
   if(iter!=iterAtmTyp){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("Dude.2, %d != %d for rho rhart chare %d %d\n",iter,iterAtmTyp,
-                  thisIndex.x,Index);
+     CkPrintf("Dude.2, %d != %d for rho rhart chare %d %d %d\n",iter,iterAtmTyp,
+                  thisIndex.x,Index,iopt);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
+
+  if((iopt==1) && (iterAtmTyp!=natmTyp) ){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Dude.3, %d != %d for rho rhart chare %d %d : %d %d\n",iter,natmTyp,
+                  thisIndex.x,iy,Index,iopt);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }
 
 //============================================================================
 // unpack the data and delete the message
@@ -727,11 +747,11 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
   if (countFFT[iopt] == nchareG){
 #ifdef _CP_RHART_VERBOSE_
-    CkPrintf("HI, I am rhart chare %d in recvsf with opt %d at %d\n",
-               thisIndex.x,iopt,iterAtmTyp);
+    CkPrintf("HI, I am rhart chare %d %d in recvsf with opt %d at %d on %d\n",
+               thisIndex.x,thisIndex.y,iopt,iterAtmTyp,CkMyPe());
 #endif
     countFFT[iopt]=0;
-    nAtmTypRecv++;
+    if(rhoRsubplanes==1){nAtmTypRecv++;}
     fftAtmForcGtoR(iopt);
   }//endif
 
@@ -749,8 +769,8 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
 //============================================================================
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in FFTAtmForc w %d at %d \n",
-        thisIndex.x,flagEwd,iterAtmTyp);
+  CkPrintf("HI, I am rhart chare %d %d in FFTAtmForc w %d at %d on %d\n",
+        thisIndex.x,thisIndex.y,flagEwd,iterAtmTyp,CkMyPe());
 #endif
 
   double *dataR;
@@ -900,9 +920,10 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   int offset       = msg->offset; // offset into lines along `a'
   complex *msgData = msg->data;
 
-  CkAssert(size==myNgridb*num);
   CkAssert(rhoRsubplanes>1);
-  CkAssert(iter!=iterAtmTyp);
+  CkAssert(size==myNgridb*num);
+  if(iterAtmTyp!=iter){CkPrintf("ECCH : %d %d : %d %d %d\n",
+				thisIndex.x,thisIndex.y,iterAtmTyp,iter,iopt);}
 
   complex *dataC;
   double  *dataR;
@@ -917,8 +938,9 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
+
   int stride = (ngrida/2+1);
-  for(int js=0,j=offset;js<myNgridb;js+=num,j+=stride){
+  for(int js=0,j=offset;js<size;js+=num,j+=stride){
    for(int is=js,i=j;is<num+js;is++,i++){
      dataC[i] = msgData[is];
    }//endfor
@@ -933,6 +955,7 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
     fftcache->doEextFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb);
+    nAtmTypRecv++;
     computeAtmForc(iopt);
   }//endif
 
@@ -950,8 +973,8 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d %d %d\n",
-             thisIndex.x,flagEwd,iterAtmTyp,nAtmTypRecv,natmTyp);
+  CkPrintf("HI, I am rhart chare %d %d in computeAtmForc.1 w %d at %d %d %d on %d\n",
+             thisIndex.x,thisIndex.y, flagEwd,iterAtmTyp,nAtmTypRecv,natmTyp,CkMyPe());
 #endif
 //============================================================================
 // Check for errors
@@ -987,12 +1010,14 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 
   int myPlane      = thisIndex.x;
   int mySubplane   = thisIndex.y;
-  int itime        = iteration;
   double *data;    
   if(flagEwd==0){data=atmSFR;}else{data=atmEwdSFR;}
 
   // you have already queried for this step:
   eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+  AtomsGrp *ag       = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+
+  CkAssert(eesData->allowedRhoRHartChares[myPlane]!=0);
   int *plane_index   = eesData->RhoRHartData[myPlane].plane_index;
   int **nSub         = eesData->RhoRHartData[myPlane].nSub;
   int ***igrid       = eesData->RhoRHartData[myPlane].igrid;
@@ -1000,7 +1025,6 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   double ***dmn_y    = eesData->RhoRHartData[myPlane].dmn_y;
   double ***dmn_z    = eesData->RhoRHartData[myPlane].dmn_z;
 
-  AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   FastAtoms *fastAtoms = &(ag->fastAtoms);
   int natm             = ag->natm;
 
@@ -1008,13 +1032,8 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    double  StartTime=CmiWallTimer();
 #endif    
 
-   if(rhoRsubplanes==1){
-     CPLOCAL::eesAtmForceRchare(natm,fastAtoms,nAtmTypRecv,igrid,dmn_x,dmn_y,dmn_z,
-                                plane_index,nSub,data,myPlane,mySubplane,flagEwd);
-   }else{
-    CkPrintf("rhart atmforc broken\n"); CkExit();
-   }//endif
-
+   CPLOCAL::eesAtmForceRchare(natm,fastAtoms,iterAtmTyp,igrid,dmn_x,dmn_y,dmn_z,
+                              plane_index,nSub,data,myPlane,mySubplane,flagEwd);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesAtmForcR_, StartTime, CmiWallTimer());    
 #endif
@@ -1032,8 +1051,8 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 #ifndef _CP_DEBUG_STOP_RHART_
  if(iterAtmTyp==natmTyp && nAtmTypRecv==(natmTyp+1)){
 #ifdef _CP_RHART_VERBOSE_
-   CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d done\n",
-             thisIndex.x,flagEwd,iterAtmTyp);
+   CkPrintf("HI, I am rhart chare %d %d in computeAtmForc.2 w %d at %d done on %d\n",
+             thisIndex.x,thisIndex.y,flagEwd,iterAtmTyp,CkMyPe());
 #endif
    CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int index = (thisIndex.x % sim->sizeZ);
@@ -1070,7 +1089,7 @@ void CP_Rho_RHartExt::exitForDebugging(){
   countDebug++;  
   if(countDebug==(rhoRsubplanes*ngridc)){
     countDebug=0;
-    CkPrintf("I am in the exitfordebuging rhoreal puppy. Bye-bye\n");
+    CkPrintf("I am in the exitfordebuging rhorhartext puppy. Bye-bye\n");
     CkExit();
   }//endif
 }

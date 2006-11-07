@@ -96,12 +96,6 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     cp_grad_corr_on      = sim->cp_grad_corr_on;
     ees_eext_on          = _ees_eext_on;
 
-    if(ees_eext_on==1 && rhoRsubplanes>1){
-      if(thisIndex.y==0&&thisIndex.x==0){
-        CkPrintf("Warning rhoreal: ees_eext_on under development\n");
-      }//endif
-    }//endif
-
     CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
 
    // set up scaling factors

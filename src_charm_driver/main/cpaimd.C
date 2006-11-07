@@ -1906,8 +1906,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     }//endif
     CkArrayOptions rhorhartOpts;
     CkPrintf("availProcs %d\n",RhoAvail->count());
-    if(ees_eext_on)
-      {
+
+    if(ees_eext_on){
 #ifdef USE_INT_MAP
 
 	RhoRHartImaptable.buildMap(nchareRhoRHart,config.rhoRsubplanes);
@@ -1923,7 +1923,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 	CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
 	rhorhartOpts.setMap(rhorHartMap);
-      }
+    }//endif : ees_ext_on
+
 //============================================================================
 // Instantiate the chares
 

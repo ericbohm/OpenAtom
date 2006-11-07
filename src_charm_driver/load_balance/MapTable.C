@@ -686,10 +686,9 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	    }
 	}
     }
-  dump();
 #ifdef MAP_DEBUG
   CkPrintf("RPPMap created on processor %d\n", CkMyPe());
-
+  dump();
 #endif
 }
 
