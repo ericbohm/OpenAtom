@@ -563,7 +563,7 @@ main::main(CkArgMsg *msg) {
 	int order;
 	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize, order))
 	  {
-	    CkPrintf("Using %d,%d,%d dimensions for box %d  mapping\n",bx,by,bz, boxSize);
+	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
 	  }
 	else
@@ -1786,7 +1786,6 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 //============================================================================
 
 void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
-
 //============================================================================
 {//begin routine
 //============================================================================
@@ -2194,6 +2193,11 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 15:
       x=5; y=3; z=1; switchSet=true; break;
     case 16:
+      if(config.useCuboidMapRS)
+	{
+	  if(maxX>=8)
+	    { x=8; y=2; z=1; switchSet=true; break;}
+	}
       x=4; y=2; z=2; switchSet=true; break;
     case 18:
       x=3; y=3; z=2; switchSet=true; break;
@@ -2214,7 +2218,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 32:
       if(config.useCuboidMapRS)
 	{
-	  if(maxX>=8)
+	  //if(maxX>=8)
 	    { x=8; y=2; z=2; switchSet=true; break;}
 	}
       x=4; y=2; z=4; switchSet=true; break;
@@ -2243,27 +2247,27 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 64:
       if(config.useCuboidMapRS)
 	{
-	  if(maxX==8)
+	  //if(maxX==8)
 	    { x=8; y=4; z=2; switchSet=true; break;}
-	  if(maxX>=16)
+	  //if(maxX>=16)
 	    { x=16; y=2; z=2; switchSet=true; break;}
 	}
       x=4; y=4; z=4; switchSet=true; break;
     case 128:
       if(config.useCuboidMapRS)
 	{
-	  if(maxX==16)
+	  //if(maxX==16)
 	    {x=16; y=4; z=2; switchSet=true; break;}
-	  if(maxX>=32)
+	  //if(maxX>=32)
 	    {  x=32; y=2; z=2; switchSet=true; break;	}
 	}
       x=8; y=4; z=4; switchSet=true; break;
     case 256:
       if(config.useCuboidMapRS)
 	{
-	  if(maxX==16)
+	  //if(maxX==16)
 	    { x=16; y=4; z=4; switchSet=true; break;}
-	  if(maxX>=32)
+	  //if(maxX>=32)
 	    { x=16; y=4; z=4; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;

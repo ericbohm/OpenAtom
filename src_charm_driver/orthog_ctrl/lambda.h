@@ -30,6 +30,7 @@ class Lambda : public CBase_Lambda{
   Lambda(CkMigrateMessage *m){}
   Lambda(int lgrain, int ograin, int sgrain) : lambdaGrainSize(lgrain), orthoGrainSize(ograin), sGrainSize(sgrain) 
     {
+      lPairCalcID2=pairCalcID2;
     }
   
   ~Lambda(){
@@ -48,17 +49,17 @@ class Lambda : public CBase_Lambda{
   virtual void pup(PUP::er &p){
 //    CBase_Lambda::pup(p);
     ArrayElement2D::pup(p);
-    p | pcLambdaProxy;
-    p | pcLambdaRedProxy;
+    p | lambdaGrainSize;
+    p | orthoGrainSize;
+    p | sGrainSize;
+    p | lPairCalcID2;
   }
 
  private:
-  CProxySection_PairCalculator pcLambdaProxy;
-  CProxySection_PairCalculator pcLambdaRedProxy;
   int lambdaGrainSize;
   int orthoGrainSize;
   int sGrainSize;
-  
+  PairCalcID lPairCalcID2;
 };
 
 /**

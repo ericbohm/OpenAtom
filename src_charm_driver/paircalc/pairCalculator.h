@@ -36,6 +36,8 @@ class PairCalcID {
   CkGroupID orthomCastGrpId;
   CkGroupID orthoRedGrpId;
   int priority;
+  CProxySection_PairCalculator proxySym;
+  CProxySection_PairCalculator proxyAsym;
   CProxySection_PairCalculator *proxyLFrom;
   CProxySection_PairCalculator *proxyLNotFrom;
   CProxySection_PairCalculator *proxyRNotFrom;
@@ -197,15 +199,16 @@ void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
-extern "C" void finishPairCalcSection(int n, double *ptr,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
+extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2,CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority);
+extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
-CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
+//CProxySection_PairCalculator initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
+void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 
-void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
+//void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 
-void startPairCalcRightAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
+//void startPairCalcRightAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
 
 void isAtSyncPairCalc(PairCalcID* pcid);
 

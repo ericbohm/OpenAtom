@@ -119,7 +119,7 @@ class Ortho : public CBase_Ortho{
   void recvStep2(double *step2result, int size);
 
   // get our copy of the pcproxy
-  void setPCproxy(CProxySection_PairCalculator inproxy){pcProxy=inproxy;}
+  void setPCproxy(CProxySection_PairCalculator inproxy);
 
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
@@ -282,15 +282,12 @@ class Ortho : public CBase_Ortho{
   // used in each element
   int iterations; //local inv_sq iterations
   CProxySection_Ortho multiproxy;
-  CProxySection_PairCalculator pcProxy;
-  CProxySection_PairCalculator pcRedProxy;
-  CProxySection_PairCalculator pcLambdaProxy;
-  CProxySection_PairCalculator pcLambdaRedProxy;
   CkSectionInfo orthoCookie;
   int num_ready;
   bool got_start;
   int lbcaught;
-
+  PairCalcID oPairCalcID1;
+  PairCalcID oPairCalcID2;
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;

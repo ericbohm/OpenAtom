@@ -37,7 +37,7 @@ extern Config config;
 extern int nstates;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern  PairCalcID pairCalcID1;
+extern  PairCalcID PairCalcID1;
 extern  PairCalcID pairCalcID2;
 extern CProxy_AtomsGrp atomsGrpProxy;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
@@ -77,7 +77,7 @@ void Lambda::acceptSectionLambda(CkReductionMsg *msg) {
   fclose(fp);
 #endif
   // finish pair calc
-  finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy, thisIndex.x, thisIndex.y, 0, pairCalcID2.priority+1);
+  finishPairCalcSection(lambdaCount, lambda, &lPairCalcID2, thisIndex.x, thisIndex.y, 0, lPairCalcID2.priority+1);
 #ifdef _CP_DEBUG_LAMBDA_VERBOSE_
   if(thisIndex.x==0 && thisIndex.y==0)
     CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -104,8 +104,8 @@ void Lambda::makeSections(int indexSize, int *indexZ){
     }
 
   // thisIndex.x and thisIndex.y range from 0 to nstates/lambdaGrainSize
-    pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, false, config.useOrthoDirect);
-    pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, true, config.useOrthoDirect);
+    initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, false, config.useOrthoDirect);
+     initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, true, config.useOrthoDirect);
 
 //----------------------------------------------------------------------------
   }// end routine

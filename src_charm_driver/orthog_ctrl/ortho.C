@@ -313,11 +313,11 @@ void Ortho::resume(){
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
     if(s1 == s2)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType,  0);
+      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType,  0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.y, thisIndex.x, actionType, 0);
+      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.y, thisIndex.x, actionType, 0);
     else if(thisIndex.y > thisIndex.x && config.phantomSym)
-      finishPairCalcSection(m * n, A, pcProxy, thisIndex.x, thisIndex.y, actionType, 0);
+      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
 
 //----------------------------------------------------------------------------
    }//end routine
@@ -395,18 +395,18 @@ void Ortho::lbresume(CkReductionMsg *msg) {
     if(lbcaught==lambdas+1) //gspace is all done lambda and psi reduction resets
       {
 	CkAbort("must fix ortho proxy reset!\n");
-	setGredProxy(&pcLambdaProxy, pairCalcID2.mCastGrpId[0],  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy),thisIndex.x, thisIndex.y); 
+	setGredProxy(&oPairCalcID2.proxyAsym, oPairCalcID2.mCastGrpId[0],  CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy),thisIndex.x, thisIndex.y); 
       }
     if(lbcaught==lambdas+2)
       {
 	CkAbort("must fix ortho proxy reset!\n");
 	if(thisIndex.x <= thisIndex.y) //lambda is done
 	  {
-	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
-	    mcastGrp->resetSection(pcProxy);
-	    setGredProxy(&pcProxy, pairCalcID1.orthomCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
+	    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
+	    mcastGrp->resetSection(oPairCalcID1.proxySym);
+	    setGredProxy(&oPairCalcID1.proxySym, oPairCalcID1.orthomCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy), thisIndex.x, thisIndex.y);
 	    if(thisIndex.x!=thisIndex.y)
-	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
+	      thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym);	  
 	  }
       }
     if(lbcaught==lambdas+3) //everyone is done
@@ -523,7 +523,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   else
     {
       // finish pair calc
-      finishPairCalcSection(lambdaCount, lambda, pcLambdaProxy, thisIndex.x, thisIndex.y, 0, pairCalcID2.priority+1);
+      finishPairCalcSection(lambdaCount, lambda, &oPairCalcID2, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -554,30 +554,30 @@ void Ortho::makeSections(int indexSize, int *indexZ){
   // thisIndex.x and thisIndex.y range from 0 to nstates/config.orthoGrainSize
 
   if(s1 <= s2)   //we get the reduction
-    {
-      pcRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
+    {  
+      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
       if(config.phantomSym)
 	{
-	  pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
-	  //	if(s1!=s2)
-	  //	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);
+	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
+
 	}
       else
 	{
 	  if(s1!=s2)
-	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcRedProxy);
-	  pcProxy=pcRedProxy;
+	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym);
+	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
 	}
     }
   else if(config.phantomSym)
-    {
-      pcProxy = initOneRedSect(indexSize, indexZ, config.numChunksSym, &pairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
+    {  // we are not phantoms
+      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
     }
   if(config.lambdaGrainSize==config.orthoGrainSize)
     { //no point in having a different chare if you won't have more of them
       // in the != case this will happen in the lambda chare
-      pcLambdaRedProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
-      pcLambdaProxy = initOneRedSect(indexSize, indexZ, config.numChunksAsym, &pairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
+      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
+      //everybody sends in lambda
+      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
     }
 
 //----------------------------------------------------------------------------
@@ -603,7 +603,7 @@ void Ortho::gamma_done(){
     fclose(outfile);
 #endif
 
-    finishPairCalcSection2(m * n, B, ortho, pcLambdaProxy,thisIndex.x, thisIndex.y, 0,  pairCalcID2.priority+1);
+    finishPairCalcSection2(m * n, B, ortho, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
 
 //----------------------------------------------------------------------------
   }// end routine
@@ -665,6 +665,8 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   ortho=NULL;
   orthoT=NULL;
   wallTimeArr=NULL;
+  oPairCalcID1=pairCalcID1;
+  oPairCalcID2=pairCalcID2;
   if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
     {
       int numOrtho=config.nstates/m;
@@ -676,7 +678,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
       if(config.useOrthoSectionRed)
 	{
 	  CProxySection_Ortho rproxy =   multiproxy;
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthoRedGrpId).ckLocalBranch();               
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthoRedGrpId).ckLocalBranch();               
 	  rproxy.ckSectionDelegate(mcastGrp);
 	  initCookieMsg *redMsg=new initCookieMsg;
 	  rproxy.orthoCookieinit(redMsg);
@@ -690,7 +692,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
 	    }
 	  else
 	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
 	      multiproxy.ckSectionDelegate(mcastGrp);
 	    }
 	}
@@ -704,7 +706,6 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
-
 //============================================================================
    }//end routine
 //============================================================================
@@ -844,7 +845,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
     {
       CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.orthomCastGrpId).ckLocalBranch();               
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
       mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
     }
   else
@@ -866,14 +867,12 @@ void Ortho::pup(PUP::er &p){
     p | num_ready;
     p | got_start;
     p | multiproxy;
-    p | pcProxy;
-    p | pcRedProxy;
-    p | pcLambdaProxy;
-    p | pcLambdaRedProxy;
     p | numGlobalIter;
     p | lbcaught;
     p | orthoCookie;
     p | toleranceCheckOrthoT;
+    p | oPairCalcID1;    
+    p | oPairCalcID2;
     p | step2done;
     p | step3done;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
@@ -908,3 +907,9 @@ void OrthoHelper::sendMatrix()
   orthoProxy(thisIndex.x, thisIndex.y).recvStep2(C, m*n);
 }
 
+
+// highly questionable that this is safe
+void Ortho::setPCproxy(CProxySection_PairCalculator inproxy)
+{
+  oPairCalcID1.proxySym=inproxy;
+}

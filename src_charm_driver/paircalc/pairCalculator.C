@@ -112,7 +112,13 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
+#ifdef CMK_VERSION_BLUEGENE
+  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
+#else
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
+#endif
+
+
   if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
@@ -312,7 +318,8 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
+//CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
+void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
@@ -348,36 +355,51 @@ CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  Pa
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list( elems, ecount, newListStart);
   CkAssert(order);
-
+  CProxySection_PairCalculator *sectProxy;
   // now that we have the section, make the proxy and do delegation
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+  if(pcid->Symmetric)
+    {
+      pcid->proxySym = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+      sectProxy=&pcid->proxySym;
+    }
+  else
+    {
+      pcid->proxyAsym = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+      sectProxy=&pcid->proxyAsym;
+    }
+
   delete [] elems;
   if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
     {
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();       
-      sectProxy.ckSectionDelegate(mcastGrp);
-      
+      sectProxy->ckSectionDelegate(mcastGrp);
       // send the message to initialize it with the callback and groupid
-      setGredProxy(&sectProxy, pcid->orthoRedGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+      setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
     }
   else
     {
       if(commlib)
 	{
+	  CkPrintf("NOTE: Rectangular Send In USE\n");
 	  if(pcid->Symmetric)
-	    ComlibAssociateProxy(&mcastInstanceCP,sectProxy);
-	  else
-	    ComlibAssociateProxy(&mcastInstanceACP,sectProxy);
+	    ComlibAssociateProxy(&mcastInstanceCP,*sectProxy);
+	  else 
+	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);	 
+ /*
+	  if(!pcid->Symmetric)
+	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
+	  */
 	}
       else
 	{
+	  CkPrintf("PC: proxy without commlib\n");
 	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
-	  sectProxy.ckSectionDelegate(mcastGrp);
+	  sectProxy->ckSectionDelegate(mcastGrp);
 
 	}
     }
 
-  return sectProxy;
+  //  return *sectProxy;
 }
 
 /**
@@ -425,18 +447,21 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
     CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
     pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
     if(pcid->useEtoM)
-      if(pcid->Symmetric)
-	ComlibAssociateProxy(&gSymInstance,pcid->cproxy);
-      else
-	ComlibAssociateProxy(&gAsymInstance,pcid->cproxy);
+      {
+	if(pcid->Symmetric)
+	  ComlibAssociateProxy(&gSymInstance,pcid->cproxy);
+	else
+	  ComlibAssociateProxy(&gAsymInstance,pcid->cproxy);
+      }
   }
   //use proxy to send
   if(pcid->useEtoM)
-    if(pcid->Symmetric)
-      gSymInstance.beginIteration();
-    else
-      gAsymInstance.beginIteration();
-
+    {
+      if(pcid->Symmetric)
+	gSymInstance.beginIteration();
+      else
+	gAsymInstance.beginIteration();
+    }
   if(pcid->existsLproxy)
     {
       int numChunks=pcid->numChunks;
@@ -564,11 +589,12 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #endif
 
   if(pcid->useEtoM)
-    if(pcid->Symmetric)
-      gSymInstance.endIteration();
-  //    else
-  //      gAsymInstance.endIteration(); in startRight
-
+    {
+      if(pcid->Symmetric)
+	gSymInstance.endIteration();
+      //    else
+      //      gAsymInstance.endIteration(); in startRight
+    }
 
 }
 
@@ -799,8 +825,9 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
     }
 #endif //_NO_MULTI
   if(pcid->useEtoM)
+    {
       gAsymInstance.endIteration();
-
+    }
 }
 
 void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
@@ -859,16 +886,23 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 
 
 
-void finishPairCalcSection(int n, double *ptr, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority) {
-  finishPairCalcSection2(n, ptr, NULL, sectionProxy, orthoX, orthoY, actionType, priority);
+void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
+  finishPairCalcSection2(n, ptr, NULL, pcid, orthoX, orthoY, actionType, priority);
 }
 
 
 /* This version uses a section multicast to only send the part of the matrix needed by each section */
-void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_PairCalculator sectionProxy, int orthoX, int orthoY, int actionType, int priority) {
+void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("     Calc Finish Mcast 2\n");
 #endif
+  //NOTE need some configuration adherence check here!
+  /*
+  if(pcid->Symmetric)
+    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxySym);
+  else
+    ComlibAssociateProxy(&mcastInstanceACP,pcid->proxyAsym);
+  */
 
   if(ptr2==NULL){
     multiplyResultMsg *omsg;
@@ -889,8 +923,10 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
       CkAssert(isnan(omsg->matrix1[i])==0);
     }
 #endif
-
-    sectionProxy.multiplyResult(omsg);
+  if(pcid->Symmetric)
+    pcid->proxySym.multiplyResult(omsg);
+  else
+    pcid->proxyAsym.multiplyResult(omsg);
   }
   else {
     multiplyResultMsg *omsg;
@@ -905,7 +941,10 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, CProxySection_Pai
 	omsg=new ( n,n, 0 ) multiplyResultMsg;
       }
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
-    sectionProxy.multiplyResult(omsg);
+  if(pcid->Symmetric)
+    pcid->proxySym.multiplyResult(omsg);
+  else
+    pcid->proxyAsym.multiplyResult(omsg);
   }
 }
 

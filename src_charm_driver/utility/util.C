@@ -2477,9 +2477,12 @@ void Config::guesstimateParms(int natm_nl, int sizez){
     {
       // this is lame and should be replace with something which finds
       // an even mod of any sGrainSize
+      /*      CkPrintf("WARNING!!!! Ortho not being autoguessed\n");
+
       orthoGrainSize=32;
       if(orthoGrainSize<32)
 	orthoGrainSize=32;
+      */
     }
 
     if((sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize))

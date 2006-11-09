@@ -30,9 +30,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  // fill out this box
 		  numBoxes++;
 
-		  for(int bz=0;bz<boxZ;bz++)
-		    for(int by=0;by<boxY;by++)
-		      for(int bx=0;bx<boxX;bx++)
+
+		  for(int bx=0;bx<boxX;bx++)
+		    for(int bz=0;bz<boxZ;bz++)
+		      for(int by=0;by<boxY;by++) // make inner planes along X
 			{
 			  sortIdx[i]=i;
 			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
@@ -48,9 +49,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  // fill out this box
 		  numBoxes++;
 
-		  for(int bz=0;bz<boxZ;bz++)
-		    for(int bx=0;bx<boxX;bx++)
-		      for(int by=0;by<boxY;by++)
+
+		  for(int by=0;by<boxY;by++)
+		    for(int bz=0;bz<boxZ;bz++)
+		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
 			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
@@ -66,9 +68,9 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		{
 		  // fill out this box
 		  numBoxes++;
-		  for(int by=0;by<boxY;by++)
-		    for(int bx=0;bx<boxX;bx++)
-			for(int bz=0;bz<boxZ;bz++)
+		  for(int bz=0;bz<boxZ;bz++)
+		    for(int by=0;by<boxY;by++)
+		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
 			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
