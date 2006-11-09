@@ -185,9 +185,17 @@ class PeList
 
 
   inline int findNext()        // return next available, increment liststart
+    //int findNext()        // return next available, increment liststart 
   {
     
 #ifdef CMK_VERSION_BLUEGENE
+    if(current>=size)
+      {
+	CkPrintf("hey why is current %d >= size %d\n");
+	current=0;
+      }
+    CkAssert(current<size);
+    CkAssert(sortIdx[current]<size);
     int value=TheList[sortIdx[current]]; 
     //    TheList.remove(sortIdx[0]);
     //    sortIdx.remove(0);

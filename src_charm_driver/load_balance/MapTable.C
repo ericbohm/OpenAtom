@@ -117,6 +117,8 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 		      }
 		    srcpe=destpe;
 		    destpe=availprocs->findNext();
+		    if(availprocs->count()==0)
+		      availprocs->reset();
 		  }
 	      }
 	  }
@@ -813,7 +815,6 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   maptable=_map;
   availprocs=_availprocs;
   int rgsobjs_per_pe, rem;
-  int srcpe=0;
 
   if(availprocs->count()==1)
     {
@@ -828,7 +829,6 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	rgsobjs_per_pe += 1;
     }
   int destpe=availprocs->findNext();
-
   if(availprocs->count()==0)
     availprocs->reset();
 
@@ -847,9 +847,11 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 #endif
 	} 
       exclude->mergeOne(destpe);
-      srcpe=destpe;
       if(chunk+1<nchareRhoG)
 	destpe=availprocs->findNext();
+      if(availprocs->count()==0)
+	availprocs->reset();
+
     }
 #ifdef MAP_DEBUG
   CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
