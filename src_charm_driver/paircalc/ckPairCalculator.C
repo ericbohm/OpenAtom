@@ -792,7 +792,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
     if(streamCaughtL>0)
       {
 	outData1= new double[m_in*n_in];
-
+	bzero(outData1,sizeof(double)*m_in*n_in);
 #if PC_FWD_DGEMM_SPLIT > 0
 	double betap = 1.0;
 	int Ksplit_m =  gemmSplitFWk;
@@ -886,7 +886,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       // right newTemp is last bit of old
       double *rightNewTemp = &(allCaughtRight[(oldCaughtRight)*actualPoints]);
       outData2= new double[m_in*n_in];
-
+      bzero(outData2,sizeof(double)*m_in*n_in);
 #ifndef CMK_OPTIMIZE
       StartTime=CmiWallTimer();
 #endif
@@ -975,6 +975,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
       n_in= streamCaughtL;
       ldc = m_in; 
       outData1= new double[m_in*n_in];
+      bzero(outData1,sizeof(double)*m_in*n_in);
       double *leftNewTemp = &(allCaughtLeft[oldCaughtLeft*actualPoints]);
 #if PC_FWD_DGEMM_SPLIT > 0
 
@@ -1067,6 +1068,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  n_in= oldCaughtLeft;
 	  ldc = m_in; 
 	  outData2= new double[m_in*n_in];
+	  bzero(outData2,sizeof(double)*m_in*n_in);
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 #if PC_FWD_DGEMM_SPLIT > 0
 	  double betap = 1.0;
@@ -1170,7 +1172,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	{ // switch to sorted order
 	  // rather ugly, but each iteration correctly places 2 rows
 	  double *scratch= new double[actualPoints];
+
 	  int datasize=actualPoints*sizeof(double);
+	  bzero(outData1,datasize);
 	  if(existsLeft)
 	    for(int off=0;off<numExpected;off++)
 	      {
@@ -1500,6 +1504,7 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 
   CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
   double *outTile=new double[orthoGrainSize*orthoGrainSize];
+  bzero(outTile,sizeof(double)*orthoGrainSize*orthoGrainSize);
   //reuse the same tile each time as contribute makes its own copy
   int numOrtho=grainSize/orthoGrainSize;
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
@@ -1702,10 +1707,14 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	{
 	  CkAssert(inResult1==NULL);
 	  inResult1 = new double[matrixSize];
+	  bzero(inResult1,sizeof(double)*matrixSize);
 	}
       if(!unitcoef){ // CG non minimization case have GAMMA      
 	if(numRecdBW==1) //alloc on first receipt
-	  inResult2 = new double[matrixSize];
+	  {
+	    inResult2 = new double[matrixSize];
+	    bzero(inResult2,sizeof(double)*matrixSize);
+	  }
 	amatrix2 = inResult2;
 	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
 	if(symmetric && (thisIndex.x!=thisIndex.y)) //swap the non diagonals
@@ -1760,6 +1769,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	    {
 	      CkAssert(!existsOut);
 	      outData=new double[grainSize*grainSize];
+	      bzero(outData,sizeof(double)*grainSize*grainSize);
 	      existsOut=true;
 	    }
 	  CkAssert(size==grainSize*grainSize);
