@@ -15,6 +15,7 @@ typedef IntMap4 MapType4;
 #include "MapTable.h"
 
 #define MAP_DEBUG_OFF
+//#define MAP_DEBUG
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
@@ -907,7 +908,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 		  maptable->put(intdual(chunk, subplane))=destpe;
 #endif
 	    objs++;
-	    if(objs==rrsobjs_per_pe)
+	    if(objs>=rrsobjs_per_pe)
 	    {
 	      exclude->mergeOne(destpe);
 	      destpe=availprocs->findNext();
