@@ -578,8 +578,8 @@ main::main(CkArgMsg *msg) {
       }
     else
       gfoo= new PeList;  // heap it
-    if(config.useCuboidMap)
-	rfoo=new PeList(*gfoo);
+    if(config.useCuboidMapRS)
+      rfoo=new PeList(*gfoo);
     else
       rfoo= new PeList;  // heap it
 
@@ -1377,7 +1377,7 @@ void main::doneInit(CkReductionMsg *msg){
   delete msg;
     double newtime=CmiWallTimer();
 
-    if(done_init<3){
+    if(done_init<5){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
       Timer=newtime;
     }else{
@@ -1388,7 +1388,7 @@ void main::doneInit(CkReductionMsg *msg){
       Timer=newtime;
     }//endif
 
-    if (done_init == 2){
+    if (done_init == 4){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
       // its completion triggers the final phase
 
@@ -1405,8 +1405,8 @@ void main::doneInit(CkReductionMsg *msg){
 	}//endfor
 #endif
     }//endif
-    if (done_init >= 3) {
-      if (done_init == 3){ 
+    if (done_init >= 5) {
+      if (done_init == 5){ 
  	  CkPrintf("\n======================================================\n");
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
@@ -1903,9 +1903,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
 	RhoAvail->rebuild();
     }//endif
-    CkArrayOptions rhorhartOpts;
     CkPrintf("availProcs %d\n",RhoAvail->count());
-
+    CkArrayOptions rhorhartOpts;
     if(ees_eext_on){
 #ifdef USE_INT_MAP
 
@@ -1915,6 +1914,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
 	RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
 				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
+
 #endif
 	CkPrintf("availProcs %d\n",RhoAvail->count());
 	CkPrintf("rho G and S consumed %d\n", excludePes->count());
@@ -1923,6 +1923,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
 	rhorhartOpts.setMap(rhorHartMap);
     }//endif : ees_ext_on
+
 
 //============================================================================
 // Instantiate the chares
@@ -2275,7 +2276,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
       break;
     }
 
-  if(switchSet && config.useCuboidMapRS)
+  if(switchSet)
     {
       // now correct the x,y,z to put long prism axis along the
       // smallest torus dimension which will fit.

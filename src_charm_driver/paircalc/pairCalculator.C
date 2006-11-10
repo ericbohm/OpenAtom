@@ -318,8 +318,9 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-//CProxySection_PairCalculator initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
-void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
+
+void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
+
 {
   int ecount=0;
 #ifdef _PAIRCALC_DEBUG_
@@ -374,7 +375,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();       
       sectProxy->ckSectionDelegate(mcastGrp);
       // send the message to initialize it with the callback and groupid
-      setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, CkCallback(CkCallback::ignore), orthoX, orthoY);
+      setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, synccb, orthoX, orthoY);
     }
   else
     {
@@ -905,7 +906,15 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
   */
 
   if(ptr2==NULL){
+#ifdef _NAN_CHECK_
+  for(int i=0;i<n ;i++)
+    {
+      CkAssert(isnan(ptr1[i])==0);
+    }
+#endif
+
     multiplyResultMsg *omsg;
+
     if(priority>0)
       {
 	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;

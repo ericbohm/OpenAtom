@@ -121,7 +121,15 @@ class partialResultMsg : public CMessage_partialResultMsg {
   complex *result;
   int N;
   int myoffset;
+  void init(int _size, int _myoffset, complex *_points)
+    {
+      N=_size;
+      myoffset=_myoffset;
+      CmiMemcpy(result,_points,N*sizeof(complex));
+    }
+
   friend class CMessage_partialResultMsg;
+
 #ifdef CMK_VERSION_BLUEGENE
 static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
   int offsets[2];
@@ -166,6 +174,7 @@ class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsM
       flag_dp=_flag_dp;
       doPsiV=_doPsiV;
       blkSize=_blkSize;
+
       memcpy(points,_points,size*sizeof(complex));
     }
   friend class CMessage_calculatePairsMsg;

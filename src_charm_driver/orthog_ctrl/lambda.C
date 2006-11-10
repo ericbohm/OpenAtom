@@ -35,6 +35,7 @@
 
 extern Config config;
 extern int nstates;
+extern CProxy_main                    mainProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
 extern  PairCalcID PairCalcID1;
@@ -104,8 +105,9 @@ void Lambda::makeSections(int indexSize, int *indexZ){
     }
 
   // thisIndex.x and thisIndex.y range from 0 to nstates/lambdaGrainSize
-    initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, false, config.useOrthoDirect);
-     initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, true, config.useOrthoDirect);
+    initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , CkCallback(CkIndex_main::doneInit(NULL),mainProxy),s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, false, config.useOrthoDirect);
+     initOneRedSect(indexSize, indexZ, config.numChunksAsym, &lPairCalcID2, CkCallback(CkIndex_Lambda::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , CkCallback(CkIndex_main::doneInit(NULL),mainProxy),s1, s2, thisIndex.x, thisIndex.y, lambdaGrainSize, false, true, config.useOrthoDirect);
+
 
 //----------------------------------------------------------------------------
   }// end routine

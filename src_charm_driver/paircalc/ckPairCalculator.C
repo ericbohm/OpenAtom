@@ -506,7 +506,14 @@ void PairCalculator::initGRed(initGRedMsg *msg)
       int foo=1;
       contribute(sizeof(int), &foo , CkReduction::sum_int, msg->synccb);
   }
+  
   */
+  if(++numRecd==numOrtho*numOrtho)
+    {
+      contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
+      numRecd=0;
+    }
+  
   //    delete msg; do not delete nokeep method
 }
 
@@ -1207,7 +1214,15 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 		    LeftRev[found]=found;
 		  }
 	      }
+#ifdef _PAIRCALC_NAN_CHECK_
+	  for(int i=0;i<numExpected*numPoints*2;i++)
+	    {
+	      CkAssert(isnan(allCaughtLeft[i])==0);
+	    }
+#endif
+
 	  if(existsRight)
+	    {
 	    for(int off=0;off<numExpected;off++)
 	      {
 		if(off!=RightOffsets[off])
@@ -1239,8 +1254,17 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 		    RightOffsets[found]=found;
 		    RightRev[found]=found;
 		  }
-
 	      }
+#ifdef _PAIRCALC_NAN_CHECK_
+	    for(int i=0;i<numExpected*numPoints*2;i++)
+	      {
+		CkAssert(isnan(allCaughtRight[i])==0);
+	      }
+#endif
+
+	    }
+
+
 	  delete [] scratch;
 	}
       numRecLeft= numRecRight=numRecd=0;
@@ -2110,6 +2134,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 		    sendBWResultColumn(false, orthoXgrain, orthoXgrain+orthoGrainSize);
 		}
 	    }
+	  CkAssert(columnCount[orthoY]<=numOrthoCol);
 	}
       else //asymm
 	{
@@ -2121,6 +2146,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	      else
 		sendBWResultColumn(false, orthoYgrain, orthoYgrain+orthoGrainSize);
 	    }
+	  CkAssert(columnCount[orthoY]<=numOrthoCol);
 	}
       if((amPhantom) || (!phantomSym && symmetric && (thisIndex.x !=thisIndex.y)) && existsRight)
 	{
@@ -2132,11 +2158,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	      else
 		sendBWResultColumn(true, orthoYgrain, orthoYgrain+orthoGrainSize);
 	    }
+	  CkAssert(columnCountOther[orthoY]<=numOrthoCol);
 	}
 
       // this could be refined to track an array of completed columns
       // and send them in some grouping scheme
-
+      CkAssert(numRecdBW<=numOrtho);
       if(numRecdBW==numOrtho)
 	{ //all done clean up after ourselves
 	  if(!amPhantom)
@@ -2158,12 +2185,15 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
   if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))) 
     { // clean up
-      if(inResult2!=NULL)
-	delete [] inResult2;
-      if(inResult1!=NULL)
-	delete [] inResult1;
-      inResult1=NULL;
-      inResult2=NULL;
+      if(collectAllTiles)
+	{  // only safe to do this if we allocated them
+	  if(inResult2!=NULL)
+	    delete [] inResult2;
+	  if(inResult1!=NULL)
+	    delete [] inResult1;
+	  inResult1=NULL;
+	  inResult2=NULL;
+	}
       numRecdBW=0;
       if(PCstreamBWout)
 	{
@@ -2247,20 +2277,24 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
       index=thisIndex.y;
     for(int j=startGrain;j<endGrain;j++)
       {
+	complex *computed=&(othernewData[j*numPoints]);
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
 	partialResultMsg *msg;
 	if(gpriority)
-	  msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	else
-	  msg= new (numPoints) partialResultMsg;
-	msg->N=numPoints;
-	msg->myoffset = thisIndex.z; // chunkth
-	memcpy(msg->result,othernewData+j*numPoints,msg->N*sizeof(complex));
-	if(gpriority)
 	  {
+	    msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
+	else
+	  msg= new (numPoints,0) partialResultMsg;
+	msg->init(numPoints, thisIndex.z, computed);
+	/*
+	  msg->N=numPoints;
+	  msg->myoffset = thisIndex.z; // chunkth
+	  memcpy(msg->result,othernewData+j*numPoints,msg->N*sizeof(complex));
+	*/
+
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
@@ -2281,25 +2315,42 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
   else
     {
       CkAssert(!amPhantom);
+      CkAssert(mynewData!=NULL);
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
+	complex *computed=&(mynewData[j*numPoints]);
+#ifdef _NAN_CHECK_
+	for(int i=0;i<numPoints ;i++)
+	  {
+	    if(isnan(computed[i].re)!=0 || isnan(computed[i].im)!=0)
+	      {
+		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan in computed at %d %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, j,i);
+	      }
+	    CkAssert(isnan(computed[i].re)==0);
+	    CkAssert(isnan(computed[i].im)==0);
+	  }
+#endif
+
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
 	partialResultMsg *msg;
 	if(gpriority)
-	  msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	else
-	  msg= new (numPoints) partialResultMsg;
-	msg->N=numPoints;
-	msg->myoffset = thisIndex.z; // chunkth
-	memcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
-	if(gpriority)
 	  {
+	    msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
+	else
+	  msg= new (numPoints,0) partialResultMsg;
+	msg->init(numPoints, thisIndex.z, computed);
+	/*
+	  msg->N=numPoints;
+	  msg->myoffset = thisIndex.z; // chunkth
+	  memcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
+	*/
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
+
 #ifdef _NAN_CHECK_
 	for(int i=0;i<msg->N ;i++)
 	  {
@@ -2347,6 +2398,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
       {
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
+	complex *computed=&(othernewData[j*numPoints]);
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();
 #endif
@@ -2357,7 +2409,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2372,7 +2424,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
       CkAssert(mynewData!=NULL);
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
-
+	complex *computed=&(mynewData[j*numPoints]);
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();
 #endif
@@ -2383,7 +2435,7 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
 #endif
 
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2424,22 +2476,24 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
       index=thisIndex.y;
     for(int j=0;j<grainSize;j++)
       {
+	complex *computed=&(othernewData[j*numPoints]);
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
 	partialResultMsg *omsg;
 	if(gpriority)
-	  omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	else
-	  omsg= new (numPoints) partialResultMsg;
-	omsg->N=numPoints;
-	omsg->myoffset = thisIndex.z; // chunkth
-	memcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
-	if(gpriority)
 	  {
+	    omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(omsg)) = gpriority;
 	    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	  }
+	else
+	  omsg= new (numPoints, 0) partialResultMsg;
+	omsg->init(numPoints, thisIndex.z, computed);
+	/*	omsg->N=numPoints;
+		omsg->myoffset = thisIndex.z; // chunkth
+		memcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
+	*/
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,index+j,thisIndex.w);
 #endif
@@ -2448,7 +2502,7 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	  {
 	    if(isnan(omsg->result[i].re)!=0 || isnan(omsg->result[i].im)!=0)
 	      {
-		CkPrintf("[%d %d %d %d %d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+		CkPrintf("[%d %d %d %d %d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
 	      }
 	    CkAssert(isnan(omsg->result[i].re)==0);
 	    CkAssert(isnan(omsg->result[i].im)==0);
@@ -2468,20 +2522,23 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
       CkAssert(mynewData!=NULL);
       for(int j=0;j<grainSize;j++) //mynewdata
 	{
+	  complex *computed=&(mynewData[j*numPoints]);
 	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
 	  partialResultMsg *omsg;
 	  if(gpriority)
-	    omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	  else
-	    omsg= new (numPoints) partialResultMsg;
-	  omsg->N=numPoints;
-	  omsg->myoffset = thisIndex.z; // chunkth
-	  memcpy(omsg->result, mynewData+j*numPoints, omsg->N*sizeof(complex) );
-	  if(gpriority)
 	    {
+	      omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	      *((int*)CkPriorityPtr(omsg)) = gpriority;
 	      CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	    }
+	  else
+	    omsg= new (numPoints, 0) partialResultMsg;
+	  omsg->init(numPoints, thisIndex.z, computed);
+	  /*
+	    omsg->N=numPoints;
+	    omsg->myoffset = thisIndex.z; // chunkth
+	    memcpy(omsg->result, mynewData+j*numPoints, omsg->N*sizeof(complex) );
+	  */
 #ifdef _PAIRCALC_DEBUG_
 	  CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
@@ -2540,6 +2597,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       {
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
+	complex *computed=&(othernewData[j*numPoints]);
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.x ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	CkPrintf("[%d %d %d %d %d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
@@ -2550,7 +2608,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 #endif
 	*/
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),othernewData+j*numPoints, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(complex),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 	/*
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2564,6 +2622,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       CkAssert(mynewData!=NULL);
       for(int j=0;j<grainSize;j++) //mynewdata
 	{
+	complex *computed=&(mynewData[j*numPoints]);
 	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
 	  CkPrintf("[%d %d %d %d %d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
@@ -2574,7 +2633,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	    #endif
 	  */
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), mynewData+j*numPoints, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 	  /*
 	    #ifndef CMK_OPTIMIZE
 	    traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2641,6 +2700,10 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
 	int tiley=y/tileSize*tilesPerRow;
 	int tilei=x%tileSize;
 	int tilej=y%tileSize;
+#ifdef _PAIRCALC_NAN_CHECK_
+	CkAssert(isnan(value)==0);
+#endif
+
 	dest[tiley+tilex][tilej*tileSize+tilei]=value;
 	touched[tiley+tilex]++;
 	//	if(symmetric)
