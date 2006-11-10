@@ -198,7 +198,7 @@ void fastAdd (double *a, double *b, int nelem);
 
 
 // sum together matrices of doubles
-// possibly faster than sum_double due to minimizing copies
+// possibly faster than CkReduction::sum_double due to minimizing copies
 // and calling CmiNetworkProgress 
 inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 {
@@ -508,8 +508,9 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   }
   
   */
-  if(++numRecd==numOrtho*numOrtho)
+  if(!symmetric && ++numRecd==numOrtho*numOrtho)
     {
+      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
       numRecd=0;
     }
@@ -1500,6 +1501,7 @@ PairCalculator::sendTiles(bool flag_dp)
 #endif
 
 	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
+	    //mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], CkReduction::sum_double, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
 	    touchedTiles[orthoIndex]=0;
 	    if(++progcounter>8)
 	      {progcounter=0;CmiNetworkProgress();}
@@ -1556,6 +1558,7 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 #endif
 
 	mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+	//mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTile, CkReduction::sum_double, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
 
       }
   delete [] outTile;

@@ -1377,7 +1377,7 @@ void main::doneInit(CkReductionMsg *msg){
   delete msg;
     double newtime=CmiWallTimer();
 
-    if(done_init<5){
+    if(done_init<4){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
       Timer=newtime;
     }else{
@@ -1388,7 +1388,7 @@ void main::doneInit(CkReductionMsg *msg){
       Timer=newtime;
     }//endif
 
-    if (done_init == 4){
+    if (done_init == 3){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
       // its completion triggers the final phase
 
@@ -1405,8 +1405,8 @@ void main::doneInit(CkReductionMsg *msg){
 	}//endfor
 #endif
     }//endif
-    if (done_init >= 5) {
-      if (done_init == 5){ 
+    if (done_init >= 4) {
+      if (done_init == 4){ 
  	  CkPrintf("\n======================================================\n");
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
