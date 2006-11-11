@@ -510,7 +510,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   */
   if(!symmetric && ++numRecd==numOrtho*numOrtho)
     {
-      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
+      //      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
       numRecd=0;
     }
@@ -681,7 +681,12 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     streamready=((streamCaughtL>=streamFW) && (streamFW>0));
   else 
     {
-      streamready=((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) && ((numRecLeft>=streamFW) && (numRecRight>=streamFW) && (streamFW>0));
+      streamready=
+	// left or right has streamFW 
+	((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) 
+	// total left and total right have at least stream FW
+	&& ((numRecLeft>=streamFW) && (numRecRight>=streamFW) 
+	    && (streamFW>0));
       //      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
 
     }
@@ -1175,99 +1180,31 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 
       int numOrtho=grainSize/orthoGrainSize;
       numOrtho*=numOrtho;
-      // no point in keeping these around
-      if(streamFW>0)
-	{ // switch to sorted order
-	  // rather ugly, but each iteration correctly places 2 rows
+
+      if(streamFW)
+	{
 	  double *scratch= new double[actualPoints];
 
-	  int datasize=actualPoints*sizeof(double);
-	  bzero(outData1,datasize);
-	  if(existsLeft)
-	    for(int off=0;off<numExpected;off++)
-	      {
-		if(off!=LeftOffsets[off])
-		  {  // gotta move
-		    int want = LeftRev[off];
-		    int found = LeftOffsets[off];
-		    int currentOffset = off * actualPoints;
-		    int wantOffset = want * actualPoints;
-		    
-		    memcpy(scratch, &(allCaughtLeft[currentOffset]), datasize);
-		    memcpy(&(allCaughtLeft[currentOffset]), &(allCaughtLeft[wantOffset]), datasize);
-		    if(want==found) //simple exchange
-		      {
-			memcpy(&(allCaughtLeft[wantOffset]),scratch, datasize);
-		      }
-		    else  // three card shuffle
-		      {
-			int foundOffset = found * actualPoints;
-			memcpy(&(allCaughtLeft[wantOffset]), &(allCaughtLeft[foundOffset]), datasize);
-			memcpy(&(allCaughtLeft[foundOffset]),scratch, datasize);
-			// 1 more entry is changed
-			LeftOffsets[want]=LeftOffsets[found];
-			LeftRev[LeftOffsets[found]]=want;
-			
-		      }
-		    LeftRev[off]=off;
-		    LeftOffsets[off]=off;
-		    LeftOffsets[found]=found;
-		    LeftRev[found]=found;
-		  }
-	      }
+	  if(existsLeft){
+	    reorder(LeftOffsets, LeftRev, allCaughtLeft, scratch);
+	  }
+	  if(existsRight){
+	    reorder(RightOffsets, RightRev, allCaughtRight, scratch);
+	  }
+	  delete [] scratch;
+	}
 #ifdef _PAIRCALC_NAN_CHECK_
 	  for(int i=0;i<numExpected*numPoints*2;i++)
 	    {
 	      CkAssert(isnan(allCaughtLeft[i])==0);
 	    }
 #endif
-
-	  if(existsRight)
-	    {
-	    for(int off=0;off<numExpected;off++)
-	      {
-		if(off!=RightOffsets[off])
-		  {  // gotta move
-		    int want = RightRev[off];
-		    int found = RightOffsets[off];
-		    int currentOffset = off * actualPoints;
-		    int wantOffset = want * actualPoints;
-		    
-		    memcpy(scratch, &(allCaughtRight[currentOffset]), datasize);
-		    memcpy(&(allCaughtRight[currentOffset]), &(allCaughtRight[wantOffset]), datasize);
-		    if(want==found) //simple exchange
-		      {
-			memcpy(&(allCaughtRight[wantOffset]),scratch, datasize);
-		      }
-		    else  // three card shuffle
-		      {
-			int foundOffset = found * actualPoints;
-			memcpy(&(allCaughtRight[wantOffset]), &(allCaughtRight[foundOffset]), datasize);
-			memcpy(&(allCaughtRight[foundOffset]),scratch, datasize);
-			// 1 more entry is changed
-			RightOffsets[want]=RightOffsets[found];
-			RightRev[RightOffsets[found]]=want;
-
-			
-		      }
-		    RightRev[off]=off;
-		    RightOffsets[off]=off;
-		    RightOffsets[found]=found;
-		    RightRev[found]=found;
-		  }
-	      }
 #ifdef _PAIRCALC_NAN_CHECK_
 	    for(int i=0;i<numExpected*numPoints*2;i++)
 	      {
 		CkAssert(isnan(allCaughtRight[i])==0);
 	      }
 #endif
-
-	    }
-
-
-	  delete [] scratch;
-	}
       numRecLeft= numRecRight=numRecd=0;
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
       for(int i=0 ; i<numOrtho ; i++)
@@ -1299,6 +1236,46 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
     }
 }
 
+void PairCalculator::reorder(int * offsetMap, int *revOffsetMap, double *data, double *scratch)
+{
+
+  int actualPoints= numPoints*2;
+  // rather ugly, but each iteration correctly places 2 rows
+  int datasize=actualPoints*sizeof(double);
+  for(int off=0;off<numExpected;off++)
+    {
+      if(off!=offsetMap[off])
+	{  // gotta move
+	  int want = revOffsetMap[off];
+	  int found = offsetMap[off];
+	  int currentOffset = off * actualPoints;
+	  int wantOffset = want * actualPoints;
+		    
+	  memcpy(scratch, &(data[currentOffset]), datasize);
+	  memcpy(&(data[currentOffset]), &(data[wantOffset]), datasize);
+	  if(want==found) //simple exchange
+	    {
+	      memcpy(&(data[wantOffset]),scratch, datasize);
+	    }
+	  else  // three card shuffle
+	    {
+	      int foundOffset = found * actualPoints;
+	      memcpy(&(data[wantOffset]), &(data[foundOffset]), datasize);
+	      memcpy(&(data[foundOffset]),scratch, datasize);
+	      // 1 more entry is changed
+	      offsetMap[want]=offsetMap[found];
+	      revOffsetMap[offsetMap[found]]=want;
+			
+	    }
+	  revOffsetMap[off]=off;
+	  offsetMap[off]=off;
+	  offsetMap[found]=found;
+	  revOffsetMap[found]=found;
+	}
+    }	
+  bzero(offsetMap, numExpected*sizeof(int));
+  bzero(revOffsetMap, numExpected*sizeof(int));
+}
 
 /**
  * Forward path multiply.  
@@ -2214,7 +2191,11 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	{
 	  sendBWsignalMsg *sigmsg;
 	  if(PCdelayBWSend)
-	    sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+	    {
+	      sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+	      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+	      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+	    }
 	  else
 	    sigmsg= new  sendBWsignalMsg;
 	  //collapse this into 1 flag
@@ -2225,12 +2206,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  else
 	    sigmsg->otherdata= false;
 
-	  if(PCdelayBWSend)
-	    {
-	      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-	      // than non prioritized
-	    }
 	  if(gSpaceSum)
 	    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
 	  else
@@ -2290,7 +2265,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
 	else
-	  msg= new (numPoints,0) partialResultMsg;
+	  msg= new (numPoints) partialResultMsg;
 	msg->init(numPoints, thisIndex.z, computed);
 	/*
 	  msg->N=numPoints;
@@ -2343,7 +2318,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
 	else
-	  msg= new (numPoints,0) partialResultMsg;
+	  msg= new (numPoints) partialResultMsg;
 	msg->init(numPoints, thisIndex.z, computed);
 	/*
 	  msg->N=numPoints;
@@ -2491,7 +2466,7 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	  }
 	else
-	  omsg= new (numPoints, 0) partialResultMsg;
+	  omsg= new (numPoints) partialResultMsg;
 	omsg->init(numPoints, thisIndex.z, computed);
 	/*	omsg->N=numPoints;
 		omsg->myoffset = thisIndex.z; // chunkth
@@ -2535,7 +2510,7 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	      CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	    }
 	  else
-	    omsg= new (numPoints, 0) partialResultMsg;
+	    omsg= new (numPoints) partialResultMsg;
 	  omsg->init(numPoints, thisIndex.z, computed);
 	  /*
 	    omsg->N=numPoints;
@@ -2703,15 +2678,18 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
 	int tiley=y/tileSize*tilesPerRow;
 	int tilei=x%tileSize;
 	int tilej=y%tileSize;
+	touched[tiley+tilex]++;
 #ifdef _PAIRCALC_NAN_CHECK_
 	CkAssert(isnan(value)==0);
+	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
+	int numOrthoCol=grainSize/orthoGrainSize;
+	int numOrtho=numOrthoCol*numOrthoCol;
+	CkAssert(tilex+tiley<numOrtho);
 #endif
-
 	dest[tiley+tilex][tilej*tileSize+tilei]=value;
-	touched[tiley+tilex]++;
 	//	if(symmetric)
 	//	  CkPrintf(" j %d i %d, x %d y %d copy %g into tilex %d tiley %d, offset %d touched %d\n", j,i, x, y, value, tilex, tiley, tilej*tileSize+tilei, touched[tiley+tilex]);
-	//	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
+	
       }
 }
 

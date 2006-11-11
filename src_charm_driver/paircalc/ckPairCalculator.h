@@ -349,7 +349,7 @@ class PairCalculator: public CBase_PairCalculator {
   void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
-
+  void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
   void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0 );
   void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
 

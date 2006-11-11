@@ -923,7 +923,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
       }
     else
       {
-	omsg=new ( n,0,0 ) multiplyResultMsg;
+	omsg=new ( n,0 ) multiplyResultMsg;
       }
     omsg->init1(n, ptr1, orthoX, orthoY, actionType);
 #ifdef _NAN_CHECK_
@@ -947,7 +947,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
       }
     else
       {
-	omsg=new ( n,n, 0 ) multiplyResultMsg;
+	omsg=new ( n,n ) multiplyResultMsg;
       }
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
   if(pcid->Symmetric)
