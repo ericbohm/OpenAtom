@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-
+#include "pup.h"
 #include "mathlib.h"
 
 void dcft(int *init,complex *x,int *istride,int *iskip,complex *y,int *ostride,int *oskip,
