@@ -1187,24 +1187,24 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 
 	  if(existsLeft){
 	    reorder(LeftOffsets, LeftRev, allCaughtLeft, scratch);
-	  }
-	  if(existsRight){
-	    reorder(RightOffsets, RightRev, allCaughtRight, scratch);
-	  }
-	  delete [] scratch;
-	}
 #ifdef _PAIRCALC_NAN_CHECK_
 	  for(int i=0;i<numExpected*numPoints*2;i++)
 	    {
 	      CkAssert(isnan(allCaughtLeft[i])==0);
 	    }
 #endif
+	  }
+	  if(existsRight){
+	    reorder(RightOffsets, RightRev, allCaughtRight, scratch);
 #ifdef _PAIRCALC_NAN_CHECK_
 	    for(int i=0;i<numExpected*numPoints*2;i++)
 	      {
 		CkAssert(isnan(allCaughtRight[i])==0);
 	      }
 #endif
+	  }
+	  delete [] scratch;
+	}
       numRecLeft= numRecRight=numRecd=0;
 #ifdef _PAIRCALC_DEBUG_CONTRIB_
       for(int i=0 ; i<numOrtho ; i++)

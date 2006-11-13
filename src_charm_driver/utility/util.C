@@ -1667,7 +1667,7 @@ void Config::readConfig(const char* fileName, Config &config,
     config.gemmSplitFWk           = 16;
     config.gemmSplitFWm           = 16;
     config.gemmSplitBW            = 16;
-    config.gemmSplitOrtho         = 16;
+    config.gemmSplitOrtho         = 32;
     config.useBWBarrier           = 0;
     config.launchNLeesFromRho     = 0;
     config.useOrthoSection       = 0;
@@ -2285,14 +2285,6 @@ void Config::readConfig(const char* fileName, Config &config,
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-    if( config.gemmSplitOrtho > config.orthoGrainSize)
-      {
-	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	CkPrintf("gemmSplitOrtho %d must not be greater than orthoGrainSize %d !\n",
-		 config.gemmSplitOrtho, config.orthoGrainSize);
-	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	CkExit();
-      }
     if(config.gemmSplitFWk > config.sGrainSize)
       {
 	CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2478,11 +2470,12 @@ void Config::guesstimateParms(int natm_nl, int sizez){
       // this is lame and should be replace with something which finds
       // an even mod of any sGrainSize
       /*      CkPrintf("WARNING!!!! Ortho not being autoguessed\n");
-
-      orthoGrainSize=32;
-      if(orthoGrainSize<32)
+       */
+      //      orthoGrainSize=32;
+      if(orthoGrainSize>32)
 	orthoGrainSize=32;
-      */
+      if(orthoGrainSize>sGrainSize)
+	orthoGrainSize=sGrainSize;
     }
 
     if((sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize))
