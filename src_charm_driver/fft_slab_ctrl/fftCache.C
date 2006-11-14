@@ -128,8 +128,8 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     initFFTholder  (&bwdYPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,&skipC,&unit);
     initFFTholder  (&fwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,&unit, &sizeY);
     initFFTholder  (&bwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,&unit, &sizeY);
-    initCRFFTholder(&fwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeX,&skipR,&skipC);
-    initRCFFTholder(&bwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeX,&skipR,&skipC);
+    initCRFFTholder(&fwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeX,&skipR,&skipC);
+    initRCFFTholder(&bwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeX,&skipR,&skipC);
     initFFTholder  (&fwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeZ,&unit, &sizeZ);
     initFFTholder  (&bwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeZ,&unit, &sizeZ);
 
@@ -173,8 +173,8 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
    initFFTholder  (&fwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbNL,&skipC,&unit);
    initFFTholder  (&bwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbNL,&skipC,&unit);
-   initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,&skipR,&skipC);
-   initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,&skipR,&skipC);
+   initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,&skipR,&skipC);
+   initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,&skipR,&skipC);
    initFFTholder  (&fwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridcNL,&unit, &ngridcNL);
    initFFTholder  (&bwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcNL,&unit, &ngridcNL);
 
@@ -220,9 +220,9 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
                                                                       &unit, &ngridbEext);
     initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
                                                                       &unit, &ngridbEext);
-    initCRFFTholder(&fwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
+    initCRFFTholder(&fwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
                                                                       &skipR,&skipC);
-    initRCFFTholder(&bwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
+    initRCFFTholder(&bwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
                                                                       &skipR,&skipC);
     initFFTholder  (&fwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
                                                                       &unit, &ngridcEext);
@@ -493,7 +493,9 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(bwdXPlanNL.option==0){
+    for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along y
@@ -536,7 +538,9 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
   );
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanNL.option==0){
+    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
@@ -642,7 +646,10 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+
+  if(bwdXPlanEext.option==0){
+   for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along y
@@ -683,7 +690,9 @@ void FFTcache::doEextFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(bwdXPlanEext.option==0){
+    for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //------------------------------------------------------------------------------
  }//end routine
@@ -740,7 +749,9 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanEext.option==0){
+   for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
@@ -771,7 +782,9 @@ void FFTcache::doEextFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   int stride = sizeX/2+1;
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanEext.option==0){
+    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
   rfftwnd_complex_to_real_split(
               &fwdXPlanEext,             // x-plan for NL Ees method
@@ -905,7 +918,9 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanRho.option==0){
+    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
@@ -946,7 +961,9 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(bwdXPlanRho.option==0){
+    for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along y
@@ -1060,7 +1077,9 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(bwdXPlanRho.option==0){
+    for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along y
@@ -1101,7 +1120,9 @@ void FFTcache::doRhoFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
            );            
 
   int stride = sizeX/2+1;
-  for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(bwdXPlanRho.option==0){
+    for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //------------------------------------------------------------------------------
    }//end routine
@@ -1156,7 +1177,9 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanRho.option==0){
+    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
@@ -1209,7 +1232,9 @@ void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   int stride = sizeX/2+1;
-  for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  if(fwdXPlanRho.option==0){
+    for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
+  }//endif
 
   rfftwnd_complex_to_real_split(
               &fwdXPlanRho,                 // x-plan 

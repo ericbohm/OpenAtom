@@ -42,7 +42,7 @@ void dcftWrap(int *init,complex *x,int *istride,int *iskip,
          work1,nwork1,work2,nwork2);
 #else
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    printf("IBM ESSL is not available\n");
+    printf("IBM ESSL is not available! Buy IBM.\n");
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     exit(1);
 #endif
@@ -67,7 +67,7 @@ void drcftWrap(int *init,double *x,int *istride,complex *y,int *ostride,
           work1,nwork1,work2,nwork2);
 #else
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    printf("IBM ESSL is not available\n");
+    printf("IBM ESSL is not available! Buy IBM\n");
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     exit(1);
 #endif
@@ -92,7 +92,7 @@ void dcrftWrap(int *init,complex *x,int *istride,double *y,int *ostride,
           work1,nwork1,work2,nwork2);
 #else
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    printf("IBM ESSL is not available\n");
+    printf("IBM ESSL is not available! Buy IBM.\n");
     printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     exit(1);
 #endif
