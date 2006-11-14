@@ -11,7 +11,7 @@
 //========================================================================
 
 #ifdef _IBM_ESSL_
-extern "C" {void dcft(int *,double *, int *,int *,double *y,int *,int *,
+extern "C" {void dcft(int *,double *, int *,int *,double *,int *,int *,
                       int *,int *,int *,double *,
 		      double *, int *,double *, int *);}
 extern "C" {void dcrft(int *,double *,int *,double *,int *,
