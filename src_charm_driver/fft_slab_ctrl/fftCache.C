@@ -1342,11 +1342,11 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
   int istride       = istride_in;
   int idist         = idist_in;
   int ostride       = ostride_in;
-  int odist        = odist_in;
+  int odist         = odist_in;
   fftw_real *out    = out_in;
   if(iopt==1){
     ostride = rfftplanholder->ostride;
-    odist  = rfftplanholder->odist;
+    odist   = rfftplanholder->odist;
     if(out==NULL){
       out     = reinterpret_cast<double*> (in);
     }//endif
@@ -1383,7 +1383,7 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
               ostride,       // stride betwen elements  (0 inplace)
               odist);       // array separation        (0 inplace)
 	  break;
-        case 1: dcrftWrap(&zero,(complex *)&(in[inoff]),&istride,(double *)dummy,&ostride,  
+        case 1: dcrftWrap(&zero,(complex *)&(in[inoff]),&idist,(double *)dummy,&odist,  
                           &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
         default : CkAbort("impossible fft iopt"); break;
       }//end switch
@@ -1470,7 +1470,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
               ostride,      // stride betwen elements  (0 inplace)
               odist);       // array separation (0 inplace)
 	  break;
-        case 1: drcftWrap(&zero,(double *)&(in[inoff]),&istride,(complex *)dummy,&ostride,
+        case 1: drcftWrap(&zero,(double *)&(in[inoff]),&idist,(complex *)dummy,&odist,
                           &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
         default : CkAbort("impossible fft iopt");  break;
       }//end switch
