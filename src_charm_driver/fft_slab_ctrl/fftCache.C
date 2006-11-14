@@ -1259,7 +1259,7 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
   fftw_complex *out = out_in;
   if(iopt==1){
     ostride = fftplanholder->ostride;
-    odist  = fftplanholder->odist;
+    odist   = fftplanholder->odist;
     out     = (out==NULL ? in : out );
   }//endif
   
@@ -1495,12 +1495,17 @@ void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, doubl
                    int *isign, int *nfft, int *stride, int *skip){
 //============================================================================
 
-  plan->option = iopt[0];
-  plan->nwork1 = nwork1[0];
-  plan->nwork2 = nwork2[0];
-  plan->scale  = scale[0];
-  plan->isign  = isign[0];
-  plan->nfft   = nfft[0];
+  plan->option  = iopt[0];
+  plan->nwork1  = nwork1[0];
+  plan->nwork2  = nwork2[0];
+  plan->scale   = scale[0];
+  plan->isign   = isign[0];
+  plan->nfft    = nfft[0];
+  plan->ostride = stride[0];
+  plan->odist   = skip[0];
+  plan->work1   = NULL;
+  plan->work2   = NULL;
+
   if(iopt[0] == 1){
     int unit = 1;
     complex x[2];
@@ -1524,12 +1529,17 @@ void initRCFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
                     int *isign, int *nfft, int *skipR, int *skipC){
 //============================================================================
 
-  plan->option = iopt[0];
-  plan->nwork1 = nwork1[0];
-  plan->nwork2 = nwork2[0];
-  plan->scale  = scale[0];
-  plan->isign  = isign[0];
-  plan->nfft   = nfft[0];
+  plan->option  = iopt[0];
+  plan->nwork1  = nwork1[0];
+  plan->nwork2  = nwork2[0];
+  plan->scale   = scale[0];
+  plan->isign   = isign[0];
+  plan->nfft    = nfft[0];
+  plan->ostride = 1;
+  plan->odist   = skipC[0];
+  plan->work1   = NULL;
+  plan->work2   = NULL;
+
   if(iopt[0] == 1){
     int unit = 1;
     complex xc[2]; double xr[2];
@@ -1551,12 +1561,17 @@ void initCRFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
                     int *isign, int *nfft, int *skipR, int *skipC){
 //============================================================================
 
-  plan->option = iopt[0];
-  plan->nwork1 = nwork1[0];
-  plan->nwork2 = nwork2[0];
-  plan->scale  = scale[0];
-  plan->isign  = isign[0];
-  plan->nfft   = nfft[0];
+  plan->option  = iopt[0];
+  plan->nwork1  = nwork1[0];
+  plan->nwork2  = nwork2[0];
+  plan->scale   = scale[0];
+  plan->isign   = isign[0];
+  plan->nfft    = nfft[0];
+  plan->ostride = 1;
+  plan->odist   = skipR[0];
+  plan->work1   = NULL;
+  plan->work2   = NULL;
+
   if(iopt[0] == 1){
     int unit = 1;
     complex xc[2]; double xr[2];
