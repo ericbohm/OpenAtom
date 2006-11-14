@@ -23,7 +23,7 @@ include $(BLAS_FORT)
 include $(LAPACK_FORT)
 include $(EISPACK_FORT)
 include $(EISPACK_FORT)
-include $(IBM_ESSL_DUMMY)
+include ibm_essl.h
 OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) $(OBJS_IBM_ESSL) \
        lst_sort_clean.o
 TARGET_LIB = ../binary/libMyMathLib.a
@@ -44,9 +44,9 @@ altRandom.o: $(MATH)/altRandom.C $(MATH)/mathlib.h
 	$(CHARMC) -c $(MATH)/altRandom.C
 
 #---------------------------------------------------------------------------
-ibm_essl_dummy.o: $(MATH)/ibm_essl_dummy.C $(MATH)/mathlib.h
+ibm_essl_dummy.o: $(MATH)/ibm_essl_dummy.C $(MATH)/mathlib.h 
 	$(ECHO) $@
-	$(CHARMC) -c $(MATH)/ibm_essl_dummy.C
+	$(CHARMC) -c $(IBM_ESSL_DUMMY) $(MATH)/ibm_essl_dummy.C
 
 #---------------------------------------------------------------------------
 lst_sort_clean.o: $(MATH)/lst_sort_clean.C $(MATH)/mathlib.h

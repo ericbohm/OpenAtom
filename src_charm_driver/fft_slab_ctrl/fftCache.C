@@ -1286,9 +1286,9 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
                     ostride,       // stride betwen elements  (0 inplace)
                     odist);       // array separation        (0 inplace)
    	        break;
-        case 1: dcft(&zero,(complex *)&(in[inoff]),&istride,&idist,
-                     (complex *)dummy,&ostride,&odist,
-                     &nfft,&thismany,&isign,&scale,work1,&nwork1,work2, &nwork2);
+        case 1: dcftWrap(&zero,(complex *)&(in[inoff]),&istride,&idist,
+                               (complex *)dummy,&ostride,&odist,
+                         &nfft,&thismany,&isign,&scale,work1,&nwork1,work2, &nwork2);
                 break;
         default : CkAbort("impossible fft iopt");  break;
       }//end switch
@@ -1375,8 +1375,8 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
               ostride,       // stride betwen elements  (0 inplace)
               odist);       // array separation        (0 inplace)
 	  break;
-        case 1: dcrft(&zero,(complex *)&(in[inoff]),&istride,(double *)dummy,&ostride,  
-                      &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
+        case 1: dcrftWrap(&zero,(complex *)&(in[inoff]),&istride,(double *)dummy,&ostride,  
+                          &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
         default : CkAbort("impossible fft iopt"); break;
       }//end switch
       inoff  += idist*(thismany);  
@@ -1462,8 +1462,8 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
               ostride,      // stride betwen elements  (0 inplace)
               odist);       // array separation (0 inplace)
 	  break;
-        case 1: drcft(&zero,(double *)&(in[inoff]),&istride,(complex *)dummy,&ostride,
-                      &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
+        case 1: drcftWrap(&zero,(double *)&(in[inoff]),&istride,(complex *)dummy,&ostride,
+                          &nfft,&thismany,&isign,&scale,work1,&nwork1,work2,&nwork2); break;
         default : CkAbort("impossible fft iopt");  break;
       }//end switch
       inoff  += idist*(thismany);  
@@ -1498,7 +1498,8 @@ void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, doubl
     complex x[2];
     double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
     double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
-    dcft(&unit,x,stride,skip,x,stride,skip,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
+    dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,&unit,isign,scale,
+             work1,nwork1,work2,nwork2);
     plan->work1   = work1;
     plan->work2   = work2;
   }//endif
@@ -1526,7 +1527,7 @@ void initRCFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
     complex xc[2]; double xr[2];
     double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
     double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
-    drcft(&unit,xr,skipR,xc,skipC,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
+    drcftWrap(&unit,xr,skipR,xc,skipC,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
     plan->work1   = work1;
     plan->work2   = work2;
   }//endif
@@ -1553,7 +1554,7 @@ void initCRFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
     complex xc[2]; double xr[2];
     double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
     double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
-    dcrft(&unit,xc,skipC,xr,skipR,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
+    dcrftWrap(&unit,xc,skipC,xr,skipR,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
     plan->work1   = work1;
     plan->work2   = work2;
   }//endif

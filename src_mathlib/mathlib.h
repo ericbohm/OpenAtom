@@ -69,11 +69,11 @@
 
 //========================================================================
 // IBM ESSL FFT STUFF 
-void dcft(int *,complex *,int *,int *,complex *,int *,int *, int *,int *,int *,double *,
+void dcftWrap(int *,complex *,int *,int *,complex *,int *,int *, int *,int *,int *,double *,
           double *, int *,double *,int *);
-void dcrft(int *,complex *,int *,double *,int *,int *,int *,int *,double *,
+void dcrftWrap(int *,complex *,int *,double *,int *,int *,int *,int *,double *,
 	   double *, int *,double *,int *);
-void drcft(int *,double *,int *,complex *,int *,int *,int *,int *,double *,
+void drcftWrap(int *,double *,int *,complex *,int *,int *,int *,int *,double *,
 	   double *, int *,double *,int *);
 //========================================================================
 

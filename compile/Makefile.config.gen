@@ -32,7 +32,7 @@ AUTOTEST    = ../$(VALID_EXEC)
 BLAS_FORT      = $(MYMATH_HOME)/blas_routines.h
 LAPACK_FORT    = $(MYMATH_HOME)/lapack_routines.h
 EISPACK_FORT   = $(MYMATH_HOME)/eispack_routines.h
-IBM_ESSL_DUMMY = $(MYMATH_HOME)/ibm_essl.h
+IBM_ESSL_DUMMY = 
 MATH_LIB       = 
 #-----------------------------------------------------------------
 #        Optimized Libraries
@@ -45,5 +45,6 @@ MATH_LIB       =
 #MATH_LIB     = -lgoto  $(MYMATH_HOME)/xerbla.o -llapack
 #MATH_LIB     = -L${MKL_HOME}/lib/32 -lmkl_ia32 -lguide -lpthread
 #MATH_LIB     = -lgoto  $(MYMATH_HOME)/xerbla.o -lessl
+#IBM_ESSL_DUMMY = -D_IBM_ESSL_
 #-----------------------------------------------------------------
 #==================================================================

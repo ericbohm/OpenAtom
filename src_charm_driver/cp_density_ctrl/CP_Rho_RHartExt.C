@@ -922,8 +922,13 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 
   CkAssert(rhoRsubplanes>1);
   CkAssert(size==myNgridb*num);
-  if(iterAtmTyp!=iter){CkPrintf("ECCH : %d %d : %d %d %d\n",
-				thisIndex.x,thisIndex.y,iterAtmTyp,iter,iopt);}
+  if(iterAtmTyp!=iter){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("iter!=iterAtmTyp recvatmforcgxtorx : %d %d : %d %d %d\n",
+		thisIndex.x,thisIndex.y,iterAtmTyp,iter,iopt);
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }//endif
 
   complex *dataC;
   double  *dataR;
