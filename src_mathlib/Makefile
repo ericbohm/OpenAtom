@@ -23,9 +23,8 @@ include $(BLAS_FORT)
 include $(LAPACK_FORT)
 include $(EISPACK_FORT)
 include $(EISPACK_FORT)
-include ibm_essl.h
 OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) $(OBJS_IBM_ESSL) \
-       lst_sort_clean.o
+       lst_sort_clean.o ibm_essl_dummy.o
 TARGET_LIB = ../binary/libMyMathLib.a
 #===========================================================================
 
