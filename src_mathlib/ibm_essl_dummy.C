@@ -11,14 +11,14 @@
 //========================================================================
 
 #ifdef _IBM_ESSL_
-extern "C" {void dcft(int *,double *,int *,int *,
-                      int *,int *, int *,int *,int *,double *,
-                      double *, int *,double *,int *);}
-extern "C" {void dcrft(int *,double *,int *,double *,
-                       int *,int *,int *,int *,double *,
+extern "C" {void dcft(int *,double *, int *,int *,double *y,int *,int *,
+                      int *,int *,int *,double *,
+		      double *, int *,double *, int *);}
+extern "C" {void dcrft(int *,double *,int *,double *,int *,
+                       int *,int *,int *,double *,
     	               double *, int *,double *,int *);}
-extern "C" {void drcft(int *,double *,int *,double *,
-                       int *,int *,int *,int *,double *,
+extern "C" {void drcft(int *,double *,int *,double *,int *,
+                       int *,int *,int *,double *,
  	               double *, int *,double *,int *);}
 #endif
 
@@ -33,6 +33,7 @@ void dcftWrap(int *init,complex *x,int *istride,int *iskip,
               int *nfft,int *num,int *isign,double *scale,
               double *work1, int *nwork1,double *work2, int *nwork2){
 //========================================================================
+
 #ifdef _IBM_ESSL_
     double *xx    = reinterpret_cast<double *> (x);
     double *yy    = reinterpret_cast<double *> (y);
