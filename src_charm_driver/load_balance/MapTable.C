@@ -14,8 +14,8 @@ typedef IntMap4 MapType4;
 #endif
 #include "MapTable.h"
 
-#define MAP_DEBUG_OFF
-//#define MAP_DEBUG
+//#define MAP_DEBUG_OFF
+#define MAP_DEBUG
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
@@ -170,54 +170,129 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	availprocs->reset();
 
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunks %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksSym, rem);
-			
-      for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
-	for(int newdim=0; newdim<numChunksSym; newdim++)
-	  for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-	    for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
-	      //for(int newdim=0; newdim<numChunksSym; newdim++)
-	      for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
+      if(useCuboidMap|| useCentroid)
+	{ // in the cuboid map case we place all planes box by box
+	  for(int plane=0; plane<nchareG; plane++)
+	    { // could restrict list to the gs box here
+
+	      PeList *thisPlaneBox;
+	      if(useCentroid)
 		{
-		  CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-		  CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
-
-		  if(count<scobjs_per_pe)
-		    {
-		      //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
-#ifdef USE_INT_MAP 
-		      maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
-
-		      count++;
-		    }
-		  else
-		    {
-		      // new partition
-		      procno++;
-		      srcpe=destpe;
-		      if(availprocs->count()==0)
-			availprocs->reset();
-		      //			  availprocs->sortSource(srcpe);
-		      destpe=availprocs->findNext();
-		      if(rem!=0)
-			if(procno==rem)
-			  scobjs_per_pe-=1;
-#ifdef USE_INT_MAP
-		      maptable->set(plane, xchunk, ychunk, newdim,destpe);
-#else
-		      maptable->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
-		      count=0;
-		      count++;
-		    }
-
+		  //		  CkPrintf("plane %d making pelist from plane's pes\n",plane);
+		  thisPlaneBox= subListPlane(plane, max_states, gsmap);
 		}
-#ifdef MAP_DEBUG
-      CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
-      dump();
+	      else
+		{
+		  //		  CkPrintf("plane %d making pelist from boxSize %d\n",plane,boxSize);
+		  thisPlaneBox= new PeList(availprocs, plane*boxSize, boxSize);
+		}
+
+	      //	      PeList *thisPlaneBox= availprocs;
+	      //	      thisPlaneBox->dump();
+	      if(!useCentroid)
+		destpe=thisPlaneBox->findNext();
+	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
+		for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
+		  { // could find centroid here
+		    if(useCentroid)
+		      {
+			thisPlaneBox->trimUsed();
+			//			CkPrintf("trimmed list for %d %d %d\n", plane, xchunk, ychunk);
+			//			thisPlaneBox->dump();
+			sortByCentroid(thisPlaneBox, plane, xchunk, ychunk, grainsize, gsmap);
+			//			CkPrintf("sorted by centroid\n");
+			//			thisPlaneBox->dump();
+			destpe=thisPlaneBox->findNext();
+			if(thisPlaneBox->count()==0)
+			  thisPlaneBox->reset();
+			count=0;
+		      }
+		    for(int newdim=0; newdim<numChunksSym; newdim++)
+		      {
+			if(count<scobjs_per_pe)
+			  {
+			    // nothing to see here
+			  }
+			else
+			  {  // new partition
+			    procno++;
+			    if(thisPlaneBox->count()==0)
+			      thisPlaneBox->reset();
+
+			    destpe=thisPlaneBox->findNext();
+			    if(rem!=0)
+			      if(procno==rem)
+				scobjs_per_pe-=1;
+			    count=0;
+
+			  }
+			//			CkPrintf("%d %d %d %d mapped to %d\n",plane,xchunk,ychunk,newdim, destpe);
+#ifdef USE_INT_MAP
+			maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
+			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
+
+			count++;
+
+		      }
+		  }
+	      delete thisPlaneBox;
+	    }
+
+	}
+      else
+	{
+	  for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
+	    for(int newdim=0; newdim<numChunksSym; newdim++)
+	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
+		for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
+		  //for(int newdim=0; newdim<numChunksSym; newdim++)
+		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
+		    {
+		      CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
+		      CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+
+		      if(count<scobjs_per_pe)
+			{
+			  //if(CkMyPe()==0) CkPrintf("plane %d x %d y %d newdim %d = proc %d\n", plane, xchunk, ychunk, newdim, fp.next[0]*x*y+fp.next[1]*x+fp.next[2]);
+#ifdef USE_INT_MAP 
+			  maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
+
+			  count++;
+			}
+		      else
+			{
+			  // new partition
+			  procno++;
+			  srcpe=destpe;
+			  if(availprocs->count()==0)
+			    availprocs->reset();
+			  //			  availprocs->sortSource(srcpe);
+			  destpe=availprocs->findNext();
+			  if(rem!=0)
+			    if(procno==rem)
+			      scobjs_per_pe-=1;
+#ifdef USE_INT_MAP
+			  maptable->set(plane, xchunk, ychunk, newdim,destpe);
+#else
+			  maptable->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
+			  count=0;
+			  count++;
+			}
+
+		    }
+#ifdef MAP_DEBUG
+	  CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
+	  dump();
+#endif
+	} // else not cuboid
     }
   else
     {
@@ -367,149 +442,158 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
    nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
 {
-	CkPrintf("RSMap");
-	int l, m, pl, pm, srem, rem, i=0, rsobjs_per_pe;
-	reverseMap=NULL;
-	maptable=_map;
-	availprocs=_availprocs;
-	int *Pecount=(int *)malloc(sizeof(int)*(availprocs->count()));
+  CkPrintf("RSMap");
+  int l, m, pl, pm, srem, rem, i=0, rsobjs_per_pe;
+  reverseMap=NULL;
+  maptable=_map;
+  availprocs=_availprocs;
+  int *Pecount= new int [CkNumPes()];
 
-	bzero(Pecount, availprocs->count() *sizeof(int));
+  bzero(Pecount, CkNumPes() *sizeof(int));
 
-        rsobjs_per_pe = nstates*sizeZ/availprocs->count();
-        l=Rstates_per_pe;		// no of states in one chunk
-        pl = nstates / l;
-        if(nstates % l == 0)
-		srem = 0;
-	else
-	{
-		while(pow(2.0, (double)i) < pl)
-			i++;
-		pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
-		srem = nstates % pl;
-	}
-        pm = availprocs->count() / pl;
+  rsobjs_per_pe = nstates*sizeZ/availprocs->count();
+  l=Rstates_per_pe;		// no of states in one chunk
+  pl = nstates / l;
+  if(nstates % l == 0)
+    srem = 0;
+  else
+    {
+      while(pow(2.0, (double)i) < pl)
+	i++;
+      pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
+      srem = nstates % pl;
+    }
+  pm = availprocs->count() / pl;
         
-	if(pm==0)
-	  CkAbort("Choose a larger Rstates_per_pe\n");
+  if(pm==0)
+    CkAbort("Choose a larger Rstates_per_pe\n");
 
-        m = sizeZ / pm;
-        rem = sizeZ % pm;
+  m = sizeZ / pm;
+  rem = sizeZ % pm;
 
-        CkPrintf("nstates %d sizeZ %d Pes %d rsobjs_per_pe %d\n", nstates, sizeZ, availprocs->count(), rsobjs_per_pe);	
-	CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-	pl, pm, srem, rem);
-	int srcpe=0;
-	int destpe=availprocs->findNext();
+  CkPrintf("nstates %d sizeZ %d Pes %d rsobjs_per_pe %d\n", nstates, sizeZ, availprocs->count(), rsobjs_per_pe);	
+  CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
+	   pl, pm, srem, rem);
+  int srcpe=0;
+  int destpe=availprocs->findNext();
 
-	if(availprocs->count()==0)
-	  availprocs->reset();	
-	if(useCuboidMap)
-	  {
-            // place all the states box by box
-	    PeList *exclusionList = NULL;
-            for(int state=0; state < nstates; state++)
-            {
-	      PeList *thisStateBox, *single;
+  if(availprocs->count()==0)
+    availprocs->reset();	
+  if(useCuboidMap)
+    {
+      // place all the states box by box
+      PeList *exclusionList = NULL;
+      for(int state=0; state < nstates; state++)
+	{
+	  PeList *thisStateBox, *single;
+	  thisStateBox = subListState(state, nchareG, gsmap);
+	  if(exclusionList!=NULL)
+	    {
+	      *thisStateBox - *exclusionList;
+	      thisStateBox->reindex();
+	    }
+	  if(thisStateBox->count()==0)
+	    {
+	      CkPrintf("RS state %d excluded to nil, ignoring exclusions\n",state);
 	      thisStateBox = subListState(state, nchareG, gsmap);
-	      if(exclusionList!=NULL)
+	    }
+	  
+	  // sort by centroid (not necessary)
+	  if(thisStateBox->count()==0)
+	    thisStateBox->reset();
+	  destpe = thisStateBox->findNext();
+
+	  for(int plane=0; plane < sizeZ; plane++)
+	    {
+	 	
+#ifdef USE_INT_MAP
+	      maptable->set(state, plane, destpe);
+#else						
+	      maptable->put(intdual(state, plane))= destpe;
+#endif
+	      //		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
+	      Pecount[destpe]++;
+	      if(Pecount[destpe]>=rsobjs_per_pe)
 		{
+		  if(exclusionList==NULL)
+		    {
+		      exclusionList=new PeList(1);
+		      exclusionList->TheList[0]=destpe;
+		    }
+		  else
+		    exclusionList->mergeOne(destpe);
 		  *thisStateBox - *exclusionList;
 		  thisStateBox->reindex();
 		}
-	      // sort by centroid (not necessary)
-
-	      destpe = thisStateBox->findNext();
-	      for(int plane=0; plane < sizeZ; plane++)
+	      if(Pecount[destpe]>rsobjs_per_pe+1)
 		{
-	 	
-#ifdef USE_INT_MAP
-		  maptable->set(state, plane, destpe);
-#else						
-		  maptable->put(intdual(state, plane))= destpe;
-#endif
-		  //		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
-		  Pecount[destpe]++;
-		  if(Pecount[destpe]>=rsobjs_per_pe+1)
-		    {
-		      if(exclusionList==NULL)
-			{
-			  exclusionList=new PeList(1);
-			  exclusionList->TheList[0]=destpe;
-			}
-		      else
-			exclusionList->mergeOne(destpe);
-		      *thisStateBox - *exclusionList;
-		      thisStateBox->reindex();
-		    }
-		  if(Pecount[destpe]>rsobjs_per_pe+1)
-		    {
-		      CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
-		      exclusionList->dump();
-		      thisStateBox->dump();
-		      CkAbort("too many chares\n");
-		    }
-		  if(thisStateBox->count()==0)
-		    thisStateBox->reset();
-		  destpe = thisStateBox->findNext();
+		  CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
+		  exclusionList->dump();
+		  thisStateBox->dump();
+		  CkAbort("too many chares\n");
 		}
-	      delete thisStateBox;
+	      if(thisStateBox->count()==0)
+		thisStateBox->reset();
+	      destpe = thisStateBox->findNext();
 	    }
-	    if(exclusionList!=NULL)
-	      delete exclusionList;
+	  delete thisStateBox;
+	}
+      if(exclusionList!=NULL)
+	delete exclusionList;
 
-	  }
-	else
+    }
+  else
+    {
+
+      // this remainder scheme is odd, creates imbalance.
+      // doesn't use all processors
+      //destpe=availprocs->findNext();
+      for(int ychunk=0; ychunk<sizeZ-rem; ychunk=ychunk+m)
+	{
+	  /*if(ychunk==(pm-rem)*m)
+	    m=m+1;*/
+	  for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+	    {
+	      if(xchunk==(pl-srem)*l)
+		l=l+1;
+	      for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+		{
+		  for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
+		    {
+#ifdef USE_INT_MAP
+		      maptable->set(state, plane, destpe);
+#else						
+		      maptable->put(intdual(state, plane))= destpe;
+#endif
+		    }
+		}
+	      destpe=availprocs->findNext();
+	      if(availprocs->count()==0)
+		availprocs->reset();	
+
+	    }
+	}
+      if(rem!=0)
+	for(int state=0; state<nstates; state++)
 	  {
-
-	    // this remainder scheme is odd, creates imbalance.
-	    // doesn't use all processors
-	    //destpe=availprocs->findNext();
-	    for(int ychunk=0; ychunk<sizeZ-rem; ychunk=ychunk+m)
+	    for(int plane=sizeZ-rem; plane<sizeZ; plane++)
 	      {
-                /*if(ychunk==(pm-rem)*m)
-		  m=m+1;*/
-        	for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		  {
-		    if(xchunk==(pl-srem)*l)
-		      l=l+1;
-		    for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-		      {
-			for(int plane=ychunk; plane<ychunk+m && plane<sizeZ; plane++)
-			  {
+		if(availprocs->count()==0)
+		  availprocs->reset();
+		destpe=availprocs->findNext();
 #ifdef USE_INT_MAP
-				maptable->set(state, plane, destpe);
+		maptable->set(state, plane, destpe);
 #else						
-				maptable->put(intdual(state, plane))= destpe;
+		maptable->put(intdual(state, plane)) = destpe;
 #endif
-			  }
-		      }
-		    destpe=availprocs->findNext();
-		    if(availprocs->count()==0)
-		      availprocs->reset();	
-
-		  }
 	      }
-              if(rem!=0)
-                for(int state=0; state<nstates; state++)
-                {
-                  for(int plane=sizeZ-rem; plane<sizeZ; plane++)
-                  {
-                    if(availprocs->count()==0)
-	              availprocs->reset();
-	            destpe=availprocs->findNext();
-#ifdef USE_INT_MAP
-		    maptable->set(state, plane, destpe);
-#else						
-		    maptable->put(intdual(state, plane)) = destpe;
-#endif
-                  }
-                }
 	  }
+    }
+  delete [] Pecount;
 #ifdef MAP_DEBUG
 
-	CkPrintf("RSMap created on processor %d\n", CkMyPe());
-	dump();
+  CkPrintf("RSMap created on processor %d\n", CkMyPe());
+  dump();
 #endif
 }
 
@@ -720,8 +804,8 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(availprocs->count()==0)
     availprocs->reset();
   int destpe;
-  int *Pecount=(int *)malloc(sizeof(int)*(availprocs->count()));
-  bzero(Pecount, availprocs->count()*sizeof(int)); 
+  int *Pecount= new int [CkNumPes()];
+  bzero(Pecount, CkNumPes()*sizeof(int)); 
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   if(useCentroid) 
@@ -737,7 +821,8 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  thisPlaneBox->reindex();
 	}
 	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
-	  
+	CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
+	
 	destpe=thisPlaneBox->findNext();
 	if(thisPlaneBox->count()==0)
 	  thisPlaneBox->reset();
@@ -749,7 +834,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  maptable->put(intdual(chunk, subplane))=destpe;
 #endif
 	  Pecount[destpe]++;	
-	  if(Pecount[destpe]>=rrsobjs_per_pe+1)
+	  if(Pecount[destpe]>=rrsobjs_per_pe)
 	  {
 	    if(exclusionList==NULL)
 	    {
@@ -760,6 +845,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	      exclusionList->mergeOne(destpe);
 	    *thisPlaneBox - *exclusionList;
 	    thisPlaneBox->reindex();
+	    sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
           }
           destpe=thisPlaneBox->findNext();
           if(thisPlaneBox->count()==0)
@@ -803,6 +889,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  }
 	}
     }
+  delete [] Pecount;
 #ifdef MAP_DEBUG
   CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());
   dump();

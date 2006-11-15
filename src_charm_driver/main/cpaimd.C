@@ -1584,8 +1584,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
     realSpacePlaneProxy.doneInserting();
   //--------------------------------------------------------------------------------
   // Do a fancy dance to determine placement of structure factors
+    CkPrintf("Making SF non-EES\n");
     if(!ees_nonlocal_on)
       {
+	CkPrintf("Making SF non-EES\n");
 	int *nsend       = new int[nchareG];
 	int **listpe     = new int * [nchareG];
 	int numproc      = CkNumPes();
@@ -1672,6 +1674,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 // Set some com strategy of Sameer
 
     if(config.useCommlib) {
+      CkPrintf("Making State streaming strats\n");
         //mstrat->enableShortArrayMessagePacking();
         //rspaceState to gspaceState : gspaceState to rspaceState 
         StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,
@@ -1826,7 +1829,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   // subtract processors used by other nonscaling chares (non local reduceZ)
    
    excludePes= new PeList(peUsedByNLZ);   
-   if(!config.useCentroidMapRho && nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
+   if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
 
        CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
                  peUsedByNLZ.size(),RhoAvail->count());
@@ -1839,7 +1842,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares
    if(ees_nonlocal_on==0){
-     if(!config.useCentroidMapRho && nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
+     if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
        CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
                   peUsedBySF.size(),RhoAvail->count());
        PeList sf(peUsedBySF);
@@ -1852,7 +1855,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 //============================================================================
 // Maps and options
-
+   CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR,config.rhoRsubplanes);
    RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
@@ -2150,13 +2153,20 @@ void mapOutput()
 // return the cuboid x,y,z of a subpartition exactly matching that volume
 bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order)
 {
-  CkPrintf("maxX %d\n",maxX);
+  int maxD=maxX;
+  int minD=maxX;
+  maxD = (maxY>maxD) ? maxY : maxD;
+  maxD = (maxZ>maxD) ? maxZ : maxD;
+  minD = (maxY<minD) ? maxY : minD;
+  minD = (maxZ<maxD) ? maxZ : minD;
+
+  CkPrintf("minD %d maxD %d\n",minD, maxD);
   order=0;
   double cubert= cbrt((double) volume);
   int cubetrunc= (int) cubert;
   x=y=z=cubetrunc;
-  if(cubetrunc>maxX)
-    cubetrunc=maxX;
+  if(cubetrunc>minD)
+    cubetrunc=minD;
   if(cubetrunc>maxY)
     cubetrunc=maxY;
   if(cubetrunc>maxZ)
@@ -2196,7 +2206,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 16:
       if(config.useCuboidMapRS)
 	{
-	  if(maxX>=8)
+	  if(maxD>=8)
 	    { x=8; y=2; z=1; switchSet=true; break;}
 	}
       x=4; y=2; z=2; switchSet=true; break;
@@ -2219,7 +2229,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 32:
       if(config.useCuboidMapRS)
 	{
-	  //if(maxX>=8)
+	  if(maxD>=8)
 	    { x=8; y=2; z=2; switchSet=true; break;}
 	}
       x=4; y=2; z=4; switchSet=true; break;
@@ -2248,27 +2258,27 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 64:
       if(config.useCuboidMapRS)
 	{
-	  //if(maxX==8)
+	  if(maxD==8)
 	    { x=8; y=4; z=2; switchSet=true; break;}
-	  //if(maxX>=16)
+	  if(maxD>=16)
 	    { x=16; y=2; z=2; switchSet=true; break;}
 	}
       x=4; y=4; z=4; switchSet=true; break;
     case 128:
       if(config.useCuboidMapRS)
 	{
-	  //if(maxX==16)
+	  if(maxD==16)
 	    {x=16; y=4; z=2; switchSet=true; break;}
-	  //if(maxX>=32)
+	  if(maxD>=32)
 	    {  x=32; y=2; z=2; switchSet=true; break;	}
 	}
       x=8; y=4; z=4; switchSet=true; break;
     case 256:
       if(config.useCuboidMapRS)
 	{
-	  //if(maxX==16)
+	  if(maxD==16)
 	    { x=16; y=4; z=4; switchSet=true; break;}
-	  //if(maxX>=32)
+	  if(maxD>=32)
 	    { x=16; y=4; z=4; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;

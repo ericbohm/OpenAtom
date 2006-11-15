@@ -177,6 +177,8 @@ class MapTable4
 PeList *subListPlane(int plane, int nstates, MapType2 *smap);
 PeList *subListState(int state, int nplanes, MapType2 *smap);
 
+
+
 class GSMapTable : public MapTable
 {
  public:
@@ -199,6 +201,11 @@ class GSMapTable : public MapTable
     }
     
 };
+
+class OrthoMapTable : public MapTable
+{
+};
+
 
 class SCalcMapTable : public MapTable4
 {

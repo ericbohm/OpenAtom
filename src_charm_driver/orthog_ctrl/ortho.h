@@ -312,10 +312,17 @@ class OrthoMap : public CkArrayMap {
 	if(nOrtho<CkNumPes())
 	  offset=1;  //skip proc 0
       }
+#ifndef TOPO_ORTHO
     virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
       int *index=(int *) iIndex.data();
       return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
     }
+#else
+    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
+      int *index=(int *) iIndex.data();
+      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
+    }
+#endif
   private:
     int N;
     int nOrtho;
