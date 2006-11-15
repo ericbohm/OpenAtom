@@ -29,8 +29,8 @@
 #define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
 #define PC_BWD_DGEMM_SPLIT 16
 #else
-#define PC_FWD_DGEMM_SPLIT 0
-#define PC_BWD_DGEMM_SPLIT 0
+#define PC_FWD_DGEMM_SPLIT 6 
+#define PC_BWD_DGEMM_SPLIT 6
 #endif
 
 //flags to control semantic for matrix contents
@@ -352,6 +352,9 @@ class PairCalculator: public CBase_PairCalculator {
   void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
   void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0 );
   void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
+  void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
+  void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
+  void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
 
  private:
 
