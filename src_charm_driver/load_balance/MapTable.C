@@ -525,7 +525,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		    }
 		  else
 		    exclusionList->mergeOne(destpe);
-		  if(useExclude)
+		  if(useExclude && thisStateBox->size>1)
 		    {
 		      *thisStateBox - *exclusionList;
 		      thisStateBox->reindex();
@@ -858,7 +858,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
             }
             else
 	      exclusionList->mergeOne(destpe);
-	    if(useExclude)
+	    if(useExclude && thisPlaneBox->size>1)
 	      {
 		*thisPlaneBox - *exclusionList;
 		thisPlaneBox->reindex();

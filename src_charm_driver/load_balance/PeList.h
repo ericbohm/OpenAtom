@@ -191,7 +191,7 @@ class PeList
 #ifdef CMK_VERSION_BLUEGENE
     if(current>=size)
       {
-	CkPrintf("hey why is current %d >= size %d\n");
+	CkPrintf("hey why is current %d >= size %d\n",current, size);
 	current=0;
       }
     CkAssert(current<size);
