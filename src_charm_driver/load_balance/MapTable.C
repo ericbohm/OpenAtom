@@ -487,6 +487,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	{
 	  PeList *thisStateBox, *single;
 	  thisStateBox = subListState(state, nchareG, gsmap);
+	  bool useExclude=true;
 	  if(exclusionList!=NULL)
 	    {
 	      *thisStateBox - *exclusionList;
@@ -494,7 +495,9 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	    }
 	  if(thisStateBox->count()==0)
 	    {
+	      useExclude=false;
 	      CkPrintf("RS state %d excluded to nil, ignoring exclusions\n",state);
+	      delete thisStateBox;
 	      thisStateBox = subListState(state, nchareG, gsmap);
 	    }
 	  
@@ -522,8 +525,11 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		    }
 		  else
 		    exclusionList->mergeOne(destpe);
-		  *thisStateBox - *exclusionList;
-		  thisStateBox->reindex();
+		  if(useExclude)
+		    {
+		      *thisStateBox - *exclusionList;
+		      thisStateBox->reindex();
+		    }
 		}
 	      if(Pecount[destpe]>rsobjs_per_pe+1)
 		{
@@ -816,10 +822,19 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       for(int chunk=0; chunk<nchareRhoR; chunk++)
       {
 	PeList *thisPlaneBox = subListPlane(chunk, max_states, rsmap);
+	bool useExclude=true;
 	if(exclusionList!=NULL) {
 	  *thisPlaneBox - *exclusionList;
 	  thisPlaneBox->reindex();
 	}
+
+	if(thisPlaneBox->count()==0)
+	  {
+	    CkPrintf("Rho RS %d ignoring exclusion\n",chunk);
+	    delete thisPlaneBox;
+	    thisPlaneBox = subListPlane(chunk, max_states, rsmap);
+	    useExclude=false;
+	  }
 	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
 	CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
 	
@@ -843,8 +858,11 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
             }
             else
 	      exclusionList->mergeOne(destpe);
-	    *thisPlaneBox - *exclusionList;
-	    thisPlaneBox->reindex();
+	    if(useExclude)
+	      {
+		*thisPlaneBox - *exclusionList;
+		thisPlaneBox->reindex();
+	      }
 	    sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
           }
           destpe=thisPlaneBox->findNext();
