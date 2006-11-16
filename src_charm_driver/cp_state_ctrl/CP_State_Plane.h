@@ -32,7 +32,22 @@ class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
 	int idx;
 };
 //============================================================================
-
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class CompAtmForcMsg: public CMessage_CompAtmForcMsg {
+ public:
+   int nZmat;
+   double *zmat;
+   int iterNL;
+   void init(int _nzmat, double *_zmat, int _iterNL)
+     {
+       nZmat=_nzmat;
+       CmiMemcpy(zmat,_zmat,sizeof(double)*nZmat);
+       iterNL=_iterNL;
+     }
+};
+//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -836,7 +851,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void FFTNLEesFwdR();
    void computeZmatEes();
    void recvZMatEes(CkReductionMsg *);
-   void computeAtmForcEes(int, double *,int );
+   void computeAtmForcEes(CompAtmForcMsg *msg);
    void FFTNLEesBckR();
    void sendToEesGPP();
    void setPlaneRedCookie(EnlCookieMsg *);

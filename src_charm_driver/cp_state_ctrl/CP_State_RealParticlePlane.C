@@ -35,7 +35,7 @@ extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
 extern MapType2                          RPPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;
-
+extern CkReduction::reducerType sumFastDoubleType;
 extern int    nstates;
 extern int    nchareG;
 extern Config config;
@@ -492,7 +492,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
          thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
 #endif
 
-#define _FANCY_RED_METHOD
+   //#define _FANCY_RED_METHOD_
 #ifdef _FANCY_RED_METHOD_
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
@@ -575,7 +575,18 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 #endif
       countZ=0;
       for(int i=0;i<nChareR;i++){
-        thisProxy(thisIndex.x,i).computeAtmForcEes(nZmat,zmatScr,iterNL_in);
+	CompAtmForcMsg* rmsg;
+	if(config.prioNLFFTMsg){
+	  rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
+	  CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
+	}//endif
+	else
+	  {
+	    rmsg = new (nZmat) CompAtmForcMsg;
+	  }
+	rmsg->init(nZmat,zmatScr,iterNL_in);
+	thisProxy(thisIndex.x,i).computeAtmForcEes(rmsg);
       }//endfor
     }//endif
 
@@ -624,8 +635,18 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
      CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
             thisIndex.x,thisIndex.y,iterNL);
 #endif
-
-   rPlaneSectProxy.computeAtmForcEes(nZmat,zmat,iterNL);
+   CompAtmForcMsg* rmsg;
+   if(config.prioNLFFTMsg){
+	rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
+	CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
+	*(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL;
+   }//endif
+   else
+     {
+       rmsg=new (nZmat) CompAtmForcMsg;
+     }
+   rmsg->init(nZmat,zmat,iterNL1);
+   rPlaneSectProxy.computeAtmForcEes(rmsg);
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -637,8 +658,8 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_loc,
-                                                   int iterNL_in){
+void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
+{
 //============================================================================
 // Unpack the message : Get some sizes
 
@@ -646,7 +667,9 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in compteAtmforc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-
+   int nZmat_in=msg->nZmat;
+   double *zmat_loc=msg->zmat;
+   int iterNL_in=msg->iterNL;
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL-1;          // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
@@ -654,8 +677,9 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 
    if(iterNL_in !=  iterNL || nZmat_in != nZmat){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, iteration mismatch : %d %d : %d %d \n",iterNL,iterNL_in,
-                   thisIndex.x,thisIndex.y);
+      CkPrintf("RPP [%d,%d] Dude, iteration mismatch : %d %d z %d %d\n",
+	       thisIndex.x,thisIndex.y,
+	       iterNL,iterNL_in,nZmat_in, nZmat );
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
@@ -736,7 +760,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(int nZmat_in, double *zmat_lo
 // Time to make the Psiforces (donuts!)
 
   FFTNLEesBckR();
-
+  // do not delete nokeep message
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================

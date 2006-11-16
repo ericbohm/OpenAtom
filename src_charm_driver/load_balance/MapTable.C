@@ -516,7 +516,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 #endif
 	      //		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
 	      Pecount[destpe]++;
-	      if(Pecount[destpe]>=rsobjs_per_pe)
+	      if(Pecount[destpe]>=rsobjs_per_pe+1)
 		{
 		  if(exclusionList==NULL)
 		    {
@@ -531,12 +531,12 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		      thisStateBox->reindex();
 		    }
 		}
-	      if(Pecount[destpe]>rsobjs_per_pe+1)
+	      if(useExclude && Pecount[destpe]>rsobjs_per_pe+1)
 		{
 		  CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
 		  exclusionList->dump();
 		  thisStateBox->dump();
-		  CkAbort("too many chares\n");
+		  CkAbort("RS has too many chares\n");
 		}
 	      if(thisStateBox->count()==0)
 		thisStateBox->reset();

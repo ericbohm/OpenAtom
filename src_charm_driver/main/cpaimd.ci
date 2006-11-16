@@ -111,6 +111,7 @@ mainmodule cpaimd {
         readonly CP           readonly_cp; 
 
 	message PPDummyMsg;
+	message CompAtmForcMsg {double zmat[];};
 	message NLDummyMsg;
 	message SFDummyMsg;
 	message RSDummyResume;
@@ -235,8 +236,8 @@ mainmodule cpaimd {
 		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
                 entry void recvFromEesGPP(NLFFTMsg *);
                 entry void recvZMatEes(CkReductionMsg *);
-                entry void computeAtmForcEes(int nZmat, double zmat_loc[nZmat],
-                                             int iterNL_in);
+                entry [nokeep] void computeAtmForcEes(CompAtmForcMsg *msg);
+
                 entry [nokeep] void setPlaneRedCookie(EnlCookieMsg *);
                 entry [nokeep] void setEnlCookie(EnlCookieMsg *);
                 entry void registrationDone(CkReductionMsg *msg);
