@@ -1355,7 +1355,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   for(int i=0;i<msg->size;i++)
     {
       //CkAssert(isnan(msg->matrix1[i])==0);
-      if(isnan(msg->matrix1[i])==0) {
+      if(isnan(msg->matrix1[i])!=0) {
 	fprintf(stderr, "Abhinav i %d\n", i);
         fprintf(stderr, "[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
         CkAbort("Abhinav nan error\n");
