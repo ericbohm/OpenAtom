@@ -1351,9 +1351,15 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
   numRecdBW++; 
 #ifdef _PAIRCALC_NAN_CHECK_
+  fprintf(stderr, "Abhinav: sym %d msg size %d\n", symmetric, msg->size);
   for(int i=0;i<msg->size;i++)
     {
-      CkAssert(isnan(msg->matrix1[i])==0);
+      //CkAssert(isnan(msg->matrix1[i])==0);
+      if(isnan(msg->matrix1[i])==0) {
+	fprintf(stderr, "Abhinav i %d\n", i);
+        fprintf(stderr, "[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
+        CkAbort("Abhinav nan error\n");
+      }
     }
 #endif
 
