@@ -26,11 +26,15 @@
 #define ALIGN16(x)        (int)((~15)&((x)+15))
 //#define TEST_ALIGN
 #define BUNDLE_USER_EVENT  
-#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
-#define PC_BWD_DGEMM_SPLIT 16
+
+//#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
+//#define PC_BWD_DGEMM_SPLIT 16
+#define PC_FWD_DGEMM_SPLIT 0
+#define PC_BWD_DGEMM_SPLIT 0
+
 #else
-#define PC_FWD_DGEMM_SPLIT 6 
-#define PC_BWD_DGEMM_SPLIT 6
+#define PC_FWD_DGEMM_SPLIT 0 
+#define PC_BWD_DGEMM_SPLIT 0
 #endif
 
 //flags to control semantic for matrix contents
@@ -340,13 +344,15 @@ class PairCalculator: public CBase_PairCalculator {
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
   void acceptPhantomData(phantomMsg *msg);
+  void multiplyResult(multiplyResultMsg *msg);
+  void multiplyPsiV();
+  void multiplyResultI(multiplyResultMsg *msg);
+  void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta);
+  void bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int numOrtho);
   void sendBWResult(sendBWsignalMsg *msg);
   void sendBWResultDirect(sendBWsignalMsg *msg);
   void sendBWResultColumn(bool other, int startGrain, int endGrain);
   void sendBWResultColumnDirect(bool other, int startGrain, int endGrain);
-  void multiplyResult(multiplyResultMsg *msg);
-  void multiplyPsiV();
-  void multiplyResultI(multiplyResultMsg *msg);
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
   void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);

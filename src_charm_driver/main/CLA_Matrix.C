@@ -516,7 +516,7 @@ void CLA_Matrix::multiply(){
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
   int Krem     = (K % Ksplit);
   int Kloop    = K/Ksplit-1;
-#define ORTHO_DGEMM_SPLIT 
+  //#define ORTHO_DGEMM_SPLIT 
 #define BUNDLE_USER_EVENTS
 #ifdef ORTHO_DGEMM_SPLIT 
 

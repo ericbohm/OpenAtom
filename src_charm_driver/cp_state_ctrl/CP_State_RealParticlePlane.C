@@ -645,7 +645,7 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
      {
        rmsg=new (nZmat) CompAtmForcMsg;
      }
-   rmsg->init(nZmat,zmat,iterNL1);
+   rmsg->init(nZmat,zmat,iterNL);
    rPlaneSectProxy.computeAtmForcEes(rmsg);
 
 //----------------------------------------------------------------------------
@@ -674,7 +674,9 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    int iterNL1          = iterNL-1;          // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
    int nZmat            = nmem_zmat[iterNL1];
-
+   //  int nZmat            = msg->nZmat;
+   /*  In the reduction case each iteration arrives together
+       So this coordination scheme is redundant */
    if(iterNL_in !=  iterNL || nZmat_in != nZmat){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("RPP [%d,%d] Dude, iteration mismatch : %d %d z %d %d\n",
@@ -684,7 +686,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
       CkExit();
    }//endif
 
-   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat);
+   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces

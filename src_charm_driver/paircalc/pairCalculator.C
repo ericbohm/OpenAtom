@@ -498,8 +498,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
-		      CkAssert(isnan(msgfromrow->points[i].re)==0);
-		      CkAssert(isnan(msgfromrow->points[i].im)==0);
+		      CkAssert(finite(msgfromrow->points[i].re));
+		      CkAssert(finite(msgfromrow->points[i].im));
 		    }
 #endif
 
@@ -520,8 +520,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
-		      CkAssert(isnan(msgfromrow->points[i].re)==0);
-		      CkAssert(isnan(msgfromrow->points[i].im)==0);
+		      CkAssert(finite(msgfromrow->points[i].re));
+		      CkAssert(finite(msgfromrow->points[i].im));
 		    }
 #endif
 
@@ -557,8 +557,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
-		      CkAssert(isnan(msg->points[i].re)==0);
-		      CkAssert(isnan(msg->points[i].im)==0);
+		      CkAssert(finite(msg->points[i].re));
+		      CkAssert(finite(msg->points[i].im));
 		    }
 #endif
 
@@ -575,8 +575,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #ifdef _NAN_CHECK_
 	      for(int i=0;i<outsize ;i++)
 		{
-		  CkAssert(isnan(msg->points[i].re)==0);
-		  CkAssert(isnan(msg->points[i].im)==0);
+		  CkAssert(finite(msg->points[i].re));
+		  CkAssert(finite(msg->points[i].im));
 		}
 #endif
 	      pcid->proxyLNotFrom[chunk].acceptPairData(msg);
@@ -792,8 +792,8 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
-		      CkAssert(isnan(msg->points[i].re)==0);
-		      CkAssert(isnan(msg->points[i].im)==0);
+		      CkAssert(finite(msg->points[i].re));
+		      CkAssert(finite(msg->points[i].im));
 		    }
 #endif
 
@@ -809,8 +809,8 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
-		      CkAssert(isnan(msg->points[i].re)==0);
-		      CkAssert(isnan(msg->points[i].im)==0);
+		      CkAssert(finite(msg->points[i].re));
+		      CkAssert(finite(msg->points[i].im));
 		    }
 #endif
 
@@ -909,7 +909,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 #ifdef _NAN_CHECK_
   for(int i=0;i<n ;i++)
     {
-      CkAssert(isnan(ptr1[i])==0);
+      CkAssert(finite(ptr1[i]));
     }
 #endif
 
@@ -929,7 +929,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 #ifdef _NAN_CHECK_
   for(int i=0;i<n ;i++)
     {
-      CkAssert(isnan(omsg->matrix1[i])==0);
+      CkAssert(finite(omsg->matrix1[i]));
     }
 #endif
   if(pcid->Symmetric)

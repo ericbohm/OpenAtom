@@ -1457,8 +1457,8 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size ;i++)
     {
-      CkAssert(isnan(msg->data[i].re)==0);
-      CkAssert(isnan(msg->data[i].im)==0);
+      CkAssert(finite(msg->data[i].re));
+      CkAssert(finite(msg->data[i].im));
     }
 #endif
 
@@ -1807,7 +1807,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
     {
-      CkAssert(isnan(((double*) msg->getData())[i])==0);
+      CkAssert(finite(((double*) msg->getData())[i]));
     }
 #endif
 
@@ -1994,8 +1994,8 @@ void CP_State_GSpacePlane::doLambda() {
 #ifdef _NAN_CHECK_
   for(int i=0;i<gs.numPoints ;i++)
     {
-      CkAssert(isnan(force[i].re)==0);
-      CkAssert(isnan(force[i].im)==0);
+      CkAssert(finite(force[i].re));
+      CkAssert(finite(force[i].im));
     }
 #endif
 
@@ -2747,9 +2747,10 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   int N         = msg->getSize()/sizeof(complex);
   complex *data = (complex *)msg->getData();
 #ifdef _NAN_CHECK_
-  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
+  for(int i=0;i<N ;i++)
     {
-      CkAssert(isnan(((double*) msg->getData())[i])==0);
+      CkAssert(finite(((complex *) msg->getData())[i].re));
+      CkAssert(finite(((complex *) msg->getData())[i].im));
     }
 #endif
 
@@ -2809,12 +2810,12 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 #ifdef _NAN_CHECK_
   for(int i=0;i<N ;i++)
     {
-      if((isnan(data[i].re)!=0)|| (isnan(data[i].im)!=0))
+      if((!finite(data[i].re)) || (!finite(data[i].im)))
 	{
 	  CkPrintf("GSP [%d,%d] acceptNewPsi offset %d %d of %d is nan\n",thisIndex.x,thisIndex.y, msg->myoffset, i,N);
 	}
-      CkAssert(isnan(data[i].re)==0);
-      CkAssert(isnan(data[i].im)==0);
+      CkAssert(finite(data[i].re));
+      CkAssert(finite(data[i].im));
     }
 #endif
 
@@ -2881,8 +2882,8 @@ void CP_State_GSpacePlane::doNewPsi(){
 #ifdef _NAN_CHECK_
   for(int i=0;i<gs.numPoints ;i++)
     {
-      CkAssert(isnan(psi[i].re)==0);
-      CkAssert(isnan(psi[i].im)==0);
+      CkAssert(finite(psi[i].re));
+      CkAssert(finite(psi[i].im));
     }
 #endif
 
