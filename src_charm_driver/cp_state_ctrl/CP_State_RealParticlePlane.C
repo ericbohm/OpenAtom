@@ -55,7 +55,7 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
   //unpack
   double d = ((double *)m->getData())[0];
   delete m;
-
+  itimeRed = m->getUserFlag();
   //output and save the data
   CkPrintf("ENL(EES)    = %5.8lf\n", d);
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  
@@ -499,7 +499,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
                  CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
                  realParticlePlaneProxy.ckGetArrayID());
    mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
-                         rPlaneRedCookie,cb);
+                         rPlaneRedCookie,cb, iterNL);
 #else
    thisProxy(thisIndex.x,reductionPlaneNum).recvZMatEesSimp(nZmat,zmat,
                                                thisIndex.x,thisIndex.y,iterNL);
@@ -575,7 +575,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 #endif
       countZ=0;
       for(int i=0;i<nChareR;i++){
-	CompAtmForcMsg* rmsg;
+	CompAtmForcMsg *rmsg;
 	if(config.prioNLFFTMsg){
 	  rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
 	  CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
@@ -603,7 +603,8 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-   int iterNL1          = iterNL-1;           // silly C++ convention
+   int iterNL_in        = msg->getUserFlag();
+   int iterNL1          = iterNL_in-1;        // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
 
@@ -635,17 +636,19 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
      CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
             thisIndex.x,thisIndex.y,iterNL);
 #endif
-   CompAtmForcMsg* rmsg;
+   CompAtmForcMsg *rmsg;
    if(config.prioNLFFTMsg){
 	rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
 	CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
-	*(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL;
+	*(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
    }//endif
    else
      {
        rmsg=new (nZmat) CompAtmForcMsg;
      }
+
    rmsg->init(nZmat,zmat,iterNL);
+   CkAssert(rmsg->iterNL>0);
    rPlaneSectProxy.computeAtmForcEes(rmsg);
 
 //----------------------------------------------------------------------------
@@ -670,6 +673,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    int nZmat_in=msg->nZmat;
    double *zmat_loc=msg->zmat;
    int iterNL_in=msg->iterNL;
+   CkAssert(msg->iterNL>0);
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL1          = iterNL-1;          // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
@@ -743,7 +747,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
                  CkArrayIndex2D(0,reductionPlaneNum),
                  realParticlePlaneProxy.ckGetArrayID());
      mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
-		          CkReduction::sum_double,rEnlCookie, cb);
+		          CkReduction::sum_double,rEnlCookie, cb, itime);
 #else
      thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
 #endif

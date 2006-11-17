@@ -35,17 +35,18 @@ class ProductMsg : public CkMcastBaseMsg, public CMessage_ProductMsg {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class CompAtmForcMsg: public CMessage_CompAtmForcMsg {
+class CompAtmForcMsg: public CkMcastBaseMsg, public CMessage_CompAtmForcMsg {
  public:
    int nZmat;
-   double *zmat;
    int iterNL;
+   double *zmat;
    void init(int _nzmat, double *_zmat, int _iterNL)
      {
-       nZmat=_nzmat;
-       CmiMemcpy(zmat,_zmat,sizeof(double)*nZmat);
-       iterNL=_iterNL;
+       memcpy(zmat,_zmat,sizeof(double)*_nzmat);
+       nZmat = _nzmat;
+       iterNL = _iterNL;
      }
+   friend class CMessage_CompAtmForcMsg;
 };
 //============================================================================
 
