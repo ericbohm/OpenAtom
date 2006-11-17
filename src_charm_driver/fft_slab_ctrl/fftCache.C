@@ -123,7 +123,7 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     }//endif
     skipR = sizeX+2;
     skipC = sizeX/2+1;
-
+    
     initFFTholder  (&fwdYPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,&skipC,&unit);
     initFFTholder  (&bwdYPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,&skipC,&unit);
     initFFTholder  (&fwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,&unit, &sizeY);
@@ -170,14 +170,15 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     }//endif
     skipR = ngridaNL+2;
     skipC = ngridaNL/2+1;
-
-   initFFTholder  (&fwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbNL,&skipC,&unit);
-   initFFTholder  (&bwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbNL,&skipC,&unit);
-   initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,&skipR,&skipC);
-   initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,&skipR,&skipC);
-   initFFTholder  (&fwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridcNL,&unit, &ngridcNL);
-   initFFTholder  (&bwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcNL,&unit, &ngridcNL);
-
+    if(ees_NL_on)
+      {
+	initFFTholder  (&fwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbNL,&skipC,&unit);
+	initFFTholder  (&bwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbNL,&skipC,&unit);
+	initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,&skipR,&skipC);
+	initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,&skipR,&skipC);
+	initFFTholder  (&fwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridcNL,&unit, &ngridcNL);
+	initFFTholder  (&bwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcNL,&unit, &ngridcNL);
+      }
     if(iopt==0){
        size[0] = ngridaNL; size[1] = ngridbNL; size[2] = 1;
        fwdXPlanNL.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL,
@@ -211,24 +212,25 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     }//endif
     skipR = ngridaEext+2;
     skipC = ngridaEext/2+1;
-
-    initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
-                                                                      &skipC,&unit);
-    initFFTholder  (&bwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
-                                                                      &skipC,&unit);
-    initFFTholder  (&fwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
-                                                                      &unit, &ngridbEext);
-    initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
-                                                                      &unit, &ngridbEext);
-    initCRFFTholder(&fwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
-                                                                      &skipR,&skipC);
-    initRCFFTholder(&bwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
-                                                                      &skipR,&skipC);
-    initFFTholder  (&fwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
-                                                                      &unit, &ngridcEext);
-    initFFTholder  (&bwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcEext,
-                                                                      &unit, &ngridcEext);
-
+    if(ees_eext_on)
+      {
+	initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
+			&skipC,&unit);
+	initFFTholder  (&bwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
+			&skipC,&unit);
+	initFFTholder  (&fwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
+			&unit, &ngridbEext);
+	initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
+			&unit, &ngridbEext);
+	initCRFFTholder(&fwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
+			&skipR,&skipC);
+	initRCFFTholder(&bwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
+			&skipR,&skipC);
+	initFFTholder  (&fwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
+			&unit, &ngridcEext);
+	initFFTholder  (&bwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcEext,
+			&unit, &ngridcEext);
+      }
     if(iopt==0){
         size[0] = ngridaEext; size[1] = ngridbEext; size[2] = 1;
         fwdXPlanEext.rfftwPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_COMPLEX_TO_REAL,
