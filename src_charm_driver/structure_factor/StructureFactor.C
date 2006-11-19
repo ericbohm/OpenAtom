@@ -99,10 +99,10 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 	  msg->gsSize=gsSize;
 	  msg->atmGrpIndex = thisIndex.x;
 	  msg->planeIndex=thisIndex.y;
-	  CmiMemcpy(msg->structFactor,structFactor,totalsize*sizeof(complex));
-	  CmiMemcpy(msg->structFactor_fx,structFactor_fx,totalsize*sizeof(complex));
-	  CmiMemcpy(msg->structFactor_fy,structFactor_fy,totalsize*sizeof(complex));
-	  CmiMemcpy(msg->structFactor_fz,structFactor_fz,totalsize*sizeof(complex));
+	  memcpy(msg->structFactor,structFactor,totalsize*sizeof(complex));
+	  memcpy(msg->structFactor_fx,structFactor_fx,totalsize*sizeof(complex));
+	  memcpy(msg->structFactor_fy,structFactor_fy,totalsize*sizeof(complex));
+	  memcpy(msg->structFactor_fz,structFactor_fz,totalsize*sizeof(complex));
 	  // send message
 	  sfCacheProxy[destinations[i]].acceptStructFact(msg);      
       }//endfor

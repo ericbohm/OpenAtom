@@ -508,26 +508,28 @@ void CLA_Matrix::multiply(){
   /* transpose result matrix (if beta != 0) */
   if(beta != 0)
     transpose(dest, m, n);
-
   /* multiply */
-  int Ksplit_m=gemmSplitOrtho;  
   char trans = 't';
+//#define ORTHO_DGEMM_SPLIT 
+
+#define BUNDLE_USER_EVENTS
+#ifdef ORTHO_DGEMM_SPLIT 
   double betap = 1.0;
+  int Ksplit_m=gemmSplitOrtho;  
   int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
   int Krem     = (K % Ksplit);
   int Kloop    = K/Ksplit-1;
-  //#define ORTHO_DGEMM_SPLIT 
-#define BUNDLE_USER_EVENTS
-#ifdef ORTHO_DGEMM_SPLIT 
 
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
+
 #ifdef TEST_ALIGN
   CkAssert((unsigned int) tmpA %16==0);
   CkAssert((unsigned int) tmpB %16==0);
   CkAssert((unsigned int) dest %16==0);
 #endif
+
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
 
@@ -548,11 +550,13 @@ void CLA_Matrix::multiply(){
     StartTime=CmiWallTimer();
 #endif
 #endif
+
 #ifdef TEST_ALIGN
     CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
     CkAssert((unsigned int) &(tmpB[boff]) %16==0);
     CkAssert((unsigned int) dest %16==0);
 #endif
+
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap,dest, &m);
 #ifndef BUNDLE_USER_EVENTS
@@ -562,6 +566,7 @@ void CLA_Matrix::multiply(){
 #endif
     CmiNetworkProgress();
   }//endfor
+
 #ifdef BUNDLE_USER_EVENTS
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(401, StartTime, CmiWallTimer());

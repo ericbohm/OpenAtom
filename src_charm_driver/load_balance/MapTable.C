@@ -231,7 +231,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else
 			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
+			memcpy(intidx,idx4d.index,2*sizeof(int));
 			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
 
@@ -253,7 +253,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 		    {
 		      CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-		      CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+		      memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 
 		      if(count<scobjs_per_pe)
 			{
@@ -372,7 +372,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			maptable->set(plane, xchunk, ychunk, newdim,destpe);
 #else
 			CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-			CmiMemcpy(intidx,idx4d.index,2*sizeof(int));
+			memcpy(intidx,idx4d.index,2*sizeof(int));
 			maptable->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
 
@@ -393,7 +393,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 		    {
 		      CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
-		      CmiMemcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
+		      memcpy(intidx,idx4d.index,2*sizeof(int));  // our 4 shorts are now 2 ints
 
 		      if(count<scobjs_per_pe)
 			{

@@ -66,17 +66,6 @@ void Lambda::acceptSectionLambda(CkReductionMsg *msg) {
   double *lambda = (double *)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(double);
 
-#ifdef _CP_DEBUG_LMAT_
-  char lmstring[80];
-  snprintf(lmstring,80,"lmatrix_t:%d_%d_%d.out",numGlobalIter,thisIndex.x,thisIndex.y);
-  FILE *fp = fopen(lmstring,"w");
-  for(int i=0; i<m; i++){
-    for(int j=0; j<n; j++){
-      fprintf(fp, "[%d %d] %.12g \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, lambda[i*n+j]);
-    }
-  }
-  fclose(fp);
-#endif
   // finish pair calc
   finishPairCalcSection(lambdaCount, lambda, &lPairCalcID2, thisIndex.x, thisIndex.y, 0, lPairCalcID2.priority+1);
 #ifdef _CP_DEBUG_LAMBDA_VERBOSE_

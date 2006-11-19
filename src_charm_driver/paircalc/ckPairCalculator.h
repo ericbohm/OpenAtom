@@ -129,7 +129,7 @@ class partialResultMsg : public CMessage_partialResultMsg {
     {
       N=_size;
       myoffset=_myoffset;
-      CmiMemcpy(result,_points,N*sizeof(complex));
+      memcpy(result,_points,N*sizeof(complex));
     }
 
   friend class CMessage_partialResultMsg;

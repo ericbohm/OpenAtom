@@ -197,10 +197,10 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
     CkAssert(sfindex>=0);
     planeCountList[sfindex].updated      =  1; // possible semantic misuse here
     structFactorAtmGrps[sfindex][atmIndex] = 1;
-    CmiMemcpy(structFactorList[sfindex]+arroffset,msg->structFactor,msg->datalen*sizeof(complex));
-    CmiMemcpy(structFactorfxList[sfindex]+arroffset,msg->structFactor_fx,msg->datalen*sizeof(complex));
-    CmiMemcpy(structFactorfyList[sfindex]+arroffset,msg->structFactor_fy,msg->datalen*sizeof(complex));
-    CmiMemcpy(structFactorfzList[sfindex]+arroffset,msg->structFactor_fz,msg->datalen*sizeof(complex));
+    memcpy(structFactorList[sfindex]+arroffset,msg->structFactor,msg->datalen*sizeof(complex));
+    memcpy(structFactorfxList[sfindex]+arroffset,msg->structFactor_fx,msg->datalen*sizeof(complex));
+    memcpy(structFactorfyList[sfindex]+arroffset,msg->structFactor_fy,msg->datalen*sizeof(complex));
+    memcpy(structFactorfzList[sfindex]+arroffset,msg->structFactor_fz,msg->datalen*sizeof(complex));
 
     // launch the computeZ's registered for this atom index
     int ppregindex;
