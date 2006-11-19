@@ -939,7 +939,7 @@ void CP_State_GSpacePlane::readFile() {
 
       complex *dataToBeSent  = (complex *)fftw_malloc(numPoints*sizeof(complex));
       complex *temp          = complexPoints+ioff;
-      CmiMemcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
+      memcpy(dataToBeSent,temp,(sizeof(complex) * numPoints));
 
       int numPointsV;
       complex *vdataToBeSent;
@@ -947,7 +947,7 @@ void CP_State_GSpacePlane::readFile() {
          numPointsV          = numPoints;
          vdataToBeSent       = (complex *)fftw_malloc(numPointsV*sizeof(complex));
          complex *vtemp      = vcomplexPoints+ioff;
-         CmiMemcpy(vdataToBeSent,vtemp,(sizeof(complex) * numPoints));
+         memcpy(vdataToBeSent,vtemp,(sizeof(complex) * numPoints));
       }else{
          numPointsV          = 1;
          vdataToBeSent       = (complex *)fftw_malloc(numPointsV*sizeof(complex));
@@ -1063,7 +1063,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gs.packedPlaneData     = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
   gs.packedForceData     = (complex *)fftw_malloc(gs.numFull*sizeof(complex));
   gs.packedVelData       = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-  CmiMemcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
+  memcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
   bzero(gs.packedForceData,sizeof(complex)*gs.numFull);
 
   // A little extra memory of dynamics
@@ -1075,14 +1075,14 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 #ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
     gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-    CmiMemcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
+    memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 #endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
     CkAssert(vsize == size);
-    CmiMemcpy(gs.packedVelData, vpoints, sizeof(complex)*gs.numPoints);
+    memcpy(gs.packedVelData, vpoints, sizeof(complex)*gs.numPoints);
   }else{
     memset(gs.packedVelData, 0, sizeof(complex)*gs.numPoints);
   }//endif
@@ -1768,6 +1768,10 @@ void  CP_State_GSpacePlane::sendLambda() {
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
   }//endif
 #endif
+#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+  for(int i=0;i<config.numChunksAsym;i++)
+    CkAssert(countLambdaO[i]==0);
+#endif
 
 
   int numPoints   = gs.numPoints;
@@ -2014,7 +2018,7 @@ void CP_State_GSpacePlane::doLambda() {
     int ncoef          = gs.numPoints;
     complex *psi_g     = gs.packedPlaneData;
     complex *psi_g_scr = gs.packedPlaneDataScr;
-    CmiMemcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+    memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
   }//endif
     
 //==============================================================================
@@ -2022,8 +2026,7 @@ void CP_State_GSpacePlane::doLambda() {
 
   acceptedLambda=true;
   countLambda=0;
-  for(int i=0;i<config.numChunksAsym;i++)
-    countLambdaO[i]=0;
+  bzero(countLambdaO,config.numChunksAsym*sizeof(int));
   /*
     if(thisIndex.y==0)
     dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
@@ -2154,7 +2157,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
     //------------------------------------------------------------------
     // Update the velocities into scratch as we are between steps
       if(cp_min_opt==0){
-        CmiMemcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
+        memcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
         gs.copyNHC();
         if(iteration>1){
           CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
@@ -2675,7 +2678,7 @@ void CP_State_GSpacePlane::sendPsi() {
   if(cp_min_opt==0){
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
-     CmiMemcpy(scr,data,sizeof(complex)*ncoef);
+     memcpy(scr,data,sizeof(complex)*ncoef);
   }//endif
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
@@ -2687,7 +2690,10 @@ void CP_State_GSpacePlane::sendPsi() {
 
 //==============================================================================
   int numPoints = gs.numPoints;
-
+#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+  for(int i=0;i<config.numChunksSym;i++)
+    CkAssert(countPsiO[i]==0);
+#endif
 #ifndef _CP_DEBUG_ORTHO_OFF_
   startPairCalcLeft(&gpairCalcID1, numPoints, data, thisIndex.x, thisIndex.y, false);
 #else
@@ -2721,7 +2727,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
      complex *psi  = gs.packedPlaneData;     // by orthonormal psi
-     CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
+     memcpy(scr,psi,sizeof(complex)*ncoef);
   }//endif
 
   if(gs.ihave_kx0==1){
@@ -2764,7 +2770,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   int idest=chunkoffset;
 
   if(countPsiO[offset]<1)
-    //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
+    //memcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
@@ -2829,7 +2835,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   int idest=chunkoffset;
 
   if(countPsiO[offset]<1)
-    //CmiMemcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
+    //memcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
   else
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
@@ -2894,7 +2900,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 #endif
   acceptedPsi=true;
   countPsi=0;
-  bzero(countPsiO,config.numChunksSym);
+  bzero(countPsiO,config.numChunksSym*sizeof(int));
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
@@ -2925,7 +2931,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 
 #ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
-    CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
