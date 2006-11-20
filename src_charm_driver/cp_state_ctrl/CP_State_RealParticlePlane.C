@@ -399,8 +399,11 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
        CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
       fftDataDone=true;
-      if(launchFFT)
+      if(launchFFT){
 	FFTNLEesFwdR();
+      }else{
+        if(iterNL!=1){CkPrintf("Badddd launchFFT.1\n");CkExit();}
+      }//endif
     }//endif
 
 //----------------------------------------------------------------------------
@@ -777,11 +780,12 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
 void CP_State_RealParticlePlane::launchFFTControl(){
   launchFFT=true;
-  if(fftDataDone)
+  if(fftDataDone){
+    if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
     FFTNLEesFwdR();
+  }//endif
 //----------------------------------------------------------------------------
 }
 //============================================================================
