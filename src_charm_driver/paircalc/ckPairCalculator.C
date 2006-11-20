@@ -891,7 +891,19 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	  // oldCaught is the same pointer as Allcaught, we just decrease n.
 
 #if PC_FWD_DGEMM_SPLIT > 0
-    dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, outData2, &ldc);
+	  dgemmSplitFwdStreamNK(m_in, n_in, k_in, &transform, &transformT, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, outData2, &ldc);
+#else 
+
+#ifndef CMK_OPTIMIZE
+	  StartTime=CmiWallTimer();
+#endif
+
+	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
+
+#ifndef CMK_OPTIMIZE
+            traceUserBracketEvent(210, StartTime, CmiWallTimer());
+#endif
+
 #endif // split 
 
 	  copyIntoTiles(outData2, outTiles, n_in, m_in, &(LeftOffsets[oldCaughtLeft]), LeftOffsets, touchedTiles, orthoGrainSize, grainSize / orthoGrainSize);
@@ -1715,7 +1727,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 
       CmiNetworkProgress();
 #ifdef TEST_ALIGN
-      CkAssert((unsigned int) &(inDataRigh[BTAoffset] )%16==0);
+      CkAssert((unsigned int) &(inDataRight[BTAoffset] )%16==0);
       CkAssert((unsigned int) amatrix %16==0);
       CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
 #endif	  
