@@ -42,9 +42,9 @@ class CompAtmForcMsg: public CkMcastBaseMsg, public CMessage_CompAtmForcMsg {
    double *zmat;
    void init(int _nzmat, double *_zmat, int _iterNL)
      {
-       memcpy(zmat,_zmat,sizeof(double)*_nzmat);
        nZmat = _nzmat;
        iterNL = _iterNL;
+       memcpy(zmat, _zmat, sizeof(double)* nZmat);
      }
    friend class CMessage_CompAtmForcMsg;
 };

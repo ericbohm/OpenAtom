@@ -604,7 +604,8 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int iterNL_in        = msg->getUserFlag();
-   int iterNL1          = iterNL_in-1;        // silly C++ convention
+   //   int iterNL1          = iterNL_in-1;        // silly C++ convention
+   int iterNL1          = iterNL-1;        // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
 
