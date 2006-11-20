@@ -418,7 +418,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
            //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
            CkAssert(ns<config.nstates);
            //           CkAssert(thisIndex.x<32);
-           gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false);
+           gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false,myTime);
          }//endfor
        }//endif
   }//endif

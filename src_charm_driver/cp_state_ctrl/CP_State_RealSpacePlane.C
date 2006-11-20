@@ -118,6 +118,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 
     setMigratable(false);
     cookie= new CkSectionInfo[rhoRsubplanes];
+    iteration = 0;
     run();
 
 }
@@ -129,6 +130,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 void CP_State_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
 
+  p|iteration;
   p|rhoRsubplanes;
   p|ngrida;
   p|ngridb;
@@ -221,6 +223,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
     if (count == nchareG) {
       count=0;
+      iteration++;
       RTH_Runtime_resume(run_thread);
     }//endif
 
@@ -282,7 +285,7 @@ void CP_State_RealSpacePlane::doFFT(){
     //    CkAssert(config.nchareG<=32);
     CkAssert(config.nchareG==scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG);
     if(thisIndex.y<config.nchareG){
-      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false);
+      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false,iteration);
     }//endif
   }//endif
 #endif

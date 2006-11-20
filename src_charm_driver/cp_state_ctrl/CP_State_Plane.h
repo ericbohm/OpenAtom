@@ -303,7 +303,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void pup(PUP::er &);
 	void initGSpace(int, complex *,int ,complex *,
                         int,int,int,int,int,int,int);
-        void startNLEes(bool);
+        void startNLEes(bool,int);
         void launchAtoms();
 	void syncpsi();
 	void requirePsiV();
@@ -441,6 +441,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void ResumeFromSync();	
 	void pup(PUP::er &);
  private:
+        int iteration;
         int rhoRsubplanes;
         int ngrida;
         int ngridb;

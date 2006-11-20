@@ -3553,10 +3553,11 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::startNLEes(bool local){
+void CP_State_GSpacePlane::startNLEes(bool local,int iteration_loc){
   if(!local)
     triggerNL=true;
 
+  if(iteration_loc!=iteration){CkPrintf("startNLees broken\n");CkExit();}
   //make sure we don't start this before we're ready
   if(NLready && triggerNL)
     {
