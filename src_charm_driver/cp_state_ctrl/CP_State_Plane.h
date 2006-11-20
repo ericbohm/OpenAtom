@@ -480,6 +480,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         int myAoff;
         int countDebug;
         int rhoRsubplanes;
+        int myTime;
 	bool doneRhoReal;
 	bool doneRHart;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
@@ -800,6 +801,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    int Rstates_per_pe;    // Real Space topomap variable
    int myPlane;           // Real space plane number
 
+   int rhoRTime;
    int numIterNl;         // # of non-local iterations per time step
    int countZ;
    int countEnl;
@@ -844,7 +846,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    CP_State_RealParticlePlane(CkMigrateMessage *m) {}
    CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
   ~CP_State_RealParticlePlane();
-   void launchFFTControl();
+   void launchFFTControl(int );
    void pup(PUP::er &);
    void printEnlR(CkReductionMsg *m);
    void printEnlRSimp(double,int,int);

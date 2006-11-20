@@ -131,6 +131,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   zmatSizeMax    = zmatSizeMax_in;       // zmatrix size
   ees_nonlocal   = ees_nonlocal_in;
 
+  rhoRTime         = 0;
   cp_enl           = 0.0;                // non-local energy
   cp_enlTot        = 0.0;
   count            = 0;                  // fft communication counter
@@ -401,8 +402,9 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
       fftDataDone=true;
       if(launchFFT){
 	FFTNLEesFwdR();
+        if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1\n");CkExit();}
       }else{
-        if(iterNL!=1){CkPrintf("Badddd launchFFT.1\n");CkExit();}
+        if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
       }//endif
     }//endif
 
@@ -780,10 +782,12 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealParticlePlane::launchFFTControl(){
+void CP_State_RealParticlePlane::launchFFTControl(int time_in){
+  rhoRTime = time_in;
   launchFFT=true;
   if(fftDataDone){
-    if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
+    if(iterNL!=1){CkPrintf("Badddd launchFFT.3\n");CkExit();}
+    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.4\n");CkExit();}
     FFTNLEesFwdR();
   }//endif
 //----------------------------------------------------------------------------
@@ -984,6 +988,7 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 void CP_State_RealParticlePlane::pup(PUP::er &p) {
 //============================================================================
 
+   p|rhoRTime;
    p|ees_nonlocal;
    p|nChareR; 
    p|nChareG;

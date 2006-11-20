@@ -125,7 +125,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     initRhoRealSlab(&rho_rs,ngrida,myNgridb,ngridc,myNplane_rho,ngridb,
                      thisIndex.x,thisIndex.y,rhoRsubplanes);
 
-   // Initialize counters, set booleans.
+   // Initialize counters, set booleans.myTime
+    myTime          = 0;
     countDebug      = 0; // does nothing in the working code.
     countWhiteByrd  = 0;
     doneGradRhoVks  = 0;
@@ -223,6 +224,7 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 //============================================================================
 void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
+  p|myTime;
   p|nplane_rho_x;
   p|ngrida;
   p|myNgridb;
@@ -305,6 +307,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 //============================================================================
 // Set the flags : you are not done unless certain conditions apply.
 
+   myTime++;
    doneHartVks   = false;
    doneWhiteByrd = false;
    doneRHart     = false;
@@ -588,7 +591,7 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         int iend    = ist + div + add;
         for(int ns=ist;ns<iend;ns++){
           CkAssert(ns<config.nstates);
-          realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl();
+          realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl(myTime);
         }//endfor
     }//endif
   }//endif

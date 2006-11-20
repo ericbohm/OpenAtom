@@ -245,7 +245,7 @@ mainmodule cpaimd {
 		entry void printEnlRSimp(double ,int,int);
                 entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
                                            int index, int iterNL_in);
-	        entry void launchFFTControl();
+	        entry void launchFFTControl(int );
 	};
 
 	array [2D] CP_State_RealSpacePlane {
