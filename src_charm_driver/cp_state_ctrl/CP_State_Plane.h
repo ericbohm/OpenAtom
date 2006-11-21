@@ -415,6 +415,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	PairCalcID gpairCalcID2;
 
  	RTH_Runtime* run_thread; // why is this private?
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+	complex *savedvksBf;
+	complex *savedforceBf;
+#endif
 #ifdef  _CP_GS_DEBUG_COMPARE_PSI_
 	// place to keep data loaded from files for comparison
 	complex *savedpsiBfp;
@@ -423,6 +427,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	complex *savedlambdaBf;
 	complex *savedlambdaAf;
 #endif
+	
 };
 //============================================================================
 
@@ -793,6 +798,10 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 	CkSectionInfo enlCookie; 
 	CProxySection_CP_State_ParticlePlane particlePlaneENLProxy;
 	CProxy_CP_State_RealParticlePlane realPP_proxy;
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+	complex *savedprojpsiBf;
+#endif
+
  public: 
 };
 //============================================================================

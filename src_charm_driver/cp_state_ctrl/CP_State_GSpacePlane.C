@@ -729,6 +729,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
    registrationFlag  = 1;
    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
    eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+   savedvksBf=NULL;
+   savedforceBf=NULL;
+#endif
 #ifdef  _CP_GS_DEBUG_COMPARE_PSI_
    savedpsiBf=NULL;
    savedpsiBfp=NULL;
@@ -1675,6 +1679,44 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 #ifdef _CP_DEBUG_VKS_OFF_ 
   bzero(forces,ncoef*sizeof(complex));
   bzero(ppForces,ncoef*sizeof(complex));
+#endif
+
+
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("vksBf",(double *)ppForces, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("forceBf",(double *)forces, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  if(savedvksBf==NULL)
+    { // load it
+      savedvksBf= new complex[gs.numPoints];
+      loadMatrixDouble("vksBf",(double *)savedvksBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  if(savedforceBf==NULL)
+    { // load it
+      savedforceBf= new complex[gs.numPoints];
+      loadMatrixDouble("forceBf",(double *)savedforceBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      if(fabs(ppForces[i].re-savedvksBf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "GSP [%d,%d] %d element vks  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, ppForces[i].re, savedvksBf[i].re);
+	}
+      CkAssert(fabs(ppForces[i].re-savedvksBf[i].re)<0.0001);
+      CkAssert(fabs(ppForces[i].im-savedvksBf[i].im)<0.0001);
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      if(fabs(forces[i].re-savedforceBf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "GSP [%d,%d] %d element force  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, forces[i].re, savedforceBf[i].re);
+	}
+      CkAssert(fabs(forces[i].re-savedforceBf[i].re)<0.0001);
+      CkAssert(fabs(forces[i].im-savedforceBf[i].im)<0.0001);
+    }
 #endif
 
   gs.addForces(ppForces,k_x);
@@ -3015,6 +3057,10 @@ void CP_State_GSpacePlane::doNewPsi(){
     }
   for(int i=0;i<gs.numPoints;i++)
     {
+      if(fabs(psi[i].re-savedpsiAf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiAf[i].re);
+	}
       CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<0.0001);
       CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<0.0001);
     }

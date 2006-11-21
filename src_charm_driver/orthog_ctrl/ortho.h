@@ -298,6 +298,13 @@ class Ortho : public CBase_Ortho{
   int m, n;
   CLA_Matrix_interface matA1, matB1, matC1, matA2, matB2, matC2, matA3,
    matB3, matC3;
+#ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
+  double *savedtmat;
+#endif
+
+#ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
+  double *savedsmat;
+#endif
 
 };
 

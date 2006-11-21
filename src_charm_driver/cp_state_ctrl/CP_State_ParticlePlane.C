@@ -286,7 +286,9 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   int constructed=1;
   contribute(sizeof(int), &constructed, CkReduction::sum_int, 
 	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
-
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  savedprojpsiBf=NULL;
+#endif
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -1192,6 +1194,27 @@ void CP_State_ParticlePlane::computeNLEesForces(){
    CkPrintf("HI, I am gPP %d %d in computeNLeesForc : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
   complex *projPsiGTmp = fftcache->tmpData;
+
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("projPsiGtmpb4",(double *)projPsiGTmp, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  if(savedprojpsiBf==NULL)
+    { // load it
+      savedprojpsiBf= new complex[ncoef];
+      loadMatrixDouble("projPsiGtmpb4",(double *)savedprojpsiBf, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<ncoef;i++)
+    {
+      if(fabs(projPsiGTmp[i].re-savedprojpsiBf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "PP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiGTmp[i].re, savedprojpsiBf[i].re);
+	}
+      CkAssert(fabs(projPsiGTmp[i].re-savedprojpsiBf[i].re)<0.0001);
+      CkAssert(fabs(projPsiGTmp[i].im-savedprojpsiBf[i].im)<0.0001);
+    }
+#endif
 
 #ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();

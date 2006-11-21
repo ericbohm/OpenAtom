@@ -184,6 +184,27 @@ void Ortho::start_calc(CkReductionMsg *msg){
   }
   fclose(outfile);
 #endif
+#ifdef _CP_ORTHO_DUMP_SMAT_
+    dumpMatrixDouble("smat",(double *)S, chunksize, chunksize,thisIndex.x,thisIndex.y,0,0,false);     
+#endif
+
+#ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
+  if(savedsmat==NULL)
+    { // load it
+      savedsmat= new double[chunksize*chunksize];
+      loadMatrixDouble("smat",(double *)savedsmat, chunksize, chunksize,thisIndex.x,thisIndex.y,0,0,false);     
+    }
+  for(int i=0;i<chunksize*chunksize;i++)
+    {
+      if(fabs(S[i]-savedsmat[i])>0.0001)
+	{
+	  fprintf(stderr, "O [%d,%d] %d element ortho %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, S[i], savedsmat[i]);
+	}
+
+      CkAssert(fabs(S[i]-savedsmat[i])<0.0001);
+      CkAssert(fabs(S[i]-savedsmat[i])<0.0001);
+    }
+#endif
   for(int i = 0; i < m * n; i++){
     B[i] = S[i] / 2.0;
   }
@@ -313,6 +334,28 @@ void Ortho::resume(){
       }
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
+#ifdef _CP_ORTHO_DUMP_TMAT_
+    dumpMatrixDouble("tmat",(double *)A, m, n,thisIndex.x,thisIndex.y,0,0,false);     
+#endif
+
+#ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
+  if(savedtmat==NULL)
+    { // load it
+      savedtmat= new double[m*n];
+      loadMatrixDouble("tmat",(double *)savedtmat, m, n, thisIndex.x,thisIndex.y,0,0,false);     
+    }
+  for(int i=0;i<m*n;i++)
+    {
+      if(fabs(A[i]-savedtmat[i])>0.0001)
+	{
+	  fprintf(stderr, "O [%d,%d] %d element ortho %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, A[i], savedtmat[i]);
+	}
+
+      CkAssert(fabs(A[i]-savedtmat[i])<0.0001);
+      CkAssert(fabs(A[i]-savedtmat[i])<0.0001);
+    }
+#endif
+
     if(s1 == s2)   //we have the answer scalc wants
       finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType,  0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
@@ -706,6 +749,14 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
+#ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
+  savedsmat=NULL;
+#endif
+
+#ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
+  savedtmat=NULL;
+#endif
+
 //============================================================================
    }//end routine
 //============================================================================
