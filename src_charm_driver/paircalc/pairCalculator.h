@@ -226,5 +226,6 @@ void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId,
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
+void loadMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart);
 #endif

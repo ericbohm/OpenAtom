@@ -510,7 +510,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
   /* multiply */
   char trans = 't';
-//#define ORTHO_DGEMM_SPLIT 
+#define ORTHO_DGEMM_SPLIT 
 
 #define BUNDLE_USER_EVENTS
 #ifdef ORTHO_DGEMM_SPLIT 

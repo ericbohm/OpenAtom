@@ -414,7 +414,15 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	PairCalcID gpairCalcID1;
 	PairCalcID gpairCalcID2;
 
-	RTH_Runtime* run_thread; // why is this private?
+ 	RTH_Runtime* run_thread; // why is this private?
+#ifdef  _CP_GS_DEBUG_COMPARE_PSI_
+	// place to keep data loaded from files for comparison
+	complex *savedpsiBfp;
+	complex *savedpsiBf;
+	complex *savedpsiAf;
+	complex *savedlambdaBf;
+	complex *savedlambdaAf;
+#endif
 };
 //============================================================================
 

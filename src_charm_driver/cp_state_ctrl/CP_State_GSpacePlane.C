@@ -729,7 +729,13 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
    registrationFlag  = 1;
    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
    eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
-
+#ifdef  _CP_GS_DEBUG_COMPARE_PSI_
+   savedpsiBf=NULL;
+   savedpsiBfp=NULL;
+   savedpsiAf=NULL;
+   savedlambdaBf=NULL;
+   savedlambdaAf=NULL;
+#endif
 //============================================================================
 // Contribute to the reduction telling main we are done
 
@@ -1772,7 +1778,38 @@ void  CP_State_GSpacePlane::sendLambda() {
   for(int i=0;i<config.numChunksAsym;i++)
     CkAssert(countLambdaO[i]==0);
 #endif
+#ifdef _CP_GS_DUMP_LAMBDA_
+    dumpMatrixDouble("lambdaBf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("psiBf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
 
+#ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  if(savedlambdaBf==NULL)
+    { // load it
+      savedlambdaBf= new complex[gs.numPoints];
+      loadMatrixDouble("lambdaBf",(double *)savedlambdaBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  if(savedpsiBf==NULL)
+    { // load it
+      savedpsiBf= new complex[gs.numPoints];
+      loadMatrixDouble("psiBf",(double *)savedpsiBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      if(fabs(force[i].re-savedlambdaBf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "GSP [%d,%d] %d element lambda  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, force[i].re, savedlambdaBf[i].re);
+	}
+      CkAssert(fabs(force[i].re-savedlambdaBf[i].re)<0.0001);
+      CkAssert(fabs(force[i].im-savedlambdaBf[i].im)<0.0001);
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      CkAssert(fabs(psi[i].re-savedpsiBf[i].re)<0.0001);
+      CkAssert(fabs(psi[i].im-savedpsiBf[i].im)<0.0001);
+    }
+
+#endif
 
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
@@ -1832,7 +1869,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 				  // contribution lies
   /*
   if(thisIndex.y==0)
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
   if(thisIndex.y==0)
     {
@@ -1920,7 +1957,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
   /*
   if(thisIndex.y==0)
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
   if(thisIndex.y==0)
     {
@@ -2027,10 +2064,24 @@ void CP_State_GSpacePlane::doLambda() {
   acceptedLambda=true;
   countLambda=0;
   bzero(countLambdaO,config.numChunksAsym*sizeof(int));
-  /*
-    if(thisIndex.y==0)
-    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,offset,false);    
-  */
+
+#ifdef _CP_GS_DUMP_LAMBDA_
+    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  if(savedlambdaAf==NULL)
+    { // load it
+      savedlambdaAf= new complex[gs.numPoints];
+      loadMatrixDouble("lambdaAf",(double *)savedlambdaAf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<0.0001);
+      CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<0.0001);
+    }
+#endif
+
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -2673,18 +2724,18 @@ void CP_State_GSpacePlane::sendPsi() {
   acceptedPsi =false;
   allAcceptedPsi =false;
 
-  complex *data=gs.packedPlaneData;
+  complex *psi=gs.packedPlaneData;
 
   if(cp_min_opt==0){
      int ncoef     = gs.numPoints;
      complex *scr  = gs.packedPlaneDataScr; //save non-orthog psi
-     memcpy(scr,data,sizeof(complex)*ncoef);
+     memcpy(scr,psi,sizeof(complex)*ncoef);
   }//endif
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
-    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2i;}
   }//endif
 #endif
 
@@ -2694,8 +2745,32 @@ void CP_State_GSpacePlane::sendPsi() {
   for(int i=0;i<config.numChunksSym;i++)
     CkAssert(countPsiO[i]==0);
 #endif
+
+#ifdef _CP_GS_DUMP_PSI_
+    dumpMatrixDouble("psiBfp",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  if(savedpsiBfp==NULL)
+    { // load it
+      savedpsiBfp= new complex[gs.numPoints];
+      loadMatrixDouble("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      if(fabs(psi[i].re-savedpsiBfp[i].re)>0.0001)
+	{
+	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiBfp[i].re);
+	}
+
+      CkAssert(fabs(psi[i].re-savedpsiBfp[i].re)<0.0001);
+      CkAssert(fabs(psi[i].im-savedpsiBfp[i].im)<0.0001);
+    }
+
+#endif
+
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  startPairCalcLeft(&gpairCalcID1, numPoints, data, thisIndex.x, thisIndex.y, false);
+  startPairCalcLeft(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
@@ -2928,6 +3003,22 @@ void CP_State_GSpacePlane::doNewPsi(){
   }///endif
   //--------------------------------------------------------------------
   // (E) Reset psi if debugging
+#ifdef _CP_GS_DUMP_PSI_
+  dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+ #ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  if(savedpsiAf==NULL)
+    { // load it
+      savedpsiAf= new complex[gs.numPoints];
+      loadMatrixDouble("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gs.numPoints;i++)
+    {
+      CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<0.0001);
+      CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<0.0001);
+    }
+#endif
 
 #ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){

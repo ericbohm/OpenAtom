@@ -613,6 +613,28 @@ void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim
   fclose(loutfile);
 }
 
+void loadMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric)
+{
+  char fmt[1000];
+  char filename[1000];
+  strncpy(fmt,infilename,999);
+  strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
+  sprintf(filename,fmt, w, x, y, z, symmetric);
+  FILE *loutfile = fopen(filename, "r");
+  if(loutfile!=NULL)
+    {
+      int junk1,junk2;
+      for(int i=0;i<xdim;i++)
+	for(int j=0;j<ydim;j++)
+	  fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j]));
+      fclose(loutfile);
+    }
+  else
+    {
+      CkAbort(filename);
+    }
+}
+
 // create multicast proxies
 void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
@@ -907,9 +929,12 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 
   if(ptr2==NULL){
 #ifdef _NAN_CHECK_
-  for(int i=0;i<n ;i++)
+    for(int i=0;i<n ;i++)
     {
-      CkAssert(finite(ptr1[i]));
+      if(pcid->Symmetric)  // just so we can discern in the abort
+	CkAssert(finite(ptr1[i]));
+      else
+	CkAssert(finite(ptr1[i]));
     }
 #endif
 
