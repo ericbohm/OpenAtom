@@ -1052,7 +1052,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
      if(config.prioNLFFTMsg){
         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
         *(int*)CkPriorityPtr(msg) = config.rsNLfftpriority + 
-                                   thisIndex.x*ngridcNL + thisIndex.y;
+                                   thisIndex.x + thisIndex.y;
      }//endif
 
      // beam out all points with same z to chare array index z
@@ -1174,16 +1174,16 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   complex *projPsiGTmp = fftcache->tmpData;
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiGb4",(double *)projPsiG, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("projPsiGb4",(double *)projPsiG, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   if(savedprojpsiGBf==NULL)
     { // load it
-      savedprojpsiGBf= new complex[gSpaceNumPoints];
-      loadMatrixDouble("projPsiGb4",(double *)savedprojpsiGBf, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      savedprojpsiGBf= new complex[numFullNL];
+      loadMatrixDouble("projPsiGb4",(double *)savedprojpsiGBf, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
-  for(int i=0;i<gSpaceNumPoints;i++)
+  for(int i=0;i<numFullNL;i++)
     {
       if(fabs(projPsiG[i].re-savedprojpsiGBf[i].re)>0.0001)
 	{

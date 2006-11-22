@@ -1568,7 +1568,7 @@ void Config::print(char *fname_in) {
      fprintf(fp,"useRInsIGZRhoGP: %d\n", useRInsIGZRhoGP);
 
      fprintf(fp,"useGssInsRealP: %d\n", useGssInsRealP);
-     fprintf(fp,"useGssInsRealP: %d\n", useGssInsRealPP);
+     fprintf(fp,"useGssInsRealPP: %d\n", useGssInsRealPP);
      fprintf(fp,"useMssInsGP: %d\n", useMssInsGP);
      fprintf(fp,"useMssInsGPP: %d\n", useMssInsGPP);
      fprintf(fp,"useGHartInsRHart %d\n",useGHartInsRHart);

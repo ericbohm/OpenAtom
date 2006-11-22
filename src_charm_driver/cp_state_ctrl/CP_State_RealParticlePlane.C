@@ -889,7 +889,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
       complex *data       = msg->data;
       if(config.prioNLFFTMsg){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x*planeSize;
+	  *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x;
       }//endif
       for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
       particlePlaneProxy(thisIndex.x, ic).recvFromEesRPP(msg); // send the message
