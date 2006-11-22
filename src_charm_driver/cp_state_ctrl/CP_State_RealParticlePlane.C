@@ -269,7 +269,9 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 
   setMigratable(false);
   usesAtSync = CmiFalse;
-
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  savedprojpsiC=NULL;
+#endif
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
@@ -429,6 +431,26 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB);
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  if(savedprojpsiC==NULL)
+    { // load it
+      savedprojpsiC= new complex[(ngridA+2)*ngridB/2];
+      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<(ngridA+2)*ngridB/2;i++)
+    {
+      if(fabs(projPsiC[i].re-savedprojpsiC[i].re)>0.0001)
+	{
+	  fprintf(stderr, "PP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiC[i].re, savedprojpsiC[i].re);
+	}
+      CkAssert(fabs(projPsiC[i].re-savedprojpsiC[i].re)<0.0001);
+      CkAssert(fabs(projPsiC[i].im-savedprojpsiC[i].im)<0.0001);
+    }
+#endif
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)

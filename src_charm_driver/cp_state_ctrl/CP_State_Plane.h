@@ -800,6 +800,8 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 	CProxy_CP_State_RealParticlePlane realPP_proxy;
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
 	complex *savedprojpsiBf;
+	complex *savedprojpsiBfsend;
+	complex *savedprojpsiGBf;
 #endif
 
  public: 
@@ -858,7 +860,9 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    CkSectionInfo rPlaneRedCookie;   // Section Red cookie for zmat
    CkSectionInfo rEnlCookie;        // Section Red cookie for cp_enl
    CProxy_CP_State_ParticlePlane gPP_proxy;
-
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  complex *savedprojpsiC;
+#endif
   //-----------
   // Functions
    CP_State_RealParticlePlane(CkMigrateMessage *m) {}

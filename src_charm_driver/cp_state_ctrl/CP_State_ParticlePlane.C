@@ -288,6 +288,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiBf=NULL;
+  savedprojpsiBfsend=NULL;
+  savedprojpsiGBf=NULL;
 #endif
 //---------------------------------------------------------------------------
    }//end routine
@@ -986,6 +988,27 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
   traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("projPsiGb4send",(double *)projPsiG, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  if(savedprojpsiBfsend==NULL)
+    { // load it
+      savedprojpsiBfsend= new complex[gSpaceNumPoints];
+      loadMatrixDouble("projPsiGb4send",(double *)savedprojpsiBfsend, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gSpaceNumPoints;i++)
+    {
+      if(fabs(projPsiG[i].re-savedprojpsiBfsend[i].re)>0.0001)
+	{
+	  fprintf(stderr, "PP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiG[i].re, savedprojpsiBfsend[i].re);
+	}
+      CkAssert(fabs(projPsiG[i].re-savedprojpsiBfsend[i].re)<0.0001);
+      CkAssert(fabs(projPsiG[i].im-savedprojpsiBfsend[i].im)<0.0001);
+    }
+#endif
+
   sendToEesRPP();
 
 //---------------------------------------------------------------------------
@@ -1150,12 +1173,33 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
   complex *projPsiGTmp = fftcache->tmpData;
 
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("projPsiGb4",(double *)projPsiG, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  if(savedprojpsiGBf==NULL)
+    { // load it
+      savedprojpsiGBf= new complex[gSpaceNumPoints];
+      loadMatrixDouble("projPsiGb4",(double *)savedprojpsiGBf, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<gSpaceNumPoints;i++)
+    {
+      if(fabs(projPsiG[i].re-savedprojpsiGBf[i].re)>0.0001)
+	{
+	  fprintf(stderr, "PP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiG[i].re, savedprojpsiGBf[i].re);
+	}
+      CkAssert(fabs(projPsiG[i].re-savedprojpsiGBf[i].re)<0.0001);
+      CkAssert(fabs(projPsiG[i].im-savedprojpsiGBf[i].im)<0.0001);
+    }
+#endif
+
 #ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
 
   fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
-                               (gss->numRuns),runs,ngridcNL);
+                               eesData->GspData[myChareG].numRuns,runs,ngridcNL);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
