@@ -1059,6 +1059,8 @@ PairCalculator::multiplyForward(bool flag_dp)
   int k_in=doubleN;
   int ldc=numExpected;   //leading dimension C
   double alpha=double(1.0);//multiplicative identity
+  if (flag_dp)  // scaling factor for psi
+    alpha=2.0;
   double beta=double(0.0); // C is unset
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
@@ -1077,11 +1079,9 @@ PairCalculator::multiplyForward(bool flag_dp)
       matrixA=inDataLeft;
     }
 
-
-
 #if PC_FWD_DGEMM_SPLIT > 0
   double betap = 1.0;
-  int Ksplit_m =  gemmSplitFWk;
+  int Ksplit_m = gemmSplitFWk;
   int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
   int Krem     = (k_in % Ksplit);
   int Kloop    = k_in/Ksplit-1;
@@ -1100,7 +1100,8 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   for(int i=1;i<=Kloop;i++){
     int off = i*Ksplit;
-    if(i==Kloop){Ksplit+=Krem;}
+    int KsplitU = (i==Kloop ? Ksplit+Krem : Ksplit); 
+    // if(i==Kloop){Ksplit+=Krem;}
 
 #ifndef CMK_OPTIMIZE
     StartTime=CmiWallTimer();
@@ -1111,7 +1112,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     CkAssert((unsigned int)outData%16==0);
 #endif
 
-    DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
+    DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
     CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
@@ -1133,8 +1134,6 @@ PairCalculator::multiplyForward(bool flag_dp)
   CkAssert(matrixA!=NULL);
   CkAssert(inDataLeft!=NULL);
   CkAssert(outData!=NULL);
-  if (flag_dp)  // scaling factor for psi
-    alpha=2.0;
 
   DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
   
