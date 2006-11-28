@@ -862,6 +862,9 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    CProxy_CP_State_ParticlePlane gPP_proxy;
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   complex *savedprojpsiC;
+  complex *savedProjpsiCScr;
+  double *savedProjpsiRScr;
+  double *savedzmat;
 #endif
   //-----------
   // Functions

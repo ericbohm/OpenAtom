@@ -271,6 +271,9 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   usesAtSync = CmiFalse;
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiC=NULL;
+  savedProjpsiCScr=NULL;
+  savedProjpsiRScr=NULL;
+  savedzmat=NULL;
 #endif
 //----------------------------------------------------------------------------
   }//end routine
@@ -428,6 +431,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
    CkPrintf("HI, I am rPP %d %d in FFTNL : %d %d %d %d\n",
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
+  // This is actually in place, projPsiR and projPsiC use the same location
 
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB);
@@ -436,6 +440,9 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
+    // at this point we're checking that we did the fft correctly
+    // which implicitly checks that we collated the input correctly
+
   if(savedprojpsiC==NULL)
     { // load it
       savedprojpsiC= new complex[(ngridA+2)*ngridB/2];
@@ -445,7 +452,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
     {
       if(fabs(projPsiC[i].re-savedprojpsiC[i].re)>0.0001)
 	{
-	  fprintf(stderr, "PP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiC[i].re, savedprojpsiC[i].re);
+	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiC[i].re, savedprojpsiC[i].re);
 	}
       CkAssert(fabs(projPsiC[i].re-savedprojpsiC[i].re)<0.0001);
       CkAssert(fabs(projPsiC[i].im-savedprojpsiC[i].im)<0.0001);
@@ -784,6 +791,45 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 #endif
    }//endif
 
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("zmat",(double *)zmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrixDouble("projPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+    // check that we did the zmat gather/scatter correctly and 
+
+  if(savedzmat==NULL)
+    { // load it
+      savedzmat= new double[nZmat_in];
+      loadMatrixDouble("zmat",(double *)savedzmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    }
+  for(int i=0;i<nZmat_in; i++)
+    {
+      if(fabs(zmat[i]-savedzmat[i])>0.0001)
+	{
+	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, zmat[i], savedzmat[i]);
+	}
+      CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
+      CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
+    }
+  if(savedProjpsiRScr==NULL)
+    { // load it
+      savedProjpsiRScr= new double[planeSize];
+      loadMatrixDouble("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<planeSize;i++)
+    {
+      if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
+	{
+	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
+	}
+      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+    }
+
+#endif
+
    // zero the total enl energy if we are done.
    if(iterNL==numIterNl){
      cp_enl = 0.0;
@@ -841,7 +887,36 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   double StartTime= CmiWallTimer();    
 #endif
 
+
+
+
   fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
+
+
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrixDouble("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+#endif
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+    // at this point we're checking that we did the fft correctly
+    // which implicitly checks that we did the zmat gather/scatter correctly
+
+  if(savedProjpsiCScr==NULL)
+    { // load it
+      savedProjpsiCScr= new complex[(ngridA+2)*ngridB/2];
+      loadMatrixDouble("projPsiCScr",(double *)savedProjpsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<(ngridA+2)*ngridB/2;i++)
+    {
+      if(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)>0.0001)
+	{
+	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiCScr[i].re, savedProjpsiCScr[i].re);
+	}
+      CkAssert(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)<0.0001);
+      CkAssert(fabs(projPsiCScr[i].im-savedProjpsiCScr[i].im)<0.0001);
+    }
+#endif
+
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
