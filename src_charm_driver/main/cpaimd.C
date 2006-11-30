@@ -1537,7 +1537,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
   fftCacheProxy = CProxy_FFTcache::ckNew(
                      sizeRealPlane,ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
-                     ngridaNl,ngridbNl,ngridcNl,ees_nonlocal_on);
+                     ngridaNl,ngridbNl,ngridcNl,ees_nonlocal_on, sim->nlines_max, sim->nlines_max_rho);
   sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
   sfCompProxy = CProxy_StructureFactor::ckNew();
   eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,

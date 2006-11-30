@@ -883,15 +883,46 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   double  *projPsiRScr = fftcache->tmpDataR;
   complex *projPsiCScr = fftcache->tmpData;
 
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  // double check that projPsiRScr is still ok
+  if(savedProjpsiRScr==NULL)
+    { // load it
+      savedProjpsiRScr= new double[planeSize];
+      loadMatrixDouble("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  for(int i=0;i<planeSize;i++)
+    {
+      if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
+	{
+	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
+	}
+      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+    }
+
+#endif
+
 #ifndef CMK_OPTIMIZE
   double StartTime= CmiWallTimer();    
 #endif
+  /*rfftwnd_plan plan = fftcache->bwdXPlanNL.rfftwPlan;
+  CkPrintf("outside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d\n ",plan,  ngridB, projPsiRScr, 1, ngridA+2, NULL, 0 ,0 ) ;
+  */
+    fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
+  /*
 
+	   *out_in,  ostride_in, odist_in, split);
 
-
-
-  fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
-
+ rfftwnd_real_to_complex(
+   	     plan,             // backward plan
+	     ngridB,                      // these many 1D ffts
+	     (fftw_real *)projPsiRScr,         // data set
+             1,                          // stride
+             (ngridA+2),                  // spacing between data sets
+  	     NULL,0,0                   // input array is output array
+           );     
+  */
 
 #ifdef _CP_GS_DUMP_VKS_
     dumpMatrixDouble("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
@@ -911,6 +942,9 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
       if(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)>0.0001)
 	{
 	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiCScr[i].re, savedProjpsiCScr[i].re);
+	  fprintf(stderr, "HI, I am rPP %d %d in FFTNLbck : %d %d %d %d\n",
+     thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
+
 	}
       CkAssert(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)<0.0001);
       CkAssert(fabs(projPsiCScr[i].im-savedProjpsiCScr[i].im)<0.0001);

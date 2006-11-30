@@ -387,7 +387,7 @@ mainmodule cpaimd {
 		entry SCalcMap(bool);
 	};
 	group FFTcache {
-		entry FFTcache(size2d, int,int,int,int,int,int,int,int);
+		entry FFTcache(size2d, int,int,int,int,int,int,int,int,int,int);
 	};
 
 	group StructFactCache {

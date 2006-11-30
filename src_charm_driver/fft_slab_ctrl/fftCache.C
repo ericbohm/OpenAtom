@@ -36,7 +36,7 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
-                   int _ees_NL_on){
+                   int _ees_NL_on, int _nlines_max, int _nlines_max_rho){
 //==============================================================================
 // Local Variables
 
@@ -58,6 +58,8 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     ngridbNL     = _ngridbNL; 
     ngridcNL     = _ngridcNL; 
     ees_NL_on    = _ees_NL_on;
+    int nlines_max     = _nlines_max;
+    int nlines_max_rho = _nlines_max_rho;
 
     int sizeY    = planeSIZE[0];
     int sizeZ    = planeSIZE[1];
@@ -85,8 +87,6 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 //==============================================================================
 // Density, State and EES Scratch
 
-    int nlines_max     = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max;
-    int nlines_max_rho = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_max_rho;
 
     int pGsize         = nlines_max*planeSize[1];     // z-collections
     int pGsizeHart     = nlines_max_rho*planeSize[1]; // z-collections
@@ -96,12 +96,12 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     int pRsizeNL       = (ngridaNL/2+1)*ngridbNL;     // x-y plane
 
     int pmax = pGsize; 
-    pmax     = (pmax > pRsize     ? pmax : pRsize);
-    pmax     = (pmax > pGsizeHart ? pmax : pGsizeHart);
+    pmax     = (pmax > pRsize   )  ? pmax : pRsize;
+    pmax     = (pmax > pGsizeHart) ? pmax : pGsizeHart;
 
-    if(ees_eext_on==1){pmax = (pmax>pGsizeEext ? pmax : pGsizeEext);}
-    if(ees_NL_on  ==1){pmax = (pmax>pGsizeNL   ? pmax : pGsizeNL);}
-    if(ees_NL_on  ==1){pmax = (pmax>pRsizeNL   ? pmax : pRsizeNL);}
+    if(ees_eext_on==1){pmax = (pmax>pGsizeEext) ? pmax : pGsizeEext;}
+    if(ees_NL_on  ==1){pmax = (pmax>pGsizeNL)   ? pmax : pGsizeNL;}
+    if(ees_NL_on  ==1){pmax = (pmax>pRsizeNL)   ? pmax : pRsizeNL;}
 
     tmpData  = (complex*) fftw_malloc(pmax*sizeof(complex)); 
     tmpDataR = reinterpret_cast<double*> (tmpData);
@@ -112,14 +112,14 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
    //------------------------------------------------
    // Double Pack Plans
 
-    nf_max = (sizeX > sizeY  ? sizeX : sizeY); 
-    nf_max = (sizeZ > nf_max ? sizeZ : nf_max);
+    nf_max = (sizeX > sizeY)  ? sizeX : sizeY; 
+    nf_max = (sizeZ > nf_max) ? sizeZ : nf_max;
     nwork1 = 0;    nwork2 = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
       nwork1   = 20000+iadd;
       nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2 ? nwork1 : nwork2);
+      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
     }//endif
     skipR = sizeX+2;
     skipC = sizeX/2+1;
@@ -159,14 +159,14 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
    //-----------------------------------
    // Double Pack Plan NL : 
 
-    nf_max = (ngridaNL> ngridbNL ? ngridaNL : ngridbNL); 
-    nf_max = (ngridcNL > nf_max  ? ngridcNL : nf_max); 
+    nf_max = (ngridaNL> ngridbNL) ? ngridaNL : ngridbNL; 
+    nf_max = (ngridcNL > nf_max ) ? ngridcNL : nf_max; 
     nwork1 = 0;   nwork2 = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
       nwork1   = 20000+iadd;
       nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2 ? nwork1 : nwork2);
+      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
     }//endif
     skipR = ngridaNL+2;
     skipC = ngridaNL/2+1;
@@ -201,14 +201,14 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
    //-----------------------------------
    // Double Pack Plan Eext : 
 
-    nf_max = (ngridaEext> ngridbEext ? ngridaEext : ngridbEext); 
-    nf_max = (ngridcEext > nf_max    ? ngridcEext : nf_max); 
+    nf_max = (ngridaEext> ngridbEext) ? ngridaEext : ngridbEext; 
+    nf_max = (ngridcEext > nf_max )   ? ngridcEext : nf_max; 
     nwork1 = 0;   nwork2 = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
       nwork1   = 20000+iadd;
       nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2 ? nwork1 : nwork2);
+      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
     }//endif
     skipR = ngridaEext+2;
     skipC = ngridaEext/2+1;
@@ -1287,7 +1287,7 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
   if(iopt==1){
     ostride = fftplanholder->ostride;
     odist   = fftplanholder->odist;
-    out     = (out==NULL ? in : out );
+    out     = (out==NULL) ? in : out ;
   }//endif
   
   int thismany  = split;
@@ -1308,7 +1308,7 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      fftw_complex *dummy = (out==NULL ? NULL : &(out[outoff]) );
+      fftw_complex *dummy = (out==NULL) ? NULL : &(out[outoff]) ;
       switch(iopt){
         case 0:
                 fftw(
@@ -1397,7 +1397,7 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      fftw_real *dummy = (out==NULL ? NULL : &(out[outoff]));
+      fftw_real *dummy = (out==NULL) ? NULL : &(out[outoff]);
       switch(iopt){
         case 0:
           rfftwnd_complex_to_real(
@@ -1476,7 +1476,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
 
   int inoff  = 0;
   int outoff = 0;
-
+  CkPrintf("inside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d split %d dummy %p\n",plan,  howmany, in, istride_in, idist_in, out_in,  ostride_in, odist_in, split,(out==NULL) ? NULL : &(out[outoff]));
   for(int i=0;i<numsplits;i++){
       thismany=split;
       if(inleft<split){thismany=inleft;}
@@ -1484,7 +1484,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
 #endif
-      fftw_complex *dummy = (out==NULL ? NULL : &(out[outoff]));
+      fftw_complex *dummy = (out==NULL) ? NULL : &(out[outoff]);
       switch(iopt){
         case 0:
           rfftwnd_real_to_complex(

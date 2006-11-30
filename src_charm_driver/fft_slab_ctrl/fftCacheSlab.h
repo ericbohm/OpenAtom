@@ -387,7 +387,7 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // The constructor 
-     FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int );
+     FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int, int, int );
 
     //-----------------------------------------------------------
     // Generic G-space expanders and contractors
