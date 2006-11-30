@@ -1476,7 +1476,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
 
   int inoff  = 0;
   int outoff = 0;
-  CkPrintf("inside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d split %d dummy %p\n",plan,  howmany, in, istride_in, idist_in, out_in,  ostride_in, odist_in, split,(out==NULL) ? NULL : &(out[outoff]));
+  //  CkPrintf("inside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d split %d dummy %p\n",plan,  howmany, in, istride_in, idist_in, out_in,  ostride_in, odist_in, split,(out==NULL) ? NULL : &(out[outoff]));
   for(int i=0;i<numsplits;i++){
       thismany=split;
       if(inleft<split){thismany=inleft;}
