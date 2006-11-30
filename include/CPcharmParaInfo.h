@@ -595,11 +595,11 @@ class CPcharmParaInfo {
 	p|sortedRunDescriptors[igrp];
       }//endfor
       for(int igrp=0;igrp<nchareG;igrp++){
-	p(index_tran_upack[igrp],nlines_per_chareG[igrp]);
+	PUParray(p,index_tran_upack[igrp],nlines_per_chareG[igrp]);
       }//endfor
       for(int igrp=0;igrp<nchareG;igrp++){
-	p(index_tran_upackNL[igrp],nlines_per_chareG[igrp]);
-      }//endfor
+	PUParray(p,index_tran_upackNL[igrp],nlines_per_chareG[igrp]);
+      }
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 5 \n");
 #endif
