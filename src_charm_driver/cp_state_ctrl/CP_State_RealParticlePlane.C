@@ -126,7 +126,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   planeSize      = (ngridA+2)*ngridB;    // expanded plane size for FFTing
   planeSizeT     = ngridA*ngridB;        // true plane size 
   csize          = (ngridA+2)*ngridB/2;  // complex variable size
-
+  CkAssert(csize*2==planeSize);
   numIterNl      = numIterNL_in;         // # of non-local iterations per time step
   zmatSizeMax    = zmatSizeMax_in;       // zmatrix size
   ees_nonlocal   = ees_nonlocal_in;
@@ -274,6 +274,11 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   savedProjpsiCScr=NULL;
   savedProjpsiRScr=NULL;
   savedzmat=NULL;
+  savedmn=NULL;
+  saveddmn_x=NULL;
+  saveddmn_y=NULL;
+  saveddmn_z=NULL;
+  savedigrid=NULL;
 #endif
 //----------------------------------------------------------------------------
   }//end routine
@@ -323,8 +328,8 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size ;i++)
     {
-      CkAssert(isnan(msg->data[i].re)==0);
-      CkAssert(isnan(msg->data[i].im)==0);
+      CkAssert(finite(msg->data[i].re));
+      CkAssert(finite(msg->data[i].im));
     }
 #endif
 
@@ -436,7 +441,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB);
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
@@ -445,10 +450,10 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 
   if(savedprojpsiC==NULL)
     { // load it
-      savedprojpsiC= new complex[(ngridA+2)*ngridB/2];
-      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      savedprojpsiC= new complex[csize];
+      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
-  for(int i=0;i<(ngridA+2)*ngridB/2;i++)
+  for(int i=0;i<csize;i++)
     {
       if(fabs(projPsiC[i].re-savedprojpsiC[i].re)>0.0001)
 	{
@@ -526,7 +531,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
          thisIndex.x,thisIndex.y,iterNL,reductionPlaneNum,nZmat,zmatSizeMax);
 #endif
 
-   //#define _FANCY_RED_METHOD_
+#define _FANCY_RED_METHOD_
 #ifdef _FANCY_RED_METHOD_
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
@@ -653,7 +658,7 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
     {
-      CkAssert(isnan(((double*) msg->getData())[i])==0);
+      CkAssert(finite(((double*) msg->getData())[i]));
     }
 #endif
 
@@ -725,7 +730,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
       CkExit();
    }//endif
 
-   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
+   memcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces
@@ -751,7 +756,92 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 #endif
 
    // projPsiR     comes in with info for atoms
-   // projPsiRSsr leaves with info for psiforces
+    // projPsiRSsr leaves with info for psiforces to (ngrid_a+2)*ngrid_b elements 
+   int n_a, n_b, n_c, n_interp, nAtm;
+   CPNONLOCAL::getEesPrms(&n_a,&n_b,&n_c,&n_interp,&nAtm);
+   int n_interp2=n_interp*n_interp;
+#ifdef _CP_GS_DUMP_VKS_
+    dumpMatrix2DDouble("mn",mn, nAtm, planeSize, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+
+    dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DInt("igrid",igrid, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+#endif
+
+
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+    // at this point we're checking that nobody poisoned projPsiR, igrid dmn_[xyz] mn 
+    // projPsiR uses the same location as projpsiC, so we hold our nose
+    // and cut and paste
+
+
+  if(savedprojpsiC==NULL)
+    { // load it
+      savedprojpsiC= new complex[csize];
+      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    }
+  if(savedmn==NULL)
+    { // load it
+      savedigrid   = (int **)fftw_malloc(nAtm*sizeof(int*));
+
+      savedmn    = (double **)fftw_malloc(nAtm*sizeof(double*));
+      saveddmn_x = (double **)fftw_malloc(nAtm*sizeof(double*));
+      saveddmn_y = (double **)fftw_malloc(nAtm*sizeof(double*));
+      saveddmn_z = (double **)fftw_malloc(nAtm*sizeof(double*));
+      // Argh! this crazy iterate from 1 stuff escaped from
+      // the piny box of evil fortranisms
+      for(int i=0;i<nAtm;i++){
+	savedigrid[i]    = (int *)fftw_malloc(n_interp2*sizeof(int))-1;    
+	double *tmp = (double *)fftw_malloc(4*n_interp2*sizeof(double));
+	// by dint of more ugly trickery we store 4 array rows in 1
+	// which provides a nice way for us to quietly violate logical
+	// array boundaries without tripping over memory we don't own
+	int ioff    = 0;
+	savedmn[i]       = &tmp[ioff]-1;  ioff+=n_interp2;
+	saveddmn_x[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+	saveddmn_y[i]    = &tmp[ioff]-1;  ioff+=n_interp2;
+	saveddmn_z[i]    = &tmp[ioff]-1;  
+      }//endfor
+
+      loadMatrix2DDouble("mn",savedmn, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+      loadMatrix2DDouble("dmn_x",saveddmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+      loadMatrix2DDouble("dmn_y",saveddmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+      loadMatrix2DDouble("dmn_z",saveddmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+      loadMatrix2DInt("igrid",savedigrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    }
+
+  for(int i=0;i<nAtm;i++)
+    {
+      for(int j=1;j<n_interp2;j++){
+	if(fabs(mn[i][j]-savedmn[i][j])>0.0001)
+	  {
+	    fprintf(stderr, "RPP [%d,%d] %d element mn  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, mn[i][j], savedmn[i][j]);
+	  }
+	CkAssert(fabs(mn[i][j]-savedmn[i][j])<0.0001);
+	if(fabs(dmn_x[i][j]-saveddmn_x[i][j])>0.0001)
+	  {
+	    fprintf(stderr, "RPP [%d,%d] %d element dmn_x  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_x[i][j], saveddmn_x[i][j]);
+	  }
+	CkAssert(fabs(dmn_x[i][j]-saveddmn_x[i][j])<0.0001);
+	if(fabs(dmn_y[i][j]-saveddmn_y[i][j])>0.0001)
+	  {
+	    fprintf(stderr, "RPP [%d,%d] %d element dmn_y  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_y[i][j], saveddmn_y[i][j]);
+	  }
+	CkAssert(fabs(dmn_y[i][j]-saveddmn_y[i][j])<0.0001);
+	if(fabs(dmn_z[i][j]-saveddmn_z[i][j])>0.0001)
+	  {
+	    fprintf(stderr, "RPP [%d,%d] %d element dmn_z  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_z[i][j], saveddmn_z[i][j]);
+	  }
+	CkAssert(fabs(dmn_z[i][j]-saveddmn_z[i][j])<0.0001);
+	if(igrid[i][j]!=savedigrid[i][j])
+	  {
+	    fprintf(stderr, "RPP [%d,%d] %d element igrid  %d not %d\n",thisIndex.x, thisIndex.y,i, igrid[i][j], savedigrid[i][j]);
+	  }
+	CkAssert(igrid[i][j]==savedigrid[i][j]);
+      }
+    }
+#endif
 
 #ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
@@ -811,7 +901,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, zmat[i], savedzmat[i]);
 	}
       CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
-      CkAssert(fabs(zmat[i]-savedzmat[i])<0.0001);
+
     }
   if(savedProjpsiRScr==NULL)
     { // load it
@@ -825,7 +915,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
 	}
       CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
-      CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
+
     }
 
 #endif
@@ -934,10 +1024,10 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 
   if(savedProjpsiCScr==NULL)
     { // load it
-      savedProjpsiCScr= new complex[(ngridA+2)*ngridB/2];
-      loadMatrixDouble("projPsiCScr",(double *)savedProjpsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      savedProjpsiCScr= new complex[csize];
+      loadMatrixDouble("projPsiCScr",(double *)savedProjpsiCScr, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
-  for(int i=0;i<(ngridA+2)*ngridB/2;i++)
+  for(int i=0;i<csize;i++)
     {
       if(fabs(projPsiCScr[i].re-savedProjpsiCScr[i].re)>0.0001)
 	{

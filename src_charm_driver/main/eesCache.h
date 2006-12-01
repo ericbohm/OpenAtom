@@ -17,7 +17,6 @@
 //============================================================================
 class eesCache: public Group {
  public:
- public:
   // Variables
    int itimeRPP;
    int itimeRHart;

@@ -865,6 +865,12 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
   complex *savedProjpsiCScr;
   double *savedProjpsiRScr;
   double *savedzmat;
+  double **savedmn;
+  double **saveddmn_x;
+  double **saveddmn_y;
+  double **saveddmn_z;
+  int **savedigrid;
+
 #endif
   //-----------
   // Functions

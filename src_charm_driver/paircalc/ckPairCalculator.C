@@ -569,7 +569,8 @@ void PairCalculator::ResumeFromSync() {
 void
 PairCalculator::acceptPairData(calculatePairsMsg *msg)
 {
-#ifdef _PAIRCALC_DEBUG_
+  //#ifdef _PAIRCALC_DEBUG_
+#if 1
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
 #endif
   if(!resumed)
