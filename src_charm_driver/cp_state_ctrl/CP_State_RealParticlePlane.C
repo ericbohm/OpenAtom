@@ -501,6 +501,9 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 // Check out your B-splines from the cache and then compute Zmat
 
    eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
+   int *allowedRppChares = eesData->allowedRppChares;
+   CkAssert(allowedRppChares[myPlane]==1);
+
    if(iterNL==1){eesData->queryCacheRPP(myPlane,itime,iterNL);}// query once a t-step
 
    int *plane_index = eesData->RppData[myPlane].plane_index;
@@ -737,6 +740,10 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 
    eesCache *eesData   = eesCacheProxy.ckLocalBranch (); 
    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();  
+
+   int *allowedRppChares = eesData->allowedRppChares;
+   CkAssert(allowedRppChares[myPlane]==1);
+
    int *plane_index    = eesData->RppData[myPlane].plane_index;
    int **igrid         = eesData->RppData[myPlane].igrid;
    int *nBreakJ        = eesData->RppData[myPlane].nBreakJ;
