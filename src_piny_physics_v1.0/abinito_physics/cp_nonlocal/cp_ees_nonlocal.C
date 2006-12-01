@@ -454,7 +454,11 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
    for(j=0;j<ngrid_c;j++){
      if(allowed_planes[j]==1){
        plane_index = RPPData[j].plane_index;
-       for(i=0;i<natm;i++){plane_index[i] = 0;}
+       igrid       = RPPData[ip].igrid;
+       for(i=0;i<natm;i++){
+          plane_index[i] = 0;
+          for(j=1;j<=n_interp*n_interp){igrid[i][j]=-2;}
+       }//endfor
      }//endif
    }//endfor
 
