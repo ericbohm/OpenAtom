@@ -1098,7 +1098,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    for(int z=0; z<(ngrid_a+2)*ngrid_b;z++)
      projPsiRScr[z]=0.0;
 
-#define _DEBUG_STUFF_   
+   //#define _DEBUG_STUFF_   
 
 #ifdef  _DEBUG_STUFF_   
     char myFileName[1000];
@@ -1156,8 +1156,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          fzz      += (pz*dmn_z[iatm][j]);
          projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
 #ifdef  _DEBUG_STUFF_   
-         fprintf(fp,"%d %d %d %d %d %g %g %g %g %g\n",jatm,iatm,katm,jc,igrid[iatm][j],
-                                     pz,q,zmat[jatm],mn[iatm][j],projPsiRScr[igrid[iatm][j]]);
+         fprintf(fp,"%d %d %d %d %d %g %g %g %g %g %d\n",jatm,iatm,katm,jc,igrid[iatm][j],
+                                     pz,q,zmat[jatm],mn[iatm][j],projPsiRScr[igrid[iatm][j]], (ngrid_a+2)*ngrid_b);
+
 #endif
        }//endfor
 #else
@@ -1214,7 +1215,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        }//endif
 #endif
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+       //       CmiNetworkProgress();
 #endif
      }//endif : atom is interpolated on this plane
    }//endfor : iatm
