@@ -1098,12 +1098,12 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    for(int z=0; z<(ngrid_a+2)*ngrid_b;z++)
      projPsiRScr[z]=0.0;
 
-   //#define _DEBUG_STUFF_   
-
+//#define _DEBUG_STUFF_   
 #ifdef  _DEBUG_STUFF_   
     char myFileName[1000];
     sprintf(myFileName, "Rproj_%d.out.%d.%d",state,plane,iter_nl);
     FILE *fp = fopen(myFileName,"w");
+#define _UNROLL_OFF_
 #endif
 
    for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
@@ -1114,9 +1114,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        zmat[jatm] *= (2.0*vnormVol); 
        double fxx=0.0,fyy=0.0,fzz=0.0;
 #ifndef _CP_BRK_BETTER_
-
-#define _UNROLL_OFF_
-#ifdef _UNROLL_
+#ifndef _UNROLL_OFF_
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
          double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi

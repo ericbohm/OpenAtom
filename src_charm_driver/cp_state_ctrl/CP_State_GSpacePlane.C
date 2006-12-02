@@ -1528,6 +1528,7 @@ void CP_State_GSpacePlane::doIFFT () {
   RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
 
+  fftcache->getCacheMem("CP_State_GSpacePlane::doIFFT");
   complex *forcTmp = fftcache->tmpData;
   fftcache->doStpFFTRtoG_Gchare(gs.packedForceData,forcTmp,
             gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
@@ -1547,6 +1548,7 @@ void CP_State_GSpacePlane::doIFFT () {
   for(int index=0; index<gs.numPoints; index++){
     forces[index] = forcTmp[index]*scaleFactor;
   }/*endfor*/
+  fftcache->freeCacheMem("CP_State_GSpacePlane::doIFFT");
 
   CmiNetworkProgress();
 

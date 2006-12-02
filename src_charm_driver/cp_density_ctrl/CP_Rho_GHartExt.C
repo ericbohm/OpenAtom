@@ -399,6 +399,7 @@ void CP_Rho_GHartExt::FFTVks() {
 #endif
 
    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();
+   fftcache->getCacheMem("CP_Rho_GHartExt::FFTVks");
    complex *vks       = rho_gs.Vks;
    complex *vksScr    = fftcache->tmpData; // scratch from the cache has FFT output
 
@@ -507,6 +508,8 @@ void CP_Rho_GHartExt::sendVks() {
   if(rhoRsubplanes==1){
    if (config.useGHartInsRhoRP){commGHartInstance.endIteration();}
   }//endif
+
+  fftcache->freeCacheMem("CP_Rho_GHartExt::sendVks");
 
 //---------------------------------------------------------------------------
   }// end routine
@@ -784,6 +787,7 @@ void CP_Rho_GHartExt::FFTEesFwd(int flag){
  //--------------------------------------------
  // Get the data and some scratch
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  fftcache->getCacheMem("CP_Rho_GHartExt::FFTEesFwd");
   complex *data_out  = fftcache->tmpData;
   complex *data;     if(flag==0){data=atmSF;}else{data=atmSFtot;}
 
@@ -899,6 +903,8 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
     atmSFHere   = 0;
     densityHere = 0; 
   }//endif
+
+  fftcache->freeCacheMem("CP_Rho_GHartExt::FFTEesFwd");
 
 //============================================================================
    }//end routine

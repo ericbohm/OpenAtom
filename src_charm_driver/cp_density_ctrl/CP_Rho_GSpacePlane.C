@@ -360,6 +360,7 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
     double StartTime=CmiWallTimer();
 #endif
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    fftcache->getCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
     complex *data_out  = fftcache->tmpData;
     complex *data_in   = rho_gs.divRhoX;
     fftcache->doRhoFFTRtoG_Gchare(data_in,data_out,
@@ -430,6 +431,8 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
 
    if(cp_grad_corr_on!=0){
       divRhoVksGspace();
+   }else{
+    fftcache->freeCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
    }//endif
 
 #ifndef CMK_OPTIMIZE
@@ -465,6 +468,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
   CPXCFNCTS::CP_fetch_hmati(&hmati,&tpi);
   rho_gs.divRhoGdot(hmati,tpi,packedRho); //divRhoAlpha's are class variable
+  fftcache->freeCacheMem("CP_Rho_GSpacePlane::divRhoVksGspace");
 
 //--------------------------------------------------------------------------
 // I)   fft_gz(divRhoX), launch transpose to R-space

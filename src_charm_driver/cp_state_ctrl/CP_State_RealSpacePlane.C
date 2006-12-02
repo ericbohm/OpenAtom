@@ -259,6 +259,7 @@ void CP_State_RealSpacePlane::doFFT(){
 
     fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
 
+    fftcache->getCacheMem("CP_State_RealSpacePlane::doFFT");
     double *data = fftcache->tmpDataR;
     for(int i=0,i2=0;i<ngridb;i++,i2+=2){
       for(int j=i*ngrida;j<(i+1)*ngrida;j++){
@@ -303,6 +304,7 @@ void CP_State_RealSpacePlane::doFFT(){
     CkPrintf("EEXC+EGGA   = OFF FOR DEBUGGING\n");
   }//endif
   bzero(planeArrR,(ngrida+2)*ngridb*sizeof(double));
+  fftcache->freeCacheMem("CP_State_RealSpacePlane::doFFT");
 #else
   doReduction();
 #endif
@@ -374,6 +376,8 @@ void CP_State_RealSpacePlane::doReduction(){
     traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    
 
+  fftcache->freeCacheMem("CP_State_RealSpacePlane::doReduction");
+
 //============================================================================
     }//end routine
 //============================================================================
@@ -424,20 +428,18 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 
 //============================================================================	
 
-  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
   double *psiVks      = rs.planeArrR;
-  double *Vks         = fftcache->tmpDataR;
-  CmiMemcpy(Vks,vks_tmp,sizeof(double)*size); // avoid the charm++ memory
 
   // multiply psi by vks to form psiVks
   for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
     for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-      psiVks[(j+i2)] *= Vks[j];
+      psiVks[(j+i2)] *= vks_tmp[j];
     }//endfor
   }//endfor
   CmiNetworkProgress();
 
 //============================================================================	
+
   countProduct++;
   if(countProduct==rhoRsubplanes){
     countProduct=0;

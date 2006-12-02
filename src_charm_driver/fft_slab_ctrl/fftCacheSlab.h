@@ -361,6 +361,8 @@ class FFTcache: public Group {
      int ngridcNL;
      int ees_eext_on;
      int ees_NL_on;
+     int cacheMemFlag;
+     char cacheMemName[1000];
 
     //-----------------------------------------------------------
     // Generic plane temporaries used everywhere possible to avoid memcpys
@@ -388,6 +390,24 @@ class FFTcache: public Group {
     //-----------------------------------------------------------
     // The constructor 
      FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int, int, int );
+
+    //-----------------------------------------------------------
+    // cache control 
+     void getCacheMem(char *name){
+       if(cacheMemFlag==1){
+	 CkPrintf("%s stealing from %s\n",cacheMemName,name);
+         CkExit();
+       }//endif
+       cacheMemFlag = 1;
+       strcpy(cacheMemName,name);
+     }//end routine
+     void freeCacheMem(char *name){
+       if(cacheMemFlag==0){
+	 CkPrintf("Bad cache memory free from %s\n",name);
+         CkExit();
+       }//endif
+       cacheMemFlag = 0;
+     }//end routine
 
     //-----------------------------------------------------------
     // Generic G-space expanders and contractors

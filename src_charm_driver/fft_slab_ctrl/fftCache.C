@@ -587,8 +587,10 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 //==============================================================================
 // pack for computing
 
+  getCacheMem("doEextFFTRtoG_Gchare");
   packGSpace(data,tmpData,runs,numRuns,numFull,numPoints,nfftz); // tmpdata returns packed
   memcpy(data,tmpData,sizeof(complex)*numPoints); // data is expanded; cp in tmpdata; 
+  freeCacheMem("doEextFFTRtoG_Gchare");
 
 //------------------------------------------------------------------------------
   }//end routine

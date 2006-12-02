@@ -927,6 +927,7 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
     CkPrintf("HI, I am gPP %d %d in createNLEes : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
+   fftcache->getCacheMem("CP_State_ParticlePlane::createNLEesFFTdata");
    complex *projPsiGTmp = fftcache->tmpData; // store in tmp
 
 #ifndef CMK_OPTIMIZE
@@ -983,6 +984,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 
   fftcache->doNlFFTGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
                                (gss->numRuns),runs,ngridcNL);
+  fftcache->freeCacheMem("CP_State_ParticlePlane::FFTNLEesFwd");
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
@@ -1171,6 +1173,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 #endif
 
   RunDescriptor *runs  = eesData->GspData[myChareG].runs;
+  fftcache->getCacheMem("CP_State_ParticlePlane::FFTNLEesBck");
   complex *projPsiGTmp = fftcache->tmpData;
 
 #ifdef _CP_GS_DUMP_VKS_
@@ -1266,7 +1269,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 
   CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
                                k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
-
+  fftcache->freeCacheMem("CP_State_ParticlePlane::computeNLEesForces");
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesPsiForcGspace_, StartTime, CmiWallTimer());    

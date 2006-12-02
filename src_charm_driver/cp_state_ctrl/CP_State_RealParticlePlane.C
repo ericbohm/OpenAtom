@@ -753,6 +753,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    double **dmn_z      = eesData->RppData[myPlane].dmn_z;
    double **mn         = eesData->RppData[myPlane].mn;
    double *projPsiRScr = fftcache->tmpDataR;
+   fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
 
    AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
    FastAtoms *fastAtoms = &(ag->fastAtoms);
@@ -1126,6 +1127,8 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
     launchFFT=false;
   }//endif
    
+  fftcache->freeCacheMem("CP_State_RealParticlePlane::sendToEesGPP");
+
 //----------------------------------------------------------------------------
    }//end routine
 //============================================================================
