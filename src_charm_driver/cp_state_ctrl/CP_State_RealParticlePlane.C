@@ -768,12 +768,14 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    CPNONLOCAL::getEesPrms(&n_a,&n_b,&n_c,&n_interp,&nAtm);
    int n_interp2=n_interp*n_interp;
 #ifdef _CP_GS_DUMP_VKS_
+#ifdef _INSANEO_PARANOID_COMPARE_THAT_EATS_HUGE_MEMORY_
     dumpMatrix2DDouble("mn",mn, nAtm, n_interp2, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
     dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
     dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
 
     dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
     dumpMatrix2DInt("igrid",igrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+#endif
 #endif
 
 
@@ -788,6 +790,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
       savedprojpsiC= new complex[csize];
       loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
+#ifdef _INSANEO_PARANOID_COMPARE_THAT_EATS_HUGE_MEMORY_
   if(savedmn==NULL)
     { // load it
       savedigrid   = (int **)fftw_malloc(nAtm*sizeof(int*));
@@ -851,6 +854,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 	}
       }
     }
+#endif
 #endif
 
 #ifndef CMK_OPTIMIZE
