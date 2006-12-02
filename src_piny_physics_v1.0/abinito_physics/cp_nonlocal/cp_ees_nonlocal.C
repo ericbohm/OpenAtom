@@ -1098,6 +1098,14 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    for(int z=0; z<(ngrid_a+2)*ngrid_b;z++)
      projPsiRScr[z]=0.0;
 
+#define _DEBUG_STUFF_   
+
+#ifdef  _DEBUG_STUFF_   
+    char myFileName[1000];
+    sprintf(myFileName, "Rproj_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+#endif
+
    for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
      int iatm = iatm_str+jatm-1;    // index of atm in non-local atm list
      int jc   = plane_index[iatm];  // interpolation ind to plane ind mapping
@@ -1106,9 +1114,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        zmat[jatm] *= (2.0*vnormVol); 
        double fxx=0.0,fyy=0.0,fzz=0.0;
 #ifndef _CP_BRK_BETTER_
-       //could use a pragma ivep because igrid does not have duplicate values in this loop
-#define _SUSPECT_UNROLL_
-#ifdef _SUSPECT_UNROLL_
+
+#define _UNROLL_OFF_
+#ifdef _UNROLL_
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
          double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
@@ -1138,15 +1146,19 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          projPsiRScr[igrid[iatm][j4]] += q4;  
        }//endfor
        for(int j=jstrt;j<=n_interp2;j++){
-#else
+#else //unroll is on
        for(int j=1;j<=n_interp2;j++){
-#endif //suspect unroll
+#endif //unroll is off
          double pz = projPsiR[igrid[iatm][j]]; // psi
          double q  = zmat[jatm]*mn[iatm][j];  
          fxx      += (pz*dmn_x[iatm][j]);
          fyy      += (pz*dmn_y[iatm][j]);
          fzz      += (pz*dmn_z[iatm][j]);
          projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
+#ifdef  _DEBUG_STUFF_   
+         fprintf(fp,"%d %d %d %d %d %g %g %g %g %g\n",jatm,iatm,katm,jc,igrid[iatm][j],
+                                                      pz,q,zmat[jmat],mn[iatm][j],projPsiRScr);
+#endif
        }//endfor
 #else
        for(int ib=1;ib<=nBreak[iatm];ib++){
@@ -1224,6 +1236,11 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
     delete [] fyt;
     delete [] fzt;
 #endif  
+
+#ifdef  _DEBUG_STUFF_   
+    fclose(fp);
+#endif
+
 
 //--------------------------------------------------------------------------
   }//end routine
