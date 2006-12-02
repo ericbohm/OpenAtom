@@ -454,10 +454,10 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
    for(j=0;j<ngrid_c;j++){
      if(allowed_planes[j]==1){
        plane_index = RPPData[j].plane_index;
-       igrid       = RPPData[ip].igrid;
+       igrid       = RPPData[j].igrid;
        for(i=0;i<natm;i++){
           plane_index[i] = 0;
-          for(j=1;j<=n_interp*n_interp){igrid[i][j]=-2;}
+          for(jc=1;jc<=n_interp*n_interp;jc++){igrid[i][jc]=-2;}
        }//endfor
      }//endif
    }//endfor
@@ -1094,7 +1094,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    jstrt = (n_interp2-nrem+1);
    jend  = (n_interp2-nrem);
 
-   bzero(projPsiRScr,(ngrid_a+2)*ngrid_b*sizeof(double));
+   //   bzero(projPsiRScr,(ngrid_a+2)*ngrid_b*sizeof(double));
+   for(int z=0; z<(ngrid_a+2)*ngrid_b;z++)
+     projPsiRScr[z]=0.0;
 
    for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
      int iatm = iatm_str+jatm-1;    // index of atm in non-local atm list
@@ -1104,7 +1106,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        zmat[jatm] *= (2.0*vnormVol); 
        double fxx=0.0,fyy=0.0,fzz=0.0;
 #ifndef _CP_BRK_BETTER_
-      //could use a pragma ivep because igrid does not have duplicate values in this loop
+       //could use a pragma ivep because igrid does not have duplicate values in this loop
+#define _SUSPECT_UNROLL_
+#ifdef _SUSPECT_UNROLL_
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
          double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
@@ -1118,14 +1122,15 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          double q3  = zmat[jatm]*mn[iatm][j3];
          double q4  = zmat[jatm]*mn[iatm][j4];
          fxx       += (pz0*dmn_x[iatm][j]  + pz1*dmn_x[iatm][j1] // forces_x
-                      +pz2*dmn_x[iatm][j2] + pz3*dmn_x[iatm][j3]
-		      +pz4*dmn_x[iatm][j4]);
+		       +pz2*dmn_x[iatm][j2] + pz3*dmn_x[iatm][j3]
+		       +pz4*dmn_x[iatm][j4]);
          fyy       += (pz0*dmn_y[iatm][j]  + pz1*dmn_y[iatm][j1] // forces_y
-                      +pz2*dmn_y[iatm][j2] + pz3*dmn_y[iatm][j3]
-		      +pz4*dmn_y[iatm][j4]);
+		       +pz2*dmn_y[iatm][j2] + pz3*dmn_y[iatm][j3]
+		       +pz4*dmn_y[iatm][j4]);
          fzz       += (pz0*dmn_z[iatm][j]  + pz1*dmn_z[iatm][j1] // forces_z
-                      +pz2*dmn_z[iatm][j2] + pz3*dmn_z[iatm][j3]
-		      +pz4*dmn_z[iatm][j4]);
+		       +pz2*dmn_z[iatm][j2] + pz3*dmn_z[iatm][j3]
+		       +pz4*dmn_z[iatm][j4]);
+
          projPsiRScr[igrid[iatm][j]]  += q0;       // add contrib into total
          projPsiRScr[igrid[iatm][j1]] += q1;  
          projPsiRScr[igrid[iatm][j2]] += q2;  
@@ -1133,6 +1138,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          projPsiRScr[igrid[iatm][j4]] += q4;  
        }//endfor
        for(int j=jstrt;j<=n_interp2;j++){
+#else
+       for(int j=1;j<=n_interp2;j++){
+#endif //suspect unroll
          double pz = projPsiR[igrid[iatm][j]]; // psi
          double q  = zmat[jatm]*mn[iatm][j];  
          fxx      += (pz*dmn_x[iatm][j]);
@@ -1156,11 +1164,11 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
            double p3 = projPsiR[k+3];           // psi
            double p4 = projPsiR[k+4];           // psi
            fxx      += (p0*dmn_x[iatm][j]   + p1*dmn_x[iatm][j+1] + p2*dmn_x[iatm][j+2] 
-		       +p3*dmn_x[iatm][j+3] + p4*dmn_x[iatm][j+4]);
+			+p3*dmn_x[iatm][j+3] + p4*dmn_x[iatm][j+4]);
            fyy      += (p0*dmn_y[iatm][j]   + p1*dmn_y[iatm][j+1] + p2*dmn_y[iatm][j+2] 
-		       +p3*dmn_y[iatm][j+3] + p4*dmn_y[iatm][j+4]);
+			+p3*dmn_y[iatm][j+3] + p4*dmn_y[iatm][j+4]);
            fzz      += (p0*dmn_z[iatm][j]   + p1*dmn_z[iatm][j+1] + p2*dmn_z[iatm][j+2] 
-		       +p3*dmn_z[iatm][j+3] + p4*dmn_z[iatm][j+4]);
+			+p3*dmn_z[iatm][j+3] + p4*dmn_z[iatm][j+4]);
            double q0  = zmat[jatm]*mn[iatm][j];  
            double q1  = zmat[jatm]*mn[iatm][j+1];  
            double q2  = zmat[jatm]*mn[iatm][j+2];  
@@ -1197,7 +1205,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
        CmiNetworkProgress();
 #endif
      }//endif : atom is interpolated on this plane
-  }//endfor : iatm
+   }//endfor : iatm
 
 //==========================================================================
 // output the debugging stuff
