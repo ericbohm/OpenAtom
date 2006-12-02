@@ -1157,7 +1157,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
          projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
 #ifdef  _DEBUG_STUFF_   
          fprintf(fp,"%d %d %d %d %d %g %g %g %g %g\n",jatm,iatm,katm,jc,igrid[iatm][j],
-                                                      pz,q,zmat[jmat],mn[iatm][j],projPsiRScr);
+                                     pz,q,zmat[jatm],mn[iatm][j],projPsiRScr[igrid[iatm][j]]);
 #endif
        }//endfor
 #else
