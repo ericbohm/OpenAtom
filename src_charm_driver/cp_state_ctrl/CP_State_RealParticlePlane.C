@@ -768,12 +768,12 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    CPNONLOCAL::getEesPrms(&n_a,&n_b,&n_c,&n_interp,&nAtm);
    int n_interp2=n_interp*n_interp;
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrix2DDouble("mn",mn, nAtm, planeSize, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("mn",mn, nAtm, n_interp2, thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("dmn_x",dmn_x, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("dmn_y",dmn_y, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
 
-    dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrix2DInt("igrid",igrid, nAtm, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DDouble("dmn_z",dmn_z, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix2DInt("igrid",igrid, nAtm, n_interp2,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
 #endif
 
 
@@ -820,32 +820,35 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 
   for(int i=0;i<nAtm;i++)
     {
-      for(int j=1;j<n_interp2;j++){
-	if(fabs(mn[i][j]-savedmn[i][j])>0.0001)
-	  {
-	    fprintf(stderr, "RPP [%d,%d] %d element mn  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, mn[i][j], savedmn[i][j]);
-	  }
-	CkAssert(fabs(mn[i][j]-savedmn[i][j])<0.0001);
-	if(fabs(dmn_x[i][j]-saveddmn_x[i][j])>0.0001)
-	  {
-	    fprintf(stderr, "RPP [%d,%d] %d element dmn_x  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_x[i][j], saveddmn_x[i][j]);
-	  }
-	CkAssert(fabs(dmn_x[i][j]-saveddmn_x[i][j])<0.0001);
-	if(fabs(dmn_y[i][j]-saveddmn_y[i][j])>0.0001)
-	  {
-	    fprintf(stderr, "RPP [%d,%d] %d element dmn_y  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_y[i][j], saveddmn_y[i][j]);
-	  }
-	CkAssert(fabs(dmn_y[i][j]-saveddmn_y[i][j])<0.0001);
-	if(fabs(dmn_z[i][j]-saveddmn_z[i][j])>0.0001)
-	  {
-	    fprintf(stderr, "RPP [%d,%d] %d element dmn_z  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, dmn_z[i][j], saveddmn_z[i][j]);
-	  }
-	CkAssert(fabs(dmn_z[i][j]-saveddmn_z[i][j])<0.0001);
-	if(igrid[i][j]!=savedigrid[i][j])
-	  {
-	    fprintf(stderr, "RPP [%d,%d] %d element igrid  %d not %d\n",thisIndex.x, thisIndex.y,i, igrid[i][j], savedigrid[i][j]);
-	  }
-	CkAssert(igrid[i][j]==savedigrid[i][j]);
+      if(plane_index[i]!=0){
+
+	for(int j=1;j<=n_interp2;j++){
+	  if(fabs(mn[i][j]-savedmn[i][j])>0.0001)
+	    {
+	      fprintf(stderr, "RPP [%d,%d] %d %d element mn  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i,j, mn[i][j], savedmn[i][j]);
+	    }
+	  CkAssert(fabs(mn[i][j]-savedmn[i][j])<0.0001);
+	  if(fabs(dmn_x[i][j]-saveddmn_x[i][j])>0.0001)
+	    {
+	      fprintf(stderr, "RPP [%d,%d] %d %d element dmn_x  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i,j, dmn_x[i][j], saveddmn_x[i][j]);
+	    }
+	  CkAssert(fabs(dmn_x[i][j]-saveddmn_x[i][j])<0.0001);
+	  if(fabs(dmn_y[i][j]-saveddmn_y[i][j])>0.0001)
+	    {
+	      fprintf(stderr, "RPP [%d,%d] %d %d element dmn_y  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i,j, dmn_y[i][j], saveddmn_y[i][j]);
+	    }
+	  CkAssert(fabs(dmn_y[i][j]-saveddmn_y[i][j])<0.0001);
+	  if(fabs(dmn_z[i][j]-saveddmn_z[i][j])>0.0001)
+	    {
+	      fprintf(stderr, "RPP [%d,%d] %d %d element dmn_z  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i,j, dmn_z[i][j], saveddmn_z[i][j]);
+	    }
+	  CkAssert(fabs(dmn_z[i][j]-saveddmn_z[i][j])<0.0001);
+	  if(igrid[i][j]!=savedigrid[i][j])
+	    {
+	      fprintf(stderr, "RPP [%d,%d] %d %d element igrid  %d not %d\n",thisIndex.x, thisIndex.y,i,j, igrid[i][j], savedigrid[i][j]);
+	    }
+	  CkAssert(igrid[i][j]==savedigrid[i][j]);
+	}
       }
     }
 #endif
@@ -920,6 +923,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
       if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
 	{
 	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
+	  dumpMatrixDouble("badprojPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 	}
       CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
 
