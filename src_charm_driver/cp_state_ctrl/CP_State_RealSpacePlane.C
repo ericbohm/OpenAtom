@@ -396,7 +396,10 @@ void CP_State_RealSpacePlane::doReduction(){
 //============================================================================
 void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 //============================================================================
-
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+ 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
   CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
 #endif
@@ -565,6 +568,9 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 */
 //============================================================================
 void CP_State_RealSpacePlane::init(ProductMsg *msg){
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
     numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);

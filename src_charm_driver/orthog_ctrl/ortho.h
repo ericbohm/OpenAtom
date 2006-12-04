@@ -139,6 +139,10 @@ class Ortho : public CBase_Ortho{
   void do_iteration(void);
 
   void do_iteration(orthoMtrigger *m){
+  //============================================================================
+  // Do not delete msg. Its a nokeep.
+  //============================================================================
+ 
     do_iteration();
   }
 
@@ -176,6 +180,10 @@ class Ortho : public CBase_Ortho{
   }
 
   void collect_results(orthoMtrigger *m){
+  //============================================================================
+  // Do not delete msg. Its a nokeep.
+  //============================================================================
+ 
     collect_results();
   }
 

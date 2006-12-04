@@ -487,6 +487,10 @@ PairCalculator::~PairCalculator()
 // initialize the section cookie and the reduction client
 void PairCalculator::initGRed(initGRedMsg *msg)
 {
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+ 
   int numOrtho=grainSize/orthoGrainSize;
   int orthoIndexX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
   int orthoIndexY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
@@ -515,13 +519,16 @@ void PairCalculator::initGRed(initGRedMsg *msg)
       numRecd=0;
     }
   
-  //    delete msg; do not delete nokeep method
+  //  do not delete nokeep msg
 }
 
 //!initialize the section cookie for each slice of the result
 void PairCalculator::initResultSection(initResultMsg *msg)
 {
-
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+ 
   CkAssert(msg->offset<grainSize);
   if(msg->dest == thisIndex.x && thisIndex.x != thisIndex.y)
   {
@@ -547,7 +554,7 @@ void PairCalculator::initResultSection(initResultMsg *msg)
   {
       contribute(sizeof(int), &rck, CkReduction::sum_int, msg->synccb);
   }
-  //    delete msg; do not delete nokeep method
+  // do not delete nokeep msg
 }
 
 void PairCalculator::ResumeFromSync() {
@@ -569,6 +576,10 @@ void PairCalculator::ResumeFromSync() {
 void
 PairCalculator::acceptPairData(calculatePairsMsg *msg)
 {
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+ 
   //#ifdef _PAIRCALC_DEBUG_
 #if 1
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
@@ -1318,9 +1329,12 @@ PairCalculator::acceptPhantomData(phantomMsg *msg)
 void
 PairCalculator::multiplyResultI(multiplyResultMsg *msg)
 {
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
   
     multiplyResult(msg);
-  }
+}
 
 
 /**
@@ -1358,6 +1372,10 @@ PairCalculator::multiplyPsiV()
 void
 PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+ 
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
 #endif
@@ -1365,16 +1383,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   numRecdBW++; 
 
 #ifdef _NAN_CHECK_
-  //  fprintf(stderr, "Abhinav: sym %d msg size %d\n", symmetric, msg->size);
   for(int i=0;i<msg->size;i++)
-    {
-      //CkAssert(finite(msg->matrix1[i]));
-      if(!finite(msg->matrix1[i])) {
-	fprintf(stderr, "Abhinav i %d\n", i);
-        fprintf(stderr, "[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
-        CkAbort("Abhinav nan error\n");
-      }
-    }
+      CkAssert(finite(msg->matrix1[i]));
 #endif
 
   int size=msg->size;

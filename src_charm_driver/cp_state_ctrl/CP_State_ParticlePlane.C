@@ -753,7 +753,9 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_ParticlePlane::setEnlCookie(EnlCookieMsg *m){
-
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
   CkGetSectionInfo(enlCookie,m);
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_

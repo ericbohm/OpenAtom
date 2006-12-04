@@ -707,6 +707,9 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 {
 //============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
+//============================================================================
 // Unpack the message : Get some sizes
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
@@ -948,7 +951,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
   FFTNLEesBckR();
   // do not delete nokeep message
 //----------------------------------------------------------------------------
-  }//end routine
+}//end routine
 //============================================================================
 
 //============================================================================
@@ -1164,12 +1167,13 @@ int CP_State_RealParticlePlane::calcReductionPlaneNum(int state){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
-
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
 #endif
-
   CkGetSectionInfo(rPlaneRedCookie,m);
 }
 //============================================================================
@@ -1181,13 +1185,14 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
-
+//============================================================================
+// Do not delete msg. Its a nokeep.
+//============================================================================
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
 #endif
   CkGetSectionInfo(rEnlCookie,m);
-
 }
 //============================================================================
 
