@@ -1,7 +1,7 @@
 /** \file ckPairCalculator.h
  *
  */
-//#define _PAIRCALC_NAN_CHECK_
+//#define _NAN_CHECK_
 #ifndef _ckPairCalculator_h_
 #define _ckPairCalculator_h_
 #define _PC_COMMLIB_MULTI_ 0
