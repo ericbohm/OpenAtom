@@ -12,6 +12,7 @@
 //============================================================================
 
 #include "charm++.h"
+#include "../../include/debug_flags.h"
 #include "ckmulticast.h"
 #include "RTH.h"
 #include "StructFactorCache.h"
