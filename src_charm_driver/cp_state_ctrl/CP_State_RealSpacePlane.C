@@ -28,7 +28,6 @@
 #include <fstream.h>
 #include <math.h>
 
-#include "../../include/debug_flags.h"
 #include "util.h"
 #include "cpaimd.h"
 #include "groups.h"
