@@ -47,6 +47,7 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 //==============================================================================
 // Copy out
 
+    cacheMemFlag = 0;
     planeSize    = planeSIZE;    //contains nfftz,nfftx for non-ees stuff
 
     ngridaEext   = _ngridaEext; 
