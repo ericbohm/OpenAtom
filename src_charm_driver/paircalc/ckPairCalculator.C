@@ -580,8 +580,8 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 // Do not delete msg. Its a nokeep.
 //============================================================================
  
-  //#ifdef _PAIRCALC_DEBUG_
-#if 1
+#ifdef _PAIRCALC_DEBUG_
+
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
 #endif
   if(!resumed)
@@ -972,18 +972,13 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	{
 	  CkAssert(existsRight);
 	  //	  CkPrintf("[%d,%d,%d,%d,%d] multi fw stream sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-	  phantomMsg *phantom;
+	  phantomMsg *phantom=new ( numExpected*numPoints*2, 8*sizeof(int)) phantomMsg;
 	  bool prioPhan=false;
 	  if(prioPhan)
 	    {
-	      phantom =new ( numExpected*numPoints*2, 8*sizeof(int)) phantomMsg;
 	      CkSetQueueing(phantom, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
 					    // than non prioritized
-	    }
-	  else
-	    {
-	      phantom =new ( numExpected*numPoints*2 ) phantomMsg;
 	    }
 	  phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize);
 	  thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
@@ -1178,18 +1173,13 @@ PairCalculator::multiplyForward(bool flag_dp)
     {
       CkAssert(existsRight);
       //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-      phantomMsg *phantom;
+      phantomMsg *phantom=new ( numExpected*numPoints*2, 8*sizeof(int)) phantomMsg;
       bool prioPhan=false;
       if(prioPhan)
 	{
-	  phantom =new ( numExpected*numPoints*2, 8*sizeof(int)) phantomMsg;
 	  CkSetQueueing(phantom, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
 	  // than non prioritized
-	}
-      else
-	{
-	  phantom =new ( numExpected*numPoints*2 ) phantomMsg;
 	}
       phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize);
       thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
@@ -1562,15 +1552,12 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       }
       else
 	{
-	  sendBWsignalMsg *sigmsg;
+	  sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
 	  if(PCdelayBWSend)
 	    {
-	      sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
 	      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
 	    }
-	  else
-	    sigmsg= new  sendBWsignalMsg;
 	  //collapse this into 1 flag
 	  if(amPhantom)
 	    sigmsg->otherdata= true;
@@ -1899,15 +1886,12 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
       {
 	complex *computed=&(othernewData[j*numPoints]);
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
-	partialResultMsg *msg;
+	partialResultMsg *msg=new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(gpriority)
 	  {
-	    msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
-	else
-	  msg= new (numPoints) partialResultMsg;
 	msg->init(numPoints, thisIndex.z, computed);
 
 #ifdef _PAIRCALC_DEBUG_
@@ -1948,15 +1932,12 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 #endif
 
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
-	partialResultMsg *msg;
+	partialResultMsg *msg=new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(gpriority)
 	  {
-	    msg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
-	else
-	  msg= new (numPoints) partialResultMsg;
 	msg->init(numPoints, thisIndex.z, computed);
 	/*
 	  msg->N=numPoints;
@@ -2096,15 +2077,12 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
-	partialResultMsg *omsg;
+	partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(gpriority)
 	  {
-	    omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	    *((int*)CkPriorityPtr(omsg)) = gpriority;
 	    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	  }
-	else
-	  omsg= new (numPoints) partialResultMsg;
 	omsg->init(numPoints, thisIndex.z, computed);
 	/*	omsg->N=numPoints;
 		omsg->myoffset = thisIndex.z; // chunkth
@@ -2140,15 +2118,12 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	{
 	  complex *computed=&(mynewData[j*numPoints]);
 	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
-	  partialResultMsg *omsg;
+	  partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	  if(gpriority)
 	    {
-	      omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	      *((int*)CkPriorityPtr(omsg)) = gpriority;
 	      CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
 	    }
-	  else
-	    omsg= new (numPoints) partialResultMsg;
 	  omsg->init(numPoints, thisIndex.z, computed);
 	  /*
 	    omsg->N=numPoints;

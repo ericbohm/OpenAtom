@@ -617,16 +617,11 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 #endif
       countZ=0;
       for(int i=0;i<nChareR;i++){
-	CompAtmForcMsg *rmsg;
+	CompAtmForcMsg *rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
 	if(config.prioNLFFTMsg){
-	  rmsg = new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
 	  CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
 	}//endif
-	else
-	  {
-	    rmsg = new (nZmat) CompAtmForcMsg;
-	  }
 	rmsg->init(nZmat,zmatScr,iterNL_in);
 	thisProxy(thisIndex.x,i).computeAtmForcEes(rmsg);
       }//endfor
@@ -679,16 +674,11 @@ void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
      CkPrintf("HI, I am rPP %d %d in recvZmat sending to compute: %d\n",
             thisIndex.x,thisIndex.y,iterNL);
 #endif
-   CompAtmForcMsg *rmsg;
+   CompAtmForcMsg *rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
    if(config.prioNLFFTMsg){
-	rmsg=new (nZmat, 8*sizeof(int)) CompAtmForcMsg;
 	CkSetQueueing(rmsg, CK_QUEUEING_IFIFO);
 	*(int*)CkPriorityPtr(rmsg) = config.gsNLfftpriority+thisIndex.x+iterNL_in;
    }//endif
-   else
-     {
-       rmsg=new (nZmat) CompAtmForcMsg;
-     }
 
    rmsg->init(nZmat,zmat,iterNL);
    CkAssert(rmsg->iterNL>0);
