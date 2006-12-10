@@ -1,7 +1,6 @@
 /** \file ckPairCalculator.h
  *
  */
-//#define _NAN_CHECK_
 #ifndef _ckPairCalculator_h_
 #define _ckPairCalculator_h_
 #define _PC_COMMLIB_MULTI_ 0
@@ -17,7 +16,7 @@
 #endif
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
-#include "debug_flags.h"
+#include "../../include/debug_flags.h"
 // Flag to use sparse reduction or regular reduction
 
 // Debugging flag for Verbose output
