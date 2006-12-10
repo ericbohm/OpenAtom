@@ -15,8 +15,7 @@
  */
 #ifndef _MAPTABLE_H_
 #define _MAPTABLE_H_
-//#define  _VERBOSE_MAP_OFF_
-#define  _VERBOSE_MAP_
+#include "../../include/debug_flags.h"
 
 class intdual {
  private:
@@ -74,7 +73,7 @@ class MapTable
 	{
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
-#ifdef _VERBOSE_MAP_
+#ifdef _MAP_VERBOSE_
 	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
 #endif
 	}
@@ -134,7 +133,7 @@ class MapTable4
 	{
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
-#ifdef _VERBOSE_MAP_
+#ifdef _MAP_VERBOSE_
 	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
 #endif
 	}
@@ -239,7 +238,7 @@ class SCalcMapTable : public MapTable4
 	  it->next((void **) &key);
 	  int proc =maptable->get(key[0]);
 	  short *four=(short*) key;
-#ifdef _VERBOSE_MAP_
+#ifdef _MAP_VERBOSE_
 	  CkPrintf("%d %d %d %d %d\n", four[0], four[1], four[2], four[3],proc);
 #endif
 	}
