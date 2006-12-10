@@ -393,7 +393,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	}
       else
 	{
-	  CkPrintf("PC: proxy without commlib\n");
+	  //CkPrintf("PC: proxy without commlib\n");
 	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
 	  sectProxy->ckSectionDelegate(mcastGrp);
 
