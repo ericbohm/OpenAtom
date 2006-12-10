@@ -1,6 +1,7 @@
 #include "charm++.h"
-#include "../../include/debug_flags.h"
 #include "PeList.h"
+#include "MapTable.h"
+
 #define USE_INT_MAP
 #ifdef USE_INT_MAP
 #include "IntMap.h"
@@ -12,10 +13,6 @@ typedef IntMap2on2 MapType2;
 #endif
 typedef IntMap4 MapType4;
 #endif
-#include "MapTable.h"
-
-//#define MAP_DEBUG_OFF
-#define MAP_DEBUG
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
@@ -123,7 +120,7 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 		  }
 	      }
 	  }
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
 	CkPrintf("GSMap created on processor %d\n", CkMyPe());
 	dump();
 #endif
@@ -161,7 +158,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
       rem = lesser_scalc*nchareG*numChunksSym % availprocs->count();
       if(rem!=0)
 	scobjs_per_pe+=1;
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
       CkPrintf(" lesser_scalc %d *nchareG %d *numChunksSym %d %% availprocs->count() %d = rem %d and scobjs_per_pe is %d\n", lesser_scalc,scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe);
 #endif
 
@@ -288,7 +285,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			}
 
 		    }
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
 	  CkPrintf("Symmetric SCalcMap created on processor %d\n", CkMyPe());
 	  dump();
 #endif
@@ -302,7 +299,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
       if(rem!=0)
 	scobjs_per_pe+=1;
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
       CkPrintf(" scalc_per_plane %d *nchareG %d *numChunksAsym %d  availprocs->count() %d = rem %d and scobjs_per_pe is %d boxSize %d\n", scalc_per_plane,nchareG,numChunksAsym , availprocs->count(),rem, scobjs_per_pe, boxSize);
 #endif
       //if(CkMyPe()==0) CkPrintf("scobjs_per_pe %d grainsize %d nchareG %d scalc_per_plane %d planes_per_pe %d numChunksAsym %d rem %d\n", scobjs_per_pe, grainsize, nchareG, scalc_per_plane, planes_per_pe, numChunksAsym, rem);
@@ -428,7 +425,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		
 		    }
 	}
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
       CkPrintf("Asymmetric SCalcMap created on processor %d\n", CkMyPe());
       dump();
 #endif
@@ -596,7 +593,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  }
     }
   delete [] Pecount;
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
 
   CkPrintf("RSMap created on processor %d\n", CkMyPe());
   dump();
@@ -779,7 +776,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	    }
 	}
     }
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
   CkPrintf("RPPMap created on processor %d\n", CkMyPe());
   dump();
 #endif
@@ -836,7 +833,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	    useExclude=false;
 	  }
 	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
-	CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
+	// CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
 	
 	destpe=thisPlaneBox->findNext();
 	if(thisPlaneBox->count()==0)
@@ -908,7 +905,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	}
     }
   delete [] Pecount;
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
   CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());
   dump();
 #endif
@@ -959,7 +956,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	availprocs->reset();
 
     }
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
   CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
   dump();
 #endif
@@ -1046,7 +1043,7 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
     }
       */
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
 	CkPrintf("RhoRHartMap created on processor %d\n", CkMyPe());
 	dump();
 #endif
@@ -1098,7 +1095,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       if(chunk+1<nchareRhoGHart)
 	destpe=availprocs->findNext();
     }
-#ifdef MAP_DEBUG
+#ifdef _MAP_DEBUG_
   CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());
   dump();
 #endif
