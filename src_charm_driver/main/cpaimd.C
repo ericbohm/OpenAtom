@@ -1855,7 +1855,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 //============================================================================
 // Maps and options
-   CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
+   //CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR,config.rhoRsubplanes);
    RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
@@ -1869,10 +1869,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     // if there aren't enough free procs refresh the RhoAvail list;
     
     if(nchareRhoG>RhoAvail->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
+	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
 	RhoAvail->rebuild();
     }//endif
-    CkPrintf("availProcs %d\n",RhoAvail->count());
+    //CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGSImaptable.buildMap(nchareRhoG,1);
     RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG, excludePes);
@@ -1885,10 +1885,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
     // if there aren't enough free procs refresh the avail list;
     if(nchareRhoGHart>RhoAvail->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoGHart);
+	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoGHart);
 	RhoAvail->rebuild();
     }//endif
-    CkPrintf("availProcs %d\n",RhoAvail->count());
+    //CkPrintf("availProcs %d\n",RhoAvail->count());
 #ifdef USE_INT_MAP
     RhoGHartImaptable.buildMap(nchareRhoGHart,1);
     RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
@@ -1903,10 +1903,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
     // if there aren't enough free procs refresh the avail list;
     if(nchareRhoRHart > RhoAvail->count()){
-	CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
+	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
 	RhoAvail->rebuild();
     }//endif
-    CkPrintf("availProcs %d\n",RhoAvail->count());
+    //CkPrintf("availProcs %d\n",RhoAvail->count());
     CkArrayOptions rhorhartOpts;
     if(ees_eext_on){
 #ifdef USE_INT_MAP
@@ -1919,7 +1919,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
 
 #endif
-	CkPrintf("availProcs %d\n",RhoAvail->count());
+	//CkPrintf("availProcs %d\n",RhoAvail->count());
 	CkPrintf("rho G and S consumed %d\n", excludePes->count());
 	//    excludePes->dump();
 
