@@ -33,7 +33,7 @@
 //#define _CP_DEBUG_HARTEEXT_OFF_   // this leaves everything on but eext/hartree
 
 //=============================================================================
-// paircalc/ckPairCalculator.C and a dozen other places
+// src_charm_driver/paircalc/ckPairCalculator.C and a dozen other places
 //#define _NAN_CHECK_
 
 //=============================================================================
@@ -111,6 +111,11 @@
 //#define _CP_ORTHO_DUMP_TMAT_
 //#define _CP_ORTHO_DEBUG_COMPARE_SMAT_
 //#define _CP_ORTHO_DEBUG_COMPARE_TMAT_ 
+
+//=============================================================================
+// src_charm_driver/load_balance/MapTable.C
+//#define _MAP_DEBUG_
+//#define _MAP_VERBOSE_
 
 //=============================================================================
 // src_piny_physics_v1.0/abinitio_physics/cp_orthog/cp_lowdin.C
