@@ -1,6 +1,5 @@
 #include "charm++.h"
 #include "PeList.h"
-#include "MapTable.h"
 
 #define USE_INT_MAP
 #ifdef USE_INT_MAP
@@ -13,6 +12,7 @@ typedef IntMap2on2 MapType2;
 #endif
 typedef IntMap4 MapType4;
 #endif
+#include "MapTable.h"
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
