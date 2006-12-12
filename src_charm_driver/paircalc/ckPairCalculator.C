@@ -1222,6 +1222,11 @@ PairCalculator::sendTiles(bool flag_dp)
 	    dumpMatrixDouble(filename, outTiles[orthoIndex], orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
 #endif
 
+#ifdef _NAN_CHECK_
+	    for(int i=0; i<orthoGrainSize*orthoGrainSize; i++)
+	      CkAssert(finite(outTiles[orthoIndex][i]));
+#endif
+
 	    mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
 	    //mcastGrp->contribute(orthoGrainSize*orthoGrainSize*sizeof(double), outTiles[orthoIndex], CkReduction::sum_double, orthoCookies[orthoIndex], orthoCB[orthoIndex]);	  
 	    touchedTiles[orthoIndex]=0;

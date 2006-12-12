@@ -566,6 +566,13 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   }
   else
     {
+
+#ifdef _NAN_CHECK_
+      CkAssert(lambdaCount==m*n);
+      for(int i=0; i<m*n; i++)
+	CkAssert(finite(lambda[i]));
+#endif
+
       // finish pair calc
       finishPairCalcSection(lambdaCount, lambda, &oPairCalcID2, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
