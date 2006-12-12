@@ -26,10 +26,8 @@
 //#define TEST_ALIGN
 #define BUNDLE_USER_EVENT  
 
-//#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
-//#define PC_BWD_DGEMM_SPLIT 16
-#define PC_FWD_DGEMM_SPLIT 0
-#define PC_BWD_DGEMM_SPLIT 0
+#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
+#define PC_BWD_DGEMM_SPLIT 16
 
 #else
 #define PC_FWD_DGEMM_SPLIT 0 
