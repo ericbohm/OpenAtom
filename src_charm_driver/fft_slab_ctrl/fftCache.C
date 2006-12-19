@@ -36,7 +36,17 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
-                   int _ees_NL_on, int _nlines_max, int _nlines_max_rho){
+                   int _ees_NL_on, int _nlines_max, int _nlines_max_rho,
+                   int _nchareGState, int _nchareRState,
+                   int _nchareGNL,    int _nchareRNL, 
+                   int _nchareGRho,   int _nchareRRho,  int _nchareRRhoTot,
+                   int _nchareGEext,  int _nchareREext, int _nchareREextTot,
+                   int  *numGState,   int  *numRXState, int *numRYState,
+                   int  *numGNL,      int  *numRXNL,    int *numRYNL,
+                   int  *numGRho,     int  *numRXRho,   int *numRYRho ,
+                   int  *numGEext,    int  *numRXEext,  int *numRYEext ,
+                   int _fftopt,       int _nsplitR,     int _nsplitG,
+                   int _rhoRsubPlanes){
 //==============================================================================
 // Local Variables
 
@@ -59,24 +69,43 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     ngridbNL     = _ngridbNL; 
     ngridcNL     = _ngridcNL; 
     ees_NL_on    = _ees_NL_on;
+
     int nlines_max     = _nlines_max;
     int nlines_max_rho = _nlines_max_rho;
 
-    int sizeY    = planeSIZE[0];
-    int sizeZ    = planeSIZE[1];
+    int iopt           = _fftopt;
 
-    int iopt     = config.fftopt;
+    int sizeY          = planeSIZE[0];
+    int sizeZ          = planeSIZE[1];
+
+    nchareGState    = _nchareGState; 
+    nchareRState    = _nchareRState; 
+    nchareGNL       = _nchareGNL;    
+    nchareRNL       = _nchareRNL;
+    nchareGRho      = _nchareGRho;   
+    nchareRRho      = _nchareRRho;  
+    nchareRRhoTot   = _nchareRRhoTot;
+    nchareGEext     = _nchareGEext;  
+    nchareREext     = _nchareREext; 
+    nchareREextTot  = _nchareREextTot;
+    rhoRsubPlanes   = _rhoRsubPlanes;
+
+    nsplitR         = _nsplitR;
+    nsplitG         = _nsplitG;
+
+//==============================================================================
+// Set the fft stuff generically
 
     int skipR    =  1;
     int skipC    =  1;
     int nf_max   =  0;
     int nwork1   =  0; 
     int nwork2   =  0;
+    int nwork2T  =  0;
     int plus     =  1;
     int mnus     = -1;
     int unit     =  1;
     double scale =  1.0;
-  
 
     if(iopt<0 || iopt>1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -108,31 +137,93 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     tmpDataR = reinterpret_cast<double*> (tmpData);
 
 //==============================================================================
-// Density and State plans : funky names : non-cubic broken
+// State plans : funky names : non-cubic broken
 
    //------------------------------------------------
    // Double Pack Plans
 
     nf_max = (sizeX > sizeY)  ? sizeX : sizeY; 
     nf_max = (sizeZ > nf_max) ? sizeZ : nf_max;
-    nwork1 = 0;    nwork2 = 0;
+    nwork1 = 0;    nwork2 = 0; nwork2T = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
+      if(nf_max<=2048){iadd=0;}
       nwork1   = 20000+iadd;
-      nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
+      nwork2   = nwork1;
+      nwork2T  = nwork1 + (2*nf_max+256)*64;
     }//endif
     skipR = sizeX+2;
     skipC = sizeX/2+1;
     
-    initFFTholder  (&fwdYPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,&skipC,&unit);
-    initFFTholder  (&bwdYPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,&skipC,&unit);
-    initFFTholder  (&fwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,&unit, &sizeY);
-    initFFTholder  (&bwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,&unit, &sizeY);
-    initCRFFTholder(&fwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeX,&skipR,&skipC);
-    initRCFFTholder(&bwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeX,&skipR,&skipC);
-    initFFTholder  (&fwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeZ,&unit, &sizeZ);
-    initFFTholder  (&bwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeZ,&unit, &sizeZ);
+    initFFTholder  (&fwdYPlanState, &iopt,&nwork1,&nwork2T,&scale,&plus,&sizeY,
+                                    &skipC,&unit,nchareRState,&nsplitR,numRYState);
+    initFFTholder  (&bwdYPlanState, &iopt,&nwork1,&nwork2T,&scale,&mnus,&sizeY,
+                                    &skipC,&unit,nchareRState,&nsplitR,numRYState);
+    initCRFFTholder(&fwdXPlanState, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeX,
+                                    &skipR,&skipC,nchareRState,&nsplitR,numRXState);
+    initRCFFTholder(&bwdXPlanState, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeX,
+                                    &skipR,&skipC,nchareRState,&nsplitR,numRXState);
+    initFFTholder  (&fwdZPlanState, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeZ,
+                                    &unit, &sizeZ,nchareGState,&nsplitG,numGState);
+    initFFTholder  (&bwdZPlanState, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeZ,
+                                    &unit, &sizeZ,nchareGState,&nsplitG,numGState);
+    if(iopt==0){
+        size[0] = planeSize[1]; size[1] = planeSize[0]; size[2] = 1; 
+        fwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+        bwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_REAL_TO_COMPLEX,
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdYPlanState.fftwPlan  =  fftw_create_plan(planeSize[0], FFTW_FORWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdYPlanState.fftwPlan =   fftw_create_plan(planeSize[0], FFTW_BACKWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        fwdZPlanState.fftwPlan  =  fftw_create_plan(sizeZ,FFTW_FORWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+        bwdZPlanState.fftwPlan  =  fftw_create_plan(sizeZ,FFTW_BACKWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
+    }//endif
+
+//==============================================================================
+// Density plans : funky names : non-cubic broken
+
+   //------------------------------------------------
+   // Double Pack Plans
+
+    nf_max = (sizeX > sizeY)  ? sizeX : sizeY; 
+    nf_max = (sizeZ > nf_max) ? sizeZ : nf_max;
+    nwork1 = 0;    nwork2 = 0;  nwork2T = 0;
+    if(iopt==1){    
+      int iadd = (int) (2.3*(double)nf_max);
+      if(nf_max<=2048){iadd=0;}
+      nwork1   = 20000+iadd;
+      nwork2   = nwork1;
+      nwork2T  = nwork1 + (2*nf_max+256)*64;
+    }//endif
+    skipR = sizeX+2;
+    skipC = sizeX/2+1;
+
+    if(rhoRsubPlanes==1){
+      initFFTholder  (&fwdYPlanRho, &iopt,&nwork1,&nwork2T,&scale,&plus,&sizeY,
+                                    &skipC,&unit,nchareRRhoTot,&nsplitR,numRYRho);
+      initFFTholder  (&bwdYPlanRho, &iopt,&nwork1,&nwork2T,&scale,&mnus,&sizeY,
+                                    &skipC,&unit,nchareRRhoTot,&nsplitR,numRYRho);
+    }else{
+      initFFTholder  (&fwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&plus,&sizeY,
+                                    &unit, &sizeY,nchareRRhoTot,&nsplitR,numRYRho);
+      initFFTholder  (&bwdYPlanRhoS,&iopt,&nwork1,&nwork2,&scale,&mnus,&sizeY,
+                                    &unit, &sizeY,nchareRRhoTot,&nsplitR,numRYRho);
+   }//endif
+    initCRFFTholder(&fwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeX,
+                                  &skipR,&skipC,nchareRRhoTot,&nsplitR,numRXRho);
+    initRCFFTholder(&bwdXPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeX,
+                                  &skipR,&skipC,nchareRRhoTot,&nsplitR,numRXRho);
+    initFFTholder  (&fwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&plus,&sizeZ,
+                                  &unit, &sizeZ,nchareGRho,&nsplitG,numGRho);
+    initFFTholder  (&bwdZPlanRho, &iopt,&nwork1,&nwork2,&scale,&mnus,&sizeZ,
+                                  &unit, &sizeZ,nchareGRho,&nsplitG,numGRho);
+    // I'm special
+    initFFTholder  (&fwdZPlanRhoHart,&iopt,&nwork1,&nwork2,&scale,&plus,&sizeZ,
+                                  &unit, &sizeZ,nchareGEext,&nsplitG,numGEext);
 
     if(iopt==0){
         size[0] = planeSize[1]; size[1] = planeSize[0]; size[2] = 1; 
@@ -152,6 +243,8 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
                                    FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
         bwdZPlanRho.fftwPlan  =  fftw_create_plan(sizeZ,FFTW_BACKWARD, 
                                    FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
+        fwdZPlanRhoHart.fftwPlan=fftw_create_plan(sizeZ,FFTW_FORWARD, 
+                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
     }//endif
 
 //==============================================================================
@@ -162,24 +255,30 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
     nf_max = (ngridaNL> ngridbNL) ? ngridaNL : ngridbNL; 
     nf_max = (ngridcNL > nf_max ) ? ngridcNL : nf_max; 
-    nwork1 = 0;   nwork2 = 0;
+    nwork1 = 0;   nwork2 = 0;  nwork2T = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
+      if(nf_max<=2048){iadd=0;}
       nwork1   = 20000+iadd;
-      nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
+      nwork2   = nwork1;
+      nwork2T  = nwork1 + (2*nf_max+256)*64;
     }//endif
     skipR = ngridaNL+2;
     skipC = ngridaNL/2+1;
-    if(ees_NL_on)
-      {
-	initFFTholder  (&fwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbNL,&skipC,&unit);
-	initFFTholder  (&bwdYPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbNL,&skipC,&unit);
-	initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,&skipR,&skipC);
-	initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,&skipR,&skipC);
-	initFFTholder  (&fwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridcNL,&unit, &ngridcNL);
-	initFFTholder  (&bwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcNL,&unit, &ngridcNL);
-      }
+    if(ees_NL_on) {
+     initFFTholder  (&fwdYPlanNL,&iopt,&nwork1,&nwork2T,&scale,&plus,&ngridbNL,
+                                 &skipC,&unit,nchareRNL,&nsplitR,numRYNL);
+     initFFTholder  (&bwdYPlanNL,&iopt,&nwork1,&nwork2T,&scale,&mnus,&ngridbNL,
+                                 &skipC,&unit,nchareRNL,&nsplitR,numRYNL);
+     initCRFFTholder(&fwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridaNL,
+                                 &skipR,&skipC,nchareRNL,&nsplitR,numRXNL);
+     initRCFFTholder(&bwdXPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaNL,
+                                 &skipR,&skipC,nchareRNL,&nsplitR,numRXNL);
+     initFFTholder  (&fwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridcNL,
+                                 &unit, &ngridcNL,nchareGNL,&nsplitG,numGNL);
+     initFFTholder  (&bwdZPlanNL,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcNL,
+                                 &unit, &ngridcNL,nchareGNL,&nsplitG,numGNL);
+    }//endif
     if(iopt==0){
        size[0] = ngridaNL; size[1] = ngridbNL; size[2] = 1;
        fwdXPlanNL.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL,
@@ -204,34 +303,38 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
 
     nf_max = (ngridaEext> ngridbEext) ? ngridaEext : ngridbEext; 
     nf_max = (ngridcEext > nf_max )   ? ngridcEext : nf_max; 
-    nwork1 = 0;   nwork2 = 0;
+    nwork1 = 0;   nwork2 = 0;  nwork2T = 0;
     if(iopt==1){    
       int iadd = (int) (2.3*(double)nf_max);
+      if(nf_max<=2048){iadd=0;}
       nwork1   = 20000+iadd;
-      nwork2   = (2*nf_max+256)*64;
-      nwork2   = (nwork1 > nwork2) ? nwork1 : nwork2;
+      nwork2   = nwork1;
+      nwork2T  = nwork1 + (2*nf_max+256)*64;
     }//endif
     skipR = ngridaEext+2;
     skipC = ngridaEext/2+1;
-    if(ees_eext_on)
-      {
-	initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
-			&skipC,&unit);
-	initFFTholder  (&bwdYPlanEext ,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
-			&skipC,&unit);
-	initFFTholder  (&fwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
-			&unit, &ngridbEext);
-	initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
-			&unit, &ngridbEext);
-	initCRFFTholder(&fwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
-			&skipR,&skipC);
-	initRCFFTholder(&bwdXPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
-			&skipR,&skipC);
-	initFFTholder  (&fwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
-			&unit, &ngridcEext);
-	initFFTholder  (&bwdZPlanEext,& iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcEext,
-			&unit, &ngridcEext);
-      }
+
+    if(ees_eext_on){
+     if(rhoRsubPlanes==1){
+       initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2T,&scale,&plus,&ngridbEext,
+      			              &skipC,&unit,nchareREext,&nsplitR,numRYEext);
+       initFFTholder  (&bwdYPlanEext ,&iopt,&nwork1,&nwork2T,&scale,&mnus,&ngridbEext,
+			              &skipC,&unit,nchareREext,&nsplitR,numRYEext);
+     }else{
+       initFFTholder  (&fwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
+	 		              &unit, &ngridbEext,nchareREext,&nsplitR,numRYEext);
+       initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
+			              &unit, &ngridbEext,nchareREext,&nsplitR,numRYEext);
+     }//endif
+     initCRFFTholder(&fwdXPlanEext, &iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
+  			            &skipR,&skipC,nchareREext,&nsplitR,numRXEext);
+     initRCFFTholder(&bwdXPlanEext, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
+			            &skipR,&skipC,nchareREext,&nsplitR,numRXEext);
+     initFFTholder  (&fwdZPlanEext, &iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
+			            &unit, &ngridcEext,nchareGEext,&nsplitG,numGEext);
+     initFFTholder  (&bwdZPlanEext, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcEext,
+			            &unit, &ngridcEext,nchareGEext,&nsplitG,numGEext);
+    }//endif
     if(iopt==0){
         size[0] = ngridaEext; size[1] = ngridbEext; size[2] = 1;
         fwdXPlanEext.rfftwPlan = rfftwnd_create_plan(1, (const int*)size,FFTW_COMPLEX_TO_REAL,
@@ -388,7 +491,7 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
-                                  int nfftz){
+                                  int nfftz, int index){
 //==============================================================================
 // FFT in expanded form
 
@@ -399,7 +502,8 @@ void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
 	  1,                      //stride
 	  nfftz,                  //distance between z-data sets
 	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+          config.fftprogresssplit,// split parameter
+          index
          ); 
 
 //==============================================================================
@@ -420,7 +524,7 @@ void FFTcache::doNlFFTRtoG_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
           int numFull, int numPoints,int numLines, int numRuns, 
-          RunDescriptor *runs, int nfftz){
+          RunDescriptor *runs, int nfftz, int index){
 //==============================================================================
 // Expand for ffting : Trickery
 
@@ -436,7 +540,8 @@ void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
 	  1,                        //stride
 	  nfftz,                    //distance between z-data sets
 	  NULL, 0, 0,               // input is ouput
-          config.fftprogresssplit   // split parameter
+          config.fftprogresssplit,  // split parameter
+          index
          ); 
 
 //------------------------------------------------------------------------------
@@ -451,7 +556,7 @@ void FFTcache::doNlFFTGtoR_Gchare(complex *data_in,complex *data_out,
 //==============================================================================
 void FFTcache::doHartFFTGtoR_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,int numLines, int numRuns, 
-                                  RunDescriptor *runs, int nfftz){
+                                  RunDescriptor *runs, int nfftz, int index){
 //==============================================================================
 // Expand for ffting : Trickery
 
@@ -461,13 +566,14 @@ void FFTcache::doHartFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          &fwdZPlanRho,             // Z-direction forward plan 
+          &fwdZPlanRhoHart,         // Z-direction forward plan 
           numLines,                 // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out, // data
 	  1,                        //stride
 	  nfftz,                    //distance between z-data sets
 	  NULL, 0, 0,               // input is ouput
-          config.fftprogresssplit   // split parameter
+          config.fftprogresssplit,  // split parameter
+          index
          ); 
 
 //------------------------------------------------------------------------------
@@ -481,7 +587,7 @@ void FFTcache::doHartFFTGtoR_Gchare(complex *data_in,complex *data_out,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                  int sizeX,int sizeY){
+                                  int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along x first
 
@@ -492,7 +598,8 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
              1,                          // stride
              (sizeX+2),                  // spacing between data sets
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
@@ -504,13 +611,14 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            &bwdYPlanNL,            // backward plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            stride,                    // stride
-            1,                         // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanNL,                // backward plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            stride,                     // stride
+            1,                          // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -524,20 +632,21 @@ void FFTcache::doNlFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                  int sizeX,int sizeY){
+                                  int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
 
   int stride = sizeX/2+1;
   fft_split(
-        &fwdYPlanNL,               // y-plan for NL Ees method
+        &fwdYPlanNL,                  // y-plan for NL Ees method
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
   	1,                            // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
   );
 
   // fftw only gives you one sign for real to complex : so do it yourself
@@ -549,13 +658,14 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              &fwdXPlanNL,               // x-plan for NL Ees method
+              &fwdXPlanNL,                  // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
    );
 
 //------------------------------------------------------------------------------
@@ -571,18 +681,19 @@ void FFTcache::doNlFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //==============================================================================
 void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
                                     int numLines, int numRuns, RunDescriptor *runs, 
-                                    int nfftz){
+                                    int nfftz, int index){
 //==============================================================================
 // FFT in expanded form
 
   fft_split(
           &bwdZPlanEext,           // Z-direction backward plan
-          numLines,               // # of ffts : one for every line of z in the chare
-	  (fftw_complex *)data,   //input data
-	  1,                      //stride
-	  nfftz,                  //distance between z-data sets
-	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+          numLines,                // # of ffts : one for every line of z in the chare
+	  (fftw_complex *)data,    // input data
+	  1,                       // stride
+	  nfftz,                   // distance between z-data sets
+	  NULL, 0, 0,              // input is ouput
+          config.fftprogresssplit, // split parameter
+          index
          ); 
 
 //==============================================================================
@@ -606,7 +717,7 @@ void FFTcache::doEextFFTRtoG_Gchare(complex *data,int numFull, int numPoints,
 void FFTcache::doEextFFTGtoR_Gchare(complex *data_in, complex *data_out, 
                                     int numFull, int numPoints,int numLines, 
                                     int numRuns, RunDescriptor *runs,
-                                    int nfftz){
+                                    int nfftz, int index){
 //==============================================================================
 // expand for ffting
 
@@ -617,12 +728,13 @@ void FFTcache::doEextFFTGtoR_Gchare(complex *data_in, complex *data_out,
 
   fft_split(
           &fwdZPlanEext,           // Z-direction forward plan
-          numLines,               // # of ffts : one for every line of z in the chare
+          numLines,                // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out,//output data
-	  1,                      //stride
-	  nfftz,                  //distance between z-data sets
-	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+	  1,                       //stride
+	  nfftz,                   //distance between z-data sets
+	  NULL, 0, 0,              // input is ouput
+          config.fftprogresssplit, // split parameter
+          index
          ); 
 
 //------------------------------------------------------------------------------
@@ -636,7 +748,7 @@ void FFTcache::doEextFFTGtoR_Gchare(complex *data_in, complex *data_out,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along x first
 
@@ -647,7 +759,8 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
              1,                          // stride
              (sizeX+2),                  // spacing between data sets
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
@@ -660,13 +773,14 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            &bwdYPlanEext,          // backward plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            stride,                    // stride
-            1,                         // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanEext,              // backward plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            stride,                     // stride
+            1,                          // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -680,18 +794,19 @@ void FFTcache::doEextFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along x first : stride 1
 
   rfftwnd_real_to_complex_split(
-   	     &bwdXPlanEext,             // backward plan
+   	     &bwdXPlanEext,              // backward plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
              (sizeX+2),                  // spacing between data sets
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
@@ -711,18 +826,19 @@ void FFTcache::doEextFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along y : stride 1
 
   fft_split(
-            &bwdYPlanEextS,            // backward plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            1,                         // stride
-            sizeY,                     // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanEextS,             // backward plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            1,                          // stride
+            sizeY,                      // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -737,20 +853,21 @@ void FFTcache::doEextFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
 
   int stride = sizeX/2+1;
   fft_split(
-        &fwdYPlanEext,             // y-plan for NL Ees method
+        &fwdYPlanEext,                // y-plan for NL Ees method
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
   	1,                            // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
@@ -762,13 +879,14 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              &fwdXPlanEext,             // x-plan for NL Ees method
+              &fwdXPlanEext,                // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
              );
 
 //------------------------------------------------------------------------------
@@ -782,7 +900,7 @@ void FFTcache::doEextFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                      int sizeX,int sizeY){
+                                      int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
 
@@ -792,13 +910,14 @@ void FFTcache::doEextFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
   }//endif
 
   rfftwnd_complex_to_real_split(
-              &fwdXPlanEext,             // x-plan for NL Ees method
+              &fwdXPlanEext,                // x-plan for NL Ees method
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
              );
 
 //------------------------------------------------------------------------------
@@ -812,7 +931,7 @@ void FFTcache::doEextFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doEextFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride 1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
@@ -824,7 +943,8 @@ void FFTcache::doEextFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
  	1,                            // stride betwen elements (x is inner)
   	sizeY,                        // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
        );
 
 //------------------------------------------------------------------------------
@@ -842,18 +962,19 @@ void FFTcache::doEextFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
 void FFTcache::doStpFFTRtoG_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
-                                  int nfftz){
+                                  int nfftz, int index){
 //==============================================================================
 // FFT in expanded form
 
   fft_split(
-          &bwdZPlanRho,           // Z-direction backward plan
+          &bwdZPlanState,         // Z-direction backward plan
           numLines,               // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_in,//input data
 	  1,                      //stride
 	  nfftz,                  //distance between z-data sets
 	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+          config.fftprogresssplit,// split parameter
+          index
          ); 
 
 //==============================================================================
@@ -875,7 +996,7 @@ void FFTcache::doStpFFTRtoG_Gchare(complex *data_in,complex *data_out,
 void FFTcache::doStpFFTGtoR_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
-                                  int nfftz){
+                                  int nfftz, int index){
 //==============================================================================
 // Expand for ffting
 
@@ -887,13 +1008,14 @@ void FFTcache::doStpFFTGtoR_Gchare(complex *data_in,complex *data_out,
 // FFT in expanded form
 
   fft_split(
-          &fwdZPlanRho,            // Z-direction forward plan
+          &fwdZPlanState,          // Z-direction forward plan
           numLines,                // # of ffts : one for every line of z in the chare
 	  (fftw_complex *)data_out,//input data
 	  1,                       //stride
 	  nfftz,                   //distance between z-data sets
 	  NULL, 0, 0,              // input is ouput
-          config.fftprogresssplit  // split parameter
+          config.fftprogresssplit, // split parameter
+          index
          ); 
 
 //------------------------------------------------------------------------------
@@ -906,24 +1028,25 @@ void FFTcache::doStpFFTGtoR_Gchare(complex *data_in,complex *data_out,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                   int sizeX,int sizeY){
+                                   int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
 
   int stride = sizeX/2+1;
   fft_split(
-        &fwdYPlanRho,                 // y-plan 
+        &fwdYPlanState,               // y-plan 
 	nplane_x,                     // how many < sizeX/2 + 1
         (fftw_complex *)(dataC),      //input data
  	stride,                       // stride betwen elements (x is inner)
   	1,                            // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
-  if(fwdXPlanRho.option==0){
+  if(fwdXPlanState.option==0){
     for(int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
   }//endif
 
@@ -931,13 +1054,14 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along X direction : X moves with stride 1 through memory
 
   rfftwnd_complex_to_real_split(
-              &fwdXPlanRho,                 // x-plan 
+              &fwdXPlanState,               // x-plan 
 	      sizeY,                        // how many
 	      (fftw_complex *)dataC,        // input data
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
              );
 
 //------------------------------------------------------------------------------
@@ -951,22 +1075,23 @@ void FFTcache::doStpFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                    int sizeX,int sizeY){
+                                    int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along x first
 
   rfftwnd_real_to_complex_split(
-   	     &bwdXPlanRho,               // backward X plan
+   	     &bwdXPlanState,             // backward X plan
 	     sizeY,                      // these many 1D ffts
 	     (fftw_real *)dataR,         // data set
              1,                          // stride
              (sizeX+2),                  // spacing between data sets
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
-  if(bwdXPlanRho.option==0){
+  if(bwdXPlanState.option==0){
     for (int i=0;i<stride*sizeY;i++){dataC[i].im = -dataC[i].im;}
   }//endif
 
@@ -974,13 +1099,14 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            &bwdYPlanRho,              // backward Y plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            stride,                    // stride
-            1,                         // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanState,             // backward Y plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            stride,                     // stride
+            1,                          // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -990,14 +1116,14 @@ void FFTcache::doStpFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 
 
 //=============================================================================
-// StatePlane : Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
+// rho Gchare : data(gx,gy,gz) -> data(gx,gy,z) : forward
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTGtoR_Gchare(complex *data_in,complex *data_out,
                                     int numFull, int numPoints,
                                     int numLines, int numRuns, RunDescriptor *runs, 
-                                    int nfftz,int iexpand){
+                                    int nfftz,int iexpand, int index){
 //==============================================================================
 // Expand for ffting : data_out is expanded
 
@@ -1015,7 +1141,8 @@ void FFTcache::doRhoFFTGtoR_Gchare(complex *data_in,complex *data_out,
 	  1,                       //stride
 	  nfftz,                   //distance between z-data sets
 	  NULL, 0, 0,              // input is ouput
-          config.fftprogresssplit  // split parameter
+          config.fftprogresssplit, // split parameter
+          index
          ); 
 
 //------------------------------------------------------------------------------
@@ -1025,14 +1152,14 @@ void FFTcache::doRhoFFTGtoR_Gchare(complex *data_in,complex *data_out,
 
 
 //=============================================================================
-// StatePlane : Gchare : data(gx,gy,z) -> data(gx,gy,gz) : backward
+// Rho Plane : Gchare : data(gx,gy,z) -> data(gx,gy,gz) : backward
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
                                   int numFull, int numPoints,
                                   int numLines, int numRuns, RunDescriptor *runs, 
-                                  int nfftz, int ipack){
+                                  int nfftz, int ipack, int index){
 //==============================================================================
 // FFT in expanded form
 
@@ -1043,7 +1170,8 @@ void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
 	  1,                      //stride
 	  nfftz,                  //distance between z-data sets
 	  NULL, 0, 0,             // input is ouput
-          config.fftprogresssplit // split parameter
+          config.fftprogresssplit,// split parameter
+          index
          ); 
 
 //==============================================================================
@@ -1065,7 +1193,7 @@ void FFTcache::doRhoFFTRtoG_Gchare(complex *data_in,complex *data_out,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x, 
-				   int sizeX,int sizeY)
+				   int sizeX,int sizeY, int index)
 //==============================================================================
    {//begin routine 
 //==============================================================================
@@ -1078,7 +1206,8 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
              1,                          // stride
              (sizeX+2),                  // spacing between data sets
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
@@ -1090,13 +1219,14 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 // FFT along y
 
   fft_split(
-            &bwdYPlanRho,              // backward Y plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            stride,                    // stride
-            1,                         // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanRho,               // backward Y plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            stride,                     // stride
+            1,                          // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -1108,7 +1238,7 @@ void FFTcache::doRhoFFTRtoG_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x, 
-  				     int sizeX,int sizeY)
+  				     int sizeX,int sizeY, int index)
 //==============================================================================
    {//begin routine 
 //==============================================================================
@@ -1121,7 +1251,8 @@ void FFTcache::doRhoFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
              1,                          // stride
              (sizeX+2),                  // spacing between data sets in doubles
   	     NULL,0,0,                   // input array is output array
-             config.fftprogresssplitReal // 
+             config.fftprogresssplitReal,// 
+             index
            );            
 
   int stride = sizeX/2+1;
@@ -1139,20 +1270,21 @@ void FFTcache::doRhoFFTRxToGx_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x, 
-				   int sizeX,int sizeY)
+				   int sizeX,int sizeY, int index)
 //==============================================================================
    {//begin routine 
 //==============================================================================
 // FFT along y
 
   fft_split(
-            &bwdYPlanRhoS,             // backward Y plan
-	    nplane_x,                  // these many 1D ffts
-	    (fftw_complex *)dataC,     // data set
-            1,                         // stride
-            sizeY,                     // spacing between data sets
-            NULL,0,0,                  // input is output
-            config.fftprogresssplitReal// progress splitting for BG/L
+            &bwdYPlanRhoS,              // backward Y plan
+	    nplane_x,                   // these many 1D ffts
+	    (fftw_complex *)dataC,      // data set
+            1,                          // stride
+            sizeY,                      // spacing between data sets
+            NULL,0,0,                   // input is output
+            config.fftprogresssplitReal,// progress splitting for BG/L
+            index
            );
 
 //------------------------------------------------------------------------------
@@ -1165,7 +1297,7 @@ void FFTcache::doRhoFFTRyToGy_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                   int sizeX,int sizeY){
+                                   int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
@@ -1178,7 +1310,8 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
  	stride,                       // stride betwen elements (x is inner)
   	1,                            // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
        );
 
   // fftw only gives you one sign for real to complex : so do it yourself
@@ -1196,7 +1329,8 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
              );
 
 //------------------------------------------------------------------------------
@@ -1208,7 +1342,7 @@ void FFTcache::doRhoFFTGtoR_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                     int sizeX,int sizeY){
+                                     int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along Y direction : Y moves with stride sizex/2+1 through memory
 //                       : nplane_x is spherical cutoff <= sizeX/2+1
@@ -1220,7 +1354,8 @@ void FFTcache::doRhoFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
  	1,                            // stride betwen elements (x is inner)
   	sizeY,                        // array separation (nffty elements)
         NULL,0,0,                     // output data is input data
-        config.fftprogresssplitReal   // splitting parameter
+        config.fftprogresssplitReal,  // splitting parameter
+        index
        );
 
 //------------------------------------------------------------------------------
@@ -1232,7 +1367,7 @@ void FFTcache::doRhoFFTGyToRy_Rchare(complex *dataC,double *dataR,int nplane_x,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x, 
-                                     int sizeX,int sizeY){
+                                     int sizeX,int sizeY, int index){
 //==============================================================================
 // FFT along X direction : X moves with stride 1 through memory
 
@@ -1248,7 +1383,8 @@ void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
               1,                            // stride (x is inner)
               stride,                       // array separation
               NULL,0,0,                     // output = input = dataR real
-  	      config.fftprogresssplitReal   // splitting parameter
+  	      config.fftprogresssplitReal,  // splitting parameter
+              index
              );
 
 //------------------------------------------------------------------------------
@@ -1266,7 +1402,8 @@ void FFTcache::doRhoFFTGxToRx_Rchare(complex *dataC,double *dataR,int nplane_x,
 //============================================================================
 void fft_split(FFTplanHolder *fftplanholder, int howmany, 
                fftw_complex *in,     int istride_in,    int idist_in, 
-               fftw_complex *out_in, int ostride_in, int odist_in, int split)
+               fftw_complex *out_in, int ostride_in, int odist_in, int split,
+               int index)
 //============================================================================
   {// begin routine 
 //============================================================================
@@ -1278,8 +1415,10 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
   int nwork1        = fftplanholder->nwork1;
   int nwork2        = fftplanholder->nwork2;
   double scale      = fftplanholder->scale;
-  double *work1     = fftplanholder->work1;
-  double *work2     = fftplanholder->work2;
+  double *work1r    = NULL;
+  double *work2r    = NULL;
+  double *work1s    = fftplanholder->work1;
+  double *work2s    = fftplanholder->work2;
 
   int zero          = 0;
   int istride       = istride_in;
@@ -1291,6 +1430,9 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
     ostride = fftplanholder->ostride;
     odist   = fftplanholder->odist;
     out     = (out==NULL) ? in : out ;
+    int kkk = fftplanholder->mapp[index];
+    work1r  = fftplanholder->essl_work[kkk].work1;
+    work2r  = fftplanholder->essl_work[kkk].work2;
   }//endif
   
   int thismany  = split;
@@ -1306,7 +1448,8 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
 
   for(int i=0;i<numsplits;i++){
       thismany = split;
-      if(inleft<split){thismany=inleft;}
+      double *work1 = work1s; double *work2 = work2s;
+      if(inleft<split){thismany=inleft;work1=work1r,work2=work2r;}
 #ifdef TEST_ALIGN
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
@@ -1353,7 +1496,7 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
 //============================================================================
 void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany, 
          fftw_complex *in,    int istride_in,    int idist_in, 
-         fftw_real   *out_in, int ostride_in, int odist_in, int split)
+         fftw_real   *out_in, int ostride_in, int odist_in, int split, int index)
 //============================================================================
    {//begin routine
 //============================================================================
@@ -1365,8 +1508,10 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
   int nwork1        = rfftplanholder->nwork1;
   int nwork2        = rfftplanholder->nwork2;
   double scale      = rfftplanholder->scale;
-  double *work1     = rfftplanholder->work1;
-  double *work2     = rfftplanholder->work2;
+  double *work1r    = NULL;
+  double *work2r    = NULL;
+  double *work1s    = rfftplanholder->work1;
+  double *work2s    = rfftplanholder->work2;
 
   int zero          = 0;
   int istride       = istride_in;
@@ -1378,8 +1523,11 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
     ostride = rfftplanholder->ostride;
     odist   = rfftplanholder->odist;
     if(out==NULL){
-      out     = reinterpret_cast<double*> (in);
+      out   = reinterpret_cast<double*> (in);
     }//endif
+    int kkk = rfftplanholder->mapp[index];
+    work1r  = rfftplanholder->essl_work[kkk].work1;
+    work2r  = rfftplanholder->essl_work[kkk].work2;
   }//endif
 
   int thismany  = split;
@@ -1395,7 +1543,8 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
 
   for(int i=0;i<numsplits;i++){
       thismany=split;
-      if(inleft<split){thismany=inleft;}
+      double *work1 = work1s; double *work2 = work2s;
+      if(inleft<split){thismany=inleft;work1=work1r,work2=work2r;}
 #ifdef TEST_ALIGN
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
@@ -1440,7 +1589,7 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
 //============================================================================
 void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany, 
         fftw_real *in,        int istride_in,    int idist_in, 
-        fftw_complex *out_in, int ostride_in, int odist_in, int split)
+        fftw_complex *out_in, int ostride_in, int odist_in, int split, int index)
 //============================================================================
    {// begin routine
 //============================================================================
@@ -1452,8 +1601,10 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
   int nwork1        = rfftplanholder->nwork1;
   int nwork2        = rfftplanholder->nwork2;
   double scale      = rfftplanholder->scale;
-  double *work1     = rfftplanholder->work1;
-  double *work2     = rfftplanholder->work2;
+  double *work1r    = NULL;
+  double *work2r    = NULL;
+  double *work1s    = rfftplanholder->work1;
+  double *work2s    = rfftplanholder->work2;
 
   int zero          = 0;
   int istride       = istride_in;
@@ -1465,8 +1616,11 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
     ostride = rfftplanholder->ostride;
     odist   = rfftplanholder->odist;
     if(out==NULL){
-      out     = reinterpret_cast<fftw_complex*> (in);
+      out   = reinterpret_cast<fftw_complex*> (in);
     }//endif
+    int kkk = rfftplanholder->mapp[index];
+    work1r  = rfftplanholder->essl_work[kkk].work1;
+    work2r  = rfftplanholder->essl_work[kkk].work2;
   }//endif
 
   int thismany  = split;
@@ -1479,10 +1633,10 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
 
   int inoff  = 0;
   int outoff = 0;
-  //  CkPrintf("inside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d split %d dummy %p\n",plan,  howmany, in, istride_in, idist_in, out_in,  ostride_in, odist_in, split,(out==NULL) ? NULL : &(out[outoff]));
   for(int i=0;i<numsplits;i++){
       thismany=split;
-      if(inleft<split){thismany=inleft;}
+      double *work1 = work1s; double *work2 = work2s;
+      if(inleft<split){thismany=inleft;work1=work1r,work2=work2r;}
 #ifdef TEST_ALIGN
       CkAssert((unsigned int) &(in[inoff]) % 16 ==0);
       CkAssert((unsigned int) &(out[outoff]) % 16 ==0);
@@ -1522,7 +1676,8 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, double *scale,
-                   int *isign, int *nfft, int *stride, int *skip){
+                   int *isign, int *nfft, int *stride, int *skip, int nchare,int *nsplit,
+                   int *num){
 //============================================================================
 
   plan->option  = iopt[0];
@@ -1535,16 +1690,43 @@ void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, doubl
   plan->odist   = skip[0];
   plan->work1   = NULL;
   plan->work2   = NULL;
+  plan->nsplit  = nsplit[0];
+  plan->nchare  = nchare;
 
   if(iopt[0] == 1){
-    int unit = 1;
     complex x[2];
-    double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
-    double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
-    dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,&unit,isign,scale,
-             work1,nwork1,work2,nwork2);
-    plan->work1   = work1;
-    plan->work2   = work2;
+    int nval,nmax;
+    int unit   = 1;
+    int *index = new int[nchare];
+    int *mappI = new int[nchare];
+    int *mapp  = new int[nchare];
+    make_essl_work_map(nchare,num,index,mappI,mapp,&nval,&nmax,nsplit[0]);
+    plan->essl_work = new ESSL_WORK[nval];
+    plan->nval      = nval;
+    plan->mapp      = mapp;
+    for(int i = 0; i<nval;i++){
+      plan->essl_work[i].num   = index[i];
+      plan->essl_work[i].work1 = NULL;
+      plan->essl_work[i].work2 = NULL;
+      if(index[i]>0){
+        double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
+        double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
+        dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,&index[i],isign,scale,
+                 work1,nwork1,work2,nwork2);
+        plan->essl_work[i].work1 = work1;
+        plan->essl_work[i].work2 = work2;
+      }//endif
+    }//endfor
+    if(nsplit[0]<=nmax){
+      double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
+      double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
+      dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,&unit,isign,scale,
+               work1,nwork1,work2,nwork2);
+      plan->work1   = work1;
+      plan->work2   = work2;
+    }//endif
+    delete [] index;
+    delete [] mappI;
   }//endif
 
 //----------------------------------------------------------------------------
@@ -1556,7 +1738,8 @@ void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, doubl
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void initRCFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, double *scale,
-                    int *isign, int *nfft, int *skipR, int *skipC){
+                    int *isign, int *nfft, int *skipR, int *skipC, int nchare,int *nsplit,
+                    int *num){
 //============================================================================
 
   plan->option  = iopt[0];
@@ -1569,26 +1752,54 @@ void initRCFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
   plan->odist   = skipC[0];
   plan->work1   = NULL;
   plan->work2   = NULL;
+  plan->nsplit  = nsplit[0];
+  plan->nchare  = nchare;
 
   if(iopt[0] == 1){
-    int unit = 1;
     complex xc[2]; double xr[2];
-    double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
-    double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
-    drcftWrap(&unit,xr,skipR,xc,skipC,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
-    plan->work1   = work1;
-    plan->work2   = work2;
+    int nval,nmax;
+    int unit   = 1;
+    int *index = new int[nchare];
+    int *mappI = new int[nchare];
+    int *mapp  = new int[nchare];
+    make_essl_work_map(nchare,num,index,mappI,mapp,&nval,&nmax,nsplit[0]);
+    plan->essl_work = new ESSL_WORK[nval];
+    plan->nval      = nval;
+    plan->mapp      = mapp;
+    for(int i = 0; i<nval;i++){
+      plan->essl_work[i].num   = index[i];
+      plan->essl_work[i].work1 = NULL;
+      plan->essl_work[i].work2 = NULL;
+      if(index[i]>0){
+        double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
+        double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
+        drcftWrap(&unit,xr,skipR,xc,skipC,nfft,&index[i],isign,scale,work1,nwork1,work2,nwork2);
+        plan->essl_work[i].work1 = work1;
+        plan->essl_work[i].work2 = work2;
+      }//endif
+    }//endfor
+    if(nsplit[0]<=nmax){
+      double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
+      double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
+      drcftWrap(&unit,xr,skipR,xc,skipC,nfft,nsplit,isign,scale,work1,nwork1,work2,nwork2);
+      plan->work1   = work1;
+      plan->work2   = work2;
+    }//endif
+    delete [] index;
+    delete [] mappI;
   }//endif
 
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
 
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void initCRFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, double *scale,
-                    int *isign, int *nfft, int *skipR, int *skipC){
+                    int *isign, int *nfft, int *skipR, int *skipC,int nchare, int *nsplit,
+                    int *num){
 //============================================================================
 
   plan->option  = iopt[0];
@@ -1601,17 +1812,72 @@ void initCRFFTholder(RFFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, do
   plan->odist   = skipR[0];
   plan->work1   = NULL;
   plan->work2   = NULL;
+  plan->nsplit  = nsplit[0];
+  plan->nchare  = nchare;
 
   if(iopt[0] == 1){
-    int unit = 1;
     complex xc[2]; double xr[2];
-    double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
-    double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
-    dcrftWrap(&unit,xc,skipC,xr,skipR,nfft,&unit,isign,scale,work1,nwork1,work2,nwork2);
-    plan->work1   = work1;
-    plan->work2   = work2;
+    int nval,nmax;
+    int unit   = 1;
+    int *index = new int[nchare];
+    int *mappI = new int[nchare];
+    int *mapp  = new int[nchare];
+    make_essl_work_map(nchare,num,index,mappI,mapp,&nval,&nmax,nsplit[0]);
+    plan->essl_work = new ESSL_WORK[nval];
+    plan->nval      = nval;
+    plan->mapp      = mapp;
+    for(int i = 0; i<nval;i++){
+      plan->essl_work[i].num   = index[i];
+      plan->essl_work[i].work1 = NULL;
+      plan->essl_work[i].work2 = NULL;
+      if(index[i]>0){
+        double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
+        double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
+        dcrftWrap(&unit,xc,skipC,xr,skipR,nfft,&index[i],isign,scale,work1,nwork1,work2,nwork2);
+        plan->essl_work[i].work1 = work1;
+        plan->essl_work[i].work2 = work2;
+      }//endif
+    }//endfor
+    if(nsplit[0]<=nmax){
+      double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double));
+      double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double));
+      dcrftWrap(&unit,xc,skipC,xr,skipR,nfft,nsplit,isign,scale,work1,nwork1,work2,nwork2);
+      plan->work1   = work1;
+      plan->work2   = work2;
+    }//endif
+    delete [] index;
+    delete [] mappI;
   }//endif
 
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void make_essl_work_map(int nchare,int *num,int *index,int *mappI,int *mapp,
+                        int *nval_out, int *nmax_out,int nsplit){
+//==========================================================================
+
+    int nmax = num[0];
+    for(int i=0;i<nchare;i++){
+       nmax     = (nmax > num[i] ? nmax : num[i]);
+       mappI[i] = i; 
+       index[i] = (num[i] % nsplit);
+    }//endfor
+
+    sort_commence(nchare,index,mappI);
+
+    int j = 0; 
+    mapp[mappI[0]] = 0;
+    for(int i=1;i<nchare;i++){
+      if(index[i]!=index[j]){j++; index[j]=index[i];}
+      mapp[mappI[i]] = j;
+    }//endfor
+
+    nval_out[0] = j+1;
+    nmax_out[0] = nmax;
+}
+//==========================================================================
+

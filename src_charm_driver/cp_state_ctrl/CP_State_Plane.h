@@ -460,6 +460,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	    return vksDone;
 	  }
  private:
+        int iplane_ind;
         int iteration;
         int rhoRsubplanes;
         int ngrida;
@@ -491,6 +492,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int ngrida;
         int ngridb;
         int ngridc;
+        int iplane_ind;
         int myNgridb;      // I don't have all ngridb lines of x now
         int myNplane_rho;  // I don't have all nplane_rho_x lines of y now
         int nptsExpndA;
@@ -590,6 +592,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int countWhiteByrd[4];
         int doneWhiteByrd;
         int rhoGHelpers;
+        int iplane_ind;
         int *numSplit;
         int *istrtSplit;
         int *iendSplit;
@@ -615,6 +618,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         int ngrida;
         int ngridb;
         int ngridc;
+        int iplane_ind;
         int ees_eext_on;
         int natmTyp;
         int countFFT[2];

@@ -311,37 +311,49 @@ class RhoGSlab {
   };
 //==============================================================================
 
-
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 //    Holder classes for the plans : Allows many fft libaries to be used
 //==============================================================================
+typedef struct essl_work {
+  int num;
+  double *work1, *work2;
+} ESSL_WORK;
 
 typedef struct fftplanholder {
+  int nchare;
+  int nsplit;
   int option;             // 0= fftw, 1=essl
-  int nfft;               // eesl stuff
-  int ostride;            // eesl stuff
-  int odist;              // eesl stuff
-  int isign;              // eesl stuff
-  int nwork1,    nwork2;  // eesl stuff
-  double scale;           // eesl stuff
-  double *work1, *work2;  // eesl stuff
+  int nfft;               // essl stuff
+  int ostride;            // essl stuff
+  int odist;              // essl stuff
+  int isign;              // essl stuff
+  int nwork1,    nwork2;  // essl stuff
+  double scale;           // essl stuff
+  int nval,nmax;          // essl stuff
+  int *mapp;              // essl stuff
+  ESSL_WORK *essl_work;   // essl stuff
+  double *work1, *work2;  // essl stuff
   fftw_plan fftwPlan;     // fftw stuff
 } FFTplanHolder;
 
 typedef struct rfftplanholder {
+  int nchare;
+  int nsplit;
   int option;             // 0= fftw, 1=essl
-  int nfft;               // eesl stuff
-  int ostride;            // eesl stuff
-  int odist;              // eesl stuff
-  int isign;              // eesl stuff
-  int nwork1,    nwork2;  // eesl stuff
-  double scale;           // eesl stuff
-  double *work1, *work2;  // eesl stuff
+  int nfft;               // essl stuff
+  int ostride;            // essl stuff
+  int odist;              // essl stuff
+  int isign;              // essl stuff
+  int nwork1,    nwork2;  // essl stuff
+  double scale;           // essl stuff
+  int nval,nmax;          // essl stuff
+  int *mapp;              // essl stuff
+  ESSL_WORK *essl_work;   // essl stuff
+  double *work1, *work2;  // essl stuff
   rfftwnd_plan rfftwPlan; // fftw stuff
 } RFFTplanHolder;
-
 //==============================================================================
 
 
@@ -361,6 +373,20 @@ class FFTcache: public Group {
      int ngridcNL;
      int ees_eext_on;
      int ees_NL_on;
+     int nchareGState;
+     int nchareRState;
+     int nchareGNL;
+     int nchareRNL;
+     int nchareGRho;
+     int nchareRRho;
+     int nchareRRhoTot;
+     int nchareGEext;
+     int nchareREext;
+     int nchareREextTot;
+     int nsplitR;
+     int nsplitG;
+     int rhoRsubPlanes;
+
      int cacheMemFlag;
      char cacheMemName[1000];
 
@@ -373,24 +399,41 @@ class FFTcache: public Group {
     // Da Plans : Use the holder class to allow other fft libs
     //            All plans are double pack plans
 
-     RFFTplanHolder fwdXPlanRho, bwdXPlanRho;     // state and density 
-     FFTplanHolder  fwdYPlanRho, bwdYPlanRho;     
-     FFTplanHolder  fwdYPlanRhoS, bwdYPlanRhoS;   // special subplane plan
-     FFTplanHolder  fwdZPlanRho, bwdZPlanRho;
+     RFFTplanHolder fwdXPlanState,  bwdXPlanState;  // state
+     FFTplanHolder  fwdYPlanState,  bwdYPlanState;     
+     FFTplanHolder  fwdZPlanState,  bwdZPlanState;
 
-     RFFTplanHolder fwdXPlanNL, bwdXPlanNL;       // ees NL 
+     RFFTplanHolder fwdXPlanRho,  bwdXPlanRho;      // density 
+     FFTplanHolder  fwdYPlanRho,  bwdYPlanRho;     
+     FFTplanHolder  fwdYPlanRhoS, bwdYPlanRhoS;     // special subplane plan
+     FFTplanHolder  fwdZPlanRho,  bwdZPlanRho;
+
+     FFTplanHolder  fwdZPlanRhoHart;
+
+     RFFTplanHolder fwdXPlanNL, bwdXPlanNL;         // ees NL 
      FFTplanHolder  fwdYPlanNL, bwdYPlanNL;  
      FFTplanHolder  fwdZPlanNL, bwdZPlanNL;    
 
-     RFFTplanHolder fwdXPlanEext, bwdXPlanEext;   // ees Eext
-     FFTplanHolder  fwdYPlanEext, bwdYPlanEext;
-     FFTplanHolder  fwdYPlanEextS, bwdYPlanEextS; // special subplane plan
-     FFTplanHolder  fwdZPlanEext, bwdZPlanEext; 
+     RFFTplanHolder fwdXPlanEext,  bwdXPlanEext;    // ees Eext
+     FFTplanHolder  fwdYPlanEext,  bwdYPlanEext;
+     FFTplanHolder  fwdYPlanEextS, bwdYPlanEextS;   // special subplane plan
+     FFTplanHolder  fwdZPlanEext,  bwdZPlanEext; 
 
     //-----------------------------------------------------------
     // The constructor 
-     FFTcache(size2d planeSIZE, int , int , int , int , int , int , int , int, int, int );
-
+     FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngridcEext, 
+                   int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
+                   int _ees_NL_on, int _nlines_max, int _nlines_max_rho,
+                   int _nchareGState, int _nchareRState,
+                   int _nchareGNL,    int _nchareRNL, 
+                   int _nchareGRho,   int _nchareRRho,  int _nchareRRhoTot,
+                   int _nchareGEext,  int _nchareREext, int _nchareREextTot,
+                   int  *numGState,   int  *numRXState, int *numRYState,
+                   int  *numGNL,      int  *numRXNL,    int *numRYNL,
+                   int  *numGRho,     int  *numRXRho,   int *numRYRho ,
+                   int  *numGEext,    int  *numRXEext,  int *numRYEext ,
+      	           int _fftopt,       int _nsplitR,     int _nsplitG,
+                   int _rhoRsubPlanes);
     //-----------------------------------------------------------
     // cache control 
      void getCacheMem(char *name){
@@ -421,45 +464,45 @@ class FFTcache: public Group {
     //-----------------------------------------------------------
     // Density FFTs
      void doHartFFTGtoR_Gchare(complex *,complex *,int , int ,int , int , 
-				RunDescriptor *, int );
+				RunDescriptor *, int ,int);
      void doRhoFFTRtoG_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
-                              int ,int );
+                              int ,int ,int);
      void doRhoFFTGtoR_Gchare(complex *,complex *,int ,int ,int ,int ,RunDescriptor *, 
-                              int ,int );
-     void doRhoFFTRtoG_Rchare(complex *,double *,int , int ,int );
-     void doRhoFFTGtoR_Rchare(complex *,double *,int , int ,int );
+                              int ,int ,int);
+     void doRhoFFTRtoG_Rchare(complex *,double *,int , int ,int ,int);
+     void doRhoFFTGtoR_Rchare(complex *,double *,int , int ,int ,int);
 
-     void doRhoFFTRxToGx_Rchare(complex *,double *,int , int ,int );
-     void doRhoFFTRyToGy_Rchare(complex *,double *,int , int ,int );
-     void doRhoFFTGxToRx_Rchare(complex *,double *,int , int ,int );
-     void doRhoFFTGyToRy_Rchare(complex *,double *,int , int ,int );
+     void doRhoFFTRxToGx_Rchare(complex *,double *,int , int ,int ,int);
+     void doRhoFFTRyToGy_Rchare(complex *,double *,int , int ,int ,int);
+     void doRhoFFTGxToRx_Rchare(complex *,double *,int , int ,int ,int);
+     void doRhoFFTGyToRy_Rchare(complex *,double *,int , int ,int ,int);
 
     //-----------------------------------------------------------
     // State FFTs
-     void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-     void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-     void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int );
-     void doStpFFTRtoG_Rchare(complex *,double *,int , int ,int );
+     void doStpFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int,int);
+     void doStpFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int,int);
+     void doStpFFTGtoR_Rchare(complex *,double *,int , int ,int ,int);
+     void doStpFFTRtoG_Rchare(complex *,double *,int , int ,int ,int);
 
    //-----------------------------------------------------------
    // non-local fft
-     void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-     void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
-     void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int );
-     void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+     void doNlFFTRtoG_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int,int);
+     void doNlFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int,int);
+     void doNlFFTRtoG_Rchare(complex *,double *,int ,int ,int ,int);
+     void doNlFFTGtoR_Rchare(complex *,double *,int ,int ,int ,int);
 
    //-----------------------------------------------------------
    // eext fft
-     void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int);
-     void doEextFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int);
+     void doEextFFTRtoG_Gchare(complex *,int, int ,int ,int, RunDescriptor *,int,int);
+     void doEextFFTGtoR_Gchare(complex *,complex *,int, int ,int ,int, RunDescriptor *,int,int);
 
-     void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int );
-     void doEextFFTGtoR_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTRtoG_Rchare(complex *,double *,int ,int ,int ,int);
+     void doEextFFTGtoR_Rchare(complex *,double *,int ,int ,int ,int);
 
-     void doEextFFTRxToGx_Rchare(complex *,double *,int ,int ,int );
-     void doEextFFTRyToGy_Rchare(complex *,double *,int ,int ,int );
-     void doEextFFTGxToRx_Rchare(complex *,double *,int ,int ,int );
-     void doEextFFTGyToRy_Rchare(complex *,double *,int ,int ,int );
+     void doEextFFTRxToGx_Rchare(complex *,double *,int ,int ,int ,int);
+     void doEextFFTRyToGy_Rchare(complex *,double *,int ,int ,int ,int);
+     void doEextFFTGxToRx_Rchare(complex *,double *,int ,int ,int ,int);
+     void doEextFFTGyToRy_Rchare(complex *,double *,int ,int ,int ,int);
 
 //-----------------------------------------------------------------------------
   };
@@ -507,19 +550,23 @@ void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
 
 void fft_split(FFTplanHolder *fftplanholder, int howmany, 
                fftw_complex *in,  int istride, int idist, 
-	       fftw_complex *out, int ostride, int odist, int split);
+	       fftw_complex *out, int ostride, int odist, int split, int index);
 
 void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany, 
                fftw_complex *in, int istride, int idist, 
-               fftw_real *out,   int ostride, int odist, int split);
+               fftw_real *out,   int ostride, int odist, int split, int index);
 
 void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany, 
     	       fftw_real *in,     int istride, int idist, 
-               fftw_complex *out, int ostride, int odist, int split);
+               fftw_complex *out, int ostride, int odist, int split, int index);
 
-void initFFTholder  ( FFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
-void initRCFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
-void initCRFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *);
+void initFFTholder  ( FFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *,
+                                     int ,int *,int *);
+void initRCFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *,
+                                     int ,int *,int *);
+void initCRFFTholder(RFFTplanHolder *,int *,int *,int *,double *,int *,int *,int *,int *,
+                                      int ,int *,int *);
+void make_essl_work_map(int ,int *,int *,int *,int *,int *, int *,int);
 
 //==============================================================================
 #endif

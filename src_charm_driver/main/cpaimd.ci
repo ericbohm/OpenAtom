@@ -388,7 +388,25 @@ mainmodule cpaimd {
 		entry SCalcMap(bool);
 	};
 	group FFTcache {
-		entry FFTcache(size2d, int,int,int,int,int,int,int,int,int,int);
+		entry FFTcache(size2d , int , int , int , 
+                   int , int , int , int , int , int , int ,
+                   int nchareGState, int nchareRState,
+                   int nchareGNL,    int nchareRNL, 
+                   int nchareGRho,   int nchareRRho,  int nchareRRhoTot,
+                   int nchareGEext,  int nchareREext, int nchareREextTot,
+                   int numGState[nchareGState],   
+                   int numRXState[nchareRState], 
+                   int numRYState[nchareRState],
+                   int numGNL[nchareGNL],      
+                   int numRXNL[nchareRNL],
+                   int numRYNL[nchareRNL],
+                   int numGRho[nchareGRho],    
+                   int numRXRho[nchareRRhoTot],  
+                   int numRYRho[nchareRRhoTot],
+                   int numGEext[nchareGEext],    
+                   int numRXEext[nchareREextTot],  
+                   int numRYEext[nchareREextTot],
+                   int ,  int ,  int , int );
 	};
 
 	group StructFactCache {

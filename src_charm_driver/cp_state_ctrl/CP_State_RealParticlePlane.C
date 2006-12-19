@@ -439,7 +439,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
   // This is actually in place, projPsiR and projPsiC use the same location
 
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
-                                                    nplane_x,ngridA,ngridB);
+                                                    nplane_x,ngridA,ngridB,myPlane);
 #ifdef _CP_GS_DUMP_VKS_
     dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
@@ -1008,7 +1008,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   /*rfftwnd_plan plan = fftcache->bwdXPlanNL.rfftwPlan;
   CkPrintf("outside rfft plan %p howmany %d in %p istride %d idist %d out %p ostride %d odist %d\n ",plan,  ngridB, projPsiRScr, 1, ngridA+2, NULL, 0 ,0 ) ;
   */
-    fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB);
+    fftcache->doNlFFTRtoG_Rchare(projPsiCScr,projPsiRScr,nplane_x,ngridA,ngridB,myPlane);
   /*
 
 	   *out_in,  ostride_in, odist_in, split);

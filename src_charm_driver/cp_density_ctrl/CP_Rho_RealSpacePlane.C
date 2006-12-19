@@ -87,6 +87,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     ngridc               = sim->sizeZ;
     nplane_rho_x         = sim->nplane_rho_x; // gx_max 
 
+    iplane_ind           = thisIndex.y*ngridc + thisIndex.x;
+
     double vol           = sim->vol;
     int numFFT           = config.numFFTPoints;
 
@@ -95,6 +97,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 
     cp_grad_corr_on      = sim->cp_grad_corr_on;
     ees_eext_on          = _ees_eext_on;
+
 
     CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
 
@@ -231,6 +234,7 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   p|myNplane_rho;
   p|ngridb;
   p|ngridc;
+  p|iplane_ind;
   p|nptsExpndA;
   p|nptsExpndB;
   p|nptsA;
@@ -515,9 +519,9 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
 
   rho_rs.uPackScale(dataR,density,volumeFactor);  // can't avoid the memcpy-scaling
   if(rhoRsubplanes>1){
-    fftcache->doRhoFFTRxToGx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doRhoFFTRxToGx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
   }else{
-    fftcache->doRhoFFTRtoG_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb);
+    fftcache->doRhoFFTRtoG_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
   }//endif
 
 #ifndef CMK_OPTIMIZE
@@ -795,7 +799,7 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
   }//endif
 
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
-  fftcache->doRhoFFTRyToGy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb);
+  fftcache->doRhoFFTRyToGy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
 
 //============================================================================
 // Send chunk to RhoGDensity 
@@ -1094,9 +1098,9 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
     if(rhoRsubplanes==1){
-      fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb);
+      fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
     }else{
-      fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb);
+      fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
       sendPartlyFFTGxToRx(iopt);
     }//endif
 
@@ -1298,7 +1302,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
     done = 1;
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
-    fftcache->doRhoFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doRhoFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
   }//endif
 
 //============================================================================
@@ -1478,10 +1482,10 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   rho_rs.scale(rhoIRX,FFTscale);
 
   if(rhoRsubplanes==1){
-    fftcache->doRhoFFTRtoG_Rchare(rhoIRXC,rhoIRX,nplane_rho_x,ngrida,ngridb);
+    fftcache->doRhoFFTRtoG_Rchare(rhoIRXC,rhoIRX,nplane_rho_x,ngrida,ngridb,iplane_ind);
     sendPartlyFFTtoRhoG(ioptx);
   }else{
-    fftcache->doRhoFFTRxToGx_Rchare(rhoIRXC,rhoIRX,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doRhoFFTRxToGx_Rchare(rhoIRXC,rhoIRX,nplane_rho_x,ngrida,myNgridb,iplane_ind);
     sendPartlyFFTRyToGy(ioptx);// transpose and do the y-gy fft
   }//endif
 
@@ -1502,10 +1506,10 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
   rho_rs.scale(rhoIRY,FFTscale);
   if(rhoRsubplanes==1){
-    fftcache->doRhoFFTRtoG_Rchare(rhoIRYC,rhoIRY,nplane_rho_x,ngrida,ngridb);
+    fftcache->doRhoFFTRtoG_Rchare(rhoIRYC,rhoIRY,nplane_rho_x,ngrida,ngridb,iplane_ind);
     sendPartlyFFTtoRhoG(iopty);
   }else{
-    fftcache->doRhoFFTRxToGx_Rchare(rhoIRYC,rhoIRY,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doRhoFFTRxToGx_Rchare(rhoIRYC,rhoIRY,nplane_rho_x,ngrida,myNgridb,iplane_ind);
     sendPartlyFFTRyToGy(iopty); // transpose and do the y-gy fft
   }//endif
 
@@ -1526,10 +1530,10 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 
   rho_rs.scale(rhoIRZ,FFTscale);
   if(rhoRsubplanes==1){
-    fftcache->doRhoFFTRtoG_Rchare(rhoIRZC,rhoIRZ,nplane_rho_x,ngrida,ngridb);
+    fftcache->doRhoFFTRtoG_Rchare(rhoIRZC,rhoIRZ,nplane_rho_x,ngrida,ngridb,iplane_ind);
     sendPartlyFFTtoRhoG(ioptz);
   }else{
-    fftcache->doRhoFFTRxToGx_Rchare(rhoIRZC,rhoIRZ,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doRhoFFTRxToGx_Rchare(rhoIRZC,rhoIRZ,nplane_rho_x,ngrida,myNgridb,iplane_ind);
     sendPartlyFFTRyToGy(ioptz);// transpose and do the y-gy fft
   }//endif
 
@@ -1652,10 +1656,10 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 #endif
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
     if(rhoRsubplanes==1){
-      fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb);
+      fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
       addWhiteByrdVks();
     }else{
-      fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb);
+      fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
       sendPartlyFFTGxToRx(0);
     }
 #ifndef CMK_OPTIMIZE
@@ -1796,10 +1800,10 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
       double StartTime=CmiWallTimer();
 #endif
       if(rhoRsubplanes==1){
-        fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb);
+        fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
         addHartEextVks();
       }else{
-        fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb);
+        fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
         sendPartlyFFTGxToRx(4);
       }//endif
 

@@ -586,7 +586,8 @@ class CPcharmParaInfoGrp: public Group {
  */
 //============================================================================
 class size2d; //forward decl to shup the compiler
-void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, CPcharmParaInfo *sim, int boxSize);
+void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, 
+                           CPcharmParaInfo *sim, int boxSize);
 void init_ortho_chares(int, int, int *);
 
 void init_commlib_strategies(int, int,int);
@@ -602,6 +603,8 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
               int dup, int planeIndex);
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
 bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order);
+void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *);
+
 //============================================================================
 
 

@@ -1372,7 +1372,7 @@ void CP_State_GSpacePlane::doFFT() {
   RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
 
   fftCacheProxy.ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
-	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
+	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
@@ -1530,7 +1530,7 @@ void CP_State_GSpacePlane::doIFFT () {
   fftcache->getCacheMem("CP_State_GSpacePlane::doIFFT");
   complex *forcTmp = fftcache->tmpData;
   fftcache->doStpFFTRtoG_Gchare(gs.packedForceData,forcTmp,
-            gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim);
+            gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceBwFFT_, StartTime, CmiWallTimer());

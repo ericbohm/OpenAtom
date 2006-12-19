@@ -985,7 +985,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 #endif
 
   fftcache->doNlFFTGtoR_Gchare(projPsiGTmp,projPsiG,numFullNL,gSpaceNumPoints,numLines,
-                               (gss->numRuns),runs,ngridcNL);
+                               (gss->numRuns),runs,ngridcNL,myChareG);
   fftcache->freeCacheMem("CP_State_ParticlePlane::FFTNLEesFwd");
 
 #ifndef CMK_OPTIMIZE
@@ -1204,7 +1204,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 #endif    
 
   fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
-                               eesData->GspData[myChareG].numRuns,runs,ngridcNL);
+                               eesData->GspData[myChareG].numRuns,runs,ngridcNL,myChareG);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif

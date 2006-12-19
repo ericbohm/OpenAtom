@@ -1535,11 +1535,58 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  //--------------------------------------------------------------------------------
  // Groups : no placement required 
 
-  fftCacheProxy = CProxy_FFTcache::ckNew(
-                     sizeRealPlane,ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
-                     ngridaNl,ngridbNl,ngridcNl,ees_nonlocal_on, sim->nlines_max, sim->nlines_max_rho);
+  int nchareRRhoTot  = nchareR*(config.rhoRsubplanes);
+  int nchareRHartTot = nchareRHart*(config.rhoRsubplanes);
+
+  int *numGState     = sim->nlines_per_chareG;
+  int *numGNL        = sim->nlines_per_chareG;
+  int *numGRho       = sim->nlines_per_chareRhoG;
+  int *numGEext      = sim->nlines_per_chareRhoGEext;
+
+  int *numRXState    = new int [nchareR];
+  int *numRYState    = new int [nchareR];
+  int *numRXNL       = new int [nchareR];
+  int *numRYNL       = new int [nchareR];
+  for(int i=0;i<nchareR;i++){
+    numRXState[i] = sim->sizeY;
+    numRYState[i] = sim->nplane_x;
+    numRXNL[i]    = ngridbNl;
+    numRYNL[i]    = sim->nplane_x;
+  }//endfor
+
+  int *numRXRho      = new int [nchareRRhoTot];
+  int *numRYRho      = new int [nchareRRhoTot];
+  int *numRXEext     = new int [nchareRHartTot];
+  int *numRYEext     = new int [nchareRHartTot];
+  create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
+                         sim->nplane_rho_x,sim->sizeY,ngridbEext,
+                         numRXRho,numRYRho,numRXEext,numRYEext);
+
+  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
+                     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
+                     ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
+                     sim->nlines_max, sim->nlines_max_rho,
+                     config.nchareG,nchareR,
+                     config.nchareG,nchareRPP, 
+                     nchareRhoG,    nchareR,    nchareRRhoTot,
+                     nchareGHart,   nchareRHart,nchareRHartTot,
+                     numGState,     numRXState, numRYState,
+                     numGNL,        numRXNL,    numRYNL,
+                     numGRho,       numRXRho,   numRYRho,
+                     numGEext,      numRXEext,  numRYEext,
+  		     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
+                     config.rhoRsubplanes);
+  delete [] numRXState;
+  delete [] numRYState;
+  delete [] numRXNL;
+  delete [] numRYNL;
+  delete [] numRXRho;
+  delete [] numRYRho;
+  delete [] numRXEext;
+  delete [] numRYEext;
+
   sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
-  sfCompProxy = CProxy_StructureFactor::ckNew();
+  sfCompProxy  = CProxy_StructureFactor::ckNew();
   eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
                                          nstates,nchareRhoG);
 
@@ -2154,12 +2201,16 @@ void mapOutput()
 
 //----------------------------------------------------------------------------
   }//end routine
+//============================================================================
 
 
 //============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 // return the cuboid x,y,z of a subpartition exactly matching that volume
-bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order)
-{
+//============================================================================
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order){
+//============================================================================
   int maxD=maxX;
   int minD=maxX;
   maxD = (maxY>maxD) ? maxY : maxD;
@@ -2357,19 +2408,25 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 
 
 }
+//============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 CkReduction::reducerType sumFastDoubleType;
-void registersumFastDouble(void)
-{ 
+void registersumFastDouble(void){ 
   sumFastDoubleType=CkReduction::addReducer(sumFastDouble);
 }
+//============================================================================
 
-
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 // sum together matrices of doubles
 // possibly faster than sum_double due to minimizing copies
 // and using sameer's fastadd
-inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs)
-{
+//============================================================================
+inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs){
 
   int size0=msgs[0]->getSize();
   int size=size0/sizeof(double);
@@ -2391,8 +2448,99 @@ inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs)
     }
   return CkReductionMsg::buildNew(size0,ret);
 }
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
+                            int nplane, int sizeY, int ngridbHart,
+                            int *numRXRho,int *numRYRho,int *numRXEext,int *numRYEext)
+//============================================================================
+    {//begin routine
+//============================================================================
+// Simple case  : everyone is the same size
+
+  if(rhoRsubplanes==1){
+
+    for(int i=0;i<nchareR;i++){
+       numRXRho[i]  = sizeY;
+       numRYRho[i]  = nplane;
+    }//endfor
+
+    for(int i=0;i<nchareRHart;i++){
+       numRXEext[i] = ngridbHart;
+       numRYEext[i] = nplane;
+    }//endfor
+
+  }//endif
+
+//============================================================================
+// Subplane case : different sizes with subplanes label
+
+  if(rhoRsubplanes>1){
+    int div,rem;
+
+    //---------------------------------------
+    // how many x FFTs for Rho
+    div  = (sizeY / rhoRsubplanes); 
+    rem  = (sizeY % rhoRsubplanes);
+    for(int j=0;j<rhoRsubplanes;j++){
+      int mySizeY = (j < rem ? div+1 : div);
+      for(int i=0;i<nchareR;i++){
+        int ind       = j*nchareR + i;
+        numRXRho[ind] = mySizeY;
+     }//endfor
+    }//endfor
+
+    //---------------------------------------
+    // how many y FFTs for HartEExt EES
+    div  = (nplane / rhoRsubplanes);
+    rem  = (nplane % rhoRsubplanes);
+    for(int j=0;j<rhoRsubplanes;j++){
+      int myNplane = (j < rem ? div+1 : div);
+      for(int i=0;i<nchareR;i++){
+        int ind       = j*nchareR + i;
+        numRYRho[ind] = myNplane;
+      }//endfor
+    }//endfor
+
+    //---------------------------------------
+    // how many x FFTs for HartEExt EES
+    div  = (ngridbHart / rhoRsubplanes); 
+    rem  = (ngridbHart % rhoRsubplanes);
+    for(int j=0;j<rhoRsubplanes;j++){
+      int myNgridb   = (j < rem ? div+1 : div);
+      for(int i=0;i<nchareRHart;i++){
+        int ind        = j*nchareRHart + i;
+        numRXEext[ind] = myNgridb;
+     }//endfor
+    }//endfor
+    
+    //---------------------------------------
+    // how many y FFTs for HartEExt EES
+    div  = (nplane / rhoRsubplanes);
+    rem  = (nplane % rhoRsubplanes);
+    for(int j=0;j<rhoRsubplanes;j++){
+      int myNplane = (j < rem ? div+1 : div);
+      for(int i=0;i<nchareRHart;i++){
+        int ind        = j*nchareRHart + i;
+        numRYEext[ind] = myNplane;
+      }//endfor
+    }//endfor
+
+  }//endif
+
+//---------------------------------------------------------------------------
+    }//end routine
+//============================================================================
 
 
 //============================================================================
 #include "cpaimd.def.h"
 //============================================================================
+
+
+
+

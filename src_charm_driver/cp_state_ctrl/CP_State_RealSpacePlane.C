@@ -114,7 +114,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     ngridc = _ngridc;
     csize = (ngrida/2 + 1)*ngridb; 
     rsize = (ngrida   + 2)*ngridb; ;
-
+    iplane_ind  = thisIndex.y;
     initRealStateSlab(&rs, size, gSpaceUnits, realSpaceUnits, thisIndex.x, thisIndex.y);
 
     gproxy = gSpacePlaneProxy;
@@ -136,6 +136,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 void CP_State_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
 
+  p|iplane_ind;
   p|iteration;
   p|rhoRsubplanes;
   p|ngrida;
@@ -268,7 +269,7 @@ void CP_State_RealSpacePlane::doFFT(){
     double StartTime=CmiWallTimer();
 #endif
 
-    fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
+    fftcache->doStpFFTGtoR_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb,iplane_ind);
 
     fftcache->getCacheMem("CP_State_RealSpacePlane::doFFT");
     double *data = fftcache->tmpDataR;
@@ -516,7 +517,7 @@ void CP_State_RealSpacePlane::doVksFFT() {
   int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
   complex *planeArr   = rs.planeArr;
   double *planeArrR   = rs.planeArrR;
-  fftcache->doStpFFTRtoG_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb);
+  fftcache->doStpFFTRtoG_Rchare(planeArr,planeArrR,nplane_x,ngrida,ngridb,iplane_ind);
 
  //------------------------------------------------------------------
  // End timer 

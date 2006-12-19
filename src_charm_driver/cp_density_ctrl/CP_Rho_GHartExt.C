@@ -404,7 +404,7 @@ void CP_Rho_GHartExt::FFTVks() {
    complex *vksScr    = fftcache->tmpData; // scratch from the cache has FFT output
 
    fftcache->doHartFFTGtoR_Gchare(vks,vksScr,rho_gs.numFull,rho_gs.numPoints,numLines,
-   			          rho_gs.numRuns,rho_gs.runs,rho_gs.sizeZ);
+   			          rho_gs.numRuns,rho_gs.runs,rho_gs.sizeZ,ind_x);
 
 #ifdef _CP_DEBUG_RHOG_VKSA_
    int numFull        = rho_gs.numFull;
@@ -664,7 +664,7 @@ void CP_Rho_GHartExt::FFTEesBck(){
 
   int numPoints = rho_gs.numPoints;
   fftCacheProxy.ckLocalBranch()->doEextFFTRtoG_Gchare(atmSF,numFullEext,numPoints,
-                                 numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext);
+                                 numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext,ind_x);
 
 //============================================================================
 // If you are in g-space, get the energy otherwise tranpose
@@ -794,7 +794,7 @@ void CP_Rho_GHartExt::FFTEesFwd(int flag){
  //--------------------------------------------
  // FFT the data : result goes into scratch
   fftcache->doEextFFTGtoR_Gchare(data,data_out,numFullEext,rho_gs.numPoints,numLines,
- 			         rho_gs.numRuns,rho_gs.runs,ngridcEext);
+ 			         rho_gs.numRuns,rho_gs.runs,ngridcEext,ind_x);
 
  //--------------------------------------------
  // send yourself back to real space

@@ -69,6 +69,8 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   ees_eext_on = _ees_eext_on;
   natmTyp     = _natmTyp;
 
+  iplane_ind  = thisIndex.y*ngridc + thisIndex.x;
+
 //============================================================================
 // Initialize some variables
 
@@ -173,6 +175,7 @@ void CP_Rho_RHartExt::pup(PUP::er &p){
    p|ngrida;
    p|ngridb;
    p|ngridc;
+   p|iplane_ind;
    p|ees_eext_on;
    p|natmTyp;
    p|nAtmTypRecv;
@@ -368,9 +371,9 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
 
   if(rhoRsubplanes>1){
-    fftcache->doEextFFTRxToGx_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doEextFFTRxToGx_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
   }else{
-    fftcache->doEextFFTRtoG_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,ngridb);
+    fftcache->doEextFFTRtoG_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,ngridb,iplane_ind);
   }//endif
 
 #ifndef CMK_OPTIMIZE
@@ -522,7 +525,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   if(countIntRtoG==rhoRsubplanes){
     countIntRtoG = 0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
-    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,ngrida,ngridb);
+    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,ngrida,ngridb,iplane_ind);
 #ifdef DEBUG_INT_TRANS_FWD
     char name[100];
     sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
@@ -797,10 +800,10 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
 
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
   if(rhoRsubplanes==1){  
-    fftcache->doEextFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb);
+    fftcache->doEextFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
     computeAtmForc(flagEwd);
   }else{
-    fftcache->doEextFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb);
+    fftcache->doEextFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
     sendAtmForcGxToRx(flagEwd);
   }//endif
 
@@ -959,7 +962,7 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   if(countIntGtoR[iopt]==rhoRsubplanes){
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
-    fftcache->doEextFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb);
+    fftcache->doEextFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
     nAtmTypRecv++;
     computeAtmForc(iopt);
   }//endif

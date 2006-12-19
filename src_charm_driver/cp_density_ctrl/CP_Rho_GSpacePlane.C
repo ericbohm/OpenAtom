@@ -76,6 +76,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
     cp_grad_corr_on = sim->cp_grad_corr_on;
 
+    iplane_ind    = thisIndex.x;
     rhoRsubplanes = config.rhoRsubplanes;
     count = 0;
     doneWhiteByrd = 0;
@@ -200,6 +201,7 @@ CP_Rho_GSpacePlane::~CP_Rho_GSpacePlane(){
 //============================================================================
 void CP_Rho_GSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
+  p|iplane_ind;
   p|nPacked;
   p|count;
   PUParray(p,countWhiteByrd,4);
@@ -366,7 +368,7 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
     fftcache->doRhoFFTRtoG_Gchare(data_in,data_out,
                                   rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs, 
-                                  rho_gs.sizeZ,1);
+                                  rho_gs.sizeZ,1,iplane_ind);
 #ifndef CMK_OPTIMIZE    
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
@@ -475,7 +477,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
    fftcache->doRhoFFTGtoR_Gchare(divRhoX,divRhoX,rho_gs.numFull,rho_gs.numPoints,
                                  rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                 rho_gs.sizeZ,0);
+                                 rho_gs.sizeZ,0,iplane_ind);
    RhoGSendRhoR(ioptx);
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -487,7 +489,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
    fftcache->doRhoFFTGtoR_Gchare(divRhoY,divRhoY,rho_gs.numFull,rho_gs.numPoints,
                                  rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                 rho_gs.sizeZ,0);
+                                 rho_gs.sizeZ,0,iplane_ind);
    RhoGSendRhoR(iopty);
 
 
@@ -500,7 +502,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 
    fftcache->doRhoFFTGtoR_Gchare(divRhoZ,divRhoZ,rho_gs.numFull,rho_gs.numPoints,
                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                rho_gs.sizeZ,0);
+                                rho_gs.sizeZ,0,iplane_ind);
    RhoGSendRhoR(ioptz);
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -721,7 +723,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
     fftcache->doRhoFFTRtoG_Gchare(chunk,chunk,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                  rho_gs.sizeZ,0);
+                                  rho_gs.sizeZ,0,iplane_ind);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
@@ -777,7 +779,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   complex *white = rho_gs.divRhoX;
   fftcache->doRhoFFTGtoR_Gchare(white,white,rho_gs.numFull,rho_gs.numPoints,
                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
-                                rho_gs.sizeZ,0);
+                                rho_gs.sizeZ,0,iplane_ind);
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();    
 #endif
