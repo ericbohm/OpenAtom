@@ -675,7 +675,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("======================================================\n\n");
 
     CkPrintf("======================================================\n");
-    CkPrintf("Launching chare arrays and obtaining data sets  \n");
+
     CkPrintf("------------------------------------------------------\n\n");
     Timer=newtime;
 
@@ -1677,23 +1677,30 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
       CkPrintf("Making State streaming strats\n");
         //mstrat->enableShortArrayMessagePacking();
         //rspaceState to gspaceState : gspaceState to rspaceState 
+      if(config.useMssInsGP){
         StreamingStrategy *mstrat = new StreamingStrategy(config.rStreamPeriod,
                                                           config.rBucketSize);
         mssInstance= ComlibRegister(mstrat);    
-
-        StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,
-                                                           config.gBucketSize);
-        gssInstance= ComlibRegister(gmstrat);    
-
+      }
+      if(config.useGssInsRealP)
+	{
+	  StreamingStrategy *gmstrat = new StreamingStrategy(config.gStreamPeriod,
+							     config.gBucketSize);
+	  gssInstance= ComlibRegister(gmstrat);    
+	}
         //mstrat->enableShortArrayMessagePacking();
         //rPPState to gPPState : gPPState to rPPState 
-        StreamingStrategy *rpmstrat = new StreamingStrategy(config.rStreamPeriod,
-                                                            config.rBucketSize);
-        mssPInstance= ComlibRegister(rpmstrat);    
+	if (config.useMssInsGPP){
+	  StreamingStrategy *rpmstrat = new StreamingStrategy(config.rStreamPeriod,
+							      config.rBucketSize);
 
-        StreamingStrategy *gpmstrat = new StreamingStrategy(config.gStreamPeriod,
-                                                            config.gBucketSize);
-        gssPInstance= ComlibRegister(gpmstrat);    
+	  mssPInstance= ComlibRegister(rpmstrat);    
+	}
+	if (config.useGssInsRealPP){
+	  StreamingStrategy *gpmstrat = new StreamingStrategy(config.gStreamPeriod,
+							      config.gBucketSize);
+	  gssPInstance= ComlibRegister(gpmstrat);    
+	}
     }//endif
 
 //============================================================================
