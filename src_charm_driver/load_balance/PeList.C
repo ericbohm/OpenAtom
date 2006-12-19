@@ -121,8 +121,8 @@ PeList::PeList() // default constructor
     {
       current=0;
       size=CkNumPes();
-      TheList= new int[size];
-      sortIdx= new int[size];
+      TheList= new int[size+1];
+      sortIdx= new int[size+1];
       for(int i=0;i<size;i++)
 	{
 	  TheList[i]=i;
