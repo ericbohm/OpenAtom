@@ -1,6 +1,7 @@
 /** \file ckPairCalculator.h
  *
  */
+
 #ifndef _ckPairCalculator_h_
 #define _ckPairCalculator_h_
 #define _PC_COMMLIB_MULTI_ 0
@@ -17,24 +18,28 @@
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
 #include "../../include/debug_flags.h"
-// Flag to use sparse reduction or regular reduction
 
 // Debugging flag for Verbose output
-//#define _PAIRCALC_DEBUG_
-#ifdef CMK_VERSION_BLUEGENE
-#define ALIGN16(x)        (int)((~15)&((x)+15))
-//#define TEST_ALIGN
-#define BUNDLE_USER_EVENT  
+// #define _PAIRCALC_DEBUG_
+// #define TEST_ALIGN
 
-#define PC_FWD_DGEMM_SPLIT 16   //multiple of 6 for BG/L?  use 16 for happier align 
-#define PC_BWD_DGEMM_SPLIT 16
+#ifdef CMK_VERSION_BLUEGENE
+
+#define ALIGN16(x)        (int)((~15)&((x)+15))
+#define BUNDLE_USER_EVENT  
+#define PC_FWD_DGEMM_SPLIT 1 
+#define PC_BWD_DGEMM_SPLIT 1  
+// to set split values, use the config parameters: gemmSplitFWk,
+// gemmSplitFWm, etc ... 16 for happier align, 6 good for BG/L?
 
 #else
-#define PC_FWD_DGEMM_SPLIT 0 
+
+#define PC_FWD_DGEMM_SPLIT 0
 #define PC_BWD_DGEMM_SPLIT 0
+
 #endif
 
-//flags to control semantic for matrix contents
+// flags to control semantic for matrix contents
 #define NORMALPC   0  // standard
 #define KEEPORTHO  1  // retain orthoT
 #define PSIV       2  // multiply new psiV by retained orthoT
@@ -53,21 +58,18 @@ PUPbytes(redtypes);
 #define DCOPY dcopy
 #define ZTODO ztodo
 #endif
+
 extern ComlibInstanceHandle mcastInstanceCP;
 #define _PAIRCALC_USE_DGEMM_
 
 #ifdef _PAIRCALC_USE_BLAS_
 extern "C" complex ZTODO( const int *N,  complex *X, const int *incX, complex *Y, const int *incY);
-
 #endif
 
 #ifdef _PAIRCALC_USE_DGEMM_
-
-//extern "C" void DGEMM(char *,char *, int *,int *, int *,double *,double *,int *, double *,int *,double *,double *,int *);
+// extern "C" void DGEMM(char *,char *, int *,int *, int *,double *,double *,int *, double *,int *,double *,double *,int *);
 extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *,
                         int *, double *, int *, double *, double *, int * );}
-
-
 #endif
 
 #ifdef _PAIRCALC_USE_ZGEMM_
@@ -75,14 +77,12 @@ extern "C" void ZGEMM(char *,char *, int *,int *, int *,complex *,complex *,int 
                        const complex *,int *,complex *,complex *,int *);
 
 extern "C" void DCOPY(int*,double *,int*, double *,int *);
-
 #endif
 
 typedef void (*FuncType) (complex a, complex b);
 PUPmarshallBytes(FuncType);
 
 #include "ckPairCalculator.decl.h"
-
 
 class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
