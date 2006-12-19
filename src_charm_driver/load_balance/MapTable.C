@@ -72,10 +72,10 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 		      maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
 		    }
-		  destpe=availprocs->findNext();
 		  if(availprocs->count()==0)
 		    availprocs->reset();
-		  /*		  if(availprocs->count()==0)
+		  destpe=availprocs->findNext();
+		  /*if(availprocs->count()==0)
 		    {
 		      CkPrintf("GSMap created on processor %d\n", CkMyPe());
 		      dump();
@@ -114,9 +114,9 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 			  }
 		      }
 		    srcpe=destpe;
-		    destpe=availprocs->findNext();
 		    if(availprocs->count()==0)
 		      availprocs->reset();
+		    destpe=availprocs->findNext();
 		  }
 	      }
 	  }
