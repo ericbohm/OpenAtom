@@ -454,6 +454,11 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	void doReduction();
 	void ResumeFromSync();	
 	void pup(PUP::er &);
+	void rdoneVks(CkReductionMsg *msg);
+	bool allVksDone()
+	  {
+	    return vksDone;
+	  }
  private:
         int iteration;
         int rhoRsubplanes;
@@ -465,6 +470,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int csize;
         int countProduct;
 	int numCookies;
+	bool vksDone;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
 	CProxy_CP_State_GSpacePlane gproxy;

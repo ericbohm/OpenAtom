@@ -69,6 +69,12 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
 #ifndef _CP_DEBUG_RHO_OFF_
     RTH_Suspend(); // after doreduction sends data to rhoreal, suspend
 #endif
+
+#ifdef RSVKS_BARRIER  // pause for every single chare to finish
+    if(!(c->allVksDone())){
+      RTH_Suspend(); // wait for broadcast that all vks is done  
+    }//endif
+#endif               //end pause
     c->doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
     c->sendFPsiToGSP();
   } //end while not done
@@ -100,6 +106,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
 
     countProduct=0;
     count = 0;
+    vksDone=false;
     rhoRsubplanes = config.rhoRsubplanes;
     numCookies=0;
     ngrida = _ngrida;
@@ -168,6 +175,11 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
     }
 #endif
 
+#ifdef RSVKS_BARRIER
+  //reset each iteration
+  vksDone=false;
+#endif
+
     int size               = msg->size; 
     int Index              = msg->senderIndex;
     complex *partiallyFFTd = msg->data;
@@ -219,7 +231,7 @@ void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 
 //============================================================================
 // If every chareG has reported then you can resume/go on and do the FFT
-
+    
     if (count == nchareG) {
       count=0;
       iteration++;
@@ -390,7 +402,7 @@ void CP_State_RealSpacePlane::doReduction(){
  *   because you don't want to work with charms squirely memory 
  *   and call the working doproduct. The copy is into cache scratch
  *   which is OK because we should not relinquish the proc to another
- *   chare until we have finsihed the working doproduct
+ *   chare until we have finished the working doproduct
  */
 //============================================================================
 void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
@@ -410,8 +422,9 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
 #endif
 
 //============================================================================
-// Unpack and check size, copy to cache temp, resume which calls doProduct
-// without relinquishing control to other chares
+//Unpack and check size, use message data for multiply, then resume
+//which calls doProduct
+
 
   double *vks_tmp = msg->data;
   int mychare    = msg->idx;
@@ -445,6 +458,12 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
   countProduct++;
   if(countProduct==rhoRsubplanes){
     countProduct=0;
+#ifdef RSVKS_BARRIER
+    int wehaveours=1;
+    contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+	       CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),realSpacePlaneProxy));
+#endif
+
     RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
                                     // as threaded loops calls do vksfft
   }//endif
@@ -607,4 +626,19 @@ void CP_State_RealSpacePlane::printData() {
     }
     fclose(outfile);
 }
+//============================================================================
+
+
+
+//============================================================================
+//     All Rho RS objects have finished vks : Debugging only
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealSpacePlane::rdoneVks(CkReductionMsg *msg){
+      delete msg;
+      //let my ffts go!
+      vksDone=true;
+      RTH_Runtime_resume(run_thread);
+  }
 //============================================================================

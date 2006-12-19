@@ -58,7 +58,7 @@
  * calculation as normal.  On receipt of newpsi, Gspace will then
  * react by sending the PC the Psi velocities (PsiV) in the same way
  * (acceptPairData) that it sends Psi, but with the psiv flag set
- * true.  These will be recored in the left data array.  We will then
+ * true.  These will be recorded in the left data array.  We will then
  * multiply with the orthoT we kept from the previous invocation (psi)
  * of the backward path.  We then ship the corrected velocities back
  * to gspace via the acceptnewVpsi reduction.  Same procedure as for
@@ -703,11 +703,10 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 
     }
 
-  if(streamready || ((streamFW>0) && (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))))
+  if(streamready || ((streamFW>0) && (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected))) && (!msg->doPsiV) )
     {
 	multiplyForwardStream(msg->flag_dp);	
-	CkAssert(!msg->doPsiV);
-	// not yet supported for dynamics
+	// not yet supported for dynamic psiV
     }
   else if (numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)) 
     {

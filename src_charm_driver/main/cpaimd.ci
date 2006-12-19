@@ -254,6 +254,7 @@ mainmodule cpaimd {
 		entry [nokeep] void doProduct(ProductMsg *m);
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
+		entry void rdoneVks(CkReductionMsg *m);
 		entry [nokeep] void init(ProductMsg *m);
 	};
 
