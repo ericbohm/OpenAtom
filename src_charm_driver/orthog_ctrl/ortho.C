@@ -361,8 +361,20 @@ void Ortho::resume(){
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
       finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.y, thisIndex.x, actionType, 0);
     else if(thisIndex.y > thisIndex.x && config.phantomSym)
-      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
+      {
+	int chunksize = m;
+	double *dest= (double*) A;
+	double tmp;
+	for(int i = 0; i < chunksize; i++)
+	  for(int j = i + 1; j < chunksize; j++){
+	    tmp = dest[i * chunksize + j];
+	    dest[i * chunksize + j] = dest[j*chunksize + i];
+	    dest[j * chunksize + i] = tmp;
+	  }
 
+	// we have a transposed copy of what scalc wants
+	finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
+      }
 //----------------------------------------------------------------------------
    }//end routine
 //============================================================================
