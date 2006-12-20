@@ -331,6 +331,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     ind =   6;
     strcpy((*dict)[ind].keyword,"useCentroidMapRho");
     strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   //  7)\rhorpriority{}
     ind =   7;
@@ -354,6 +355,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     ind =  10;
     strcpy((*dict)[ind].keyword,"lbdensity");
     strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 11)\rhoGHelpers{}
     ind =  11;
