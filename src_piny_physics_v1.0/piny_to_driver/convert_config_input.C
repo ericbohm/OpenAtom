@@ -244,12 +244,14 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     ind =   6;
     strcpy((*dict)[ind].keyword,"useCentroidMapRho");
     strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+    (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
   //  7)\rhorpriority{}
     ind =   7;
     strcpy((*dict)[ind].keyword,"rhorpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
-    strcpy((*dict)[ind].error_mes,"a number > 0");
+
   //-----------------------------------------------------------------------------
   //  8)\rhogpriority{}
     ind =   8;
