@@ -862,13 +862,13 @@ OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orth
 #ifdef USE_INT_MAP
       destpe = omap->get(state1, state2);
       if(destpe	== 0)
-        maptable->set(state1, state2, destpe+1);
+        maptable->set(state1, state2, (destpe+1)%CkNumPes());
       else
         maptable->set(state1, state2, destpe-1);
 #else
       destpe = omap->get(intdual(state1, state2));
       if(destpe	== 0)
-        maptable->put(intdual(state1, state2))=destpe+1;
+        maptable->put(intdual(state1, state2))=(destpe+1)%CkNumPes();
       else
         maptable->put(intdual(state1, state2))=destpe-1;
 #endif
