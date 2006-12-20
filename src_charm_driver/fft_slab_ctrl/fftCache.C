@@ -317,19 +317,19 @@ FFTcache::FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngri
     if(ees_eext_on){
      if(rhoRsubPlanes==1){
        initFFTholder  (&fwdYPlanEext ,&iopt,&nwork1,&nwork2T,&scale,&plus,&ngridbEext,
-      			              &skipC,&unit,nchareREext,&nsplitR,numRYEext);
+      			              &skipC,&unit,nchareREextTot,&nsplitR,numRYEext);
        initFFTholder  (&bwdYPlanEext ,&iopt,&nwork1,&nwork2T,&scale,&mnus,&ngridbEext,
-			              &skipC,&unit,nchareREext,&nsplitR,numRYEext);
+			              &skipC,&unit,nchareREextTot,&nsplitR,numRYEext);
      }else{
        initFFTholder  (&fwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&plus,&ngridbEext,
-	 		              &unit, &ngridbEext,nchareREext,&nsplitR,numRYEext);
+	 		              &unit, &ngridbEext,nchareREextTot,&nsplitR,numRYEext);
        initFFTholder  (&bwdYPlanEextS,&iopt,&nwork1,&nwork2,&scale,&mnus,&ngridbEext,
-			              &unit, &ngridbEext,nchareREext,&nsplitR,numRYEext);
+			              &unit, &ngridbEext,nchareREextTot,&nsplitR,numRYEext);
      }//endif
      initCRFFTholder(&fwdXPlanEext, &iopt,&nwork1,&nwork2,&scale,&plus,&ngridaEext,
-  			            &skipR,&skipC,nchareREext,&nsplitR,numRXEext);
+  			            &skipR,&skipC,nchareREextTot,&nsplitR,numRXEext);
      initRCFFTholder(&bwdXPlanEext, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridaEext,
-			            &skipR,&skipC,nchareREext,&nsplitR,numRXEext);
+			            &skipR,&skipC,nchareREextTot,&nsplitR,numRXEext);
      initFFTholder  (&fwdZPlanEext, &iopt,&nwork1,&nwork2,&scale,&plus,&ngridcEext,
 			            &unit, &ngridcEext,nchareGEext,&nsplitG,numGEext);
      initFFTholder  (&bwdZPlanEext, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridcEext,
@@ -1720,7 +1720,7 @@ void initFFTholder(FFTplanHolder *plan, int *iopt,int *nwork1,int *nwork2, doubl
     if(nsplit[0]<=nmax){
       double *work1 = (double*) fftw_malloc(nwork1[0]*sizeof(double)); 
       double *work2 = (double*) fftw_malloc(nwork2[0]*sizeof(double)); 
-      dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,&unit,isign,scale,
+      dcftWrap(&unit,x,stride,skip,x,stride,skip,nfft,nsplit,isign,scale,
                work1,nwork1,work2,nwork2);
       plan->work1   = work1;
       plan->work2   = work2;
