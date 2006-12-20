@@ -2360,7 +2360,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 	  if(maxD==16)
 	    { x=16; y=4; z=4; switchSet=true; break;}
 	  if(maxD>=32)
-	    { x=16; y=4; z=4; switchSet=true; break;}
+	    { x=32; y=4; z=2; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;
     default:
