@@ -437,9 +437,16 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
   // This is actually in place, projPsiR and projPsiC use the same location
+#ifndef CMK_OPTIMIZE
+   double  StartTime=CmiWallTimer();
+#endif    
 
   fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB,myPlane);
+#ifndef CMK_OPTIMIZE
+   traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
+#endif
+
 #ifdef _CP_GS_DUMP_VKS_
     dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
