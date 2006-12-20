@@ -156,6 +156,8 @@ MapType2 RhoGSImaptable;
 MapType2 RhoRSImaptable;
 MapType2 RhoGHartImaptable;
 MapType2 RhoRHartImaptable;
+MapType2 OrthoImaptable;
+MapType2 OrthoHelperImaptable;
 MapType4 AsymScalcImaptable;
 MapType4 SymScalcImaptable;
 
@@ -176,6 +178,8 @@ CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
 CkHashtableT<intdual, int> RhoRHartmaptable;
+CkHashtableT<intdual, int> Orthomaptable;
+CkHashtableT<intdual, int> OrthoHelpermaptable;
 
 PairCalcID pairCalcID1;
 PairCalcID pairCalcID2;
@@ -1262,9 +1266,20 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
 	  stride=config.orthoStride;
       }
     nOrtho*=nOrtho;
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks,nOrtho, stride);
+
+    availGlobR->reset();
+#ifdef USE_INT_MAP
+    OrthoImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+    OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcImaptable, config.nchareG, config.numChunks, config.sGrainSize);
+#else
+    OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize);
+#endif
+
+    //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew();
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
+
     orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
     CharmStrategy *multistrat = new DirectMulticastStrategy(orthoProxy.ckGetArrayID());
     orthoInstance=ComlibRegister(multistrat);
@@ -1293,7 +1308,15 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
      mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-    CProxy_OrthoMap orthoHMap = CProxy_OrthoMap::ckNew(chunks,nOrtho, stride+1);
+
+#ifdef USE_INT_MAP
+    OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+    OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &OrthoImaptable);
+#else
+    OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable);
+#endif
+
+    CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
     CkArrayOptions orthoHOpts;
     orthoHOpts.setMap(orthoHMap);
 
@@ -1516,7 +1539,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
                                  Rstates_per_pe, config.useCuboidMapRS, &GSImaptable, config.nchareG);
 #else
   RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
-                                 Rstates_per_pe, config.useCuboidMapRS, &GSImaptable, config.nchareG);
+                                 Rstates_per_pe, config.useCuboidMapRS, &GSmaptable, config.nchareG);
 #endif
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   newtime=CmiWallTimer();
@@ -1911,7 +1934,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 // Maps and options
    //CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
 #ifdef USE_INT_MAP
-   RhoRSImaptable.buildMap(nchareRhoR,config.rhoRsubplanes);
+   RhoRSImaptable.buildMap(nchareRhoR, config.rhoRsubplanes);
    RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
 #else
    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
