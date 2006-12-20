@@ -24,6 +24,8 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
 	readonly CkHashtableT<intdual, int> RhoRHartmaptable;
+	readonly CkHashtableT<intdual, int> Orthomaptable;
+	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
 
@@ -34,6 +36,8 @@ mainmodule cpaimd {
 	readonly MapType2 RhoRSImaptable;
 	readonly MapType2 RhoGHartImaptable;
 	readonly MapType2 RhoRHartImaptable;
+	readonly MapType2 OrthoImaptable;
+	readonly MapType2 OrthoHelperImaptable;
 	readonly MapType4 AsymScalcImaptable;
 	readonly MapType4 SymScalcImaptable;
 
@@ -331,7 +335,7 @@ mainmodule cpaimd {
       };
 
 	group OrthoMap : CkArrayMap {
-		entry OrthoMap(int M,int nOrtho, int stride);
+		entry OrthoMap();
 	};
 
 	array [2D] OrthoHelper {
@@ -341,6 +345,10 @@ mainmodule cpaimd {
 	        entry void recvAB(OrthoHelperMsg *msg);
 
 	}
+	
+	group OrthoHelperMap : CkArrayMap {
+		entry OrthoHelperMap();
+	};
 
 	array [2D] Lambda{
 		entry void Lambda(int lgrain, int ograin, int sgrain);
