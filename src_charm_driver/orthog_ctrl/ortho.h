@@ -86,6 +86,9 @@
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
+extern MapType2 OrthoImaptable;
+extern CkHashtableT <intdual, int> Orthomaptable;
+
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
@@ -318,31 +321,73 @@ class Ortho : public CBase_Ortho{
 
 /**
  * provide procnum mapping for Ortho
- */
-class OrthoMap : public CkArrayMap {
-  public:
-  OrthoMap(int NN,int _nOrtho, int _stride):N(NN), nOrtho(_nOrtho), stride(_stride)
-      {
-	offset=0;
-	if(nOrtho<CkNumPes())
-	  offset=1;  //skip proc 0
-      }
+ * this old class is now defunct: Abhinav
+ *
+ * class OrthoMap : public CkArrayMap {
+ *  public:
+ *   OrthoMap(int NN,int _nOrtho, int _stride):N(NN), nOrtho(_nOrtho), stride(_stride)
+    {
+      offset=0;
+      if(nOrtho<CkNumPes())
+        offset=1;  //skip proc 0
+    }
 #ifndef TOPO_ORTHO
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
+    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
+    {
       int *index=(int *) iIndex.data();
       return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
     }
 #else
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex){
+    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
+    {
       int *index=(int *) iIndex.data();
       return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
     }
 #endif
   private:
-    int N;
-    int nOrtho;
-    int offset;
-    int stride;
+ *   int N;
+ *   int nOrtho;
+ *   int offset;
+ *   int stride;
+ * };
+ **/
+
+/*
+ * new centroid based ortho map
+ * actual map creation in MapTable.C
+ */
+class OrthoMap : public CkArrayMapTable {
+  public:
+    OrthoMap()
+    {
+#ifdef USE_INT_MAP
+      maptable= &OrthoImaptable;
+#else
+      maptable= &Orthomaptable;
+#endif
+    }
+
+    ~OrthoMap() { }
+    
+    void pup(PUP::er &p)
+    {
+      CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+      maptable= &OrthoImaptable;
+#else
+      maptable= &Orthomaptable;
+#endif
+    }
+    
+    inline int procNum(int, const CkArrayIndex &iIndex)
+    {
+      int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+      return(maptable->get(index[0],index[1]));
+#else
+      return(maptable->get(intdual(index[0],index[1])));
+#endif
+    }
 };
 
 #endif // #ifndef _ortho_h_
