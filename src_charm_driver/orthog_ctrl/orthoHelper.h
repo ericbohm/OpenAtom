@@ -28,6 +28,9 @@
 # define   	ORTHOHELPER_H_
 #include "CLA_Matrix.h"
 
+extern MapType2 OrthoHelperImaptable;
+extern CkHashtableT <intdual, int> OrthoHelpermaptable;
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -132,6 +135,38 @@ class OrthoHelper : public CBase_OrthoHelper
   CLA_Matrix_interface matA, matB, matC;
 };
 
+class OrthoHelperMap : public CkArrayMapTable {
+  public:
+    OrthoHelperMap()
+    {
+#ifdef USE_INT_MAP
+      maptable= &OrthoHelperImaptable;
+#else
+      maptable= &OrthoHelpermaptable;
+#endif
+    }
 
+    ~OrthoHelperMap() { }
+    
+    void pup(PUP::er &p)
+    {
+      CkArrayMapTable::pup(p);
+#ifdef USE_INT_MAP
+      maptable= &OrthoHelperImaptable;
+#else
+      maptable= &OrthoHelpermaptable;
+#endif
+    }
+    
+    inline int procNum(int, const CkArrayIndex &iIndex)
+    {
+      int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+      return(maptable->get(index[0],index[1]));
+#else
+      return(maptable->get(intdual(index[0],index[1])));
+#endif
+    }
+};
 
 #endif 	    /* !ORTHOHELPER_H_ */
