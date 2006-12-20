@@ -203,7 +203,7 @@ CProxy_StructFactCache            sfCacheProxy;
 CProxy_StructureFactor            sfCompProxy;
 CProxy_eesCache                   eesCacheProxy;
 CProxy_OrthoHelper                orthoHelperProxy;
-Config     config;
+Config                            config;
 
 //============================================================================
 
@@ -423,9 +423,9 @@ main::main(CkArgMsg *msg) {
     CkPrintf("---------------------------------------------------------\n\n");
     Timer=CmiWallTimer();
     double phase1start=Timer;
-    Config::readConfig(msg->argv[1],config,sim->nstates,
-                       sim->sizeX,sim->sizeY,sim->sizeZ,
-                       sim->ntime,ibinary_opt,natm_nl,ees_nonloc_opt,fftopt);
+    int numProc = CkNumPes();
+    config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
+                      sim->ntime,ibinary_opt,natm_nl,fftopt,numProc);
 
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
@@ -436,9 +436,7 @@ main::main(CkArgMsg *msg) {
     nstates          = config.nstates;    // globals : avail on all procs
     sizeX            = sim->sizeX;
 
-    config.print(msg->argv[1]);
     double newtime= CmiWallTimer();
-
 
     CkPrintf("\n------------------------------------------------\n");
     CkPrintf("Cpaimd-Charm-Driver input completed in %g\n",newtime-Timer);
@@ -693,16 +691,15 @@ main::main(CkArgMsg *msg) {
 /**
  * Cleanup stuff in the hopes of getting clean valgrind
  */
-main::~main()
-{
-
+main::~main(){
     if (config.useCommlib) {        
-	if(config.usePairEtoM)
-	{
-	}
-    }
+	if(config.usePairEtoM){
+	}//endif
+    }//endif
+}//end routine
+//============================================================================    
 
-}
+
 //============================================================================    
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================    
@@ -2518,7 +2515,7 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
     }//endfor
 
     //---------------------------------------
-    // how many y FFTs for HartEExt EES
+    // how many y FFTs for Rho
     div  = (nplane / rhoRsubplanes);
     rem  = (nplane % rhoRsubplanes);
     for(int j=0;j<rhoRsubplanes;j++){

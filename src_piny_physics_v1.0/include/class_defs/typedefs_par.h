@@ -324,17 +324,7 @@ typedef struct NULL_INTER_PARSE {
 /*==========================================================================*/
 /*      Words in dictionaries                                               */
 
-typedef struct DICT_WORD{
-  int iflag,iuset,key_type;    /* Opt: modifiers                      */
-  NAME keyword,keyarg;         /* Chr: keyword and its arg            */
-  LINE error_mes;              /* Chr: keyword error mess             */
-
-//Default Constructor/Destructor
-
-   DICT_WORD(){};
-    ~DICT_WORD(){};
-
-}DICT_WORD;
+#include "../../../include/dictionary.h"
 
 /*==========================================================================*/
 /*      Intra dictionaries                                                  */

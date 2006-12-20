@@ -24,8 +24,6 @@
 #define MAX_BOND_SITE1   5
 #define NCOEF_GHOST_MAX  5
 #define NCOEF_GHOST_MAX1 6
-#define MAXWORD          80
-#define MAXLINE          100
 #define NR_END           0
 #define NMEM_MIN         100
 
@@ -38,7 +36,10 @@
 #define list_int int
 #endif
 
+#define MAXWORD          80
 typedef char NAME[MAXWORD];    // Chr: a name; Lth: MAXWORD           
+
+#define MAXLINE          100
 typedef char LINE[MAXLINE];    // Chr: a line; Lth: MAXLINE           
 
 //==========================================================================

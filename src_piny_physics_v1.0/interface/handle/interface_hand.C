@@ -736,3 +736,13 @@ void parse_hydrog_mass(char *strip,char *strip2,int *iopt,double *val,
 }/* end routine */
 /*==========================================================================*/
 
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void parse_on_off(char *keyarg,int *int_val,int *ierr){
+  ierr[0]=1;
+  if(strcasecmp(keyarg,"off")==0){int_val[0]=0; ierr[0]=0;}
+  if(strcasecmp(keyarg,"on")==0) {int_val[0]=1; ierr[0]=0;}
+}
+/*==========================================================================*/

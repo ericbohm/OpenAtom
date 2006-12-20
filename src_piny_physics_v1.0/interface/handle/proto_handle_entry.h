@@ -1,5 +1,6 @@
 /*---------------------------------------------------------------------*/
 /*     Interface_handle.c                                              */
+void parse_on_off(char *,int *l,int *);
 
 FILE *cfopen(char [],char *);
 

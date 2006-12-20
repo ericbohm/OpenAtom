@@ -40,6 +40,7 @@ CLASS_ATOM_INTEGRATE = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_atominte
 CLASS_ATOM_OUTPUT = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_atomoutput.h
 CLASS_CP_GEN_WAVE  = $(CODE)/include/class_defs/CP/class_gen_wave.h
 CLASS_VX_SMPL  = $(CODE)/include/class_defs/ATOM_OPERATIONS/class_vx_smpl.h
+CLASS_CHARM_CONFIG = $(CODE)/../include/configure.h
 
 #-------------------------------------------------------
 #               PROTO_TYPES
@@ -73,5 +74,6 @@ PATH_INIT_ENT = $(CODE)/interface/path_integral/proto_path_init_entry.h
 PARSE_LOC     = $(CODE)/interface/parse/proto_parse_local.h
 PARSE_ENT     = $(CODE)/interface/parse/proto_parse_entry.h
 MATH          = $(CODE)/mathlib/proto_math.h
+FRIEND_ENT    = $(CODE)/friend_lib/proto_friend_lib_entry.h
 
 #-------------------------------------------------------

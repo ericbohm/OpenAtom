@@ -48,8 +48,14 @@ ParaInfoInit.o     :      $(STANDARD) $(DEFINES) \
                          $(CODE)/piny_to_driver/Parainfoinit.C
 	$(ECHO) $@
 	$(COBJ) $(CODE)/piny_to_driver/Parainfoinit.C
+
 #==========================================================================
+configure.o     :      $(STANDARD) $(DEFINES) $(TYP_PAR) \
+                       $(CLASS_CHARM_CONFIG) $(HANDLE_ENT) $(FRIEND_ENT) \
+                       $(CODE)/piny_to_driver/configure.C
+	$(ECHO) $@
+	$(COBJ_CARE) $(CODE)/piny_to_driver/configure.C
 
-
+#==========================================================================
 
 
