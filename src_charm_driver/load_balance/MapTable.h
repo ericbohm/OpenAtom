@@ -175,7 +175,7 @@ class MapTable4
 
 PeList *subListPlane(int plane, int nstates, MapType2 *smap);
 PeList *subListState(int state, int nplanes, MapType2 *smap);
-
+PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapType4 *smap);
 
 
 class GSMapTable : public MapTable
@@ -199,10 +199,6 @@ class GSMapTable : public MapTable
     {
     }
     
-};
-
-class OrthoMapTable : public MapTable
-{
 };
 
 
@@ -276,6 +272,27 @@ class RPPMapTable  : public MapTable
   RPPMapTable(){}
 };
 
+
+class OrthoMapTable : public MapTable
+{
+  public:
+    int nstates;
+    int orthoGrainSize;
+
+    OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize);
+    OrthoMapTable() { }
+    void sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap);
+};
+
+class OrthoHelperMapTable : public MapTable
+{
+  public:
+    int nstates;
+    int orthoGrainSize;
+
+    OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap);
+    OrthoHelperMapTable() { }
+};
 
 class RhoRSMapTable  : public MapTable
 {

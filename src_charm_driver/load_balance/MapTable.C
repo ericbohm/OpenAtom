@@ -782,6 +782,98 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 #endif
 }
 
+OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize): nstates(_nstates), orthoGrainSize(_orthograinsize)
+{
+  maptable = _map;
+  availprocs = _availprocs;
+  int oobjs_per_pe;
+  int srcpe = 0, destpe;
+  oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count()) + 1;
+  int *Pecount= new int [CkNumPes()];
+  bzero(Pecount, CkNumPes()*sizeof(int)); 
+  int s1 = 0, s2 = 0;
+  PeList *exclusionList = NULL;
+  for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
+    for(int state2 = 0; state2 < nstates; state2 += orthoGrainSize)
+    {
+      s1 = (state1/sGrainSize);
+      s1 = s1 * sGrainSize;
+      s2 = (state2/sGrainSize);
+      s2 = s2 * sGrainSize;
+      PeList *thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
+      bool useExclude = true;
+      if(exclusionList != NULL) 
+      {
+	*thisStateBox - *exclusionList;
+	thisStateBox->reindex();
+      }
+
+      if(thisStateBox->count() == 0)
+      {
+	CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
+	delete thisStateBox;
+	thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
+	useExclude = false;
+      }
+	
+      sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
+	
+      destpe=thisStateBox->findNext();
+      if(thisStateBox->count()==0)
+	thisStateBox->reset();
+
+#ifdef USE_INT_MAP
+      maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
+#else
+      maptable->put(intdual(state1/orthoGrainSize, state2/orthoGrainSize))=destpe;
+#endif
+      Pecount[destpe]++;	
+      if(Pecount[destpe]>=oobjs_per_pe)
+      {
+	if(exclusionList==NULL)
+	{
+	  exclusionList=new PeList(1);
+	  exclusionList->TheList[0]=destpe;
+        }
+        else
+	  exclusionList->mergeOne(destpe);
+	if(useExclude && thisStateBox->size>1)
+	{
+	  *thisStateBox - *exclusionList;
+	  thisStateBox->reindex();
+	}
+	sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
+      }
+      destpe=thisStateBox->findNext();
+      if(thisStateBox->count()==0)
+         thisStateBox->reset();
+      delete thisStateBox;
+    }
+}
+
+OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap): nstates(_nstates), orthoGrainSize(_orthograinsize)
+{
+  maptable = _map;
+  int destpe = 0;
+
+  for(int state1 = 0; state1 < nstates/orthoGrainSize; state1++)
+    for(int state2 = 0; state2 < nstates/orthoGrainSize; state2++)
+    {
+#ifdef USE_INT_MAP
+      destpe = omap->get(state1, state2);
+      if(destpe	== 0)
+        maptable->set(state1, state2, destpe+1);
+      else
+        maptable->set(state1, state2, destpe-1);
+#else
+      destpe = omap->get(intdual(state1, state2));
+      if(destpe	== 0)
+        maptable->put(intdual(state1, state2))=destpe+1;
+      else
+        maptable->put(intdual(state1, state2))=destpe-1;
+#endif
+    }
+}
 
 RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR, int _rhoRsubplanes, int max_states, bool useCentroid, MapType2 *rsmap, PeList *exclude): nchareRhoR(_nchareRhoR), rhoRsubplanes(_rhoRsubplanes)
 {
@@ -826,12 +918,12 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	}
 
 	if(thisPlaneBox->count()==0)
-	  {
+	{
 	    CkPrintf("Rho RS %d ignoring exclusion\n",chunk);
 	    delete thisPlaneBox;
 	    thisPlaneBox = subListPlane(chunk, max_states, rsmap);
 	    useExclude=false;
-	  }
+	}
 	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
 	// CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
 	
@@ -869,10 +961,10 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	delete thisPlaneBox;
       }
       if(exclusionList!=NULL)
-	{
+      {
 	  exclude->append(*exclusionList);
 	  delete exclusionList;
-	}
+      }
     }
   else
     {
@@ -1125,26 +1217,26 @@ void MapTable::makeReverseMap()
 PeList *subListPlane(int plane, int nstates, MapType2 *smap)
 {
 
-      PeList *thisPlane= new PeList(nstates);
-      int count=0;
-      for(int state=0;state<nstates;state++)
+      PeList *thisPlane = new PeList(nstates);
+      int count = 0;
+      for(int state=0; state<nstates; state++)
+      {
+	bool newPe = true;
+	int pe = smap->get(state,plane);
+	for(int i=0; i<count; i++)
 	{
-	  bool newPe=true;
-	  int pe=smap->get(state,plane);
-	  for(int i=0;i<count;i++)
-	    {
-	      if(thisPlane->TheList[i]==pe)
-		newPe=false;
-	    }
-	  if(newPe)
-	    {
-	      thisPlane->sortIdx[count]=count;
-	      thisPlane->TheList[count]=pe;
-	      count++;
-	    }
+	    if(thisPlane->TheList[i] == pe)
+	    newPe = false;
 	}
-      thisPlane->size=count;
-      thisPlane->current=0;
+	if(newPe)
+	{
+	    thisPlane->sortIdx[count] = count;
+	    thisPlane->TheList[count] = pe;
+	    count++;
+	}
+      }
+      thisPlane->size = count;
+      thisPlane->current = 0;
       return(thisPlane);
 }
 
@@ -1174,6 +1266,31 @@ PeList *subListState(int state, int nplanes, MapType2 *smap)
       return(thisState);
 }
 
+PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapType4 *smap)
+{
+      PeList *thisState = new PeList(nplanes*numChunks);
+      int count = 0;
+      for(int plane=0; plane<nplanes; plane++)
+        for(int chunk=0; chunk<numChunks; chunk++)
+	{
+	  bool newPe = true;
+	  int pe = smap->get(plane, state1, state2, chunk);
+	  for(int i=0; i<count; i++)
+	    {
+	      if(thisState->TheList[i] == pe)
+		newPe = false;
+	    }
+	  if(newPe)
+	    {
+	      thisState->sortIdx[count] = count;
+	      thisState->TheList[count] = pe;
+	      count++;
+	    }
+	}
+      thisState->size = count;
+      thisState->current = 0;
+      return(thisState);
+}
 
 #ifdef CMK_VERSION_BLUEGENE
 extern 	BGLTorusManager *bgltm;
@@ -1208,7 +1325,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   for(int state=stateX;state<stateX+grainsize;state++)
     {
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+      bgltm->getCoordinatesByRank(gsmap->get(state,plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1217,7 +1334,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   for(int state=stateY;state<stateY+grainsize;state++)
     {
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(gsmap->get(state,plane),X, Y, Z);
+      bgltm->getCoordinatesByRank(gsmap->get(state,plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1231,7 +1348,28 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   avail->reset();
 }
 
+void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
+{
+  int sumX = 0, sumY = 0, sumZ = 0;
+  int points = 0;
 
+  for(int plane=0; plane<nplanes; plane++)
+    for(int chunk=0; chunk<numChunks; chunk++)
+    {    
+      int X, Y, Z;
+      bgltm->getCoordinatesByRank(smap->get(plane, state1, state2, chunk), X, Y, Z);
+      sumX += X;
+      sumY += Y;
+      sumZ += Z;
+      points++;
+    }
+  int avgX = sumX/points;
+  int avgY = sumY/points;
+  int avgZ = sumZ/points;
+  int bestPe = bgltm->coords2rank(avgX, avgY, avgZ);
+  avail->sortSource(bestPe);
+  avail->reset();
+}
 
 #else
 // arguably meaningless in non torus case but it was easy to implement
@@ -1264,6 +1402,22 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
       points++;
     }
   int bestPe=sumPe/points;
+  avail->sortSource(bestPe);
+  avail->reset();
+}
+
+void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
+{
+  int sumPe = 0;
+  int points = 0;
+
+  for(int plane=0; plane<nplanes; plane++)
+    for(int chunk=0; chunk<numChunks; chunk++)
+    {    
+      sumPe += smap->get(plane, state1, state2, chunk);
+      points++;
+    }
+  int bestPe = sumPe/points;
   avail->sortSource(bestPe);
   avail->reset();
 }
