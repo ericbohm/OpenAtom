@@ -133,7 +133,7 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
 /*==========================================================================*/
 /*               Local variable declarations:                               */
 
-  int iii;
+  int iii,na,nb,nc;
   double rtwoth,tpi,rvol23;
   double d1,d2,d3;
   double try1,try2,try3;
@@ -183,10 +183,10 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
       kmax_cp[1] = NINT(temp1);
       kmax_cp[2] = NINT(temp2);
       kmax_cp[3] = NINT(temp3);
-      radixme(&(kmax_cp[1]),&(kmax_cp[2]),&(kmax_cp[3]));
-      kmaxv[1] = kmax_cp[1] << 1;  /* <<1 multiply by 2 */
-      kmaxv[2] = kmax_cp[2] << 1;
-      kmaxv[3] = kmax_cp[3] << 1;
+      radixme(&(kmax_cp[1]),&(kmax_cp[2]),&(kmax_cp[3]),&na,&nb,&nc);
+      kmaxv[1] = na/2-2;
+      kmaxv[2] = nb/2-2;
+      kmaxv[3] = nc/2-2;
    }else{
       kmaxv[1] = (int) ( 2.0*temp1);
       kmaxv[2] = (int) ( 2.0*temp2);
@@ -213,7 +213,7 @@ void set_pme_grid(double ecut_now,double deth,double *hmatik,int *kmaxv,
 /*==========================================================================*/
 /*               Local variable declarations:                               */
 
-  int iii,igo;
+  int iii,igo,na,nb,nc;
   double rtwoth,tpi,rvol23;
   double d1,d2,d3;
   double try1,try2,try3;
@@ -253,29 +253,29 @@ void set_pme_grid(double ecut_now,double deth,double *hmatik,int *kmaxv,
    ktemp1 = NINT(temp1);
    ktemp2 = NINT(temp2);
    ktemp3 = NINT(temp3);
-   radixme(&ktemp1,&ktemp2,&ktemp3);
-   *ngrid_a = 4*(ktemp1 + 1);
-   *ngrid_b = 4*(ktemp2 + 1);
-   *ngrid_c = 4*(ktemp3 + 1);
+   radixme(&ktemp1,&ktemp2,&ktemp3,&na,&nb,&nc);
+   *ngrid_a = na;
+   *ngrid_b = nb;
+   *ngrid_c = nc;
    igo=0;
-   if(*ngrid_a < 2*(kmaxv[1]+2)){igo=1;}
-   if(*ngrid_b < 2*(kmaxv[2]+2)){igo=1;}
-   if(*ngrid_c < 2*(kmaxv[3]+2)){igo=1;}
+   if(*ngrid_a < 2*kmaxv[1]+1){igo=1;}
+   if(*ngrid_b < 2*kmaxv[2]+1){igo=1;}
+   if(*ngrid_c < 2*kmaxv[3]+1){igo=1;}
    while(igo==1){
-       if(*ngrid_a < 2*(kmaxv[1]+2)){temp1+=1.0;}
-       if(*ngrid_b < 2*(kmaxv[2]+2)){temp2+=1.0;}
-       if(*ngrid_c < 2*(kmaxv[3]+2)){temp3+=1.0;}
+       if(*ngrid_a < 2*kmaxv[1]+1){temp1+=1.0;}
+       if(*ngrid_b < 2*kmaxv[2]+1){temp2+=1.0;}
+       if(*ngrid_c < 2*kmaxv[3]+1){temp3+=1.0;}
        ktemp1 = NINT(temp1);
        ktemp2 = NINT(temp2);
        ktemp3 = NINT(temp3);
-       radixme(&ktemp1,&ktemp2,&ktemp3);
-       *ngrid_a = 4*(ktemp1 + 1);
-       *ngrid_b = 4*(ktemp2 + 1);
-       *ngrid_c = 4*(ktemp3 + 1);
+       radixme(&ktemp1,&ktemp2,&ktemp3,&na,&nb,&nc);
+       *ngrid_a = na;
+       *ngrid_b = nb;
+       *ngrid_c = nc;
        igo = 0;
-       if(*ngrid_a < 2*(kmaxv[1]+2)){igo=1;}
-       if(*ngrid_b < 2*(kmaxv[2]+2)){igo=1;}
-       if(*ngrid_c < 2*(kmaxv[3]+2)){igo=1;}
+       if(*ngrid_a < 2*kmaxv[1]+1){igo=1;}
+       if(*ngrid_b < 2*kmaxv[2]+1){igo=1;}
+       if(*ngrid_c < 2*kmaxv[3]+1){igo=1;}
    }/*endwhile*/
    if((n_interp > *ngrid_a) || 
       (n_interp > *ngrid_b) || 
@@ -821,7 +821,7 @@ void setkvec3d_res(int kmax_res, double *hmatik,
 /*  satisfy the radix condition                                             */
 /*==========================================================================*/
 
-void radixme(int *kmax1, int *kmax2, int *kmax3)
+void radixme(int *kmax1, int *kmax2, int *kmax3, int *n1, int *n2, int *n3)
 
 /*==========================================================================*/
 /* Calculate the quantity to be radicized */
@@ -839,259 +839,53 @@ void radixme(int *kmax1, int *kmax2, int *kmax3)
 /*==========================================================================*/
 /* Local variables */
 
-  int i1, i2;
-  int i, k1, k2, k3, iii, jjj, kkk;
+  int i1,i2,i3;
+  int i, k1, k2, k3;
 
-  int nrad = 180;
-  int krad[180]; 
+  int nrad;
+  int krad[181]; 
+  int nrad_in = 180;
 
 /*==========================================================================*/
+  set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
 
-  k1 = (*kmax1 + 1) << 2;
-  k2 = (*kmax2 + 1) << 2;
-  k3 = (*kmax3 + 1) << 2;
+  i1=0;
+  for(i=nrad;i>=1;i--){
+    if(krad[i]/4-1>=kmax1[0] && krad[i]/2-1>=2*kmax1[0] ){
+      k1 = krad[i]; i1=i;
+    }//endif
+  }//endfor
+  if(i1==0){PRINTF("Bad Radix\n");EXIT(1);}
 
-/* radix condition IBM_ESSL (2^h)(3^i)(5^j)(7^k)(11^m)                */
-  krad[0]   = 2;
-  krad[1]   = 4;
-  krad[2]   = 6;
-  krad[3]   = 8;
-  krad[4]   = 10;
-  krad[5]   = 12;
-  krad[6]   = 14;
-  krad[7]   = 16;
-  krad[8]   = 18;
-  krad[9]   = 20;
-  krad[10]  = 22;
-  krad[11]  = 24;
-  krad[12]  = 28;
-  krad[13]  = 30;
-  krad[14]  = 32;
-  krad[15]  = 36;
-  krad[16]  = 40;
-  krad[17]  = 42;
-  krad[18]  = 44;
-  krad[19]  = 48;
-  krad[20]  = 56;
-  krad[21]  = 60;
-  krad[22]  = 64;
-  krad[23]  = 66;
-  krad[24]  = 70;
-  krad[25]  = 72;
-  krad[26]  = 80;
-  krad[27]  = 84;
-  krad[28]  = 88;
-  krad[29]  = 90;
-  krad[30]  = 96;
-  krad[31]  = 110;
-  krad[32]  = 112;
-  krad[33]  = 120;
-  krad[34]  = 126;
-  krad[35]  = 128;
-  krad[36]  = 132;
-  krad[37]  = 140;
-  krad[38]  = 144;
-  krad[39]  = 154;
-  krad[40]  = 160;
-  krad[41]  = 168;
-  krad[42]  = 176;
-  krad[43]  = 180;
-  krad[44]  = 192;
-  krad[45]  = 198;
-  krad[46]  = 210;
-  krad[47]  = 220;
-  krad[48]  = 224;
-  krad[49]  = 240;
-  krad[50]  = 252;
-  krad[51]  = 256;
-  krad[52]  = 264;
-  krad[53]  = 280;
-  krad[54]  = 288;
-  krad[55]  = 308;
-  krad[56]  = 320;
-  krad[57]  = 330;
-  krad[58]  = 336;
-  krad[59]  = 352;
-  krad[60]  = 360;
-  krad[61]  = 384;
-  krad[62]  = 396;
-  krad[63]  = 420;
-  krad[64]  = 440;
-  krad[65]  = 448;
-  krad[66]  = 462;
-  krad[67]  = 480;
-  krad[68]  = 504;
-  krad[69]  = 512;
-  krad[70]  = 528;
-  krad[71]  = 560;
-  krad[72]  = 576;
-  krad[73]  = 616;
-  krad[74]  = 630;
-  krad[75]  = 640;
-  krad[76]  = 660;
-  krad[77]  = 672;
-  krad[78]  = 704;
-  krad[79]  = 720;
-  krad[80]  = 768;
-  krad[81]  = 770;
-  krad[82]  = 792;
-  krad[83]  = 840;
-  krad[84]  = 880;
-  krad[85]  = 896;
-  krad[86]  = 924;
-  krad[87]  = 960;
-  krad[88]  = 990;
-  krad[89]  = 1008;
-  krad[90]  = 1024;
-  krad[91]  = 1056;
-  krad[92]  = 1120;
-  krad[93]  = 1152;
-  krad[94]  = 1232;
-  krad[95]  = 1260;
-  krad[96]  = 1280;
-  krad[97]  = 1320;
-  krad[98]  = 1344;
-  krad[99]  = 1386;
-  krad[100] = 1408;
-  krad[101] = 1440;
-  krad[102] = 1536;
-  krad[103] = 1540;
-  krad[104] = 1584;
-  krad[105] = 1680;
-  krad[106] = 1760;
-  krad[107] = 1792;
-  krad[108] = 1848;
-  krad[109] = 1920;
-  krad[110] = 1980;
-  krad[111] = 2016;
-  krad[112] = 2048;
-  krad[113] = 2112;
-  krad[114] = 2240;
-  krad[115] = 2304;
-  krad[116] = 2310;
-  krad[117] = 2464;
-  krad[118] = 2520;
-  krad[119] = 2560;
-  krad[120] = 2640;
-  krad[121] = 2688;
-  krad[122] = 2772;
-  krad[123] = 2816;
-  krad[124] = 2880;
-  krad[125] = 3072;
-  krad[126] = 3080;
-  krad[127] = 3168;
-  krad[128] = 3360;
-  krad[129] = 3520;
-  krad[130] = 3584;
-  krad[131] = 3696;
-  krad[132] = 3840;
-  krad[133] = 3960;
-  krad[134] = 4032;
-  krad[135] = 4096;
-  krad[136] = 4224;
-  krad[137] = 4480;
-  krad[138] = 4608;
-  krad[139] = 4620;
-  krad[140] = 4928;
-  krad[141] = 5040;
-  krad[142] = 5120;
-  krad[143] = 5280;
-  krad[144] = 5376;
-  krad[145] = 5544;
-  krad[146] = 5632;
-  krad[147] = 5760;
-  krad[148] = 6144;
-  krad[149] = 6160;
-  krad[150] = 6336;
-  krad[151] = 6720;
-  krad[152] = 6930;
-  krad[153] = 7040;
-  krad[154] = 7168;
-  krad[155] = 7392;
-  krad[156] = 7680;
-  krad[157] = 7920;
-  krad[158] = 8064;
-  krad[159] = 8192;
-  krad[160] = 8448;
-  krad[161] = 8960;
-  krad[162] = 9216;
-  krad[163] = 9240;
-  krad[164] = 9856;
-  krad[165] = 10080;
-  krad[166] = 10240;
-  krad[167] = 10560;
-  krad[168] = 10752;
-  krad[169] = 11088;
-  krad[170] = 11264;
-  krad[171] = 11520;
-  krad[172] = 12288;
-  krad[173] = 12320;
-  krad[174] = 12672;
-  krad[175] = 13440;
-  krad[176] = 13860;
-  krad[177] = 14080;
-  krad[178] = 14336;
-  krad[179] = 14784;
+  i2=0;
+  for(i=nrad;i>=1;i--){
+    if(krad[i]/4-1>=kmax2[0] && krad[i]/2-1>=2*kmax2[0] ){
+      k2 = krad[i]; i2=i;
+    }//endif
+  }//endfor
+  if(i2==0){PRINTF("Bad Radix\n");EXIT(1);}
 
-  i1 = nrad;
-  for (i = 1; i <= i1; ++i) {
-    if (krad[i - 1] > k1) {
-      i2 = i - 1;
-      iii = MAX(i2,1);
-      jjj = krad[(i - 1)];
-      kkk = krad[(iii - 1)];
-      if (k1 > kkk && k1 < jjj) {
-	jjj = (i2 = k1 - krad[(i - 1)], abs(i2));
-	kkk = (i2 = k1 - krad[(iii - 1)], abs(i2));
-	if (jjj < kkk) {
-	  k1 = krad[(i - 1)];
-	} else {
-	  k1 = krad[(iii - 1)];
-	}
-      }
-    }
-    if (krad[(i - 1)] > k2) {
-      i2 = i - 1;
-      iii = MAX(i2,1);
-      jjj = krad[(i - 1)];
-      kkk = krad[(iii - 1)];
-      if (k2 > kkk && k2 < jjj) {
-	jjj = (i2 = k2 - krad[(i - 1)], abs(i2));
-	kkk = (i2 = k2 - krad[(iii - 1)], abs(i2));
-	if (jjj < kkk) {
-	  k2 = krad[(i - 1)];
-	} else {
-	  k2 = krad[(iii - 1)];
-	}
-      }
-    }
-    if (krad[(i - 1)] > k3) {
-      i2 = i - 1;
-      iii = MAX(i2,1);
-      jjj = krad[(i - 1)];
-      kkk = krad[(iii - 1)];
-      if (k3 > kkk && k3 < jjj) {
-	jjj = (i2 = k3 - krad[(i - 1)], abs(i2));
-	kkk = (i2 = k3 - krad[(iii - 1)], abs(i2));
-	if (jjj < kkk) {
-	  k3 = krad[(i - 1)];
-	} else {
-	  k3 = krad[(iii - 1)];
-	}
-      }
-    }
-  }
-  *kmax1 = k1 / 4 - 1;
-  *kmax2 = k2 / 4 - 1;
-  *kmax3 = k3 / 4 - 1;
-#ifdef DEBUG
-  PRINTF("k1 %d kmax1 %d \n",k1,*kmax1);
-  PRINTF("k2 %d kmax1 %d \n",k2,*kmax2);
-  PRINTF("k3 %d kmax1 %d \n",k3,*kmax3);
-#endif
+  i3=0;
+  for(i=nrad;i>=1;i--){
+    if(krad[i]/4-1>=kmax3[0] && krad[i]/2-1>=2*kmax3[0] ){
+      k3 = krad[i]; i3=i;
+    }//endif
+  }//endfor
+  if(i3==0){PRINTF("Bad Radix\n");EXIT(1);}
+
+  PRINTF("   Radix data : k1 %d kmax1 %d \n",k1,kmax1[0]);
+  PRINTF("   Radix data : k2 %d kmax2 %d \n",k2,kmax2[0]);
+  PRINTF("   Radix data : k3 %d kmax3 %d \n",k3,kmax3[0]);
+
+  kmax1[0] = k1/4 - 1;
+  kmax2[0] = k2/4 - 1;
+  kmax3[0] = k3/4 - 1;
+  n1[0]    = k1;
+  n2[0]    = k2;
+  n3[0]    = k3;
 
 /*--------------------------------------------------------------------------*/
-} /* radixme */
+  } /* radixme */
 /*==========================================================================*/
 
 
@@ -1482,13 +1276,13 @@ void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
    int nkf1t,nkf2t,nkf3t;
    int nkf1,nkf2,nkf3,nrad;
 
-   int krad[51];
-   int nrad_in=50;
+   int krad[181];
+   int nrad_in=180;
 
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,&(krad[1])); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1565,20 +1359,20 @@ void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
    int n_interp = cppseudo->n_interp_ps;
    double scale = cppseudo->fft_size_scale_ps;
 
-   int nk1      = 2*(kmax[1]+1);
-   int nk2      = 2*(kmax[2]+1);
-   int nk3      = 2*(kmax[3]+1);
+   int nk1      = 2*kmax[1]+1;
+   int nk2      = 2*kmax[2]+1;
+   int nk3      = 2*kmax[3]+1;
 
    int nkf1t,nkf2t,nkf3t;
    int nkf1,nkf2,nkf3,nrad;
 
-   int krad[51];
-   int nrad_in=50;
+   int krad[181];
+   int nrad_in=180;
 
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,&krad[1]); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1645,7 +1439,7 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
   {/*begin routine */
 /*-------------------------------------------------------------------------*/
 
-  int nrad=50;
+  int nrad=179;
  (*nrad_ret)  = nrad;
 
   if(nrad_in<nrad){
@@ -1656,111 +1450,190 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
     EXIT(1);
   }/*endif*/
 
-#ifdef IBM_ESSL
-  krad[0] = 4;
-  krad[1] = 8;
-  krad[2] = 12;
-  krad[3] = 16;
-  krad[4] = 20;
-  krad[5] = 24;
-  krad[6] = 32;
-  krad[7] = 36;
-  krad[8] = 40;
-  krad[9] = 48;
-  krad[10] = 60;
-  krad[11] = 64;
-  krad[12] = 72;
-  krad[13] = 80;
-  krad[14] = 96;
-  krad[15] = 112;
-  krad[16] = 112;
-  krad[17] = 120;
-  krad[18] = 128;
-  krad[19] = 144;
-  krad[20] = 160;
-  krad[21] = 180;
-  krad[22] = 192;
-  krad[23] = 220;
-  krad[24] = 224;
-  krad[25] = 240;
-  krad[26] = 252;
-  krad[27] = 288;
-  krad[28] = 308;
-  krad[29] = 320;
-  krad[30] = 336;
-  krad[31] = 360;
-  krad[32] = 384;
-  krad[33] = 420;
-  krad[34] = 440;
-  krad[35] = 480;
-  krad[36] = 504;
-  krad[37] = 512;
-  krad[38] = 560;
-  krad[39] = 576;
-  krad[40] = 616;
-  krad[41] = 640;
-  krad[42] = 660;
-  krad[43] = 720;
-  krad[44] = 768;
-  krad[45] = 792;
-  krad[46] = 880;
-  krad[47] = 896;
-  krad[48] = 960;
-  krad[49] = 1008;
-#else
-  krad[0] = 4;
-  krad[1] = 8;
-  krad[2] = 12;
-  krad[3] = 16;
-  krad[4] = 20;
-  krad[5] = 24;
-  krad[6] = 32;
-  krad[7] = 36;
-  krad[8] = 40;
-  krad[9] = 48;
-  krad[10] = 60;
-  krad[11] = 64;
-  krad[12] = 72;
-  krad[13] = 80;
-  krad[14] = 96;
-  krad[15] = 100;
-  krad[16] = 108;
-  krad[17] = 120;
-  krad[18] = 128;
-  krad[19] = 144;
-  krad[20] = 160;
-  krad[21] = 180;
-  krad[22] = 192;
-  krad[23] = 200;
-  krad[24] = 216;
-  krad[25] = 240;
-  krad[26] = 256;
-  krad[27] = 288;
-  krad[28] = 300;
-  krad[29] = 320;
-  krad[30] = 324;
-  krad[31] = 360;
-  krad[32] = 384;
-  krad[33] = 400;
-  krad[34] = 432;
-  krad[35] = 480;
-  krad[36] = 500;
-  krad[37] = 512;
-  krad[38] = 540;
-  krad[39] = 576;
-  krad[40] = 600;
-  krad[41] = 640;
-  krad[42] = 648;
-  krad[43] = 720;
-  krad[44] = 768;
-  krad[45] = 800;
-  krad[46] = 864;
-  krad[47] = 900;
-  krad[48] = 960;
-  krad[49] = 972;
-#endif
-  
+  krad[1]   = 4;
+  krad[2]   = 6;
+  krad[3]   = 8;
+  krad[4]   = 10;
+  krad[5]   = 12;
+  krad[6]   = 14;
+  krad[7]   = 16;
+  krad[8]   = 18;
+  krad[9]   = 20;
+  krad[10]  = 22;
+  krad[11]  = 24;
+  krad[12]  = 28;
+  krad[13]  = 30;
+  krad[14]  = 32;
+  krad[15]  = 36;
+  krad[16]  = 40;
+  krad[17]  = 42;
+  krad[18]  = 44;
+  krad[19]  = 48;
+  krad[20]  = 56;
+  krad[21]  = 60;
+  krad[22]  = 64;
+  krad[23]  = 66;
+  krad[24]  = 70;
+  krad[25]  = 72;
+  krad[26]  = 80;
+  krad[27]  = 84;
+  krad[28]  = 88;
+  krad[29]  = 90;
+  krad[30]  = 96;
+  krad[31]  = 110;
+  krad[32]  = 112;
+  krad[33]  = 120;
+  krad[34]  = 126;
+  krad[35]  = 128;
+  krad[36]  = 132;
+  krad[37]  = 140;
+  krad[38]  = 144;
+  krad[39]  = 154;
+  krad[40]  = 160;
+  krad[41]  = 168;
+  krad[42]  = 176;
+  krad[43]  = 180;
+  krad[44]  = 192;
+  krad[45]  = 198;
+  krad[46]  = 210;
+  krad[47]  = 220;
+  krad[48]  = 224;
+  krad[49]  = 240;
+  krad[50]  = 252;
+  krad[51]  = 256;
+  krad[52]  = 264;
+  krad[53]  = 280;
+  krad[54]  = 288;
+  krad[55]  = 308;
+  krad[56]  = 320;
+  krad[57]  = 330;
+  krad[58]  = 336;
+  krad[59]  = 352;
+  krad[60]  = 360;
+  krad[61]  = 384;
+  krad[62]  = 396;
+  krad[63]  = 420;
+  krad[64]  = 440;
+  krad[65]  = 448;
+  krad[66]  = 462;
+  krad[67]  = 480;
+  krad[68]  = 504;
+  krad[69]  = 512;
+  krad[70]  = 528;
+  krad[71]  = 560;
+  krad[72]  = 576;
+  krad[73]  = 616;
+  krad[74]  = 630;
+  krad[75]  = 640;
+  krad[76]  = 660;
+  krad[77]  = 672;
+  krad[78]  = 704;
+  krad[79]  = 720;
+  krad[80]  = 768;
+  krad[81]  = 770;
+  krad[82]  = 792;
+  krad[83]  = 840;
+  krad[84]  = 880;
+  krad[85]  = 896;
+  krad[86]  = 924;
+  krad[87]  = 960;
+  krad[88]  = 990;
+  krad[89]  = 1008;
+  krad[90]  = 1024;
+  krad[91]  = 1056;
+  krad[92]  = 1120;
+  krad[93]  = 1152;
+  krad[94]  = 1232;
+  krad[95]  = 1260;
+  krad[96]  = 1280;
+  krad[97]  = 1320;
+  krad[98]  = 1344;
+  krad[99]  = 1386;
+  krad[100] = 1408;
+  krad[101] = 1440;
+  krad[102] = 1536;
+  krad[103] = 1540;
+  krad[104] = 1584;
+  krad[105] = 1680;
+  krad[106] = 1760;
+  krad[107] = 1792;
+  krad[108] = 1848;
+  krad[109] = 1920;
+  krad[110] = 1980;
+  krad[111] = 2016;
+  krad[112] = 2048;
+  krad[113] = 2112;
+  krad[114] = 2240;
+  krad[115] = 2304;
+  krad[116] = 2310;
+  krad[117] = 2464;
+  krad[118] = 2520;
+  krad[119] = 2560;
+  krad[120] = 2640;
+  krad[121] = 2688;
+  krad[122] = 2772;
+  krad[123] = 2816;
+  krad[124] = 2880;
+  krad[125] = 3072;
+  krad[126] = 3080;
+  krad[127] = 3168;
+  krad[128] = 3360;
+  krad[129] = 3520;
+  krad[130] = 3584;
+  krad[131] = 3696;
+  krad[132] = 3840;
+  krad[133] = 3960;
+  krad[134] = 4032;
+  krad[135] = 4096;
+  krad[136] = 4224;
+  krad[137] = 4480;
+  krad[138] = 4608;
+  krad[139] = 4620;
+  krad[140] = 4928;
+  krad[141] = 5040;
+  krad[142] = 5120;
+  krad[143] = 5280;
+  krad[144] = 5376;
+  krad[145] = 5544;
+  krad[146] = 5632;
+  krad[147] = 5760;
+  krad[148] = 6144;
+  krad[149] = 6160;
+  krad[150] = 6336;
+  krad[151] = 6720;
+  krad[152] = 6930;
+  krad[153] = 7040;
+  krad[154] = 7168;
+  krad[155] = 7392;
+  krad[156] = 7680;
+  krad[157] = 7920;
+  krad[158] = 8064;
+  krad[159] = 8192;
+  krad[160] = 8448;
+  krad[161] = 8960;
+  krad[162] = 9216;
+  krad[163] = 9240;
+  krad[164] = 9856;
+  krad[165] = 10080;
+  krad[166] = 10240;
+  krad[167] = 10560;
+  krad[168] = 10752;
+  krad[169] = 11088;
+  krad[170] = 11264;
+  krad[171] = 11520;
+  krad[172] = 12288;
+  krad[173] = 12320;
+  krad[174] = 12672;
+  krad[175] = 13440;
+  krad[176] = 13860;
+  krad[177] = 14080;
+  krad[178] = 14336;
+  krad[179] = 14784;
 
+  for(int i=2;i<=nrad;i++){
+    if( (krad[i] % 4) !=0){krad[i]=krad[(i-1)];}
+  }//endfor
+  
 /*--------------------------------------------------------------------------*/
    }/*end routine */
 /*==========================================================================*/

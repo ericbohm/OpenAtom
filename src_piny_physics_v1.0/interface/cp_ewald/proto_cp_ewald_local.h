@@ -33,7 +33,7 @@ void setkvec3d_sm(int ,double ,int *,double *,int *, int *, int *,
 /*==========================================================================*/
 /*               Proto for radixme:                                         */ 
 
-void radixme(int *, int *, int *);
+void radixme(int *, int *, int *,int *, int *, int *);
 
 /*==========================================================================*/
 /*               Proto for countkvec3d:                                     */ 
