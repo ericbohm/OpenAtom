@@ -66,8 +66,6 @@ class Config {
    int Gstates_per_pe;
    int Rstates_per_pe;
    int stateOutputOn;
-   int RpesPerState;
-   int GpesPerState;
    int psipriority;
    int prioFFTMsg;
    int rsfftpriority;
@@ -76,7 +74,6 @@ class Config {
    int gsifftpriority;
    int conserveMemory;
    int lbgspace;
-   int pesPerState;
    int doublePack;
    int useCuboidMap;
    int useCuboidMapRS;

@@ -610,7 +610,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 26;
+  num_dict[0] = 23;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
 //=================================================================================
@@ -678,105 +678,87 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"off/on");
   //-----------------------------------------------------------------------------
-  // 10)\RpesPerState{}
+  // 10)\psipriority{}
     ind=10;
-    strcpy((*dict)[ind].keyword,"RpesPerState");
-    strcpy((*dict)[ind].keyarg,"1");    
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 11)\GpesPerState{}
-    ind=11;
-    strcpy((*dict)[ind].keyword,"GpesPerState");
-    strcpy((*dict)[ind].keyarg,"1");    
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 12)\psipriority{}
-    ind=12;
     strcpy((*dict)[ind].keyword,"psipriority");
     strcpy((*dict)[ind].keyarg,"400000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 13)\prioFFTMsg{}
-    ind=13;
+  // 11)\prioFFTMsg{}
+    ind=11;
     strcpy((*dict)[ind].keyword,"prioFFTMsg");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 14)\rsfftpriority{}
-    ind=14;
+  // 12)\rsfftpriority{}
+    ind=12;
     strcpy((*dict)[ind].keyword,"rsfftpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 15)\gsfftpriority{}
-    ind=15;
+  // 13)\gsfftpriority{}
+    ind=13;
     strcpy((*dict)[ind].keyword,"gsfftpriority");
     strcpy((*dict)[ind].keyarg,"1000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 16)\rsifftpriority{}
-    ind=16;
+  // 14)\rsifftpriority{}
+    ind=14;
     strcpy((*dict)[ind].keyword,"rsifftpriority");
     strcpy((*dict)[ind].keyarg,"100000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 17)\gsifftpriority{}
-    ind=17;
+  // 15)\gsifftpriority{}
+    ind=15;
     strcpy((*dict)[ind].keyword,"gsifftpriority");
     strcpy((*dict)[ind].keyarg,"200000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 18)\conserveMemory{}
-    ind=18;
+  // 16)\conserveMemory{}
+    ind=16;
     strcpy((*dict)[ind].keyword,"conserveMemory");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 19)\lbgspace{}
-    ind=19;
+  // 17)\lbgspace{}
+    ind=17;
     strcpy((*dict)[ind].keyword,"lbgspace");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 20)\pesPerState{}
-    ind=20;
-    strcpy((*dict)[ind].keyword,"pesPerState");
-    strcpy((*dict)[ind].keyarg,"1"); 
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 21)\doublePack{}
-    ind=21;
+  // 18)\doublePack{}
+    ind=18;
     strcpy((*dict)[ind].keyword,"doublePack");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 22)\useCuboidMap{}
-    ind=22;
+  // 19)\useCuboidMap{}
+    ind=19;
     strcpy((*dict)[ind].keyword,"useCuboidMap");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 23)\useCuboidMapRS{}
-    ind=23;
+  // 20)\useCuboidMapRS{}
+    ind=20;
     strcpy((*dict)[ind].keyword,"useCuboidMapRS");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 24)\useCentroidMap{}
-    ind=24;
+  // 21)\useCentroidMap{}
+    ind=21;
     strcpy((*dict)[ind].keyword,"useCentroidMap");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 25)\useGssInsRealP{}
-    ind=25;
+  // 22)\useGssInsRealP{}
+    ind=22;
     strcpy((*dict)[ind].keyword,"useGssInsRealP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 26)\useMssInsGP{}
-    ind=26;
+  // 23)\useMssInsGP{}
+    ind=23;
     strcpy((*dict)[ind].keyword,"useMssInsGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
@@ -843,89 +825,74 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     parse_on_off(dict[ind].keyarg,&stateOutputOn,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 10)\RpesPerState{}
+  // 10)\psipriority{}
     ind=10;
-    sscanf(dict[ind].keyarg,"%d",&RpesPerState);
-    if(RpesPerState<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 11)\GpesPerState{}
-    ind=11;
-    sscanf(dict[ind].keyarg,"%d",&GpesPerState);
-    if(GpesPerState<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 12)\psipriority{}
-    ind=12;
     sscanf(dict[ind].keyarg,"%d",&psipriority);
     if(psipriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 13)\prioFFTMsg{}
-    ind=13;
+  // 11)\prioFFTMsg{}
+    ind=11;
     parse_on_off(dict[ind].keyarg,&prioFFTMsg,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 14)\rsfftpriority{}
-    ind=14;
+  // 12)\rsfftpriority{}
+    ind=12;
     sscanf(dict[ind].keyarg,"%d",&rsfftpriority);
     if(rsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 15)\gsfftpriority{}
-    ind=15;
+  // 13)\gsfftpriority{}
+    ind=13;
     sscanf(dict[ind].keyarg,"%d",&gsfftpriority);
     if(gsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 16)\rsifftpriority{}
-    ind=16;
+  // 14)\rsifftpriority{}
+    ind=14;
     sscanf(dict[ind].keyarg,"%d",&rsifftpriority);
     if(rsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 17)\gsifftpriority{}
-    ind=17;
+  // 15)\gsifftpriority{}
+    ind=15;
     sscanf(dict[ind].keyarg,"%d",&gsifftpriority);
     if(gsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 18)\conserveMemory{}
-    ind=18;
+  // 16)\conserveMemory{}
+    ind=16;
     parse_on_off(dict[ind].keyarg,&conserveMemory,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 19)\lbgspace{}
-    ind=19;
+  // 17)\lbgspace{}
+    ind=17;
     parse_on_off(dict[ind].keyarg,&lbgspace,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 20)\pesPerState{}
-    ind=20;
-    sscanf(dict[ind].keyarg,"%d",&pesPerState);
-    if(pesPerState<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 21)\doublePack{}
-    ind=21;
+  // 18)\doublePack{}
+    ind=18;
     parse_on_off(dict[ind].keyarg,&doublePack,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 22)\useCuboidMap{}
-    ind=22;
+  // 19)\useCuboidMap{}
+    ind=19;
     parse_on_off(dict[ind].keyarg,&useCuboidMap,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 23)\useCuboidMapRS{}
-    ind=23;
+  // 20)\useCuboidMapRS{}
+    ind=20;
     parse_on_off(dict[ind].keyarg,&useCuboidMapRS,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 24)\useCentroidMap{}
-    ind=24;
+  // 21)\useCentroidMap{}
+    ind=21;
     parse_on_off(dict[ind].keyarg,&useCentroidMap,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 25)\useGssInsRealP{}
-    ind=25;
+  // 22)\useGssInsRealP{}
+    ind=22;
     parse_on_off(dict[ind].keyarg,&useGssInsRealP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGssInsRealP=0;}
   //-----------------------------------------------------------------------------
-  // 26)\useMssInsGP{}
-    ind=26;
+  // 23)\useMssInsGP{}
+    ind=23;
     parse_on_off(dict[ind].keyarg,&useMssInsGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useMssInsGP=0;}
@@ -1706,7 +1673,7 @@ void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_
  *
  * Supported parameters: sGrainSize, gExpandFact, gExpandFactRho,
  * fftprogresssplit, fftprogresssplitReal, numSfGrps, numSfDups,
- * pesPerState, rhoGHelpers, numMulticastMsgs
+ * rhoGHelpers, numMulticastMsgs
 
  */
 //=============================================================================
@@ -1903,36 +1870,6 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
       sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers);
     }//endif
-
-//============================================================================
-// Fix up the Rpes
-
-  igo = dict_state[20].iuset+dict_state[10].iuset;
-
-  if(pesPerState>0 && RpesPerState <1){
-    if(igo==1){
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      PRINTF("   pesPerState>0 && RpesPerState <1 : seting rpes=pes\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-    }//endif
-    RpesPerState=pesPerState;
-    sprintf(dict_state[10].keyarg,"%d",RpesPerState);
-  }//endif
-
-//============================================================================
-// Fix up the Gpes
-
-  igo = dict_state[20].iuset+dict_state[11].iuset;
-
-  if(pesPerState>0 && GpesPerState <1){
-    if(igo==1){
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      PRINTF("   pesPerState>0 && GpesPerState <1 : seting Gpes=pes\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-    }//endif
-    GpesPerState=pesPerState;
-    sprintf(dict_state[11].keyarg,"%d",GpesPerState);
-  }//endif
 
 //============================================================================
    }//end routine
@@ -2187,9 +2124,6 @@ void Config::simpleRangeCheck(){
   rangeExit(rhoRsubplanes,"rhoRsubplanes",0);
   rangeExit(numMulticastMsgs,"numMulticastMsgs",0);
   rangeExit(PCSpanFactor,"numMulticastMsgs",0);
-  rangeExit(pesPerState,"pesPerState;",0);
-  rangeExit(GpesPerState,"GpesPerState;",0);
-  rangeExit(RpesPerState,"RpesPerState;",0);
   rangeExit(toleranceInterval,"toleranceInterval;",0);
   rangeExit(numChunks,"numChunks;",0);
   rangeExit(phantomSym,"phantomSym;",1);
@@ -2312,12 +2246,6 @@ void Config::rangeExit(int param, char *name, int iopt){
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       PRINTF("   Too few rhog-space chares %d %d\n",nplane_x_rho,nchareRhoG);
       PRINTF("   This probably could work but I'd check first.\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-    }//endif
-
-    if(pesPerState>nchareG){
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-      PRINTF("   Warning : pesPerState > %d %g %d\n",nchareG,gExpandFact,nkf1);
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
     }//endif
 

@@ -374,7 +374,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 26;
+  num_dict[0] = 23;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -443,113 +443,95 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 10)\RpesPerState{}
+  // 10)\psipriority{}
     ind=10;
-    strcpy((*dict)[ind].keyword,"RpesPerState");
-    strcpy((*dict)[ind].keyarg,"1");    
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 11)\GpesPerState{}
-    ind=11;
-    strcpy((*dict)[ind].keyword,"GpesPerState");
-    strcpy((*dict)[ind].keyarg,"1");    
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 12)\psipriority{}
-    ind=12;
     strcpy((*dict)[ind].keyword,"psipriority");
     strcpy((*dict)[ind].keyarg,"400000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 13)\prioFFTMsg{}
-    ind=13;
+  // 11)\prioFFTMsg{}
+    ind=11;
     strcpy((*dict)[ind].keyword,"prioFFTMsg");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 14)\rsfftpriority{}
-    ind=14;
+  // 12)\rsfftpriority{}
+    ind=12;
     strcpy((*dict)[ind].keyword,"rsfftpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 15)\gsfftpriority{}
-    ind=15;
+  // 13)\gsfftpriority{}
+    ind=13;
     strcpy((*dict)[ind].keyword,"gsfftpriority");
     strcpy((*dict)[ind].keyarg,"1000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 16)\rsifftpriority{}
-    ind=16;
+  // 14)\rsifftpriority{}
+    ind=14;
     strcpy((*dict)[ind].keyword,"rsifftpriority");
     strcpy((*dict)[ind].keyarg,"100000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 17)\gsifftpriority{}
-    ind=17;
+  // 15)\gsifftpriority{}
+    ind=15;
     strcpy((*dict)[ind].keyword,"gsifftpriority");
     strcpy((*dict)[ind].keyarg,"200000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 18)\conserveMemory{}
-    ind=18;
+  // 16)\conserveMemory{}
+    ind=16;
     strcpy((*dict)[ind].keyword,"conserveMemory");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 19)\lbgspace{}
-    ind=19;
+  // 17)\lbgspace{}
+    ind=17;
     strcpy((*dict)[ind].keyword,"lbgspace");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 20)\pesPerState{}
-    ind=20;
-    strcpy((*dict)[ind].keyword,"pesPerState");
-    strcpy((*dict)[ind].keyarg,"1"); 
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 21)\doublePack{}
-    ind=21;
+  // 18)\doublePack{}
+    ind=18;
     strcpy((*dict)[ind].keyword,"doublePack");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 22)\useCuboidMap{}
-    ind=22;
+  // 19)\useCuboidMap{}
+    ind=19;
     strcpy((*dict)[ind].keyword,"useCuboidMap");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 23)\useCuboidMapRS{}
-    ind=23;
+  // 20)\useCuboidMapRS{}
+    ind=20;
     strcpy((*dict)[ind].keyword,"useCuboidMapRS");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 24)\useCentroidMap{}
-    ind=24;
+  // 21)\useCentroidMap{}
+    ind=21;
     strcpy((*dict)[ind].keyword,"useCentroidMap");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 25)\useGssInsRealP{}
-    ind=25;
+  // 22)\useGssInsRealP{}
+    ind=22;
     strcpy((*dict)[ind].keyword,"useGssInsRealP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 26)\useMssInsGP{}
-    ind=26;
+  // 23)\useMssInsGP{}
+    ind=23;
     strcpy((*dict)[ind].keyword,"useMssInsGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
