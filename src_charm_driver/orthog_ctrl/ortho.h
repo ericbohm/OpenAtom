@@ -356,7 +356,7 @@ class Ortho : public CBase_Ortho{
  * new centroid based ortho map
  * actual map creation in MapTable.C
  */
-class OrthoMap : public CkArrayMapTable {
+class OrthoMap : public CkArrayMapTable2 {
   public:
     OrthoMap()
     {
@@ -371,7 +371,7 @@ class OrthoMap : public CkArrayMapTable {
     
     void pup(PUP::er &p)
     {
-      CkArrayMapTable::pup(p);
+      CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
       maptable= &OrthoImaptable;
 #else

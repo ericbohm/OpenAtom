@@ -135,7 +135,7 @@ class OrthoHelper : public CBase_OrthoHelper
   CLA_Matrix_interface matA, matB, matC;
 };
 
-class OrthoHelperMap : public CkArrayMapTable {
+class OrthoHelperMap : public CkArrayMapTable2 {
   public:
     OrthoHelperMap()
     {
@@ -150,7 +150,7 @@ class OrthoHelperMap : public CkArrayMapTable {
     
     void pup(PUP::er &p)
     {
-      CkArrayMapTable::pup(p);
+      CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
       maptable= &OrthoHelperImaptable;
 #else
