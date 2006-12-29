@@ -57,7 +57,7 @@ typedef CkHashtableT <intdual, int > MapType4;
  * Abstract base class.
  *  
  */
-class MapTable 
+class MapTable2 
 {
  public:
   MapType2 *maptable;
@@ -86,13 +86,13 @@ class MapTable
  protected:
    CkVec <intdual> *reverseMap;
 
-  MapTable()
+  MapTable2()
     {
       availprocs=NULL;
       maptable=NULL;
       reverseMap=NULL;
     }
-  ~MapTable()
+  ~MapTable2()
     {
       if(reverseMap!=NULL)
 	delete [] reverseMap;
@@ -178,7 +178,7 @@ PeList *subListState(int state, int nplanes, MapType2 *smap);
 PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapType4 *smap);
 
 
-class GSMapTable : public MapTable
+class GSMapTable : public MapTable2
 {
  public:
 
@@ -247,7 +247,7 @@ class SCalcMapTable : public MapTable4
   
 };
 
-class RSMapTable  : public MapTable
+class RSMapTable  : public MapTable2
 {
  public:
   int nstates;
@@ -259,7 +259,7 @@ class RSMapTable  : public MapTable
 };
 
 
-class RPPMapTable  : public MapTable
+class RPPMapTable  : public MapTable2
 {
  public:
   int nstates;
@@ -273,7 +273,7 @@ class RPPMapTable  : public MapTable
 };
 
 
-class OrthoMapTable : public MapTable
+class OrthoMapTable : public MapTable2
 {
   public:
     int nstates;
@@ -284,7 +284,7 @@ class OrthoMapTable : public MapTable
     void sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap);
 };
 
-class OrthoHelperMapTable : public MapTable
+class OrthoHelperMapTable : public MapTable2
 {
   public:
     int nstates;
@@ -294,7 +294,7 @@ class OrthoHelperMapTable : public MapTable
     OrthoHelperMapTable() { }
 };
 
-class RhoRSMapTable  : public MapTable
+class RhoRSMapTable  : public MapTable2
 {
  public:
   int nchareRhoR;
@@ -306,7 +306,7 @@ class RhoRSMapTable  : public MapTable
 };
 
 
-class RhoRHartMapTable  : public MapTable
+class RhoRHartMapTable  : public MapTable2
 {
  public:
   int nchareRhoRHart;
@@ -315,7 +315,7 @@ class RhoRHartMapTable  : public MapTable
   RhoRHartMapTable(){}
 };
 
-class RhoGHartMapTable  : public MapTable
+class RhoGHartMapTable  : public MapTable2
 {
  public:
   int nchareRhoGHart;
@@ -324,7 +324,7 @@ class RhoGHartMapTable  : public MapTable
   RhoGHartMapTable(){}
 };
 
-class RhoGSMapTable  : public MapTable
+class RhoGSMapTable  : public MapTable2
 {
  public:
   int nchareRhoG;

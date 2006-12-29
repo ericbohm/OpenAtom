@@ -1195,7 +1195,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 }
 
 
-void MapTable::makeReverseMap()
+void MapTable2::makeReverseMap()
 {
 #ifndef USE_INT_MAP
     CkHashtableIterator *it=maptable->iterator();
