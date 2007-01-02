@@ -574,7 +574,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 2)\PCCollectTiles{}
     ind=2;
     strcpy((*dict)[ind].keyword,"PCCollectTiles");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
