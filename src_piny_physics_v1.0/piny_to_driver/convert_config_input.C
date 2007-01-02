@@ -1014,7 +1014,7 @@ void Config::load_cpaimd_config (DICT_WORD *dict,  int num_dict,
           strcpy(dict[j].keyarg,keyarg[i]);
 	}else{
           strcpy(dict[j].keyarg,"on");
-	  if(strcasecmp(keyword[i],"0")==0){strcpy(dict[j].keyarg,"off");}
+	  if(strcasecmp(keyarg[i],"0")==0){strcpy(dict[j].keyarg,"off");}
 	}//endif
       }//endif
     }//endfor
