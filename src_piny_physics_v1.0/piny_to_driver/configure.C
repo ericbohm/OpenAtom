@@ -949,8 +949,8 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 5)\PCstreamFWblock{}
     ind=5;
     strcpy((*dict)[ind].keyword,"PCstreamFWblock");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
+    sprintf((*dict)[ind].keyarg,"%d",0);
+    strcpy((*dict)[ind].error_mes,"a number >= 0");
   //-----------------------------------------------------------------------------
   // 6)\useOrthoDirect{}
     ind=6;
@@ -1147,8 +1147,8 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
   //-----------------------------------------------------------------------------
   // 5)\PCstreamFWblock{}
     ind=5;
-    parse_on_off(dict[ind].keyarg,&PCstreamFWblock,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    sscanf(dict[ind].keyarg,"%d",&PCstreamFWblock);
+    if(PCstreamFWblock<0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 6)\useOrthoDirect{}
     ind=6;

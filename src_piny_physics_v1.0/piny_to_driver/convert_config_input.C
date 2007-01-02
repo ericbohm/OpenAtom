@@ -595,9 +595,8 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 5)\PCstreamFWblock{}
     ind=5;
     strcpy((*dict)[ind].keyword,"PCstreamFWblock");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-    (*dict)[ind].iflag = 1;
+    sprintf((*dict)[ind].keyarg,"%d",0);
+    strcpy((*dict)[ind].error_mes,"a number >= 0");
   //-----------------------------------------------------------------------------
   // 6)\useOrthoDirect{}
     ind=6;
