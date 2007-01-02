@@ -302,12 +302,11 @@ main::main(CkArgMsg *msg) {
       {
 
 	//get system name
-	char tidyphysfname[80];
-	bzero(tidyphysfname,80);
-	char simfname[80];
-	bzero(simfname,80);
-	char *lastslash=strrchr(msg->argv[2],'/');
-
+	char tidyphysfname[1024];
+	bzero(tidyphysfname,1024);
+	char simfname[1024];
+	bzero(simfname,1024);
+	char *lastslash=strrchr(msg->argv[1],'/');
 	if(lastslash==NULL)
 	  {
 	    lastslash=msg->argv[2];
@@ -316,7 +315,7 @@ main::main(CkArgMsg *msg) {
 	else
 	  {
 	    strncat(tidyphysfname,msg->argv[2],lastslash-msg->argv[2]);
-	    strncpy(simfname,tidyphysfname,80);
+	    strncpy(simfname,tidyphysfname,1024);
 	    strncat(tidyphysfname,"/tidy ",8);
 	    strncat(simfname,"/",2);
 	    lastslash++;
@@ -326,14 +325,18 @@ main::main(CkArgMsg *msg) {
 	CkPrintf("  Tidy mode, running %s\n",tidyphysfname);
 	unlink(simfname);
 	system(tidyphysfname);
-	strncpy(tidyphysfname,simfname,80);
+	strncpy(tidyphysfname,simfname,1024);
 	strncat(tidyphysfname,".coords_out",20);
 	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
 	unlink(tidyphysfname);
-	strncpy(tidyphysfname,simfname,80);
+	strncpy(tidyphysfname,simfname,1024);
 	strncat(tidyphysfname,".confp",20);
 	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
 	unlink(tidyphysfname);
+	strncpy(simfname,msg->argv[1],1024);
+	strncat(simfname,".out",4);
+	CkPrintf("  Tidy mode, unlinking %s\n",simfname);
+	unlink(simfname);
 	sleep(1);
       }
     CkPrintf("\n================================================\n");
