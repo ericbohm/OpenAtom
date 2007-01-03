@@ -109,6 +109,7 @@
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
 #include "PeList.h"
+#include "MapFile.h"
 #ifdef USE_TOPOMAP
 #include "bgltorus.h"
 #endif
@@ -1510,12 +1511,21 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  // state g-space
 
   availGlobG->reset();
-#ifdef USE_INT_MAP
   GSImaptable.buildMap(nstates,nchareG);
-  GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
+#ifdef USE_INT_MAP
+  int success = 0;
+  if(config.loadMapFiles)
+  {
+    int size[2];
+    size[0] = config.nstates; size[1] = config.nchareG;
+    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    success = mf->loadMap("GSMap", &GSImaptable);
+  }
+  if(success == 0)
+    GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
 				   nstates, Gstates_per_pe, config.useCuboidMap);
-#else
+  #else
   GSMapTable gsTable = GSMapTable( &GSmaptable, availGlobG,nchareG,
 				   sim->lines_per_chareG, sim->pts_per_chareG,
 				   nstates, config.Gstates_per_pe, config.useCuboidMap);
@@ -1997,7 +2007,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
 #endif
 	//CkPrintf("availProcs %d\n",RhoAvail->count());
-	CkPrintf("rho G and S consumed %d\n", excludePes->count());
+	//CkPrintf("rho G and S consumed %d\n", excludePes->count());
 	//    excludePes->dump();
 
 	CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
