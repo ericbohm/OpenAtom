@@ -610,7 +610,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 23;
+  num_dict[0] = 24;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
 //=================================================================================
@@ -763,6 +763,12 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 24)\loadMapFiles{}
+    ind=24;
+    strcpy((*dict)[ind].keyword,"loadMapFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -896,6 +902,11 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     parse_on_off(dict[ind].keyarg,&useMssInsGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useMssInsGP=0;}
+  //-----------------------------------------------------------------------------
+  // 24)\loadMapFiles{}
+    ind=24;
+    parse_on_off(dict[ind].keyarg,&loadMapFiles,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -2131,6 +2142,7 @@ void Config::simpleRangeCheck(){
   rangeExit(useCuboidMap,"useCuboidMap;",1);
   rangeExit(useCuboidMapRS,"useCuboidMapRS;",1);
   rangeExit(useCentroidMap,"useCentroidMap;",1);
+  rangeExit(loadMapFiles,"loadMapFiles:",1);
   rangeExit(useCentroidMapRho,"useCentroidMapRho;",1);
   rangeExit(numChunksAsym,"numChunksAsym;",0);
   rangeExit(numChunksSym,"numChunksSym;",0);

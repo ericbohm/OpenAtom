@@ -374,7 +374,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 23;
+  num_dict[0] = 24;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -535,6 +535,13 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"useMssInsGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
+    strcpy((*dict)[ind].error_mes,"on/off");
+    (*dict)[ind].iflag = 1;
+  //-----------------------------------------------------------------------------
+  // 24)\loadMapFiles{}
+    ind=24;
+    strcpy((*dict)[ind].keyword,"loadMapFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
 //----------------------------------------------------------------------------------
