@@ -125,7 +125,7 @@ void set_cpmass(int ncoef,int *kastore,int *kbstore,int *kcstore,
 /*==========================================================================*/
 
 void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
-                 int *kmax_cp, int *kmaxv, double *hmatik, double deth)
+                 int *kmax_cp, int *kmaxv, double *hmatik, double deth, int *nfft)
 
 /*==========================================================================*/
 /*               Begin subprogram:                                          */
@@ -138,6 +138,8 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
   double d1,d2,d3;
   double try1,try2,try3;
   double temp1,temp2,temp3;
+  int itemp1,itemp2,itemp3;
+  double frac1,frac2,frac3;
 
 /*==========================================================================*/
 /* II) Calculate Ewald Cutoff */
@@ -180,115 +182,39 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
    temp2 = sqrt(*ecut * .5) / (M_PI * try2);
    temp3 = sqrt(*ecut * .5) / (M_PI * try3);
    if(cp_on==1){
-      kmax_cp[1] = NINT(temp1);
-      kmax_cp[2] = NINT(temp2);
-      kmax_cp[3] = NINT(temp3);
-      radixme(&(kmax_cp[1]),&(kmax_cp[2]),&(kmax_cp[3]),&na,&nb,&nc);
-      kmaxv[1] = na/2-2;
-      kmaxv[2] = nb/2-2;
-      kmaxv[3] = nc/2-2;
+      itemp1     = (int)temp1;
+      itemp2     = (int)temp2;
+      itemp3     = (int)temp3;
+      frac1      = temp1-(double)itemp1;
+      frac2      = temp2-(double)itemp2;
+      frac3      = temp3-(double)itemp3;
+      if(frac1>0.99)itemp1++;
+      if(frac2>0.99)itemp2++;
+      if(frac3>0.99)itemp3++;
+      kmax_cp[1] = itemp1;
+      kmax_cp[2] = itemp2;
+      kmax_cp[3] = itemp3;
+      radixme(kmax_cp[1],kmax_cp[2],kmax_cp[3],&na,&nb,&nc);
+      kmaxv[1] = 2*kmax_cp[1];
+      kmaxv[2] = 2*kmax_cp[2];
+      kmaxv[3] = 2*kmax_cp[3];
+      nfft[1]  = na;
+      nfft[2]  = nb;
+      nfft[3]  = nc;
    }else{
-      kmaxv[1] = (int) ( 2.0*temp1);
-      kmaxv[2] = (int) ( 2.0*temp2);
-      kmaxv[3] = (int) ( 2.0*temp3);
+     itemp1     = (int)(2.0*temp1);
+     itemp2     = (int)(2.0*temp2);
+     itemp3     = (int)(2.0*temp3);
+     frac1      = temp1-(double)itemp1;
+     frac2      = temp2-(double)itemp2;
+     frac3      = temp3-(double)itemp3;
+     if(frac1>0.99)itemp1++;
+     if(frac2>0.99)itemp2++;
+     if(frac3>0.99)itemp3++;
+     kmaxv[1] = itemp1;
+     kmaxv[2] = itemp2;
+     kmaxv[3] = itemp3;
     }/*endif*/
-
-/*-------------------------------------------------------------------------*/
-     } /* end routine */
-/*==========================================================================*/
-
-
-
-/*==========================================================================*/
-/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
-/*==========================================================================*/
-
-void set_pme_grid(double ecut_now,double deth,double *hmatik,int *kmaxv,
-                  int *ngrid_a,int *ngrid_b,int *ngrid_c,int n_interp,
-                  int kmax_pme)
-
-/*==========================================================================*/
-/*               Begin subprogram:                                          */
-      {/*begin routine*/
-/*==========================================================================*/
-/*               Local variable declarations:                               */
-
-  int iii,igo,na,nb,nc;
-  double rtwoth,tpi,rvol23;
-  double d1,d2,d3;
-  double try1,try2,try3;
-  double temp1,temp2,temp3,ecut_pme,ecut;
-  int ktemp1,ktemp2,ktemp3;
-
-
-/*==========================================================================*/
-/* IV) Calculate PME cutoff                                                 */
-
-   rtwoth = -(2./3.);
-   rvol23 = pow(deth,rtwoth);
-   tpi = M_PI * 2.0;
-   ecut_pme = M_PI * .5 * M_PI * (double) (kmax_pme * kmax_pme)*rvol23;
-   if(ecut_pme < ecut_now){
-    PRINTF("$$$$$$$$$$$$$$$$$$$$_Warning_$$$$$$$$$$$$$$$$$$$$\n");
-    PRINTF("Warning PME cutoff taken too small             \n");
-    PRINTF("Using an appropriate larger value.             \n");
-    PRINTF("$$$$$$$$$$$$$$$$$$$$_Warning_$$$$$$$$$$$$$$$$$$$$\n");
-    FFLUSH(stdout);
-   }/*endif*/
-   ecut = MAX(ecut_pme,ecut_now);
-  
-
-/*==========================================================================*/
-/* III) Adjust shape of reciprocal space  */
-
-   d1 = hmatik[1];  d2 = hmatik[4];   d3 = hmatik[7];
-   try1 = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-   d1 = hmatik[2];  d2 = hmatik[5];   d3 = hmatik[8];
-   try2 = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-   d1 = hmatik[3];  d2 = hmatik[6];   d3 = hmatik[9];
-   try3 = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-   temp1 = sqrt(ecut * .5) / (M_PI * try1);
-   temp2 = sqrt(ecut * .5) / (M_PI * try2);
-   temp3 = sqrt(ecut * .5) / (M_PI * try3);
-   ktemp1 = NINT(temp1);
-   ktemp2 = NINT(temp2);
-   ktemp3 = NINT(temp3);
-   radixme(&ktemp1,&ktemp2,&ktemp3,&na,&nb,&nc);
-   *ngrid_a = na;
-   *ngrid_b = nb;
-   *ngrid_c = nc;
-   igo=0;
-   if(*ngrid_a < 2*kmaxv[1]+1){igo=1;}
-   if(*ngrid_b < 2*kmaxv[2]+1){igo=1;}
-   if(*ngrid_c < 2*kmaxv[3]+1){igo=1;}
-   while(igo==1){
-       if(*ngrid_a < 2*kmaxv[1]+1){temp1+=1.0;}
-       if(*ngrid_b < 2*kmaxv[2]+1){temp2+=1.0;}
-       if(*ngrid_c < 2*kmaxv[3]+1){temp3+=1.0;}
-       ktemp1 = NINT(temp1);
-       ktemp2 = NINT(temp2);
-       ktemp3 = NINT(temp3);
-       radixme(&ktemp1,&ktemp2,&ktemp3,&na,&nb,&nc);
-       *ngrid_a = na;
-       *ngrid_b = nb;
-       *ngrid_c = nc;
-       igo = 0;
-       if(*ngrid_a < 2*kmaxv[1]+1){igo=1;}
-       if(*ngrid_b < 2*kmaxv[2]+1){igo=1;}
-       if(*ngrid_c < 2*kmaxv[3]+1){igo=1;}
-   }/*endwhile*/
-   if((n_interp > *ngrid_a) || 
-      (n_interp > *ngrid_b) || 
-      (n_interp > *ngrid_c) ){
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("PME parameter n_interp too large for pme cutoff\n");
-       PRINTF("%d > %d or %d or %d \n",
-            n_interp, *ngrid_a, *ngrid_b, *ngrid_c);
-       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       FFLUSH(stdout);
-       EXIT(1);
-   }/*endif*/
-   
 
 /*-------------------------------------------------------------------------*/
      } /* end routine */
@@ -821,7 +747,7 @@ void setkvec3d_res(int kmax_res, double *hmatik,
 /*  satisfy the radix condition                                             */
 /*==========================================================================*/
 
-void radixme(int *kmax1, int *kmax2, int *kmax3, int *n1, int *n2, int *n3)
+void radixme(int kmax1, int kmax2, int kmax3, int *n1, int *n2, int *n3)
 
 /*==========================================================================*/
 /* Calculate the quantity to be radicized */
@@ -841,45 +767,42 @@ void radixme(int *kmax1, int *kmax2, int *kmax3, int *n1, int *n2, int *n3)
 
   int i1,i2,i3;
   int i, k1, k2, k3;
+  int kk1, kk2, kk3;
 
   int nrad;
   int krad[181]; 
   int nrad_in = 180;
 
 /*==========================================================================*/
-  set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
+
+  set_fftsizes(nrad_in,&nrad,krad,1); /* radix conditions */
+
+  kk1 = 2*(2*kmax1 + 1);
+  kk2 = 2*(2*kmax2 + 1);
+  kk3 = 2*(2*kmax3 + 1);
 
   i1=0;
   for(i=nrad;i>=1;i--){
-    if(krad[i]/4-1>=kmax1[0] && krad[i]/2-1>=2*kmax1[0] ){
-      k1 = krad[i]; i1=i;
-    }//endif
+    if(krad[i]>=kk1){k1 = krad[i]; i1=i;}
   }//endfor
   if(i1==0){PRINTF("Bad Radix\n");EXIT(1);}
 
   i2=0;
   for(i=nrad;i>=1;i--){
-    if(krad[i]/4-1>=kmax2[0] && krad[i]/2-1>=2*kmax2[0] ){
-      k2 = krad[i]; i2=i;
-    }//endif
+    if(krad[i]>=kk2){k2 = krad[i]; i2=i;}
   }//endfor
   if(i2==0){PRINTF("Bad Radix\n");EXIT(1);}
 
   i3=0;
   for(i=nrad;i>=1;i--){
-    if(krad[i]/4-1>=kmax3[0] && krad[i]/2-1>=2*kmax3[0] ){
-      k3 = krad[i]; i3=i;
-    }//endif
+    if(krad[i]>=kk3){k3 = krad[i]; i3=i;}
   }//endfor
   if(i3==0){PRINTF("Bad Radix\n");EXIT(1);}
 
-  PRINTF("   Radix data : k1 %d kmax1 %d \n",k1,kmax1[0]);
-  PRINTF("   Radix data : k2 %d kmax2 %d \n",k2,kmax2[0]);
-  PRINTF("   Radix data : k3 %d kmax3 %d \n",k3,kmax3[0]);
+  PRINTF("   Radix data : k1 %d kmax1 %d kk1 %d\n",k1,kmax1,kk1);
+  PRINTF("   Radix data : k2 %d kmax2 %d kk2 %d\n",k2,kmax2,kk2);
+  PRINTF("   Radix data : k3 %d kmax3 %d kk3 %d\n",k3,kmax3,kk3);
 
-  kmax1[0] = k1/4 - 1;
-  kmax2[0] = k2/4 - 1;
-  kmax3[0] = k3/4 - 1;
   n1[0]    = k1;
   n2[0]    = k2;
   n3[0]    = k3;
@@ -1269,9 +1192,9 @@ void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
    int n_interp = psnonlocal->n_interp;
    double scale = psnonlocal->fft_size_scale;
 
-   int nk1      = kmax[1];
-   int nk2      = kmax[2];
-   int nk3      = kmax[3];
+   int nk1      = kmax[1]+1;
+   int nk2      = kmax[2]+1;
+   int nk3      = kmax[3]+1;
 
    int nkf1t,nkf2t,nkf3t;
    int nkf1,nkf2,nkf3,nrad;
@@ -1282,7 +1205,7 @@ void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad,0); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1372,7 +1295,7 @@ void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,krad); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad,0); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1433,7 +1356,7 @@ void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
+void set_fftsizes(int nrad_in,int *nrad_ret, int *krad, int iflag)
 
 /*==========================================================================*/
   {/*begin routine */
@@ -1480,7 +1403,7 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
   krad[28]  = 88;
   krad[29]  = 90;
   krad[30]  = 96;
-  krad[31]  = 110;
+  krad[31]  = 112;
   krad[32]  = 112;
   krad[33]  = 120;
   krad[34]  = 126;
@@ -1630,10 +1553,6 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad)
   krad[178] = 14336;
   krad[179] = 14784;
 
-  for(int i=2;i<=nrad;i++){
-    if( (krad[i] % 4) !=0){krad[i]=krad[(i-1)];}
-  }//endfor
-  
 /*--------------------------------------------------------------------------*/
    }/*end routine */
 /*==========================================================================*/

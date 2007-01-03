@@ -4,7 +4,7 @@ void set_cpmass(int ,int *,int *,int *,double *,double *,
 		double *,double ,int *);
 
 void calc_cutoff(int , double *,double *,int ,int *, int *,
-                 double *, double );
+                 double *, double ,int *);
 
 /*==========================================================================*/
 /*               Proto for check_kvec:                                      */ 
@@ -33,7 +33,7 @@ void setkvec3d_sm(int ,double ,int *,double *,int *, int *, int *,
 /*==========================================================================*/
 /*               Proto for radixme:                                         */ 
 
-void radixme(int *, int *, int *,int *, int *, int *);
+void radixme(int , int , int ,int *, int *, int *);
 
 /*==========================================================================*/
 /*               Proto for countkvec3d:                                     */ 
@@ -89,6 +89,6 @@ void get_bspline_wght1d(int ,int ,double *,double *,
 
 void init_nonlocal_ees(int *,double, PSNONLOCAL *);
 void init_eext_ees(int *,CPPSEUDO *);
-void set_fftsizes(int, int *, int *);
+void set_fftsizes(int, int *, int *,int);
 
 /*==========================================================================*/

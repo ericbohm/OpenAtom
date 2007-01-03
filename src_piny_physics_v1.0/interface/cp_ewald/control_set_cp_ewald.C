@@ -94,6 +94,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 
    int cp_nonlocal_ees_opt = psnonlocal->ees_on;
    int cp_eext_ees_opt     = psnonlocal->ees_eext_on;
+   int *nfft;
+   int *nfft_dens;
 
 /*=======================================================================*/
 /* 0) Output to screen                                                   */
@@ -133,8 +135,14 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
    kmax_cp        =    (int *)cmalloc((size_t)3*sizeof(int),"control_set_cp_ewald")-1;
    kmax_cp_dens_cp_box = (int *)cmalloc((size_t)3*sizeof(int),"control_set_cp_ewald")-1;
 
+   nfft        =    (int *)cmalloc((size_t)3*sizeof(int),"control_set_cp_ewald")-1;
+   nfft_dens   = (int *)cmalloc((size_t)3*sizeof(int),"control_set_cp_ewald")-1;
+
    cpewald->kmax_cp             = kmax_cp;
    cpewald->kmax_cp_dens_cp_box = kmax_cp_dens_cp_box;
+
+   cpewald->nfft             = nfft;
+   cpewald->nfft_dens        = nfft_dens;
 
 /*==========================================================================*/
 /* III) Get inverse cell matrix and convert ewald_alpha                     */
@@ -154,7 +162,7 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 /*    With the dual box this is the small box calculation              */
 
    calc_cutoff(kmax_ewd,&ecut_now,&(cp_parse->cp_ecut),cp_on,kmax_cp,kmaxv,
-               hmati_ewd_cp,deth_cp);  
+               hmati_ewd_cp,deth_cp,nfft);  
    countkvec3d(&nktot,ecut_now,kmaxv,hmati_ewd_cp,gmin_spl,gmin_true,gmax_spl);
 
    ewald->nktot            = ewald->nktot;
@@ -171,6 +179,10 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
    kmax_cp_dens_cp_box[1] = kmax_cp[1];
    kmax_cp_dens_cp_box[2] = kmax_cp[2];
    kmax_cp_dens_cp_box[3] = kmax_cp[3];
+
+   nfft_dens[1] = nfft[1];
+   nfft_dens[2] = nfft[2];
+   nfft_dens[3] = nfft[3];
  
 /*=======================================================================*/
 /* VII) Setup CP coefs and k vectors  : wavefunction grid                */
@@ -204,9 +216,9 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 /*=======================================================================*/
 /* VIII) Output time has arrived                                         */
 
-    nkf1 = 4*(kmax_cp[1]+1);
-    nkf2 = 4*(kmax_cp[2]+1);
-    nkf3 = 4*(kmax_cp[3]+1);
+    nkf1 = nfft[1];
+    nkf2 = nfft[2]; 
+    nkf3 = nfft[3];
 
     nk1  = 2*kmax_cp_dens_cp_box[1];
     nk2  = 2*kmax_cp_dens_cp_box[2];

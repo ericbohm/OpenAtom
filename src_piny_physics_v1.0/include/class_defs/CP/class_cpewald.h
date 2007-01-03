@@ -32,6 +32,8 @@ class CPEWALD {
                                    //  dual=1 kmax_cp_dens_cp_box=kmax_cp 
                                    //         but kmax_cp requires box_rat
                                    //  dual=2 kmax_cp has true values     
+  int *nfft;
+  int *nfft_dens;
  //----------------
  //con-destruct:
    CPEWALD(){
@@ -41,6 +43,8 @@ class CPEWALD {
     box_rat           = 0;   
     kmax_cp = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
     kmax_cp_dens_cp_box = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
+    nfft = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
+    nfft_dens = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
    };
   ~CPEWALD(){};
 
@@ -64,6 +68,8 @@ class CPEWALD {
     if(cp_any_on==1){
        pup1d_int(p,&kmax_cp,3);
        pup1d_int(p,&kmax_cp_dens_cp_box,3);
+       pup1d_int(p,&nfft,3);
+       pup1d_int(p,&nfft_dens,3);
     }//endif
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())
