@@ -51,7 +51,7 @@ OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
          CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o \
          util.o ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
-         groups.o MapTable.o  PeList.o para_grp_parse.o
+         groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o
 
 OBJS_DECL = ../main/cpaimd.decl.h
 OBJS_DEF = ../main/cpaimd.decl.h
@@ -146,6 +146,7 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(TOPINC)/RunDescriptor.h \
 	$(LOADB)/PeList.h \
 	$(LOADB)/MapTable.h \
+	$(UTIL)/MapFile.h \
 	$(LOADB)/IntMap.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
@@ -288,6 +289,11 @@ util.o: $(UTIL)/util.C $(UTIL)/util.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescr
         $(TOPINC)/CPcharmParaInfo.h   
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/util.C $(OPTS) $(FLAGS) $(OPT_FORT)
+#---------------------------------------------------------------------------
+MapFile.o: $(UTIL)/MapFile.C $(UTIL)/MapFile.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+        $(TOPINC)/CPcharmParaInfo.h $(LOADB)/MapTable.h
+	$(ECHO) $@
+	$(CHARMC) -c $(UTIL)/MapFile.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 para_grp_parse.o: $(UTIL)/para_grp_parse.C $(UTIL)/para_grp_parse.h \
                   $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
