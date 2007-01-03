@@ -1,5 +1,6 @@
 #include "charm++.h"
 #include "PeList.h"
+#include "MapFile.h"
 
 #define USE_INT_MAP
 #ifdef USE_INT_MAP
@@ -21,110 +22,113 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
       nchareG(_nchareG), 
     lines_per_chareG(_lines_per_chareG),  pts_per_chareG(_pts_per_chareG), 
     nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
-      { 
-	reverseMap=NULL;
-	maptable=_map;
-	availprocs=_availprocs;
-	  state_load = 0.0;
-	int l, m, pl, pm, srem, rem, i=0;
+{ 
+  reverseMap=NULL;
+  maptable=_map;
+  availprocs=_availprocs;
+  state_load = 0.0;
+  int l, m, pl, pm, srem, rem, i=0;
 
-	l=Gstates_per_pe;		// no of states in one chunk
-        pl = nstates / l;		// no of procs on y axis
-        if(nstates % l == 0)
-		srem = 0;
-	else
+  l=Gstates_per_pe;		// no of states in one chunk
+  pl = nstates / l;		// no of procs on y axis
+  if(nstates % l == 0)
+    srem = 0;
+  else
+  {
+    while(pow(2.0, (double)i) < pl)
+      i++;
+    pl = (int) pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
+    srem = nstates % pl;
+  }
+  pm = availprocs->count() / pl;		// no of procs on x axis
+        
+  if(pm==0)
+  CkAbort("Choose a larger Gstates_per_pe\n");
+        
+  m = nchareG / pm;		// no of planes in one chunk
+  rem = nchareG % pm;		// remainder of planes left to be mapped
+        
+  planes_per_pe=m;
+
+  /*if(CkMyPe()==0) 
+  {
+    CkPrintf("nstates %d nchareG %d Pes %d\n", nstates, nchareG, availprocs->count());
+    CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
+  }*/
+
+  // Initialize pelist
+  int srcpe=0;
+  int destpe=availprocs->findNext();
+
+  if(useCuboidMap)
+  {
+    for(int plane=0;plane<nchareG;plane++)
+      for(int state=0;state<nstates;state+=Gstates_per_pe)
+      {
+	for(int stateperpe=0;stateperpe<Gstates_per_pe;stateperpe++)
 	{
-                while(pow(2.0, (double)i) < pl)
-                        i++;
-                pl = (int) pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
-		srem = nstates % pl;
+#ifdef USE_INT_MAP
+	  maptable->set(state+stateperpe, plane,destpe);
+#else
+	  maptable->put(intdual(state+stateperpe, plane))=destpe;
+#endif
 	}
-	pm = availprocs->count() / pl;		// no of procs on x axis
-        
-	if(pm==0)
-	  CkAbort("Choose a larger Gstates_per_pe\n");
-        
-	m = nchareG / pm;		// no of planes in one chunk
-        rem = nchareG % pm;		// remainder of planes left to be mapped
-        
-        planes_per_pe=m;
-
-        /*if(CkMyPe()==0) 
+	if(availprocs->count()==0)
+	  availprocs->reset();
+	destpe=availprocs->findNext();
+	/*if(availprocs->count()==0)
 	{
-		CkPrintf("nstates %d nchareG %d Pes %d\n", nstates, nchareG, availprocs->count());
-		CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m, pl, pm, srem, rem);
-	}*/
-
-	// Initialize pelist
-	int srcpe=0;
-	int destpe=availprocs->findNext();
-
-	if(useCuboidMap)
-	  {
-	    for(int plane=0;plane<nchareG;plane++)
-	      for(int state=0;state<nstates;state+=Gstates_per_pe)
-		{
-		  for(int stateperpe=0;stateperpe<Gstates_per_pe;stateperpe++)
-		    {
-#ifdef USE_INT_MAP
-		      maptable->set(state+stateperpe, plane,destpe);
-#else
-		      maptable->put(intdual(state+stateperpe, plane))=destpe;
-#endif
-		    }
-		  if(availprocs->count()==0)
-		    availprocs->reset();
-		  destpe=availprocs->findNext();
-		  /*if(availprocs->count()==0)
-		    {
-		      CkPrintf("GSMap created on processor %d\n", CkMyPe());
-		      dump();
-		      CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
-		      CkExit();
-		    }
-		  */
-		}
-	  }
-	else
-	  {
-	    // foreach statechunk 
-	    //         foreach state in chunk
-	    //              map it
-	    //         new pe
-	    // done
-	    //}
-	    //else old way 
-	    for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
-	      {
-                if(ychunk==(pm-rem)*m)
-		  m=m+1;
-                for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
-		  {
-		    if(xchunk==(pl-srem)*l)
-		      l=l+1;
-		    for(int state=xchunk; state<xchunk+l && state<nstates; state++)
-		      {
-			for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
-			  {
-#ifdef USE_INT_MAP
-			    maptable->set(state, plane,destpe);
-#else
-			    maptable->put(intdual(state, plane))=destpe;
-#endif
-			  }
-		      }
-		    srcpe=destpe;
-		    if(availprocs->count()==0)
-		      availprocs->reset();
-		    destpe=availprocs->findNext();
-		  }
-	      }
-	  }
-#ifdef _MAP_DEBUG_
-	CkPrintf("GSMap created on processor %d\n", CkMyPe());
-	dump();
-#endif
+	  CkPrintf("GSMap created on processor %d\n", CkMyPe());
+	  dump();
+	  CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
+	  CkExit();
+	}
+	*/
       }
+  }
+  else
+  {
+    // foreach statechunk 
+    //         foreach state in chunk
+    //              map it
+    //         new pe
+    // done
+    //
+    //else old way 
+    for(int ychunk=0; ychunk<nchareG; ychunk=ychunk+m)
+    {
+      if(ychunk==(pm-rem)*m)
+	m=m+1;
+      for(int xchunk=0; xchunk<nstates; xchunk=xchunk+l)
+      {
+	if(xchunk==(pl-srem)*l)
+	  l=l+1;
+	for(int state=xchunk; state<xchunk+l && state<nstates; state++)
+        {
+	  for(int plane=ychunk; plane<ychunk+m && plane<nchareG; plane++)
+	  {
+#ifdef USE_INT_MAP
+	    maptable->set(state, plane,destpe);
+#else
+	    maptable->put(intdual(state, plane))=destpe;
+#endif
+	  }
+	}
+	srcpe=destpe;
+	if(availprocs->count()==0)
+	  availprocs->reset();
+	destpe=availprocs->findNext();
+      }
+    }
+  }
+#ifdef _MAP_DEBUG_
+  CkPrintf("GSMap created on processor %d\n", CkMyPe());
+  dump();
+  int size[2] = {128, 12};
+  MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+  mf->dumpMap(maptable);
+#endif
+}
 
 SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs, 
 			     int _nstates, int _nchareG,  int _grainsize, CmiBool _flag, 
@@ -439,7 +443,6 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
    nstates(_nstates), sizeZ(_sizeZ),
   Rstates_per_pe(_Rstates_per_pe)
 {
-  CkPrintf("RSMap");
   int l, m, pl, pm, srem, rem, i=0, rsobjs_per_pe;
   reverseMap=NULL;
   maptable=_map;
@@ -468,9 +471,9 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
   m = sizeZ / pm;
   rem = sizeZ % pm;
 
-  CkPrintf("nstates %d sizeZ %d Pes %d rsobjs_per_pe %d\n", nstates, sizeZ, availprocs->count(), rsobjs_per_pe);	
-  CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-	   pl, pm, srem, rem);
+  //CkPrintf("nstates %d sizeZ %d Pes %d rsobjs_per_pe %d\n", nstates, sizeZ, availprocs->count(), rsobjs_per_pe);	
+  //CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
+  //	   pl, pm, srem, rem);
   int srcpe=0;
   int destpe=availprocs->findNext();
 
@@ -662,13 +665,12 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   m = sizeZNL / pm;
   rem = sizeZNL % pm;
 
-  CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
-  //CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
-  //pl, pm, srem, rem);
+  // CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
+  // CkPrintf("l %d, m %d pl %d pm %d srem %d rem %d\n", l, m,
+  // pl, pm, srem, rem);
   int srcpe=0;
-  CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
-  //  CkPrintf("using list\n");
-  //  RPPlist->dump();
+  // CkPrintf("nstates %d sizeZNL %d Pes %d\n", nstates, sizeZNL, RPPlist->count());	
+  // RPPlist->dump();
   if(usePPmap)
     {
       /*  
