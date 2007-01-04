@@ -92,6 +92,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
    double *hmat_ewd    = cell->hmat_ewd;
    double *hmat_ewd_cp = cell->hmat_ewd_cp;
 
+   int  fft_opt        =  simopts->fftopt;
+
    int cp_nonlocal_ees_opt = psnonlocal->ees_on;
    int cp_eext_ees_opt     = psnonlocal->ees_eext_on;
    int *nfft;
@@ -162,7 +164,7 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 /*    With the dual box this is the small box calculation              */
 
    calc_cutoff(kmax_ewd,&ecut_now,&(cp_parse->cp_ecut),cp_on,kmax_cp,kmaxv,
-               hmati_ewd_cp,deth_cp,nfft);  
+               hmati_ewd_cp,deth_cp,nfft,fft_opt);  
    countkvec3d(&nktot,ecut_now,kmaxv,hmati_ewd_cp,gmin_spl,gmin_true,gmax_spl);
 
    ewald->nktot            = ewald->nktot;
@@ -200,11 +202,11 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 /*  E) Set up the pme-nonlocal                                        */
 
    if(cp_nonlocal_ees_opt==1){
-      init_nonlocal_ees(kmax_cp,ecut_sm,psnonlocal);
+      init_nonlocal_ees(kmax_cp,ecut_sm,psnonlocal,fft_opt);
    }/*endif*/
 
    if(cp_eext_ees_opt==1){
-      init_eext_ees(kmax_cp,cppseudo);
+      init_eext_ees(kmax_cp,cppseudo,fft_opt);
    }/*endif*/
 
 /*=======================================================================*/

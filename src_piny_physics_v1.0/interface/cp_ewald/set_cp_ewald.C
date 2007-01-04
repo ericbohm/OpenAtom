@@ -125,7 +125,8 @@ void set_cpmass(int ncoef,int *kastore,int *kbstore,int *kcstore,
 /*==========================================================================*/
 
 void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
-                 int *kmax_cp, int *kmaxv, double *hmatik, double deth, int *nfft)
+                 int *kmax_cp, int *kmaxv, double *hmatik, double deth, 
+                 int *nfft, int fft_opt)
 
 /*==========================================================================*/
 /*               Begin subprogram:                                          */
@@ -194,7 +195,7 @@ void calc_cutoff(int kmax_ewd, double *ecut,double *ecut_cp,int cp_on,
       kmax_cp[1] = itemp1;
       kmax_cp[2] = itemp2;
       kmax_cp[3] = itemp3;
-      radixme(kmax_cp[1],kmax_cp[2],kmax_cp[3],&na,&nb,&nc);
+      radixme(kmax_cp[1],kmax_cp[2],kmax_cp[3],&na,&nb,&nc,fft_opt);
       kmaxv[1] = 2*kmax_cp[1];
       kmaxv[2] = 2*kmax_cp[2];
       kmaxv[3] = 2*kmax_cp[3];
@@ -747,7 +748,8 @@ void setkvec3d_res(int kmax_res, double *hmatik,
 /*  satisfy the radix condition                                             */
 /*==========================================================================*/
 
-void radixme(int kmax1, int kmax2, int kmax3, int *n1, int *n2, int *n3)
+void radixme(int kmax1, int kmax2, int kmax3, int *n1, int *n2, int *n3,
+             int fft_opt)
 
 /*==========================================================================*/
 /* Calculate the quantity to be radicized */
@@ -775,7 +777,7 @@ void radixme(int kmax1, int kmax2, int kmax3, int *n1, int *n2, int *n3)
 
 /*==========================================================================*/
 
-  set_fftsizes(nrad_in,&nrad,krad,1); /* radix conditions */
+  set_fftsizes(nrad_in,&nrad,krad,fft_opt); /* radix conditions */
 
   kk1 = 2*(2*kmax1 + 1);
   kk2 = 2*(2*kmax2 + 1);
@@ -1180,7 +1182,7 @@ void get_bspline_wght1d(int n_interp,int ngrid,double *aj,double *rn,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
+void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal,int fft_opt)
 
 /*==========================================================================*/
    {/*begin routine */
@@ -1205,7 +1207,7 @@ void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,krad,0); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad,fft_opt); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1270,7 +1272,7 @@ void init_nonlocal_ees(int *kmax,double ecut,PSNONLOCAL *psnonlocal)
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
+void init_eext_ees(int *kmax,CPPSEUDO *cppseudo,int fft_opt)
 
 /*==========================================================================*/
    {/*begin routine */
@@ -1295,7 +1297,7 @@ void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
 /*==========================================================================*/
 /* (I) Compute the grid size : */
 
-   set_fftsizes(nrad_in,&nrad,krad,0); /* radix conditions */
+   set_fftsizes(nrad_in,&nrad,krad,fft_opt); /* radix conditions */
 
    nkf1 = (int)( 2.0*scale*((double)nk1) );
    nkf2 = (int)( 2.0*scale*((double)nk2) );
@@ -1356,7 +1358,7 @@ void init_eext_ees(int *kmax,CPPSEUDO *cppseudo)
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void set_fftsizes(int nrad_in,int *nrad_ret, int *krad, int iflag)
+void set_fftsizes(int nrad_in,int *nrad_ret, int *krad, int fft_opt)
 
 /*==========================================================================*/
   {/*begin routine */
@@ -1404,6 +1406,7 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad, int iflag)
   krad[29]  = 90;
   krad[30]  = 96;
   krad[31]  = 112;
+  if(fft_opt==0){krad[31]  = 100;}
   krad[32]  = 112;
   krad[33]  = 120;
   krad[34]  = 126;
