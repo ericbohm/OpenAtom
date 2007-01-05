@@ -181,7 +181,7 @@
 // void _alignx(int alignment,  const void *address);
 // void alignx(int alignment,  const void *address);
 #endif
-
+//#define PRINT_DGEMM_PARAMS
 
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
@@ -825,6 +825,10 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
         StartTime=CmiWallTimer();
 #endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, lda, ldb, ldc);
+#endif
 	DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtRight, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -854,6 +858,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
       StartTime=CmiWallTimer();
 #endif
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, lda, ldb, ldc);
+#endif
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, rightNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -880,6 +887,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 
 #ifndef CMK_OPTIMIZE
       StartTime=CmiWallTimer();
+#endif
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, lda, ldb, ldc);
 #endif
       DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, allCaughtLeft, &lda, leftNewTemp, &ldb, &beta, outData1, &ldc);
 #ifndef CMK_OPTIMIZE
@@ -908,7 +918,9 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 #ifndef CMK_OPTIMIZE
 	  StartTime=CmiWallTimer();
 #endif
-
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, lda, ldb, ldc);
+#endif
 	  DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, leftNewTemp, &lda, allCaughtLeft, &ldb, &beta, outData2, &ldc);
 
 #ifndef CMK_OPTIMIZE
@@ -1096,8 +1108,10 @@ PairCalculator::multiplyForward(bool flag_dp)
   CkAssert((unsigned int)inDataLeft %16==0);
   CkAssert((unsigned int)outData%16==0);
 #endif
-
-  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta,  outData,&ldc);
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, ldc);
+#endif
+  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
   CmiNetworkProgress();
 
 #ifndef CMK_OPTIMIZE
@@ -1118,6 +1132,9 @@ PairCalculator::multiplyForward(bool flag_dp)
     CkAssert((unsigned int)outData%16==0);
 #endif
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, ldc);
+#endif
     DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
     CmiNetworkProgress();
 
@@ -1127,7 +1144,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   }//endfor
 
-#else  // not SPLIT 
+#else  // not split
 
   int lda=doubleN;   //leading dimension A
   int ldb=doubleN;   //leading dimension B
@@ -1141,6 +1158,9 @@ PairCalculator::multiplyForward(bool flag_dp)
   CkAssert(inDataLeft!=NULL);
   CkAssert(outData!=NULL);
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, ldc);
+#endif
   DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
   
 #ifndef CMK_OPTIMIZE
@@ -1702,12 +1722,20 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
       CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
       CkAssert((unsigned int) amatrix %16==0);
       CkAssert((unsigned int)&(mynewDatad[BNCoffset] )%16==0);
-#endif	  
-      if(symmetric)
-	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
-      else
-	DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
+#endif
 
+      if(symmetric) {
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
+	DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BNAoffset]), &m_in, amatrix, &k_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
+      }
+      else {
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
+	DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
+      }
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
@@ -1731,7 +1759,11 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
       CkAssert((unsigned int) &(inDataRight[BTAoffset] )%16==0);
       CkAssert((unsigned int) amatrix %16==0);
       CkAssert((unsigned int)&(othernewDatad[BTCoffset] )%16==0);
-#endif	  
+#endif
+ 		 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
       DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(250, StartTime, CmiWallTimer());
@@ -1770,10 +1802,12 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     }//endif
 
     CmiNetworkProgress();
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
     DGEMM(&transform, &transform, &m_in, &n_in, &k_in, &alpha, &(inDataRight[BNAoffset]), 
-	  &m_in,  amatrix2, &k_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
-
-
+	  &m_in, amatrix2, &k_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
 
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
@@ -2341,6 +2375,9 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
           CkAssert((unsigned int) C[moffc] % 16==0);
 #endif
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, MsplitU, n, Ksplit, alpha, betap, lda, ldb, ldc);
+#endif
           DGEMM(transT, trans, &MsplitU, &n, &Ksplit, alpha, &A[moff], lda, B, ldb, &betap, &C[moffc], ldc);
 
 #ifndef BUNDLE_USER_EVENT
@@ -2362,6 +2399,10 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
             CkAssert((unsigned int) A[koff+moff] % 16==0);
             CkAssert((unsigned int) B[koff] % 16==0);
             CkAssert((unsigned int) C[moffc] % 16==0);
+#endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, MsplitU, n, KsplitU, alpha, betap, lda, ldb, ldc);
 #endif
             DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
 #ifndef BUNDLE_USER_EVENT
@@ -2413,6 +2454,10 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
           CkAssert((unsigned int) B[noff] % 16==0);
           CkAssert((unsigned int) C[noffc] % 16==0);
 #endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, m, NsplitU, Ksplit, alpha, betap, lda, ldb, ldc);
+#endif
             DGEMM(transT, trans, &m, &NsplitU, &Ksplit, alpha, A, lda, &B[noff], ldb, &betap, &C[noffc], ldc);      
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -2432,6 +2477,10 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
               CkAssert((unsigned int) A[koff] % 16==0);
               CkAssert((unsigned int) B[koff+noff] % 16==0);
               CkAssert((unsigned int) C[noffc] % 16==0);
+#endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, m, NsplitU, KsplitU, alpha, betap, lda, ldb, ldc);
 #endif
               DGEMM(transT, trans, &m, &NsplitU, &KsplitU, alpha, &A[koff], lda, &B[koff+noff], ldb, &betap, &C[noffc], ldc);      
 
@@ -2467,6 +2516,9 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
         // CkAssert((unsigned int) C % 16==0);
 #endif    
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, transT, Msplit, n, k, alpha, bt, m, k, m);
+#endif
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, A, &m, B, &k, bt, C, &m);
 #ifndef BUNDLE_USER_EVENT
 #ifndef CMK_OPTIMIZE
@@ -2490,6 +2542,9 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
         // CkAssert((unsigned int) C[off] % 16==0);
 #endif    
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, transT, Msplit, n, k, alpha, bt, m, k, m);
+#endif
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, &A[off], &m, B, &k, bt, &C[off], &m);
 
 #ifndef BUNDLE_USER_EVENT

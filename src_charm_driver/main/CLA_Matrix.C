@@ -11,7 +11,7 @@ using std::endl;
 #else
 #define DGEMM dgemm
 #endif
-
+//#define PRINT_DGEMM_PARAMS
 
 extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 			   double *, int *, double *, int *, double *,
@@ -530,6 +530,9 @@ void CLA_Matrix::multiply(){
   CkAssert((unsigned int) dest %16==0);
 #endif
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
+#endif
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
 
@@ -557,6 +560,9 @@ void CLA_Matrix::multiply(){
     CkAssert((unsigned int) dest %16==0);
 #endif
 
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
+#endif
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap,dest, &m);
 #ifndef BUNDLE_USER_EVENTS
@@ -577,6 +583,10 @@ void CLA_Matrix::multiply(){
   /* old unsplit version */
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
+#endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
 #endif
      DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
    dest, &m);
@@ -681,6 +691,10 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
   CkAssert((unsigned int) A %16==0);
   CkAssert((unsigned int) B %16==0);
   CkAssert((unsigned int) C %16==0);
+#endif
+
+#ifdef PRINT_DGEMM_PARAMS
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, k, alpha, beta, k, n, m);
 #endif
   DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
 #ifndef CMK_OPTIMIZE
