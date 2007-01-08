@@ -2376,7 +2376,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 #endif
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, MsplitU, n, Ksplit, alpha, betap, lda, ldb, ldc);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *transT, *trans, MsplitU, n, Ksplit, *alpha, betap, *lda, *ldb, *ldc);
 #endif
           DGEMM(transT, trans, &MsplitU, &n, &Ksplit, alpha, &A[moff], lda, B, ldb, &betap, &C[moffc], ldc);
 
@@ -2402,7 +2402,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 #endif
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, MsplitU, n, KsplitU, alpha, betap, lda, ldb, ldc);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *transT, *trans, MsplitU, n, KsplitU, *alpha, betap, *lda, *ldb, *ldc);
 #endif
             DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
 #ifndef BUNDLE_USER_EVENT
@@ -2456,7 +2456,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
 #endif
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, m, NsplitU, Ksplit, alpha, betap, lda, ldb, ldc);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *transT, *trans, m, NsplitU, Ksplit, *alpha, betap, *lda, *ldb, *ldc);
 #endif
             DGEMM(transT, trans, &m, &NsplitU, &Ksplit, alpha, A, lda, &B[noff], ldb, &betap, &C[noffc], ldc);      
 #ifndef BUNDLE_USER_EVENT
@@ -2480,7 +2480,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
 #endif
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transT, trans, m, NsplitU, KsplitU, alpha, betap, lda, ldb, ldc);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *transT, *trans, m, NsplitU, KsplitU, *alpha, betap, *lda, *ldb, *ldc);
 #endif
               DGEMM(transT, trans, &m, &NsplitU, &KsplitU, alpha, &A[koff], lda, &B[koff+noff], ldb, &betap, &C[noffc], ldc);      
 
@@ -2517,7 +2517,7 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
 #endif    
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, transT, Msplit, n, k, alpha, bt, m, k, m);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *trans, *transT, Msplit, n, k, *alpha, *bt, m, k, m);
 #endif
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, A, &m, B, &k, bt, C, &m);
 #ifndef BUNDLE_USER_EVENT
@@ -2543,7 +2543,7 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
 #endif    
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, transT, Msplit, n, k, alpha, bt, m, k, m);
+  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", *trans, *transT, Msplit, n, k, *alpha, *bt, m, k, m);
 #endif
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, &A[off], &m, B, &k, bt, &C[off], &m);
 
