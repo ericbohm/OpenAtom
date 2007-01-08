@@ -70,7 +70,7 @@ void MapFile::dumpMap(MapType2 *map)
   fprintf(fp, "\n%d \n", numProcs);
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
-      fprintf(fp, "%d %d %d\n", i, j, map->get(i, j)); 
+      fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
   fclose(fp);
 }
 
@@ -102,7 +102,11 @@ int MapFile::loadMap(char *filename, MapType2 *map)
     for(int j=0; j<sizeDim[1]; j++)
     {
       fscanf(fp, "%d%d%d", &x, &y, &pe);
+#ifdef USE_INT_MAP
       map->set(x, y, pe);
+#else
+      map->put(intdual(x, y))=destpe;
+#endif
     }
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
@@ -123,9 +127,16 @@ int MapFile::loadMap(char *filename, MapType4 *map)
 	for(int l=0; l<sizeDim[3]; l++)
 	{	
 	  fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe);
+#ifdef USE_INT_MAP
           map->set(x, y, z, w, pe);
+#else
+	  CkArrayIndex4D idx4d(x, y, z, w);
+	  memcpy(intidx, idx4d.index, 2*sizeof(int));
+	  map->put(intdual(intidx[0], intidx[1]))=destpe;
+#endif
 	}
   fclose(fp);
+  CkPrintf("%s loaded from file ----\n", filename);
   return 1;
 }
 
