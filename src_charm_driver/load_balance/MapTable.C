@@ -17,10 +17,9 @@ typedef IntMap4 MapType4;
 
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
-		       int _nchareG, double *_lines_per_chareG, double *_pts_per_chareG, 
-		       int _nstates,  int _Gstates_per_pe, bool useCuboidMap)    : 
+		       int _nchareG, int _nstates,  
+		       int _Gstates_per_pe, bool useCuboidMap)    : 
       nchareG(_nchareG), 
-    lines_per_chareG(_lines_per_chareG),  pts_per_chareG(_pts_per_chareG), 
     nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
 { 
   reverseMap=NULL;
@@ -131,17 +130,16 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 }
 
 SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs, 
-			     int _nstates, int _nchareG,  int _grainsize, CmiBool _flag, 
-			     int _nplanes,  double *_lines_per_chareG, 
-			     double *_pts_per_chareG, int _scalc_per_plane,  
+			     int _nstates, int _nchareG,  int _grainsize, 
+			     CmiBool _flag, int _scalc_per_plane,  
 			     int _planes_per_pe, 
 			     int _numChunksA, 
 			     int _numChunksS, 
 			     MapType2  *gsmap, bool useCuboidMap, bool useCentroid, int boxSize) : 
   max_states(_nstates), nchareG(_nchareG),  
-  grainsize(_grainsize), symmetric(_flag), max_planes(_nplanes), 
-  lines_per_chareG(_lines_per_chareG), pts_per_chareG(_pts_per_chareG),
-  scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), numChunksAsym(_numChunksA), numChunksSym(_numChunksS)
+  grainsize(_grainsize), symmetric(_flag), 
+  scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), 
+  numChunksAsym(_numChunksA), numChunksSym(_numChunksS)
 { 
 
   int scobjs_per_pe, rem;

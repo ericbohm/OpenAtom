@@ -186,14 +186,11 @@ class GSMapTable : public MapTable2
   int nstates;
   int Gstates_per_pe;
   
-  double *lines_per_chareG;
-  double *pts_per_chareG;
   double state_load;
   int planes_per_pe;
 
   GSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareG,
-	       double *_lines_per_chareG, double *_pts_per_chareG, int _nstates,  
-	       int _Gstates_per_pe, bool useCuboidMap);
+	       int _nstates, int _Gstates_per_pe, bool useCuboidMap);
 
   GSMapTable()
     {
@@ -205,11 +202,8 @@ class GSMapTable : public MapTable2
 class SCalcMapTable : public MapTable4
 {
 
-  int max_states,nchareG, grainsize;
+  int max_states, nchareG, grainsize;
   CmiBool symmetric;
-  int max_planes;
-  double *lines_per_chareG;
-  double *pts_per_chareG;
   int scalc_per_plane;
   int planes_per_pe;
   int numChunksAsym;
@@ -218,8 +212,7 @@ class SCalcMapTable : public MapTable4
     
  public:
     SCalcMapTable(MapType4  *_map, PeList *_availprocs, int _nstates, 
-	     int _nchareG,  int gs, CmiBool _flag, int _nplanes,
-	     double *_lines_per_chareG, double *_pts_per_chareG, int _scalc_per_plane,
+	     int _nchareG,  int gs, CmiBool _flag, int _scalc_per_plane,
 	     int _planes_per_pe, int _numChunksA, int _numChunksS, MapType2  *_gmap, bool useCuboidMap, bool useCentroid, int boxSize);
 
   void dump()
