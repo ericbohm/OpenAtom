@@ -53,6 +53,8 @@
 #include <unistd.h>
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#define PRINTF CkPrintf
 
 //============================================================================
 
@@ -114,17 +116,17 @@ void Ortho::start_calc(CkReductionMsg *msg){
   if(thisIndex.x==0 && thisIndex.y==0)
     {
       if(cp_min_opt==1){
-	CkPrintf("------------------------------------------------------\n");
+	PRINT_LINE_DASH;
 	CkPrintf("Iteration %d done\n", numGlobalIter+1);
-	CkPrintf("======================================================\n\n");
-	CkPrintf("======================================================\n");
+	PRINT_LINE_STAR; CkPrintf("\n");
+	PRINT_LINE_STAR; 
       }else{
 	if(numGlobalIter>0){
-	  CkPrintf("======================================================\n\n");
-	  CkPrintf("======================================================\n");
+	  PRINT_LINE_STAR; CkPrintf("\n");
+	  PRINT_LINE_STAR;
 	}//endif
 	CkPrintf("Beginning Iteration %d \n", numGlobalIter);
-	CkPrintf("------------------------------------------------------\n");
+	PRINT_LINE_DASH;
       }//endif
     }
   got_start = true;
@@ -253,15 +255,15 @@ void Ortho::collect_results(void){
     if(thisIndex.x==0 && thisIndex.y==0){
   	wallTimeArr[itime] = CkWallTimer();
 	if (numGlobalIter == iprintout && config.maxIter<30) {
-	      CkPrintf("----------------------------\n");
-	      CkPrintf("wall times from within ortho\n");
+	      PRINT_LINE_DASH;
+	      CkPrintf("Wall Times from within Ortho\n\n");
 	      for (int t = 1; t < iprintout; t++){
 		ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
 	      }//endfor
 	  if(itime>0)
 	    {
 	      CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
-	      CkPrintf("------------------------------\n");
+	      PRINT_LINE_DASH; CkPrintf("\n");
 	    }
         }else{
 	  if(numGlobalIter>0){

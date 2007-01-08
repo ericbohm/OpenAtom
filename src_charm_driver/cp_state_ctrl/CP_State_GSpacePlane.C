@@ -423,11 +423,11 @@ void cleanExit(void *param, void *msg){
   
   CkReductionMsg *m=(CkReductionMsg *)msg;
   delete m;
-  CkPrintf("======================================================\n\n\n");
+  PRINT_LINE_STAR; CkPrintf("\n"); CkPrintf("\n");
 
-  CkPrintf("======================================================\n");
+  PRINT_LINE_STAR;
   CkPrintf("         Open Atom Simulation Complete                \n");
-  CkPrintf("======================================================\n");
+  PRINT_LINE_STAR;
   CkExit();
 }
 //============================================================================
@@ -3215,7 +3215,7 @@ void CP_State_GSpacePlane::screenOutputPsi(){
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
-	  CkPrintf("------------------------------------------------------\n");
+	  PRINT_LINE_DASH;
 	  CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
@@ -3226,19 +3226,19 @@ void CP_State_GSpacePlane::screenOutputPsi(){
  	    CkPrintf("VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  CkPrintf("------------------------------------------------------\n");
+	  PRINT_LINE_DASH;
 	}//endif
 	if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
           double vre=vpsi[i].re;
           double vim=vpsi[i].im;
-	  CkPrintf("------------------------------------------------------\n");
+	  PRINT_LINE_DASH;
 	  CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
  	    CkPrintf("VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  CkPrintf("------------------------------------------------------\n");
+	  PRINT_LINE_DASH;
 	}//endif
       }//endfor
     }//endif
