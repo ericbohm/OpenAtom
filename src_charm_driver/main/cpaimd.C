@@ -340,14 +340,15 @@ main::main(CkArgMsg *msg) {
 	unlink(simfname);
 	sleep(1);
       }
-    CkPrintf("\n================================================\n");
+    CkPrintf("\n");
+    PRINT_LINE_STAR;
     CkPrintf("Starting Cpaimd-Charm-Driver Setup Phase\n");
-    CkPrintf("---------------------------------------------------\n");
+    PRINT_LINE_DASH;
     CkPrintf("  Cpaimd-Charm-Driver running on %d processors. \n", CkNumPes());
     CkPrintf("  Reading Physics input from %s\n",msg->argv[2]);
     CkPrintf("  Reading Driver  input from %s\n",msg->argv[1]);
 
-    CkPrintf("---------------------------------------------------\n\n");
+    PRINT_LINE_DASH; CkPrintf("\n");
 
 //============================================================================    
 // check the debug flags for consistency
@@ -422,9 +423,9 @@ main::main(CkArgMsg *msg) {
 //============================================================================    
 /* Invoke Ramkumar input class */
 
-    CkPrintf("\n======================================================\n");
+    PRINT_LINE_STAR;
     CkPrintf("Cpaimd-Charm-Driver input started \n");
-    CkPrintf("---------------------------------------------------------\n\n");
+    PRINT_LINE_DASH; CkPrintf("\n");
     Timer=CmiWallTimer();
     double phase1start=Timer;
     int numProc = CkNumPes();
@@ -442,9 +443,9 @@ main::main(CkArgMsg *msg) {
 
     double newtime= CmiWallTimer();
 
-    CkPrintf("\n------------------------------------------------\n");
+    PRINT_LINE_DASH;
     CkPrintf("Cpaimd-Charm-Driver input completed in %g\n",newtime-Timer);
-    CkPrintf("================================================\n\n");
+    PRINT_LINE_STAR; CkPrintf("\n");
     Timer=newtime;
 
 //============================================================================
@@ -537,10 +538,10 @@ main::main(CkArgMsg *msg) {
     //    }//endfor
 
 #ifdef USE_TOPOMAP
-  CkPrintf("\n===========================================================================\n");
-  CkPrintf("\n         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n");
-  CkPrintf("\n=========================================================================\n\n");
+    PRINT_LINE_STAR; CkPrintf("\n");
+  CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
+    PRINT_LINE_STAR; CkPrintf("\n");
 #endif
 #ifdef CMK_VERSION_BLUEGENE
     CkPrintf("Initializing BGLTorusManager\n");
@@ -676,13 +677,12 @@ main::main(CkArgMsg *msg) {
 //============================================================================
 
     newtime=CmiWallTimer();
-    CkPrintf("\n-----------------------------------------------------\n");
+    PRINT_LINE_DASH;
     CkPrintf("Cpaimd-Charm-Driver setup phase completed in %g \n",newtime-phase1start);
-    CkPrintf("======================================================\n\n");
+    PRINT_LINE_STAR; CkPrintf("\n");
+    PRINT_LINE_STAR; 
+    PRINT_LINE_DASH;CkPrintf("\n");
 
-    CkPrintf("======================================================\n");
-
-    CkPrintf("------------------------------------------------------\n\n");
     Timer=newtime;
 
 //============================================================================
@@ -723,7 +723,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 
 //============================================================================    
   //-------------------------------------------------------------
-  // Populate maptables for Paircalculators
+  // Populate maptable for Symmetric Paircalculators
   Timer =CmiWallTimer();
   availGlobG->reset();
   bool maptype=true;
@@ -736,46 +736,102 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     }//endif
 #ifdef USE_INT_MAP
   SymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, achunks, config.sGrainSize);
-  SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable, 
+#endif
+
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("SymScalcMap", &SymScalcImaptable);
+#else
+    success = mf->loadMap("SymScalcMap", &SymScalcmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable, 
 					 availGlobG, config.nstates,
-                   config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, 
+                   config.nchareG, config.sGrainSize, maptype, 
 		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
-  SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
+    SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
 					 availGlobG, config.nstates,
-                   config.nchareG, config.sGrainSize, maptype, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, 
-
+                   config.nchareG, config.sGrainSize, maptype,
 		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #endif
+  }
 
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
 
   double newtime=CmiWallTimer();
   CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
+  
+  if(config.dumpMapFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&SymScalcImaptable);
+#else
+    mf->dumpMap(&SymScalcmaptable);
+#endif
+  }
 
   //-------------------------------------------------------------
-  // Populate maptables for Paircalculators
-  Timer=newtime;
+  // Populate maptable for Asymmetric Paircalculators
+  Timer=CmiWallTimer();
   availGlobG->reset();
 #ifdef USE_INT_MAP
   AsymScalcImaptable.buildMap(config.nchareG, config.nstates/config.sGrainSize,config.nstates/config.sGrainSize, config.numChunksAsym, config.sGrainSize);
-  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlobG,config.nstates,
-  	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("AsymScalcMap", &AsymScalcImaptable);
+#else
+    success = mf->loadMap("AsymScalcMap", &AsymScalcmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable, availGlobG,config.nstates,
+  	           config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane, 
                    planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
 #else
-  SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlobG,config.nstates,
-  	           config.nchareG, config.sGrainSize, CmiFalse, sim->nchareG, 
-                   sim->lines_per_chareG, sim->pts_per_chareG, config.scalc_per_plane, 
+    SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlobG,config.nstates,
+  	           config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane, 
                    planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap,boxSize);
 #endif
+  }
+
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
   CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
   Timer=newtime;
-  
+
+  if(config.dumpMapFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&AsymScalcImaptable);
+#else
+    mf->dumpMap(&AsymScalcmaptable);
+#endif
+  }
+
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
   //-------------------------------------------------------------
@@ -1243,7 +1299,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_ortho_chares(int nstates, int indexSize, int *indexZ){
+void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 //============================================================================
 
   PRINT_LINE_STAR;
@@ -1251,144 +1307,197 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ){
   PRINT_LINE_DASH;printf("\n");
 
 
-    int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
-    int nOrtho= (nstates/config.orthoGrainSize);
+  int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
+  int nOrtho= (nstates/config.orthoGrainSize);
     
-    int stride= 1;
-    if(config.orthoStride>0)
-      {
-	if(config.orthoStride==1)
-	  {
-	    CkNumPes()/(nOrtho*nOrtho+1); 
-	    if(stride<1)
-	      stride=1;
-	  }
-	else
-	  stride=config.orthoStride;
-      }
-    nOrtho*=nOrtho;
+  int stride= 1;
+  if(config.orthoStride>0)
+  {
+    if(config.orthoStride==1)
+    {
+      CkNumPes()/(nOrtho*nOrtho+1); 
+      if(stride<1)
+        stride=1;
+    }
+    else
+      stride=config.orthoStride;
+  }
+  nOrtho *= nOrtho;
 
-    availGlobR->reset();
+  availGlobR->reset();
 #ifdef USE_INT_MAP
-    OrthoImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+  OrthoImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+#endif
+
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = size[1] = nstates/config.orthoGrainSize;
+    MapFile *mf = new MapFile("OrthoMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("OrthoMap", &OrthoImaptable);
+#else
+    success = mf->loadMap("OrthoMap", &Orthomaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
     OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcImaptable, config.nchareG, config.numChunks, config.sGrainSize);
 #else
     OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize);
 #endif
+  }
 
-    //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew();
-    CkArrayOptions orthoOpts;
-    orthoOpts.setMap(orthoMap);
+  //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
+  CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew();
+  CkArrayOptions orthoOpts;
+  orthoOpts.setMap(orthoMap);
 
-    orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
-    CharmStrategy *multistrat = new DirectMulticastStrategy(orthoProxy.ckGetArrayID());
-    orthoInstance=ComlibRegister(multistrat);
+  orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
+  CharmStrategy *multistrat = new DirectMulticastStrategy(orthoProxy.ckGetArrayID());
+  orthoInstance=ComlibRegister(multistrat);
 
-    CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
-    orthoProxy.ckSetReductionClient(&ocb);
+  CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), orthoProxy(0, 0));
+  orthoProxy.ckSetReductionClient(&ocb);
     
-    // extra triangle ortho elements are really a waste of our time
-    // and resources, but we don't have a triangular solver for
-    // inv_square, so we'll just make do.
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = size[1] = nstates/config.orthoGrainSize;
+    MapFile *mf = new MapFile("OrthoMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&OrthoImaptable);
+#else
+    mf->dumpMap(&Orthomaptable);
+#endif
+  }
 
-    // They need to exist solely so that the inv_sq method can work.
-    // So we need to copy their mirror elements data into them.
-    // then when complete they need to know not to call finishpaircalc.
-    // Because their redundant data has nowhere to go.
+  // extra triangle ortho elements are really a waste of our time
+  // and resources, but we don't have a triangular solver for
+  // inv_square, so we'll just make do.
 
-    /* create matrix multiplication objects */
-    CLA_Matrix_interface matA1, matB1, matC1;
-    CLA_Matrix_interface matA2, matB2, matC2;
-    CLA_Matrix_interface matA3, matB3, matC3;
+  // They need to exist solely so that the inv_sq method can work.
+  // So we need to copy their mirror elements data into them.
+  // then when complete they need to know not to call finishpaircalc.
+  // Because their redundant data has nowhere to go.
 
-    CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
-     orthoProxy(0, 0));
+  /* create matrix multiplication objects */
+  CLA_Matrix_interface matA1, matB1, matC1;
+  CLA_Matrix_interface matA2, matB2, matC2;
+  CLA_Matrix_interface matA3, matB3, matC3;
 
-    make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+  CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
+   orthoProxy(0, 0));
+
+  make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
+   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
 
 #ifdef USE_INT_MAP
-    OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+  OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = size[1] = nstates/config.orthoGrainSize;
+    MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable);
+#else
+    success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
     OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &OrthoImaptable);
 #else
     OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable);
 #endif
+  }
 
-    CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
-    CkArrayOptions orthoHOpts;
-    orthoHOpts.setMap(orthoHMap);
+  CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
+  CkArrayOptions orthoHOpts;
+  orthoHOpts.setMap(orthoHMap);
 
-    if(config.useOrthoHelpers)
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = size[1] = nstates/config.orthoGrainSize;
+    MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&OrthoHelperImaptable);
+#else
+    mf->dumpMap(&OrthoHelpermaptable);
+#endif
+  }
+
+  if(config.useOrthoHelpers)
+  {
+    orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
+    make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
+	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
+	ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+  }
+  else
+  {
+    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
+	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+  }
+
+  make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
+   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+
+
+  for (int s1 = 0; s1 < nstates; s1 += config.orthoGrainSize)
+    for (int s2 = 0; s2 < nstates; s2 += config.orthoGrainSize) {
+      int indX = s1 / config.orthoGrainSize;
+      int indY = s2 / config.orthoGrainSize;
+      orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
+      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
+      if(config.useOrthoHelpers)
       {
-	orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
-	make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
-			nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-			config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
-			ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+	orthoHelperProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
+		   matA2, matB2, matC2);
       }
-    else
-      {
-	make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
-			nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-			config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-			mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+    }
+  orthoProxy.doneInserting();
+  if(config.useOrthoHelpers)
+    orthoHelperProxy.doneInserting();
+    
+  orthoProxy.makeSections(indexSize, indexZ);
+  if(config.lambdaGrainSize!=config.orthoGrainSize)
+  {
+    int chunks = (nstates + config.lambdaGrainSize - 1) / config.lambdaGrainSize;
+    int nLambda= (nstates/config.lambdaGrainSize);
+    int stride= CkNumPes()/(nOrtho*nOrtho+1); 
+    if(stride<1)
+      stride=1;
 
+    nLambda*=nLambda;
+    CProxy_LambdaMap lambdaMap = CProxy_LambdaMap::ckNew(chunks,nLambda, stride);
+    CkArrayOptions lambdaOpts;
+    lambdaOpts.setMap(lambdaMap);
+    lambdaProxy = CProxy_Lambda::ckNew(lambdaOpts);
+    for (int s1 = 0; s1 < nstates; s1 += config.lambdaGrainSize)
+      for (int s2 = 0; s2 < nstates; s2 += config.lambdaGrainSize) {
+        int indX = s1 / config.lambdaGrainSize;
+        int indY = s2 / config.lambdaGrainSize;
+        lambdaProxy(indX, indY).insert(config.lambdaGrainSize, config.orthoGrainSize, config.sGrainSize);
       }
+    lambdaProxy.doneInserting();
+    lambdaProxy.makeSections(indexSize, indexZ);
 
-    make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
-     nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-     config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-     mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-
-
-    for (int s1 = 0; s1 < nstates; s1 += config.orthoGrainSize)
-      for (int s2 = 0; s2 < nstates; s2 += config.orthoGrainSize) {
-	int indX = s1 / config.orthoGrainSize;
-	int indY = s2 / config.orthoGrainSize;
-	orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-         matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
-	if(config.useOrthoHelpers)
-	  {
-	    orthoHelperProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-					   matA2, matB2, matC2);
-
-	  }
-      }
-    orthoProxy.doneInserting();
-    if(config.useOrthoHelpers)
-      {
-	orthoHelperProxy.doneInserting();
-      }
-    orthoProxy.makeSections(indexSize, indexZ);
-    if(config.lambdaGrainSize!=config.orthoGrainSize)
-      {
-	int chunks = (nstates + config.lambdaGrainSize - 1) / config.lambdaGrainSize;
-	int nLambda= (nstates/config.lambdaGrainSize);
-	int stride= CkNumPes()/(nOrtho*nOrtho+1); 
-	if(stride<1)
-	  stride=1;
-
-	nLambda*=nLambda;
-	CProxy_LambdaMap lambdaMap = CProxy_LambdaMap::ckNew(chunks,nLambda, stride);
-	CkArrayOptions lambdaOpts;
-	lambdaOpts.setMap(lambdaMap);
-	lambdaProxy = CProxy_Lambda::ckNew(lambdaOpts);
-	for (int s1 = 0; s1 < nstates; s1 += config.lambdaGrainSize)
-	  for (int s2 = 0; s2 < nstates; s2 += config.lambdaGrainSize) {
-	    int indX = s1 / config.lambdaGrainSize;
-	    int indY = s2 / config.lambdaGrainSize;
-	    lambdaProxy(indX, indY).insert(config.lambdaGrainSize, config.orthoGrainSize, config.sGrainSize);
-	  }
-	lambdaProxy.doneInserting();
-	lambdaProxy.makeSections(indexSize, indexZ);
-
-      }
+  }
 
 //============================================================================
-   }//end routine 
+  }//end routine 
 //============================================================================
 
 
@@ -1406,9 +1515,9 @@ void main::doneInit(CkReductionMsg *msg){
       Timer=newtime;
     }else{
       CkPrintf("Completed chare data acquisition phase %d in %g\n",done_init+1,newtime-Timer);
-      CkPrintf("\n-----------------------------------------------------\n");
+      PRINT_LINE_DASH;
       CkPrintf("Chare array launch and initialization complete       \n");
-      CkPrintf("======================================================\n\n");
+      PRINT_LINE_STAR; printf("\n");
       Timer=newtime;
     }//endif
 
@@ -1431,14 +1540,14 @@ void main::doneInit(CkReductionMsg *msg){
     }//endif
     if (done_init >= 4) {
       if (done_init == 4){ 
- 	  CkPrintf("\n======================================================\n");
+          PRINT_LINE_STAR;
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
 	  }else{
             CkPrintf("Running Open Atom CP Dynamics: \n");
 	  }//endif
-  	  CkPrintf("======================================================\n\n");
-  	  CkPrintf("\n======================================================\n");
+          PRINT_LINE_STAR; CkPrintf("\n");
+          PRINT_LINE_STAR;
 	  gSpacePlaneProxy.run();
       }//endif
     }
@@ -1507,59 +1616,107 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 //============================================================================
 // Instantiate the Chares with placement determined by the maps
 
-  //--------------------------------------------------------------------------------
+ //---------------------------------------------------------------------------
  // state g-space
 
   availGlobG->reset();
-  GSImaptable.buildMap(nstates,nchareG);
 #ifdef USE_INT_MAP
-  int success = 0;
-  if(config.loadMapFiles)
-  {
-    int size[2];
-    size[0] = config.nstates; size[1] = config.nchareG;
-    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
-    success = mf->loadMap("GSMap", &GSImaptable);
-  }
-  if(success == 0)
-    GSMapTable gsTable = GSMapTable( &GSImaptable, availGlobG,nchareG,
-				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, Gstates_per_pe, config.useCuboidMap);
-  #else
-  GSMapTable gsTable = GSMapTable( &GSmaptable, availGlobG,nchareG,
-				   sim->lines_per_chareG, sim->pts_per_chareG,
-				   nstates, config.Gstates_per_pe, config.useCuboidMap);
+  GSImaptable.buildMap(nstates, nchareG);
 #endif
+
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareG;
+    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("GSMap", &GSImaptable);
+#else
+    success = mf->loadMap("GSMap", &GSmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    GSMapTable gsTable = GSMapTable(&GSImaptable, availGlobG, nchareG,
+				  nstates, Gstates_per_pe, config.useCuboidMap);
+#else
+    GSMapTable gsTable = GSMapTable(&GSmaptable, availGlobG, nchareG,
+				  nstates, Gstates_per_pe, config.useCuboidMap);
+#endif
+  }
+
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   double newtime=CmiWallTimer();
-  CkPrintf("GSMap created in %g\n",newtime-Timer);
-  Timer=newtime;
+  CkPrintf("GSMap created in %g\n", newtime-Timer);
   CkArrayOptions gSpaceOpts;
   gSpaceOpts.setMap(gsMap);
   gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX, sizeYZ,1, 1,sGrainSize,numChunks,gSpaceOpts);
+                     sizeX, sizeYZ, 1, 1, sGrainSize, numChunks, gSpaceOpts);
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareG;
+    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&GSImaptable);
+#else
+    mf->dumpMap(&GSmaptable);
+#endif
+  }
 
  //---------------------------------------------------------------------------
  // state r-space
 
+  Timer=CmiWallTimer();
   availGlobR->reset();
 #ifdef USE_INT_MAP
-  RSImaptable.buildMap(nstates,nchareR);
-  RSMapTable RStable= RSMapTable(&RSImaptable, availGlobR, nstates, nchareR, 
+  RSImaptable.buildMap(nstates, nchareR);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareR;
+    MapFile *mf = new MapFile("RSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("RSMap", &RSImaptable);
+#else
+    success = mf->loadMap("RSMap", &RSmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    RSMapTable RStable= RSMapTable(&RSImaptable, availGlobR, nstates, nchareR, 
                                  Rstates_per_pe, config.useCuboidMapRS, &GSImaptable, config.nchareG);
 #else
-  RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
+    RSMapTable RStable= RSMapTable(&RSmaptable, availGlobR, nstates, nchareR, 
                                  Rstates_per_pe, config.useCuboidMapRS, &GSmaptable, config.nchareG);
 #endif
+  }
+
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew();
   newtime=CmiWallTimer();
-  CkPrintf("RSMap created in %g\n",newtime-Timer);
+  CkPrintf("RSMap created in %g\n", newtime-Timer);
   Timer=newtime;
   CkArrayOptions realSpaceOpts;
   realSpaceOpts.setMap(rsMap);
   size2d sizeRealPlane(sizeYZ[1], sizeX);
-  realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane,1,1,
-				      ngrida,ngridb,ngridc,realSpaceOpts);
+  realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane, 
+	1, 1, ngrida, ngridb, ngridc, realSpaceOpts);
+  
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareR;
+    MapFile *mf = new MapFile("RSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&RSImaptable);
+#else
+    mf->dumpMap(&RSmaptable);
+#endif
+  }
+
  //--------------------------------------------------------------------------------
  // state r-particleplane
 
@@ -1695,10 +1852,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	int maxsend=0;
 	double avgsend=0.0;
 	int chareG_use=0;
-	CkPrintf("============================\n");
+        PRINT_LINE_STAR;
 	CkPrintf("Structure factor chareG dests\n");
 	CkPrintf("Number of g-space chares : %d\n",nchareG);    
-	CkPrintf("---------------------------\n");
+        PRINT_LINE_DASH;
 	for(int lsi=0;lsi<nchareG;lsi++){
 	  chareG_use++;
 	  CkPrintf("chareG [%d] nsend %d\n",lsi,nsend[lsi]);
@@ -1713,9 +1870,9 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	  }//endfor
 #endif
 	}//endfor
-	CkPrintf("---------------------------\n");
+        PRINT_LINE_DASH;
 	CkPrintf("SFSends min %d max %d avg %g\n",minsend,maxsend,avgsend/(double)chareG_use);
-	CkPrintf("============================\n");
+        PRINT_LINE_STAR;
 
 	//--------------------------------------------------------------------------------
 	// Insert the objects into the StructureFactor array
@@ -1829,17 +1986,34 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   availGlobG->reset();
   double newtime=CmiWallTimer();
 #ifdef USE_INT_MAP
-  RPPImaptable.buildMap(nstates,nchareRPP);
-  RPPMapTable RPPtable= RPPMapTable(&RPPImaptable, availGlobG, exclusion, 
+  RPPImaptable.buildMap(nstates, nchareRPP);
+#endif
+
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareRPP;
+    MapFile *mf = new MapFile("RPPMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("RPPMap", &RPPImaptable);
+#else
+    success = mf->loadMap("RPPMap", &RPPmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    RPPMapTable RPPtable= RPPMapTable(&RPPImaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap, 
 				    config.nchareG, &GSImaptable);
 #else
-  RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, exclusion, 
+    RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, exclusion, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap, 
 				    config.nchareG, &GSImaptable);
 #endif
+  }
 
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew();
   newtime=CmiWallTimer();
@@ -1865,6 +2039,16 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   PRINTF("Completed RealParticle chare array build\n");
   PRINT_LINE_STAR;printf("\n");
 
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareRPP;
+    MapFile *mf = new MapFile("RPPMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&RPPImaptable);
+#else
+    mf->dumpMap(&RPPmaptable);
+#endif
+  }
 
 }
 
@@ -1885,18 +2069,18 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 //  Chare array sizes and offsets 
 
-   int ngrid_eext_a    = sim->ngrid_eext_a;
-   int ngrid_eext_b    = sim->ngrid_eext_b;
-   int ngrid_eext_c    = sim->ngrid_eext_c;
-   int ees_eext_on     = sim->ees_eext_on;
-   int ees_nonlocal_on = sim->ees_nloc_on;
-   int natmTyp         = sim->natm_typ;
-   int nchareRhoG      = sim->nchareRhoG;
-   int nchareRhoR      = sim->sizeZ;
-   int rhoGHelpers     = config.rhoGHelpers;
+  int ngrid_eext_a    = sim->ngrid_eext_a;
+  int ngrid_eext_b    = sim->ngrid_eext_b;
+  int ngrid_eext_c    = sim->ngrid_eext_c;
+  int ees_eext_on     = sim->ees_eext_on;
+  int ees_nonlocal_on = sim->ees_nloc_on;
+  int natmTyp         = sim->natm_typ;
+  int nchareRhoG      = sim->nchareRhoG;
+  int nchareRhoR      = sim->sizeZ;
+  int rhoGHelpers     = config.rhoGHelpers;
 
-   int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
-   int nchareRhoRHart  = ngrid_eext_c;
+  int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
+  int nchareRhoRHart  = ngrid_eext_c;
 
 //============================================================================
 // Output to the screen
@@ -1909,110 +2093,221 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 // Nuke some procs from the list : reset, nuke, reset if you run out
 
-   availGlobR->reset();
+  availGlobR->reset();
    
-   PeList *RhoAvail= new PeList(*availGlobR);
+  PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
    
-   excludePes= new PeList(peUsedByNLZ);   
-   if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
+  excludePes= new PeList(peUsedByNLZ);   
+  if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
 
-       CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
-                 peUsedByNLZ.size(),RhoAvail->count());
-       //       nlz.dump();
-       *RhoAvail-*excludePes; //unary minus
-       RhoAvail->reindex();
-       CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
-   }//endif
+    CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
+               peUsedByNLZ.size(),RhoAvail->count());
+    //       nlz.dump();
+    *RhoAvail-*excludePes; //unary minus
+    RhoAvail->reindex();
+    CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
+  }//endif
 
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares
-   if(ees_nonlocal_on==0){
-     if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
-       CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
-                  peUsedBySF.size(),RhoAvail->count());
-       PeList sf(peUsedBySF);
-       *RhoAvail-sf;
-       RhoAvail->reindex();
-     }//endif
-   }
+  if(ees_nonlocal_on==0){
+    if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
+      CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
+                 peUsedBySF.size(),RhoAvail->count());
+      PeList sf(peUsedBySF);
+      *RhoAvail-sf;
+      RhoAvail->reindex();
+    }//endif
+  }
 
-   if(RhoAvail->count()>2){RhoAvail->reindex();}
+  if(RhoAvail->count()>2) { RhoAvail->reindex(); }
 
 //============================================================================
 // Maps and options
    //CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
+
+ //---------------------------------------------------------------------------
+ // rho RS 
 #ifdef USE_INT_MAP
    RhoRSImaptable.buildMap(nchareRhoR, config.rhoRsubplanes);
-   RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
-#else
-   RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
 #endif
-    CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
-    CkArrayOptions rhorsOpts;
-    rhorsOpts.setMap(rhorsMap);
 
-    // if there aren't enough free procs refresh the RhoAvail list;
-    
-    if(nchareRhoG>RhoAvail->count()){
-	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoG);
-	RhoAvail->rebuild();
-    }//endif
-    //CkPrintf("availProcs %d\n",RhoAvail->count());
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
+    MapFile *mf = new MapFile("RhoRSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
-    RhoGSImaptable.buildMap(nchareRhoG,1);
+    success = mf->loadMap("RhoRSMap", &RhoRSImaptable);
+#else
+    success = mf->loadMap("RhoRSMap", &RhoRSmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    RhoRSMapTable RhoRStable(&RhoRSImaptable, RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable, excludePes);
+#else
+    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
+#endif
+  }
+
+  CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
+  CkArrayOptions rhorsOpts;
+  rhorsOpts.setMap(rhorsMap);
+
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
+    MapFile *mf = new MapFile("RhoRSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&RhoRSImaptable);
+#else
+    mf->dumpMap(&RhoRSmaptable);
+#endif
+  }
+
+ //---------------------------------------------------------------------------
+ // rho GS 
+  // if there aren't enough free procs refresh the RhoAvail list;
+  if(nchareRhoG>RhoAvail->count())
+    RhoAvail->rebuild();
+#ifdef USE_INT_MAP
+  RhoGSImaptable.buildMap(nchareRhoG, 1);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("RhoGSMap", &RhoGSImaptable);
+#else
+    success = mf->loadMap("RhoGSMap", &RhoGSmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
     RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG, excludePes);
 #else
     RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG, excludePes);
 #endif
-    CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
-    CkArrayOptions rhogsOpts;
-    rhogsOpts.setMap(rhogsMap);
+  }
 
-    // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoGHart>RhoAvail->count()){
-	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoGHart);
-	RhoAvail->rebuild();
-    }//endif
-    //CkPrintf("availProcs %d\n",RhoAvail->count());
+  CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
+  CkArrayOptions rhogsOpts;
+  rhogsOpts.setMap(rhogsMap);
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
-    RhoGHartImaptable.buildMap(nchareRhoGHart,1);
+    mf->dumpMap(&RhoGSImaptable);
+#else
+    mf->dumpMap(&RhoGSmaptable);
+#endif
+  }
+
+ //---------------------------------------------------------------------------
+ // rho GHart 
+  // if there aren't enough free procs refresh the avail list;
+  if(nchareRhoGHart>RhoAvail->count())
+    RhoAvail->rebuild();
+#ifdef USE_INT_MAP
+  RhoGHartImaptable.buildMap(nchareRhoGHart, 1);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nchareRhoGHart; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable);
+#else
+    success = mf->loadMap("RhoGHartMap", &RhoGHartmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
     RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
 				   nchareRhoGHart, excludePes);
 #else
     RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
 				   excludePes);
 #endif
-    CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
-    CkArrayOptions rhoghartOpts;
-    rhoghartOpts.setMap(rhogHartMap);
+  }
 
-    // if there aren't enough free procs refresh the avail list;
-    if(nchareRhoRHart > RhoAvail->count()){
-	//CkPrintf("Rebuilding list because %d < %d\n",RhoAvail->count(),nchareRhoRHart);
-	RhoAvail->rebuild();
-    }//endif
-    //CkPrintf("availProcs %d\n",RhoAvail->count());
-    CkArrayOptions rhorhartOpts;
-    if(ees_eext_on){
+  CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
+  CkArrayOptions rhoghartOpts;
+  rhoghartOpts.setMap(rhogHartMap);
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoGHart; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
+    mf->dumpMap(&RhoGHartImaptable);
+#else
+    mf->dumpMap(&RhoGHartmaptable);
+#endif
+  }
 
-	RhoRHartImaptable.buildMap(nchareRhoRHart,config.rhoRsubplanes);
-	RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
+ //---------------------------------------------------------------------------
+ // rho RHart 
+  // if there aren't enough free procs refresh the avail list;
+  if(nchareRhoRHart > RhoAvail->count())
+    RhoAvail->rebuild();
+  CkArrayOptions rhorhartOpts;
+    
+  if(ees_eext_on) {
+#ifdef USE_INT_MAP
+    RhoRHartImaptable.buildMap(nchareRhoRHart, config.rhoRsubplanes);
+#endif
+
+    success = 0;
+    if(config.loadMapFiles) {
+      int size[2];
+      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
+      MapFile *mf = new MapFile("RhoRHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+      success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable);
+#else
+      success = mf->loadMap("RhoRHartMap", &RhoRHartmaptable);
+#endif
+    }
+
+    if(success == 0) {
+#ifdef USE_INT_MAP
+      RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
 				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
 #else
-	RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
+      RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
 				   nchareRhoRHart, config.rhoRsubplanes, excludePes);
-
 #endif
-	//CkPrintf("availProcs %d\n",RhoAvail->count());
-	//CkPrintf("rho G and S consumed %d\n", excludePes->count());
-	//    excludePes->dump();
+    }
 
-	CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
-	rhorhartOpts.setMap(rhorHartMap);
-    }//endif : ees_ext_on
+    CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew();
+    rhorhartOpts.setMap(rhorHartMap);
+
+    if(config.dumpMapFiles) {
+      int size[2];
+      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
+      MapFile *mf = new MapFile("RhoRHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+      mf->dumpMap(&RhoRHartImaptable);
+#else
+      mf->dumpMap(&RhoRHartmaptable);
+#endif
+    }
+  } //endif : ees_ext_on
 
 
 //============================================================================
@@ -2020,7 +2315,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
     bool dummy = true;
 
-  //---------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
     
   // insert rhoreal
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
@@ -2032,7 +2327,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     }//endfor
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
-  //---------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
   // insert rhog
     rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
 						 1, dummy, 
@@ -2041,7 +2336,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
     }//endfor
     rhoGProxy.doneInserting();
-  //---------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
   // insert rhoghart
     rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
                                  ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
@@ -2051,7 +2346,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     }//endfor
     rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
     rhoGHartExtProxy.doneInserting();
-  //---------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
   // insert rhoRhart
     if(ees_eext_on)
       {
