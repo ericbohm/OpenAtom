@@ -374,7 +374,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 24;
+  num_dict[0] = 25;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -544,6 +544,14 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
+  //-----------------------------------------------------------------------------
+  // 25)\dumpMapFiles{}
+    ind=25;
+    strcpy((*dict)[ind].keyword,"dumpMapFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+    (*dict)[ind].iflag = 1;
+
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================

@@ -79,6 +79,7 @@ class Config {
    int useCuboidMapRS;
    int useCentroidMap;
    int loadMapFiles;
+   int dumpMapFiles;
    int useGssInsRealP;
    int useMssInsGP;
   //==================================
