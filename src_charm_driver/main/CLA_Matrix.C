@@ -509,7 +509,7 @@ void CLA_Matrix::multiply(){
   if(beta != 0)
     transpose(dest, m, n);
   /* multiply */
-  char trans = 't';
+  char trans = 'T';
 #define ORTHO_DGEMM_SPLIT 
 
 #define BUNDLE_USER_EVENTS
@@ -682,7 +682,7 @@ void CLA_MM3D_multiplier::receiveB(CLA_Matrix_msg *msg){
 void CLA_MM3D_multiplier::multiply(double *A, double *B){
   double alpha = 1, beta = 0;
   gotA = gotB = false;
-  char trans = 't';
+  char trans = 'T';
   double *C = new double[m * n];
 #ifndef CMK_OPTIMIZE
   double  StartTime=CmiWallTimer();
