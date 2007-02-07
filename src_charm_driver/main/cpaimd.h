@@ -568,6 +568,10 @@ class CPcharmParaInfoGrp: public Group {
 #define enlForcCalc_         302
 #define doEextFFTRtoG_       303
 #define doEextFFTGtoR_       304
+#define doEextFFTGxtoRx_     305
+#define doEextFFTRytoGy_     306
+#define doRhoFFTRytoGy_      307
+#define doRhoFFTGxtoRx_      308
 #define OrthoDGEMM1_         401
 #define OrthoDGEMM2_         402
 //200-300 reserved for paircalculator
@@ -602,7 +606,7 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex);
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
-bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order);
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order, int vn);
 void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *);
 
 //============================================================================

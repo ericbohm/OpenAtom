@@ -39,15 +39,15 @@
 <TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">Software</FONT></TD></TR>
 <TR bgcolor="#FFFFFF"><TD>Currently we have a Charm++ implementation of the core of the CP method. You
  can check out the latest build using CVS. The code is available under the
- module name "new_leanCP". Charm++ and <a href="http://www.fftw.org">FFTW</a>
+ module name "leanCP". Charm++ and <a href="http://www.fftw.org">FFTW</a>
  are required to run the code.   
 </TD></TR>
 <TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">People</FONT></TD></TR>
 <TR bgcolor="#FFFFFF"><TD><UL>
 <LI><A href="mailto:ebohm AT uiuc.edu
 ">Eric Bohm</A></LI>
-<LI><A href="mailto:yanshi AT uiuc.edu
-">Yan Shi</A></LI>
+<LI><A href="mailto:bhatele2 AT uiuc.edu
+">Abhinav Bhatele</A></LI>
 
 <LI><A href="mailto:kale AT cs.uiuc.edu
 ">L. V. Kale</A></LI>
@@ -491,6 +491,11 @@ main::main(CkArgMsg *msg) {
      traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
      traceRegisterUserEvent("Scalcmap", Scalcmap_);
      traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
+     traceRegisterUserEvent("doEextFFTGxtoRx", doEextFFTGxtoRx_);
+     traceRegisterUserEvent("doEextFFTRytoGy", doEextFFTRytoGy_);
+     traceRegisterUserEvent("doRhoFFTRytoGy", doRhoFFTRytoGy_);
+     traceRegisterUserEvent("doRhoFFTGxtoRx", doRhoFFTGxtoRx_);
+
      traceRegisterUserEvent("GSProcnum", 10000);
      traceRegisterUserEvent("RSProcnum", 20000);
      traceRegisterUserEvent("SCProcnum", 30000);
@@ -568,7 +573,7 @@ main::main(CkArgMsg *msg) {
 #ifdef CMK_VERSION_BLUEGENE
 	boxSize=pl;
 	int order;
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize, order))
+	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize, order, bgltm->isVnodeMode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
@@ -2537,15 +2542,26 @@ void mapOutput()
 //============================================================================
 // return the cuboid x,y,z of a subpartition exactly matching that volume
 //============================================================================
-bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order){
+bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order, int vn){
 //============================================================================
   int maxD=maxX;
   int minD=maxX;
-  maxD = (maxY>maxD) ? maxY : maxD;
-  maxD = (maxZ>maxD) ? maxZ : maxD;
-  minD = (maxY<minD) ? maxY : minD;
-  minD = (maxZ<maxD) ? maxZ : minD;
+  if(vn)
+    {  // using Y as the prism axis seems to suck
+      //        maxD = (maxY>maxD) ? maxY : maxD;
+	maxD = (maxZ>maxD) ? maxZ : maxD;
+	//	minD = (maxY<minD) ? maxY : minD;
+	minD = (maxZ<maxD) ? maxZ : minD;
 
+    }
+  else
+    {
+      maxD = (maxY>maxD) ? maxY : maxD;
+      maxD = (maxZ>maxD) ? maxZ : maxD;
+      minD = (maxY<minD) ? maxY : minD;
+      minD = (maxZ<maxD) ? maxZ : minD;
+
+    }
   CkPrintf("minD %d maxD %d\n",minD, maxD);
   order=0;
   double cubert= cbrt((double) volume);
@@ -2592,7 +2608,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 16:
       if(config.useCuboidMapRS)
 	{
-	  if(maxD>=8)
+	  if(minD>=8)
 	    { x=8; y=2; z=1; switchSet=true; break;}
 	}
       x=4; y=2; z=2; switchSet=true; break;
@@ -2615,8 +2631,11 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 32:
       if(config.useCuboidMapRS)
 	{
-	  if(maxD>=8)
+	  if(minD==8)
 	    { x=8; y=2; z=2; switchSet=true; break;}
+	  if(minD>=16)
+	    { x=16; y=2; z=1; switchSet=true; break;}
+
 	}
       x=4; y=2; z=4; switchSet=true; break;
     case 35:
@@ -2644,27 +2663,31 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     case 64:
       if(config.useCuboidMapRS)
 	{
-	  if(maxD==8)
+	  if(minD==8)
 	    { x=8; y=4; z=2; switchSet=true; break;}
-	  if(maxD>=16)
+	  if(minD>=16)
 	    { x=16; y=2; z=2; switchSet=true; break;}
 	}
       x=4; y=4; z=4; switchSet=true; break;
     case 128:
       if(config.useCuboidMapRS)
 	{
-	  if(maxD==16)
+	  if(minD==8)
+	    { x=8; y=4; z=4; switchSet=true; break;}
+	  if(minD==16)
 	    {x=16; y=4; z=2; switchSet=true; break;}
-	  if(maxD>=32)
+	  if(minD>=32)
 	    {  x=32; y=2; z=2; switchSet=true; break;	}
 	}
       x=8; y=4; z=4; switchSet=true; break;
     case 256:
       if(config.useCuboidMapRS)
 	{
-	  if(maxD==16)
+	  if(minD==8)
+	    { x=8; y=8; z=4; switchSet=true; break;}
+	  if(minD==16)
 	    { x=16; y=4; z=4; switchSet=true; break;}
-	  if(maxD>=32)
+	  if(minD>=32)
 	    { x=32; y=4; z=2; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;
