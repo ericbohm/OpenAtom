@@ -469,6 +469,7 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
+      if(ic%3==0)
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -525,7 +526,15 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   if(countIntRtoG==rhoRsubplanes){
     countIntRtoG = 0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+
     fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,ngrida,ngridb,iplane_ind);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doEextFFTRytoGy_, StartTime, CmiWallTimer());    
+#endif
+
 #ifdef DEBUG_INT_TRANS_FWD
     char name[100];
     sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
@@ -621,6 +630,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
       }//endif
 
 #ifdef CMK_VERSION_BLUEGENE
+      if(ic%3==0)
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -890,6 +900,7 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
+      if(ic%3==0)
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -962,7 +973,14 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   if(countIntGtoR[iopt]==rhoRsubplanes){
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
     fftcache->doEextFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doEextFFTGxtoRx_, StartTime, CmiWallTimer());    
+#endif
+
     nAtmTypRecv++;
     computeAtmForc(iopt);
   }//endif

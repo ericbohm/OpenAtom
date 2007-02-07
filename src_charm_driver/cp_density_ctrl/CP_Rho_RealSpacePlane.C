@@ -698,7 +698,8 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+      if(ic%3==0)
+	CmiNetworkProgress();
 #endif
     }//end for : chare sending
 
@@ -799,7 +800,15 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
   }//endif
 
   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
   fftcache->doRhoFFTRyToGy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doRhoFFTRytoGy_, StartTime, CmiWallTimer());    
+#endif
+
+
 
 //============================================================================
 // Send chunk to RhoGDensity 
@@ -946,7 +955,8 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       }//endif
 
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+      if(ic%3==0)
+	CmiNetworkProgress();
 #endif
     }//end for : chare sending
 
@@ -1221,6 +1231,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
+      if(ic%3==0)
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -1302,7 +1313,15 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
     done = 1;
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
     fftcache->doRhoFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
+#ifndef CMK_OPTIMIZE
+  traceUserBracketEvent(doRhoFFTGxtoRx_, StartTime, CmiWallTimer());    
+#endif
+
+
   }//endif
 
 //============================================================================

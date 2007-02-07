@@ -878,10 +878,11 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
         case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
       }//end switch
     }//endif
+  }
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
-  }}//endfor
+  }//endfor
 
 //============================================================================
 // end commlib
