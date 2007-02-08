@@ -306,7 +306,7 @@ class RhoRHartMapTable  : public MapTable2
  public:
   int nchareRhoRHart;
   RhoRHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoRHart, int rhoRsubplanes, PeList *exclude);
+	int _nchareRhoRHart, int rhoRsubplanes,  PeList *exclude);
   RhoRHartMapTable(){}
 };
 
@@ -315,7 +315,8 @@ class RhoGHartMapTable  : public MapTable2
  public:
   int nchareRhoGHart;
   RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoGHart, PeList *exclude);
+	int _nchareRhoGHart, int useCentroid, MapType2 *rhartmap,
+		   PeList *exclude);
   RhoGHartMapTable(){}
 };
 

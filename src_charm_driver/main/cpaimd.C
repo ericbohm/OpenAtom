@@ -2179,7 +2179,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
  // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
   if(nchareRhoG>RhoAvail->count())
-    RhoAvail->rebuild();
+    {
+      CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
+      RhoAvail->rebuild();
+    }
 #ifdef USE_INT_MAP
   RhoGSImaptable.buildMap(nchareRhoG, 1);
 #endif
@@ -2219,51 +2222,6 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #endif
   }
 
- //---------------------------------------------------------------------------
- // rho GHart 
-  // if there aren't enough free procs refresh the avail list;
-  if(nchareRhoGHart>RhoAvail->count())
-    RhoAvail->rebuild();
-#ifdef USE_INT_MAP
-  RhoGHartImaptable.buildMap(nchareRhoGHart, 1);
-#endif
-
-  success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoGHart; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable);
-#else
-    success = mf->loadMap("RhoGHartMap", &RhoGHartmaptable);
-#endif
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
-				   nchareRhoGHart, excludePes);
-#else
-    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
-				   excludePes);
-#endif
-  }
-
-  CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
-  CkArrayOptions rhoghartOpts;
-  rhoghartOpts.setMap(rhogHartMap);
-
-  if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = nchareRhoGHart; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&RhoGHartImaptable);
-#else
-    mf->dumpMap(&RhoGHartmaptable);
-#endif
-  }
 
  //---------------------------------------------------------------------------
  // rho RHart 
@@ -2314,6 +2272,53 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     }
   } //endif : ees_ext_on
 
+ //---------------------------------------------------------------------------
+ // rho GHart 
+  // if there aren't enough free procs refresh the avail list;
+  if(nchareRhoGHart>RhoAvail->count())
+    RhoAvail->rebuild();
+#ifdef USE_INT_MAP
+  RhoGHartImaptable.buildMap(nchareRhoGHart, 1);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nchareRhoGHart; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable);
+#else
+    success = mf->loadMap("RhoGHartMap", &RhoGHartmaptable);
+#endif
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
+				   nchareRhoGHart,config.useCentroidMapRho,
+				   &RhoRHartImaptable, excludePes);
+#else
+    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
+				   config.useCentroidMapRho, &RhoRHartmaptable,
+				   excludePes);
+#endif
+  }
+
+  CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
+  CkArrayOptions rhoghartOpts;
+  rhoghartOpts.setMap(rhogHartMap);
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoGHart; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&RhoGHartImaptable);
+#else
+    mf->dumpMap(&RhoGHartmaptable);
+#endif
+  }
 
 //============================================================================
 // Instantiate the chares

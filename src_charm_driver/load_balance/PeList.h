@@ -104,7 +104,7 @@ class PeList
     };	 // make a copy of a sublist
   
   // given the max grid/torus dimenions and the volume of a desired subpartition
-
+  
   inline bool noPes() 
     {
       return(size-current<1);
@@ -118,7 +118,13 @@ class PeList
 	  sortIdx[i]=i;
 	}
   } 
-
+  inline int exists(int target)
+    {
+      for(int i=0;i<size;i++)
+	if(TheList[i]==target)
+	  return i;
+      return -1;
+    }
   void rebuild(); 
 
   void reset(){current=0;} 
@@ -137,9 +143,9 @@ class PeList
 	newlist[i]=TheList[i];
 	newIndex[i]=sortIdx[i];
       }
-    for(; i< newsize ; i++)
+    for(int j=0; (i< newsize && j<inlist.size) ; i++,j++)
       {
-	newlist[i]=inlist.TheList[i];
+	newlist[i]=inlist.TheList[j];
 	newIndex[i]=i;
       }
     size=newsize;
@@ -151,6 +157,7 @@ class PeList
 
   void mergeOne(int pe)
   {
+    
     // make array large enough for both, paste together
     int i=0;
     bool found=false;
@@ -214,7 +221,7 @@ class PeList
   PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}   
 
 
-  // need to rebuild your sortIdx
+  // need to rebuild your sortIdx after set union
   PeList &operator+(PeList &inlist) { 
     // make array large enough for both, paste together
     int newsize=inlist.size+size;
@@ -226,9 +233,9 @@ class PeList
 	newlist[i]=TheList[i];
 	newIndex[i]=sortIdx[i];
       }
-    for(; i< newsize ; i++)
+    for(int j=0; (i< newsize &j<inlist.size); i++)
       {
-	newlist[i]=inlist.TheList[i];
+	newlist[i]=inlist.TheList[j];
 	newIndex[i]=i;
       }
     size=newsize;
@@ -239,7 +246,7 @@ class PeList
     return *this; 
   }
   
-  // need to rebuild your sortIdx
+  // need to rebuild your sortIdx after unary set difference
   PeList &operator-(PeList &inlist) {
     for(int i=0; i< inlist.size;i++)
       {
