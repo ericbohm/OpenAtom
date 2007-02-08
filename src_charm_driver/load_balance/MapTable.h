@@ -47,7 +47,7 @@ class intdual {
 };
 
 #ifndef USE_INT_MAP
-typedef CkHashtableT <intdual, int > MapType2;
+//typedef CkHashtableT <intdual, int > MapType2;
 typedef CkHashtableT <intdual, int > MapType4;
 #else
 #endif
@@ -85,7 +85,7 @@ class MapTable2
 
  protected:
    CkVec <intdual> *reverseMap;
-
+   
   MapTable2()
     {
       availprocs=NULL;
@@ -109,8 +109,10 @@ class MapTable2
 	makeReverseMap();
       return(reverseMap[proc]); 
     }
-
-
+  
+  //! return processor at topological center of this list
+  int getCentroid();
+  
 };
 
 /**
@@ -322,7 +324,7 @@ class RhoGSMapTable  : public MapTable2
  public:
   int nchareRhoG;
   RhoGSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoG, PeList *exclude);
+	int _nchareRhoG,  bool useCentroid, MapType2 *rhorsmap, PeList *exclude);
   RhoGSMapTable(){}
 };
 

@@ -9,12 +9,46 @@
 #ifdef USE_INT_2on1
 typedef IntMap2on1 MapType2;
 #else
-typedef IntMap2on2 MapType2;
+//class MapType2;
 #endif
 typedef IntMap4 MapType4;
 #endif
 #include "MapTable.h"
+#ifdef CMK_VERSION_BLUEGENE
+    extern 	BGLTorusManager *bgltm;
+#endif      
 
+int MapType2::getCentroid(){
+#ifdef CMK_VERSION_BLUEGENE
+  int points=0;
+  int  sumX=0;
+  int sumY=0;
+  int sumZ=0;
+  int X=0,Y=0,Z=0;
+    for(int i=0;i<getXmax();i++)
+      for(int j=0;j<getYmax();j++){
+      bgltm->getCoordinatesByRank(get(i,j),X, Y, Z);
+
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
+    }
+  int avgX=sumX/points;
+  int avgY=sumY/points;
+  int avgZ=sumZ/points;
+  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+#else
+  int points=sum=0;
+  for(int i=0;i<getXmax();i++)
+    for(int j=0;j<getYmax();j++){
+      sum+=get(i,j);
+      points++;
+    }
+  int bestpe=sum/points;
+#endif      
+  return(bestPe);
+  }
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
 		       int _nchareG, int _nstates,  
@@ -1003,8 +1037,17 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 #endif
 
 }
+/**
+ * RhoG and RhoR are mutually all to all. They should be mapped such
+ * that they are relatively near but exclusive.  Meaning they should
+ * share no processors if there are enough to go around.  Given that
+ * RhoR is already placed.  We can take the centroid of that map. Then
+ * sort the available list based on distance to that centroid.  Giving
+ * us the cloud of available processors around the RhoRS processors as
+ * our preferred placement.  
+ */
 
-RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG, PeList *exclude): nchareRhoG(_nchareRhoG)
+RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG,  bool useCentroid, MapType2 *rhorsmap, PeList *exclude): nchareRhoG(_nchareRhoG)
 {
   reverseMap=NULL;
   maptable=_map;
@@ -1027,9 +1070,16 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(availprocs->count()==0)
     availprocs->reset();
 
-  //if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem %d\n", nchareRhoG, rgsobjs_per_pe, rem);   
+  //if(CkMyPe()==0) CkPrintf("nchareRhoG %d rgsobjs_per_pe %d rem
+  //%d\n", nchareRhoG, rgsobjs_per_pe, rem); 
+  if(useCentroid)
+    {
+      // get centroid of rsmap  use it to sort the avail list
+      availprocs->sortSource(rhorsmap->getCentroid());
+    }
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
+
       if(rem!=0)
 	if(chunk==rem*rgsobjs_per_pe)
 	  rgsobjs_per_pe -= 1;  
@@ -1293,7 +1343,7 @@ PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapTyp
 }
 
 #ifdef CMK_VERSION_BLUEGENE
-extern 	BGLTorusManager *bgltm;
+
 
 void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)
 {

@@ -1,6 +1,6 @@
 // Things to do
 // dofft should do the fft
-
+//#define RSVKS_BARRIER  
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

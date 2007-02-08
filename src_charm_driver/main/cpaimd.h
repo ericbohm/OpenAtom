@@ -33,13 +33,12 @@ class IntMap2
 typedef IntMap2 IntMap4;
 #else
 #include "IntMap.h"
-//#define USE_INT_2on1
-#ifdef USE_INT_2on1
-typedef IntMap2on1 MapType2;
-#else
-typedef IntMap2on2 MapType2;
-#endif
 typedef IntMap4 MapType4;
+class MapType2 : public IntMap2on2 {
+ public:
+  int getCentroid ();
+};
+
 #endif
 
 #include "MapTable.h"

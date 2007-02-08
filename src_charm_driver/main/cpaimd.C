@@ -2198,9 +2198,9 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
   if(success == 0) {
 #ifdef USE_INT_MAP
-    RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG, excludePes);
+    RhoGSMapTable RhoGStable(&RhoGSImaptable, RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSImaptable, excludePes);
 #else
-    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG, excludePes);
+    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSmaptable, excludePes);
 #endif
   }
 
@@ -2546,6 +2546,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 //============================================================================
   int maxD=maxX;
   int minD=maxX;
+  //  vn=0;
   if(vn)
     {  // using Y as the prism axis seems to suck
       //        maxD = (maxY>maxD) ? maxY : maxD;
@@ -2691,6 +2692,18 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 	    { x=32; y=4; z=2; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;
+    case 512:
+      if(config.useCuboidMapRS)
+	{
+	  if(minD==8)
+	    { x=8; y=8; z=8; switchSet=true; break;}
+	  if(minD==16)
+	    { x=16; y=4; z=8; switchSet=true; break;}
+	  if(minD>=32)
+	    { x=32; y=4; z=4; switchSet=true; break;}
+	}
+      x=8; y=8; z=8; switchSet=true; break;
+
     default:
       break;
     }

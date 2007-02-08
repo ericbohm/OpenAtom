@@ -214,6 +214,7 @@ class IntMap2on2 {
       }
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
+    int getCentroid();
     inline int get(int X, int Y)  {
       /*
       CkAssert(X<keyXmax);
