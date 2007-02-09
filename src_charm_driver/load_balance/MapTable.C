@@ -1099,14 +1099,22 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       availprocs->sortSource(rhorsmap->getCentroid());
       availprocs->reset();
     }
-  if(availprocs->count()-exclude->count()>nchareRhoG)
+  PeList *avail= new PeList(*availprocs);
+  *avail-*exclude;
+  if(avail->count()>nchareRhoG)
     {
       // try an exclusion
-      CkPrintf("excluding %d from avail %d\n",exclude->count(), availprocs->count());
+      CkPrintf("RhoG excluding %d from avail %d\n",exclude->count(), availprocs->count());
       *availprocs-*exclude;
       availprocs->reindex();
       CkPrintf("avail now %d\n", availprocs->count());
     }
+  else
+    {
+      CkPrintf("cannot use exclusion in rhog\n");
+    }
+  delete avail;
+
   int destpe=availprocs->findNext();
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
@@ -1158,14 +1166,21 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
-  if(availprocs->count()-exclude->count()>numChares)
+  PeList *avail= new PeList(*availprocs);
+  *avail-*exclude;
+  if(avail->count()>numChares)
     {
       // try an exclusion
-      CkPrintf("excluding %d from avail %d\n",exclude->count(), availprocs->count());
+      CkPrintf("RhoRHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
       *availprocs-*exclude;
       availprocs->reindex();
       CkPrintf("avail now %d\n", availprocs->count());
     }
+  else
+    {
+      CkPrintf("cannot use exclusion in rhoRhart\n");
+    }
+  delete avail;
 
   int destpe=availprocs->findNext(); 
   srcpe=destpe;
@@ -1234,10 +1249,12 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       if(rem!=0)
 	rghobjs_per_pe += 1;
     }
-  if(availprocs->count()-exclude->count()>nchareRhoGHart)
+  PeList *avail= new PeList(*availprocs);
+  *avail-*exclude;
+  if(avail->count()>nchareRhoGHart)
     {
       // try an exclusion
-      CkPrintf("excluding %d from avail %d\n",exclude->count(), availprocs->count());
+      CkPrintf("RhoGHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
       *availprocs-*exclude;
       availprocs->reindex();
       CkPrintf("avail now %d\n", availprocs->count());
@@ -1246,9 +1263,10 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
     {
       CkPrintf("cannot use exclusion in rhoghart\n");
     }
+  delete avail;
     
 
-  int destpe=availprocs->findNext();
+
   if(availprocs->count()==0)
     availprocs->reset();
   if(useCentroid)
@@ -1257,8 +1275,10 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       availprocs->sortSource(rhartmap->getCentroid());
       availprocs->reset();
     }
+  int destpe=availprocs->findNext();
   for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
     {
+      //      CkAssert(exclude->exists(destpe)<0);
       if(rem!=0)
 	if(chunk==rem*rghobjs_per_pe)
 	  rghobjs_per_pe -= 1; 
