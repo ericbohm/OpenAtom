@@ -121,19 +121,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   rho_gs.xdim     = rho_gs.sizeX;
   rho_gs.ydim     = rho_gs.sizeY;
   rho_gs.zdim     = 1;
-  int **index_pack;
-  int *nline_send;
-   if(rhoRsubplanes>1){
-     nline_send  = sim->nline_send_eext_y[thisIndex.x];
-     index_pack  = sim->index_tran_pack_eext_y[thisIndex.x];
-   }//endif
-   
-   index_pack_tran  = new int*[rhoRsubplanes];
-   for(int i=0;i<rhoRsubplanes;i++)
-     index_pack_tran[i]= new int[sim->nlines_max_eext];
-   for(int s=0;s<rhoRsubplanes;s++)
-     for(int i=0;i<sim->nlines_max_eext;i++)
-       index_pack_tran[s][i]=index_pack[s][i]/ngridcEext;
+
 //==================================================================================
 // Decomposition rhoG lines into slices of size rhoGHelper
 
@@ -860,18 +848,6 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
     nline_send  = sim->nline_send_eext_y[ix];
     index_pack  = sim->index_tran_pack_eext_y[ix];
   }//endif
-  /*
-  complex *trandata;     if(flag==0){trandata=atmSF;}else{trandata=atmSFtot;}
-  for(int i=0;i<ngridcEext;i++)
-    {
-      int ic=i*numLines;
-      for(int j=0;j<numLines;j++)
-	{
-	  int jc=j*ngridcEext+i;
-	  trandata[ic+j]=senddata[jc];
-	}
-    }
-  */
 //============================================================================
 // start commlib
 
@@ -905,9 +881,6 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 	  *(int*)CkPriorityPtr(msg) = priority;
 	}//endif
 
-#ifndef CMK_OPTIMIZE
-	double  StartTime=CmiWallTimer();
-#endif    
 
 
 	// beam out all points with same z to chare array index z
@@ -916,19 +889,11 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 	  for (int i=0,j=z; i<numLines; i++,j+=ngridcEext){data[i] = senddata[j];}
 	}else{
 	  int *index_packs=index_pack[s];    
-	  //int *index_packs=index_pack_tran[s];    
 	  for(int i=0; i< numLinesNow; i++){
 	    data[i] = senddata[(z+index_packs[i])];
-	    //data[i]= trandata[(zz+index_packs[i])];
 	  }//endif
 	}//endif
 
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(GHartAtmForcCopy_, StartTime, CmiWallTimer());    
-#endif
-#ifndef CMK_OPTIMIZE
-	StartTime=CmiWallTimer();
-#endif    
 
 	if(rhoRsubplanes==1){
 	  switch(iopt){
@@ -941,9 +906,6 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 	  case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
 	  }//end switch
 	}//endif
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(GHartAtmForcSend_, StartTime, CmiWallTimer());    
-#endif
       }// endif
   }// endfor
 

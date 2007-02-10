@@ -294,12 +294,24 @@ void CP_State_RealSpacePlane::doFFT(){
       {
 	fprintf(stderr,"[%d,%d]on %d nchareG is %d\n",thisIndex.x, thisIndex.y, CkMyPe(),config.nchareG);
 	} */
-    CkAssert(config.nchareG<=ngridc);
-    //    CkAssert(config.nchareG<=32);
-    CkAssert(config.nchareG==scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG);
+    //    CkAssert(config.nchareG<=ngridc);
+    int div    = (config.nchareG / ngridc);
+    int rem    = (config.nchareG % ngridc);
+    int ind    = thisIndex.y+ngridc;    
+    if(div>1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("NchareG too large for ngridc for launch Scheme\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+
     if(thisIndex.y<config.nchareG){
       gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false,iteration);
     }//endif
+    if((div==1) && (thisIndex.y<rem))
+      {
+	gSpacePlaneProxy(thisIndex.x,ind).startNLEes(false,iteration);
+      }
   }//endif
 #endif
 
