@@ -98,6 +98,34 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     cp_grad_corr_on      = sim->cp_grad_corr_on;
     ees_eext_on          = _ees_eext_on;
 
+    int nchareRhoG=sim->nchareRhoG;
+    if(rhoRsubplanes>1)
+      {
+	recvCountFromGRho = 0;
+	for(int i=0;i<nchareRhoG;i++)
+	  {
+	    if(sim->nline_send_rho_y[i][thisIndex.y]>0)
+	      recvCountFromGRho++;
+	  }
+      }
+    else
+      {
+	recvCountFromGRho=nchareRhoG;
+      }
+    int nchareRhoGEext=sim->nchareRhoGEext;
+    if(rhoRsubplanes>1)
+      {
+	recvCountFromGHartExt = 0;
+	for(int i=0;i<nchareRhoGEext;i++)
+	  {
+	    if(sim->nline_send_eext_y[i][thisIndex.y]>0)
+	      recvCountFromGHartExt++;
+	  }
+      }
+    else
+      {
+	recvCountFromGHartExt=nchareRhoGEext;
+      }
 
     CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
 
@@ -910,54 +938,57 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
      //malloc the message
       int sendFFTDataSize = nlines_per_chareRhoG[ic];
       if(rhoRsubplanes!=1){sendFFTDataSize = nlines_per_chareRhoGY[ic][iy];}
-      RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
+      if(sendFFTDataSize>0)
+	{
+	  RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
 
-     //---------------------------
-     //Pack the message
-      msg->size        = sendFFTDataSize;
-      msg->iopt        = iopt;
-      msg->offset      = thisIndex.x;    // z-index
-      msg->offsetGx    = thisIndex.y;    // gx parallelization index
-      complex *data    = msg->data;
-      if(config.prioFFTMsg){
-          CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-          *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x;
-      }//endif
+	  //---------------------------
+	  //Pack the message
+	  msg->size        = sendFFTDataSize;
+	  msg->iopt        = iopt;
+	  msg->offset      = thisIndex.x;    // z-index
+	  msg->offsetGx    = thisIndex.y;    // gx parallelization index
+	  complex *data    = msg->data;
+	  if(config.prioFFTMsg){
+	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	    *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.x;
+	  }//endif
 
-      if(rhoRsubplanes==1){
-        for(int i=0;i<sendFFTDataSize;i++){
-          data[i] = FFTresult[tranpack_rho[ic][i]];
-        }//endfor
-      }else{
-        for(int i=0;i<sendFFTDataSize;i++){
-          data[i] = FFTresult[tranupack_rhoY[ic][iy][i]];
-        }//endfor
-      }//endif
+	  if(rhoRsubplanes==1){
+	    for(int i=0;i<sendFFTDataSize;i++){
+	      data[i] = FFTresult[tranpack_rho[ic][i]];
+	    }//endfor
+	  }else{
+	    for(int i=0;i<sendFFTDataSize;i++){
+	      data[i] = FFTresult[tranupack_rhoY[ic][iy][i]];
+	    }//endfor
+	  }//endif
 
-     //---------------------------
-     // Send the message
-      if(rhoRsubplanes==1){
-       switch(iopt){
-        case 0 : rhoGProxy_com(ic,0).acceptRhoData(msg);      break;
-        case 1 : rhoGProxyIGX_com(ic,0).acceptWhiteByrd(msg); break;
-        case 2 : rhoGProxyIGY_com(ic,0).acceptWhiteByrd(msg); break;
-        case 3 : rhoGProxyIGZ_com(ic,0).acceptWhiteByrd(msg); break;
-        default: CkAbort("impossible iopt");break;
-       }//end switch
-      }else{
-       switch(iopt){
-        case 0 : rhoGProxy(ic,0).acceptRhoData(msg);   break;
-        case 1 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-        case 2 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-        case 3 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-        default: CkAbort("impossible iopt");break;
-       }//end switch
-      }//endif
-
+	  //---------------------------
+	  // Send the message
+	  if(rhoRsubplanes==1){
+	    switch(iopt){
+	    case 0 : rhoGProxy_com(ic,0).acceptRhoData(msg);      break;
+	    case 1 : rhoGProxyIGX_com(ic,0).acceptWhiteByrd(msg); break;
+	    case 2 : rhoGProxyIGY_com(ic,0).acceptWhiteByrd(msg); break;
+	    case 3 : rhoGProxyIGZ_com(ic,0).acceptWhiteByrd(msg); break;
+	    default: CkAbort("impossible iopt");break;
+	    }//end switch
+	  }else{
+	    switch(iopt){
+	    case 0 : rhoGProxy(ic,0).acceptRhoData(msg);   break;
+	    case 1 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
+	    case 2 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
+	    case 3 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
+	    default: CkAbort("impossible iopt");break;
+	    }//end switch
+	  }//endif
+	}//end if nonzero
 #ifdef CMK_VERSION_BLUEGENE
-      if(ic%3==0)
+      if(ic%4==0)
 	CmiNetworkProgress();
 #endif
+
     }//end for : chare sending
 
 //============================================================================
@@ -1035,7 +1066,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 // Perform some error checking
 
   countGradVks[iopt]++;
-  if (countGradVks[iopt] > nchareG) {
+  if (countGradVks[iopt] > recvCountFromGRho) {
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Mismatch in allowed rho_gspace chare arrays : %d %d %d %d\n",
                countGradVks[iopt],nchareG,thisIndex.x,thisIndex.y);
@@ -1097,7 +1128,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
 //============================================================================
 // When you have all the data : finish the FFT back to real space
 
-  if (countGradVks[iopt] == nchareG){
+  if (countGradVks[iopt] == recvCountFromGRho){
 
     countGradVks[iopt]=0;
     if(rhoRsubplanes==1){doneGradRhoVks++;}
@@ -1620,7 +1651,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 // Perform some error checking
 
   countWhiteByrd++;
-  if (countWhiteByrd > nchareG) {
+  if (countWhiteByrd > recvCountFromGRho) {
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Mismatch in allowed rho_gspace chare arrays : %d %d %d %d\n",
                countWhiteByrd,nchareG,thisIndex.x,thisIndex.y);
@@ -1667,7 +1698,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 //============================================================================
 // When you have all the messages, do the last fft, and add in the correction
 
-  if(countWhiteByrd == nchareG){
+  if(countWhiteByrd == recvCountFromGRho){
     countWhiteByrd=0;
 
 #ifndef CMK_OPTIMIZE
@@ -1811,7 +1842,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
 //============================================================================
 // fft the puppy if you've got it all
 
-  if (countGradVks[iopt] == nchareG*rhoGHelpers){
+  if (countGradVks[iopt] == recvCountFromGHartExt){
       countGradVks[iopt]=0;
 
       FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  

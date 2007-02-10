@@ -454,6 +454,16 @@ void make_rho_runs(CPcharmParaInfo *sim){
           }//endfor
         }//endfor
       }//endfor
+      int nsend_min=10000000;
+      int nsend_max=0;
+      for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+	for(int ic=0;ic<rhoRsubplanes;ic++){
+	  if(nline_send_rho_y[igrp][ic]>0)
+	    nsend_min= MIN(nsend_min, nline_send_rho_y[igrp][ic]);
+	  nsend_max= MAX(nsend_max, nline_send_rho_y[igrp][ic]);
+	}
+      }
+      CkPrintf("Send Imbalance for rho_gtor  min %d max %d\n",nsend_min, nsend_max);
 
       // EextR(gx,gy,z) parallelized by gx(subPlane) and z : bigger Z than rho
       // EextG(gx,gy,z) parallelized by collections of {gx,gy} (subdivided)
@@ -478,7 +488,16 @@ void make_rho_runs(CPcharmParaInfo *sim){
           }//endfor
         }//endfor
       }//endfor
-
+      nsend_min=10000000;
+      nsend_max=0;
+      for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+	for(int ic=0;ic<rhoRsubplanes;ic++){
+	  if(nline_send_eext_y[igrp][ic]>0)
+	    nsend_min= MIN(nsend_min, nline_send_eext_y[igrp][ic]);
+	  nsend_max= MAX(nsend_max, nline_send_eext_y[igrp][ic]);
+	}
+      }
+      CkPrintf("Send Imbalance for Eext_gtor  min %d max %d\n",nsend_min, nsend_max);
       delete [] strGx;
       delete [] endGx;
     }//endif
@@ -512,6 +531,114 @@ void make_rho_runs(CPcharmParaInfo *sim){
     sim->index_tran_pack_eext_y  = index_tran_pack_eext_y;
     sim->index_tran_pack_eext_ys = index_tran_pack_eext_ys;
 
+//=================================================================================
+    // find the big and small ones
+    if(rhoRsubplanes>1)
+      {
+	int Rhart_max=0;
+	int Rhart_min=10000000;
+	for( int j=0; j< nchareRhoGEext;j++)
+	  {
+	    int recvCountFromRHartExt = 0;
+	    for(int i=0;i<rhoRsubplanes;i++)
+	      {
+		if(sim->nline_send_eext_y[j][i]>0)
+		  recvCountFromRHartExt++;
+	      }
+	    recvCountFromRHartExt*=sizeZEext;
+	    Rhart_max=MAX(Rhart_max,recvCountFromRHartExt);
+	    Rhart_min=MIN(Rhart_min,recvCountFromRHartExt);
+	  }
+	CkPrintf("GHart recv %d min msg %d max msg from RHart\n",Rhart_min, Rhart_max);
+      }
+    if(rhoRsubplanes>1)
+      {  // this is sort of a lie
+	int Rho_max=0;
+	int Rho_min=10000000;
+	for( int j=0; j< nchareRhoGEext;j++)
+	  {
+	    int recvCountFromRho = 0;
+	    for(int i=0;i<rhoRsubplanes;i++)
+	      {
+		if(sim->nline_send_eext_y[j][i]>0)
+		  recvCountFromRho++;
+	      }
+	    recvCountFromRho*=sizeZ;
+	    Rho_max=MAX(Rho_max,recvCountFromRho);
+	    Rho_min=MIN(Rho_min,recvCountFromRho);
+	  }
+	CkPrintf("GHart recv %d min msg %d max msg from RRho\n",Rho_min, Rho_max);
+      }
+    if(rhoRsubplanes>1)
+      {
+	int RRho_max=0;
+	int RRho_min=10000000;
+	for( int j=0; j< nchareRhoG;j++)
+	  {
+	    int recvCountFromRRho = 0;
+	    for(int i=0;i<rhoRsubplanes;i++)
+	      {
+		if(sim->nline_send_rho_y[j][i]>0)
+		  recvCountFromRRho++;
+	      }
+	    recvCountFromRRho*=sizeZ;
+	    RRho_max=MAX(RRho_max,recvCountFromRRho);
+	    RRho_min=MIN(RRho_min,recvCountFromRRho);
+	  }
+	CkPrintf("GRho recv %d min msg %d max msg from RRho\n",RRho_min, RRho_max);
+      }
+    if(rhoRsubplanes>1)
+      {
+	int GRho_max=0;
+	int GRho_min=10000000;
+	for( int j=0; j< rhoRsubplanes;j++)
+	  {
+	    int recvCountFromGRho = 0;
+	    for(int i=0;i<nchareRhoG;i++)
+	      {
+		if(sim->nline_send_rho_y[i][j]>0)
+		  recvCountFromGRho++;
+	      }
+	    GRho_max=MAX(GRho_max,recvCountFromGRho);
+	    GRho_min=MIN(GRho_min,recvCountFromGRho);
+	  }
+	CkPrintf("RRho recv %d min msg %d max msg from RhoG\n",GRho_min, GRho_max);
+      }
+    if(rhoRsubplanes>1)
+      {
+	int GHart_max=0;
+	int GHart_min=10000000;
+	for( int j=0; j< rhoRsubplanes;j++)
+	  {
+	    int recvCountFromGHartExt = 0;
+	    for(int i=0;i<nchareRhoGEext;i++)
+	      {
+		if(sim->nline_send_eext_y[i][j]>0)
+		  recvCountFromGHartExt++;
+	      }
+	    GHart_max=MAX(GHart_max,recvCountFromGHartExt);
+	    GHart_min=MIN(GHart_min,recvCountFromGHartExt);
+	  }
+	CkPrintf("RRho recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
+      }
+    if(rhoRsubplanes>1)
+      {
+	int GHart_max=0;
+	int GHart_min=10000000;
+	for( int j=0; j< rhoRsubplanes;j++)
+	  {
+	    int recvCountFromGHartExt = 0;
+	    for(int i=0;i<nchareRhoGEext;i++)
+	      {
+		if(sim->nline_send_eext_y[i][j]>0)
+		  recvCountFromGHartExt++;
+	      }
+	    GHart_max=MAX(GHart_max,recvCountFromGHartExt);
+	    GHart_min=MIN(GHart_min,recvCountFromGHartExt);
+	  }
+	CkPrintf("RHart recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
+      }
+ 
 //============================================================================
 // Clean up the memory
 

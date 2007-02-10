@@ -99,6 +99,20 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   launchFlag      = 0;
   nsendAtmTyp     = 0;
   CountDebug      = 0;
+  if(rhoRsubplanes>1)
+    {
+      recvCountFromRHartExt = 0;
+      for(int i=0;i<rhoRsubplanes;i++)
+	{
+	  if(sim->nline_send_eext_y[thisIndex.x][i]>0)
+	    recvCountFromRHartExt++;
+	}
+      recvCountFromRHartExt*=ngridcEext;
+    }
+  else
+    {
+      recvCountFromRHartExt=ngridcEext;
+    }
 
   rhoGHelpers     = config.rhoGHelpers;
   rho_gs.sizeX    = sizeX;
@@ -107,7 +121,19 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   rho_gs.xdim     = rho_gs.sizeX;
   rho_gs.ydim     = rho_gs.sizeY;
   rho_gs.zdim     = 1;
-
+  int **index_pack;
+  int *nline_send;
+   if(rhoRsubplanes>1){
+     nline_send  = sim->nline_send_eext_y[thisIndex.x];
+     index_pack  = sim->index_tran_pack_eext_y[thisIndex.x];
+   }//endif
+   
+   index_pack_tran  = new int*[rhoRsubplanes];
+   for(int i=0;i<rhoRsubplanes;i++)
+     index_pack_tran[i]= new int[sim->nlines_max_eext];
+   for(int s=0;s<rhoRsubplanes;s++)
+     for(int i=0;i<sim->nlines_max_eext;i++)
+       index_pack_tran[s][i]=index_pack[s][i]/ngridcEext;
 //==================================================================================
 // Decomposition rhoG lines into slices of size rhoGHelper
 
@@ -449,11 +475,11 @@ void CP_Rho_GHartExt::sendVks() {
    int ix               = thisIndex.x;
    int sendLines        = numLines;
 
-   int ***index_pack;
-   int **nline_send;
+   int **index_pack;
+   int *nline_send;
    if(rhoRsubplanes>1){
-     nline_send  = sim->nline_send_eext_y;
-     index_pack  = sim->index_tran_pack_eext_ys;
+     nline_send  = sim->nline_send_eext_y[ix];
+     index_pack  = sim->index_tran_pack_eext_ys[ix];
    }//endif
 
 //============================================================================
@@ -469,38 +495,44 @@ void CP_Rho_GHartExt::sendVks() {
   for(int z=0; z < sizeZ; z++) {
   for(int s=0;s<rhoRsubplanes;s++){
 
-   if(rhoRsubplanes>1){sendLines = nline_send[ix][s];} 
-   RhoHartRSFFTMsg *msg = new (sendLines,8*sizeof(int)) RhoHartRSFFTMsg;
-    msg->size           = sendLines;   // number of z-lines in this batch
-    msg->index          = thisIndex.x;  // regular old index
-    msg->senderBigIndex = ind_xdiv;     // big line batch index
-    msg->senderStrtLine = istrt_lines;  // where my lines start in big batch
-    msg->iopt           = 0;            // iopt always 0 for us
-    if(config.prioFFTMsg){
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x + thisIndex.y;
-    }//endif
+   if(rhoRsubplanes>1){sendLines = nline_send[s];} 
+   if(sendLines >0)
+      {
 
-    // beam out all points with same z to chare array index z
-    complex *data = msg->data;
-    if(rhoRsubplanes==1){
-      for (int i=0,j=z; i<sendLines; i++,j+=sizeZ){data[i] = vksScr[j];}
-    }else{
-      for(int i=0; i< sendLines; i++){
-        data[i] = vksScr[(z+index_pack[ix][s][i])];
-      }//endif
-    }//endif
+	RhoHartRSFFTMsg *msg = new (sendLines,8*sizeof(int)) RhoHartRSFFTMsg;
+	msg->size           = sendLines;   // number of z-lines in this batch
+	msg->index          = thisIndex.x;  // regular old index
+	msg->senderBigIndex = ind_xdiv;     // big line batch index
+	msg->senderStrtLine = istrt_lines;  // where my lines start in big batch
+	msg->iopt           = 0;            // iopt always 0 for us
+	if(config.prioFFTMsg){
+	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x + thisIndex.y;
+	}//endif
 
-    if(rhoRsubplanes==1){
-      rhoRealProxy_com(z,0).acceptHartVks(msg);
-    }else{
-      rhoRealProxy(z,s).acceptHartVks(msg);
-    }//endif
+	// beam out all points with same z to chare array index z
+	complex *data = msg->data;
+	if(rhoRsubplanes==1){
+	  for (int i=0,j=z; i<sendLines; i++,j+=sizeZ){data[i] = vksScr[j];}
+	}else{
+	  for(int i=0; i< sendLines; i++){
+	    data[i] = vksScr[(z+index_pack[s][i])];
+	  }//endif
+	}//endif
 
+	if(rhoRsubplanes==1){
+	  rhoRealProxy_com(z,0).acceptHartVks(msg);
+	}else{
+	  rhoRealProxy(z,s).acceptHartVks(msg);
+	}//endif
+
+      } //endif
+  }
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+	CmiNetworkProgress();
 #endif
-  }}//endfor
+
+}//endfor
 
 //============================================================================
 // Complete the commlib dance and hang out.
@@ -568,11 +600,11 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
  
   int ix              = thisIndex.x;
   int numLinesNow     = numLines;
-  int ***index_pack;
+  int **index_pack;
   if(rhoRsubplanes>1){
-    int **nline_send = sim->nline_send_eext_y;
-    index_pack       = sim->index_tran_pack_eext_y;
-    numLinesNow      = nline_send[ix][isub];
+    int *nline_send = sim->nline_send_eext_y[ix];
+    index_pack       = sim->index_tran_pack_eext_y[ix];
+    numLinesNow      = nline_send[isub];
   }//endif
 
 //============================================================================
@@ -600,7 +632,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
     for(int i=0,j=offset; i< numLines; i++,j+=ngridcEext){atmSF[j] = partlyIFFTd[i];}
   }else{
     for(int i=0; i< numLinesNow; i++){
-      atmSF[(offset+index_pack[ix][isub][i])] = partlyIFFTd[i];
+      atmSF[(offset+index_pack[isub][i])] = partlyIFFTd[i];
     }//endif
   }//endif
 
@@ -610,7 +642,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 // You must receive 1 message from each R-chare before continuing
 
   countEextFFT++;
-  if (countEextFFT == ngridcEext*rhoRsubplanes) {
+  if (countEextFFT == recvCountFromRHartExt) {
     countEextFFT = 0;
 #ifndef _DEBUG_INT_TRANS_FWD_
     launchFlag   = 1;
@@ -822,13 +854,24 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
   complex *senddata  = fftcache->tmpData;
   int ix             = thisIndex.x;
   int numLinesNow    = numLines;
-  int ***index_pack;
-  int **nline_send;
+  int **index_pack;
+  int *nline_send;
   if(rhoRsubplanes>1){
-    nline_send  = sim->nline_send_eext_y;
-    index_pack  = sim->index_tran_pack_eext_y;
+    nline_send  = sim->nline_send_eext_y[ix];
+    index_pack  = sim->index_tran_pack_eext_y[ix];
   }//endif
-
+  /*
+  complex *trandata;     if(flag==0){trandata=atmSF;}else{trandata=atmSFtot;}
+  for(int i=0;i<ngridcEext;i++)
+    {
+      int ic=i*numLines;
+      for(int j=0;j<numLines;j++)
+	{
+	  int jc=j*ngridcEext+i;
+	  trandata[ic+j]=senddata[jc];
+	}
+    }
+  */
 //============================================================================
 // start commlib
 
@@ -841,46 +884,72 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
 //============================================================================
 // Send the message : 1 pt from each line to each chareR
+  int priority =config.rhorHartpriority + thisIndex.x*10;
+  int prioritybits = 8*sizeof(int);
 
   for(int z=0; z < ngridcEext; z++) {
+    int zz=z*numLines;
   for(int s=0;s<rhoRsubplanes;s++){
 
-    if(rhoRsubplanes>1){numLinesNow = nline_send[ix][s];}
-    RhoRHartMsg *msg = new (numLinesNow,8*sizeof(int)) RhoRHartMsg;
-    msg->size        = numLinesNow;     // number of z-lines in this batch
-    msg->senderIndex = thisIndex.x;  // line batch index
-    msg->iopt        = flag;         // iopt
-    msg->iter        = iterAtmTyp;
-    
-    if(config.prioEextFFTMsg){
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rhorHartpriority + thisIndex.x*10;
-    }//endif
+    if(rhoRsubplanes>1){numLinesNow = nline_send[s];}
+    if(numLinesNow >0)
+      {
+	RhoRHartMsg *msg = new (numLinesNow, prioritybits) RhoRHartMsg;
+	msg->size        = numLinesNow;     // number of z-lines in this batch
+	msg->senderIndex = thisIndex.x;  // line batch index
+	msg->iopt        = flag;         // iopt
+	msg->iter        = iterAtmTyp;
 
-    // beam out all points with same z to chare array index z
-    complex *data = msg->data;
-    if(rhoRsubplanes==1){
-      for (int i=0,j=z; i<numLines; i++,j+=ngridcEext){data[i] = senddata[j];}
-    }else{
-      for(int i=0; i< numLinesNow; i++){
-        data[i] = senddata[(z+index_pack[ix][s][i])];
-      }//endif
-    }//endif
+	if(config.prioEextFFTMsg){
+	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg) = priority;
+	}//endif
 
-    if(rhoRsubplanes==1){
-      switch(iopt){
-        case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
-        case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
-      }//end switch
-    }else{
-      switch(iopt){
-        case 0 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
-        case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
-      }//end switch
-    }//endif
-  }
+#ifndef CMK_OPTIMIZE
+	double  StartTime=CmiWallTimer();
+#endif    
+
+
+	// beam out all points with same z to chare array index z
+	complex *data = msg->data;
+	if(rhoRsubplanes==1){
+	  for (int i=0,j=z; i<numLines; i++,j+=ngridcEext){data[i] = senddata[j];}
+	}else{
+	  int *index_packs=index_pack[s];    
+	  //int *index_packs=index_pack_tran[s];    
+	  for(int i=0; i< numLinesNow; i++){
+	    data[i] = senddata[(z+index_packs[i])];
+	    //data[i]= trandata[(zz+index_packs[i])];
+	  }//endif
+	}//endif
+
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(GHartAtmForcCopy_, StartTime, CmiWallTimer());    
+#endif
+#ifndef CMK_OPTIMIZE
+	StartTime=CmiWallTimer();
+#endif    
+
+	if(rhoRsubplanes==1){
+	  switch(iopt){
+	  case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
+	  case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
+	  }//end switch
+	}else{
+	  switch(iopt){
+	  case 0 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
+	  case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
+	  }//end switch
+	}//endif
+#ifndef CMK_OPTIMIZE
+	traceUserBracketEvent(GHartAtmForcSend_, StartTime, CmiWallTimer());    
+#endif
+      }// endif
+  }// endfor
+
 #ifdef CMK_VERSION_BLUEGENE
-       CmiNetworkProgress();
+  if(z%8==0)
+    CmiNetworkProgress();
 #endif
   }//endfor
 

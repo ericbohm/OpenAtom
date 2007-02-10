@@ -506,6 +506,8 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         int myTime;
 	bool doneRhoReal;
 	bool doneRHart;
+	int recvCountFromGRho;
+	int recvCountFromGHartExt;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
 	CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
        ~CP_Rho_RealSpacePlane();
@@ -586,6 +588,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int countDebug;
         void exitForDebugging();
  private:
+	int recvCountFromRRho;
         int nPacked;
         int count_stuff;
 	int count;
@@ -638,7 +641,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         int nptsA;
         int nptsExpndA;
         int countDebug;
-
+	int recvCountFromGHartExt;
         complex *atmSFC;
         double  *atmSFR;
         complex *atmForcC;
@@ -720,6 +723,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         void registrationDone(CkReductionMsg *msg);
         void exitForDebugging();
  private:
+	int recvCountFromRHartExt;
 	RhoGSlab rho_gs;
         int atmSFHere;
         int densityHere;
@@ -736,6 +740,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         CProxy_CP_Rho_RealSpacePlane rhoRealProxy_com;
         CProxy_CP_Rho_RHartExt       rhoRHartProxy_com0;
         CProxy_CP_Rho_RHartExt       rhoRHartProxy_com1;
+	int **index_pack_tran;
 };
 //============================================================================
 

@@ -576,6 +576,8 @@ class CPcharmParaInfoGrp: public Group {
 //200-300 reserved for paircalculator
 #define IntegrateModForces_  1000
 #define Scalcmap_            2000
+#define GHartAtmForcCopy_    3000
+#define GHartAtmForcSend_    4000
 //============================================================================
 
 

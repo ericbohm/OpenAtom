@@ -82,6 +82,22 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     doneWhiteByrd = 0;
     for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
     countDebug=0;
+    int sizeZ=sizeYZ[1];
+    if(rhoRsubplanes>1)
+      {
+	recvCountFromRRho = 0;
+	for(int i=0;i<rhoRsubplanes;i++)
+	  {
+	    if(sim->nline_send_rho_y[thisIndex.x][i]>0)
+	      recvCountFromRRho++;
+	  }
+	recvCountFromRRho*=sizeZ;
+      }
+    else
+      {
+	recvCountFromRRho=sizeZ;
+      }
+
 
 //============================================================================
 // Deal with the run descriptors then malloc
@@ -311,7 +327,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
   count_stuff += size;
 
   count++;
-  if(count==sizeZ*rhoRsubplanes){
+  if(count== recvCountFromRRho){
     if(count_stuff!=rho_gs.numLines*sizeZ){
       CkPrintf("Not enough stuff %d %d on %d\n",count_stuff,rho_gs.numLines,thisIndex.x);
       CkExit();
@@ -569,44 +585,46 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
   for(int s=0;s<rhoRsubplanes;s++){
 
     if(rhoRsubplanes>1){numLines = nline_send[ix][s];}
-    RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;
-    msg->size        = numLines;     // number of z-lines in this batch
-    msg->senderIndex = thisIndex.x;  // line batch index
-    msg->iopt        = iopt;         // iopt
+    if(numLines>0)
+      {
+	RhoRSFFTMsg *msg = new (numLines,8*sizeof(int)) RhoRSFFTMsg;
+	msg->size        = numLines;     // number of z-lines in this batch
+	msg->senderIndex = thisIndex.x;  // line batch index
+	msg->iopt        = iopt;         // iopt
     
-    if(config.prioFFTMsg){
-       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-       *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-    }//endif
+	if(config.prioFFTMsg){
+	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
+	}//endif
 
-    // beam out all points with same z to chare array index z
-    complex *data = msg->data;
-    if(rhoRsubplanes==1){
-      for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
-    }else{
-      for(int i=0; i< numLines; i++){
-        data[i] = ffttempdata[(z+index_pack[ix][s][i])];
-      }//endif
-    }//endif
+	// beam out all points with same z to chare array index z
+	complex *data = msg->data;
+	if(rhoRsubplanes==1){
+	  for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = ffttempdata[j];}
+	}else{
+	  for(int i=0; i< numLines; i++){
+	    data[i] = ffttempdata[(z+index_pack[ix][s][i])];
+	  }//endif
+	}//endif
 
-    if(rhoRsubplanes==1){    
-     switch(iopt){
-      case 1 : rhoRealProxy1_com(z,0).acceptGradRhoVks(msg); break;
-      case 2 : rhoRealProxy2_com(z,0).acceptGradRhoVks(msg); break;
-      case 3 : rhoRealProxy3_com(z,0).acceptGradRhoVks(msg); break;
-      case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
-      default: CkAbort("impossible iopt"); break;
-     }//end switch
-    }else{
-     switch(iopt){
-      case 1 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-      case 2 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-      case 3 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-      case 4 : rhoRealProxy(z,s).acceptWhiteByrd(msg); break;
-      default: CkAbort("impossible iopt"); break;
-     }//end switch
-    }//endif
-
+	if(rhoRsubplanes==1){    
+	  switch(iopt){
+	  case 1 : rhoRealProxy1_com(z,0).acceptGradRhoVks(msg); break;
+	  case 2 : rhoRealProxy2_com(z,0).acceptGradRhoVks(msg); break;
+	  case 3 : rhoRealProxy3_com(z,0).acceptGradRhoVks(msg); break;
+	  case 4 : rhoRealProxyByrd_com(z,0).acceptWhiteByrd(msg); break;
+	  default: CkAbort("impossible iopt"); break;
+	  }//end switch
+	}else{
+	  switch(iopt){
+	  case 1 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+	  case 2 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+	  case 3 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
+	  case 4 : rhoRealProxy(z,s).acceptWhiteByrd(msg); break;
+	  default: CkAbort("impossible iopt"); break;
+	  }//end switch
+	}//endif
+      }// endif
   }//endfor
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
@@ -714,7 +732,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
 // If all chares for a gradient report, perform final FFT.
 
   countWhiteByrd[iopt]++;
-  if(countWhiteByrd[iopt]==sizeZ*rhoRsubplanes){
+  if(countWhiteByrd[iopt]==recvCountFromRRho){
     countWhiteByrd[iopt]=0;
     doneWhiteByrd++;
 

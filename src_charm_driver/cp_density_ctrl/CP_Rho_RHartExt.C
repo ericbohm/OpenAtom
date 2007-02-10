@@ -73,7 +73,20 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 
 //============================================================================
 // Initialize some variables
-
+  int nchareG=sim->nchareRhoGEext;
+  if(rhoRsubplanes>1)
+    {
+      recvCountFromGHartExt = 0;
+      for(int i=0;i<nchareG;i++)
+	{
+	  if(sim->nline_send_eext_y[i][thisIndex.y]>0)
+	    recvCountFromGHartExt++;
+	}
+    }
+  else
+    {
+      recvCountFromGHartExt=nchareG;
+    }
   countIntRtoG     = 0;
   countIntGtoR[0]  = 0;
   countIntGtoR[1]  = 0;
@@ -599,38 +612,40 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
      // malloc the message
       int sendFFTDataSize = nlines_per_chareG[ic];
       if(rhoRsubplanes!=1){sendFFTDataSize = nlines_per_chareG_Y[ic][iy];}
-      RhoGHartMsg *msg    = new (sendFFTDataSize, 8 * sizeof(int)) RhoGHartMsg; 
+      if(sendFFTDataSize>0)
+	{
+	  RhoGHartMsg *msg    = new (sendFFTDataSize, 8 * sizeof(int)) RhoGHartMsg; 
 
-     //----------------------
-     // pack the message
-      if(config.prioEextFFTMsg){
-	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.rhogHartpriority+thisIndex.x*10;
-      }//endif
-      msg->iter           = iterAtmTyp;
-      msg->size           = sendFFTDataSize;
-      msg->offset         = thisIndex.x;    // c-plane-index
-      msg->offsetGx       = thisIndex.y;    // gx parallelization index
-      complex *data       = msg->data;
+	  //----------------------
+	  // pack the message
+	  if(config.prioEextFFTMsg){
+	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+	    *(int*)CkPriorityPtr(msg) = config.rhogHartpriority+thisIndex.x*10;
+	  }//endif
+	  msg->iter           = iterAtmTyp;
+	  msg->size           = sendFFTDataSize;
+	  msg->offset         = thisIndex.x;    // c-plane-index
+	  msg->offsetGx       = thisIndex.y;    // gx parallelization index
+	  complex *data       = msg->data;
 
-      if(rhoRsubplanes==1){      
-        for(int i=0;i<sendFFTDataSize;i++){data[i] = atmSFC[tranpack[ic][i]];}
-      }else{
-        for(int i=0;i<sendFFTDataSize;i++){
-          data[i] = atmSFCint[tranupack_Y[ic][iy][i]];
-        }//endfor
-      }//endif
+	  if(rhoRsubplanes==1){      
+	    for(int i=0;i<sendFFTDataSize;i++){data[i] = atmSFC[tranpack[ic][i]];}
+	  }else{
+	    for(int i=0;i<sendFFTDataSize;i++){
+	      data[i] = atmSFCint[tranupack_Y[ic][iy][i]];
+	    }//endfor
+	  }//endif
 
-     //-----------------
-     // Send the message
-      if(rhoRsubplanes==1){
-        rhoGHartProxy_com(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
-      }else{
-        rhoGHartExtProxy(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
-      }//endif
-
+	  //-----------------
+	  // Send the message
+	  if(rhoRsubplanes==1){
+	    rhoGHartProxy_com(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
+	  }else{
+	    rhoGHartExtProxy(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
+	  }//endif
+	}
 #ifdef CMK_VERSION_BLUEGENE
-      if(ic%3==0)
+      if(ic%4==0)
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -693,7 +708,7 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 // Perform some error checking
 
   countFFT[iopt]++;
-  if (countFFT[iopt] > nchareG) {
+  if (countFFT[iopt] > 	recvCountFromGHartExt) {
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkPrintf("Mismatch in allowed rho_gspace chare arrays : %d %d %d %d\n",
                countFFT[iopt],nchareG,thisIndex.x,thisIndex.y);
@@ -758,7 +773,7 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 //============================================================================
 // When you have all the data : finish the FFT back to real space
 
-  if (countFFT[iopt] == nchareG){
+  if (countFFT[iopt] == recvCountFromGHartExt){
 #ifdef _CP_RHART_VERBOSE_
     CkPrintf("HI, I am rhart chare %d %d in recvsf with opt %d at %d on %d\n",
                thisIndex.x,thisIndex.y,iopt,iterAtmTyp,CkMyPe());
