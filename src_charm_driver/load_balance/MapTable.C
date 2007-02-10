@@ -39,13 +39,13 @@ int MapType2::getCentroid(){
   int avgZ=sumZ/points;
   int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
 #else
-  int points=sum=0;
+  int points=0, sum=0;
   for(int i=0;i<getXmax();i++)
     for(int j=0;j<getYmax();j++){
       sum+=get(i,j);
       points++;
     }
-  int bestpe=sum/points;
+  int bestPe=sum/points;
 #endif      
   return(bestPe);
   }
