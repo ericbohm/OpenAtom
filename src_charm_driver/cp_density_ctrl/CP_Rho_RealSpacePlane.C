@@ -182,12 +182,12 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     CkArrayIndex2D idx(0, thisIndex.x);
     if(is_pow2(nstates)){
 	for (j = 0; j < nstates; j++) {
-	  idx.index[0] = j^((thisIndex.x+thisIndex.y)%nstates);
+	  idx.index[0] = j^((thisIndex.x+thisIndex.y*2)%nstates);
 	    elems[j] = idx;
 	}//endfor
     }else{
 	for (j = 0; j < nstates; j++) {
-	    idx.index[0] = (j+thisIndex.x+thisIndex.y)%nstates;
+	    idx.index[0] = (j+thisIndex.x+thisIndex.y*2)%nstates;
 	    elems[j] = idx;
 	}//endfor
     }//endif
