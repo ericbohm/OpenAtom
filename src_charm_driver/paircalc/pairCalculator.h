@@ -45,6 +45,12 @@ class PairCalcID {
   CkVec <CkArrayIndex4D> listLFrom;
   CkVec <CkArrayIndex4D> listLNotFrom;
   CkVec <CkArrayIndex4D> listRNotFrom;
+#ifdef _CP_SUBSTEP_TIMING_
+  CkCallback beginTimerCB;
+  CkCallback endTimerCB;
+  int forwardTimerID;
+  int backwardTimerID;
+#endif
   PairCalcID() {}
   ~PairCalcID() {
     if(existsLproxy)
@@ -127,6 +133,12 @@ class PairCalcID {
     orthomCastGrpId=pid.orthomCastGrpId;
     orthoRedGrpId=pid.orthoRedGrpId;
     cproxy=pid.cproxy;
+#ifdef _CP_SUBSTEP_TIMING_
+    forwardTimerID=pid.forwardTimerID;
+    backwardTimerID=pid.backwardTimerID;
+    beginTimerCB=pid.beginTimerCB;
+    endTimerCB=pid.endTimerCB;
+#endif
     // everyone has to make their own proxies
     return *this;
   }
@@ -151,6 +163,12 @@ class PairCalcID {
     p|orthomCastGrpId;
     p|orthoRedGrpId;
     p|priority;
+#ifdef _CP_SUBSTEP_TIMING_
+    p|forwardTimerID;
+    p|backwardTimerID;
+    p|beginTimerCB;
+    p|endTimerCB;
+#endif
     if(p.isUnpacking())
       {
 	if(existsLproxy)

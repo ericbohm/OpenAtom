@@ -36,6 +36,7 @@
 
 
 //============================================================================
+extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_AtomsGrp                atomsGrpProxy;
 extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
 extern CProxy_CP_Rho_RealSpacePlane   rhoRealProxy;
@@ -98,7 +99,7 @@ void CP_State_RealSpacePlane::run () {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits, 
-                  int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc) {
+                  int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc, int _rfortime, int _rbacktime) {
 //============================================================================
 //  ckout << "State R Space Constructor : "
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
@@ -115,6 +116,8 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     csize = (ngrida/2 + 1)*ngridb; 
     rsize = (ngrida   + 2)*ngridb; ;
     iplane_ind  = thisIndex.y;
+    forwardTimeKeep=_rfortime;
+    backwardTimeKeep=_rbacktime;
     initRealStateSlab(&rs, size, gSpaceUnits, realSpaceUnits, thisIndex.x, thisIndex.y);
 
     gproxy = gSpacePlaneProxy;
@@ -168,6 +171,12 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 //============================================================================
 void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 //============================================================================
+#ifdef _CP_SUBSTEP_TIMING_
+  double rstart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&rstart,CkReduction::min_double, cb , forwardTimeKeep);
+#endif
+
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size ;i++)
     {
@@ -401,6 +410,11 @@ void CP_State_RealSpacePlane::doReduction(){
 #endif    
 
   fftcache->freeCacheMem("CP_State_RealSpacePlane::doReduction");
+#ifdef _CP_SUBSTEP_TIMING_
+  double rend=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&rend,CkReduction::max_double, cb , forwardTimeKeep);
+#endif
 
 //============================================================================
     }//end routine
@@ -426,6 +440,11 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
  
 #ifdef _CP_DEBUG_STATER_VERBOSE_
   CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
+#endif
+#ifdef _CP_SUBSTEP_TIMING_
+  double rstart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&rstart,CkReduction::min_double, cb , backwardTimeKeep);
 #endif
 
 #ifdef _NAN_CHECK_
@@ -585,6 +604,11 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
   if(config.conserveMemory){
      rs.destroy();
   }//endif
+#ifdef _CP_SUBSTEP_TIMING_
+  double rend=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&rend,CkReduction::max_double, cb , backwardTimeKeep);
+#endif
 
 //============================================================================
    }//end routine : CP_State_RealSpacePlane::sendFPsiToGSP

@@ -175,6 +175,7 @@
 
 
 #include "ckPairCalculator.h"
+#include "pairCalculator.h"
 #ifdef CMK_VERSION_BLUEGENE
 #include "builtins.h"
 // void __alignx(int alignment,  const void *address);
@@ -185,6 +186,9 @@
 
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
+
+extern PairCalcID pairCalcID1;
+extern PairCalcID pairCalcID2;
 
 CkReduction::reducerType sumMatrixDoubleType;
 
@@ -583,6 +587,18 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
 
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
+#endif
+#ifdef _CP_SUBSTEP_TIMING_
+  if(numRecd==0)
+    {
+      double pstart=CmiWallTimer();
+      if(symmetric)
+	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.forwardTimerID);
+      else
+	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID2.beginTimerCB , pairCalcID2.forwardTimerID);
+
+
+    }
 #endif
   if(!resumed)
     {
@@ -1184,6 +1200,16 @@ PairCalculator::multiplyForward(bool flag_dp)
 
   // do the slicing and dicing to send bits to Ortho
   contributeSubTiles(outData);
+#ifdef _CP_SUBSTEP_TIMING_
+  double pstart=CmiWallTimer();
+  if(symmetric)
+    contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.forwardTimerID);
+
+  else
+    contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID2.endTimerCB , pairCalcID2.forwardTimerID);
+
+
+#endif
 
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -1321,6 +1347,16 @@ PairCalculator::acceptPhantomData(phantomMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
   /  CkPrintf("[%d,%d,%d,%d,%d] accept Phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 #endif
+
+
+#ifdef _CP_SUBSTEP_TIMING_
+  //satisfy fw path reduction for this triangle
+  double pstart=CmiWallTimer();
+  contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.forwardTimerID);
+  pstart=CmiWallTimer();
+  contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.forwardTimerID);
+#endif
+
   blkSize=msg->blkSize;
   CkAssert(amPhantom);
   if (!existsRight)
@@ -1393,7 +1429,17 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d %d %d %d %d]: MultiplyResult with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType);
 #endif
+#ifdef _CP_SUBSTEP_TIMING_
+  if(numRecdBW==0)
+    {
+      double pstart=CmiWallTimer();
+      if(symmetric)
+	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.backwardTimerID);
 
+      else
+	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID2.beginTimerCB , pairCalcID2.backwardTimerID);
+    }
+#endif
   numRecdBW++; 
 
 #ifdef _NAN_CHECK_
@@ -1897,6 +1943,16 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int n
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
       numRecdBW=0;
+#ifdef _CP_SUBSTEP_TIMING_
+      double pstart=CmiWallTimer();
+      if(symmetric)
+	contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.backwardTimerID);
+      else
+	contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID2.endTimerCB , pairCalcID2.backwardTimerID);
+
+
+#endif
+
     }
 }
 

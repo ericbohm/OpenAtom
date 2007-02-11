@@ -97,7 +97,7 @@ class orthoMtrigger : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 
 class Ortho : public CBase_Ortho{
  public:
-  Ortho(){}
+  Ortho() {}
   Ortho(CkMigrateMessage *m){}
   ~Ortho(){
     delete [] A;
@@ -247,7 +247,7 @@ class Ortho : public CBase_Ortho{
    CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
    CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
    CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
-   CLA_Matrix_interface matB3, CLA_Matrix_interface matC3);
+   CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, int timeKeep);
 
   void tolerance_check(void);
   void step_2();
@@ -285,6 +285,7 @@ class Ortho : public CBase_Ortho{
   bool step2done;
   bool step3done;
  private:
+  int timeKeep;
   double *orthoT; // only used on [0,0]
   double *ortho; //only used on [0,0]
   double *wallTimeArr;//only used on [0,0]

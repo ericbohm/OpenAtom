@@ -60,6 +60,7 @@
 
 extern Config config;
 extern int nstates;
+extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_main                    mainProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
@@ -113,6 +114,12 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+#ifdef _CP_SUBSTEP_TIMING_
+  double ostart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&ostart,CkReduction::min_double, cb , timeKeep);
+#endif
+
   if(thisIndex.x==0 && thisIndex.y==0)
     {
       if(cp_min_opt==1){
@@ -377,6 +384,12 @@ void Ortho::resume(){
 	// we have a transposed copy of what scalc wants
 	finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
       }
+#ifdef _CP_SUBSTEP_TIMING_
+  double oend=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&oend,CkReduction::max_double, cb , timeKeep);
+#endif
+
 //----------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -704,7 +717,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
  CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
  CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
  CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
- CLA_Matrix_interface matB3, CLA_Matrix_interface matC3){
+ CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, int timekeep){
 //============================================================================
 /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
@@ -713,6 +726,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
   this->matA2 = matA2; this->matB2 = matB2; this->matC2 = matC2;
   this->matA3 = matA3; this->matB3 = matB3; this->matC3 = matC3;
+  timeKeep=timekeep;
   A = new double[m * n];
   B = new double[m * n];
   C = new double[m * n];

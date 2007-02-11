@@ -138,6 +138,7 @@ cpaimd:    $(OBJS_DECL) $(OBJS)
 #---------------------------------------------------------------------------
 cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/ReductionClients.h \
+	$(MAIN)/TimeKeeper.h \
 	$(ORTHO)/ortho.h $(ORTHO)/lambda.h $(FFTSLAB)/fftCacheSlab.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
 	$(TOPINC)/CPcharmParaInfo.h \
@@ -150,7 +151,8 @@ cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(LOADB)/IntMap.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
-	$(CHARMC) -c $(MAIN)/cpaimd.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(MAIN)/cpaimd.C -O -g $(FLAGS) $(OPT_FORT)
+#  higher than -O is a waste of time here
 #---------------------------------------------------------------------------
 CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
                         $(STATE)/CP_State_Plane.h \

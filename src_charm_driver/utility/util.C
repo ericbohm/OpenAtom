@@ -467,7 +467,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
         }//endfor
      }//endfor
      for(int i=0;i<nplane_x;i++){listGx[i]=i;}
-     if(nplane_x>1){sort_commence(nplane_x,winGx,listGx);}
+     //     if(nplane_x>1){sort_commence(nplane_x,winGx,listGx);}
 
      int div    = (nplane_x/rhoRsubplanes);
      int rem    = (nplane_x % rhoRsubplanes);

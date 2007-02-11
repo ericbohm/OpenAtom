@@ -35,7 +35,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
 //============================================================================
-
+extern CProxy_TimeKeeper                 TimeKeeperProxy;
 extern CProxy_CP_State_RealSpacePlane    realSpacePlaneProxy;
 extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
 extern CProxy_CP_Rho_RealSpacePlane      rhoRealProxy;
@@ -69,7 +69,8 @@ bool is_pow2(int );
 //
 //============================================================================
 CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCommlib, 
-                                             int _ees_eext_on,int _ngridcEext)
+                                             int _ees_eext_on,int _ngridcEext,
+					     int _rhokeeperid)
 //============================================================================
    {//begin routine
 //============================================================================
@@ -97,7 +98,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 
     cp_grad_corr_on      = sim->cp_grad_corr_on;
     ees_eext_on          = _ees_eext_on;
-
+    rhoKeeperId          = _rhokeeperid;
     int nchareRhoG=sim->nchareRhoG;
     if(rhoRsubplanes>1)
       {
@@ -335,7 +336,11 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
       CkAssert(isnan(((double*) msg->getData())[i])==0);
   }
 #endif
-
+#ifdef _CP_SUBSTEP_TIMING_
+  double rhostart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&rhostart,CkReduction::min_double, cb ,rhoKeeperId);
+#endif
 //============================================================================
 // Set the flags : you are not done unless certain conditions apply.
 
@@ -1997,6 +2002,11 @@ void CP_Rho_RealSpacePlane::doMulticast(){
         realSpaceSectionProxy.doProduct(msg);
       }//enddif
      if(config.useCommlibMulticast){mcastInstance.endIteration();}
+#ifdef _CP_SUBSTEP_TIMING_
+     double rhoend=CmiWallTimer();
+     contribute(sizeof(double), &rhoend, CkReduction::max_double,  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy),rhoKeeperId);
+#endif
+
 #endif
    }//endif
 

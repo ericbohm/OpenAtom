@@ -73,8 +73,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  bool streamBWout, bool delayBWSend, int streamFW, 
 			  bool useDirectSend, bool gSpaceSum, int gpriority, 
 			  bool phantomSym, bool useBWBarrier, 
-			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW
-			  ) {
+			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW)
+			   {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);

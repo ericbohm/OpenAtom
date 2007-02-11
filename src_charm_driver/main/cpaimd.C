@@ -113,6 +113,7 @@
 #ifdef USE_TOPOMAP
 #include "bgltorus.h"
 #endif
+#include "TimeKeeper.h"
 //============================================================================
 #include "../include/debug_flags.h"
 #include "../include/CPcharmParaInfo.h"
@@ -122,8 +123,8 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
 //============================================================================
 
-
-
+int TimeKeeperID=0;
+vector <string> TimeKeeperNames;
 //============================================================================
 /** 
  * \defgroup  piny_vars Defining all Charm++ readonly variables for PINY physics 
@@ -185,6 +186,7 @@ CkHashtableT<intdual, int> OrthoHelpermaptable;
 PairCalcID pairCalcID1;
 PairCalcID pairCalcID2;
 
+
 CProxy_main                       mainProxy;
 CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
 CProxy_CP_State_ParticlePlane     particlePlaneProxy;
@@ -205,7 +207,7 @@ CProxy_StructureFactor            sfCompProxy;
 CProxy_eesCache                   eesCacheProxy;
 CProxy_OrthoHelper                orthoHelperProxy;
 Config                            config;
-
+CProxy_TimeKeeper                 TimeKeeperProxy;
 //============================================================================
 
 
@@ -602,7 +604,7 @@ main::main(CkArgMsg *msg) {
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     Timer=newtime;
-
+    TimeKeeperProxy= CProxy_TimeKeeper::ckNew(0);    
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 
@@ -671,6 +673,8 @@ main::main(CkArgMsg *msg) {
 
 
     init_commlib_strategies(sim->nchareRhoG, sizeYZ[1],nchareRhoRHart);
+
+    TimeKeeperProxy.init();
 
 //============================================================================
 // clean up
@@ -864,7 +868,12 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
     orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
 
-
+#ifdef _CP_SUBSTEP_TIMING_
+    pairCalcID1.forwardTimerID=keeperRegister("Sym Forward");
+    pairCalcID1.backwardTimerID=keeperRegister("Sym Backward");
+    pairCalcID1.beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+    pairCalcID1.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+#endif
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW);
 
     CkArrayIndex2D myindex(0, 0);
@@ -877,6 +886,13 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     for(int i=0; i< nchareG ;i++)
       mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
       //asymmetric AKA Lambda AKA Gamma
+#ifdef _CP_SUBSTEP_TIMING_
+    pairCalcID2.forwardTimerID=keeperRegister("Asym Forward");
+    pairCalcID2.backwardTimerID=keeperRegister("Asym Backward");
+    pairCalcID2.beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+    pairCalcID2.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+#endif
+
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, orthomCastGrpId, orthoRedGrpId,config.numChunksAsym, config.lambdaGrainSize, config.usePairEtoM, config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW);
     
 
@@ -1461,13 +1477,13 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
    config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
 
-
+  int timekeep=keeperRegister("Ortho S to T");
   for (int s1 = 0; s1 < nstates; s1 += config.orthoGrainSize)
     for (int s2 = 0; s2 < nstates; s2 += config.orthoGrainSize) {
       int indX = s1 / config.orthoGrainSize;
       int indY = s2 / config.orthoGrainSize;
       orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3);
+      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep);
       if(config.useOrthoHelpers)
       {
 	orthoHelperProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
@@ -1656,10 +1672,14 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew();
   double newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n", newtime-Timer);
+  //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts;
+  int gforward=keeperRegister(string("GSpaceForward"));
+  int gbackward=keeperRegister(string("GSpaceBackward"));
   gSpaceOpts.setMap(gsMap);
   gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX, sizeYZ, 1, 1, sGrainSize, numChunks, gSpaceOpts);
+                     sizeX, sizeYZ, 1, 1, sGrainSize, numChunks,  gforward, 
+		     gbackward, gSpaceOpts);
 
   if(config.dumpMapFiles) {
     int size[2];
@@ -1707,11 +1727,15 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   newtime=CmiWallTimer();
   CkPrintf("RSMap created in %g\n", newtime-Timer);
   Timer=newtime;
+  //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts;
   realSpaceOpts.setMap(rsMap);
   size2d sizeRealPlane(sizeYZ[1], sizeX);
+  int rforward=keeperRegister(string("RealSpaceForward"));
+  int rbackward=keeperRegister(string("RealSpaceBackward"));
+
   realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane, 
-	1, 1, ngrida, ngridb, ngridc, realSpaceOpts);
+	1, 1, ngrida, ngridb, ngridc, rforward, rbackward,realSpaceOpts);
   
   if(config.dumpMapFiles) {
     int size[2];
@@ -1773,6 +1797,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
                      numGEext,      numRXEext,  numRYEext,
   		     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
                      config.rhoRsubplanes);
+  CkPrintf("created fftcache proxy\n");
   delete [] numRXState;
   delete [] numRYState;
   delete [] numRXNL;
@@ -1783,14 +1808,16 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   delete [] numRYEext;
 
   sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
+  CkPrintf("created sfcache proxy\n");
   sfCompProxy  = CProxy_StructureFactor::ckNew();
+  CkPrintf("created sfcomp proxy\n");
   eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
                                          nstates,nchareRhoG);
-
-
+  CkPrintf("created eescache proxy\n");
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
 
+  //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts;
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
   particleOpts.bindTo(gSpacePlaneProxy);
@@ -1806,7 +1833,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
   for (int s = 0; s < nstates; s++){
     for (int x = 0; x <nchareG; x++){
-        gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1,1,sGrainSize,numChunks);
+        gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1,1,sGrainSize,numChunks,gforward, gbackward);
         particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
                                         ngridaNl,ngridbNl,ngridcNl,1,
    				        numSfGrps, natm_nl, natm_nl_grp_max,
@@ -1814,6 +1841,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
                                         numIterNL,ees_nonlocal_on);
     }//endfor
   }//endfor
+
   gSpacePlaneProxy.doneInserting();
   particlePlaneProxy.doneInserting();
 
@@ -1822,7 +1850,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
     for (int s = 0;  s < nstates; s++){
       for (int y = 0; y < nchareR; y += 1){
-         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1,ngrida,ngridb,ngridc);
+         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1,ngrida,ngridb,ngridc, rforward, rbackward);
       }//endfor
     }//endfor
     realSpacePlaneProxy.doneInserting();
@@ -2162,7 +2190,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
-  CkArrayOptions rhorsOpts;
+  CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
+    //CkArrayOptions rhorsOpts;
   rhorsOpts.setMap(rhorsMap);
 
 
@@ -2330,13 +2359,16 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   //--------------------------------------------------------------------------
     
   // insert rhoreal
+    int rhokeeper= keeperRegister(string("Density"));
     rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
-                                          ees_eext_on,ngrid_eext_c,rhorsOpts);
-    for (int i = 0; i < nchareRhoR; i++) {
+                                          ees_eext_on, ngrid_eext_c, rhokeeper,
+						       rhorsOpts);
+    /*    for (int i = 0; i < nchareRhoR; i++) {
       for(int j = 0; j < config.rhoRsubplanes; j++){
-        rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy,ees_eext_on,ngrid_eext_c);
+        rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy,ees_eext_on,ngrid_eext_c,rhokeeper);
       }//endfor
     }//endfor
+    */
     rhoRealProxy.doneInserting();
     rhoRealProxy.setReductionClient(printEnergyEexc, 0);
   //--------------------------------------------------------------------------

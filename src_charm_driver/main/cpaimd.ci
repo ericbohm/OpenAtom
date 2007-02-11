@@ -11,7 +11,9 @@ mainmodule cpaimd {
 	readonly int Ortho_UE_step3;
 	readonly int Ortho_UE_error;
 	readonly bool Ortho_use_local_cb;
-
+	readonly int TimeKeeperID;
+	
+	readonly CProxy_TimeKeeper TimeKeeperProxy;
 	initproc registersumFastDouble(void);	
 
         extern module ckPairCalculator;
@@ -181,7 +183,7 @@ mainmodule cpaimd {
 
 	array [2D]  CP_State_GSpacePlane {
 		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
-                        int numG, int numR, int s_grain, int numChunks);
+                        int numG, int numR, int s_grain, int numChunks, int timekeepf, int timekeepb);
 		entry void initGSpace(int m, 
 			complex pts[m],int mv, complex vpts[mv], 
                         int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
@@ -253,7 +255,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_State_RealSpacePlane {
-		entry CP_State_RealSpacePlane(size2d , int , int ,int, int, int);
+		entry CP_State_RealSpacePlane(size2d , int , int ,int, int, int,int, int);
 		entry void doFFT(RSFFTMsg *);
 		entry [nokeep] void doProduct(ProductMsg *m);
 		entry void setNumPlanesToExpect(int num);
@@ -263,7 +265,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
+		entry CP_Rho_RealSpacePlane(int, size2d, bool,int,int, int);
                 entry void exitForDebugging();
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
@@ -309,7 +311,9 @@ mainmodule cpaimd {
 		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
-		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3);
+		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+	         int timekeep
+         	);
 		entry Ortho();
 		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void acceptSectionLambda(CkReductionMsg *msg);
@@ -454,5 +458,10 @@ mainmodule cpaimd {
 		entry eesCache(int,int,int,int,int,int);
 	};
 	
-
+	chare TimeKeeper {
+		entry TimeKeeper();
+		entry void init();
+	        entry void collectStart(CkReductionMsg *m);	  
+	        entry void collectEnd(CkReductionMsg *m);	  
+	};
 };

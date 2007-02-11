@@ -298,7 +298,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool triggerNL;
 	bool NLready;
 	friend class CP_State_ParticlePlane;
-	CP_State_GSpacePlane(int, size2d, int, int, int, int);
+	CP_State_GSpacePlane(int, size2d, int, int, int, int,int,int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void pup(PUP::er &);
@@ -359,6 +359,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void startFFT(CkReductionMsg *msg);
 	
  private:
+	int forwardTimeKeep;
+	int backwardTimeKeep;
 	int ireset_cg;
         int numReset_cg;
         int istart_typ_cp;
@@ -438,7 +440,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 //============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
-	CP_State_RealSpacePlane(size2d, int, int,int,int,int);
+	CP_State_RealSpacePlane(size2d, int, int,int,int,int,int,int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void doFFT(RSFFTMsg *);
@@ -460,6 +462,8 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	    return vksDone;
 	  }
  private:
+	int forwardTimeKeep;
+	int backwardTimeKeep;
         int iplane_ind;
         int iteration;
         int rhoRsubplanes;
@@ -509,7 +513,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int recvCountFromGRho;
 	int recvCountFromGHartExt;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-	CP_Rho_RealSpacePlane(int, size2d, bool,int,int);
+	CP_Rho_RealSpacePlane(int, size2d, bool,int,int,int);
        ~CP_Rho_RealSpacePlane();
 	void pup(PUP::er &);
 	void acceptDensity(CkReductionMsg *);
@@ -537,6 +541,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void isAtSync(int iter){AtSync();};
 	void ResumeFromSync();
  private:
+	int rhoKeeperId;
         int rhoGHelpers;
         int countGradVks[5]; // number of collections that have arrived
         int countIntRtoG[5]; // our internal transpose friends.

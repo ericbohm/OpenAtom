@@ -74,6 +74,7 @@ extern PairCalcID pairCalcID1;
 extern PairCalcID pairCalcID2;
 
 extern CProxy_main                    mainProxy;
+extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
 extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
 extern CProxy_Ortho                   orthoProxy;
@@ -552,7 +553,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
                                            int    gSpaceUnits, 
                                            int    realSpaceUnits, 
                                            int    s_grain,
-					   int    _numChunks
+					   int    _numChunks,
+					   int   _gforward,
+					   int   _gbackward
 					   ) 
 //============================================================================
    {//begin routine
@@ -578,7 +581,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   myenergy_reduc_flag  = 0;
   isuspend_energy      = 0;
   isuspend_atms        = 0;
-
+  forwardTimeKeep = _gforward;
+  backwardTimeKeep = _gbackward;
   total_energy      = 0.0;
   ehart_total       = 0.0;
   enl_total         = 0.0;
@@ -1287,6 +1291,11 @@ void CP_State_GSpacePlane::startNewIter ()  {
 // Output psi at start of minimization for debugging
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
+#ifdef _CP_SUBSTEP_TIMING_
+  double gstart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
+#endif
 
 
 //---------------------------------------------------------------------------
@@ -1436,6 +1445,12 @@ void CP_State_GSpacePlane::sendFFTData () {
 // Finish up 
 
   if (config.useGssInsRealP){gssInstance.endIteration();}
+#ifdef _CP_SUBSTEP_TIMING_
+  double gend=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
+#endif
+
 //----------------------------------------------------------------------
   }//end routine 
 //============================================================================
@@ -1459,6 +1474,11 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
+#ifdef _CP_SUBSTEP_TIMING_
+  double gstart=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&gstart,CkReduction::min_double, cb , backwardTimeKeep);
+#endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     CkPrintf("doIfft %d.%d \n",thisIndex.x,thisIndex.y);
@@ -1868,6 +1888,11 @@ void  CP_State_GSpacePlane::sendLambda() {
 #ifdef _CP_DEBUG_STATEG_VERBOSE_ 
   if(thisIndex.x==0)
    CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
+#ifdef _CP_SUBSTEP_TIMING_
+  double gend=CmiWallTimer();
+  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+  contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
 #endif
 
 //-----------------------------------------------------------------------------
