@@ -191,6 +191,10 @@ class CPcharmParaInfo {
    int ***index_tran_pack_eext_y;
    int ***index_tran_pack_eext_ys;
 
+   int ngxSubMax;                  // max number of gx values in any subplane grp
+   int *numSubGx;                  // number of gx values in each subplane grp
+   int **listSubGx;                // gx values in each subplane grp
+
    CkVec<RunDescriptor> *RhosortedRunDescriptors; // description of collection
    RedundantCommPkg *RCommPkg;  // communication of redundant elements
 
@@ -389,7 +393,18 @@ class CPcharmParaInfo {
          }//endfor
 	}//endfor
        }//endfor
-     }//endif
+
+       ngxSubMax = s.ngxSubMax; 
+       numSubGx  = new int [rhoRsubplanes];
+       listSubGx = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"charmparainfo");
+       for(int ic=0;ic<rhoRsubplanes;ic++){
+         numSubGx[ic] = s.numSubGx[ic];
+         for(int jc=0;jc<numSubGx[ic];jc++){
+           listSubGx[ic][jc] = s.listSubGx[ic][jc];
+	 }//endfor
+       }//endfor
+
+     }//endif : we have subplanes
 
      LBTurnInstrumentOff();
    }//end constructor
@@ -426,6 +441,10 @@ class CPcharmParaInfo {
        index_tran_pack_eext_y   = NULL;
        index_tran_pack_eext_ys  = NULL;
        nline_send_eext_y        = NULL;
+
+       ngxSubMax = 0;
+       numSubGx  = NULL;
+       listSubGx = NULL;
 
    }
 //=============================================================================
@@ -465,6 +484,9 @@ class CPcharmParaInfo {
   		                          0,nlines_max_eext);
       cfree_int_mat(nline_send_rho_y,0,nchareRhoG,0,rhoRsubplanes);
       cfree_int_mat(nline_send_eext_y,0,nchareRhoGEext,0,rhoRsubplanes);
+
+      delete [] numSubGx;
+      cfree_int_mat(listSubGx,0,rhoRsubplanes,0,ngxSubMax);
      }//endif
       
   }//end destructor
@@ -493,6 +515,8 @@ class CPcharmParaInfo {
       p|nlines_max; p|nlines_max_eext;
       p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 
       p|nlines_max_rho; p|nlines_tot_rho; p|npts_tot_rho;
+      p|ngxSubMax; 
+
       if(p.isUnpacking()) {
         lines_per_chareRhoG      = new double[nchareRhoG];
         pts_per_chareRhoG        = new double[nchareRhoG];
@@ -525,6 +549,9 @@ class CPcharmParaInfo {
                                                  0,nlines_max_eext,"cpcharmparainfo.h");
           nline_send_eext_y       = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,
                                                   "cpcharmparainfo.h");
+          numSubGx                = new int [rhoRsubplanes];
+          listSubGx               = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,
+                                                  "charmparainfo");
         }//endif
       }//enddif : unpacking
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
@@ -535,6 +562,8 @@ class CPcharmParaInfo {
       PUParray(p,nlines_per_chareRhoGEext, nchareRhoGEext);
       PUParray(p,pts_per_chareRhoG, nchareRhoG);
       PUParray(p,npts_per_chareRhoG, nchareRhoG);
+      PUParray(p,numSubGx,rhoRsubplanes);
+
       for(int igrp=0;igrp<nchareRhoG;igrp++){
 	p|RhosortedRunDescriptors[igrp];
       }
@@ -565,6 +594,10 @@ class CPcharmParaInfo {
             PUParray(p,index_tran_upack_eext_ys[igrp][ic],nline_send_eext_y[igrp][ic]);
 	  }
 	}
+        for(int ic=0;ic<rhoRsubplanes;ic++){
+	  PUParray(p,listSubGx[ic],numSubGx[ic]);
+        }//endfor
+
       }//endif : subplanes are in use.
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
       CkPrintf("CPcharmParaInfo pup 3 \n");

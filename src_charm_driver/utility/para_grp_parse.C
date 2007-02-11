@@ -28,14 +28,11 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,
 // Find the best load balancing factor
 
   PRINT_LINE_STAR;
-  if(statespace)
-    {
+  if(statespace){
       PRINTF("Statically load balancing pts and lines in state G-space : \n");
-    }
-  else
-    {
+  }else{
       PRINTF("Statically load balancing pts and lines in rho G-space : \n");
-    }
+  }//endif
   PRINTF("  There are %d pts %d lines and %d chunks\n",nktot,nline,nchareG);
   PRINT_LINE_DASH;printf("\n");
 
@@ -46,14 +43,14 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,
     EXIT(1);
   }//endif
 
-
   double dev_min  = 0.0;
   int nbal_min    = 0;
   int ibal_min    = 0;
   int ifirst      = 0;
-  for(int ibal=0;ibal<=128;ibal++){
-    int nbal  = ((ibal*nchareG)/32);
+  int mmm         = (nktot/nchareG);
+  for(int ibal=0;ibal<=mmm-1;ibal++){
     int ntarg = (nktot/nchareG);
+    int nbal  = ibal;
     if(ntarg > nbal){ntarg -= nbal;}
     int nmax  = 0;
     int nmin  = nktot;
@@ -281,6 +278,3 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
 //==========================================================================
 
 
-//==========================================================================
-// Reorder for better line decomposition
-//==========================================================================

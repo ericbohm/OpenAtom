@@ -79,6 +79,7 @@ void drcftWrap(int *,double *,int *,complex *,int *,int *,int *,int *,double *,
 
 void lst_sort_clean(int , int *, int *);
 void sort_commence(int , int *,int *);
+void sort_me(int , int *);
 void sort_commence_piny(int , int *,int *);
 
 double altRandom(long *);

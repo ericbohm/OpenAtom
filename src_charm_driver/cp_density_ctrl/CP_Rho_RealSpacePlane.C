@@ -649,6 +649,10 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
 void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 //============================================================================
 
+    CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    int **listSubGx       = sim->listSubGx;
+    int  *numSubGx        = sim->numSubGx;
+
     CkAssert(rhoRsubplanes>1);
     complex *FFTresult;
     switch(iopt){   
@@ -682,14 +686,8 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
     int stride = ngrida/2+1;
     int ix     = thisIndex.x;
     for(int ic = 0; ic < rhoRsubplanes; ic ++) { // chare arrays to which we will send
-
-      int div     = (nplane_rho_x/rhoRsubplanes);   //parallelize gx
-      int rem     = (nplane_rho_x % rhoRsubplanes);
-      int add     = (ic < rem ? 1 : 0);
-      int max     = (ic < rem ? ic : rem);
-      int ist     = div*ic + max;        // start of gx desired by chare ic
-      int iend    = ist + div + add;     // end   of gx desired by chare ic
-      int size    = (iend-ist)*myNgridb; // data size
+      int num   = numSubGx[ic]; // number of gx values chare ic wants
+      int size  = num*myNgridb; // num*(all the y's i have)
 
       int sendFFTDataSize = size;
       RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
@@ -704,9 +702,9 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
           *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
-      for(int i=ist,koff=0;i<iend;i++,koff+=myNgridb){
-        for(int k=koff,ii=i;k<myNgridb+koff;k++,ii+=stride){
-          data[k] = FFTresult[ii]; 
+      for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
+        for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
+          data[k] = FFTresult[ii];  // all y's of this gx
         }//endfor
       }//endfor
 
@@ -835,8 +833,6 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doRhoFFTRytoGy_, StartTime, CmiWallTimer());    
 #endif
-
-
 
 //============================================================================
 // Send chunk to RhoGDensity 
@@ -1227,9 +1223,9 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       RhoGSFFTMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGSFFTMsg; 
       msg->size        = size;
       msg->iopt        = iopt;
-      msg->offset      = myAoff;      // where the gx-lines I have start.
-      msg->num         = myNplane_rho;    // number of gx-lines I have. 
-      complex *data    = msg->data;   // data
+      msg->offset      = thisIndex.y;   // my chare index
+      msg->num         = myNplane_rho;  // number of gx-lines I have. 
+      complex *data    = msg->data;     // data
 
       if(config.prioFFTMsg){
           CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -1302,10 +1298,14 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
 void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 //============================================================================
 
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int **listSubGx      = sim->listSubGx;
+  int  *numSubGx       = sim->numSubGx;
+
   int size         = msg->size;  // msg size
   int iopt         = msg->iopt;  
-  int num          = msg->num;   // number of lines along `a' sent
-  int offset       = msg->offset; // offset into lines along `a'
+  int num          = msg->num;    // number of lines along `a' sent
+  int offset       = msg->offset; // chare array that sent the data
   complex *msgData = msg->data;
 
   CkAssert(size==myNgridb*num);
@@ -1327,10 +1327,12 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
 
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
-  int stride = (ngrida/2+1);
-  for(int js=0,j=offset;js<size;js+=num,j+=stride){
-   for(int is=js,i=j;is<num+js;is++,i++){
-     dataC[i] = msgData[is];
+
+  int stride = ngrida/2+1;
+  for(int js=0,j=0;js<size;js+=num,j++){
+   int jj = j*stride;
+   for(int is=js,i=0;is<(num+js);is++,i++){
+     dataC[(listSubGx[offset][i]+jj)] = msgData[is];
    }//endfor
   }//endfor
 

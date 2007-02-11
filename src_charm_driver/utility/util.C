@@ -260,6 +260,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
+
     for(int i=0;i<nline_tot;i+=2){
       RunDescriptor *Desi  = &runs[i];
       RunDescriptor *Desi1 = &runs[(i+1)];
@@ -402,15 +403,28 @@ void make_rho_runs(CPcharmParaInfo *sim){
     int ***index_tran_pack_eext_y  = NULL;
     int ***index_tran_pack_eext_ys = NULL;
     int **nline_send_eext_y        = NULL;
+    int *numSubGx                  = NULL;
+    int **listSubGx                = NULL;
+    int ngxSubMax                  = nplane_x/rhoRsubplanes+1;
+    if(rhoRsubplanes==1){ngxSubMax=0;}
 
     if(rhoRsubplanes>1){
-      // for normal rho work
+      CkPrintf("\n");
+      PRINT_LINE_STAR;
+      CkPrintf("Creating the subPlane maps\n");
+      PRINT_LINE_DASH;
+    }//endif
+
+    if(rhoRsubplanes>1){//subplanes on
+     //----------------------------------------------------------------
+     // for normal rho work
       index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
                                              0,nlines_max,"util.C");
       index_tran_pack_rho_y   = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
                                              0,nlines_max,"util.C");
       nline_send_rho_y        = cmall_int_mat(0,nchareRhoG,0,rhoRsubplanes,"util.C");
-      // for eext-ees rho work
+     //----------------------------------------------------------------
+     // for eext-ees rho work
       index_tran_upack_eext_y  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
                                               0,nlines_max_eext,"util.C");
       index_tran_upack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
@@ -420,19 +434,60 @@ void make_rho_runs(CPcharmParaInfo *sim){
       index_tran_pack_eext_ys  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
                                               0,nlines_max_eext,"util.C");
       nline_send_eext_y        = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,"util.C");
+     //----------------------------------------------------------------
+     // Balanced SubPlane decomp
+      numSubGx                 = new int [rhoRsubplanes];
+      listSubGx                = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"util.C");
 
-      // RhoR(gx,gy,z) parallelized by gx,  0=<gx<=nplane_x  : same for ees/rho
-      int div       = (nplane_x/rhoRsubplanes);
-      int rem       = (nplane_x % rhoRsubplanes);
-      int *strGx  = new int[rhoRsubplanes];
-      int *endGx  = new int[rhoRsubplanes];
-      for(int ic = 0; ic < rhoRsubplanes; ic ++) {
-        int add     = (ic < rem ? 1 : 0);
-        int max     = (ic < rem ? ic : rem);
-        strGx[ic]  = div*ic + max;
-        endGx[ic]  = strGx[ic] + div + add;
+     //----------------------------------------------------------------
+     // Group the Gx in the subplanes so as to minimize # of message sent from RtoG
+      int **scoreGx  = cmall_int_mat(0,nchareRhoG,0,nplane_x,"util.C");
+      int *winGx     = new int [nplane_x];
+      int *listGx    = new int [nplane_x];
+      int *mapGrpGx  = new int [nplane_x];
+      int *mapMemGx  = new int [nplane_x];
+      for(int igrp=0;igrp<nchareRhoG;igrp++){
+        for(int i=0;i<nplane_x;i++){
+          scoreGx[igrp][i] = 0;
+        }//endfor
       }//endfor
+      for(int igrp=0;igrp<nchareRhoG;igrp++){
+        for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++){
+          scoreGx[igrp][kx_line[i]]++;
+        }//endfor
+      }//endfor
+      for(int i=0;i<nplane_x;i++){
+        int score_max = scoreGx[0][i];
+        winGx[i]      = 0;
+        for(int igrp=0;igrp<nchareRhoG;igrp++){
+          if(scoreGx[igrp][i]>=score_max){
+            score_max = scoreGx[igrp][i];
+            winGx[i]  = igrp;
+	  }//endif
+        }//endfor
+     }//endfor
+     for(int i=0;i<nplane_x;i++){listGx[i]=i;}
+     if(nplane_x>1){sort_commence(nplane_x,winGx,listGx);}
 
+     int div    = (nplane_x/rhoRsubplanes);
+     int rem    = (nplane_x % rhoRsubplanes);
+     int iii = 0;
+     for(int igrp=0;igrp<rhoRsubplanes;igrp++){
+       int max        = (igrp < rem ? 1 : 0);
+       numSubGx[igrp] = (max+div);
+       sort_me(numSubGx[igrp],&listGx[iii]);  //order the gx you have
+       CkPrintf("subplane[%d] Gx { ",igrp);
+       for(int jc=0,ic=iii;ic<iii+max+div;ic++,jc++){
+         listSubGx[igrp][jc]  = listGx[ic];
+         mapGrpGx[listGx[ic]] = igrp;
+         mapMemGx[listGx[ic]] = jc;
+         CkPrintf("(%d %d) ",listGx[ic],winGx[ic]);
+       }//endfor
+       CkPrintf("}\n");
+       iii += (max+div); 
+     }//endfor
+
+      //----------------------------------------------------------------
       // RhoR(gx,gy,z) parallelized by gx(subPlane) and z
       // RhoG(gx,gy,z) parallelized by collections of {gx,gy}
       // pack and upack indicies for rhoG(gx,gy,z) <-> rhoR(gx,gy,z)
@@ -443,28 +498,29 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
       for(int igrp=0;igrp<nchareRhoG;igrp++){
         for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
-          for(int ic=0;ic<rhoRsubplanes;ic++){
-            if(strGx[ic]<=kx_line[i] && kx_line[i]< endGx[ic]){
-              int jc = nline_send_rho_y[igrp][ic];
+  	      int ic = mapGrpGx[kx_line[i]];       //subPlane index where kx is located
+              int ip = mapMemGx[kx_line[i]];       //which kx in the subplane this is
+              int jc = nline_send_rho_y[igrp][ic]; //cnt pts sent from subplane to g-chare
               nline_send_rho_y[igrp][ic]++;
               index_tran_pack_rho_y[igrp][ic][jc]  = j*sizeZ;
-              index_tran_upack_rho_y[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeY
-   		                                   +  ky_line[i];
-	    }//endif
-          }//endfor
+              index_tran_upack_rho_y[igrp][ic][jc] = ip*sizeY +  ky_line[i];
         }//endfor
       }//endfor
+
       int nsend_min=10000000;
       int nsend_max=0;
-      for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+      for(int igrp=0;igrp<nchareRhoG;igrp++){
 	for(int ic=0;ic<rhoRsubplanes;ic++){
-	  if(nline_send_rho_y[igrp][ic]>0)
+	  if(nline_send_rho_y[igrp][ic]>0){
 	    nsend_min= MIN(nsend_min, nline_send_rho_y[igrp][ic]);
-	  nsend_max= MAX(nsend_max, nline_send_rho_y[igrp][ic]);
-	}
-      }
-      CkPrintf("Send Imbalance for rho_gtor  min %d max %d\n",nsend_min, nsend_max);
+  	    nsend_max= MAX(nsend_max, nline_send_rho_y[igrp][ic]);
+	  }//endif
+	}//endif
+      }//endfor
+      CkPrintf("Msg size Imbalance : rhoG <-> rhoR min %d max %d\n",
+                nsend_min, nsend_max);
 
+      //----------------------------------------------------------------
       // EextR(gx,gy,z) parallelized by gx(subPlane) and z : bigger Z than rho
       // EextG(gx,gy,z) parallelized by collections of {gx,gy} (subdivided)
       // pack and upack indicies for EextG(gx,gy,z) <-> EextR(gx,gy,z)
@@ -472,35 +528,40 @@ void make_rho_runs(CPcharmParaInfo *sim){
       for(int ic=0;ic<rhoRsubplanes;ic++){
         nline_send_eext_y[igrp][ic]=0;
       }}//endfor
+
       for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
         for(int j=0;j<nline_lgrp_eext[igrp];j++,i++){
-          for(int ic=0;ic<rhoRsubplanes;ic++){
-            if(strGx[ic]<=kx_line[i] && kx_line[i]< endGx[ic]){
-              int jc = nline_send_eext_y[igrp][ic];
+  	      int ic = mapGrpGx[kx_line[i]];        //subPlane index
+              int ip = mapMemGx[kx_line[i]];        //which kx in the subplane
+              int jc = nline_send_eext_y[igrp][ic]; // cnt num pts sent
               nline_send_eext_y[igrp][ic]++;
               index_tran_pack_eext_y[igrp][ic][jc]  = j*sizeZEext;
               index_tran_pack_eext_ys[igrp][ic][jc] = j*sizeZ;
-              index_tran_upack_eext_y[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeYEext
-   		                                    +  ky_line_ext[i];
-              index_tran_upack_eext_ys[igrp][ic][jc] = (kx_line[i]-strGx[ic])*sizeY
-   		                                     +  ky_line[i];
-	    }//endif
-          }//endfor
+              index_tran_upack_eext_y[igrp][ic][jc] = ip*sizeYEext +  ky_line_ext[i];
+              index_tran_upack_eext_ys[igrp][ic][jc]= ip*sizeY     +  ky_line[i];
         }//endfor
       }//endfor
+
       nsend_min=10000000;
       nsend_max=0;
-      for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+      for(int igrp=0;igrp<nchareRhoGEext;igrp++){
 	for(int ic=0;ic<rhoRsubplanes;ic++){
-	  if(nline_send_eext_y[igrp][ic]>0)
+           if(nline_send_eext_y[igrp][ic]>0){
 	    nsend_min= MIN(nsend_min, nline_send_eext_y[igrp][ic]);
-	  nsend_max= MAX(nsend_max, nline_send_eext_y[igrp][ic]);
-	}
-      }
-      CkPrintf("Send Imbalance for Eext_gtor  min %d max %d\n",nsend_min, nsend_max);
-      delete [] strGx;
-      delete [] endGx;
-    }//endif
+	    nsend_max= MAX(nsend_max, nline_send_eext_y[igrp][ic]);
+           }//endif
+        }//endfor
+      }//endfor
+      CkPrintf("Msg size Imbalance : rhoGhart <-> rhoRhart min %d max %d\n",
+                nsend_min, nsend_max);
+
+      cfree_int_mat(scoreGx,0,nchareRhoG,0,nplane_x);
+      delete [] winGx;
+      delete [] listGx;
+      delete [] mapGrpGx;
+      delete [] mapMemGx;
+
+    }//endif : subplanes are on.
 
 //============================================================================
 // Pack up the stuff
@@ -531,113 +592,111 @@ void make_rho_runs(CPcharmParaInfo *sim){
     sim->index_tran_pack_eext_y  = index_tran_pack_eext_y;
     sim->index_tran_pack_eext_ys = index_tran_pack_eext_ys;
 
+    sim->ngxSubMax               = ngxSubMax;  // max number of gx values in any grp
+    sim->numSubGx                = numSubGx;   // number of gx values in each grp
+    sim->listSubGx               = listSubGx;  // gx values in grp
+      
 //=================================================================================
-    // find the big and small ones
-    if(rhoRsubplanes>1)
-      {
+// Analyze the Send and Receives
+
+    if(rhoRsubplanes>1){
 	int Rhart_max=0;
 	int Rhart_min=10000000;
-	for( int j=0; j< nchareRhoGEext;j++)
-	  {
+	for( int j=0; j< nchareRhoGEext;j++){
 	    int recvCountFromRHartExt = 0;
-	    for(int i=0;i<rhoRsubplanes;i++)
-	      {
+	    for(int i=0;i<rhoRsubplanes;i++){
 		if(sim->nline_send_eext_y[j][i]>0)
 		  recvCountFromRHartExt++;
-	      }
+            }//endfor
 	    recvCountFromRHartExt*=sizeZEext;
 	    Rhart_max=MAX(Rhart_max,recvCountFromRHartExt);
 	    Rhart_min=MIN(Rhart_min,recvCountFromRHartExt);
-	  }
+        }//endfor
 	CkPrintf("GHart recv %d min msg %d max msg from RHart\n",Rhart_min, Rhart_max);
-      }
-    if(rhoRsubplanes>1)
-      {  // this is sort of a lie
+    }//endif
+
+    if(rhoRsubplanes>1){
 	int Rho_max=0;
 	int Rho_min=10000000;
-	for( int j=0; j< nchareRhoGEext;j++)
-	  {
+	for( int j=0; j< nchareRhoGEext;j++){
 	    int recvCountFromRho = 0;
-	    for(int i=0;i<rhoRsubplanes;i++)
-	      {
+	    for(int i=0;i<rhoRsubplanes;i++){
 		if(sim->nline_send_eext_y[j][i]>0)
 		  recvCountFromRho++;
-	      }
+	    }//endfor
 	    recvCountFromRho*=sizeZ;
 	    Rho_max=MAX(Rho_max,recvCountFromRho);
 	    Rho_min=MIN(Rho_min,recvCountFromRho);
-	  }
+	}//endfor
 	CkPrintf("GHart recv %d min msg %d max msg from RRho\n",Rho_min, Rho_max);
-      }
-    if(rhoRsubplanes>1)
-      {
+    }//endif
+
+    if(rhoRsubplanes>1){
 	int RRho_max=0;
 	int RRho_min=10000000;
-	for( int j=0; j< nchareRhoG;j++)
-	  {
+	for( int j=0; j< nchareRhoG;j++){
 	    int recvCountFromRRho = 0;
-	    for(int i=0;i<rhoRsubplanes;i++)
-	      {
+	    for(int i=0;i<rhoRsubplanes;i++){
 		if(sim->nline_send_rho_y[j][i]>0)
 		  recvCountFromRRho++;
-	      }
+	    }//endfor
 	    recvCountFromRRho*=sizeZ;
 	    RRho_max=MAX(RRho_max,recvCountFromRRho);
 	    RRho_min=MIN(RRho_min,recvCountFromRRho);
-	  }
+	  }//endfor
 	CkPrintf("GRho recv %d min msg %d max msg from RRho\n",RRho_min, RRho_max);
-      }
-    if(rhoRsubplanes>1)
-      {
+    }//endif
+
+    if(rhoRsubplanes>1){
 	int GRho_max=0;
 	int GRho_min=10000000;
-	for( int j=0; j< rhoRsubplanes;j++)
-	  {
+	for( int j=0; j< rhoRsubplanes;j++){
 	    int recvCountFromGRho = 0;
-	    for(int i=0;i<nchareRhoG;i++)
-	      {
+	    for(int i=0;i<nchareRhoG;i++){
 		if(sim->nline_send_rho_y[i][j]>0)
 		  recvCountFromGRho++;
-	      }
+	    }//endfor
 	    GRho_max=MAX(GRho_max,recvCountFromGRho);
 	    GRho_min=MIN(GRho_min,recvCountFromGRho);
-	  }
+	}//endfor
 	CkPrintf("RRho recv %d min msg %d max msg from RhoG\n",GRho_min, GRho_max);
-      }
-    if(rhoRsubplanes>1)
-      {
+    }//endif
+
+    if(rhoRsubplanes>1){
 	int GHart_max=0;
 	int GHart_min=10000000;
-	for( int j=0; j< rhoRsubplanes;j++)
-	  {
+	for( int j=0; j< rhoRsubplanes;j++){
 	    int recvCountFromGHartExt = 0;
-	    for(int i=0;i<nchareRhoGEext;i++)
-	      {
+	    for(int i=0;i<nchareRhoGEext;i++){
 		if(sim->nline_send_eext_y[i][j]>0)
 		  recvCountFromGHartExt++;
-	      }
+	    }//endfor
 	    GHart_max=MAX(GHart_max,recvCountFromGHartExt);
 	    GHart_min=MIN(GHart_min,recvCountFromGHartExt);
-	  }
+	}//endfor
 	CkPrintf("RRho recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
-      }
-    if(rhoRsubplanes>1)
-      {
+    }//endif
+
+    if(rhoRsubplanes>1){
 	int GHart_max=0;
 	int GHart_min=10000000;
-	for( int j=0; j< rhoRsubplanes;j++)
-	  {
+	for( int j=0; j< rhoRsubplanes;j++){
 	    int recvCountFromGHartExt = 0;
-	    for(int i=0;i<nchareRhoGEext;i++)
-	      {
+	    for(int i=0;i<nchareRhoGEext;i++){
 		if(sim->nline_send_eext_y[i][j]>0)
 		  recvCountFromGHartExt++;
-	      }
+	    }//endfor
 	    GHart_max=MAX(GHart_max,recvCountFromGHartExt);
 	    GHart_min=MIN(GHart_min,recvCountFromGHartExt);
-	  }
+	}//endfor
 	CkPrintf("RHart recv %d min msg %d max msg from GHart\n",GHart_min, GHart_max);
-      }
+    }//endif
+
+    if(rhoRsubplanes>1){
+      PRINT_LINE_DASH;
+      CkPrintf("Completed subPlane map creation.\n");
+      PRINT_LINE_STAR; CkPrintf("\n\n");
+    }//endif
  
 //============================================================================
 // Clean up the memory
