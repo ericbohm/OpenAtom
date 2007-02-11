@@ -24,6 +24,10 @@ extern int sizeX;
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
 #endif
+
+void create_subPlane_decomp(int ,int *,int *,int ,int *,int *,int *,int **, int );
+void score_subPlane_decomp(int ,int , int *,int *, int *,int **, int *);
+
 //===================================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -110,21 +114,40 @@ void make_rho_runs(CPcharmParaInfo *sim){
     memcpy(kxt,kx,(nPacked*sizeof(int)));
     memcpy(kyt,ky,(nPacked*sizeof(int)));
     memcpy(kzt,kz,(nPacked*sizeof(int)));
-    int nsplit = (3*nplane_x)/2;
 
+    int *mapl      = new int[nline_tot];
+    for(int i=0;i<nline_tot;i++){mapl[i]=i;}
+
+    if(config.rhoLineOrder==0){
+       int nsplit = (3*nplane_x)/2;
+       int jj=0;
+       for(int i=0;i<nsplit; i++){
+       for(int j=i;j<nline_tot;j+=nsplit){
+         mapl[jj]=j; jj++;
+       }}//endfor
+    }//end switch
+    if(config.rhoLineOrder==1){
+      long seed      = 174571;
+      for(int j=0;j<4;j++){
+      for(int i=0;i<nline_tot;i++){
+        double stuff = altRandom(&seed);
+        int index    = nline_tot*stuff;
+        index        = MIN(index,nline_tot-1);
+        int itemp    = mapl[i];
+        mapl[i]      = mapl[index];
+        mapl[index]  = itemp;     
+      }}//endfor
+    }//endif
 
     int jc      = 0;
-    int lc      = 0;
-    for(int i=0;i<nsplit; i++){
-      for(int j=i;j<nline_tot;j+=nsplit){
-        for(int lt=istrt_line[j],l=jc;lt<iend_line[j];lt++,l++){
-          kx[l]    = kxt[lt];
-          ky[l]    = kyt[lt];
-          kz[l]    = kzt[lt];
-	}//endfor
-        jc+=npts_line[j];
-        lc++;
+    for(int i=0;i<nline_tot;i++){
+      int j = mapl[i];
+      for(int lt=istrt_line[j],l=jc;lt<iend_line[j];lt++,l++){
+        kx[l]    = kxt[lt];
+        ky[l]    = kyt[lt];
+        kz[l]    = kzt[lt];
       }//endfor
+      jc+=npts_line[j];
     }//endfor
     if(jc!=nPacked)  {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -132,13 +155,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-    if(lc!=nline_tot){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Toasty Line Flip-lines!\n");
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-    }//endif
 
+    delete [] mapl;
     delete [] kxt;
     delete [] kyt;
     delete [] kzt;
@@ -441,51 +459,32 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
      //----------------------------------------------------------------
      // Group the Gx in the subplanes so as to minimize # of message sent from RtoG
-      int **scoreGx  = cmall_int_mat(0,nchareRhoG,0,nplane_x,"util.C");
-      int *winGx     = new int [nplane_x];
       int *listGx    = new int [nplane_x];
       int *mapGrpGx  = new int [nplane_x];
       int *mapMemGx  = new int [nplane_x];
-      for(int igrp=0;igrp<nchareRhoG;igrp++){
-        for(int i=0;i<nplane_x;i++){
-          scoreGx[igrp][i] = 0;
-        }//endfor
-      }//endfor
-      for(int igrp=0;igrp<nchareRhoG;igrp++){
-        for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++){
-          scoreGx[igrp][kx_line[i]]++;
-        }//endfor
-      }//endfor
-      for(int i=0;i<nplane_x;i++){
-        int score_max = scoreGx[0][i];
-        winGx[i]      = 0;
-        for(int igrp=0;igrp<nchareRhoG;igrp++){
-          if(scoreGx[igrp][i]>=score_max){
-            score_max = scoreGx[igrp][i];
-            winGx[i]  = igrp;
-	  }//endif
-        }//endfor
-     }//endfor
-     for(int i=0;i<nplane_x;i++){listGx[i]=i;}
-     //     if(nplane_x>1){sort_commence(nplane_x,winGx,listGx);}
 
-     int div    = (nplane_x/rhoRsubplanes);
-     int rem    = (nplane_x % rhoRsubplanes);
-     int iii = 0;
-     for(int igrp=0;igrp<rhoRsubplanes;igrp++){
-       int max        = (igrp < rem ? 1 : 0);
-       numSubGx[igrp] = (max+div);
-       sort_me(numSubGx[igrp],&listGx[iii]);  //order the gx you have
-       CkPrintf("subplane[%d] Gx { ",igrp);
-       for(int jc=0,ic=iii;ic<iii+max+div;ic++,jc++){
-         listSubGx[igrp][jc]  = listGx[ic];
-         mapGrpGx[listGx[ic]] = igrp;
-         mapMemGx[listGx[ic]] = jc;
-         CkPrintf("(%d %d) ",listGx[ic],winGx[ic]);
-       }//endfor
-       CkPrintf("}\n");
-       iii += (max+div); 
-     }//endfor
+      int div = (nplane_x/rhoRsubplanes);
+      int rem = (nplane_x % rhoRsubplanes);
+      for(int igrp=0;igrp<rhoRsubplanes;igrp++){
+        int max        = (igrp < rem ? 1 : 0);
+        numSubGx[igrp] = max+div;
+      }//endfor
+      create_subPlane_decomp(nplane_x,listGx,mapGrpGx,nchareRhoGEext,numSubGx,
+                             nline_lgrp_eext,kx_line,nline_send_eext_y,rhoRsubplanes);
+      int iii = 0;
+      for(int igrp=0;igrp<rhoRsubplanes;igrp++){
+        int num = numSubGx[igrp];
+        sort_me(numSubGx[igrp],&listGx[iii]);  //order the gx you have
+        CkPrintf("subplane[%d] Gx { ",igrp);
+        for(int jc=0,ic=iii;ic<iii+num;ic++,jc++){
+          listSubGx[igrp][jc]  = listGx[ic];
+          mapGrpGx[listGx[ic]] = igrp;
+          mapMemGx[listGx[ic]] = jc;
+          CkPrintf("%d ",listGx[ic]);
+        }//endfor
+        CkPrintf("}\n");
+        iii += num;
+      }//endfor
 
       //----------------------------------------------------------------
       // RhoR(gx,gy,z) parallelized by gx(subPlane) and z
@@ -555,8 +554,6 @@ void make_rho_runs(CPcharmParaInfo *sim){
       CkPrintf("Msg size Imbalance : rhoGhart <-> rhoRhart min %d max %d\n",
                 nsend_min, nsend_max);
 
-      cfree_int_mat(scoreGx,0,nchareRhoG,0,nplane_x);
-      delete [] winGx;
       delete [] listGx;
       delete [] mapGrpGx;
       delete [] mapMemGx;
@@ -602,6 +599,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     if(rhoRsubplanes>1){
 	int Rhart_max=0;
 	int Rhart_min=10000000;
+        double total=0;
 	for( int j=0; j< nchareRhoGEext;j++){
 	    int recvCountFromRHartExt = 0;
 	    for(int i=0;i<rhoRsubplanes;i++){
@@ -609,15 +607,19 @@ void make_rho_runs(CPcharmParaInfo *sim){
 		  recvCountFromRHartExt++;
             }//endfor
 	    recvCountFromRHartExt*=sizeZEext;
+            total += recvCountFromRHartExt;
 	    Rhart_max=MAX(Rhart_max,recvCountFromRHartExt);
 	    Rhart_min=MIN(Rhart_min,recvCountFromRHartExt);
         }//endfor
-	CkPrintf("GHart recv %d min msg %d max msg from RHart\n",Rhart_min, Rhart_max);
+        total /= (double)nchareRhoGEext;
+	CkPrintf("GHart recv %d min msg %d max msg avg %g from RHart\n",
+                  Rhart_min, Rhart_max,total);
     }//endif
 
     if(rhoRsubplanes>1){
 	int Rho_max=0;
 	int Rho_min=10000000;
+        double total=0;
 	for( int j=0; j< nchareRhoGEext;j++){
 	    int recvCountFromRho = 0;
 	    for(int i=0;i<rhoRsubplanes;i++){
@@ -625,15 +627,19 @@ void make_rho_runs(CPcharmParaInfo *sim){
 		  recvCountFromRho++;
 	    }//endfor
 	    recvCountFromRho*=sizeZ;
+            total += recvCountFromRho;
 	    Rho_max=MAX(Rho_max,recvCountFromRho);
 	    Rho_min=MIN(Rho_min,recvCountFromRho);
 	}//endfor
-	CkPrintf("GHart recv %d min msg %d max msg from RRho\n",Rho_min, Rho_max);
+        total /= (double)nchareRhoGEext;
+	CkPrintf("GHart recv %d min msg %d max msg avg %g from RRho\n",
+                    Rho_min, Rho_max,total);
     }//endif
 
     if(rhoRsubplanes>1){
 	int RRho_max=0;
 	int RRho_min=10000000;
+        double total=0;
 	for( int j=0; j< nchareRhoG;j++){
 	    int recvCountFromRRho = 0;
 	    for(int i=0;i<rhoRsubplanes;i++){
@@ -641,10 +647,13 @@ void make_rho_runs(CPcharmParaInfo *sim){
 		  recvCountFromRRho++;
 	    }//endfor
 	    recvCountFromRRho*=sizeZ;
+            total += recvCountFromRRho;
 	    RRho_max=MAX(RRho_max,recvCountFromRRho);
 	    RRho_min=MIN(RRho_min,recvCountFromRRho);
 	  }//endfor
-	CkPrintf("GRho recv %d min msg %d max msg from RRho\n",RRho_min, RRho_max);
+        total /= (double)nchareRhoG;
+	CkPrintf("GRho recv %d min msg %d max msg avg %g from RRho\n",
+                  RRho_min,RRho_max,total);
     }//endif
 
     if(rhoRsubplanes>1){
@@ -2068,4 +2077,115 @@ void getSplitDecomp(int *istrt_ret,int *iend_ret,int *n_ret,
 
 //---------------------------------------------------------------------------
   }//end routine
+//============================================================================
+
+
+
+//============================================================================
+// Create some decompositions and find the best one.
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void create_subPlane_decomp(int nplane_x,int *listGx,int *mapGrpGx,
+                            int nchareRhoGEext,int *numSubGx,
+                            int *nline_lgrp_eext,int *kx_line,
+                            int **nline_send_eext_y, int rhoRsubplanes){
+//============================================================================
+// try out some several decomps and find the best
+
+  int *list1 = new int [nplane_x];
+  long seed  = 1145;
+
+  int score_max = 0;
+  for(int j=0;j<nplane_x;j++){list1[j]=j;}
+  for(int ntry=1;ntry<100;ntry++){
+
+   //------------------------------------------------------
+   // Mix up the kx
+    if(ntry>1){
+      double stuff = altRandom(&seed);
+      int index    = nplane_x*stuff;
+      index        = MIN(index,nplane_x-1);
+      stuff        = altRandom(&seed);
+      int jndex    = nplane_x*stuff;
+      jndex        = MIN(jndex,nplane_x-1);
+      int itemp    = list1[index];
+      list1[index] = list1[jndex];
+      list1[jndex] = itemp;
+    }//endif
+
+   //------------------------------------------------------
+   // Create the decomp
+    int iii = 0;
+    for(int igrp=0;igrp<rhoRsubplanes;igrp++){
+      int num = numSubGx[igrp];
+      for(int jc=0,ic=iii;ic<iii+num;ic++,jc++){
+        mapGrpGx[list1[ic]] = igrp;
+      }//endfor
+      iii += num;
+    }//endfor
+
+   //------------------------------------------------------
+   // Score the decomp
+    int score;
+    score_subPlane_decomp(nchareRhoGEext,rhoRsubplanes,nline_lgrp_eext,
+                          mapGrpGx,kx_line,nline_send_eext_y,&score);
+
+   //------------------------------------------------------
+   // Keep the best decomp
+    //    CkPrintf("try %d score %d score_max %d : ",ntry,score,score_max);
+    //    for(int i=0;i<nplane_x;i++){CkPrintf("%d ",list1[i]);} CkPrintf("\n");
+    if(score<score_max || ntry==1){
+      score_max = score;
+      for(int i=0;i<nplane_x;i++){listGx[i]=list1[i];}
+    }else{
+      for(int i=0;i<nplane_x;i++){list1[i]=listGx[i];}
+    }//endif
+
+  }//endfor
+
+  delete [] list1;
+
+//============================================================================
+ }//end routine
+//============================================================================
+
+
+//============================================================================
+// Score a decomposition
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void score_subPlane_decomp(int nchareRhoGEext,int rhoRsubplanes, int *nline_lgrp_eext,
+                           int *mapGrpGx, int *kx_line,int **nline_send_eext_y, 
+                           int *Rhart_max){
+//============================================================================
+// Count the sends
+
+  for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+   for(int ic=0;ic<rhoRsubplanes;ic++){
+     nline_send_eext_y[igrp][ic]=0;
+  }}//endfor
+
+  for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+    for(int j=0;j<nline_lgrp_eext[igrp];j++,i++){
+      int ic = mapGrpGx[kx_line[i]];   //subPlane index
+      nline_send_eext_y[igrp][ic]++;
+    }//endfor
+  }//endfor
+
+//============================================================================
+// Find the total number of send/recvs
+
+  Rhart_max[0] = 0;
+  for( int j=0; j< nchareRhoGEext;j++){
+    int recvCountFromRHartExt = 0;
+    for(int i=0;i<rhoRsubplanes;i++){
+      if(nline_send_eext_y[j][i]>0){recvCountFromRHartExt++;}
+    }//endfor
+    Rhart_max[0]+=recvCountFromRHartExt;
+  }//endfor
+
+//============================================================================
+  }//
 //============================================================================

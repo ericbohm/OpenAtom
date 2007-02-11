@@ -280,7 +280,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 22;
+  num_dict[0] = 23;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
 //=================================================================================
@@ -437,6 +437,12 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"prioEextFFTMsg");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 23)\rhoLineOrder{}
+    ind =  23;
+    strcpy((*dict)[ind].keyword,"rhoLineOrder");
+    strcpy((*dict)[ind].keyarg,"skip");    
+    strcpy((*dict)[ind].error_mes,"skip,none,random");
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -576,6 +582,14 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     ind =  22;
     parse_on_off(dict[ind].keyarg,&prioEextFFTMsg,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 23)\rhoLineOrder{}
+    ind =  23;
+    ierr= 0;
+    if(strcasecmp(dict[ind].keyarg,"none")==0)  {rhoLineOrder =-1; ierr++;}
+    if(strcasecmp(dict[ind].keyarg,"skip")==0)  {rhoLineOrder = 0; ierr++;}
+    if(strcasecmp(dict[ind].keyarg,"random")==0){rhoLineOrder = 1; ierr++;}
+    if(ierr!=1){keyarg_barf(dict,input_name,fun_key,ind);}
 
 //===================================================================================
 // Clean up 

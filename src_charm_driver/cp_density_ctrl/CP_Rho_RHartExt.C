@@ -73,20 +73,17 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 
 //============================================================================
 // Initialize some variables
-  int nchareG=sim->nchareRhoGEext;
-  if(rhoRsubplanes>1)
-    {
-      recvCountFromGHartExt = 0;
-      for(int i=0;i<nchareG;i++)
-	{
-	  if(sim->nline_send_eext_y[i][thisIndex.y]>0)
-	    recvCountFromGHartExt++;
-	}
-    }
-  else
-    {
-      recvCountFromGHartExt=nchareG;
-    }
+
+  int nchareG = sim->nchareRhoGEext;
+  if(rhoRsubplanes>1){
+    recvCountFromGHartExt = 0;
+    for(int i=0;i<nchareG;i++){
+      if(sim->nline_send_eext_y[i][thisIndex.y]>0){recvCountFromGHartExt++;}
+    }//endfor
+  }else{
+    recvCountFromGHartExt=nchareG;
+  }//endif
+
   countIntRtoG     = 0;
   countIntGtoR[0]  = 0;
   countIntGtoR[1]  = 0;
@@ -432,7 +429,11 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 //============================================================================
 // Launch the communication
 
-   CkAssert(rhoRsubplanes>1);
+  CkAssert(rhoRsubplanes>1);
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int **listSubGx      = sim->listSubGx;
+  int  *numSubGx       = sim->numSubGx;
+
   //-----------------------------------------------------------------------------
   // Commlib launch : 
 
@@ -447,14 +448,8 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
     int stride = ngrida/2+1;
     int ix     = thisIndex.x;
     for(int ic = 0; ic < rhoRsubplanes; ic ++) { // chare arrays to which we will send
-
-      int div     = (nplane_rho_x/rhoRsubplanes);   //parallelize gx
-      int rem     = (nplane_rho_x % rhoRsubplanes);
-      int add     = (ic < rem ? 1 : 0);
-      int max     = (ic < rem ? ic : rem);
-      int ist     = div*ic + max;        // start of gx desired by chare ic
-      int iend    = ist + div + add;     // end   of gx desired by chare ic
-      int size    = (iend-ist)*myNgridb; // data size
+      int num   = numSubGx[ic]; // number of gx values chare ic wants
+      int size  = num*myNgridb; // num*(all the y's i have)
 
       int sendFFTDataSize = size;
       RhoGHartMsg *msg = new (sendFFTDataSize, 8 * sizeof(int)) RhoGHartMsg; 
@@ -469,10 +464,10 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
-      for(int i=ist,koff=0;i<iend;i++,koff+=myNgridb){
-        for(int k=koff,ii=i;k<myNgridb+koff;k++,ii+=stride){
-          data[k] = atmSFC[ii]; 
-	}//endfor
+      for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
+        for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
+          data[k] = atmSFC[ii];  // all y's of this gx
+        }//endfor
       }//endfor
 
       rhoRHartExtProxy(ix,ic).recvAtmSfRyToGy(msg);
@@ -889,7 +884,7 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
       msg->size        = size;
       msg->iopt        = iopt;
       msg->iter        = iterAtmTyp;
-      msg->offset      = myAoff;       // where the gx-lines I have start.
+      msg->offset      = thisIndex.y;  // my chare index
       msg->num         = myNplane_rho; // number of gx-lines I have. 
       complex *data    = msg->data;    // data
 
@@ -942,6 +937,10 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
 void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 //============================================================================
 
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int **listSubGx      = sim->listSubGx;
+  int  *numSubGx       = sim->numSubGx;
+
   int size         = msg->size;  // msg size
   int iopt         = msg->iopt;  
   int iter         = msg->iter;  
@@ -973,10 +972,11 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
 
-  int stride = (ngrida/2+1);
-  for(int js=0,j=offset;js<size;js+=num,j+=stride){
-   for(int is=js,i=j;is<num+js;is++,i++){
-     dataC[i] = msgData[is];
+  int stride = ngrida/2+1;
+  for(int js=0,j=0;js<size;js+=num,j++){
+   int jj = j*stride;
+   for(int is=js,i=0;is<(num+js);is++,i++){
+     dataC[(listSubGx[offset][i]+jj)] = msgData[is];
    }//endfor
   }//endfor
 

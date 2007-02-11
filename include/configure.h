@@ -30,6 +30,7 @@ class Config {
   //==================================
   // density control flags and values
   //----------------------------------
+    int rhoLineOrder;
     int rhorHartpriority;
     int rhogHartpriority;
     int useGHartInsRhoRP;
