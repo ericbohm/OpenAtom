@@ -72,7 +72,7 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   iplane_ind  = thisIndex.y*ngridc + thisIndex.x;
 
 //============================================================================
-// Initialize some variables
+// Compute messages sizes and zero message counters
 
   int nchareG = sim->nchareRhoGEext;
   if(rhoRsubplanes>1){
@@ -96,7 +96,11 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   iterAtmTyp       = 0;
   countDebug       = 0;
 
-  // Parallelization of rho(x,y,z) by (y,z)
+//============================================================================
+// Parallelization 
+
+  //------------------------------------------------------
+  // rho(x,y,z) by (y,z)
   int div      = (ngridb/rhoRsubplanes); 
   int rem      = (ngridb % rhoRsubplanes);
   int max      = (thisIndex.y < rem ? thisIndex.y : rem);
@@ -105,20 +109,23 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   nptsB        =  ngrida*myNgridb;                 // size of plane without extra room
   nptsExpndB   = (ngrida+2)*myNgridb;              // extra memory for RealToComplex FFT
 
+  //------------------------------------------------------
   // Parallelization after transpose : rho(gx,y,z) : parallelize gx and z
-  int divb     = (nplane_rho_x/rhoRsubplanes);
-  int remb     = (nplane_rho_x % rhoRsubplanes);
-  int maxb     = (thisIndex.y < remb ? thisIndex.y : remb);
-  myNplane_rho = (thisIndex.y<remb ? divb+1 : divb);// number of x values/lines of y
-  myAoff       = divb*thisIndex.y + maxb;
+  if(rhoRsubplanes>1){
+    myNplane_rho = sim->numSubGx[thisIndex.y];
+  }else{
+    myNplane_rho = nplane_rho_x;
+  }//endif
   nptsA        = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
   nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
+
+//============================================================================
+// Malloc data sets : Register in the cache
 
   csize        = 0;
   csizeInt     = 0;
   if(ees_eext_on==1){
     csize        = (ngrida/2+1)*myNgridb;  // complex variable size
-
  
     eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
     eesData->registerCacheRHart(thisIndex.x);
@@ -150,6 +157,9 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
     CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),rhoRHartExtProxy);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
+
+//============================================================================
+// Set up proxies
 
   rhoGHartProxy_com    = rhoGHartExtProxy;;
   if (config.useRHartInsGHart){
@@ -374,6 +384,8 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
            thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
+//==========================================================================
+// Do the FFT
 #ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
@@ -389,6 +401,9 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
+
+//==========================================================================
+// Do the communication if you are not debugging
 
   if(rhoRsubplanes>1){
     sendAtmSfRyToGy();   // double transpose method (yz ---> gx,z)
@@ -528,37 +543,48 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   delete msg;
 
 //============================================================================
-// Do the Y fft, invoke communication
+// Do the Y fft, invoke communication if not debugging
 
   countIntRtoG++;
   if(countIntRtoG==rhoRsubplanes){
+
     countIntRtoG = 0;
     FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
-
-    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,ngrida,ngridb,iplane_ind);
+    fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,
+                                     ngrida,ngridb,iplane_ind);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTRytoGy_, StartTime, CmiWallTimer());    
 #endif
 
+#ifndef DEBUG_INT_TRANS_FWD
+    sendAtmSfRhoGHart(); 
+#endif
+  }//endif
+
+//============================================================================
+// Debugging 
+
 #ifdef DEBUG_INT_TRANS_FWD
+  if(countIntRtoG==rhoRsubplanes){
+    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    int **listSubGx = sim->listSubGx;
+    int ic          = thisIndex.y;
     char name[100];
     sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
     FILE *fp = fopen(name,"w");
     for(int ix =0;ix<myNplane_rho;ix++){
       for(int iy =0;iy<ngridb;iy++){
         int i = ix*ngridb + iy;
-        fprintf(fp,"%d %d : %g %g\n",iy,ix+myAoff,atmSFCint[i].re,atmSFCint[i].im);
+        fprintf(fp,"%d %d : %g %g\n",iy,listSubGx[ic][ix],atmSFCint[i].re,atmSFCint[i].im);
       }//endfor
     }//endof
     fclose(fp);
     rhoRHartExtProxy(0,0).exitForDebugging();
-#else
-    sendAtmSfRhoGHart(); 
+  }//endif
 #endif
-  }//endfor
 
 //============================================================================
   }//end routine

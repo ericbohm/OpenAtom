@@ -81,7 +81,9 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 
 //============================================================================
 // Get parameters from the globals/groups
+
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+
     ngridcEext           = _ngridcEext;    // FFT sizes for rharteext
     ngrida               = sim->sizeX;     // FFT sizes for rho
     ngridb               = sim->sizeY;
@@ -90,52 +92,47 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 
     iplane_ind           = thisIndex.y*ngridc + thisIndex.x;
 
-    double vol           = sim->vol;
-    int numFFT           = config.numFFTPoints;
-
-    rhoGHelpers          = config.rhoGHelpers;
     rhoRsubplanes        = config.rhoRsubplanes;
+    CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
 
     cp_grad_corr_on      = sim->cp_grad_corr_on;
     ees_eext_on          = _ees_eext_on;
     rhoKeeperId          = _rhokeeperid;
-    int nchareRhoG=sim->nchareRhoG;
-    if(rhoRsubplanes>1)
-      {
-	recvCountFromGRho = 0;
-	for(int i=0;i<nchareRhoG;i++)
-	  {
-	    if(sim->nline_send_rho_y[i][thisIndex.y]>0)
-	      recvCountFromGRho++;
-	  }
-      }
-    else
-      {
-	recvCountFromGRho=nchareRhoG;
-      }
-    int nchareRhoGEext=sim->nchareRhoGEext;
-    if(rhoRsubplanes>1)
-      {
-	recvCountFromGHartExt = 0;
-	for(int i=0;i<nchareRhoGEext;i++)
-	  {
-	    if(sim->nline_send_eext_y[i][thisIndex.y]>0)
-	      recvCountFromGHartExt++;
-	  }
-      }
-    else
-      {
-	recvCountFromGHartExt=nchareRhoGEext;
-      }
 
-    CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
-
-   // set up scaling factors
+    double vol           = sim->vol;
+    int numFFT           = config.numFFTPoints;
     FFTscale     = 1.0/((double)numFFT);  // these are based on the full size
     volumeFactor = vol*FFTscale;
     probScale    = 1.0/vol;
 
-   // Parallelization before transpose : rho(x,y,z) : parallelize y and z
+//============================================================================
+// Compute number of messages to be received 
+
+    int nchareRhoG=sim->nchareRhoG;
+    if(rhoRsubplanes>1){
+	recvCountFromGRho = 0;
+	for(int i=0;i<nchareRhoG;i++){
+	  if(sim->nline_send_rho_y[i][thisIndex.y]>0)recvCountFromGRho++;
+        }//endfor
+    }else{
+	recvCountFromGRho=nchareRhoG;
+    }//endif
+
+    int nchareRhoGEext=sim->nchareRhoGEext;
+    if(rhoRsubplanes>1){
+       recvCountFromGHartExt = 0;
+       for(int i=0;i<nchareRhoGEext;i++){
+         if(sim->nline_send_eext_y[i][thisIndex.y]>0)recvCountFromGHartExt++;
+       }
+    }else{
+	recvCountFromGHartExt=nchareRhoGEext;
+    }//endif
+
+
+//============================================================================
+// Parallelization 
+
+   // Before transpose : rho(x,y,z) : parallelize y and z
     int div      = (ngridb/rhoRsubplanes); 
     int rem      = (ngridb % rhoRsubplanes);
     int max      = (thisIndex.y < rem ? thisIndex.y : rem);
@@ -144,20 +141,24 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     nptsB        =  ngrida*myNgridb;                 // size of plane without extra room
     nptsExpndB   = (ngrida+2)*myNgridb;              // extra memory for RealToComplex FFT
 
-    // Parallelization after transpose : rho(gx,y,z) : parallelize gx and z
-    int divb     = (nplane_rho_x/rhoRsubplanes);
-    int remb     = (nplane_rho_x % rhoRsubplanes);
-    int maxb     = (thisIndex.y < remb ? thisIndex.y : remb);
-    myNplane_rho = (thisIndex.y < remb ? divb+1 : divb);// number of x values/lines of y
-    myAoff       = divb*thisIndex.y + maxb;
+   // After transpose : rho(gx,y,z) : parallelize gx and z
+    if(rhoRsubplanes>1){
+      myNplane_rho = sim->numSubGx[thisIndex.y];
+    }else{
+      myNplane_rho = nplane_rho_x;
+    }//endif
     nptsA        = 2*myNplane_rho*ngridb;            // memory size fft in doubles
     nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size fft in doubles
-    
-   // Set up the data class : mallocs rho,gradrho, etc.
-    initRhoRealSlab(&rho_rs,ngrida,myNgridb,ngridc,myNplane_rho,ngridb,
-                     thisIndex.x,thisIndex.y,rhoRsubplanes);
 
-   // Initialize counters, set booleans.myTime
+//============================================================================    
+// Set up the data class : mallocs rho,gradrho, etc.
+
+    initRhoRealSlab(&rho_rs,ngrida,myNgridb,ngridc,myNplane_rho,ngridb,
+                    thisIndex.x,thisIndex.y,rhoRsubplanes);
+
+//============================================================================
+// Initialize counters, set booleans.myTime
+
     myTime          = 0;
     countDebug      = 0; // does nothing in the working code.
     countWhiteByrd  = 0;
@@ -845,15 +846,17 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
 #ifndef DEBUG_INT_TRANS_FWD
   sendPartlyFFTtoRhoG(iopt);
 #else
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  int **listSubGx = sim->listSubGx;
+  int ic          = thisIndex.y;
+  CkPrintf("%d %d : %d\n",thisIndex.x,thisIndex.y,myNplane_rho);
   char name[100];
-  FILE *fp;
-  CkPrintf("%d %d : %d %d\n",thisIndex.x,thisIndex.y,myNplane_rho,myAoff);
   sprintf(name,"partFFTGxGyZ%d.out.%d.%d",rhoRsubplanes,thisIndex.x,thisIndex.y);
-  fp = fopen(name,"w");
+  FILE *fp = fopen(name,"w");
   for(int ix =0;ix<myNplane_rho;ix++){
    for(int iy =0;iy<ngridb;iy++){
      int i = ix*ngridb + iy;
-     fprintf(fp,"%d %d : %g %g\n",iy,ix+myAoff,dataC[i].re,dataC[i].im);
+     fprintf(fp,"%d %d : %g %g\n",iy,listSubGx[ic][ix],dataC[i].re,dataC[i].im);
    }//endfor
   }//endof
   fclose(fp);
