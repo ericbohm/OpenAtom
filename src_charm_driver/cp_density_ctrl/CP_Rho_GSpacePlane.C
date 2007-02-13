@@ -38,21 +38,21 @@
 
 //============================================================================
 
-extern Config config;
+extern Config                       config;
 extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
-extern int nstates;
-extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CProxy_AtomsGrp atomsGrpProxy;
+extern CProxy_CP_Rho_GHartExt       rhoGHartExtProxy;
+extern CProxy_CPcharmParaInfoGrp    scProxy;
+extern CProxy_AtomsGrp              atomsGrpProxy;
+
 extern ComlibInstanceHandle commGInstance0;
 extern ComlibInstanceHandle commGInstance1;
 extern ComlibInstanceHandle commGInstance2;
 extern ComlibInstanceHandle commGInstance3;
 extern ComlibInstanceHandle commGByrdInstance;
-
 extern CProxy_ComlibManager mgrProxy;
+
 extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
-extern CProxy_FFTcache fftCacheProxy;
+extern CProxy_FFTcache           fftCacheProxy;
 //extern ComlibInstanceHandle mssInstance;
 
 //#define _CP_DEBUG_RHOG_VERBOSE_
@@ -408,54 +408,56 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
 // II) Communicate rho(g) to RHoGHartExt to compute eext and hart part of vks
 //     or print out that you are taking the day off
 
+ //------------------------------------------------
+ // Hartree is on, send rhoG to the harteext-G chare
 #ifndef _CP_DEBUG_HARTEEXT_OFF_  // hartree is cooking
-
+     int nchareHartAtmT=config.nchareHartAtmT;
      for(int i=0;i<rhoGHelpers;i++){
-  
-       RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
-       msg->size        = numSplit[i];     
-       msg->senderIndex = thisIndex.x;
-       memcpy(msg->data,&data_out[istrtSplit[i]],numSplit[i]*sizeof(complex));
+       for(int j=0;j<nchareHartAtmT;j++){
+         RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
+         msg->size        = numSplit[i];     
+         msg->senderIndex = thisIndex.x;
+         memcpy(msg->data,&data_out[istrtSplit[i]],numSplit[i]*sizeof(complex));
     
-      if(config.prioFFTMsg){
-         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-         *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
-       }//endif
-    
-       int index = thisIndex.x*rhoGHelpers + i;
-       rhoGHartExtProxy(index,thisIndex.y).acceptData(msg);
+         if(config.prioFFTMsg){
+            CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+            *(int*)CkPriorityPtr(msg) = config.rhorpriority + thisIndex.x+ thisIndex.y;
+         }//endif
 
+         int index = thisIndex.x*rhoGHelpers + i;
+         rhoGHartExtProxy(index,j).acceptData(msg);
+       }//endfor : atmType parallelization
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress(); 
 #endif
-     }//endfor
+     }//endfor : helper parallelization
+#endif
 
-#else //hartree is sitting this one out
-
+ //------------------------------------------------
+ // Hartree is off, chill
+#ifdef _CP_DEBUG_HARTEEXT_OFF_ //hartree is sitting this one out
     if(thisIndex.x==0 && thisIndex.y==0){
        CkPrintf("EHART       = OFF FOR DEBUGGING\n");
        CkPrintf("EExt        = OFF FOR DEBUGGING\n");
        CkPrintf("EWALD_recip = OFF FOR DEBUGGING\n");
      }//endif
-
 #endif
 
 //============================================================================
-// III) Start grad corr computations
+// III) Start grad corr computations if necessary
 
 #ifndef CMK_OPTIMIZE
      StartTime=CmiWallTimer();
 #endif    
-
    if(cp_grad_corr_on!=0){
       divRhoVksGspace();
    }else{
-    fftcache->freeCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
+      fftcache->freeCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
    }//endif
-
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
 #endif
+
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -507,7 +509,6 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
                                  rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                  rho_gs.sizeZ,0,iplane_ind);
    RhoGSendRhoR(iopty);
-
 
 #ifdef CMK_VERSION_BLUEGENE
   CmiNetworkProgress();

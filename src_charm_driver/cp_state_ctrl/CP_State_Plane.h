@@ -647,6 +647,10 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
         int nptsExpndA;
         int countDebug;
 	int recvCountFromGHartExt;
+	int nchareHartAtmT;
+	int natmTypTot;
+	int atmTypoff;
+
         complex *atmSFC;
         double  *atmSFR;
         complex *atmForcC;
@@ -702,6 +706,8 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 	void HartExtVksG();
 	void FFTVks();
 	void sendVks();
+	void acceptVks(int size, complex * inVks);
+	void acceptAtmSFTot(int size, complex * inAtm);
         void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
         void FFTEesBck();
         void getHartEextEes();
@@ -728,6 +734,13 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         void registrationDone(CkReductionMsg *msg);
         void exitForDebugging();
  private:
+	complex *atmSFtotRecv;
+	complex *VksRecv;
+	int countAtmSFtot;
+	int countVksTot;
+	int nchareHartAtmT;
+	int natmTypTot;
+	int atmTypoff;
 	int recvCountFromRHartExt;
 	RhoGSlab rho_gs;
         int atmSFHere;

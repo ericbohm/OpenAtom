@@ -17,6 +17,39 @@
 #define _MAPTABLE_H_
 #include "../../include/debug_flags.h"
 
+class inttriple {
+ private:
+    int x, y, z;
+ public:
+    inttriple(){x=y=z=0;}
+
+    inttriple(int _x,int _y,int _z) : x(_x), y(_y), z(_z) {}
+    void pup(PUP::er &p)
+      {
+	  p|x;
+	  p|y;
+	  p|z;
+      }
+    inline int getx(){return x;};
+    inline int gety(){return y;};
+    inline int getz(){return z;};
+    // silenty assumes that X is the heavy hitter in keyspace
+    // safe for our purposes
+    inline CkHashCode hash() const {
+	return (CkHashCode)((x<<16)|(y<<8)|z);
+    }
+    static CkHashCode staticHash(const void *k,size_t){
+	return ((inttriple *)k)->hash();
+    }
+    inline int compare(inttriple &t) const{
+	return (t.getx() == x && t.gety() == y && t.getz() ==z);
+    }
+    static int staticCompare(const void *a,const void *b,size_t){
+	return ((inttriple *)a)->compare((*(inttriple *)b));
+    }
+   
+};
+
 class intdual {
  private:
     int x, y;
@@ -46,9 +79,11 @@ class intdual {
    
 };
 
+
 #ifndef USE_INT_MAP
 //typedef CkHashtableT <intdual, int > MapType2;
 typedef CkHashtableT <intdual, int > MapType4;
+typedef CkHashtableT <inttriple, int > MapType3;
 #else
 #endif
 
@@ -114,6 +149,65 @@ class MapTable2
   int getCentroid();
   
 };
+
+class MapTable3
+{
+ public:
+  MapType3 *maptable;
+  PeList *availprocs;
+  void dump()
+    {
+#ifndef USE_INT_MAP
+      CkHashtableIterator *it=maptable->iterator();
+      it->seekStart();
+      CkPrintf("Map dump\n");
+      inttriple *key;
+      while(it->hasNext())
+	{
+	  it->next((void **) &key);
+	  int proc =maptable->get(key[0]);
+#ifdef _MAP_VERBOSE_
+	  CkPrintf("%d %d %d %d\n", key[0].getx(), key[0].gety(), key[0].getz(),proc);
+#endif
+	}
+      delete it;
+#else
+      maptable->dump();
+#endif
+    }
+
+ protected:
+   CkVec <inttriple> *reverseMap;
+   
+  MapTable3()
+    {
+      availprocs=NULL;
+      maptable=NULL;
+      reverseMap=NULL;
+    }
+  ~MapTable3()
+    {
+      if(reverseMap!=NULL)
+	delete [] reverseMap;
+    }
+  void makeReverseMap();
+  
+  /**
+   * return ckvec containing the  reverse map of  all elements on
+   *  given proc 
+   */
+  inline CkVec <inttriple>  ProcByArrIndex(int proc) 
+    { 
+      if(reverseMap==NULL)
+	makeReverseMap();
+      return(reverseMap[proc]); 
+    }
+  
+  //! return processor at topological center of this list
+  int getCentroid();
+  
+};
+
 
 /**
  * Abstract base class.
@@ -301,12 +395,13 @@ class RhoRSMapTable  : public MapTable2
 };
 
 
-class RhoRHartMapTable  : public MapTable2
+class RhoRHartMapTable  : public MapTable3
 {
  public:
   int nchareRhoRHart;
-  RhoRHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoRHart, int rhoRsubplanes,  PeList *exclude);
+  RhoRHartMapTable(MapType3  *_map, PeList *_availprocs,
+	int _nchareRhoRHart,  int rhoRsubplanes, int _nchareHartAtmT,
+		   PeList *exclude);
   RhoRHartMapTable(){}
 };
 
@@ -315,8 +410,8 @@ class RhoGHartMapTable  : public MapTable2
  public:
   int nchareRhoGHart;
   RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nchareRhoGHart, int useCentroid, MapType2 *rhartmap,
-		   PeList *exclude);
+	int _nchareRhoGHart, int _nchareHartAtmT, int useCentroid, 
+		   MapType3 *rhartmap,   PeList *exclude);
   RhoGHartMapTable(){}
 };
 

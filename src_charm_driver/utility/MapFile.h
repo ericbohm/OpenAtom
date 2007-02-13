@@ -37,8 +37,10 @@ class MapFile
     void setSize(int num, int* size); 
     void setAttributes(int num, int* size, char *order, int x, int y, int z, int t);
     void dumpMap(MapType2 *map);
+    void dumpMap(MapType3 *map);
     void dumpMap(MapType4 *map);
     int loadMap(char *filename, MapType2 *map);
+    int loadMap(char *filename, MapType3 *map);
     int loadMap(char *filename, MapType4 *map);
 
 };

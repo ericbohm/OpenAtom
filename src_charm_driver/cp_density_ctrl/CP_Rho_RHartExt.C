@@ -67,7 +67,14 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   ngridb      = _ngridb; 
   ngridc      = _ngridc; 
   ees_eext_on = _ees_eext_on;
-  natmTyp     = _natmTyp;
+  natmTypTot  = _natmTyp;
+
+  nchareHartAtmT = config.nchareHartAtmT;
+  int div        = (natmTypTot/nchareHartAtmT); 
+  int rem        = (natmTypTot % nchareHartAtmT);
+  int max        = (thisIndex.z < rem ? thisIndex.z : rem);
+  natmTyp        = (thisIndex.z<rem ? div+1 : div);  
+  atmTypoff      = div*thisIndex.z + max;         
 
   iplane_ind  = thisIndex.y*ngridc + thisIndex.x;
 
@@ -101,9 +108,9 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 
   //------------------------------------------------------
   // rho(x,y,z) by (y,z)
-  int div      = (ngridb/rhoRsubplanes); 
-  int rem      = (ngridb % rhoRsubplanes);
-  int max      = (thisIndex.y < rem ? thisIndex.y : rem);
+  div      = (ngridb/rhoRsubplanes); 
+  rem      = (ngridb % rhoRsubplanes);
+  max      = (thisIndex.y < rem ? thisIndex.y : rem);
   myNgridb     = (thisIndex.y<rem ? div+1 : div);  // number of y values/lines of x
   myBoff       = div*thisIndex.y + max;            // offset into y 
   nptsB        =  ngrida*myNgridb;                 // size of plane without extra room
@@ -185,7 +192,7 @@ CP_Rho_RHartExt::~CP_Rho_RHartExt(){
 void CP_Rho_RHartExt::pup(PUP::er &p){
 //============================================================================
 
-  ArrayElement2D::pup(p);
+  ArrayElement3D::pup(p);
 
    p|countDebug;
    p|nplane_rho_x;
@@ -197,7 +204,10 @@ void CP_Rho_RHartExt::pup(PUP::er &p){
    p|ngridc;
    p|iplane_ind;
    p|ees_eext_on;
+   p|natmTypTot;
+   p|atmTypoff;
    p|natmTyp;
+   p|nchareHartAtmT;
    p|nAtmTypRecv;
    p|countIntRtoG;
    p(countIntGtoR,2);
@@ -337,16 +347,17 @@ void CP_Rho_RHartExt::computeAtmSF(){
   }//endif
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d %d in computeatmsf at iter %d on %d\n",
-          thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
+  CkPrintf("HI, I am rhart chare %d %d %d in computeatmsf at iter %d on %d\n",
+          thisIndex.x,thisIndex.y,thisIndex.z, iterAtmTyp,CkMyPe());
 #endif
 
 //============================================================================
 // Look up some constants and fill the r-space grid
 
-  int myPlane      =  thisIndex.x;
-  int mySubplane   =  thisIndex.y;
-  int itime        = iteration;
+  int myPlane        = thisIndex.x;
+  int mySubplane     = thisIndex.y;
+  int itime          = iteration;
+  int iterAtmTypFull = iterAtmTyp+atmTypoff;
 
   eesCache *eesData= eesCacheProxy.ckLocalBranch ();
   if(iterAtmTyp==1){eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);}
@@ -359,7 +370,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
   AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
 
-  CPLOCAL::eesPackGridRchare(natm,iterAtmTyp,atmSFR,myPlane,mySubplane,igrid,mn,
+  CPLOCAL::eesPackGridRchare(natm,iterAtmTypFull,atmSFR,myPlane,
+			     mySubplane,igrid,mn,
                              plane_index,nSub,myNgridb);
 
 //============================================================================
@@ -380,8 +392,8 @@ void CP_Rho_RHartExt::computeAtmSF(){
 void CP_Rho_RHartExt::fftAtmSfRtoG(){
 //============================================================================
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d %d in fftsback at %d on %d\n",
-           thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
+  CkPrintf("HI, I am rhart chare %d %d %d in fftsback at %d on %d\n",
+           thisIndex.x,thisIndex.y,thisIndex.z, iterAtmTyp,CkMyPe());
 #endif
 
 //==========================================================================
@@ -419,7 +431,7 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
       }//endfor
     }//endof
     fclose(fp);
-    rhoRHartExtProxy(0,0).exitForDebugging();
+    rhoRHartExtProxy(0,0,0).exitForDebugging();
 #else
     sendAtmSfRhoGHart(); // single transpose method (z ---> gx,gy)
 #endif
@@ -485,10 +497,11 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
         }//endfor
       }//endfor
 
-      rhoRHartExtProxy(ix,ic).recvAtmSfRyToGy(msg);
+      //WHOAH, may need glenn to unravel this
+      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
-      rhoRHartExtProxy(ix,ic).recvAtmSfRyToGy(msg);
+      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -582,7 +595,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
       }//endfor
     }//endof
     fclose(fp);
-    rhoRHartExtProxy(0,0).exitForDebugging();
+    rhoRHartExtProxy(0,0,0).exitForDebugging();
   }//endif
 #endif
 
@@ -601,8 +614,8 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 //============================================================================
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d %d in sendsf at %d on %d\n",
-         thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
+  CkPrintf("HI, I am rhart chare %d %d %d in sendsf at %d on %d\n",
+         thisIndex.x,thisIndex.y,thisIndex.z,iterAtmTyp,CkMyPe());
 #endif
 
   CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
@@ -660,9 +673,9 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 	  //-----------------
 	  // Send the message
 	  if(rhoRsubplanes==1){
-	    rhoGHartProxy_com(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
+	    rhoGHartProxy_com(ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
 	  }else{
-	    rhoGHartExtProxy(ic,0).recvAtmSFFromRhoRHart(msg); // send the message
+	    rhoGHartExtProxy(ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
 	  }//endif
 	}
 #ifdef CMK_VERSION_BLUEGENE
@@ -759,7 +772,7 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
                   thisIndex.x,iy,Index,iopt);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
-  }
+  }//endif
 
 //============================================================================
 // unpack the data and delete the message
@@ -796,8 +809,8 @@ void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 
   if (countFFT[iopt] == recvCountFromGHartExt){
 #ifdef _CP_RHART_VERBOSE_
-    CkPrintf("HI, I am rhart chare %d %d in recvsf with opt %d at %d on %d\n",
-               thisIndex.x,thisIndex.y,iopt,iterAtmTyp,CkMyPe());
+    CkPrintf("HI, I am rhart chare %d %d %d in recvsf with opt %d at %d on %d\n",
+               thisIndex.x,thisIndex.y, thisIndex.z,iopt,iterAtmTyp,CkMyPe());
 #endif
     countFFT[iopt]=0;
     if(rhoRsubplanes==1){nAtmTypRecv++;}
@@ -818,8 +831,8 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
 //============================================================================
 
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d %d in FFTAtmForc w %d at %d on %d\n",
-        thisIndex.x,thisIndex.y,flagEwd,iterAtmTyp,CkMyPe());
+  CkPrintf("HI, I am rhart chare %d %d %d in FFTAtmForc w %d at %d on %d\n",
+        thisIndex.x,thisIndex.y,thisIndex.z,flagEwd,iterAtmTyp,CkMyPe());
 #endif
 
   double *dataR;
@@ -925,7 +938,8 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
 	}//endfor
       }//endfor
 
-      rhoRHartExtProxy(ix,ic).recvAtmForcGxToRx(msg);
+      //HEY is thisIndex.z right here?
+      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmForcGxToRx(msg);
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
       switch(iopt){
@@ -978,8 +992,8 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   CkAssert(size==myNgridb*num);
   if(iterAtmTyp!=iter){
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("iter!=iterAtmTyp recvatmforcgxtorx : %d %d : %d %d %d\n",
-		thisIndex.x,thisIndex.y,iterAtmTyp,iter,iopt);
+     CkPrintf("iter!=iterAtmTyp recvatmforcgxtorx : %d %d %d : %d %d %d\n",
+		thisIndex.x,thisIndex.y,thisIndex.z,iterAtmTyp,iter,iopt);
      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      CkExit();
   }//endif
@@ -1040,8 +1054,8 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 #ifdef _CP_RHART_VERBOSE_
-  CkPrintf("HI, I am rhart chare %d %d in computeAtmForc.1 w %d at %d %d %d on %d\n",
-             thisIndex.x,thisIndex.y, flagEwd,iterAtmTyp,nAtmTypRecv,natmTyp,CkMyPe());
+  CkPrintf("HI, I am rhart chare %d %d %d in computeAtmForc.1 w %d at %d %d %d on %d\n",
+             thisIndex.x,thisIndex.y, thisIndex.z, flagEwd,iterAtmTyp,nAtmTypRecv,natmTyp,CkMyPe());
 #endif
 //============================================================================
 // Check for errors
@@ -1075,8 +1089,10 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 // set the variables to evaluate atom forces
 
-  int myPlane      = thisIndex.x;
-  int mySubplane   = thisIndex.y;
+  int myPlane        = thisIndex.x;
+  int mySubplane     = thisIndex.y;
+  int iterAtmTypFull = iterAtmTyp+atmTypoff;
+
   double *data;    
   if(flagEwd==0){data=atmSFR;}else{data=atmEwdSFR;}
 
@@ -1099,8 +1115,9 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    double  StartTime=CmiWallTimer();
 #endif    
 
-   CPLOCAL::eesAtmForceRchare(natm,fastAtoms,iterAtmTyp,igrid,dmn_x,dmn_y,dmn_z,
-                              plane_index,nSub,data,myPlane,mySubplane,flagEwd);
+   CPLOCAL::eesAtmForceRchare(natm,fastAtoms,iterAtmTypFull,igrid,
+			      dmn_x,dmn_y,dmn_z, plane_index,nSub,data,
+			      myPlane,mySubplane,flagEwd);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesAtmForcR_, StartTime, CmiWallTimer());    
 #endif
@@ -1113,13 +1130,16 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 // If your are done, Tell rho real and reset yourself for the next time step
 
+ int nrecvMax=natmTyp;
+ if(thisIndex.z==0){nrecvMax++;}
+
 #define _CP_DEBUG_STOP_RHART_OFF
 
 #ifndef _CP_DEBUG_STOP_RHART_
- if(iterAtmTyp==natmTyp && nAtmTypRecv==(natmTyp+1)){
+ if(iterAtmTyp==natmTyp && nAtmTypRecv==nrecvMax){
 #ifdef _CP_RHART_VERBOSE_
-   CkPrintf("HI, I am rhart chare %d %d in computeAtmForc.2 w %d at %d done on %d\n",
-             thisIndex.x,thisIndex.y,flagEwd,iterAtmTyp,CkMyPe());
+   CkPrintf("HI, I am rhart chare %d %d %d in computeAtmForc.2 w %d at %d done on %d\n",
+             thisIndex.x,thisIndex.y,thisIndex.z,flagEwd,iterAtmTyp,CkMyPe());
 #endif
    CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int index = (thisIndex.x % sim->sizeZ);
@@ -1133,7 +1153,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 // If your are done and debugging, exit
 
 #ifdef _CP_DEBUG_STOP_RHART_
- if(iterAtmTyp==natmTyp && nAtmTypRecv==(natmTyp+1)){
+ if(iterAtmTyp==natmTyp && nAtmTypRecv==nrecvMax){
    CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d contrib\n",
               thisIndex.x,flagEwd,iterAtmTyp);
    int i=1;
@@ -1154,7 +1174,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 //============================================================================
 void CP_Rho_RHartExt::exitForDebugging(){
   countDebug++;  
-  if(countDebug==(rhoRsubplanes*ngridc)){
+  if(countDebug==(rhoRsubplanes*ngridc*nchareHartAtmT)){
     countDebug=0;
     CkPrintf("I am in the exitfordebuging rhorhartext puppy. Bye-bye\n");
     CkExit();

@@ -25,7 +25,7 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> RhoGSmaptable;
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
-	readonly CkHashtableT<intdual, int> RhoRHartmaptable;
+	readonly CkHashtableT<inttriple, int> RhoRHartmaptable;
 	readonly CkHashtableT<intdual, int> Orthomaptable;
 	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
@@ -37,7 +37,7 @@ mainmodule cpaimd {
 	readonly MapType2 RhoGSImaptable;
 	readonly MapType2 RhoRSImaptable;
 	readonly MapType2 RhoGHartImaptable;
-	readonly MapType2 RhoRHartImaptable;
+	readonly MapType3 RhoRHartImaptable;
 	readonly MapType2 OrthoImaptable;
 	readonly MapType2 OrthoHelperImaptable;
 	readonly MapType4 AsymScalcImaptable;
@@ -276,7 +276,7 @@ mainmodule cpaimd {
                 entry void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
                 entry void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
 	};
-       array [2D] CP_Rho_RHartExt {
+       array [3D] CP_Rho_RHartExt {
                 entry CP_Rho_RHartExt(int, int, int,int,int);
                 entry void startEextIter();
                 entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
@@ -301,6 +301,8 @@ mainmodule cpaimd {
 		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
                 entry void registrationDone(CkReductionMsg *msg);
                 entry void exitForDebugging();
+                entry void acceptVks(int size, complex inVks[size]);
+                entry void acceptAtmSFTot(int size, complex inSF[size]);
 	};
 
 

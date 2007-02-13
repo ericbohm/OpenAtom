@@ -18,10 +18,12 @@ class Config {
     int maxIter;          // num of iterations        (piny)
     int fftopt;           // fft type[fftw/essl]      (piny)
     int natm_nl;          // num of nonlocal atoms    (piny)
+    int natm_typ;         // number of atm types      (piny)
     int low_x_size;       // g-grid points along x    (piny)
     int high_x_size;      // g-grid points along x    (piny)
     int numFFTPoints;     // size number of r-grid    (piny)
     int numData;          // size number of g-grid    (piny)
+    int ees_eext_opt;     // ees eext option on/off   (piny)
     int nchareG;          // num state g-space chares (driver)
     int nchareRhoG;       // num rho g-space chares   (driver)
     int scalc_per_plane;  // num of scalcs g-plane    (driver)
@@ -30,6 +32,7 @@ class Config {
   //==================================
   // density control flags and values
   //----------------------------------
+    int nchareHartAtmT;
     int rhoLineOrder;
     int rhorHartpriority;
     int rhogHartpriority;
@@ -159,9 +162,9 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char* ,int , int , int , int , int ,int ,int , int , int );
+   void readConfig(char* ,int , int , int , int , int ,int ,int , int , int, int ,int);
    void readStateInfo(int &,int &, int &, int &, int &, int &,
-                      const char *, int );
+                      const char *, int);
    void simpleRangeCheck();
    void rangeExit(int , char *, int );
    void Finale(int ,int ,int ,int,int);

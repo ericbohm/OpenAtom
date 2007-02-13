@@ -91,6 +91,21 @@ void MapFile::dumpMap(MapType4 *map)
 }
 
 
+void MapFile::dumpMap(MapType3 *map)
+{
+  FILE *fp = fopen(mapName, "w");
+  fprintf(fp, "%s %d ", mapName, numDim);
+  for(int i=0; i<numDim; i++)
+    fprintf(fp, "%d ", sizeDim[i]);
+  fprintf(fp, "\n%d \n", numProcs);
+  for(int i=0; i<sizeDim[0]; i++)
+    for(int j=0; j<sizeDim[1]; j++)
+      for(int k=0; k<sizeDim[2]; k++)
+	fprintf(fp, "%d %d %d %d\n", i, j, k,  map->get(i, j, k));
+  fclose(fp);
+}
+
+
 int MapFile::loadMap(char *filename, MapType2 *map)
 {
   int x, y, pe;
@@ -108,6 +123,31 @@ int MapFile::loadMap(char *filename, MapType2 *map)
       map->put(intdual(x, y))=destpe;
 #endif
     }
+  fclose(fp);
+  CkPrintf("%s loaded from file ----\n", filename);
+  return 1;
+}
+
+int MapFile::loadMap(char *filename, MapType3 *map)
+{
+  int x, y, z, w, pe;
+  FILE *fp = fopen(filename, "r");
+  if(fp==NULL)
+    return 0;
+  fscanf(fp, "%s%d%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
+  for(int i=0; i<sizeDim[0]; i++)
+    for(int j=0; j<sizeDim[1]; j++)
+      for(int k=0; k<sizeDim[2]; k++)
+	{	
+	  fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe);
+#ifdef USE_INT_MAP
+          map->set(x, y, z, pe);
+#else
+	  CkArrayIndex3D idx3d(x, y, z);
+	  memcpy(intidx, idx3d.index, 3*sizeof(int));
+	  map->put(inttriple(intidx[0], intidx[1], intidx[2]))=destpe;
+#endif
+	}
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
   return 1;

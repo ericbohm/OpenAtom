@@ -166,6 +166,100 @@ class IntMap4 {
     IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL;}
 };
 
+class IntMap3 {
+ private:
+  int ***Map;
+  int keyXmax;
+  int keyYmax;
+  int keyZmax;
+
+ public:
+
+    IntMap3(int keyX, int keyY, int keyZ, int step) 
+           :  keyXmax(keyX), keyYmax(keyY), keyZmax(keyZ)
+      {
+	Map=new int**[keyXmax];
+	for(int x=0;x<keyXmax;x++)
+	  {
+	    Map[x]= new int*[keyYmax];
+	    for(int y=0;y<keyYmax;y++)
+	      Map[x][y]= new int[keyZmax];
+	  }
+      }
+    ~IntMap3(){
+      if(Map!=NULL)
+	{
+	  for(int x=0;x<keyXmax;x++)
+	    {
+	      for(int y=0;y<keyYmax;y++)
+		delete [] Map[x][y];
+	      delete [] Map[x];
+	    }
+	  Map=NULL;
+	}
+      
+    }
+
+    void buildMap(int keyX=1, int keyY=1, int keyZ=1, int step=1)
+      {
+	CkAssert(keyX>0);
+	CkAssert(keyY>0);
+	CkAssert(keyZ>0);
+	keyXmax=keyX;
+	keyYmax=keyY;
+	keyZmax=keyZ;
+	Map=new int**[keyXmax];
+	for(int x=0;x<keyXmax;x++)
+	  {
+	    Map[x]= new int*[keyYmax];
+	    for(int y=0;y<keyYmax;y++)
+	      Map[x][y]= new int[keyZmax];
+	  }
+      }
+    void pup(PUP::er &p)
+      {
+	  p|keyXmax;
+	  p|keyYmax;
+	  p|keyZmax;
+	  if(p.isUnpacking())
+	    Map=new int**[keyXmax];
+	  for(int x=0;x<keyXmax;x++)
+	    {
+	      if(p.isUnpacking())
+		Map[x]= new int*[keyYmax];
+	      for(int y=0;y<keyYmax;y++)
+		{
+		  if(p.isUnpacking())
+		    Map[x][y]= new int[keyZmax];
+		  PUParray(p,Map[x][y],keyZmax);
+		}
+	    }
+      }
+    inline int getXmax(){return(keyXmax);}
+    inline int getYmax(){return(keyYmax);}
+    inline int getZmax(){return(keyZmax);}
+    inline int get(int X, int Y, int Z)  {
+      return(Map[X][Y][Z]);
+    }
+    //    inline int &put(int W, int X, int Y, int Z){return(&(Map[W][X/keyStep][Y/keyStep][Z]));}
+    inline void set(int X, int Y, int Z, int value){
+      CkAssert(X<keyXmax);
+      CkAssert(Y<keyYmax);
+      CkAssert(Z<keyZmax);
+      CkAssert(CkNumPes()>value);
+      Map[X][Y][Z]=value;
+    }
+    int getCentroid();
+    void dump()
+      {
+	  for(int x=0;x<keyXmax;x++)
+	    for(int y=0;y<keyYmax;y++)
+	      for(int z=0;z<keyZmax;z++)
+		CkPrintf("%d %d %d %d \n",x,y,z, get(x,y,z));
+      }
+    IntMap3(){keyXmax=0; keyYmax=0, keyZmax=0;  Map=NULL;}
+};
+
 class IntMap2on2 {
  private:
   int **Map;

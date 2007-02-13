@@ -34,6 +34,7 @@ typedef IntMap2 IntMap4;
 #else
 #include "IntMap.h"
 typedef IntMap4 MapType4;
+typedef IntMap3 MapType3;
 class MapType2 : public IntMap2on2 {
  public:
   int getCentroid ();
@@ -71,7 +72,7 @@ extern MapType2 RPPImaptable;
 extern MapType2 RhoGSImaptable;
 extern MapType2 RhoRSImaptable;
 extern MapType2 RhoGHartImaptable;
-extern MapType2 RhoRHartImaptable;
+extern MapType3 RhoRHartImaptable;
 extern MapType4 AsymScalcImaptable;
 extern MapType4 SymScalcImaptable;
 
@@ -81,7 +82,7 @@ extern CkHashtableT <intdual, int> RPPmaptable;
 extern CkHashtableT <intdual, int> RhoGSmaptable;
 extern CkHashtableT <intdual, int> RhoRSmaptable;
 extern CkHashtableT <intdual, int> RhoGHartmaptable;
-extern CkHashtableT <intdual, int> RhoRHartmaptable;
+extern CkHashtableT <inttriple, int> RhoRHartmaptable;
 extern CkHashtableT <intdual, int> AsymScalcmaptable;
 extern CkHashtableT <intdual, int> SymScalcmaptable;
 CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs);
@@ -141,6 +142,29 @@ class CkArrayMapTable2 : public CkArrayMap
       CkArrayMap::pup(p);
     }
   ~CkArrayMapTable2(){}
+  
+};
+
+class CkArrayMapTable3 : public CkArrayMap
+{
+ public:
+  MapType3 *maptable;
+
+
+  CkArrayMapTable3() {}
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+#ifdef USE_INT_MAP
+	return(maptable->get(index[0],index[1],index[2]));
+#else
+	return(maptable->get(inttriple(index[0],index[1],index[2])));
+#endif
+  }
+  void pup(PUP::er &p)
+    {
+      CkArrayMap::pup(p);
+    }
+  ~CkArrayMapTable3(){}
   
 };
 
@@ -464,7 +488,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
 
 };
 
-class RhoRHartMap : public CkArrayMapTable2 {
+class RhoRHartMap : public CkArrayMapTable3 {
   public:
   RhoRHartMap()
   {
@@ -483,7 +507,7 @@ class RhoRHartMap : public CkArrayMapTable2 {
     
   void pup(PUP::er &p)
       {
-	CkArrayMapTable2::pup(p);
+	CkArrayMapTable3::pup(p);
 #ifdef USE_INT_MAP
 	maptable= &RhoRHartImaptable;
 #else
@@ -493,9 +517,9 @@ class RhoRHartMap : public CkArrayMapTable2 {
   inline int procNum(int, const CkArrayIndex &iIndex){
     int *index=(int *) iIndex.data();
 #ifdef USE_INT_MAP
-	return(maptable->get(index[0],index[1]));
+	return(maptable->get(index[0],index[1],index[2]));
 #else
-	return(maptable->get(intdual(index[0],index[1])));
+	return(maptable->get(inttriple(index[0],index[1],index[2])));
 #endif
   }
 

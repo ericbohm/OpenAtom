@@ -78,13 +78,18 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
 
 //============================================================================
+// Fetch and compute the useful variables : zero counters
 
-  rhoRsubplanes = config.rhoRsubplanes;
-  ngridaEext    = _ngridaEext; 
-  ngridbEext    = _ngridbEext; 
-  ngridcEext    = _ngridcEext; 
-  ees_eext_on   = _ees_eext_on;
-  natmTyp       = _natmTyp;
+  rhoRsubplanes  = config.rhoRsubplanes;
+  rhoGHelpers    = config.rhoGHelpers;
+  nchareHartAtmT = config.nchareHartAtmT;
+
+  ngridaEext     = _ngridaEext; 
+  ngridbEext     = _ngridbEext; 
+  ngridcEext     = _ngridcEext; 
+  ees_eext_on    = _ees_eext_on;
+  natmTypTot     = _natmTyp;
+  CkAssert(natmTypTot>=nchareHartAtmT);
 
   iopt            = 0;
   iteration       = 0;
@@ -98,29 +103,35 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   registrationFlag= 0;
   launchFlag      = 0;
   nsendAtmTyp     = 0;
+  countVksTot     = 0;
+  countAtmSFtot   = 0;
   CountDebug      = 0;
-  if(rhoRsubplanes>1)
-    {
-      recvCountFromRHartExt = 0;
-      for(int i=0;i<rhoRsubplanes;i++)
-	{
-	  if(sim->nline_send_eext_y[thisIndex.x][i]>0)
-	    recvCountFromRHartExt++;
-	}
-      recvCountFromRHartExt*=ngridcEext;
-    }
-  else
-    {
-      recvCountFromRHartExt=ngridcEext;
-    }
 
-  rhoGHelpers     = config.rhoGHelpers;
-  rho_gs.sizeX    = sizeX;
-  rho_gs.sizeY    = sizeYZ[0];
-  rho_gs.sizeZ    = sizeYZ[1];
-  rho_gs.xdim     = rho_gs.sizeX;
-  rho_gs.ydim     = rho_gs.sizeY;
-  rho_gs.zdim     = 1;
+  if(rhoRsubplanes>1){
+     recvCountFromRHartExt = 0;
+     for(int i=0;i<rhoRsubplanes;i++){
+	if(sim->nline_send_eext_y[thisIndex.x][i]>0){recvCountFromRHartExt++;}
+     }//endfor
+     recvCountFromRHartExt*=ngridcEext;
+  }else{
+     recvCountFromRHartExt=ngridcEext;
+  }//endif
+
+//==================================================================================
+// AtmTyp parallelization
+
+  int div        = (natmTypTot/nchareHartAtmT); 
+  int rem        = (natmTypTot % nchareHartAtmT);
+  int max        = (thisIndex.y < rem ? thisIndex.y : rem);
+  natmTyp        = (thisIndex.y<rem ? div+1 : div);  
+  atmTypoff      = div*thisIndex.y + max;         
+
+  if(ees_eext_on==0 && nchareHartAtmT>1){
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkPrintf("Parallel atom type not supported without ees Eext\n");
+     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     CkExit();
+  }//endif
 
 //==================================================================================
 // Decomposition rhoG lines into slices of size rhoGHelper
@@ -134,12 +145,20 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
                  rhoGHelpers,ind_xrem);
 
 //==================================================================================
-// Carve out your rundescriptor, make the k-vectors , malloc the memory
+// Set up rho_gs : Carve out your rundescriptor : Make the k-vectors  (donuts)
+
+  rho_gs.sizeX     = sizeX;
+  rho_gs.sizeY     = sizeYZ[0];
+  rho_gs.sizeZ     = sizeYZ[1];
+  rho_gs.xdim      = rho_gs.sizeX;
+  rho_gs.ydim      = rho_gs.sizeY;
+  rho_gs.zdim      = 1;
 
   rho_gs.numLines  = numLines;
   rho_gs.numRuns   = (numLines*2);
   rho_gs.numFull   = (numLines*rho_gs.sizeZ);
   rho_gs.size      = rho_gs.numFull;
+
   rho_gs.runs      = new RunDescriptor[(rho_gs.numRuns)];
   rho_gs.numPoints = 0;
   for (int r = (2*istrt_lines),s=0; r < (2*iend_lines); r++,s++) {
@@ -150,33 +169,46 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   int nPacked;
   rho_gs.setKVectors(&nPacked);
   rho_gs.nPacked=nPacked;
-
   CkAssert(nPacked==rho_gs.numPoints);
 
   int numFull = rho_gs.numFull;
   numFullEext = numLines*ngridcEext;
 
+//==================================================================================
+// Malloc your memory : more juice for ees_ext and yet to support atmtyp parallel
+
+  atmSF          = NULL;
+  atmSFtot       = NULL;
+  VksRecv        = NULL;
+  atmSFtotRecv   = NULL;
+  rho_gs.divRhoX = NULL;
+  rho_gs.divRhoY = NULL;
+  rho_gs.divRhoZ = NULL;
+  rho_gs.Rho     = NULL;
+
   rho_gs.packedRho = (complex *)fftw_malloc(nPacked*sizeof(complex));
   rho_gs.Vks       = (complex *)fftw_malloc(nPacked*sizeof(complex));
+  if(ees_eext_on==1 && nchareHartAtmT>1 && thisIndex.y==1){
+    VksRecv        = (complex *)fftw_malloc(nPacked*sizeof(complex));
+  }//endif
 
   if(ees_eext_on==1){
     atmSF          = (complex *)fftw_malloc(numFullEext*sizeof(complex));
     atmSFtot       = (complex *)fftw_malloc(numFullEext*sizeof(complex));
+    if(nchareHartAtmT>1 && thisIndex.y==0){
+      atmSFtotRecv = (complex *)fftw_malloc(numFullEext*sizeof(complex));
+    }//endif
   }//endif
 
-  rho_gs.divRhoX   = NULL;
-  rho_gs.divRhoY   = NULL;
-  rho_gs.divRhoZ   = NULL;
-  rho_gs.Rho       = NULL;
-
 //==================================================================================
+// Register in the cache : contribute to a reduction to be sure everyone is done
 
   if(ees_eext_on==1){
-    eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-    eesData->registerCacheGHart(thisIndex.x,nPacked,rho_gs.k_x,rho_gs.k_y,rho_gs.k_z);
-    int i=1;
-    CkCallback cb(CkIndex_CP_Rho_GHartExt::registrationDone(NULL),rhoGHartExtProxy);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+     eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+     eesData->registerCacheGHart(thisIndex.x,nPacked,rho_gs.k_x,rho_gs.k_y,rho_gs.k_z);
+     int i=1;
+     CkCallback cb(CkIndex_CP_Rho_GHartExt::registrationDone(NULL),rhoGHartExtProxy);
+     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
 //==================================================================================
@@ -217,9 +249,13 @@ CP_Rho_GHartExt::~CP_Rho_GHartExt(){
   if(ees_eext_on==1){
     fftw_free(atmSF);
     fftw_free(atmSFtot);
+    if(nchareHartAtmT>1 && thisIndex.y==1){fftw_free(VksRecv);}
+    if(nchareHartAtmT>1 && thisIndex.y==0){fftw_free(atmSFtotRecv);}
   }//endif
-  atmSF    = NULL;
-  atmSFtot = NULL;
+  atmSF        = NULL;
+  atmSFtot     = NULL;
+  VksRecv      = NULL;
+  atmSFtotRecv = NULL;
 
 }
 //============================================================================
@@ -242,7 +278,9 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   p|numFullEext;
   p|registrationFlag;
   p|launchFlag;
-
+  p|natmTypTot;
+  p|atmTypoff;
+  p|nchareHartAtmT;
   p|natmTyp;
   p|iterAtmTyp;
   p|nsendAtmTyp;
@@ -252,7 +290,8 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   p|ehart_ret;
   p|eext_ret;
   p|ewd_ret;
-
+  p|countAtmSFtot;
+  p|countVksTot;
   p|iopt;
   p|iteration;
   p|ind_x;
@@ -350,9 +389,9 @@ void CP_Rho_GHartExt::HartExtVksG() {
    int *k_y      = rho_gs.k_y;
    int *k_z      = rho_gs.k_z;
 
-   ehart_ret  = 0.0;
-   eext_ret  = 0.0;
-   ewd_ret   = 0.0;
+   ehart_ret     = 0.0;
+   eext_ret      = 0.0;
+   ewd_ret       = 0.0;
 
 //============================================================================
 // compute vks(g) from hart eext and reduce eext and ehart
@@ -409,7 +448,8 @@ void CP_Rho_GHartExt::FFTVks() {
 // Perform the FFT(gx,gy,gz) to FFT(gx,gy,z)
 
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("Ghart %d Here in fftvks at %d on %d\n",thisIndex.x,iterAtmTyp,CkMyPe());
+  CkPrintf("Ghart %d %d Here in fftvks at %d on %d\n",
+             thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();
@@ -447,13 +487,17 @@ void CP_Rho_GHartExt::FFTVks() {
 //============================================================================
 void CP_Rho_GHartExt::sendVks() { 
 //============================================================================
+
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("Ghart %d Here in sendvks at %d on %d\n",thisIndex.x,iterAtmTyp,CkMyPe());
+  CkPrintf("Ghart %d %d Here in sendvks at %d on %d\n",
+            thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
+
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
   CkPrintf("Communicating data from RhoGHart to RhoR : %d %d\n",
 	   thisIndex.x,thisIndex.y);
 #endif
+
 //============================================================================
 
    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
@@ -515,12 +559,11 @@ void CP_Rho_GHartExt::sendVks() {
 	}//endif
 
       } //endif
-  }
+  }//endfor : subplanes
 #ifdef CMK_VERSION_BLUEGENE
-	CmiNetworkProgress();
+  CmiNetworkProgress();
 #endif
-
-}//endfor
+  }//endfor : z plane parallel index
 
 //============================================================================
 // Complete the commlib dance and hang out.
@@ -554,7 +597,7 @@ void CP_Rho_GHartExt::sendVks() {
   registrationFlag=1;
   if(launchFlag==1){launchFlag=0;FFTEesBck();}
 
-}
+}//end routine
 //==========================================================================
 
 
@@ -591,8 +634,8 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
   int **index_pack;
   if(rhoRsubplanes>1){
     int *nline_send = sim->nline_send_eext_y[ix];
-    index_pack       = sim->index_tran_pack_eext_y[ix];
-    numLinesNow      = nline_send[isub];
+    index_pack      = sim->index_tran_pack_eext_y[ix];
+    numLinesNow     = nline_send[isub];
   }//endif
 
 //============================================================================
@@ -607,7 +650,8 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 
   if(iter!= (iterAtmTyp+1) ){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Atm Type Iteration out of whack. %d %d\n",iter,iterAtmTyp);
+    CkPrintf("Atm Type Iteration out of whack. %d %d : chare %d %d : %d %d\n",
+              iter,iterAtmTyp,thisIndex.x,thisIndex.y,natmTyp,atmTypoff);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
@@ -679,7 +723,8 @@ void CP_Rho_GHartExt::FFTEesBck(){
 // FFT yourself to heaven
 
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("GHart %d starting FFTBck at %d on %d\n",thisIndex.x,iterAtmTyp,CkMyPe());
+  CkPrintf("GHart %d %d starting FFTBck at %d on %d\n",thisIndex.x, thisIndex.y,
+	   iterAtmTyp,CkMyPe());
 #endif
 
   int numPoints = rho_gs.numPoints;
@@ -701,9 +746,11 @@ void CP_Rho_GHartExt::FFTEesBck(){
 //============================================================================
 void CP_Rho_GHartExt::getHartEextEes(){
 //============================================================================
+// Output and Error check
 
 #ifdef _CP_GHART_VERBOSE_
- CkPrintf("GHart %d starting getHartEextEes at %d on %d\n",thisIndex.x,iterAtmTyp,CkMyPe());
+  CkPrintf("GHart %d %d starting getHartEextEes at %d on %d\n",
+           thisIndex.x,thisIndex.y,iterAtmTyp,CkMyPe());
 #endif
 
   if(ees_eext_on==0){
@@ -716,9 +763,13 @@ void CP_Rho_GHartExt::getHartEextEes(){
 //============================================================================
 // Compute eext energy, hartree, total SF and VKS
 
+ //----------------------------------------------------------
+ // Local Variables
   eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
 
-  int myChareG = thisIndex.x;
+  int myChareG       = thisIndex.x;
+  int iterAtmTypFull = iterAtmTyp+atmTypoff;
+
   int ncoef    = rho_gs.nPacked;
   complex *vks = rho_gs.Vks;
   complex *rho = rho_gs.packedRho;
@@ -728,6 +779,8 @@ void CP_Rho_GHartExt::getHartEextEes(){
   double *b_re = eesData->RhoGHartData[myChareG].b_re;
   double *b_im = eesData->RhoGHartData[myChareG].b_im;
 
+ //----------------------------------------------------------
+ // Initialize
   if(iterAtmTyp==1){  
      bzero(vks,ncoef*sizeof(complex));  // no getting around these zeros
      bzero(atmSFtot,ncoef*sizeof(complex));
@@ -735,24 +788,27 @@ void CP_Rho_GHartExt::getHartEextEes(){
      eext_ret  = 0.0;
      ewd_ret   = 0.0;
   }//endif
+
+ //----------------------------------------------------------
+ // Get the energy, vks, modifiy atmSF, contribute to total SF
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
-  CPLOCAL::eesHartEextGchare(ncoef,iterAtmTyp,rho,vks,atmSF,atmSFtot,
+  CPLOCAL::eesHartEextGchare(ncoef,iterAtmTypFull,rho,vks,atmSF,atmSFtot,
                              b_re,b_im,&ehart_ret,&eext_ret,k_x,k_y,k_z,myChareG);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesHartExcG_, StartTime, CmiWallTimer());    
 #endif
 
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("Ghart %d Here in hartees: EHart %.10g Eext %.10g at %d on %d\n",
-	   thisIndex.x,ehart_ret,eext_ret,iterAtmTyp,CkMyPe());
+  CkPrintf("Ghart %d %d Here in hartees: EHart %.10g Eext %.10g at %d on %d\n",
+	   thisIndex.x,thisIndex.y,ehart_ret,eext_ret,iterAtmTyp,CkMyPe());
 #endif
 
 //============================================================================
-// If you have SFtot get the ewald energy and FFT SFtot to real space
+// If you have SFtot get the ewald energy  : A reduction is required when atmTyp parallel
 
-  if(iterAtmTyp==natmTyp){
+  if(iterAtmTyp==natmTyp && nchareHartAtmT==1){
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
@@ -761,31 +817,56 @@ void CP_Rho_GHartExt::getHartEextEes(){
     traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
 #endif
 #ifdef _CP_GHART_VERBOSE_
-    CkPrintf("Ghart %d iter %d Here in hartees: EwaldRecip : %.10g on\n",
-	   thisIndex.x,iterAtmTyp,ewd_ret,CkMyPe());
+    CkPrintf("Ghart %d %d iter %d Here in hartees: EwaldRecip : %.10g on\n",
+              thisIndex.x,thisIndex.z,iterAtmTyp,ewd_ret,CkMyPe());
 #endif
   }//endif
+     
 
 //============================================================================
-// Blast out the energies when done
+// Blast out the energies when done with atom type stuff : index=0 may have to wait
 
   if(iterAtmTyp==natmTyp){
 #ifdef _CP_GHART_VERBOSE_
     CkPrintf("Ghart %d reduces energies at %d on %d\n",iterAtmTyp,CkMyPe());
 #endif
-    double e[3];
-    e[0] = ehart_ret;
-    e[1] = eext_ret;
-    e[2] = ewd_ret;
-    contribute(3*sizeof(double),e,CkReduction::sum_double);
+    if(thisIndex.y!=0 || nchareHartAtmT==1){
+        double e[3];
+	e[0] = ehart_ret;
+	e[1] = eext_ret;
+	e[2] = ewd_ret;
+	contribute(3*sizeof(double),e,CkReduction::sum_double);
+    }//endif
   }//endif
 
 //============================================================================
 // Perform the back FFT SF and SFtot to get atm forces and VKS to get e-forces
 
-  FFTEesFwd(0);                          // we always geneterate an SF
-  if(iterAtmTyp==natmTyp){FFTVks();}     // Vks needs contribs from all SF
-  if(iterAtmTyp==natmTyp){FFTEesFwd(1);} // Ewd needs the total SF
+ //-----------------------------------------------------------------
+ // Ewald needs contribs from all SF  : chare index 0 is large and in charge
+  if(iterAtmTyp==natmTyp){
+    if(nchareHartAtmT==1){
+      FFTEesFwd(1);
+    }else{
+      rhoGHartExtProxy(thisIndex.x,0).acceptAtmSFTot(ncoef,atmSFtot);  
+    }//endif
+  }//endif
+
+ //-----------------------------------------------------------------
+ // Vks needs contribs from all SF : chare index 1 is large and in charge
+  if(iterAtmTyp==natmTyp){
+    if(nchareHartAtmT==1)  { 
+      FFTVks(); 
+    }else{
+      rhoGHartExtProxy(thisIndex.x,1).acceptVks(ncoef,vks);  
+    }//endif
+  }//endif
+
+ //-----------------------------------------------------------------
+ // we always geneterate an SF : we have everthing for this atmtype
+ //                            : flow of control says ``this guy goes last''
+ //                            : This guy controls exit condition.
+  FFTEesFwd(0);                // DON'T MOVE HIM
 
 //============================================================================
   }//end routine
@@ -800,8 +881,8 @@ void CP_Rho_GHartExt::getHartEextEes(){
 void CP_Rho_GHartExt::FFTEesFwd(int flag){
 //============================================================================
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("Ghart %d Here in FFT to r: %.10g %.10g : with %d at %d %d on %d\n",
-            thisIndex.x,ehart_ret,eext_ret,flag,iterAtmTyp,natmTyp,CkMyPe());
+  CkPrintf("Ghart %d %d Here in FFT to r: %.10g %.10g : with %d at %d %d on %d\n",
+            thisIndex.x,thisIndex.y,ehart_ret,eext_ret,flag,iterAtmTyp,natmTyp,CkMyPe());
 #endif
 
  //--------------------------------------------
@@ -833,8 +914,8 @@ void CP_Rho_GHartExt::FFTEesFwd(int flag){
 void CP_Rho_GHartExt::sendAtmSF(int flag){
 //============================================================================
 #ifdef _CP_GHART_VERBOSE_
-  CkPrintf("Ghart %d Here in send to Rhart with opt %d at %d %d on %d\n",
-         thisIndex.x,flag,iterAtmTyp,natmTyp,CkMyPe());
+  CkPrintf("Ghart %d %d Here in send to Rhart with opt %d at %d %d on %d\n",
+         thisIndex.x,thisIndex.y,flag,iterAtmTyp,natmTyp,CkMyPe());
 #endif
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
@@ -848,6 +929,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
     nline_send  = sim->nline_send_eext_y[ix];
     index_pack  = sim->index_tran_pack_eext_y[ix];
   }//endif
+
 //============================================================================
 // start commlib
 
@@ -860,16 +942,15 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
 //============================================================================
 // Send the message : 1 pt from each line to each chareR
+
   int priority =config.rhorHartpriority + thisIndex.x*10;
   int prioritybits = 8*sizeof(int);
 
   for(int z=0; z < ngridcEext; z++) {
-    int zz=z*numLines;
   for(int s=0;s<rhoRsubplanes;s++){
 
     if(rhoRsubplanes>1){numLinesNow = nline_send[s];}
-    if(numLinesNow >0)
-      {
+    if(numLinesNow >0){
 	RhoRHartMsg *msg = new (numLinesNow, prioritybits) RhoRHartMsg;
 	msg->size        = numLinesNow;     // number of z-lines in this batch
 	msg->senderIndex = thisIndex.x;  // line batch index
@@ -880,8 +961,6 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  *(int*)CkPriorityPtr(msg) = priority;
 	}//endif
-
-
 
 	// beam out all points with same z to chare array index z
 	complex *data = msg->data;
@@ -894,26 +973,24 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 	  }//endif
 	}//endif
 
-
 	if(rhoRsubplanes==1){
 	  switch(iopt){
-	  case 0 : rhoRHartProxy_com0(z,0).recvAtmForcFromRhoGHart(msg); break;
-	  case 1 : rhoRHartProxy_com1(z,0).recvAtmForcFromRhoGHart(msg); break;
+ 	   case 0 : rhoRHartProxy_com0(z,0,thisIndex.y).recvAtmForcFromRhoGHart(msg);break;
+	   case 1 : rhoRHartProxy_com1(z,0,thisIndex.y).recvAtmForcFromRhoGHart(msg);break;
 	  }//end switch
 	}else{
 	  switch(iopt){
-	  case 0 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
-	  case 1 : rhoRHartExtProxy(z,s).recvAtmForcFromRhoGHart(msg); break;
+	   case 0 : rhoRHartExtProxy(z,s,thisIndex.y).recvAtmForcFromRhoGHart(msg);break;
+	   case 1 : rhoRHartExtProxy(z,s,thisIndex.y).recvAtmForcFromRhoGHart(msg);break;
 	  }//end switch
 	}//endif
-      }// endif
-  }// endfor
 
+    }// endif : we need to send to this subplane
+  }// endfor : subplane loop
 #ifdef CMK_VERSION_BLUEGENE
-  if(z%8==0)
-    CmiNetworkProgress();
+  if(z%8==0){CmiNetworkProgress();}
 #endif
-  }//endfor
+  }//endfor : z-plane parallel loop
 
 //============================================================================
 // end commlib
@@ -926,10 +1003,13 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
   }//endif
 
 //============================================================================
-// We are done when when have sent out all SFs and the Ewald total SF
+// We are done when when have sent out all SFs and the Ewald total SF (index=0)
 
+  int nsendExpect=natmTyp;
+  if(thisIndex.y==0){nsendExpect++;} // chare 0 sends out SFtot, too.
+    
   nsendAtmTyp ++;
-  if(nsendAtmTyp==(natmTyp+1)){
+  if(nsendAtmTyp==nsendExpect){
     nsendAtmTyp = 0;
     iterAtmTyp  = 0;
     atmSFHere   = 0;
@@ -942,6 +1022,99 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
    }//end routine
 //============================================================================
 
+//============================================================================
+// Collect the SF from all the atm type chares on chare 0
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
+//============================================================================
+// Recv the contribs.
+
+  CkAssert(thisIndex.y==0);
+
+  if(countAtmSFtot==0){bzero(atmSFtotRecv,size*sizeof(complex));}
+  countAtmSFtot++;
+
+  for(int i=0;i<size;i++){atmSFtotRecv[i]+=inSF[i];}
+
+//============================================================================
+// Once you have it all, compute the energy, contribute, fft back, send to Rhart
+
+  if(countAtmSFtot==nchareHartAtmT){
+    countAtmSFtot=0;
+
+   //---------------------------------------------------------
+   // Compute ewald energy, modify the atmSFtot appropriately
+    int myChareG = thisIndex.x;
+    int ncoef    = rho_gs.nPacked;
+    int *k_x     = rho_gs.k_x;
+    int *k_y     = rho_gs.k_y;
+    int *k_z     = rho_gs.k_z;
+    eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+    double *b_re = eesData->RhoGHartData[myChareG].b_re;
+    double *b_im = eesData->RhoGHartData[myChareG].b_im;
+#ifndef CMK_OPTIMIZE
+    double StartTime=CmiWallTimer();
+#endif
+    CPLOCAL::eesEwaldGchare(ncoef,atmSFtotRecv,b_re,b_im,&ewd_ret,k_x,k_y,k_z,myChareG);
+#ifndef CMK_OPTIMIZE
+    traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
+#endif
+
+   //---------------------------------------------------------
+   // Contribute your energies now that you have them all
+    double e[3];
+    e[0] = ehart_ret;
+    e[1] = eext_ret;
+    e[2] = ewd_ret;
+    contribute(3*sizeof(double),e,CkReduction::sum_double);
+
+   //---------------------------------------------------------
+   // FFT back, which generates a send back to RHart
+    complex *junk=atmSFtot;
+    atmSFtot=atmSFtotRecv;  // avoid a memcpy : tricky, tricky
+    FFTEesFwd(1);
+    atmSFtot=junk;
+
+  }//endif
+
+//============================================================================
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+// Collect the VKS from all the atm type chares on chare 1
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
+//============================================================================
+// Recv the contributions
+
+  CkAssert(thisIndex.y==1);
+
+  if(countVksTot==0){bzero(VksRecv,size*sizeof(complex));}
+  countVksTot++;
+
+  for(int i=0;i<size;i++){VksRecv[i] += inVks[i];}
+
+//============================================================================
+// When all the guys have reported, you can do the fft and then send vks to RhoReal
+
+  if(countVksTot==nchareHartAtmT){
+     countVksTot=0;
+     complex *junk=rho_gs.Vks;
+     rho_gs.Vks= VksRecv;  // save a memcpy : tricky, tricky
+     FFTVks(); 
+     rho_gs.Vks=junk;
+  }//endif
+
+//============================================================================
+   }//end routine
+//============================================================================
+
 
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -949,13 +1122,18 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 // Glenn's special exit 
 //============================================================================
 void CP_Rho_GHartExt::exitForDebugging(){
+//============================================================================
+
   CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int nchareG               = sim->nchareRhoGEext;
+
   CountDebug++;  
-  if(CountDebug==nchareG){
+  if(CountDebug==nchareG*nchareHartAtmT){
     CountDebug=0;
     CkPrintf("I am in the exitfordebuging rhoghartext puppy. Bye-bye\n");
     CkExit();
   }//endif
-}
+
+//============================================================================
+  }//end routine
 //============================================================================

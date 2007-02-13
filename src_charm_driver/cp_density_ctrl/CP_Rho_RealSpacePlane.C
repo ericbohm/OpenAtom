@@ -123,9 +123,9 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
        recvCountFromGHartExt = 0;
        for(int i=0;i<nchareRhoGEext;i++){
          if(sim->nline_send_eext_y[i][thisIndex.y]>0)recvCountFromGHartExt++;
-       }
+       }//endfor
     }else{
-	recvCountFromGHartExt=nchareRhoGEext;
+      recvCountFromGHartExt=nchareRhoGEext;
     }//endif
 
 
@@ -164,7 +164,10 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     countWhiteByrd  = 0;
     doneGradRhoVks  = 0;
     countRHart      = 0;
-    countRHartValue = 1;if(thisIndex.x<(ngridcEext-rho_rs.sizeZ)){countRHartValue=2;}
+
+    countRHartValue = 1; if(thisIndex.x<(ngridcEext-rho_rs.sizeZ)){countRHartValue=2;}
+    countRHartValue*=(config.nchareHartAtmT);
+
     doneHartVks     = false;
     doneRHart       = false;
     doneWhiteByrd   = false;
@@ -425,13 +428,15 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
     CkPrintf("HI, I am r-rho chare %d lauchning %d : ngrids %d %d : %d\n",
              thisIndex.x,thisIndex.x,ngridcEext,ngridc,rem);
 #endif
-    rhoRHartExtProxy(thisIndex.x,thisIndex.y).startEextIter();
-    if(thisIndex.x<rem){
+    for(int j=0;j<config.nchareHartAtmT;j++){
+      rhoRHartExtProxy(thisIndex.x,thisIndex.y,j).startEextIter();
+      if(thisIndex.x<rem){
 #ifdef _CP_RHO_RSP_VERBOSE_
-      CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
+	CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
 #endif
-      rhoRHartExtProxy(ind,thisIndex.y).startEextIter();
-    }//endif : the launch
+	rhoRHartExtProxy(ind,thisIndex.y,j).startEextIter();
+      }//endif : the launch
+    }//endfor : atmTyp parallism
   }//endif : Launch is needed
 #endif
 
@@ -1850,7 +1855,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   delete msg;  
 
 //============================================================================
-// fft the puppy if you've got it all
+// fft the puppy if you've got it all : only atmtyp index=1 of ghart sends rho_real
 
   if (countGradVks[iopt] == recvCountFromGHartExt){
       countGradVks[iopt]=0;

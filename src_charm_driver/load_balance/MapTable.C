@@ -12,6 +12,7 @@ typedef IntMap2on1 MapType2;
 //class MapType2;
 #endif
 typedef IntMap4 MapType4;
+typedef IntMap3 MapType3;
 #endif
 #include "MapTable.h"
 #ifdef CMK_VERSION_BLUEGENE
@@ -27,12 +28,44 @@ int MapType2::getCentroid(){
   int X=0,Y=0,Z=0;
     for(int i=0;i<getXmax();i++)
       for(int j=0;j<getYmax();j++){
-      bgltm->getCoordinatesByRank(get(i,j),X, Y, Z);
+	  bgltm->getCoordinatesByRank(get(i,j),X, Y, Z);
+	  sumX+=X;
+	  sumY+=Y;
+	  sumZ+=Z;
+	  points++;
+	}
+  int avgX=sumX/points;
+  int avgY=sumY/points;
+  int avgZ=sumZ/points;
+  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+#else
+  int points=0, sum=0;
+  for(int i=0;i<getXmax();i++)
+    for(int j=0;j<getYmax();j++){
+	sum+=get(i,j);
+	points++;
+      }
+  int bestPe=sum/points;
+#endif      
+  return(bestPe);
+  }
 
-      sumX+=X;
-      sumY+=Y;
-      sumZ+=Z;
-      points++;
+int MapType3::getCentroid(){
+#ifdef CMK_VERSION_BLUEGENE
+  int points=0;
+  int  sumX=0;
+  int sumY=0;
+  int sumZ=0;
+  int X=0,Y=0,Z=0;
+    for(int i=0;i<getXmax();i++)
+      for(int j=0;j<getYmax();j++){
+	for(int k=0;k<getZmax();k++){
+	  bgltm->getCoordinatesByRank(get(i,j,k),X, Y, Z);
+	  sumX+=X;
+	  sumY+=Y;
+	  sumZ+=Z;
+	  points++;
+	}
     }
   int avgX=sumX/points;
   int avgY=sumY/points;
@@ -42,8 +75,10 @@ int MapType2::getCentroid(){
   int points=0, sum=0;
   for(int i=0;i<getXmax();i++)
     for(int j=0;j<getYmax();j++){
-      sum+=get(i,j);
-      points++;
+      for(int k=0;k<getZmax();k++){
+	sum+=get(i,j,k);
+	points++;
+      }
     }
   int bestPe=sum/points;
 #endif      
@@ -883,6 +918,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
          thisStateBox->reset();
       delete thisStateBox;
     }
+  delete [] Pecount;
 }
 
 OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap): nstates(_nstates), orthoGrainSize(_orthograinsize)
@@ -1116,6 +1152,9 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   delete avail;
 
   int destpe=availprocs->findNext();
+  if(availprocs->count()==0)
+    availprocs->reset();
+
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
       if(rem!=0)
@@ -1134,7 +1173,6 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	destpe=availprocs->findNext();
       if(availprocs->count()==0)
 	availprocs->reset();
-
     }
 #ifdef _MAP_DEBUG_
   CkPrintf("RhoGSMap created on processor %d\n", CkMyPe());
@@ -1143,14 +1181,14 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 }
 
 
-RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoRHart, int rhoRsubplanes, PeList *exclude ): nchareRhoRHart(_nchareRhoRHart)
+RhoRHartMapTable::RhoRHartMapTable(MapType3  *_map, PeList *_availprocs, int _nchareRhoRHart, int rhoRsubplanes, int nchareHartAtmT,PeList *exclude ): nchareRhoRHart(_nchareRhoRHart)
 {
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   int rrsobjs_per_pe, rem;
   int srcpe=0;
-  int numChares=nchareRhoRHart*rhoRsubplanes;
+  int numChares=nchareRhoRHart*rhoRsubplanes*nchareHartAtmT;
   if(availprocs->count()==0)
     availprocs->reset();
 
@@ -1193,32 +1231,35 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
   destpe=availprocs->findNext();
   if(availprocs->count()==0)
     availprocs->reset();
-  for(int chunk=0; chunk<nchareRhoRHart; chunk++)
-    {
-      for(int subplane=0; subplane<rhoRsubplanes; subplane++)
-	{
-	  if(rem!=0)
-	    if(nprocs==rem)
-	      rrsobjs_per_pe -= 1;
-#ifdef USE_INT_MAP
-	  maptable->set(chunk, subplane, destpe);
-#else
-	  maptable->put(intdual(chunk, subplane))=destpe;
-#endif
-	  objs++;
-	  exclude->mergeOne(destpe);
-	  if(objs>=rrsobjs_per_pe)
-	    {
 
-	      destpe=availprocs->findNext();
-	      if(availprocs->count()==0)
-	        availprocs->reset();
-	      objs=0;
-	      nprocs++;
+  for(int atmtype=0; atmtype< nchareHartAtmT;atmtype++)
+    {
+      for(int chunk=0; chunk<nchareRhoRHart; chunk++)
+	{
+	  for(int subplane=0; subplane<rhoRsubplanes; subplane++)
+	    {
+	      if(rem!=0)
+		if(nprocs==rem)
+		  rrsobjs_per_pe -= 1;
+#ifdef USE_INT_MAP
+	      maptable->set(chunk, subplane, atmtype,destpe);
+#else
+	      maptable->put(inttriple(chunk, subplane, atmtype))=destpe;
+#endif
+	      objs++;
+	      exclude->mergeOne(destpe);
+	      if(objs>=rrsobjs_per_pe)
+		{
+
+		  destpe=availprocs->findNext();
+		  if(availprocs->count()==0)
+		    availprocs->reset();
+		  objs=0;
+		  nprocs++;
+		}
 	    }
 	}
     }
-
 #ifdef _MAP_DEBUG_
   CkPrintf("RhoRHartMap created on processor %d\n", CkMyPe());
   dump();
@@ -1226,32 +1267,31 @@ RhoRHartMapTable::RhoRHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
 }
 
-RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart, int useCentroid, MapType2 *rhartmap, PeList *exclude): nchareRhoGHart(_nchareRhoGHart)
+RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoGHart, int nchareHartAtmT, int useCentroid, MapType3 *rhartmap, PeList *exclude): nchareRhoGHart(_nchareRhoGHart)
 {
   int npes;
-  int srcpe=0;
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
   npes=availprocs->count();
 
   int rghobjs_per_pe, rem;
-
+  int numchares=nchareRhoGHart*nchareHartAtmT;
   if(availprocs->count()==1)
     {
-      rghobjs_per_pe= nchareRhoGHart;
+      rghobjs_per_pe= numchares;
       rem=0;
     }
   else
     {
-      rghobjs_per_pe= nchareRhoGHart/npes;
-      rem = nchareRhoGHart % npes;
+      rghobjs_per_pe= numchares/npes;
+      rem = numchares % npes;
       if(rem!=0)
 	rghobjs_per_pe += 1;
     }
   PeList *avail= new PeList(*availprocs);
   *avail-*exclude;
-  if(avail->count()>nchareRhoGHart)
+  if(avail->count()>numchares)
     {
       // try an exclusion
       CkPrintf("RhoGHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
@@ -1266,7 +1306,6 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
   delete avail;
     
 
-
   if(availprocs->count()==0)
     availprocs->reset();
   if(useCentroid)
@@ -1276,25 +1315,32 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       availprocs->reset();
     }
   int destpe=availprocs->findNext();
-  for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
+  if(availprocs->count()==0)
+    availprocs->reset();
+  for(int atmtype=0; atmtype< nchareHartAtmT;atmtype++)
     {
-      //      CkAssert(exclude->exists(destpe)<0);
-      if(rem!=0)
-	if(chunk==rem*rghobjs_per_pe)
-	  rghobjs_per_pe -= 1; 
-      for(int i=chunk;i<chunk+rghobjs_per_pe;i++)
+      for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
 	{
+	  //      CkAssert(exclude->exists(destpe)<0);
+	  if(rem!=0)
+	    if(chunk==rem*rghobjs_per_pe)
+	      rghobjs_per_pe -= 1; 
+	  for(int i=chunk;((i<chunk+rghobjs_per_pe)&&(i<nchareRhoGHart));i++)
+	    {
 #ifdef USE_INT_MAP
-	  maptable->set(i, 0, destpe);
+	      maptable->set(i, atmtype, destpe);
 #else
-	  maptable->put(intdual(i, 0))=destpe;
+	      maptable->put(intdual(i, atmtype))=destpe;
 #endif
-	} 
-      exclude->mergeOne(destpe);
-      srcpe=destpe;
-      //	  availprocs->sortSource(srcpe);
-      if(chunk+1<nchareRhoGHart)
-	destpe=availprocs->findNext();
+	    } 
+	  exclude->mergeOne(destpe);
+	  //	  availprocs->sortSource(srcpe);
+	  if(chunk+1<numchares)
+	    destpe=availprocs->findNext();
+	  if(availprocs->count()==0)
+	    availprocs->reset();
+
+	}
     }
 #ifdef _MAP_DEBUG_
   CkPrintf("RhoGHartMap created on processor %d\n", CkMyPe());

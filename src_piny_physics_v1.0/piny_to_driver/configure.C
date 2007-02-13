@@ -28,7 +28,7 @@
 //===================================================================================
 void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
                         int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
-                        int numPes_in)
+                        int numPes_in, int natm_typ_in,int ees_eext_opt_in)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -73,6 +73,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   sGrainSize   = nstates_in;
   natm_nl      = natm_nl_in;
   numPes       = numPes_in;
+  natm_typ     = natm_typ_in;
+  ees_eext_opt = ees_eext_opt_in;
 
 //===================================================================================
 // Set up the dictionaries
@@ -280,7 +282,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 23;
+  num_dict[0] = 24;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
 //=================================================================================
@@ -444,6 +446,13 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"skip");    
     strcpy((*dict)[ind].error_mes,"skip,none,random");
 //----------------------------------------------------------------------------------
+  // 24)\nchareHartAtmT{}
+    ind =  24;
+    strcpy((*dict)[ind].keyword,"nchareHartAtmT");
+    strcpy((*dict)[ind].keyarg,"1");    
+    strcpy((*dict)[ind].error_mes," number >=1 and <= natmtype");
+//----------------------------------------------------------------------------------
+
   }//end routine
 //===================================================================================
 
@@ -590,7 +599,13 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     if(strcasecmp(dict[ind].keyarg,"skip")==0)  {rhoLineOrder = 0; ierr++;}
     if(strcasecmp(dict[ind].keyarg,"random")==0){rhoLineOrder = 1; ierr++;}
     if(ierr!=1){keyarg_barf(dict,input_name,fun_key,ind);}
-
+  //-----------------------------------------------------------------------------
+  // 24)\nchareHartAtmT{}
+    ind =   24;
+    sscanf(dict[ind].keyarg,"%d",&nchareHartAtmT);
+    if(nchareHartAtmT<1 || nchareHartAtmT>natm_typ){
+      keyarg_barf(dict,input_name,fun_key,ind);
+    }//endif
 //===================================================================================
 // Clean up 
 
@@ -2382,6 +2397,14 @@ void Config::rangeExit(int param, char *name, int iopt){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
+
+    if(ees_eext_opt==0 && nchareHartAtmT>1){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Multiple external/hartree atm-type chares only");
+      PRINTF("   enabled for the ees external method");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }
 
 //===================================================================================
 // Nonlocal Controls 
