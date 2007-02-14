@@ -196,6 +196,10 @@ void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
 
 void getSplitDecomp(int *,int *,int *, int , int ,int ); 
 
+void create_subPlane_decomp(int ,int *,int *,int ,int *,int *,int *,int **, int );
+void score_subPlane_decomp(int ,int , int *,int *, int *,int **, int *);
+void create_gx_decomp(int , int , int *, int *,int ,int *);
+
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

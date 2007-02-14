@@ -198,7 +198,7 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
     zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
     g2  = xk*xk+yk*yk+zk*zk;
     g   = sqrt(g2);
-    iii = (g-gmin_spl)/dg_spl + 1;  //look up array convention in piny, starts at 1
+    iii = (int)( (g-gmin_spl)/dg_spl + 1.0);  //look up array convention in piny, starts at 1
     iii = MIN(iii,nsplin_g);
     iii = MAX(iii,1);
     h0  = ((double)(iii-1))*dg_spl+gmin_spl;

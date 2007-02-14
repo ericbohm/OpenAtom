@@ -25,9 +25,6 @@ extern int sizeX;
 #define M_PI       3.14159265358979323846
 #endif
 
-void create_subPlane_decomp(int ,int *,int *,int ,int *,int *,int *,int **, int );
-void score_subPlane_decomp(int ,int , int *,int *, int *,int **, int *);
-
 //===================================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -473,18 +470,22 @@ void make_rho_runs(CPcharmParaInfo *sim){
       }//endfor
       create_subPlane_decomp(nplane_x,listGx,mapGrpGx,nchareRhoGEext,numSubGx,
                              nline_lgrp_eext,kx_line,nline_send_eext_y,rhoRsubplanes);
+      if(config.rhoSubPlaneBalance==1){
+	for(int i=0;i<nplane_x;i++){mapGrpGx[listGx[i]] = i;}
+        create_gx_decomp(nline_tot,nplane_x,kx_line,mapGrpGx,rhoRsubplanes,numSubGx);
+      }//endfif
       
       listSubFlag=0;
       for(int i=0;i<nplane_x;i++){
         if(listGx[i]!=i){listSubFlag==1;}
       }//endif
       if(listSubFlag==0){
-        CkPrintf("There is a straight run through gx on the subplanes\n");
+        CkPrintf("This is a straight run through gx on the subplanes\n");
       }//endif
       int iii = 0;
       for(int igrp=0;igrp<rhoRsubplanes;igrp++){
         int num = numSubGx[igrp];
-        sort_me(numSubGx[igrp],&listGx[iii]);  //order the gx you have
+        if(num>1){sort_me(num,&listGx[iii]);}  //order the gx you have
         CkPrintf("subplane[%d] Gx { ",igrp);
         for(int jc=0,ic=iii;ic<iii+num;ic++,jc++){
           listSubGx[igrp][jc]  = listGx[ic];
@@ -2198,5 +2199,84 @@ void score_subPlane_decomp(int nchareRhoGEext,int rhoRsubplanes, int *nline_lgrp
   }//endfor
 
 //============================================================================
-  }//
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void create_gx_decomp(int nktot, int nline, int *kx_line, int *mapl, 
+                      int nchare,int *nline_grp){
+//============================================================================
+// count the pts in the lines
+
+  int *npts = new int [nline];
+  for(int i =0;i<nline;i++){npts[i]=0;}
+  for(int i =0;i<nktot;i++){npts[mapl[kx_line[i]]]++;} // ky pts per kx line
+
+//============================================================================
+// Find the best division
+
+  double dev_min  = 0.0;
+  int nbal_min    = 0;
+  int ibal_min    = 0;
+  int ifirst      = 0;
+  int mmm         = (nktot/nchare);
+  for(int ibal=0;ibal<=mmm-1;ibal++){
+    int nbal  = ibal;
+    int ntarg = (nktot/nchare);
+    if(ntarg > nbal){ntarg -= nbal;}
+    int nmax  = 0;
+    int nmin  = nktot;
+    int nnow  = 0;
+    int ic    = 0;
+    for(int i=0;i<nline;i++){
+      nnow += npts[i];
+      if( (nnow>=ntarg) && (ic<(nchare-1)) ){
+        ic+=1;
+        nmin = MIN(nmin,nnow);
+        nmax = MAX(nmax,nnow);
+        nnow = 0;
+      }//endif
+    }//endfor
+    nmin = MIN(nmin,nnow);
+    nmax = MAX(nmax,nnow);
+    double dev = 100.0*((double)(nmax-nmin))/((double)MAX(nmin,1));
+    if(ic==nchare-1){
+     if(dev<dev_min || ifirst==0){
+       ifirst   = 1;
+       dev_min  = dev;
+       nbal_min = nbal;
+       ibal_min = ibal;
+     }//endif
+    }//endif
+  }//endfor
+
+//==========================================================================
+// Store the good decomposition
+
+  int ntarg = (nktot/nchare);
+  if(ntarg > nbal_min){ntarg = ntarg-nbal_min;}
+
+  int ic   = 0;
+  int nnow = 0;
+  for(int i=0;i<nchare;i++){nline_grp[i]=0;}
+  for(int i=0;i<nline;i++){
+     nline_grp[ic]++;
+     nnow += npts[i];
+     if( (nnow>=ntarg) && (ic<(nchare-1)) ){
+       ic  +=1;
+       nnow = 0;
+    }//endif
+  }//endfor
+
+  for(int i=0;i<nchare;i++){
+    CkPrintf("SubGrp[%d] has %d lines of %d total lines\n",i,nline_grp[i],nline);
+  }//endfor
+
+  delete [] npts;
+
+//============================================================================
+  }//end routine
 //============================================================================

@@ -143,7 +143,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   recvBlock        = 0;
   fftDataDone      = false;
   launchFFT        = false;
-  countZ = 0.0;      // Zmat communication counter
+  countZ           = 0;      // Zmat communication counter
 
 //============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache

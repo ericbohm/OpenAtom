@@ -283,7 +283,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 24;
+  num_dict[0] = 25;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
 //=================================================================================
@@ -452,8 +452,13 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"nchareHartAtmT");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes," number >=1 and <= natmtype");
+  //-----------------------------------------------------------------------------
+  // 25)\rhoSubPlaneBalance{}
+    ind =  25;
+    strcpy((*dict)[ind].keyword,"rhoSubPlaneBalance");
+    strcpy((*dict)[ind].keyarg,"off");
+    strcpy((*dict)[ind].error_mes,"on/off");
 //----------------------------------------------------------------------------------
-
   }//end routine
 //===================================================================================
 
@@ -607,6 +612,12 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     if(nchareHartAtmT<1 || nchareHartAtmT>natm_typ){
       keyarg_barf(dict,input_name,fun_key,ind);
     }//endif
+  //-----------------------------------------------------------------------------
+  // 25)\rhoSubPlaneBalance{}
+    ind =  25;
+    parse_on_off(dict[ind].keyarg,&rhoSubPlaneBalance,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+
 //===================================================================================
 // Clean up 
 
