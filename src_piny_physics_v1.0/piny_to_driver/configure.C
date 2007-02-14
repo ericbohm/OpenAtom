@@ -80,6 +80,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 // Set up the dictionaries
 
   useCommlib = 1;  //default value
+  useTimeKeeper = 0;  //default value
   set_config_dict_fun  (&num_dict_fun  ,&dict_fun);
   set_config_dict_rho  (&num_dict_rho  ,&dict_rho);
   set_config_dict_state(&num_dict_state,&dict_state);
@@ -1518,7 +1519,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 6;
+  num_dict[0] = 7;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
 
 //=================================================================================
@@ -1576,6 +1577,13 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
 //----------------------------------------------------------------------------------
+  // 7)\useTimeKeeper{}
+    ind=7;
+    strcpy((*dict)[ind].keyword,"useTimeKeeper");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+
   }//end routine
 //===================================================================================
 
@@ -1620,6 +1628,12 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
   // 6)\useCommlibMulticast{}
     ind=6;
     parse_on_off(dict[ind].keyarg,&useCommlibMulticast,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+
+//----------------------------------------------------------------------------------
+  // 7)\useTimeKeeper{}
+    ind=7;
+    parse_on_off(dict[ind].keyarg,&useTimeKeeper,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 
 //----------------------------------------------------------------------------------

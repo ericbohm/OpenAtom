@@ -15,13 +15,20 @@
  */
 #include <vector>
 #include <string>
+extern Config config;
 extern int TimeKeeperID;
 extern vector <string> TimeKeeperNames;
 int keeperRegister(string name)
 {
-  
-  TimeKeeperNames.push_back(name);
-  return(TimeKeeperID++);
+  if(config.useTimeKeeper)
+    {
+      TimeKeeperNames.push_back(name);
+      return(TimeKeeperID++);
+    }
+  else
+    { //disable all timers
+      return(-1);
+    }
 }
 
 class TimeKeeper : public Chare

@@ -172,9 +172,12 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
 //============================================================================
 #ifdef _CP_SUBSTEP_TIMING_
-  double rstart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&rstart,CkReduction::min_double, cb , forwardTimeKeep);
+  if(forwardTimeKeep>0)
+    {
+      double rstart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&rstart,CkReduction::min_double, cb , forwardTimeKeep);
+    }
 #endif
 
 #ifdef _NAN_CHECK_
@@ -411,9 +414,12 @@ void CP_State_RealSpacePlane::doReduction(){
 
   fftcache->freeCacheMem("CP_State_RealSpacePlane::doReduction");
 #ifdef _CP_SUBSTEP_TIMING_
-  double rend=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&rend,CkReduction::max_double, cb , forwardTimeKeep);
+  if(forwardTimeKeep>0)
+    {
+      double rend=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&rend,CkReduction::max_double, cb , forwardTimeKeep);
+    }
 #endif
 
 //============================================================================
@@ -442,9 +448,12 @@ void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
   CkPrintf("In StateRSpacePlane[%d %d] doProd \n", thisIndex.x, thisIndex.y);
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  double rstart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&rstart,CkReduction::min_double, cb , backwardTimeKeep);
+  if(backwardTimeKeep>0)
+    {
+      double rstart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&rstart,CkReduction::min_double, cb , backwardTimeKeep);
+    }
 #endif
 
 #ifdef _NAN_CHECK_
@@ -605,9 +614,12 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
      rs.destroy();
   }//endif
 #ifdef _CP_SUBSTEP_TIMING_
-  double rend=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&rend,CkReduction::max_double, cb , backwardTimeKeep);
+  if(backwardTimeKeep>0)
+    {
+      double rend=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&rend,CkReduction::max_double, cb , backwardTimeKeep);
+    }
 #endif
 
 //============================================================================

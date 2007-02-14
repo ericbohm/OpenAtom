@@ -141,6 +141,7 @@ class Config {
   //==================================
   // General control flags and values
   //----------------------------------
+   int useTimeKeeper;
    int fftprogresssplit;
    int fftprogresssplitReal;
    int useCommlib;

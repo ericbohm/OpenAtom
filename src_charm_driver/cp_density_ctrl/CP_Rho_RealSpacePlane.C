@@ -187,12 +187,12 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     CkArrayIndex2D idx(0, thisIndex.x);
     if(is_pow2(nstates)){
 	for (j = 0; j < nstates; j++) {
-	  idx.index[0] = j^((thisIndex.x+thisIndex.y*2)%nstates);
+	  idx.index[0] = j^((thisIndex.x+thisIndex.y)%nstates);
 	    elems[j] = idx;
 	}//endfor
     }else{
 	for (j = 0; j < nstates; j++) {
-	    idx.index[0] = (j+thisIndex.x+thisIndex.y*2)%nstates;
+	    idx.index[0] = (j+thisIndex.x+thisIndex.y)%nstates;
 	    elems[j] = idx;
 	}//endfor
     }//endif
@@ -341,9 +341,12 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   }
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  double rhostart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&rhostart,CkReduction::min_double, cb ,rhoKeeperId);
+  if(rhoKeeperId>0)
+    {
+      double rhostart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&rhostart,CkReduction::min_double, cb ,rhoKeeperId);
+    }
 #endif
 //============================================================================
 // Set the flags : you are not done unless certain conditions apply.
@@ -384,15 +387,17 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
       fclose(fp);
 #endif
 
-//============================================================================
-// 1st Launch real-space external-hartree and the G-space non-local
-
-   launchEextRNlG();
 
 //============================================================================
 // Compute the exchange correlation energy (density no-grad part)
 
   energyComputation();
+
+//============================================================================
+// 2nd Launch real-space external-hartree and the G-space non-local
+// The energy comp through RhoG is he more expensive critical path.
+   launchEextRNlG();
+
 
 //============================================================================
   }//end routine
@@ -571,10 +576,6 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   CmiNetworkProgress();
 #endif
 
-//============================================================================
-// Launch non-local real space FFT : allow NL to advance after density works a bit
-
-  launchNLRealFFT();
 
 //============================================================================
 // Launch the transpose :go directly to rhog if the 1 transpose method is on.
@@ -601,6 +602,12 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
     rhoRealProxy(0,0).exitForDebugging();
 #endif
   }//endif
+
+//============================================================================
+// Launch non-local real space FFT : allow NL to advance after density works a bit
+// Now that we have previously done our bit for the critical path through rhog
+
+  launchNLRealFFT();
 
 //============================================================================
   }//end routine
@@ -635,6 +642,8 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         for(int ns=ist;ns<iend;ns++){
           CkAssert(ns<config.nstates);
           realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl(myTime);
+	  if(ns%4)
+	    CmiNetworkProgress();
         }//endfor
     }//endif
   }//endif
@@ -735,8 +744,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
-      if(ic%3==0)
-	CmiNetworkProgress();
+      CmiNetworkProgress();
 #endif
     }//end for : chare sending
 
@@ -2011,8 +2019,11 @@ void CP_Rho_RealSpacePlane::doMulticast(){
       }//enddif
      if(config.useCommlibMulticast){mcastInstance.endIteration();}
 #ifdef _CP_SUBSTEP_TIMING_
-     double rhoend=CmiWallTimer();
-     contribute(sizeof(double), &rhoend, CkReduction::max_double,  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy),rhoKeeperId);
+     if(rhoKeeperId>0)
+       {
+	 double rhoend=CmiWallTimer();
+	 contribute(sizeof(double), &rhoend, CkReduction::max_double,  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy),rhoKeeperId);
+       }
 #endif
 
 #endif

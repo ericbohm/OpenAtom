@@ -115,9 +115,12 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 void Ortho::start_calc(CkReductionMsg *msg){
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
 #ifdef _CP_SUBSTEP_TIMING_
-  double ostart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&ostart,CkReduction::min_double, cb , timeKeep);
+  if(timeKeep>0)
+    {
+      double ostart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&ostart,CkReduction::min_double, cb , timeKeep);
+    }
 #endif
 
   if(thisIndex.x==0 && thisIndex.y==0)
@@ -385,9 +388,12 @@ void Ortho::resume(){
 	finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
       }
 #ifdef _CP_SUBSTEP_TIMING_
-  double oend=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&oend,CkReduction::max_double, cb , timeKeep);
+    if(timeKeep>0)
+      {
+	double oend=CmiWallTimer();
+	CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+	contribute(sizeof(double),&oend,CkReduction::max_double, cb , timeKeep);
+      }
 #endif
 
 //----------------------------------------------------------------------------

@@ -1292,9 +1292,12 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 #ifdef _CP_SUBSTEP_TIMING_
-  double gstart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
+  if(forwardTimeKeep>0)
+    {
+      double gstart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
+    }
 #endif
 
 
@@ -1446,9 +1449,12 @@ void CP_State_GSpacePlane::sendFFTData () {
 
   if (config.useGssInsRealP){gssInstance.endIteration();}
 #ifdef _CP_SUBSTEP_TIMING_
-  double gend=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
+  if(forwardTimeKeep>0)
+    {
+      double gend=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
+    }
 #endif
 
 //----------------------------------------------------------------------
@@ -1475,9 +1481,12 @@ void CP_State_GSpacePlane::sendFFTData () {
 void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
 #ifdef _CP_SUBSTEP_TIMING_
-  double gstart=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&gstart,CkReduction::min_double, cb , backwardTimeKeep);
+  if(backwardTimeKeep>0)
+    {
+      double gstart=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&gstart,CkReduction::min_double, cb , backwardTimeKeep);
+    }
 #endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
@@ -1890,9 +1899,12 @@ void  CP_State_GSpacePlane::sendLambda() {
    CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  double gend=CmiWallTimer();
-  CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
-  contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
+  if(backwardTimeKeep>0)
+    {
+      double gend=CmiWallTimer();
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
+    }
 #endif
 
 //-----------------------------------------------------------------------------
