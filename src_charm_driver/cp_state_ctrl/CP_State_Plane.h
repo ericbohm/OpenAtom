@@ -489,6 +489,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 //============================================================================
 class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
  public:	
+        int listSubFlag;
         int cp_grad_corr_on;
 	int ees_eext_on;
         int nplane_rho_x;
@@ -619,6 +620,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 //============================================================================
 class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
  public:
+        int listSubFlag;
         int nplane_rho_x;
         int rhoRsubplanes;
         int registrationFlag;

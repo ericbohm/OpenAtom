@@ -59,6 +59,7 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   nplane_rho_x         = sim->nplane_rho_x;
+  listSubFlag          = sim->listSubFlag;
   rhoRsubplanes        = config.rhoRsubplanes;
 
   CkAssert(nplane_rho_x >= rhoRsubplanes); // safety : should already be checked.
@@ -193,7 +194,7 @@ void CP_Rho_RHartExt::pup(PUP::er &p){
 //============================================================================
 
   ArrayElement3D::pup(p);
-
+   p|listSubFlag;
    p|countDebug;
    p|nplane_rho_x;
    p|rhoRsubplanes;
@@ -491,13 +492,21 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 	  *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
-      for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
-        for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
-          data[k] = atmSFC[ii];  // all y's of this gx
+      if(listSubFlag==1){
+        for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
+          for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
+            data[k] = atmSFC[ii];  // all y's of this gx
+          }//endfor
         }//endfor
-      }//endfor
+      }else{
+        int nst=listSubGx[ic][0];
+        for(int i=0,ist=nst,koff=0;i<num;i++,koff+=myNgridb,ist++){
+          for(int k=koff,ii=ist;k<myNgridb+koff;k++,ii+=stride){
+            data[k] = atmSFC[ii];  // all y's of this gx
+          }//endfor
+        }//endfor
+      }//endif
 
-      //WHOAH, may need glenn to unravel this
       rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
@@ -1012,14 +1021,23 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   countIntGtoR[iopt]++;
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
 
-  int stride = ngrida/2+1;
-  for(int js=0,j=0;js<size;js+=num,j++){
-   int jj = j*stride;
-   for(int is=js,i=0;is<(num+js);is++,i++){
-     dataC[(listSubGx[offset][i]+jj)] = msgData[is];
-   }//endfor
-  }//endfor
-
+    int stride = ngrida/2+1;
+  if(listSubFlag==1){
+    for(int js=0,j=0;js<size;js+=num,j++){
+     int jj = j*stride;
+     for(int is=js,i=0;is<(num+js);is++,i++){
+       dataC[(listSubGx[offset][i]+jj)] = msgData[is];
+     }//endfor
+    }//endfor
+  }else{
+    int nst = listSubGx[offset][0];
+    for(int js=0,j=0;js<size;js+=num,j++){
+      int jj = j*stride+nst;
+      for(int is=js,i=jj;is<(num+js);is++,i++){
+       dataC[i] = msgData[is];
+     }//endfor
+    }//endfor
+  }//endif
   delete msg;
 
 //============================================================================

@@ -48,11 +48,10 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,
   int ibal_min    = 0;
   int ifirst      = 0;
   int mmm         = (nktot/nchareG);
-//  for(int ibal=0;ibal<=mmm-1;ibal++){
-//    int nbal  = ibal;
-  for(int ibal=0;ibal<=128;ibal++){
-    int nbal  = ((ibal*nchareG)/32);
-//
+  for(int ibal=0;ibal<=mmm-1;ibal++){
+    int nbal  = ibal;
+//  for(int ibal=0;ibal<=128;ibal++){
+//    int nbal  = ((ibal*nchareG)/32);
     int ntarg = (nktot/nchareG);
     if(ntarg > nbal){ntarg -= nbal;}
     int nmax  = 0;

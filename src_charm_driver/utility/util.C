@@ -131,7 +131,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       for(int j=0;j<4;j++){
       for(int i=0;i<nline_tot;i++){
         double stuff = altRandom(&seed);
-        int index    = nline_tot*stuff;
+        int index    = (int)( ((double) nline_tot)*stuff );
         index        = MIN(index,nline_tot-1);
         int itemp    = mapl[i];
         mapl[i]      = mapl[index];
@@ -423,6 +423,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     int **nline_send_eext_y        = NULL;
     int *numSubGx                  = NULL;
     int **listSubGx                = NULL;
+    int listSubFlag                = 0;
     int ngxSubMax                  = nplane_x/rhoRsubplanes+1;
     if(rhoRsubplanes==1){ngxSubMax=0;}
 
@@ -456,6 +457,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
      // Balanced SubPlane decomp
       numSubGx                 = new int [rhoRsubplanes];
       listSubGx                = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"util.C");
+      listSubFlag              = 0;
 
      //----------------------------------------------------------------
      // Group the Gx in the subplanes so as to minimize # of message sent from RtoG
@@ -471,6 +473,14 @@ void make_rho_runs(CPcharmParaInfo *sim){
       }//endfor
       create_subPlane_decomp(nplane_x,listGx,mapGrpGx,nchareRhoGEext,numSubGx,
                              nline_lgrp_eext,kx_line,nline_send_eext_y,rhoRsubplanes);
+      
+      listSubFlag=0;
+      for(int i=0;i<nplane_x;i++){
+        if(listGx[i]!=i){listSubFlag==1;}
+      }//endif
+      if(listSubFlag==0){
+        CkPrintf("There is a straight run through gx on the subplanes\n");
+      }//endif
       int iii = 0;
       for(int igrp=0;igrp<rhoRsubplanes;igrp++){
         int num = numSubGx[igrp];
@@ -592,6 +602,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     sim->ngxSubMax               = ngxSubMax;  // max number of gx values in any grp
     sim->numSubGx                = numSubGx;   // number of gx values in each grp
     sim->listSubGx               = listSubGx;  // gx values in grp
+    sim->listSubFlag             = listSubFlag;
       
 //=================================================================================
 // Analyze the Send and Receives
@@ -2104,10 +2115,10 @@ void create_subPlane_decomp(int nplane_x,int *listGx,int *mapGrpGx,
    // Mix up the kx
     if(ntry>1){
       double stuff = altRandom(&seed);
-      int index    = nplane_x*stuff;
+      int index    = (int) (((double)nplane_x)*stuff);
       index        = MIN(index,nplane_x-1);
       stuff        = altRandom(&seed);
-      int jndex    = nplane_x*stuff;
+      int jndex    = (int) (((double)nplane_x)*stuff);
       jndex        = MIN(jndex,nplane_x-1);
       int itemp    = list1[index];
       list1[index] = list1[jndex];

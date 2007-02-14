@@ -89,6 +89,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     ngridb               = sim->sizeY;
     ngridc               = sim->sizeZ;
     nplane_rho_x         = sim->nplane_rho_x; // gx_max 
+    listSubFlag          = sim->listSubFlag;
 
     iplane_ind           = thisIndex.y*ngridc + thisIndex.x;
 
@@ -260,6 +261,7 @@ CP_Rho_RealSpacePlane::~CP_Rho_RealSpacePlane(){
 //============================================================================
 void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
+  p|listSubFlag;
   p|myTime;
   p|nplane_rho_x;
   p|ngrida;
@@ -722,11 +724,20 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
           *(int*)CkPriorityPtr(msg) = config.rhogpriority+thisIndex.y;
       }//endif
 
-      for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
-        for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
-          data[k] = FFTresult[ii];  // all y's of this gx
+      if(listSubFlag==1){
+        for(int i=0,koff=0;i<num;i++,koff+=myNgridb){
+          for(int k=koff,ii=listSubGx[ic][i];k<myNgridb+koff;k++,ii+=stride){
+            data[k] = FFTresult[ii];  // all y's of this gx
+          }//endfor
         }//endfor
-      }//endfor
+      }else{
+        int nst=listSubGx[ic][0];
+        for(int i=0,ist=nst,koff=0;i<num;i++,koff+=myNgridb,ist++){
+          for(int k=koff,ii=ist;k<myNgridb+koff;k++,ii+=stride){
+            data[k] = FFTresult[ii];  // all y's of this gx
+          }//endfor
+        }//endfor
+      }//endif
 
       switch(iopt){
         case 0 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
@@ -1350,12 +1361,22 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   if(countIntGtoR[iopt]==1){bzero(dataR,sizeof(double)*nptsExpndB);}
 
   int stride = ngrida/2+1;
-  for(int js=0,j=0;js<size;js+=num,j++){
-   int jj = j*stride;
-   for(int is=js,i=0;is<(num+js);is++,i++){
-     dataC[(listSubGx[offset][i]+jj)] = msgData[is];
-   }//endfor
-  }//endfor
+  if(listSubFlag==1){
+    for(int js=0,j=0;js<size;js+=num,j++){
+      int jj = j*stride;
+      for(int is=js,i=0;is<(num+js);is++,i++){
+       dataC[(listSubGx[offset][i]+jj)] = msgData[is];
+     }//endfor
+    }//endfor
+  }else{
+    int nst = listSubGx[offset][0];
+    for(int js=0,j=0;js<size;js+=num,j++){
+      int jj = j*stride+nst;
+      for(int is=js,i=jj;is<(num+js);is++,i++){
+       dataC[i] = msgData[is];
+     }//endfor
+    }//endfor
+  }//endif
 
   delete msg;
 

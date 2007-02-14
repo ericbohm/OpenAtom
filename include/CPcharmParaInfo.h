@@ -194,6 +194,7 @@ class CPcharmParaInfo {
    int ngxSubMax;                  // max number of gx values in any subplane grp
    int *numSubGx;                  // number of gx values in each subplane grp
    int **listSubGx;                // gx values in each subplane grp
+   int listSubFlag;
 
    CkVec<RunDescriptor> *RhosortedRunDescriptors; // description of collection
    RedundantCommPkg *RCommPkg;  // communication of redundant elements
@@ -394,9 +395,10 @@ class CPcharmParaInfo {
 	}//endfor
        }//endfor
 
-       ngxSubMax = s.ngxSubMax; 
-       numSubGx  = new int [rhoRsubplanes];
-       listSubGx = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"charmparainfo");
+       listSubFlag = s.listSubFlag;
+       ngxSubMax   = s.ngxSubMax; 
+       numSubGx    = new int [rhoRsubplanes];
+       listSubGx   = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"charmparainfo");
        for(int ic=0;ic<rhoRsubplanes;ic++){
          numSubGx[ic] = s.numSubGx[ic];
          for(int jc=0;jc<numSubGx[ic];jc++){
@@ -516,6 +518,7 @@ class CPcharmParaInfo {
       p|nplane_rho_x; p|nchareRhoG; p|nchareRhoGEext; 
       p|nlines_max_rho; p|nlines_tot_rho; p|npts_tot_rho;
       p|ngxSubMax; 
+      p|listSubFlag;
 
       if(p.isUnpacking()) {
         lines_per_chareRhoG      = new double[nchareRhoG];
