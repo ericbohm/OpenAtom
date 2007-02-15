@@ -463,6 +463,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
   double d0         = ((double *)msg->getData())[0];
   double d1         = ((double *)msg->getData())[1];
          d1         = sqrt(d1); // piny convention
+
   delete msg;  
 
   fovlap_old        = fovlap; // CG ovlap (all chares need it)
@@ -1922,45 +1923,50 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind].ka;
 
-  complex *data  = (complex *)msg->getData();
   int       N    = msg->getSize()/sizeof(complex);
+  complex *data  = (complex *)msg->getData();
+  int offset     = msg->getUserFlag();  if(offset<0){offset=0;}
+
   complex *force = gs.packedForceData;
+  int chunksize  = gs.numPoints/config.numChunksAsym;
+  int chunkoffset=offset*chunksize; // how far into the points this contribution lies
+
 #ifdef _NAN_CHECK_
-  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
-    {
+  for(int i=0;i<msg->getSize()/sizeof(double) ;i++){
       CkAssert(finite(((double*) msg->getData())[i]));
-    }
+  }//endfor
 #endif
 
-
 //==============================================================================
-// Get the modified forces
+// Count then debug
 
   countLambda++;//lambda arrives in as many as 2 * numChunks reductions
 
-//=============================================================================
-// (II) Add it in to our forces
+/*
+  if(thisIndex.y==0){
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,
+                      thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+  }//endif
 
-  int offset=msg->getUserFlag();
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksAsym;
-  int chunkoffset=offset*chunksize; // how far into the points this
-				  // contribution lies
-  /*
-  if(thisIndex.y==0)
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+  if(thisIndex.y==0){
+      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", 
+                thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
+  }//endif
+*/
 
-  if(thisIndex.y==0)
-    {
-      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
-    }
-  */
+//==============================================================================
+// Add the forces 
+
+  //---------------------------------------------------
+  // A) BGL STuff
 #ifdef CMK_VERSION_BLUEGENE
 #pragma disjoint(*force, *data)
       __alignx(16,force);
       __alignx(16,data);
 #endif
+
+  //---------------------------------------------------
+  // B) Double Pack
   if(config.doublePack==1){
    if(cp_min_opt==1){
 #ifdef CMK_VERSION_BLUEGENE
@@ -1972,19 +1978,24 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
        force[idest].im -= wght*data[i].im;
      }//endfor
    }else{
-       if(countLambdaO[offset]<1)
+     if(countLambdaO[offset]<1){
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
-       else
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
+     }else{
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-	 for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
-   }//endif
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+     }// coutlambda
+   }//endif : cpmin
  
-  }else{
+  }//endif : double pack
+
+  //---------------------------------------------------
+  // C) Double Pack
+  if(config.doublePack==0){
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
@@ -1993,7 +2004,13 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
        force[idest].im -= 0.5*data[i].im;
     }//endfor
   }//endif
+
+  //---------------------------------------------------
+  // D) Cleanup
   delete msg;  
+
+//==============================================================================
+// Do we have everything?
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
@@ -2002,9 +2019,10 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }
+  }//endif
+
 //==============================================================================
-}//end routine
+   }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -2012,7 +2030,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 //==============================================================================
-// unpack the message : pop out variables from groups
+// 0) unpack the message : pop out variables from groups
 
   complex *data     = msg->result;
   int       N       = msg->N;
@@ -2028,66 +2046,82 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   int chunkoffset   = offset*chunksize; // how far into the points this contribution lies
 
 //==============================================================================
-// Get the modified forces
+// I) Increment the counter and do some checking
 
   countLambda++;  //lambda arrives in as many as 2 * numChunks reductions
+
+/*
+  if(thisIndex.y==0){
+    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,
+                     thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+  }//endif
+
+  if(thisIndex.y==0){
+      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", 
+                thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
+  }//endif
+*/
 
 //=============================================================================
 // (II) Add it in to our forces : Careful about offsets, doublepack and cpmin/cp
 
-  /*
-  if(thisIndex.y==0)
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
+ //----------------------------------------------------------
+ //A) BlueGene nonsense
 
-  if(thisIndex.y==0)
-    {
-      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
-    }
-  */
 #ifdef CMK_VERSION_BLUEGENE
 #pragma disjoint(*force, *data)
       __alignx(16,force);
       __alignx(16,data);
 #endif
-  if(config.doublePack==1){
+ //----------------------------------------------------------
+ //B) Double Pack
 
+  if(config.doublePack==1){
    if(cp_min_opt==1){
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
    }else{
-     if(countLambdaO[offset]<1)
+     if(countLambdaO[offset]<1){
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
-     else
+     }else{
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+     }//endif : off set thingy
    }//endif : cp_min_on
+  }//endif : double pack
 
-  }else{
+ //----------------------------------------------------------
+ //C) Single pack
+
+  if(config.doublePack==0){
 #ifdef CMK_VERSION_BLUEGENE
 #pragma unroll(10)
 #endif
-
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
     }//endfor
 
-  }//endif : double pack
+  }//endif : single pack
+
+ //----------------------------------------------------------
+ //D) Clean up
+
   delete msg;  
+
+//=============================================================================
+// are we done?
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
@@ -2096,10 +2130,10 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }
+  }//endif
 
 //==============================================================================
- }//end routine
+    }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -2145,28 +2179,36 @@ void CP_State_GSpacePlane::doLambda() {
   countLambda=0;
   bzero(countLambdaO,config.numChunksAsym*sizeof(int));
 
+//==============================================================================
+// Debug
+
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,
+                      thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
-  if(savedlambdaAf==NULL)
-    { // load it
+  if(savedlambdaAf==NULL){ // load it
       savedlambdaAf= new complex[gs.numPoints];
-      loadMatrixDouble("lambdaAf",(double *)savedlambdaAf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
+      loadMatrixDouble("lambdaAf",(double *)savedlambdaAf, 1, 
+                        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+  for(int i=0;i<gs.numPoints;i++){
       CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<0.0001);
       CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<0.0001);
-    }
+  }//endfor
 #endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
+
+//==============================================================================
+// Back to the threaded loop
+
   RTH_Runtime_resume(run_thread);
+
 //==============================================================================
   }//end routine
 //==============================================================================
@@ -2390,6 +2432,8 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
     tk_y[j]  = mk_y[i];
     tk_z[j]  = mk_z[i];
   }//endfor
+
+  delete msg;
 
 //============================================================================
 // If you've got the whole state, write it out and then invoke the reduction.
@@ -2776,7 +2820,7 @@ void CP_State_GSpacePlane::sendPsi() {
 #endif
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-  int cp_min_opt = sim->cp_min_opt;
+  int cp_min_opt       = sim->cp_min_opt;
 
   if(finishedRedPsi==0 || finishedCpIntegrate==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2801,10 +2845,11 @@ void CP_State_GSpacePlane::sendPsi() {
 //==============================================================================
 // Prepare the data : If cp dynamics is going, save the non-orthogonal puppies.
 
-  acceptedPsi =false;
-  allAcceptedPsi =false;
+  acceptedPsi    = false;
+  allAcceptedPsi = false;
 
-  complex *psi=gs.packedPlaneData;
+  complex *psi   = gs.packedPlaneData;
+  int numPoints  = gs.numPoints;
 
   if(cp_min_opt==0){
      int ncoef     = gs.numPoints;
@@ -2820,34 +2865,35 @@ void CP_State_GSpacePlane::sendPsi() {
 #endif
 
 //==============================================================================
-  int numPoints = gs.numPoints;
+// Debugging 
+
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-  for(int i=0;i<config.numChunksSym;i++)
-    CkAssert(countPsiO[i]==0);
+  for(int i=0;i<config.numChunksSym;i++){CkAssert(countPsiO[i]==0);}
 #endif
 
 #ifdef _CP_GS_DUMP_PSI_
-    dumpMatrixDouble("psiBfp",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
+    dumpMatrixDouble("psiBfp",(double *)psi, 1, gs.numPoints*2,
+                     thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
-  if(savedpsiBfp==NULL)
-    { // load it
+  if(savedpsiBfp==NULL){ // load it
       savedpsiBfp= new complex[gs.numPoints];
-      loadMatrixDouble("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
-      if(fabs(psi[i].re-savedpsiBfp[i].re)>0.0001)
-	{
-	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiBfp[i].re);
-	}
-
+      loadMatrixDouble("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,
+                        thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+  for(int i=0;i<gs.numPoints;i++){
+      if(fabs(psi[i].re-savedpsiBfp[i].re)>0.0001){
+	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",
+                  thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiBfp[i].re);
+      }//endif
       CkAssert(fabs(psi[i].re-savedpsiBfp[i].re)<0.0001);
       CkAssert(fabs(psi[i].im-savedpsiBfp[i].im)<0.0001);
-    }
-
+  }//endfor
 #endif
+
+//==============================================================================
+// Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
   startPairCalcLeft(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
@@ -2903,42 +2949,44 @@ void  CP_State_GSpacePlane::sendPsiV() {
 //==============================================================================
 void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 //=============================================================================
-// (I) Unpack the contribution to newpsi (orthonormal psi)
+// (0) Nan Check and output
 
-  int N         = msg->getSize()/sizeof(complex);
-  complex *data = (complex *)msg->getData();
+  int N           = msg->getSize()/sizeof(complex);
+  complex *data   = (complex *)msg->getData();
+  int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
+  complex *psi    = gs.packedPlaneData;
+  int chunksize   = gs.numPoints/config.numChunksSym;
+  int chunkoffset = offset*chunksize; // how far into the points this contribution lies
+
 #ifdef _NAN_CHECK_
-  for(int i=0;i<N ;i++)
-    {
+  for(int i=0;i<N ;i++){
       CkAssert(finite(((complex *) msg->getData())[i].re));
       CkAssert(finite(((complex *) msg->getData())[i].im));
-    }
+  }//endfor
 #endif
 
-  complex *psi  = gs.packedPlaneData;
-  int offset=msg->getUserFlag();
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksSym;
-  int chunkoffset=offset*chunksize; // how far into the points this
-				  // contribution lies
+/*
+  if(thisIndex.y==0){
+      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", 
+           thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
+  }//endif
+*/
+
+//=============================================================================
+// (I) Unpack the contribution to newpsi (orthonormal psi)
+
   int idest=chunkoffset;
 
-  if(countPsiO[offset]<1)
+  if(countPsiO[offset]<1){
     //memcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
-  else
+  }else{
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
     //    fastAdd((double *) psi,(double *)data,N*2);
-
+  }//endif
 
   delete msg;
-  /*
-  if(thisIndex.y==0)
-    {
-      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
-    }
-  */
+
 //=============================================================================
 // (II) If you have got it all : Rescale it, produce some output
 
@@ -2950,10 +2998,12 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
    if(thisIndex.x==0)
     CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
-  }
+  }//endif
+
 //----------------------------------------------------------------------------
-}//end routine
+   }//end routine
 //==============================================================================
+
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2961,60 +3011,66 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 /**
  * When the psi calculator is sending to us directly
  */
+//==============================================================================
 void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
+//=============================================================================
+// (0) Check for Nans
+
+//  CkPrintf("GSP [%d,%d] acceptNewPsi\n",thisIndex.x,thisIndex.y);
+
+  int N           = msg->N;
+  complex *data   = msg->result;
+  int offset      = msg->myoffset;  if(offset<0){offset=0;}
+  complex *psi    = gs.packedPlaneData;
+  int chunksize   = gs.numPoints/config.numChunksSym;
+  int chunkoffset = offset*chunksize; // how far into the points this contribution lies
+
+#ifdef _NAN_CHECK_
+  for(int i=0;i<N ;i++){
+      if((!finite(data[i].re)) || (!finite(data[i].im))){
+	 CkPrintf("GSP [%d,%d] acceptNewPsi offset %d %d of %d is nan\n",
+               thisIndex.x,thisIndex.y, msg->myoffset, i,N);
+      }
+      CkAssert(finite(data[i].re));
+      CkAssert(finite(data[i].im));
+  }//endif
+#endif
+
+/*
+  if(thisIndex.y==0){
+      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", 
+               thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
+  }//endif
+*/
+
 //=============================================================================
 // (I) Unpack the contribution to newpsi (orthonormal psi)
 
-//  CkPrintf("GSP [%d,%d] acceptNewPsi\n",thisIndex.x,thisIndex.y);
-  int N         = msg->N;
-  complex *data = msg->result;
-#ifdef _NAN_CHECK_
-  for(int i=0;i<N ;i++)
-    {
-      if((!finite(data[i].re)) || (!finite(data[i].im)))
-	{
-	  CkPrintf("GSP [%d,%d] acceptNewPsi offset %d %d of %d is nan\n",thisIndex.x,thisIndex.y, msg->myoffset, i,N);
-	}
-      CkAssert(finite(data[i].re));
-      CkAssert(finite(data[i].im));
-    }
-#endif
-
-  complex *psi  = gs.packedPlaneData;
-  int offset=msg->myoffset;
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksSym;
-  int chunkoffset=offset*chunksize; // how far into the points this
-				  // contribution lies
-  int idest=chunkoffset;
-
-  if(countPsiO[offset]<1)
+  int idest = chunkoffset;
+  if(countPsiO[offset]<1){
     //memcpy(&(psi[idest]), &(data[0]), N*sizeof(complex)); //slower?
     for(int i=0; i<N; i++,idest++){psi[idest] = data[i];}
-  else
+  }else{
     for(int i=0; i<N; i++,idest++){psi[idest] += data[i];}
     //    fastAdd((double *) psi,(double *)data,N*2);
+  }//endif
 
   delete msg;
-  /*
-  if(thisIndex.y==0)
-    {
-      CkPrintf("PSI [%d %d], offset %d chunkoffset %d N %d countPsiO %d\n", thisIndex.x, thisIndex.y, offset, chunkoffset, N, countPsiO[offset]);
-    }
-  */
-  countPsi++;//psi arrives in as many as 2 *numblock * numgrain reductions
+
+//==============================================================================
+// When you are done, continue
+
+  countPsi++;         //psi arrives in as many as 2 *numblock * numgrain reductions
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   if(countPsi==AllPsiExpected){ 
     doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
-   if(thisIndex.x==0)
-    CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
+    if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
-  }
+  }//endif
 
 //----------------------------------------------------------------------------
-}//end routine
+   }//end routine
 //==============================================================================
 
 
@@ -3034,37 +3090,41 @@ void CP_State_GSpacePlane::doNewPsi(){
     CkPrintf("donewpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
-
   CkAssert(countPsi==AllPsiExpected); 
-  //--------------------------------------------------------------------
-  // (A) Reset counters and rescale the kx=0 stuff
-  complex *psi  = gs.packedPlaneData;
 
+  complex *psi  = gs.packedPlaneData;
 #ifdef _NAN_CHECK_
-  for(int i=0;i<gs.numPoints ;i++)
-    {
+  for(int i=0;i<gs.numPoints ;i++){
       CkAssert(finite(psi[i].re));
       CkAssert(finite(psi[i].im));
-    }
+  }//endfor
 #endif
+
+//=============================================================================
+// (A) Reset counters and rescale the kx=0 stuff
 
 #ifdef GPSI_BARRIER
   int wehaveours=1;
   contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
 	     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsi(NULL),gSpacePlaneProxy));
 #endif
-  acceptedPsi=true;
-  countPsi=0;
+
+  acceptedPsi = true;
+  countPsi    = 0;
   bzero(countPsiO,config.numChunksSym*sizeof(int));
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
   }//endif
-  //--------------------------------------------------------------------
-  // (B) Generate some screen output of orthogonal psi
+
+//=============================================================================
+// (B) Generate some screen output of orthogonal psi
+
   screenOutputPsi();
-  //--------------------------------------------------------------------
-  // (D) Go back to the top or exit
+
+//=============================================================================
+// (D) Go back to the top or exit
+
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
@@ -3073,6 +3133,7 @@ void CP_State_GSpacePlane::doNewPsi(){
      }//endif
      cleanExitCalled = 1;
   }//endifw
+
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
      config.stateOutputOn==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
@@ -3081,28 +3142,33 @@ void CP_State_GSpacePlane::doNewPsi(){
      }//endif
      cleanExitCalled = 1;
   }///endif
-  //--------------------------------------------------------------------
-  // (E) Reset psi if debugging
+
+//=============================================================================
+// (D) Debug psi
+
 #ifdef _CP_GS_DUMP_PSI_
-  dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
+                    thisIndex.x,0,false);    
 #endif
 
- #ifdef _CP_GS_DEBUG_COMPARE_PSI_
-  if(savedpsiAf==NULL)
-    { // load it
+#ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  if(savedpsiAf==NULL){
       savedpsiAf= new complex[gs.numPoints];
-      loadMatrixDouble("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
-      if(fabs(psi[i].re-savedpsiAf[i].re)>0.0001)
-	{
-	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiAf[i].re);
-	}
+      loadMatrixDouble("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,
+                        thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+  for(int i=0;i<gs.numPoints;i++){
+      if(fabs(psi[i].re-savedpsiAf[i].re)>0.0001){
+        fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",
+        thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiAf[i].re);
+      }//endif
       CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<0.0001);
       CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<0.0001);
-    }
+  }//endfor
 #endif
+
+//=============================================================================
+// (E) Reset psi 
 
 #ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
@@ -3111,6 +3177,10 @@ void CP_State_GSpacePlane::doNewPsi(){
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
 #endif      
+
+//==============================================================================
+// Back to the threaded loop.
+
   RTH_Runtime_resume(run_thread);
 
 //----------------------------------------------------------------------------
@@ -3123,34 +3193,41 @@ void CP_State_GSpacePlane::doNewPsi(){
 //==============================================================================
 void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 //=============================================================================
-// (I) Unpack the contribution to newpsi (orthonormal psi)
+// (I) Local pointers
 
-  int N         = msg->getSize()/sizeof(complex);
-  complex *data = (complex *)msg->getData();
-  complex *vpsi = gs.packedVelData;
-  int offset=msg->getUserFlag();
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksSym;
-  int chunkoffset=offset*chunksize;; // how far into the points this
-				  // contribution lies
+  int N           = msg->getSize()/sizeof(complex);
+  complex *data   = (complex *)msg->getData();
+  int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
+
+  complex *vpsi   = gs.packedVelData;
+  int chunksize   = gs.numPoints/config.numChunksSym;
+  int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
+
+//=============================================================================
+// (II) Unpack the contribution to newpsi (orthonormal psi)
+
   int idest=chunkoffset;
-  if(countVPsiO[offset]<1) 
+  if(countVPsiO[offset]<1){
     // memcpy(&(vpsi[idest]), &(data[0]), N*sizeof(complex));//slower?
     for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
-  else
+  }else{
     for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
-  
+  }//endif  
+
   delete msg;
 
-  countVPsi++;//psi arrives in as many as 2 reductions
+//=============================================================================
+// (III) When all has arrive, onward to victory
+
+  countVPsi++;         //psi arrives in as many as 2 reductions
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
+
   if(countVPsi==AllPsiExpected){ 
     doNewPsiV();
-  }
+  }//endif
 
 //----------------------------------------------------------------------------
-}//end routine
+   }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -3158,34 +3235,41 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 //==============================================================================
 void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 //=============================================================================
+// (I) Local pointers
+
+  int N           = msg->N;
+  complex *data   = msg->result;
+  int offset      = msg->myoffset;  if(offset<0){offset=0;}
+
+  complex *vpsi   = gs.packedVelData;
+  int chunksize   = gs.numPoints/config.numChunksSym;
+  int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
+
+//=============================================================================
 // (I) Unpack the contribution to newpsi (orthonormal psi)
 
-  int N         = msg->N;
-  complex *data = msg->result;
-  complex *vpsi = gs.packedVelData;
-  int offset=msg->myoffset;
-  if(offset<0)
-    offset=0;
-  int chunksize=gs.numPoints/config.numChunksSym;
-  int chunkoffset=offset*chunksize;; // how far into the points this
-				  // contribution lies
   int idest=chunkoffset;
-  if(countVPsiO[offset]<1) 
+  if(countVPsiO[offset]<1){
     // memcpy(&(vpsi[idest]), &(data[0]), N*sizeof(complex));//slower?
     for(int i=0; i<N; i++,idest++){vpsi[idest] = data[i];}
-  else
+  }else{
     for(int i=0; i<N; i++,idest++){vpsi[idest] += data[i];}
+  }//endif
   
   delete msg;
 
+//=============================================================================
+// (II) Continue
+
   countVPsi++;//psi arrives in as many as 2 reductions
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
+
   if(countVPsi==AllPsiExpected){ 
     doNewPsiV();
-  }
+  }//endif
 
 //----------------------------------------------------------------------------
-}//end routine
+  }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -3193,26 +3277,10 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 //==============================================================================
 void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
-// (I) If you have got it all : Rescale it, produce some output
-
+// (0) Error check
 
   CkAssert(countVPsi==AllPsiExpected); 
-  //--------------------------------------------------------------------
-  // (A) Reset counters and rescale the kx=0 stuff
-  complex *vpsi = gs.packedVelData;
-  acceptedVPsi=true;
-  countVPsi=0;
-  for(int i=0;i<config.numChunksSym;i++)
-    countVPsiO[i]=0;
-  if(gs.ihave_kx0==1){
-    double rad2 = sqrt(2.0);
-    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
-  }//endif
-  /* debugging barrier
-     int wehaveours=1;
-     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
-  */
+
   if(!acceptedPsi){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Flow of Control Error : Attempting to v-psi\n");
@@ -3221,11 +3289,36 @@ void CP_State_GSpacePlane::doNewPsiV(){
     CkExit();
   }//endif
 
-  needPsiV=false;
+//=============================================================================
+// (I) Reset counters and rescale the kx=0 stuff
+
+  complex *vpsi = gs.packedVelData;
+  acceptedVPsi  = true;
+  needPsiV      = false;
+  countVPsi     = 0;
+
+  for(int i=0;i<config.numChunksSym;i++){countVPsiO[i]=0;}
+  if(gs.ihave_kx0==1){
+    double rad2 = sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
+  }//endif
+
+//=============================================================================
+// II) A Barrier for debugging
+
+  /* debugging barrier
+     int wehaveours=1;
+     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
+  */
+
+//=============================================================================
+// III) Back to the threaded loop
+
   RTH_Runtime_resume(run_thread);
 
-  //----------------------------------------------------------------------------
-}//end routine
+//----------------------------------------------------------------------------
+   }//end routine
 //==============================================================================
 
 //==============================================================================
@@ -3234,19 +3327,23 @@ void CP_State_GSpacePlane::doNewPsiV(){
 void CP_State_GSpacePlane::screenOutputPsi(){
 //==============================================================================
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
-   if(thisIndex.x==0)
-    CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);
+  if(thisIndex.x==0){CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
+
   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind].ka;
   int *k_y          = eesData->GspData[iplane_ind].kb;
   int *k_z          = eesData->GspData[iplane_ind].kc;
 
-  int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-  int nstates     = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
-  complex *vpsi = gs.packedVelData;
-  complex *psi  = gs.packedPlaneData; //orthogonal psi
+  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  int nstates       = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
+
+  complex *vpsi     = gs.packedVelData;
+  complex *psi      = gs.packedPlaneData;       //orthogonal psi
   if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} //non-orthogonal psi
+
+//==============================================================================
+// Screen Output
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
@@ -3279,15 +3376,17 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 	}//endif
       }//endfor
     }//endif
-    //--------------------------------------------------------------------
 #endif
+
+//==============================================================================
+// II) Tell the world you are done with the output
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   CkPrintf("GSP [%d,%d] screenwrite: %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
 
 //----------------------------------------------------------------------------
-   }//end routine
+  }//end routine
 //==============================================================================
 
 
@@ -3421,30 +3520,34 @@ void CP_State_GSpacePlane::ResumeFromSync() {
 //==============================================================================
 //    CmiPrintf("ResumeFromSync calls resume\n");
 
-  // reset commlib proxies
-  if(config.useGssInsRealP)
-      ComlibResetProxy(&real_proxy);
+//==============================================================================
+// reset commlib proxies
+
+  if(config.useGssInsRealP){ComlibResetProxy(&real_proxy);}
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = sim->cp_min_opt;
 
-  // reset lambda PC proxies
+//==============================================================================
+// reset lambda PC proxies
+
   CkMulticastMgr *mcastGrp = 
         CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId[thisIndex.y]).ckLocalBranch();         
-  for(int chunk=0;chunk<config.numChunksAsym;chunk++)
-    {
+  for(int chunk=0;chunk<config.numChunksAsym;chunk++){
       mcastGrp->resetSection(lambdaproxy[chunk]);
       setResultProxy(&lambdaproxy[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
-		     gpairCalcID2.mCastGrpId[thisIndex.y],true,CkCallback(CkIndex_Ortho::lbresume(NULL),
-							     orthoProxy));
-      if(cp_min_opt==0)
-	{
+		     gpairCalcID2.mCastGrpId[thisIndex.y],true,
+                     CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+      if(cp_min_opt==0){
 	  mcastGrp->resetSection(lambdaproxyother[chunk]);
 	  setResultProxy(&lambdaproxyother[chunk], thisIndex.x, gpairCalcID2.GrainSize, 
 			 gpairCalcID2.mCastGrpId[thisIndex.y], true,
-			 CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
-	}
-    }
+  		         CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
+      }//endif
+  }//endfo
   gpairCalcID2.resetProxy();
+
+//==============================================================================
+// turn off : output
 
   LBTurnInstrumentOff();
 //  CmiPrintf("G ResumeFromSync %d %d!\n",thisIndex.x, thisIndex.y);
@@ -3462,19 +3565,19 @@ void CP_State_GSpacePlane::syncpsi(){
 
   CkMulticastMgr *mcastGrp = 
      CProxy_CkMulticastMgr(gpairCalcID2.mCastGrpId[thisIndex.y]).ckLocalBranch();         
-  for(int chunk=0;chunk<config.numChunksSym;chunk++)
-    {
-      mcastGrp->resetSection(psiproxy[chunk]);
-      setResultProxy(&psiproxy[chunk],thisIndex.x,gpairCalcID1.GrainSize, gpairCalcID1.mCastGrpId[thisIndex.y], 
-                  true, CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
 
+  for(int chunk=0;chunk<config.numChunksSym;chunk++){
+      mcastGrp->resetSection(psiproxy[chunk]);
+      setResultProxy(&psiproxy[chunk],thisIndex.x,gpairCalcID1.GrainSize, 
+                     gpairCalcID1.mCastGrpId[thisIndex.y],true, 
+                     CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
       if(AllPsiExpected>1){
 	mcastGrp->resetSection(psiproxyother[chunk]);
 	setResultProxy(&psiproxyother[chunk], thisIndex.x, gpairCalcID1.GrainSize, 
-		       gpairCalcID1.mCastGrpId[thisIndex.y],true,CkCallback(CkIndex_Ortho::lbresume(NULL),
-							       orthoProxy));
+		       gpairCalcID1.mCastGrpId[thisIndex.y],true,
+                       CkCallback(CkIndex_Ortho::lbresume(NULL),orthoProxy));
       }//endif
-    }//endfor
+  }//endfor
 
   //takes care of the paircalc result proxies which we own via the pairCalcID
   gpairCalcID1.resetProxy();
@@ -3635,12 +3738,16 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::requirePsiV() {
+//==============================================================================
+
   needPsiV=true;
-  int foo=1;
   // when everyone is ready, restart Ortho's backward path
+  int foo=1;
   contribute(sizeof(int), &foo, CkReduction::min_int, 
              CkCallback(CkIndex_Ortho::resumeV(NULL), orthoProxy));
-}
+
+//==============================================================================
+  }//end routine
 //==============================================================================
 
 
@@ -3660,6 +3767,8 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 //==============================================================================
    {//begin routine
 //==============================================================================
+// Local pointers
+
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
@@ -3677,15 +3786,16 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
   double eke2      = 0.0;
 
 //==============================================================================
+// Compute some eke
 
-   for(int i = 0; i < ncoef; i++){
+  for(int i = 0; i < ncoef; i++){
      
-     gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-     gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-     gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
-     g2 = gx*gx + gy*gy + gz*gz;
+    gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
+    gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
+    gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    g2 = gx*gx + gy*gy + gz*gz;
 
-     if(g2<=ecut){
+    if(g2<=ecut){
        double wght_now = 2.0;
        if(k_x[i]==0 && k_y[i]<0){wght_now=0.0;}
        if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){wght_now=0.0;}
@@ -3695,14 +3805,14 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
        wght_now = (k_x[i]==0 ? 1.0 : wght);
        eke2      += (wght_now*g2)*psi_g[i].getMagSqr();
        norm2     += (wght_now)*psi_g[i].getMagSqr();
-     }else{
+    }else{
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Why the cutoff\n");
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
-     }//endif
+    }//endif
 
-   }/* endfor */
+  }/* endfor */
 
    eke/=2.0;
    eke2/=2.0;
@@ -3729,21 +3839,21 @@ void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::startNLEes(bool local,int iteration_loc){
-  if(!local)
-    triggerNL=true;
+//==============================================================================
+// check and set constants
 
+  if(!local){triggerNL=true;}
   if(iteration_loc!=iteration){CkPrintf("startNLees broken\n");CkExit();}
-  //make sure we don't start this before we're ready
-  if(NLready && triggerNL)
-    {
-      //      CkPrintf("GS[%d,%d] triggering NL\n");
+
+//==============================================================================
+// I) Make sure we don't start this before we're ready
+
+  if(NLready && triggerNL){
+      //CkPrintf("GS[%d,%d] triggering NL\n");
 #define _NLEES_PRIO_START_
 #ifdef _NLEES_PRIO_START_OFF_
-
-      CP_State_ParticlePlane *pp = 
-	particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+      CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
       pp->startNLEes(iteration);
-
 #else
       NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -3753,7 +3863,7 @@ void CP_State_GSpacePlane::startNLEes(bool local,int iteration_loc){
 #endif
       triggerNL=false;
       NLready=false;
-    }
+  }//endif
 
 //-----------------------------------------------------------------------------
   }//end routine
