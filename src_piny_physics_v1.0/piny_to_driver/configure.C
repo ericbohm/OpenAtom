@@ -650,6 +650,15 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
      useRInsIGZRhoGP   = 0; strcpy(dict[21].keyarg,"off");
   }//endif
 
+  if(nchareHartAtmT>1  && rhoRsubplanes==1){
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   nchareHartAtmT=%d. Disabling rho hart commlib use\n",nchareHartAtmT);
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     useGHartInsRHart  = 0; strcpy(dict[3].keyarg,"off");
+     useRHartInsGHart  = 0; strcpy(dict[4].keyarg,"off");
+     useGHartInsRhoRP  = 0; strcpy(dict[5].keyarg,"off");
+  }//endif
+
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
