@@ -452,7 +452,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 //  Spread the launch over all the rhoRchares you can.
 
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
-  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho){ 
+  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1){ 
 
       CkAssert(rho_rs.sizeZ>=config.nchareG);
       if(thisIndex.x<config.nchareG){

@@ -43,6 +43,7 @@ extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
 extern CProxy_CP_Rho_GHartExt       rhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp    scProxy;
 extern CProxy_AtomsGrp              atomsGrpProxy;
+extern CProxy_CP_State_GSpacePlane  gSpacePlaneProxy;
 
 extern ComlibInstanceHandle commGInstance0;
 extern ComlibInstanceHandle commGInstance1;
@@ -79,6 +80,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     iplane_ind    = thisIndex.x;
     rhoRsubplanes = config.rhoRsubplanes;
     count = 0;
+    myTime          = 1;
     doneWhiteByrd = 0;
     for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
     countDebug=0;
@@ -97,7 +99,15 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
       {
 	recvCountFromRRho=sizeZ;
       }
-
+    //make section proxy
+    if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
+      if(thisIndex.x<config.nchareG){
+	nlsectproxy = CProxySection_CP_State_GSpacePlane::
+	  ckNew(gSpacePlaneProxy.ckGetArrayID(),
+		0, config.nstates-1, 1,
+		thisIndex.x, thisIndex.x, 1);
+      }
+    }
 
 //============================================================================
 // Deal with the run descriptors then malloc
@@ -457,11 +467,31 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
 #endif
-
+    launchNlG(); //kick off NL if its our job
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+//
+// The density is here : Launch ees NL
+//
+// Do this once an algorithm step
+//
+//============================================================================
+void CP_Rho_GSpacePlane::launchNlG() {
+//============================================================================
+// Launch the nonlocal energy computation
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
+      CkAssert(config.nchareRhoG>=config.nchareG);
+      if(thisIndex.x<config.nchareG){
+	nlsectproxy.startNLEes(false,myTime);
+       }//endif
+  }//endif
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -812,7 +842,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 #endif
 
   RhoGSendRhoR(ioptSendWhite);
-
+   myTime++;
 //---------------------------------------------------------------------------
   }//end routine
 //============================================================================

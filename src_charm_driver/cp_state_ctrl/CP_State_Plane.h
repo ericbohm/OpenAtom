@@ -593,7 +593,10 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int rhoRsubplanes;
         int countDebug;
         void exitForDebugging();
+	void launchNlG();
  private:
+	CProxySection_CP_State_GSpacePlane nlsectproxy;
+	int myTime;
 	int recvCountFromRRho;
         int nPacked;
         int count_stuff;

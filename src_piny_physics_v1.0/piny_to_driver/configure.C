@@ -1437,8 +1437,8 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
   // 7)\launchNLeesFromRho{}
     ind=7;
     strcpy((*dict)[ind].keyword,"launchNLeesFromRho");
-    strcpy((*dict)[ind].keyarg,"off");
-    strcpy((*dict)[ind].error_mes,"on/off");
+    strcpy((*dict)[ind].keyarg,"0");
+    strcpy((*dict)[ind].error_mes,"0 1 2");
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
     ind=8;
@@ -1503,8 +1503,8 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
   //-----------------------------------------------------------------------------
   // 7)\launchNLeesFromRho{}
     ind=7;
-    parse_on_off(dict[ind].keyarg,&launchNLeesFromRho,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    sscanf(dict[ind].keyarg,"%d",&launchNLeesFromRho);
+    if(launchNLeesFromRho<0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
     ind=8;
@@ -2177,7 +2177,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 void Config::simpleRangeCheck(){ 
 //===================================================================================
 
-  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",1);
+  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
   rangeExit(prioFFTMsg,"prioFFTMsg",1);
   rangeExit(stateOutputOn,"stateOutputOn",1);
   rangeExit(atmOutputOn,"atmOutputOn",1);
