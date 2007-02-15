@@ -110,6 +110,7 @@ class OrthoHelper : public CBase_OrthoHelper
       CmiNetworkProgress();
       matC.multiply(trigger->factorC, 0, C, OrthoHelper::step_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
+      delete msg;
 
     }
 

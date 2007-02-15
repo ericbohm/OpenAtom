@@ -197,7 +197,7 @@ class Ortho : public CBase_Ortho{
 
   void collect_error(CkReductionMsg *msg);
 
-  void orthoCookieinit(initCookieMsg *msg){CkGetSectionInfo(orthoCookie,msg);}
+  void orthoCookieinit(initCookieMsg *msg){CkGetSectionInfo(orthoCookie,msg); delete msg;}
 
   void start_calc(CkReductionMsg *msg);
 
