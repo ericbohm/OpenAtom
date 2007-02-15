@@ -486,7 +486,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
       for(int igrp=0;igrp<rhoRsubplanes;igrp++){
         int num = numSubGx[igrp];
         if(num>1){sort_me(num,&listGx[iii]);}  //order the gx you have
-        CkPrintf("subplane[%d] Gx { ",igrp);
+        CkPrintf("subplane[%d] : %d : Gx { ",igrp,num);
         for(int jc=0,ic=iii;ic<iii+num;ic++,jc++){
           listSubGx[igrp][jc]  = listGx[ic];
           mapGrpGx[listGx[ic]] = igrp;
@@ -2269,10 +2269,6 @@ void create_gx_decomp(int nktot, int nline, int *kx_line, int *mapl,
        ic  +=1;
        nnow = 0;
     }//endif
-  }//endfor
-
-  for(int i=0;i<nchare;i++){
-    CkPrintf("SubGrp[%d] has %d lines of %d total lines\n",i,nline_grp[i],nline);
   }//endfor
 
   delete [] npts;
