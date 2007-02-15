@@ -1436,9 +1436,10 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
   //-----------------------------------------------------------------------------
   // 7)\launchNLeesFromRho{}
     ind=7;
+    int ierr= 0;
     strcpy((*dict)[ind].keyword,"launchNLeesFromRho");
-    strcpy((*dict)[ind].keyarg,"0");
-    strcpy((*dict)[ind].error_mes,"0 1 2");
+    strcpy((*dict)[ind].keyarg,"rs");    
+    strcpy((*dict)[ind].error_mes,"rs rhor rhog");
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
     ind=8;
@@ -1503,7 +1504,10 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
   //-----------------------------------------------------------------------------
   // 7)\launchNLeesFromRho{}
     ind=7;
-    sscanf(dict[ind].keyarg,"%d",&launchNLeesFromRho);
+    if(strcasecmp(dict[ind].keyarg,"rs")==0)  {launchNLeesFromRho =0; ierr++;}
+    if(strcasecmp(dict[ind].keyarg,"rhor")==0)  {launchNLeesFromRho = 1; ierr++;}
+    if(strcasecmp(dict[ind].keyarg,"rhog")==0){launchNLeesFromRho = 2; ierr++;}
+    if(ierr!=1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(launchNLeesFromRho<0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 8)\useGssInsRealPP{}
@@ -2177,7 +2181,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 void Config::simpleRangeCheck(){ 
 //===================================================================================
 
-  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
+//  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
   rangeExit(prioFFTMsg,"prioFFTMsg",1);
   rangeExit(stateOutputOn,"stateOutputOn",1);
   rangeExit(atmOutputOn,"atmOutputOn",1);

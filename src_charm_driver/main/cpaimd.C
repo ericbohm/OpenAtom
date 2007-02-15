@@ -162,7 +162,7 @@ MapType2 OrthoImaptable;
 MapType2 OrthoHelperImaptable;
 MapType4 AsymScalcImaptable;
 MapType4 SymScalcImaptable;
-
+CkVec <CkGroupID> mCastGrpIds;
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
@@ -861,7 +861,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
     }
     //    CkGroupID symMcast = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
-    CkVec <CkGroupID> mCastGrpIds;
+
     for(int i=0; i< nchareG ;i++)
       mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
     //mCastGrpIds.push_back(symMcast);

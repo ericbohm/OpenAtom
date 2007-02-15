@@ -14,6 +14,7 @@ mainmodule cpaimd {
 	readonly int TimeKeeperID;
 	
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
+	readonly CkVec <CkGroupID> mCastGrpIds;
 	initproc registersumFastDouble(void);	
 
         extern module ckPairCalculator;
