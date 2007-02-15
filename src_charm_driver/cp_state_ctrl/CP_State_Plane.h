@@ -507,6 +507,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         int myBoff;
         int myAoff;
         int countDebug;
+        int countFFTRyToGy;
         int rhoRsubplanes;
         int myTime;
 	bool doneRhoReal;
@@ -541,6 +542,8 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
         void exitForDebugging();
 	void isAtSync(int iter){AtSync();};
 	void ResumeFromSync();
+ 	void sendPartlyFFTtoRhoGall();
+        void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
  private:
 	int rhoKeeperId;
         int rhoGHelpers;
@@ -593,6 +596,8 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         int rhoRsubplanes;
         int countDebug;
         void exitForDebugging();
+        void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
+        void RhoGSendRhoRall(); 
 	void launchNlG();
  private:
 	CProxySection_CP_State_GSpacePlane nlsectproxy;

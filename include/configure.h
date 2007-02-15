@@ -32,6 +32,7 @@ class Config {
   //==================================
   // density control flags and values
   //----------------------------------
+    int rhoGToRhoRMsgComb;
     int rhoSubPlaneBalance;
     int nchareHartAtmT;
     int rhoLineOrder;

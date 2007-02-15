@@ -565,7 +565,6 @@ class CPcharmParaInfo {
       PUParray(p,nlines_per_chareRhoGEext, nchareRhoGEext);
       PUParray(p,pts_per_chareRhoG, nchareRhoG);
       PUParray(p,npts_per_chareRhoG, nchareRhoG);
-      PUParray(p,numSubGx,rhoRsubplanes);
 
       for(int igrp=0;igrp<nchareRhoG;igrp++){
 	p|RhosortedRunDescriptors[igrp];
@@ -577,6 +576,7 @@ class CPcharmParaInfo {
 	PUParray(p,index_tran_upack_eext[igrp],nlines_per_chareRhoGEext[igrp]);
       }
       if(rhoRsubplanes>1){
+        PUParray(p,numSubGx,rhoRsubplanes);
         for(int igrp=0;igrp<nchareRhoG;igrp++){
           PUParray(p,nline_send_rho_y[igrp],rhoRsubplanes);
 	}

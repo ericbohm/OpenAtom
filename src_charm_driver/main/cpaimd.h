@@ -632,7 +632,7 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
               int dup, int planeIndex);
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
 bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order, int vn);
-void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *);
+void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *, int *);
 
 //============================================================================
 

@@ -1781,9 +1781,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int *numRYRho      = new int [nchareRRhoTot];
   int *numRXEext     = new int [nchareRHartTot];
   int *numRYEext     = new int [nchareRHartTot];
+  int *numSubGx      = sim->numSubGx;
   create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
                          sim->nplane_rho_x,sim->sizeY,ngridbEext,
-                         numRXRho,numRYRho,numRXEext,numRYEext);
+                         numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
 
   fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
                      ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
@@ -2870,7 +2871,8 @@ inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs){
 //============================================================================
 void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
                             int nplane, int sizeY, int ngridbHart,
-                            int *numRXRho,int *numRYRho,int *numRXEext,int *numRYEext)
+                            int *numRXRho,int *numRYRho,int *numRXEext,int *numRYEext,
+                            int *numSubGx)
 //============================================================================
     {//begin routine
 //============================================================================
@@ -2909,10 +2911,8 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
 
     //---------------------------------------
     // how many y FFTs for Rho
-    div  = (nplane / rhoRsubplanes);
-    rem  = (nplane % rhoRsubplanes);
     for(int j=0;j<rhoRsubplanes;j++){
-      int myNplane = (j < rem ? div+1 : div);
+      int myNplane = numSubGx[j];
       for(int i=0;i<nchareR;i++){
         int ind       = j*nchareR + i;
         numRYRho[ind] = myNplane;
@@ -2933,10 +2933,8 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
     
     //---------------------------------------
     // how many y FFTs for HartEExt EES
-    div  = (nplane / rhoRsubplanes);
-    rem  = (nplane % rhoRsubplanes);
     for(int j=0;j<rhoRsubplanes;j++){
-      int myNplane = (j < rem ? div+1 : div);
+      int myNplane = numSubGx[j];
       for(int i=0;i<nchareRHart;i++){
         int ind        = j*nchareRHart + i;
         numRYEext[ind] = myNplane;

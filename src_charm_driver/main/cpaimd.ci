@@ -270,6 +270,7 @@ mainmodule cpaimd {
                 entry void exitForDebugging();
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
+                entry void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoRSFFTMsg *msg);
 		entry void acceptHartVks(RhoHartRSFFTMsg *msg);
 	        entry void RHartReport();
@@ -291,6 +292,7 @@ mainmodule cpaimd {
 		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool);
 		entry void acceptRhoData(RhoGSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
+                entry void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
 		entry void isAtSync(int);
                 entry void exitForDebugging();
 	};
