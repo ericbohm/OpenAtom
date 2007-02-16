@@ -1243,7 +1243,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
 
 	rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
 	for(i = 0; i < numRhoRhart; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex3D(i,0,0);
 	}
 
 	CharmStrategy *gstratEext1 = new EachToManyMulticastStrategy
@@ -2100,12 +2100,12 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 //============================================================================
 {//begin routine
-//============================================================================
-/*
- * create the array for real-space densities (two-dimensional chare array)
- */    
-//============================================================================
-//  Chare array sizes and offsets 
+  //============================================================================
+  /*
+   * create the array for real-space densities (two-dimensional chare array)
+   */    
+  //============================================================================
+  //  Chare array sizes and offsets 
 
   int ngrid_eext_a    = sim->ngrid_eext_a;
   int ngrid_eext_b    = sim->ngrid_eext_b;
@@ -2121,16 +2121,16 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   int nchareRhoRHart  = ngrid_eext_c;
 
 
-//============================================================================
-// Output to the screen
+  //============================================================================
+  // Output to the screen
 
   PRINT_LINE_STAR;
   CkPrintf("Building RhoR, RhoG, RhoGHartExt, RhoRHartExt Chares %d %d %d %d natmtyp:%d\n",
-            nchareRhoR,nchareRhoG,nchareRhoGHart,nchareRhoRHart,natmTyp);
+	   nchareRhoR,nchareRhoG,nchareRhoGHart,nchareRhoRHart,natmTyp);
   PRINT_LINE_DASH;printf("\n");
 
-//============================================================================
-// Nuke some procs from the list : reset, nuke, reset if you run out
+  //============================================================================
+  // Nuke some procs from the list : reset, nuke, reset if you run out
 
   availGlobR->reset();
    
@@ -2142,7 +2142,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
 
     CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
-               peUsedByNLZ.size(),RhoAvail->count());
+	     peUsedByNLZ.size(),RhoAvail->count());
     //       nlz.dump();
     *RhoAvail-*excludePes; //unary minus
     RhoAvail->reindex();
@@ -2155,7 +2155,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(ees_nonlocal_on==0){
     if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
       CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
-                 peUsedBySF.size(),RhoAvail->count());
+	       peUsedBySF.size(),RhoAvail->count());
       PeList sf(peUsedBySF);
       *RhoAvail-sf;
       RhoAvail->reindex();
@@ -2164,14 +2164,14 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
   if(RhoAvail->count()>2) { RhoAvail->reindex(); }
 
-//============================================================================
-// Maps and options
-   //CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
+  //============================================================================
+  // Maps and options
+  //CkPrintf("RhoR map for %d x %d=%d chares, using %d procs\n",nchareRhoR, config.rhoRsubplanes, nchareRhoR*config.rhoRsubplanes, RhoAvail->count());
 
- //---------------------------------------------------------------------------
- // rho RS 
+  //---------------------------------------------------------------------------
+  // rho RS 
 #ifdef USE_INT_MAP
-   RhoRSImaptable.buildMap(nchareRhoR, config.rhoRsubplanes);
+  RhoRSImaptable.buildMap(nchareRhoR, config.rhoRsubplanes);
 #endif
 
   int success = 0;
@@ -2195,8 +2195,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
-  CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
-    //CkArrayOptions rhorsOpts;
+  //CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
+  CkArrayOptions rhorsOpts;
   rhorsOpts.setMap(rhorsMap);
 
 
@@ -2211,8 +2211,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #endif
   }
 
- //---------------------------------------------------------------------------
- // rho GS 
+  //---------------------------------------------------------------------------
+  // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
   if(nchareRhoG>RhoAvail->count())
     {
@@ -2259,8 +2259,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
 
- //---------------------------------------------------------------------------
- // rho RHart 
+  //---------------------------------------------------------------------------
+  // rho RHart 
   // if there aren't enough free procs refresh the avail list;
   if(nchareRhoRHart*nchareHartAtmT > RhoAvail->count())
     RhoAvail->rebuild();
@@ -2287,11 +2287,11 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     if(success == 0) {
 #ifdef USE_INT_MAP
       RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable, RhoAvail, 
-				   nchareRhoRHart, config.rhoRsubplanes, 
+				     nchareRhoRHart, config.rhoRsubplanes, 
 				     config.nchareHartAtmT, excludePes);
 #else
       RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
-				   nchareRhoRHart, config.rhoRsubplanes, 
+				     nchareRhoRHart, config.rhoRsubplanes, 
 				     config.nchareHartAtmT, excludePes);
 #endif
     }
@@ -2311,8 +2311,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     }
   } //endif : ees_ext_on
 
- //---------------------------------------------------------------------------
- // rho GHart 
+  //---------------------------------------------------------------------------
+  // rho GHart 
   // if there aren't enough free procs refresh the avail list;
   if(nchareRhoGHart>RhoAvail->count())
     RhoAvail->rebuild();
@@ -2361,63 +2361,68 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #endif
   }
 
-//============================================================================
-// Instantiate the chares
+  //============================================================================
+  // Instantiate the chares
 
-    bool dummy = true;
+  bool dummy = true;
 
   //--------------------------------------------------------------------------
     
   // insert rhoreal
-    int rhokeeper= keeperRegister(string("Density"));
-    rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
-                                          ees_eext_on, ngrid_eext_c, rhokeeper,
-						       rhorsOpts);
-    rhoRealProxy.doneInserting();
-    rhoRealProxy.setReductionClient(printEnergyEexc, 0);
+  int rhokeeper= keeperRegister(string("Density"));
+  rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
+						     ees_eext_on, ngrid_eext_c, rhokeeper,
+						     rhorsOpts);
+    for (int i = 0; i < nchareRhoR; i++){
+      for (int j = 0; j < config.rhoRsubplanes; j++){
+	rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy, ees_eext_on, ngrid_eext_c, rhokeeper);
+      } //endfor
+    } //endfor
+  rhoRealProxy.doneInserting();
+  rhoRealProxy.setReductionClient(printEnergyEexc, 0);
   //--------------------------------------------------------------------------
   // insert rhog
-    rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
-						 1, dummy, 
-						 rhogsOpts);
-    for (int i = 0; i < nchareRhoG; i++){
-	rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
-    }//endfor
-    rhoGProxy.doneInserting();
+  rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
+					       1, dummy, 
+					       rhogsOpts);
+  for (int i = 0; i < nchareRhoG; i++){
+    rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
+  }//endfor
+  rhoGProxy.doneInserting();
   //--------------------------------------------------------------------------
   // insert rhoghart
-    rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
-                                 ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
+  rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+						   ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
 
-    for (int k = 0; k < nchareHartAtmT; k++){
-     for (int i = 0; i < nchareRhoGHart; i++){
-       rhoGHartExtProxy(i,k).insert(sizeYZ,ngrid_eext_a,ngrid_eext_b,
-                                    ngrid_eext_c,ees_eext_on,natmTyp);
-     }//endfor
+  for (int k = 0; k < nchareHartAtmT; k++){
+    for (int i = 0; i < nchareRhoGHart; i++){
+      rhoGHartExtProxy(i,k).insert(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+				   ngrid_eext_c,ees_eext_on,natmTyp);
     }//endfor
+  }//endfor
 
-    rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
-    rhoGHartExtProxy.doneInserting();
+  rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
+  rhoGHartExtProxy.doneInserting();
   //--------------------------------------------------------------------------
   // insert rhoRhart
-    if(ees_eext_on){
-       rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
-                                 ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
+  if(ees_eext_on){
+    rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
+						     ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
 
-       for (int k = 0; k < nchareHartAtmT; k++){
-	for (int i = 0; i < nchareRhoRHart; i++){
- 	 for (int j = 0; j < config.rhoRsubplanes; j++){
+    for (int k = 0; k < nchareHartAtmT; k++){
+      for (int i = 0; i < nchareRhoRHart; i++){
+	for (int j = 0; j < config.rhoRsubplanes; j++){
 	  rhoRHartExtProxy(i,j,k).insert(ngrid_eext_a,ngrid_eext_b,ngrid_eext_c,
-				       ees_eext_on,natmTyp);
-         }//endfor
+					 ees_eext_on,natmTyp);
 	}//endfor
-       }//endfor
+      }//endfor
+    }//endfor
 
-       rhoRHartExtProxy.doneInserting();
-    }//endif
+    rhoRHartExtProxy.doneInserting();
+  }//endif
 
-//===========================================================================
-// Output to the screen
+  //===========================================================================
+  // Output to the screen
 
   printf("\n");
   PRINT_LINE_DASH;
@@ -2425,8 +2430,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PRINT_LINE_STAR;printf("\n");
   delete RhoAvail;
 
-//===========================================================================
-  }//end routine
+  //===========================================================================
+}//end routine
 //============================================================================
 
 
