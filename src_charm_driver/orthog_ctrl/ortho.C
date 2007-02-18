@@ -994,8 +994,6 @@ void Ortho::pup(PUP::er &p){
 
 void OrthoHelper::sendMatrix()
 {
-
-  //delete trigger;
   orthoProxy(thisIndex.x, thisIndex.y).recvStep2(C, m*n);
 }
 

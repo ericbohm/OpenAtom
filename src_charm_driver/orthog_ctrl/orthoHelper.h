@@ -90,7 +90,6 @@ class OrthoHelper : public CBase_OrthoHelper
       C= new double[m*n];
       A=NULL;
       B=NULL;
-      trigger=NULL;
     }
   OrthoHelper(CkMigrateMessage *m){}
   ~OrthoHelper(){
@@ -99,19 +98,17 @@ class OrthoHelper : public CBase_OrthoHelper
 
   void recvAB(OrthoHelperMsg *msg)
     {  
-      trigger=msg;
-      A=trigger->A;  // no sense in making extra copies
-      B=trigger->B;
-      matA.multiply(trigger->factorA, 0, A, OrthoHelper::step_cb, (void*) this,
+      A=msg->A;  // no sense in making extra copies
+      B=msg->B;
+      matA.multiply(msg->factorA, 0, A, OrthoHelper::step_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
       CmiNetworkProgress();
-      matB.multiply(trigger->factorB, 0, B, OrthoHelper::step_cb, (void*) this,
+      matB.multiply(msg->factorB, 0, B, OrthoHelper::step_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
       CmiNetworkProgress();
-      matC.multiply(trigger->factorC, 0, C, OrthoHelper::step_cb, (void*) this,
+      matC.multiply(msg->factorC, 0, C, OrthoHelper::step_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
       delete msg;
-
     }
 
   void sendMatrix();
@@ -132,7 +129,6 @@ class OrthoHelper : public CBase_OrthoHelper
   int m;
   int n;
   double *A, *B, *C;
-  OrthoHelperMsg *trigger;
   CLA_Matrix_interface matA, matB, matC;
 };
 
