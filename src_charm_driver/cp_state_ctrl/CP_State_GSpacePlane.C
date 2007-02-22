@@ -3198,7 +3198,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   int N           = msg->getSize()/sizeof(complex);
   complex *data   = (complex *)msg->getData();
   int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
-
+  //  CkPrintf("[%d %d] GSP acceptnewpsiv %d \n",thisIndex.x, thisIndex.y,offset);
   complex *vpsi   = gs.packedVelData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
@@ -3240,7 +3240,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   int N           = msg->N;
   complex *data   = msg->result;
   int offset      = msg->myoffset;  if(offset<0){offset=0;}
-
+  //  CkPrintf("[%d %d] GSP acceptnewpsiv %d \n",thisIndex.x, thisIndex.y,offset);
   complex *vpsi   = gs.packedVelData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
@@ -3278,7 +3278,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
 void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // (0) Error check
-
+//  CkPrintf("[%d %d] GSP doNewPsiV \n",thisIndex.x, thisIndex.y);
   CkAssert(countVPsi==AllPsiExpected); 
 
   if(!acceptedPsi){

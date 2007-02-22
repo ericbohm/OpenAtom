@@ -1103,7 +1103,7 @@ PairCalculator::multiplyForward(bool flag_dp)
   double StartTime=CmiWallTimer();
 #endif
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] gemming %c %c %d %d %d %f A %d B %d %f C %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,transformT,transform, m_in, n_in, k_in, alpha, lda, ldb, beta, ldc);
+  //  CkPrintf("[%d,%d,%d,%d,%d] gemming %c %c %d %d %d %f A %d B %d %f C %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,transformT,transform, m_in, n_in, k_in, alpha, lda, ldb, beta, ldc);
 #endif
 
   double *matrixA;
@@ -1350,7 +1350,7 @@ void
 PairCalculator::acceptPhantomData(phantomMsg *msg)
 {
 #ifdef _PAIRCALC_DEBUG_
-  /  CkPrintf("[%d,%d,%d,%d,%d] accept Phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+  CkPrintf("[%d,%d,%d,%d,%d] accept Phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 #endif
 
 
@@ -1450,7 +1450,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 #endif
   numRecdBW++; 
-
+  int numOrthoCol=grainSize/orthoGrainSize;
+  int numOrtho=numOrthoCol*numOrthoCol;
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size;i++)
       CkAssert(finite(msg->matrix1[i]));
@@ -1470,7 +1471,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 #endif
   actionType=msg->actionType;
   bool unitcoef = false;
-  int numOrthoCol=grainSize/orthoGrainSize;
+
 
 
   // find our tile indices within this sGrain
@@ -1524,6 +1525,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   if (orthoGrainSize==grainSize||actionType==PSIV)
     { // you were sent the correct section only
       amatrix=matrix1;
+      numRecdBW=numOrthoCol*numOrthoCol;
     }
   else if (collectAllTiles)
     {
@@ -1594,8 +1596,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       beta=1.0;  // need to sum over tiles within orthoY columns
     }
 
-  int numOrtho=numOrthoCol*numOrthoCol;
-  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles) // have all the input we need  
+
+  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles|| actionType==PSIV) // have all the input we need  
    {
      // call helper function to do the math
      // purely a readability improver
@@ -1603,7 +1605,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
      bwMultiplyHelper(size, matrix1, matrix2, amatrix, amatrix2,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta);
    }
 
-  if(PCstreamBWout && !collectAllTiles && !useBWBarrier)  // send results which are complete and not yet sent
+  if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV)  // send results which are complete and not yet sent
     {
       // just a readability improver
 
@@ -1611,7 +1613,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 
   // check to see if we're all done
-  if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))) 
+  if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))|| actionType==PSIV) 
     { // clean up
       if(collectAllTiles)
 	{  // only safe to do this if we allocated them
@@ -1680,6 +1682,9 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta)
 {
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d %d %d %d %d]: bwMultiplyHelper with size %d numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, size, numRecdBW, actionType);
+#endif
 
   if(symmetric && actionType==KEEPORTHO) // there will be a psiV step following
     {
@@ -1882,6 +1887,9 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 
 void PairCalculator::bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int numOrtho)
 {
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("[%d %d %d %d %d]: bwSendHelper with  numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
+#endif
 
   // not supported in dynamics until we figure out how to stream that
   // computation.
