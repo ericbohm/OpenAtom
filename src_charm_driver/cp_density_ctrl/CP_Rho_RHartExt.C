@@ -271,12 +271,20 @@ void CP_Rho_RHartExt::startEextIter(){
 //============================================================================
 // Check for error
 
-  if(atomsGrpProxy.ckLocalBranch()->iteration != iteration){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Flow of Control Error in RHartExtVks : atoms slow\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
+ CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+ int cp_min_opt = sim->cp_min_opt;
+
+ iteration ++;
+ // the atoms haven't moved yet
+ if(cp_min_opt==0){
+     if(atomsGrpProxy.ckLocalBranch()->iteration != iteration-1){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
+              atomsGrpProxy.ckLocalBranch()->iteration,iteration);
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit();
+     }//endif
+ }//endif
 
 //============================================================================
 // This is a new time step : Increment time step counter, zero atm typ counter
@@ -289,7 +297,6 @@ void CP_Rho_RHartExt::startEextIter(){
 
   if(iterAtmTyp==natmTyp){CkPrintf("%d signing off\n",thisIndex.x);CkExit();}
 
-  iteration ++;
   iterAtmTyp  = 0; 
   nAtmTypRecv = 0;
 

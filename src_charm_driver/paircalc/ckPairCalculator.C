@@ -1690,7 +1690,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 	  bzero(outData,sizeof(double)*grainSize*grainSize);
 	  existsOut=true;
 	}
-      CkAssert(size==grainSize*grainSize);
+      //      CkAssert(size==grainSize*grainSize); outdated
       //keep the orthoT we just received in matrix1
       if(!collectAllTiles && orthoGrainSize!=grainSize)
 	{ // copy this tile

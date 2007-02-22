@@ -313,7 +313,7 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
 //============================================================================
 
 //============================================================================
-// The density arrives from RhoGspace
+// The density arrives from RhoGspace ONCE a time step
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -324,10 +324,13 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = sim->cp_min_opt;
 
+  iteration ++;
+
+ // the atoms haven't moved yet
   if(cp_min_opt==0){
-     if(atomsGrpProxy.ckLocalBranch()->iteration != iteration){
+     if(atomsGrpProxy.ckLocalBranch()->iteration != iteration-1){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("Flow of Control Error in HartExtVks : atoms slow %d %d\n",
+        CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
               atomsGrpProxy.ckLocalBranch()->iteration,iteration);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
@@ -403,7 +406,6 @@ void CP_Rho_GHartExt::HartExtVksG() {
    CPLOCAL::CP_hart_eext_calc(numPoints,rho,natm,fastAtoms,vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
                               thisIndex.x);
-   iteration ++;
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
 #endif
