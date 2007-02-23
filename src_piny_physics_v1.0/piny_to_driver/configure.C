@@ -1873,18 +1873,19 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     igo = dict_pc[19].iuset;
 
-    if( (sGrainSize%orthoGrainSize !=0) || (sGrainSize==orthoGrainSize)){
-      int iii = orthoGrainSize;
-      if(orthoGrainSize>32){orthoGrainSize=32;}
-      if(orthoGrainSize>sGrainSize){orthoGrainSize=sGrainSize;}
-      if(igo==1){
-         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-         PRINTF("   Changing your choice of orthograinsize from %d\n",iii);
-         PRINTF("   to %d\n",orthoGrainSize);
-         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    if(igo==0){
+      if( (sGrainSize%orthoGrainSize !=0) || (sGrainSize==orthoGrainSize)){
+        int iii = orthoGrainSize;
+        if(orthoGrainSize>32){orthoGrainSize=32;}
+        if(orthoGrainSize>sGrainSize){orthoGrainSize=sGrainSize;}
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   Changing the default choice of orthograinsize from %d\n",iii);
+        PRINTF("   to %d\n",orthoGrainSize);
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
       }//endif
-      sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
     }//endif
+
 
 //=============================================================================
 // Rejiggering lambdagrainsize if dumb values employed :

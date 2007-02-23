@@ -503,7 +503,7 @@ void control_vps_params(CPPSEUDO *cppseudo,GENCELL *gencell,
 /* Test the q_pseud */
     
     for(i=1;i<=natm_typ;i++){
-      if(q_typ[i]!=q_pseud[i]){
+      if(fabs(q_typ[i]-q_pseud[i])>1.e-05){
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Charges assigned to the atom types must\n");
         PRINTF("match the pseudo potential charge : %d : %g %g!\n",
