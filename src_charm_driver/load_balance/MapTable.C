@@ -258,7 +258,12 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	      //	      PeList *thisPlaneBox= availprocs;
 	      //	      thisPlaneBox->dump();
 	      if(!useCentroid)
-		destpe=thisPlaneBox->findNext();
+		{
+		  destpe=thisPlaneBox->findNext();
+		  if(thisPlaneBox->count()==0)
+		    thisPlaneBox->reset();
+
+		}
 	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 		for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
 		  { // could find centroid here
@@ -288,6 +293,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			      thisPlaneBox->reset();
 
 			    destpe=thisPlaneBox->findNext();
+			    if(thisPlaneBox->count()==0)
+			      thisPlaneBox->reset();
+
 			    if(rem!=0)
 			      if(procno==rem)
 				scobjs_per_pe-=1;
@@ -343,6 +351,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			    availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
+			  if(availprocs->count()==0)
+			    availprocs->reset();
+
 			  if(rem!=0)
 			    if(procno==rem)
 			      scobjs_per_pe-=1;
@@ -399,7 +410,12 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	      //	      PeList *thisPlaneBox= availprocs;
 	      //	      thisPlaneBox->dump();
 	      if(!useCentroid)
-		destpe=thisPlaneBox->findNext();
+		{
+		  destpe=thisPlaneBox->findNext();
+		  if(thisPlaneBox->count()==0)
+		    thisPlaneBox->reset();
+		}
+
 	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
 		for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
 		  { // could find centroid here
@@ -425,10 +441,11 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			else
 			  {  // new partition
 			    procno++;
+			    destpe=thisPlaneBox->findNext();
 			    if(thisPlaneBox->count()==0)
 			      thisPlaneBox->reset();
 
-			    destpe=thisPlaneBox->findNext();
+
 			    if(rem!=0)
 			      if(procno==rem)
 				scobjs_per_pe-=1;
@@ -481,6 +498,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			    availprocs->reset();
 			  //			  availprocs->sortSource(srcpe);
 			  destpe=availprocs->findNext();
+			  if(availprocs->count()==0)
+			    availprocs->reset();
+
 			  if(rem!=0)
 			    if(procno==rem)
 			      scobjs_per_pe-=1;
