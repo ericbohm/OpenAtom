@@ -220,7 +220,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
   availprocs=_availprocs;
 
   if(planes_per_pe==0)
-    CkAbort("Choose a smaller Gstates_per_pe\n");
+    CkAbort("Choose a larger Gstates_per_pe\n");
   if(symmetric)
     {
       for(int i=1; i<=max_states/grainsize; i++)
