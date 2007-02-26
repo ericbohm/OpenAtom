@@ -2891,7 +2891,8 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
     }//endfor
 
     for(int i=0;i<nchareRHart;i++){
-       numRYEext[i] = nplane;
+       numRXEext[i] = ngridbHart;
+       numRYEext[i]   = nplane;
     }//endfor
 
   }//endif
