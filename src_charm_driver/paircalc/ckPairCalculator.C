@@ -1413,6 +1413,22 @@ PairCalculator::multiplyPsiV()
   // path invocation
 
   // make a message
+  if(phantomSym && symmetric && thisIndex.x!=thisIndex.y) //mirror our data to the phantom
+    {
+      CkAssert(existsRight);
+      //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      phantomMsg *phantom=new ( numExpected*numPoints*2, 8*sizeof(int)) phantomMsg;
+      bool prioPhan=false;
+      if(prioPhan)
+	{
+	  CkSetQueueing(phantom, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
+	  // than non prioritized
+	}
+      phantom->init(numExpected*numPoints*2, numPoints, true, inDataRight, blkSize);
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
+    }
+
   multiplyResultMsg *psiV= new ( grainSize*grainSize,0,0 ) multiplyResultMsg;
   // copy in outData
   CkAssert(outData!=NULL);
@@ -1421,7 +1437,10 @@ PairCalculator::multiplyPsiV()
   psiV->init1(grainSize*grainSize, outData,0,0,PSIV);
   // convert this to an inline call once this all works
   thisProxy(thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z).multiplyResult(psiV);
-
+  if(phantomSym && symmetric && thisIndex.x!=thisIndex.y) //mirror our data to the phantom
+    {
+      thisProxy(thisIndex.w, thisIndex.y, thisIndex.x, thisIndex.z).multiplyResult(psiV);
+    }
 }
 
 /**
@@ -1525,6 +1544,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   if (orthoGrainSize==grainSize||actionType==PSIV)
     { // you were sent the correct section only
       amatrix=matrix1;
+      // the other tiles were already collected for PSIV
       numRecdBW=numOrthoCol*numOrthoCol;
     }
   else if (collectAllTiles)
@@ -1596,8 +1616,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       beta=1.0;  // need to sum over tiles within orthoY columns
     }
 
-
-  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles|| actionType==PSIV) // have all the input we need  
+  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV) // have all the input we need  
    {
      // call helper function to do the math
      // purely a readability improver
@@ -1695,7 +1714,6 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 	  bzero(outData,sizeof(double)*grainSize*grainSize);
 	  existsOut=true;
 	}
-      //      CkAssert(size==grainSize*grainSize); outdated
       //keep the orthoT we just received in matrix1
       if(!collectAllTiles && orthoGrainSize!=grainSize)
 	{ // copy this tile

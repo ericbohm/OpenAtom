@@ -1007,12 +1007,12 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
   if(ptr2==NULL){
 #ifdef _NAN_CHECK_
     for(int i=0;i<n ;i++)
-    {
-      if(pcid->Symmetric)  // just so we can discern in the abort
-	CkAssert(finite(ptr1[i]));
-      else
-	CkAssert(finite(ptr1[i]));
-    }
+      {
+	if(pcid->Symmetric)  // just so we can discern in the abort
+	  CkAssert(finite(ptr1[i]));
+	else
+	  CkAssert(finite(ptr1[i]));
+      }
 #endif
 
     multiplyResultMsg *omsg;
@@ -1029,15 +1029,15 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
       }
     omsg->init1(n, ptr1, orthoX, orthoY, actionType);
 #ifdef _NAN_CHECK_
-  for(int i=0;i<n ;i++)
-    {
-      CkAssert(finite(omsg->matrix1[i]));
-    }
+    for(int i=0;i<n ;i++)
+      {
+	CkAssert(finite(omsg->matrix1[i]));
+      }
 #endif
-  if(pcid->Symmetric)
-    pcid->proxySym.multiplyResult(omsg);
-  else
-    pcid->proxyAsym.multiplyResult(omsg);
+    if(pcid->Symmetric)
+      pcid->proxySym.multiplyResult(omsg);
+    else
+      pcid->proxyAsym.multiplyResult(omsg);
   }
   else {
     multiplyResultMsg *omsg;
