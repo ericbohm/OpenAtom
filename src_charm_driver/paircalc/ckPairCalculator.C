@@ -1899,7 +1899,7 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int n
       
   // symmetric uses BNCoffset on newData for diagonal.      
   // symmetric also BTCoffset on otherNewData for off diagonal.
-    // asymmetric uses BTC offset on newData
+  // asymmetric uses BTC offset on newData
   int orthoXgrain=orthoX*orthoGrainSize;
   int orthoYgrain=orthoY*orthoGrainSize;
   if(symmetric)
@@ -1929,7 +1929,7 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int n
 	}
       CkAssert(columnCount[orthoY]<=numOrthoCol);
     }
-  if((amPhantom) || (!phantomSym && symmetric && (thisIndex.x !=thisIndex.y)) && existsRight)
+  if((amPhantom) || (!phantomSym && (thisIndex.x !=thisIndex.y)) && existsRight)
     {
       if(++columnCountOther[orthoY]==numOrthoCol) // BTC
 	{
