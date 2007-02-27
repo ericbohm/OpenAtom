@@ -1947,7 +1947,7 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int n
 	}
       CkAssert(columnCount[orthoY]<=numOrthoCol);
     }
-  if((amPhantom) || (!phantomSym && (thisIndex.x !=thisIndex.y)) && existsRight)
+  if((amPhantom) || (!phantomSym && (othernewData!=NULL)&&(thisIndex.x !=thisIndex.y)) && existsRight)
     {
       if(++columnCountOther[orthoY]==numOrthoCol) // BTC
 	{
