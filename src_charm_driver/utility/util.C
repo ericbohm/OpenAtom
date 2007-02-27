@@ -574,6 +574,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
 //============================================================================
 // Pack up the stuff
 
+    config.nchareRhoG            = nchareRhoG;
     sim->nplane_rho_x            = nplane_x;
     sim->nchareRhoG              = nchareRhoG;
     sim->nchareRhoGEext          = nchareRhoGEext;

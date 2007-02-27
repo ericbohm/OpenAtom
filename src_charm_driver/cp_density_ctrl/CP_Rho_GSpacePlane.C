@@ -498,6 +498,12 @@ void CP_Rho_GSpacePlane::launchNlG() {
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
 
   if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
+      if(config.nchareRhoG<config.nchareG){
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkPrintf("Bad chare sizes %d %d\n",config.nchareRhoG,config.nchareG);
+         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+         CkExit();
+      }//endif
       CkAssert(config.nchareRhoG>=config.nchareG);
       if(thisIndex.x<config.nchareG){
 	nlsectproxy.startNLEes(false,myTime);
