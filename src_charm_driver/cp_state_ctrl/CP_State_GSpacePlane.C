@@ -1080,8 +1080,8 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   memcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
   bzero(gs.packedForceData,sizeof(complex)*gs.numFull);
 
-  // A little extra memory of dynamics
-  if(cp_min_opt==0){
+  // A little extra memory of dynamics or if you are creating output
+  if(cp_min_opt==0 || config.stateOutputOn==1){
     gs.packedPlaneDataScr  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
     memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
   }//endif
