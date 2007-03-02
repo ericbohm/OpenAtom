@@ -593,7 +593,10 @@ void AtomsGrp::outputAtmEnergy() {
   delete msg;
 
   copySlowToFast();
-  atomsDone();
+
+  int i=0;
+  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 
 //-------------------------------------------------------------------------
   }//end routine

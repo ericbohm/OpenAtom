@@ -514,7 +514,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      if(iteration>1){
        CkPrintf("CpuTime(GSP)= %g\n",cpuTimeNow-cpuTimeOld);
        if(cp_min_opt==0){
-         CkPrintf("Psi-Rotation= %d\n",nrotation);
+         CkPrintf("Step= %d : Psi-Rotation= %d\n",iteration,nrotation);
        }//endif
      }//endif
   }//endif
@@ -3414,10 +3414,11 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
    myatom_integrate_flag=1;
    if(atomsGrpProxy.ckLocalBranch()->iteration != iteration){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Flow of Control Error : Iteration\n");
-      CkPrintf("mismatch between atoms and g-space planes\n");
-      CkPrintf("suspend %d iteration_atm %d iteration_gsp %d\n",
-                isuspend_atms,iteration,atomsGrpProxy.ckLocalBranch()->iteration);
+      CkPrintf("Flow of Control Error GSP::acceptatoms : \n");
+      CkPrintf("Iteration mismatch between atoms and g-space planes\n");
+      CkPrintf("suspend_atms %d suspend_energy %d,iteration_atm %d iteration_gsp %d\n",
+                isuspend_atms,isuspend_energy,
+                iteration,atomsGrpProxy.ckLocalBranch()->iteration);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
