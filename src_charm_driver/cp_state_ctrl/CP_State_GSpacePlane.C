@@ -3178,13 +3178,13 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-//#ifdef  _CP_DEBUG_UPDATE_OFF_
-  //  if(cp_min_opt==1){
-  //    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-  //	      sizeof(complex)*gs.numPoints);
-  //    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-  //  }//endif
-  //#endif      
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  if(cp_min_opt==1){
+    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+	      sizeof(complex)*gs.numPoints);
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
+#endif      
 
 //==============================================================================
 // Back to the threaded loop.
