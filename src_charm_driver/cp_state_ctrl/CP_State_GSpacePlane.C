@@ -748,9 +748,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //============================================================================
 // Pick a reduction plane
 
-  redPlane = (thisIndex.x % (nchareG-1));
-  redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
-  redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
+  redPlane = 1;
+  if(nchareG>1){
+    redPlane = (thisIndex.x % (nchareG-1));
+    redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
+    redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
+  }//endif
 
 //============================================================================
 // Contribute to the reduction telling main we are done
