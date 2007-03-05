@@ -276,6 +276,7 @@ public:
 //============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
+        int redPlane;
         int registrationFlag;
         int istate_ind;
         int iplane_ind;

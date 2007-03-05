@@ -744,6 +744,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
    savedlambdaBf=NULL;
    savedlambdaAf=NULL;
 #endif
+
+//============================================================================
+// Pick a reduction plane
+
+  redPlane = (thisIndex.x % (nchareG-1));
+  redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
+  redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
+
 //============================================================================
 // Contribute to the reduction telling main we are done
 
@@ -1202,22 +1210,25 @@ void CP_State_GSpacePlane::makePCproxies(){
   psiproxy=new CProxySection_PairCalculator[config.numChunksSym];
   psiproxyother=new CProxySection_PairCalculator[config.numChunksSym];
   //need one proxy per chunk
-  if(!config.gSpaceSum)
-    {
-      for(int chunk=0;chunk<config.numChunksAsym;chunk++)
-	{
-	  lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
-	  if(AllLambdaExpected/config.numChunksAsym == 2)  // need additional column reduction in dynamics
-	    lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, thisIndex.x, thisIndex.y,chunk);
-	}
-      for(int chunk=0; chunk < config.numChunksSym ;chunk++)
-	{
-	  psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
+  if(!config.gSpaceSum){
+      for(int chunk=0;chunk<config.numChunksAsym;chunk++){
+	  lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, 
+                                                       thisIndex.x, thisIndex.y,chunk);
+	  if(AllLambdaExpected/config.numChunksAsym == 2)//additional col. red. in dynamics
+	    lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, 
+                                                        thisIndex.x, thisIndex.y,chunk);
+      }//endfor chunk
+      for(int chunk=0; chunk < config.numChunksSym ;chunk++){
+	  psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, 
+                                                     thisIndex.x, thisIndex.y,chunk);
 	  if(AllPsiExpected / config.numChunksSym > 1)
-	    psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, thisIndex.x, thisIndex.y,chunk);
-	}
-    }
-}
+	    psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, 
+                                                           thisIndex.x, thisIndex.y,chunk);
+      }//endfor chunk
+  }//endif not gspacesum
+
+//============================================================================
+   }//end routine
 //============================================================================
 
 
@@ -1293,12 +1304,11 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
   if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
 #ifdef _CP_SUBSTEP_TIMING_
-  if(forwardTimeKeep>0)
-    {
+  if(forwardTimeKeep>0){
       double gstart=CmiWallTimer();
       CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
       contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
-    }
+  }//endif
 #endif
 
 
@@ -1714,40 +1724,40 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("vksBf",(double *)ppForces, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrixDouble("forceBf",(double *)forces, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("vksBf",(double *)ppForces, 1, 
+                gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("forceBf",(double *)forces, 1, 
+                gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
-  if(savedvksBf==NULL)
-    { // load it
+  if(savedvksBf==NULL){ // load it
       savedvksBf= new complex[gs.numPoints];
-      loadMatrixDouble("vksBf",(double *)savedvksBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  if(savedforceBf==NULL)
-    { // load it
+      loadMatrixDouble("vksBf",(double *)savedvksBf, 1, 
+                 gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+  if(savedforceBf==NULL){ // load it
       savedforceBf= new complex[gs.numPoints];
-      loadMatrixDouble("forceBf",(double *)savedforceBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
+      loadMatrixDouble("forceBf",(double *)savedforceBf, 1, 
+                gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
 
-  for(int i=0;i<gs.numPoints;i++)
-    {
-      if(fabs(ppForces[i].re-savedvksBf[i].re)>0.0001)
-	{
-	  fprintf(stderr, "GSP [%d,%d] %d element vks  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, ppForces[i].re, savedvksBf[i].re);
-	}
+  for(int i=0;i<gs.numPoints;i++){
+      if(fabs(ppForces[i].re-savedvksBf[i].re)>0.0001){
+	 fprintf(stderr, "GSP [%d,%d] %d element vks  %.10g not %.10g\n",
+              thisIndex.x, thisIndex.y,i, ppForces[i].re, savedvksBf[i].re);
+      }//endif
       CkAssert(fabs(ppForces[i].re-savedvksBf[i].re)<0.0001);
       CkAssert(fabs(ppForces[i].im-savedvksBf[i].im)<0.0001);
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
-      if(fabs(forces[i].re-savedforceBf[i].re)>0.0001)
-	{
-	  fprintf(stderr, "GSP [%d,%d] %d element force  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, forces[i].re, savedforceBf[i].re);
-	}
+  }//endfor
+  for(int i=0;i<gs.numPoints;i++){
+      if(fabs(forces[i].re-savedforceBf[i].re)>0.0001){
+	  fprintf(stderr, "GSP [%d,%d] %d element force  %.10g not %.10g\n",
+              thisIndex.x, thisIndex.y,i, forces[i].re, savedforceBf[i].re);
+      }//endif
       CkAssert(fabs(forces[i].re-savedforceBf[i].re)<0.0001);
       CkAssert(fabs(forces[i].im-savedforceBf[i].im)<0.0001);
-    }
+  }//endfor
 #endif
 
   gs.addForces(ppForces,k_x);
@@ -1852,36 +1862,36 @@ void  CP_State_GSpacePlane::sendLambda() {
     CkAssert(countLambdaO[i]==0);
 #endif
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrixDouble("lambdaBf",(double *)force, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrixDouble("psiBf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("lambdaBf",(double *)force, 1, 
+                     gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrixDouble("psiBf",(double *)psi, 1, 
+                     gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
-  if(savedlambdaBf==NULL)
-    { // load it
+  if(savedlambdaBf==NULL){ // load it
       savedlambdaBf= new complex[gs.numPoints];
-      loadMatrixDouble("lambdaBf",(double *)savedlambdaBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  if(savedpsiBf==NULL)
-    { // load it
+      loadMatrixDouble("lambdaBf",(double *)savedlambdaBf, 1, 
+                       gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+  if(savedpsiBf==NULL){ // load it
       savedpsiBf= new complex[gs.numPoints];
-      loadMatrixDouble("psiBf",(double *)savedpsiBf, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
-      if(fabs(force[i].re-savedlambdaBf[i].re)>0.0001)
-	{
-	  fprintf(stderr, "GSP [%d,%d] %d element lambda  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, force[i].re, savedlambdaBf[i].re);
-	}
+      loadMatrixDouble("psiBf",(double *)savedpsiBf, 1, 
+                        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+  }//endif
+
+  for(int i=0;i<gs.numPoints;i++){
+      if(fabs(force[i].re-savedlambdaBf[i].re)>0.0001){
+	  fprintf(stderr, "GSP [%d,%d] %d element lambda  %.10g not %.10g\n",
+                  thisIndex.x, thisIndex.y,i, force[i].re, savedlambdaBf[i].re);
+      }//endif
       CkAssert(fabs(force[i].re-savedlambdaBf[i].re)<0.0001);
       CkAssert(fabs(force[i].im-savedlambdaBf[i].im)<0.0001);
-    }
-  for(int i=0;i<gs.numPoints;i++)
-    {
+  }//endfor
+  for(int i=0;i<gs.numPoints;i++){
       CkAssert(fabs(psi[i].re-savedpsiBf[i].re)<0.0001);
       CkAssert(fabs(psi[i].im-savedpsiBf[i].im)<0.0001);
-    }
-
+  }//endfor
 #endif
 
   int numPoints   = gs.numPoints;
@@ -1896,16 +1906,14 @@ void  CP_State_GSpacePlane::sendLambda() {
 #endif
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_ 
-  if(thisIndex.x==0)
-   CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);
+  if(thisIndex.x==0){CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  if(backwardTimeKeep>0)
-    {
+  if(backwardTimeKeep>0){
       double gend=CmiWallTimer();
       CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
       contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
-    }
+  }//endif
 #endif
 
 //-----------------------------------------------------------------------------
@@ -2364,10 +2372,10 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
         data[i]  = psi[i];  
         mk_x[i]  = k_x[i];  mk_y[i]  = k_y[i];  mk_z[i]  = k_z[i];
       }//endfor
-      gSpacePlaneProxy(thisIndex.x,0).collectFileOutput(msg);
+      gSpacePlaneProxy(thisIndex.x,redPlane).collectFileOutput(msg);
     //------------------------------------------------------------------
-    // If you are not plane 0, you are done. Invoke the correct reduction.
-      if(thisIndex.y!=0){
+    // If you are not plane redPlane, you are done. Invoke the correct reduction.
+      if(thisIndex.y!=redPlane){
         int i = 0;
         if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
           if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
@@ -3170,13 +3178,13 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-  if(cp_min_opt==1){
-    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-	      sizeof(complex)*gs.numPoints);
-    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-  }//endif
-#endif      
+//#ifdef  _CP_DEBUG_UPDATE_OFF_
+  //  if(cp_min_opt==1){
+  //    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+  //	      sizeof(complex)*gs.numPoints);
+  //    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  //  }//endif
+  //#endif      
 
 //==============================================================================
 // Back to the threaded loop.
