@@ -76,6 +76,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     eKinetic        = 0.0;
     eKineticNhc     = 0.0;
     potNhc          = 0.0;    
+    countAtm        = 0;
 
 //==============================================================================
 // Initial positions, forces, velocities 
@@ -88,7 +89,6 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     zeroforces();
     if(iextended_on==1 && cp_min_opt==0){
        zeronhc();
-       computeFNhc();
     }//endif
 
 //==============================================================================
@@ -230,6 +230,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
   EnergyGroup *eg   = egroupProxy.ckLocalBranch();
 
+  int nproc         = CkNumPes();
   int myid          = CkMyPe();
   int output_on     = config.atmOutputOn;
 
@@ -312,10 +313,20 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
    //   CkPrintf("entering atom integrate!\n");
    if(iteration+1>config.maxIter){myoutput_on = 0;}
+
+   int div     = (natm / nproc);
+   int rem     = (natm % nproc);
+   int natmStr = div*myid;
+   int natmNow = div;
+   if(myid>=rem){natmStr += rem;}
+   if(myid< rem){natmStr += myid;}
+   if(myid< rem){natmNow++;}
+   int natmEnd = natmNow+natmStr;
+
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-                    myoutput_on);
+                    myoutput_on,natmNow,natmStr,natmEnd);
 
 //============================================================
   // Debug output
@@ -333,45 +344,34 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #endif
 
 //============================================================
-// Tuck things : At present no reduction required for kin,nhc stuff
+// Tuck things that can be tucked.
 
-  iteration++;
-
-  eKinetic    = eKinetic_loc;
-  eKineticNhc = eKineticNhc_loc;
-  potNhc      = potNhc_loc;     
 
   eg->estruct.eewald_real     = pot_ewd_rs;  
   eg->estruct.fmag_atm        = fmag;
-  eg->estruct.eKinetic_atm    = eKinetic_loc;
-  eg->estruct.eKineticNhc_atm = eKineticNhc_loc;  
-  eg->estruct.potNhc_atm      = potNhc_loc;  
-  eg->estruct.iteration_atm   = iteration;
-  eg->iteration_atm           = iteration;
 
 //============================================================
 // Get ready for the next iteration : 
 //      zero forces, outputAtmEnergy, atomsDone
 
   zeroforces();
-  copySlowToFast();
-  outputAtmEnergy();
 
-  //--------------------------------------------------
-  // Sync Values : proc 0 atoms are the master copy
-  //               acceptatoms calls atomsdone
-  int isync_atm = 0;
-  if((iteration % 50)==0 && cp_wave_opt==0 && cp_min_opt==0){
-     isync_atm=1;
-     sendAtoms();
-  }//endif
+  if(cp_wave_opt==0 && cp_min_opt==0){
+    sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,natmNow,natmStr,natmEnd);
+  }else{
+    eKinetic                    = 0.0;
+    eKineticNhc                 = 0.0;
+    potNhc                      = 0.0;
+    eg->estruct.eKinetic_atm    = 0.0;
+    eg->estruct.eKineticNhc_atm = 0.0;
+    eg->estruct.potNhc_atm      = 0.0;
 
-  //------------------------------------------------
-  // Sync Timing : atomsDone(msg) invokes atomsDone()
-  if(isync_atm==0){
-     i=0;
-     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
-     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+    copySlowToFast();
+    outputAtmEnergy();
+
+    i=0;
+    CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
 //-------------------------------------------------------------------------
@@ -440,11 +440,30 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-   void AtomsGrp::atomsDone() {
+void AtomsGrp::atomsDone() {
 //==========================================================================
-// Use the cool new data caching system
+// Increment iteration counters
 
  int myid = CkMyPe();
+
+ EnergyGroup *eg             = egroupProxy.ckLocalBranch();
+ iteration++;
+ eg->estruct.iteration_atm   = iteration;
+ eg->iteration_atm           = iteration;
+
+#ifdef _DEBUG_CHECK_ATOM_COMM_
+ char fname[100];
+ sprintf(fname,"atoms.out.%d.%d",iteration,myid);
+ FILE *fp = fopen(fname,"w");
+ for(int i=0;i<natm;i++){
+   fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
+ }//endfor
+ fclose(fp);
+#endif
+
+//==========================================================================
+// Use the cool new data caching system to say we're done.
+
  if(config.localAtomBarrier){
 
    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
@@ -484,56 +503,47 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-  void AtomsGrp::sendAtoms() {
+void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNhc_loc,
+                         int natmNow,int natmStr,int natmEnd){
 //==========================================================================
+// Malloc the message
 
-  int myid          = CkMyPe();
+  int nsize    = 9*natmNow+3;
+  AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
+  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+  *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
 
-  int nsize = 6*natm;
-  if(iextended_on==1){nsize += len_nhc*3*natm;}
-  double *atmData = new double [nsize];
+  double *atmData = msg->data;
+  msg->nsize      = nsize;
+  msg->natmStr    = natmStr;
+  msg->natmEnd    = natmEnd;
 
 //==========================================================================
-// pack atom position and velocity
+// pack atom positions : new for use : old for output
 
-  for(int i=0,j=0;i<natm;i++,j+=6){
+  for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
     atmData[(j)  ]=atoms[i].x;
     atmData[(j+1)]=atoms[i].y;
     atmData[(j+2)]=atoms[i].z;
-    atmData[(j+3)]=atoms[i].vx;
-    atmData[(j+4)]=atoms[i].vy;
-    atmData[(j+5)]=atoms[i].vz;
+    atmData[(j+3)]=atoms[i].xold;
+    atmData[(j+4)]=atoms[i].yold;
+    atmData[(j+5)]=atoms[i].zold;
+    atmData[(j+6)]=atoms[i].vxold;
+    atmData[(j+7)]=atoms[i].vyold;
+    atmData[(j+8)]=atoms[i].vzold;
   }//endfor
 
 //==========================================================================
-// pack NHC position and velocity
+// pack the 3 energies
 
-  if(iextended_on==1){
-    int joff= 6*natm;
-    for(int i=0,j=joff;i<natm;i++,j+=3*len_nhc){
-      for(int k=0,m=j;k<len_nhc;k++,m+=3){
-	atmData[(m)]  =atomsNHC[i].vx[k];
-	atmData[(m+1)]=atomsNHC[i].vy[k];
-	atmData[(m+2)]=atomsNHC[i].vz[k];
-      }//endfor
-    }//endfor
-  }//endif
+   atmData[(nsize-3)] = eKinetic_loc;
+   atmData[(nsize-2)] = eKineticNhc_loc;
+   atmData[(nsize-1)] = potNhc_loc;
 
 //==========================================================================
 // Send the message to everyone in the group
 
-  if(myid==0){
-    CkPrintf("Synching atoms after iteration %d\n",iteration);
-    AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
-    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-    *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-    double *data = msg->data;
-    msg->nsize=nsize;
-    memcpy(data,atmData,nsize*sizeof(double));
-    atomsGrpProxy.acceptAtoms(msg);
-  }//endif
-
-  delete [] atmData;  
+  atomsGrpProxy.acceptAtoms(msg);
 
 //-------------------------------------------------------------------------
   }//end routine
@@ -547,56 +557,65 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
   AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
-  int myid          = CkMyPe();
   double *atmData   = msg->data;
-  int    nsizeMsg   = msg->nsize;
-  
-  int nsize = 6*natm;
-  if(iextended_on==1){nsize += len_nhc*3*natm;}
-  if(nsize!=nsizeMsg){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Incorrect message size in atmsgrp::acceptatoms \n");
-    CkPrintf("%d %d %d\n",myid,nsize,nsizeMsg);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
+  int    nsize      = msg->nsize;
+  int    natmStr    = msg->natmStr;
+  int    natmEnd    = msg->natmEnd;
 
 //==========================================================================
 // unpack atom position and velocity
 
-  for(int i=0,j=0;i<natm;i++,j+=6){
-    atoms[i].x = atmData[(j)  ];
-    atoms[i].y = atmData[(j+1)];
-    atoms[i].z = atmData[(j+2)];
-    atoms[i].vx= atmData[(j+3)];
-    atoms[i].vy= atmData[(j+4)];
-    atoms[i].vz= atmData[(j+5)];
+  for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
+    atoms[i].x     = atmData[(j)  ];
+    atoms[i].y     = atmData[(j+1)];
+    atoms[i].z     = atmData[(j+2)];
+    atoms[i].xold  = atmData[(j+3)];
+    atoms[i].yold  = atmData[(j+4)];
+    atoms[i].zold  = atmData[(j+5)];
+    atoms[i].vxold = atmData[(j+6)];
+    atoms[i].vyold = atmData[(j+7)];
+    atoms[i].vzold = atmData[(j+8)];
   }//endfor
 
 //==========================================================================
-// unpack NHC position and velocity
+// unpack energy
 
-  if(iextended_on==1){
-    int joff= 6*natm;
-    for(int i=0,j=joff;i<natm;i++,j+=(3*len_nhc)){
-      for(int k=0,m=j;k<len_nhc;k++,m+=3){
-	atomsNHC[i].vx[k] = atmData[(m)];
-	atomsNHC[i].vy[k] = atmData[(m+1)];
-	atomsNHC[i].vz[k] = atmData[(m+2)];
-      }//endfor
-    }//endfor
+  countAtm++;
+
+  if(countAtm==1){
+    eKinetic    = 0;
+    eKineticNhc = 0;
+    potNhc      = 0;
   }//endif
 
+  eKinetic    += atmData[(nsize-3)];
+  eKineticNhc += atmData[(nsize-2)];  
+  potNhc      += atmData[(nsize-1)];
+
 //==========================================================================
-// Delete the message, copy to the fast vectors and phone home
+// Delete the message
 
   delete msg;
 
-  copySlowToFast();
+//==========================================================================
+// Copy to the fast vectors and phone home
 
-  int i=0;
-  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
-  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  if(countAtm==CkNumPes()){
+     countAtm = 0;
+
+     EnergyGroup *eg             = egroupProxy.ckLocalBranch();
+     eg->estruct.eKinetic_atm    = eKinetic;
+     eg->estruct.eKineticNhc_atm = eKineticNhc;
+     eg->estruct.potNhc_atm      = potNhc;
+
+     copySlowToFast();
+     outputAtmEnergy();
+
+     //everybody has to have received all the atoms before continuing : not just me
+     int i=0;
+     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  }//endif
 
 //-------------------------------------------------------------------------
   }//end routine

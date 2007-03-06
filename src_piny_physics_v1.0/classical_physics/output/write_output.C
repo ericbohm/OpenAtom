@@ -45,30 +45,38 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
   char *cpparname      = genfilenames->cpparname;
   char *dname          = genfilenames->dname;
 
+  int mytime = itime-1;
+
 //==========================================================================
-// Make the case for writing the file
+// Write the file now.
+
   int iwrite_atm=0;
-  if( (itime % iwrite_confp)==0 && output_on==1){
-    iwrite_atm++;
-    if(myid==0){
-      int low = 0; int high = natm;
-      write_atom_output_conf(low,high,pi_beads,atoms,cpname);
+  if(mytime>0 && output_on==1){
+
+    if( (mytime % iwrite_confp)==0 ){
+      iwrite_atm++;
+      if(myid==0){
+        int low = 0; int high = natm;
+        write_atom_output_conf(low,high,pi_beads,atoms,cpname);
+      }//endif
     }//endif
+
+    if( (mytime % iwrite_par_confp)==0 && low_lim_par<high_lim_par){
+      iwrite_atm++;
+      if(myid==0){
+        write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
+      }//endif
+    }//endif
+
+    if( ((mytime-1) % iwrite_dump)==0){
+      iwrite_atm++;
+      if(myid==0){
+        write_atom_output_dump(natm,len_nhc,pi_beads,mytime,atoms,atomsNHC);
+      }//endif
+    }//endif
+
   }//endif
 
-  if( (itime % iwrite_par_confp)==0 && low_lim_par<high_lim_par && output_on==1){
-    iwrite_atm++;
-    if(myid==0){
-      write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
-    }//endif
-  }//endif
-
-  if( (itime % iwrite_dump)==0 && output_on==1){
-    iwrite_atm++;
-    if(myid==0){
-      write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC);
-    }//endif
-  }//endif
 
   (*iwrite_atm_ret)=iwrite_atm;
 //==========================================================================
@@ -120,7 +128,7 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
    for(ip=1;ip<=pi_beads;ip++){
      for(i=1,i1=0;i<=natm;i++,i1++){
        fprintf(fp,"%.13g %.13g %.13g %s %s %s %d %d\n",
-              atoms[i1].x,atoms[i1].y,atoms[i1].z,
+              atoms[i1].xold,atoms[i1].yold,atoms[i1].zold,
               atm_typ[iatm_atm_typ[i]],res_typ[iatm_res_typ[i]],
               mol_typ[iatm_mol_typ[i]],iatm_mol_num[i],iatm_res_num[i]);
      }//endfor
@@ -146,10 +154,11 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
    fprintf(fp,"atm vel\n");
    for(ip=1;ip<=pi_beads;ip++){
     for(i=0;i<natm;i++){
-      fprintf(fp,"%.13g %.13g %.13g\n",atoms[i].vx,atoms[i].vy,atoms[i].vz);
+      fprintf(fp,"%.13g %.13g %.13g\n",atoms[i].vxold,atoms[i].vyold,atoms[i].vzold);
     }//endfor
    }//endfor
 
+#ifdef JUNK
    if(iextended_on==1){
      fprintf(fp,"number of atm nhc, length of nhc\n");
      fprintf(fp,"%d %d\n",num_nhc,len_nhc);
@@ -162,10 +171,12 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
        }//endfor
      }//endfor
    }else{
+#endif
      fprintf(fp,"number of atm nhc, length of nhc\n");
      fprintf(fp,"0 %d\n",len_nhc);
      fprintf(fp,"atm nhc velocities\n");
-   }//endif
+
+//   }//endif
 
 //==========================================================================
 // IV)Vol and Vol NHC Velocities                                            
@@ -229,7 +240,7 @@ void ATOMOUTPUT::write_atom_output_conf(int low, int high, int pi_beads,
     if(iwrite_conf_binary==0){
       for(ip=1;ip<=pi_beads;ip++){
         for(i=low;i<high;i++){
-          fprintf(fp,"%.12g  %.12g  %.12g\n",atoms[i].x,atoms[i].y,atoms[i].z);
+          fprintf(fp,"%.12g  %.12g  %.12g\n",atoms[i].xold,atoms[i].yold,atoms[i].zold);
         }//endfor
       }//endfor
       for(i=1;i<=9;i+=3){
@@ -245,9 +256,9 @@ void ATOMOUTPUT::write_atom_output_conf(int low, int high, int pi_beads,
       n=1;
       for(ip=1;ip<=pi_beads;ip++){
         for(i=low;i<high;i++){ 
-          double x=atoms[i].x;
-          double y=atoms[i].y;
-          double z=atoms[i].z;
+          double x=atoms[i].xold;
+          double y=atoms[i].yold;
+          double z=atoms[i].zold;
           fwrite(&x,sizeof(double),n,fp);
           fwrite(&y,sizeof(double),n,fp);
           fwrite(&z,sizeof(double),n,fp);

@@ -19,6 +19,7 @@
 class AtomMsg: public CMessage_AtomMsg {
  public:
   int nsize;
+  int natmStr,natmEnd;
   double *data;  
 };
 //============================================================================
@@ -43,6 +44,7 @@ class AtomsGrp: public Group {
   int cp_wave_opt;
   int iteration;
   int isokin_opt;
+  int countAtm;
   double kT;
   double pot_ewd_rs;      // total real space ewald energy
   double eKinetic;        // kinetic energy
@@ -59,7 +61,7 @@ class AtomsGrp: public Group {
   void recvContribute(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
   void atomsDone();
-  void sendAtoms();
+  void sendAtoms(double,double ,double,int,int,int);
   void acceptAtoms(AtomMsg *);
   void StartRealspaceForces();
   void outputAtmEnergy();
@@ -71,46 +73,6 @@ class AtomsGrp: public Group {
     }//endfor
   }//end routine
   void zeronhc(){for(int i=0;i<natm;i++){atomsNHC[i].posKT = 0;}}
-  void computeEkin(){
-    eKinetic = 0.0;
-    for(int i=0;i<natm;i++){
-      eKinetic += atoms[i].m*(atoms[i].vx*atoms[i].vx+
-                              atoms[i].vy*atoms[i].vy+
-                              atoms[i].vz*atoms[i].vz);
-    }//endfor
-    eKinetic *= 0.5;
-  }//end routine
-  void computeENhc(){
-    potNhc = 0.0;
-    for(int i=0;i<natm;i++){potNhc  += atomsNHC[i].posKT;}
-    eKineticNhc = 0.0;
-    for(int i=0;i<natm;i++){
-      for(int j=0;j<len_nhc;j++){
-        eKineticNhc += atomsNHC[i].m[j]*(atomsNHC[i].vx[j]*atomsNHC[i].vx[j]+
-                                         atomsNHC[i].vy[j]*atomsNHC[i].vy[j]+
-                                         atomsNHC[i].vz[j]*atomsNHC[i].vz[j]);
-      }//endfor
-    }//endfor
-    eKineticNhc *= 0.5;
-  }//end routine
-  void computeFNhc(){
-    for(int i=0; i<natm; i++){
-      atomsNHC[i].fx[0] = (atoms[i].m*atoms[i].vx*atoms[i].vx-kT);
-      atomsNHC[i].fy[0] = (atoms[i].m*atoms[i].vy*atoms[i].vy-kT);
-      atomsNHC[i].fz[0] = (atoms[i].m*atoms[i].vz*atoms[i].vz-kT);
-      for(int j=1,k=0; j<len_nhc; j++,k++){
-        atomsNHC[i].fx[j]=(atomsNHC[i].m[k]*atomsNHC[i].vx[k]*atomsNHC[i].vx[k]-kT);
-        atomsNHC[i].fy[j]=(atomsNHC[i].m[k]*atomsNHC[i].vy[k]*atomsNHC[i].vy[k]-kT);
-        atomsNHC[i].fz[j]=(atomsNHC[i].m[k]*atomsNHC[i].vz[k]*atomsNHC[i].vz[k]-kT);
-      }//endfor
-      for(int j=0;j<len_nhc;j++){
-        atomsNHC[i].fx[j] /= atomsNHC[i].m[j];
-        atomsNHC[i].fy[j] /= atomsNHC[i].m[j];
-        atomsNHC[i].fz[j] /= atomsNHC[i].m[j];
-      }//endfor
-    }//endfor
-    eKineticNhc *= 0.5;
-  }//end routine
   void copySlowToFast(){
     double *x  = fastAtoms.x;
     double *y  = fastAtoms.y;

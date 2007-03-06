@@ -15,7 +15,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::integrate_nve_2nd_half(int itime,int natm,Atom *atoms,
-                                double *eKinetic)
+                                double *eKinetic,int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -30,14 +30,14 @@ void ATOMINTEGRATE::integrate_nve_2nd_half(int itime,int natm,Atom *atoms,
 // Evolve the system : if its not the first time step
 
    if(itime>0){
-     for(int i=0;i<natm;i++){
+     for(int i=natmStr;i<natmEnd;i++){
        atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
        atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
        atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
      }//endfor  
    }//endif
  
-   computeEkin(natm,atoms,eKinetic);
+   computeEkin(natm,atoms,eKinetic,natmNow,natmStr,natmEnd);
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -49,7 +49,8 @@ void ATOMINTEGRATE::integrate_nve_2nd_half(int itime,int natm,Atom *atoms,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void ATOMINTEGRATE::integrate_nve_1st_half(int natm,Atom *atoms)
+void ATOMINTEGRATE::integrate_nve_1st_half(int natm,Atom *atoms,
+                                           int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -63,13 +64,13 @@ void ATOMINTEGRATE::integrate_nve_1st_half(int natm,Atom *atoms)
 //============================================================================
 // Evolve the system 
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
      atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
      atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
    }//endfor  
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].x += dt*atoms[i].vx;
      atoms[i].y += dt*atoms[i].vy;
      atoms[i].z += dt*atoms[i].vz;
@@ -87,7 +88,8 @@ void ATOMINTEGRATE::integrate_nve_1st_half(int natm,Atom *atoms)
 //============================================================================
 void ATOMINTEGRATE::integrate_nvt_2nd_half(int itime,int natm,int len_nhc,
                            Atom *atoms,AtomNHC *atomsNHC,double *eKinetic,
-                           double *eKineticNhc,double *potNhc)
+                           double *eKineticNhc,double *potNhc,
+                           int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -107,17 +109,18 @@ void ATOMINTEGRATE::integrate_nvt_2nd_half(int itime,int natm,int len_nhc,
 // Evolve the system : if its not the first time step
 
    if(itime>0){
-     for(int i =0;i<natm;i++){
+     for(int i=natmStr;i<natmEnd;i++){
        atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
        atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
        atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
      }//endfor  
-     applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
+     applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
    }//endif
 
-   computeEkin(natm,atoms,eKinetic);
+   computeEkin(natm,atoms,eKinetic,natmNow,natmStr,natmEnd);
    double eKineticNhc1=0.0;
-   computeENHC(natm,len_nhc,atomsNHC,eKineticNhc,&eKineticNhc1,potNhc,0);
+   computeENHC(natm,len_nhc,atomsNHC,eKineticNhc,&eKineticNhc1,potNhc,0,
+               natmNow,natmStr,natmEnd);
 
 //----------------------------------------------------------------------------
   }//end routine
@@ -130,7 +133,8 @@ void ATOMINTEGRATE::integrate_nvt_2nd_half(int itime,int natm,int len_nhc,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
-                                           Atom *atoms,AtomNHC *atomsNHC)
+                                           Atom *atoms,AtomNHC *atomsNHC,
+                                           int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -149,14 +153,14 @@ void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
 //============================================================================
 // Evolve the system : 
 
-   applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
-   for(int i =0;i<natm;i++){
+   applyNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].vx += dt2*atoms[i].fx/atoms[i].m;
      atoms[i].vy += dt2*atoms[i].fy/atoms[i].m;
      atoms[i].vz += dt2*atoms[i].fz/atoms[i].m;
    }//endfor  
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].x += dt*atoms[i].vx;
      atoms[i].y += dt*atoms[i].vy;
      atoms[i].z += dt*atoms[i].vz;
@@ -173,7 +177,8 @@ void ATOMINTEGRATE::integrate_nvt_1st_half(int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
                            Atom *atoms,AtomNHC *atomsNHC,double *eKinetic,
-                           double *eKineticNhc,double *potNhc)
+                           double *eKineticNhc,double *potNhc,
+                           int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -194,15 +199,16 @@ void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
 // Evolve the system : if its not the first time step
 
    if(itime>0){
-     applyIsoVel(natm,atoms,atomsNHC,dt);
-     applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
+     applyIsoVel(natm,atoms,atomsNHC,dt,natmNow,natmStr,natmEnd);
+     applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
    }//endif
-   scaleIso(natm,atoms,atomsNHC); // prevent round-off
-                                  // set initial condition
+   scaleIso(natm,atoms,atomsNHC,natmNow,natmStr,natmEnd); // prevent round-off
+                                                          // set initial condition
 
    double eKineticNhc1=0.0;
-   computeEkin(natm,atoms,eKinetic);
-   computeENHC(natm,len_nhc,atomsNHC,eKineticNhc,&eKineticNhc1,potNhc,1);
+   computeEkin(natm,atoms,eKinetic,natmNow,natmStr,natmEnd);
+   computeENHC(natm,len_nhc,atomsNHC,eKineticNhc,&eKineticNhc1,potNhc,1,
+               natmNow,natmStr,natmEnd);
    (*eKinetic) += (gamma*eKineticNhc1);
 
 //----------------------------------------------------------------------------
@@ -216,7 +222,8 @@ void ATOMINTEGRATE::integrate_isonvt_2nd_half(int itime,int natm,int len_nhc,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
-                                           Atom *atoms,AtomNHC *atomsNHC)
+                                           Atom *atoms,AtomNHC *atomsNHC,
+                                           int natmNow,int natmStr,int natmEnd)
 //============================================================================
     {//begin routine 
 //============================================================================
@@ -235,10 +242,10 @@ void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
 //============================================================================
 // Evolve the system : 
 
-   applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp);
-   applyIsoVel(natm,atoms,atomsNHC,dt);
+   applyIsoNHC(natm,len_nhc,atoms,atomsNHC,dt,nyosh,nresp,natmNow,natmStr,natmEnd);
+   applyIsoVel(natm,atoms,atomsNHC,dt,natmNow,natmStr,natmEnd);
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].x += dt*atoms[i].vx;
      atoms[i].y += dt*atoms[i].vy;
      atoms[i].z += dt*atoms[i].vz;
@@ -252,10 +259,11 @@ void ATOMINTEGRATE::integrate_isonvt_1st_half(int natm,int len_nhc,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void ATOMINTEGRATE::computeEkin(int natm, Atom *atoms, double *eKinetic_ret){
+void ATOMINTEGRATE::computeEkin(int natm, Atom *atoms, double *eKinetic_ret,
+                                int natmNow,int natmStr,int natmEnd){
 
    double eKinetic = 0.0;
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
           eKinetic += atoms[i].m*(atoms[i].vx*atoms[i].vx+
                                   atoms[i].vy*atoms[i].vy+
                                   atoms[i].vz*atoms[i].vz);
@@ -274,17 +282,18 @@ void ATOMINTEGRATE::computeEkin(int natm, Atom *atoms, double *eKinetic_ret){
 //============================================================================
 void ATOMINTEGRATE::computeENHC(int natm, int len_nhc,AtomNHC *atomsNHC, 
                                 double *eKinNHC_ret,double *eKinNHC1_ret,
-                                double *potNHC_ret,int iopt)
+                                double *potNHC_ret,int iopt,
+                                int natmNow,int natmStr,int natmEnd)
 //============================================================================
   {//begin routine
 //============================================================================
 
    double potNHC = 0.0;
-   for(int i=0;i<natm;i++){potNHC += atomsNHC[i].posKT;}
+   for(int i=natmStr;i<natmEnd;i++){potNHC += atomsNHC[i].posKT;}
  
    double eKinNHC1 = 0.0;
    double eKinNHC  = 0.0;
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      int j=0;
      eKinNHC1 += atomsNHC[i].m[j]*(atomsNHC[i].vx[j]*atomsNHC[i].vx[j]
                                   +atomsNHC[i].vy[j]*atomsNHC[i].vy[j]+
@@ -316,7 +325,8 @@ void ATOMINTEGRATE::computeENHC(int natm, int len_nhc,AtomNHC *atomsNHC,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::applyNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsNHC,
-                             double dt,int nyosh,int nresp)
+                             double dt,int nyosh,int nresp,
+                             int natmNow,int natmStr,int natmEnd)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -329,13 +339,13 @@ void ATOMINTEGRATE::applyNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsNHC,
 //============================================================================
 // (I)Compute the forces : Precompute  m*v^2 of atoms
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atoms[i].mvx2 = atoms[i].m*atoms[i].vx*atoms[i].vx;
      atoms[i].mvy2 = atoms[i].m*atoms[i].vy*atoms[i].vy;
      atoms[i].mvz2 = atoms[i].m*atoms[i].vz*atoms[i].vz;
    }//endfor
-   get_forc_NHC0(natm,atoms,atomsNHC);
-   for(int ic=1;ic<len_nhc;ic++){get_forc_NHC(natm,ic,atomsNHC);}
+   get_forc_NHC0(natm,atoms,atomsNHC,natmNow,natmStr,natmEnd);
+   for(int ic=1;ic<len_nhc;ic++){get_forc_NHC(natm,ic,atomsNHC,natmNow,natmStr,natmEnd);}
 
 //============================================================================
 // (II) Yoshida-Suzuki step yourself to heaven
@@ -344,31 +354,30 @@ void ATOMINTEGRATE::applyNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsNHC,
   for(int iyosh=1;iyosh<=nyosh;iyosh++){
 //--------------------------------------------------------------------------
 //  1) Evolve the last therm velocity in each chain                         
-    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh]);
+    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  2) Evolve the last-1 to the first therm velocity in each chain        
     for(int ic=len_nhc-2;ic>=0;ic--){
-      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh]);
+      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh],natmNow,natmStr,natmEnd);
     }//endfor
 //--------------------------------------------------------------------------
 //  3) Evolve the particle velocities 
-    evolve_vAtmNHC(natm,atoms,atomsNHC,wdti2[iyosh]);
+    evolve_vAtmNHC(natm,atoms,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  4) Evolve the therm positions                                           
-    evolve_pNHC(natm,len_nhc,atomsNHC,wdti2[iyosh]);
+    evolve_pNHC(natm,len_nhc,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  5) Evolve the 1 to last-1 therm velocity in each chain : get forces
-    get_forc_NHC0(natm,atoms,atomsNHC);
+    get_forc_NHC0(natm,atoms,atomsNHC,natmNow,natmStr,natmEnd);
     for(int ic=0,icp=1;ic<(len_nhc-1);ic++,icp++){
-      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh]);
-      get_forc_NHC(natm,icp,atomsNHC);
+      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh],natmNow,natmStr,natmEnd);
+      get_forc_NHC(natm,icp,atomsNHC,natmNow,natmStr,natmEnd);
     }//endfor
 //--------------------------------------------------------------------------
 //  6) Evolve the last therm velocotiy in each chain                        
-    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh]);
+    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
   }}//endfor: iyosh,iresn
-
 
 //==========================================================================
   }//end routine
@@ -377,8 +386,9 @@ void ATOMINTEGRATE::applyNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsNHC,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMINTEGRATE::get_forc_NHC0(int natm,Atom *atoms,AtomNHC *atomsNHC){
-  for(int i=0;i<natm;i++){
+void ATOMINTEGRATE::get_forc_NHC0(int natm,Atom *atoms,AtomNHC *atomsNHC,
+                                  int natmNow,int natmStr,int natmEnd){
+  for(int i=natmStr;i<natmEnd;i++){
     atomsNHC[i].fx[0] = (atoms[i].mvx2-atomsNHC[i].kT)/atomsNHC[i].m[0];
     atomsNHC[i].fy[0] = (atoms[i].mvy2-atomsNHC[i].kT)/atomsNHC[i].m[0];
     atomsNHC[i].fz[0] = (atoms[i].mvz2-atomsNHC[i].kT)/atomsNHC[i].m[0];
@@ -389,9 +399,10 @@ void ATOMINTEGRATE::get_forc_NHC0(int natm,Atom *atoms,AtomNHC *atomsNHC){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMINTEGRATE::get_forc_NHC(int natm,int ic,AtomNHC *atomsNHC){
+void ATOMINTEGRATE::get_forc_NHC(int natm,int ic,AtomNHC *atomsNHC,
+                                 int natmNow,int natmStr,int natmEnd){
   int icm = ic-1;
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     atomsNHC[i].fx[ic]=(atomsNHC[i].m[icm]*atomsNHC[i].vx[icm]*atomsNHC[i].vx[icm]
                        -atomsNHC[i].kT)/atomsNHC[i].m[ic];
     atomsNHC[i].fy[ic]=(atomsNHC[i].m[icm]*atomsNHC[i].vy[icm]*atomsNHC[i].vy[icm]
@@ -406,11 +417,11 @@ void ATOMINTEGRATE::get_forc_NHC(int natm,int ic,AtomNHC *atomsNHC){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMINTEGRATE::evolve_vNHCM(int natm,int len_nhc,AtomNHC *atomsNHC,
-                                 double wdti4)
+                                 double wdti4,int natmNow,int natmStr,int natmEnd)
 //==========================================================================
 {//begin routine
   int ic = len_nhc-1;
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     atomsNHC[i].vx[ic] += atomsNHC[i].fx[ic]*wdti4;
     atomsNHC[i].vy[ic] += atomsNHC[i].fy[ic]*wdti4;
     atomsNHC[i].vz[ic] += atomsNHC[i].fz[ic]*wdti4;
@@ -422,13 +433,14 @@ void ATOMINTEGRATE::evolve_vNHCM(int natm,int len_nhc,AtomNHC *atomsNHC,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMINTEGRATE::evolve_vNHC(int natm,int ic,AtomNHC *atomsNHC,
-                                double wdti4,double wdti8)
+                                double wdti4,double wdti8,
+                                int natmNow,int natmStr,int natmEnd)
 //==========================================================================
 {//begin routine
   double argx,argy,argz;
   double aax,aay,aaz;
   int icp = ic+1;
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     argx = -wdti8*atomsNHC[i].vx[icp]; aax = exp(argx);  
     argy = -wdti8*atomsNHC[i].vy[icp]; aay = exp(argy);
     argz = -wdti8*atomsNHC[i].vz[icp]; aaz = exp(argz);
@@ -443,12 +455,12 @@ void ATOMINTEGRATE::evolve_vNHC(int natm,int ic,AtomNHC *atomsNHC,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMINTEGRATE::evolve_vAtmNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,
-                                   double wdti2)
+                                   double wdti2,int natmNow,int natmStr,int natmEnd)
 //==========================================================================
 {//begin routine
   double argx,argy,argz;
   double aax,aay,aaz;
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     argx = -wdti2*atomsNHC[i].vx[0]; aax = exp(argx); 
     argy = -wdti2*atomsNHC[i].vy[0]; aay = exp(argy); 
     argz = -wdti2*atomsNHC[i].vz[0]; aaz = exp(argz);
@@ -463,10 +475,10 @@ void ATOMINTEGRATE::evolve_vAtmNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMINTEGRATE::evolve_pNHC(int natm,int len_nhc, AtomNHC *atomsNHC,
-                                double wdti2)
+                                double wdti2,int natmNow,int natmStr,int natmEnd)
 //==========================================================================
 {//begin routine
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
   double pre = (atomsNHC[i].kT*wdti2);
   for(int ic=0;ic<len_nhc;ic++){
     atomsNHC[i].posKT += (pre*(atomsNHC[i].vx[ic]+atomsNHC[i].vy[ic]
@@ -552,11 +564,12 @@ void ATOMINTEGRATE::set_yosh(int nyosh,double dt,double *wdt,double *wdt2,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMINTEGRATE::scaleIso(int natm,Atom *atoms,AtomNHC *atomsNHC){
+void ATOMINTEGRATE::scaleIso(int natm,Atom *atoms,AtomNHC *atomsNHC,
+                             int natmNow,int natmStr,int natmEnd){
 //==========================================================================
 
    double gamma = 0.5;
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
       double kinAtm,kinNhc,scale;
       double kT = atomsNHC[i].kT;
 
@@ -587,7 +600,7 @@ void ATOMINTEGRATE::scaleIso(int natm,Atom *atoms,AtomNHC *atomsNHC){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::applyIsoVel(int natm,Atom *atoms,AtomNHC *atomsNHC,
-                                double dt)
+                                double dt,int natmNow,int natmStr,int natmEnd)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -600,7 +613,7 @@ void ATOMINTEGRATE::applyIsoVel(int natm,Atom *atoms,AtomNHC *atomsNHC,
 //============================================================================
 // x evolution
 
-    for(int i=0;i<natm;i++){
+    for(int i=natmStr;i<natmEnd;i++){
       ffdot = (atoms[i].fx*atoms[i].fx)/(atoms[i].m*gkt);
       pfdot = (atoms[i].fx*atoms[i].vx)/gkt;
       ffdot_r = sqrt(ffdot);
@@ -619,7 +632,7 @@ void ATOMINTEGRATE::applyIsoVel(int natm,Atom *atoms,AtomNHC *atomsNHC,
 //============================================================================
 // y evolution
 
-    for(int i=0;i<natm;i++){
+    for(int i=natmStr;i<natmEnd;i++){
       ffdot   = (atoms[i].fy*atoms[i].fy)/(atoms[i].m*gkt);
       pfdot   = (atoms[i].fy*atoms[i].vy)/gkt;
       ffdot_r = sqrt(ffdot);
@@ -638,7 +651,7 @@ void ATOMINTEGRATE::applyIsoVel(int natm,Atom *atoms,AtomNHC *atomsNHC,
 //============================================================================
 // z evolution
 
-    for(int i=0;i<natm;i++){
+    for(int i=natmStr;i<natmEnd;i++){
       ffdot   = (atoms[i].fz*atoms[i].fz)/(atoms[i].m*gkt);
       pfdot   = (atoms[i].fz*atoms[i].vz)/gkt;
       ffdot_r = sqrt(ffdot);
@@ -663,7 +676,8 @@ void ATOMINTEGRATE::applyIsoVel(int natm,Atom *atoms,AtomNHC *atomsNHC,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsNHC,
-                             double dt,int nyosh,int nresp)
+                                double dt,int nyosh,int nresp,
+                                int natmNow,int natmStr,int natmEnd)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -676,12 +690,12 @@ void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsN
 //============================================================================
 // (I)Compute the forces : Precompute  m*v^2 of atoms
 
-   for(int i=0;i<natm;i++){
+   for(int i=natmStr;i<natmEnd;i++){
      atomsNHC[i].fx[0]=0.0;
      atomsNHC[i].fy[0]=0.0;
      atomsNHC[i].fz[0]=0.0;
    }//endfor
-   for(int ic=1;ic<len_nhc;ic++){get_forc_NHC(natm,ic,atomsNHC);}
+   for(int ic=1;ic<len_nhc;ic++){get_forc_NHC(natm,ic,atomsNHC,natmNow,natmStr,natmEnd);}
 
 //============================================================================
 // (II) Yoshida-Suzuki step yourself to heaven
@@ -690,31 +704,31 @@ void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsN
   for(int iyosh=1;iyosh<=nyosh;iyosh++){
 //--------------------------------------------------------------------------
 //  1) Evolve the last therm velocity in each chain                         
-    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh]);
+    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  2) Evolve the last-1 to the first therm velocity in each chain        
     for(int ic=len_nhc-2;ic>=1;ic--){
-      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh]);
+      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh],natmNow,natmStr,natmEnd);
     }//endfor
 //--------------------------------------------------------------------------
 //  3) Evolve the particle velocities 
-    evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh]);
+    evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  4) Evolve the therm positions                                           
-    evolve_pIsoNHC(natm,len_nhc,atomsNHC,wdti2[iyosh]);
+    evolve_pIsoNHC(natm,len_nhc,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  5) Evolve the particle velocities 
-    evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh]);
+    evolve_vAtmIsoNHC(natm,atoms,atomsNHC,wdti2[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
 //  6) Evolve the 1 to last-1 therm velocity in each chain : get forces
-    get_forc_NHC(natm,1,atomsNHC);
+    get_forc_NHC(natm,1,atomsNHC,natmNow,natmStr,natmEnd);
     for(int ic=1,icp=2;ic<(len_nhc-1);ic++,icp++){
-      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh]);
-      get_forc_NHC(natm,icp,atomsNHC);
+      evolve_vNHC(natm,ic,atomsNHC,wdti4[iyosh],wdti8[iyosh],natmNow,natmStr,natmEnd);
+      get_forc_NHC(natm,icp,atomsNHC,natmNow,natmStr,natmEnd);
     }//endfor
 //--------------------------------------------------------------------------
 //  7) Evolve the last therm velocotiy in each chain                        
-    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh]);
+    evolve_vNHCM(natm,len_nhc,atomsNHC,wdti4[iyosh],natmNow,natmStr,natmEnd);
 //--------------------------------------------------------------------------
   }}//endfor: iyosh,iresn
 
@@ -726,10 +740,11 @@ void ATOMINTEGRATE::applyIsoNHC(int natm,int len_nhc,Atom *atoms,AtomNHC *atomsN
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMINTEGRATE::evolve_pIsoNHC(int natm,int len_nhc,AtomNHC *atomsNHC,double wdti2){
+void ATOMINTEGRATE::evolve_pIsoNHC(int natm,int len_nhc,AtomNHC *atomsNHC,double wdti2,
+                                   int natmNow,int natmStr,int natmEnd){
 //==========================================================================
 
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     atomsNHC[i].posKT -= (wdti2*atomsNHC[i].m[0]*(
                           atomsNHC[i].vx[0]*atomsNHC[i].vx[0]*atomsNHC[i].vx[1]
                          +atomsNHC[i].vy[0]*atomsNHC[i].vy[0]*atomsNHC[i].vy[1]
@@ -737,7 +752,7 @@ void ATOMINTEGRATE::evolve_pIsoNHC(int natm,int len_nhc,AtomNHC *atomsNHC,double
   }//endfor
 
   double pre = (atomsNHC[0].kT*wdti2);
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
   for(int ic=1;ic<len_nhc;ic++){
     atomsNHC[i].posKT += pre*(atomsNHC[i].vx[ic]
                              +atomsNHC[i].vy[ic]
@@ -752,7 +767,8 @@ void ATOMINTEGRATE::evolve_pIsoNHC(int natm,int len_nhc,AtomNHC *atomsNHC,double
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMINTEGRATE::evolve_vAtmIsoNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,double wdti2){
+void ATOMINTEGRATE::evolve_vAtmIsoNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,double wdti2,
+                                      int natmNow,int natmStr,int natmEnd){
 //==========================================================================
 
   double wdti4 = wdti2*0.5;
@@ -761,7 +777,7 @@ void ATOMINTEGRATE::evolve_vAtmIsoNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,dou
 
 //==========================================================================
 
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     double aa   = exp(-atomsNHC[i].vx[1]*wdti4);
     double temp = atoms[i].m*atoms[i].vx*atoms[i].vx
                  +atomsNHC[i].m[0]*atomsNHC[i].vx[0]*atomsNHC[i].vx[0]*gamma*aa*aa;
@@ -772,7 +788,7 @@ void ATOMINTEGRATE::evolve_vAtmIsoNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,dou
 
 //==========================================================================
 
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     double aa   = exp(-atomsNHC[i].vy[1]*wdti4);
     double temp = atoms[i].m*atoms[i].vy*atoms[i].vy
                  +atomsNHC[i].m[0]*atomsNHC[i].vy[0]*atomsNHC[i].vy[0]*gamma*aa*aa;
@@ -783,7 +799,7 @@ void ATOMINTEGRATE::evolve_vAtmIsoNHC(int natm,Atom *atoms,AtomNHC *atomsNHC,dou
 
 //==========================================================================
 
-  for(int i=0;i<natm;i++){
+  for(int i=natmStr;i<natmEnd;i++){
     double aa   = exp(-atomsNHC[i].vz[1]*wdti4);
     double temp = atoms[i].m*atoms[i].vz*atoms[i].vz
                 +atomsNHC[i].m[0]*atomsNHC[i].vz[0]*atomsNHC[i].vz[0]*gamma*aa*aa;

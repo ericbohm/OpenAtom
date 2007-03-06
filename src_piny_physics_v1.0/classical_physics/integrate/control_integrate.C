@@ -22,7 +22,8 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
                         int cp_min_opt, int cp_wave_opt, int iextended_on,
                         Atom *atoms,AtomNHC *atomsNHC,int myid,
                         double *eKinetic,double *eKineticNhc,double *potNhc,
-                        int *iwrite_atm,int output_on)
+                        int *iwrite_atm,int output_on,
+                        int natmNow,int natmStr,int natmEnd)
 //============================================================================
    {//begin routine 
 //============================================================================
@@ -38,7 +39,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
  
    if(cp_min_opt==0 && cp_wave_opt==0){
      integrate_2nd_half_step(itime,natm,len_nhc,iextended_on,atoms,atomsNHC,
-                             eKinetic,eKineticNhc,potNhc); 
+                             eKinetic,eKineticNhc,potNhc,natmNow,natmStr,natmEnd);
    }//endif
  
 //============================================================================
@@ -47,11 +48,20 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
    ATOMOUTPUT::ctrl_piny_output(itime,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
                                 iwrite_atm,output_on);
 
+   if(cp_min_opt==0 && cp_wave_opt==0){
+      for(int i=natmStr;i<natmEnd;i++){
+        atoms[i].xold = atoms[i].x;  atoms[i].vxold = atoms[i].vx;
+        atoms[i].yold = atoms[i].y;  atoms[i].vyold = atoms[i].vy;
+        atoms[i].zold = atoms[i].z;  atoms[i].vzold = atoms[i].vz;
+      }//endif
+   }//endfor
+
 //============================================================================
 // (III) Evolve to first 1/2 step of the present step
 
    if(cp_min_opt==0 && cp_wave_opt==0){
-     integrate_1st_half_step(natm,len_nhc,iextended_on,atoms,atomsNHC); 
+     integrate_1st_half_step(natm,len_nhc,iextended_on,atoms,atomsNHC,
+                             natmNow,natmStr,natmEnd); 
    }//endif
 
 //============================================================================
@@ -79,7 +89,8 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
 //============================================================================
 void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
                             int iextended_on,Atom *atoms,AtomNHC *atomsNHC,
-                            double *eKinetic,double *eKineticNhc,double *potNhc)
+                            double *eKinetic,double *eKineticNhc,double *potNhc,
+                            int natmNow,int natmStr,int natmEnd)
 //============================================================================
    {//begin routine 
 //============================================================================
@@ -92,14 +103,15 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
    (*eKineticNhc) = 0.0;
    (*potNhc)      = 0.0;
    switch(iextended_on){
-     case 0 : integrate_nve_2nd_half(itime,natm,atoms,eKinetic);
+     case 0 : integrate_nve_2nd_half(itime,natm,atoms,
+                                       eKinetic,natmNow,natmStr,natmEnd);
               break;
      case 1 : if(isokin_opt==0){
                 integrate_nvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
-                                        eKinetic,eKineticNhc,potNhc); 
+                                       eKinetic,eKineticNhc,potNhc,natmNow,natmStr,natmEnd); 
               }else{
                 integrate_isonvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
-                                        eKinetic,eKineticNhc,potNhc); 
+                                       eKinetic,eKineticNhc,potNhc,natmNow,natmStr,natmEnd); 
 	      }//endif
               break;
    }//endif
@@ -115,7 +127,8 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_on,
-                                            Atom *atoms,AtomNHC *atomsNHC)
+                                            Atom *atoms,AtomNHC *atomsNHC,
+                                            int natmNow,int natmStr,int natmEnd)
 //============================================================================
    {//begin routine 
 //============================================================================
@@ -125,11 +138,13 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
    int isokin_opt = mdtherm_info->isokin_opt;
 
    switch(iextended_on){
-     case 0 : integrate_nve_1st_half(natm,atoms); break;
+     case 0 : integrate_nve_1st_half(natm,atoms,natmNow,natmStr,natmEnd); break;
      case 1 : if(isokin_opt==0){
-                integrate_nvt_1st_half(natm,len_nhc,atoms,atomsNHC); 
+               integrate_nvt_1st_half(natm,len_nhc,atoms,atomsNHC,
+                                      natmNow,natmStr,natmEnd); 
               }else{
-                integrate_isonvt_1st_half(natm,len_nhc,atoms,atomsNHC); 
+ 	       integrate_isonvt_1st_half(natm,len_nhc,atoms,atomsNHC,
+                                         natmNow,natmStr,natmEnd);
               }//endif
               break;
    }//endif
@@ -137,3 +152,4 @@ void ATOMINTEGRATE::integrate_1st_half_step(int natm,int len_nhc,int iextended_o
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
+

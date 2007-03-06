@@ -43,6 +43,8 @@ class Atom {
 
   double x, y, z, q, m;
   double fx,fy,fz;
+  double vxold,vyold,vzold;
+  double xold,yold,zold;
   double vx,vy,vz,mvx2,mvy2,mvz2;
 
   void pup(PUP::er &p) {
