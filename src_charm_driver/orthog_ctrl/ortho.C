@@ -673,7 +673,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 //============================================================================
 void Ortho::gamma_done(){
 //============================================================================
-  //  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
+//  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
 #ifdef _CP_DEBUG_GMAT_
     char fname[80];
     snprintf(fname,80,"gamma.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
