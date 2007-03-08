@@ -1937,7 +1937,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   int       N    = msg->getSize()/sizeof(complex);
   complex *data  = (complex *)msg->getData();
   int offset     = msg->getUserFlag();  if(offset<0){offset=0;}
-
+  //  CkPrintf("[%d %d] accepts lambda %d \n", thisIndex.x, thisIndex.y,offset);
   complex *force = gs.packedForceData;
   int chunksize  = gs.numPoints/config.numChunksAsym;
   int chunkoffset=offset*chunksize; // how far into the points this contribution lies
@@ -2047,7 +2047,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   int       N       = msg->N;
   int offset        = msg->myoffset;
   if(offset<0){offset=0;}
-
+  //  CkPrintf("[%d %d] accepts lambda %d \n", thisIndex.x, thisIndex.y,offset);
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind].ka;

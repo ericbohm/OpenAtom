@@ -28,6 +28,7 @@ int MapType2::getCentroid(){
   int X=0,Y=0,Z=0;
     for(int i=0;i<getXmax();i++)
       for(int j=0;j<getYmax();j++){
+	CkAssert(get(i,j)>=0);
 	  bgltm->getCoordinatesByRank(get(i,j),X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
@@ -42,6 +43,7 @@ int MapType2::getCentroid(){
   int points=0, sum=0;
   for(int i=0;i<getXmax();i++)
     for(int j=0;j<getYmax();j++){
+	CkAssert(get(i,j)>=0);
 	sum+=get(i,j);
 	points++;
       }
@@ -60,6 +62,7 @@ int MapType3::getCentroid(){
     for(int i=0;i<getXmax();i++)
       for(int j=0;j<getYmax();j++){
 	for(int k=0;k<getZmax();k++){
+	  CkAssert(get(i,j,k)>=0);
 	  bgltm->getCoordinatesByRank(get(i,j,k),X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
@@ -76,6 +79,7 @@ int MapType3::getCentroid(){
   for(int i=0;i<getXmax();i++)
     for(int j=0;j<getYmax();j++){
       for(int k=0;k<getZmax();k++){
+	CkAssert(get(i,j,k)>=0);
 	sum+=get(i,j,k);
 	points++;
       }
@@ -983,6 +987,11 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
     {
       rrsobjs_per_pe= numChares/(availprocs->count());
       rem = numChares % (availprocs->count());
+      if(numChares<availprocs->count())
+	{
+	  rem=0;
+	  rrsobjs_per_pe=1;
+	}
       if(rem!=0)
 	rrsobjs_per_pe += 1;
     }
@@ -1131,19 +1140,6 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   availprocs=_availprocs;
   int rgsobjs_per_pe, rem;
 
-  if(availprocs->count()==1)
-    {
-      rgsobjs_per_pe= nchareRhoG;
-      rem=0;
-    }
-  else
-    {
-      rgsobjs_per_pe= nchareRhoG/(availprocs->count());
-      rem = nchareRhoG % (availprocs->count());
-      if(rem!=0)
-	rgsobjs_per_pe += 1;
-    }
-
   if(availprocs->count()==0)
     availprocs->reset();
 
@@ -1168,8 +1164,27 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   else
     {
       CkPrintf("cannot use exclusion in rhog\n");
+      availprocs->reset();
     }
   delete avail;
+
+  if(availprocs->count()==1)
+    {
+      rgsobjs_per_pe= nchareRhoG;
+      rem=0;
+    }
+  else
+    {
+      rgsobjs_per_pe= nchareRhoG/(availprocs->count());
+      rem = nchareRhoG % (availprocs->count());
+      if(nchareRhoG<availprocs->count())
+	{
+	  rem=0;
+	  rgsobjs_per_pe=1;
+	}
+      if(rem!=0)
+	rgsobjs_per_pe += 1;
+    }
 
   int destpe=availprocs->findNext();
   if(availprocs->count()==0)
@@ -1177,7 +1192,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 
   for(int chunk=0; chunk<nchareRhoG; chunk+=rgsobjs_per_pe)
     {
-      if(rem!=0)
+      if(rem>1)
 	if(chunk==rem*rgsobjs_per_pe)
 	  rgsobjs_per_pe -= 1;  
       for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
@@ -1211,19 +1226,6 @@ RhoRHartMapTable::RhoRHartMapTable(MapType3  *_map, PeList *_availprocs, int _nc
   int numChares=nchareRhoRHart*rhoRsubplanes*nchareHartAtmT;
   if(availprocs->count()==0)
     availprocs->reset();
-
-  if(availprocs->count()==1)
-    {
-      rrsobjs_per_pe= numChares;
-      rem=0;
-    }
-  else
-    {
-      rrsobjs_per_pe= numChares/(availprocs->count());
-      rem = numChares % (availprocs->count());
-      if(rem!=0)
-	rrsobjs_per_pe += 1;
-    }
   PeList *avail= new PeList(*availprocs);
   *avail-*exclude;
   if(avail->count()>numChares)
@@ -1237,8 +1239,27 @@ RhoRHartMapTable::RhoRHartMapTable(MapType3  *_map, PeList *_availprocs, int _nc
   else
     {
       CkPrintf("cannot use exclusion in rhoRhart\n");
+      availprocs->reset();
     }
   delete avail;
+
+  if(availprocs->count()==1)
+    {
+      rrsobjs_per_pe= numChares;
+      rem=0;
+    }
+  else
+    {
+      rrsobjs_per_pe= numChares/(availprocs->count());
+      rem = numChares % (availprocs->count());
+      if(numChares<availprocs->count())
+	{
+	  rrsobjs_per_pe=1;
+	  rem=0;
+	}
+      if(rem!=0)
+	rrsobjs_per_pe += 1;
+    }
 
   int destpe=availprocs->findNext(); 
   srcpe=destpe;
@@ -1292,11 +1313,32 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
   int npes;
   reverseMap=NULL;
   maptable=_map;
-  availprocs=_availprocs;
-  npes=availprocs->count();
-
-  int rghobjs_per_pe, rem;
+  PeList *availprocs=_availprocs;
+  PeList *avail= new PeList(*availprocs);
+  avail->reset();
+  exclude->reset();
+  *avail-*exclude;
   int numchares=nchareRhoGHart*nchareHartAtmT;
+  bool excluded=true;
+  if(avail->count()>numchares)
+    {
+      // try an exclusion
+      CkPrintf("RhoGHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
+      *availprocs-*exclude;
+      availprocs->reindex();
+    }
+  else
+    {
+      excluded=false;
+      CkPrintf("cannot use exclusion in rhoghart\n");
+      availprocs->reset();      
+    }
+  delete avail;
+  if(availprocs->count()==0)
+    availprocs->reset();
+  npes=availprocs->count();
+  int rghobjs_per_pe, rem;
+
   if(availprocs->count()==1)
     {
       rghobjs_per_pe= numchares;
@@ -1306,31 +1348,18 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
     {
       rghobjs_per_pe= numchares/npes;
       rem = numchares % npes;
+      if(numchares < npes)
+	{
+	  rem=0;
+	  rghobjs_per_pe=1;
+	}
       if(rem!=0)
 	rghobjs_per_pe += 1;
     }
-  PeList *avail= new PeList(*availprocs);
-  *avail-*exclude;
-  if(avail->count()>numchares)
+  if(useCentroid && excluded)
     {
-      // try an exclusion
-      CkPrintf("RhoGHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
-      *availprocs-*exclude;
-      availprocs->reindex();
-      CkPrintf("avail now %d\n", availprocs->count());
-    }
-  else
-    {
-      CkPrintf("cannot use exclusion in rhoghart\n");
-    }
-  delete avail;
-    
-
-  if(availprocs->count()==0)
-    availprocs->reset();
-  if(useCentroid)
-    {
-      // get centroid of rsmap  use it to sort the avail list
+      // get centroid of rhartmap  use it to sort the avail list
+      availprocs->reset();
       availprocs->sortSource(rhartmap->getCentroid());
       availprocs->reset();
     }
@@ -1342,7 +1371,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
 	{
 	  //      CkAssert(exclude->exists(destpe)<0);
-	  if(rem!=0)
+	  if(rem>1)
 	    if(chunk==rem*rghobjs_per_pe)
 	      rghobjs_per_pe -= 1; 
 	  for(int i=chunk;((i<chunk+rghobjs_per_pe)&&(i<nchareRhoGHart));i++)
@@ -1355,8 +1384,10 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 	    } 
 	  exclude->mergeOne(destpe);
 	  //	  availprocs->sortSource(srcpe);
-	  if(chunk+1<numchares)
+	  if(chunk+1<nchareRhoGHart)
 	    destpe=availprocs->findNext();
+	  else
+	    chunk=nchareRhoGHart;  //get us out of here
 	  if(availprocs->count()==0)
 	    availprocs->reset();
 
@@ -1491,6 +1522,7 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
   avail->sortSource(bestPe);
   avail->reset();
 }
+
 
 void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
 {

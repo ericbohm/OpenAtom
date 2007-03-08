@@ -131,7 +131,7 @@ PeList::PeList() // default constructor
       sortSource(0);
     }
 
-void PeList::rebuild() // default constructor
+void PeList::rebuild()
 {
   current=0;
   size=CkNumPes();
@@ -151,6 +151,8 @@ void PeList::sortSource(int srcPe)
 {
   // sort it using bgltm
   //  CkPrintf("PRE: sortIndexByHops\n");
+  CkAssert(srcPe>=0);
+  CkAssert(srcPe<CkNumPes());
   bgltm->sortIndexByHops(srcPe,TheList,sortIdx,size);
   //  CkPrintf("POST sortIndexByHops\n");
 

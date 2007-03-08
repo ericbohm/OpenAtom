@@ -183,7 +183,10 @@ class IntMap3 {
 	  {
 	    Map[x]= new int*[keyYmax];
 	    for(int y=0;y<keyYmax;y++)
-	      Map[x][y]= new int[keyZmax];
+	      {
+		Map[x][y]= new int[keyZmax];
+		memset(Map[x][y],-1,keyZmax*sizeof(int));
+	      }
 	  }
       }
     ~IntMap3(){
@@ -213,7 +216,10 @@ class IntMap3 {
 	  {
 	    Map[x]= new int*[keyYmax];
 	    for(int y=0;y<keyYmax;y++)
-	      Map[x][y]= new int[keyZmax];
+	      {
+		Map[x][y]= new int[keyZmax];
+		memset(Map[x][y],-1,keyZmax*sizeof(int));
+	      }
 	  }
       }
     void pup(PUP::er &p)
@@ -280,7 +286,10 @@ class IntMap2on2 {
       {
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
-	  Map[x]= new int[keyYmax];
+	  {
+	    Map[x]= new int[keyYmax];
+	    memset(Map[x],-1,keyYmax*sizeof(int));
+	  }
 	
       }
     void buildMap(int keyX=1, int keyY=1)
@@ -291,7 +300,11 @@ class IntMap2on2 {
 	keyYmax=keyY;
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
-	  Map[x]= new int[keyYmax];
+	  {
+	    Map[x]= new int[keyYmax];
+	    memset(Map[x],-1,keyYmax*sizeof(int));
+	  }
+	
       }
     void pup(PUP::er &p)
       {

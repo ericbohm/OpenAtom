@@ -780,7 +780,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue);
 
   double newtime=CmiWallTimer();
-  CkPrintf("SymScalcMap created in %g\n",newtime-Timer);
+  CkPrintf("SymScalcMap %d x %d x %d x %d created in %g\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksSym, newtime-Timer);
   
   if(config.dumpMapFiles) {
     int size[4];
@@ -829,7 +829,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse);
   newtime=CmiWallTimer();
-  CkPrintf("AsymScalcMap created in %g\n",newtime-Timer);
+  CkPrintf("AsymScalcMap %d x %d x %d x %d created in %g\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksAsym, newtime-Timer);
   Timer=newtime;
 
   if(config.dumpMapFiles) {
@@ -2019,6 +2019,11 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   int numIterNL       = sim->nlIters;
   int zmatSizeMax     = sim->nmem_zmat_max;
 
+  PeList *nlexcludePes;
+  if(config.useRhoExclusionMap)
+    nlexcludePes=exclusion;
+  else
+    nlexcludePes= new PeList(peUsedByNLZ);   
 
   int Rstates_per_pe  = config.Rstates_per_pe;
   availGlobG->reset();
@@ -2041,21 +2046,28 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 
   if(success == 0) {
 #ifdef USE_INT_MAP
-    RPPMapTable RPPtable= RPPMapTable(&RPPImaptable, availGlobG, exclusion, 
+    RPPMapTable RPPtable= RPPMapTable(&RPPImaptable, availGlobG, nlexcludePes, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap, 
 				    config.nchareG, &GSImaptable);
 #else
-    RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, exclusion, 
+    RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
 				    nstates,  nchareRPP, Rstates_per_pe,
 				    boxSize, config.useCuboidMap, 
 				    config.nchareG, &GSImaptable);
 #endif
   }
-
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("RPPMap created in %g\n",newtime-Timer);
+  if(config.useRhoExclusionMap)
+    {
+      nlexcludePes=NULL;
+    }
+    else
+    {
+      delete nlexcludePes;
+    }
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts;
   pRealSpaceOpts.setMap(rspMap);
@@ -2217,7 +2229,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(nchareRhoG>RhoAvail->count())
     {
       CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
-      RhoAvail->rebuild();
+      RhoAvail->reset();
     }
 #ifdef USE_INT_MAP
   RhoGSImaptable.buildMap(nchareRhoG, 1);
@@ -2263,7 +2275,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   // rho RHart 
   // if there aren't enough free procs refresh the avail list;
   if(nchareRhoRHart*nchareHartAtmT > RhoAvail->count())
-    RhoAvail->rebuild();
+    RhoAvail->reset();
   //  CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
   CkArrayOptions rhorhartOpts;
     
@@ -2310,12 +2322,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #endif
     }
   } //endif : ees_ext_on
-
+  CkPrintf("RhoRHartMap built %d x %d x %d\n",nchareRhoRHart, config.rhoRsubplanes, config.nchareHartAtmT);
   //---------------------------------------------------------------------------
   // rho GHart 
   // if there aren't enough free procs refresh the avail list;
   if(nchareRhoGHart>RhoAvail->count())
-    RhoAvail->rebuild();
+    RhoAvail->reset();
 #ifdef USE_INT_MAP
   RhoGHartImaptable.buildMap(nchareRhoGHart, nchareHartAtmT);
 #endif
