@@ -925,7 +925,15 @@ void Ortho::tolerance_check(){
   step = 4;
   step2done=false;
   step3done=false;
-    
+   
+#ifdef _NAN_CHECK_ 
+  for(int i = 0; i < m * n; i++)
+  {
+    CkAssert(finite(A[i]));
+    CkAssert(finite(B[i]));
+  }
+#endif
+
   double ret = 0;
   for(int i = 0; i < m * n; i++){
     double tmp = B[i] - A[i];
