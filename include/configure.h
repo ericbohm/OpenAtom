@@ -138,6 +138,7 @@ class Config {
    int launchNLeesFromRho;
    int useGssInsRealPP;
    int useMssInsGPP;
+   int useRhoExclusionMap;
   //==================================
 
   //==================================
