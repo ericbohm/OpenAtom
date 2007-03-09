@@ -1195,7 +1195,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       if(rem>1)
 	if(chunk==rem*rgsobjs_per_pe)
 	  rgsobjs_per_pe -= 1;  
-      for(int i=chunk;i<chunk+rgsobjs_per_pe;i++)
+      for(int i=chunk;((i<chunk+rgsobjs_per_pe)&&(i<nchareRhoG));i++)
 	{
 #ifdef USE_INT_MAP
 	  maptable->set(i, 0, destpe);
