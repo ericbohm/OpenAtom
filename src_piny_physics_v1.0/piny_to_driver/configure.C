@@ -1404,7 +1404,7 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 9;
+  num_dict[0] = 10;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_nl")-1;
 
 //=================================================================================
@@ -1474,6 +1474,12 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 10)\useRhoExclusionMap{}
+    ind=10;
+    strcpy((*dict)[ind].keyword,"useRhoExclusionMap");
+    strcpy((*dict)[ind].keyarg,"on");
+    strcpy((*dict)[ind].error_mes,"on/off");
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1541,6 +1547,12 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
     parse_on_off(dict[ind].keyarg,&useMssInsGPP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useMssInsGPP=0;}
+  //-----------------------------------------------------------------------------
+  // 9)\useRhoExclusionMap{}
+    ind=10;
+    parse_on_off(dict[ind].keyarg,&useRhoExclusionMap,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(iflag==0 && dict[ind].iuset==0){useRhoExclusionMap=1;}
 
 //----------------------------------------------------------------------------------
   }//end routine
