@@ -237,7 +237,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     }//endif
     //------------------------------------------------------------------------
     // (C) Velocity Norb rotation
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 && c->iteration>0 && 
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 && c->iteration>1 && 
        c->iteration<= config.maxIter){
        if(c->weneedPsiV()){//ortho will have told us this
           c->sendRedPsiV();      // Sync psiV at time t : resume called in acceptRedPsiV
