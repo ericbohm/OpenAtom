@@ -276,6 +276,7 @@ public:
 //============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
+        int halfStepEvolve;
         int redPlane;
         int registrationFlag;
         int istate_ind;
@@ -287,7 +288,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int myatom_integrate_flag; // 0 after I launch, 1 after return of atoms
         int myenergy_reduc_flag;   // 0 after I launch eke, 1 after return of energy
         int exitFlag;
-        int finishedRedPsi;
+        int iRecvRedPsi;
+        int iRecvRedPsiV;
+        int iSentRedPsi;
+        int iSentRedPsiV;
         int finishedCpIntegrate;
         int isuspend_energy;
         int isuspend_atms;
@@ -295,6 +299,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int ees_nonlocal;
         int cleanExitCalled;
         int isuspendNLForces;
+        int numRecvRedPsi;
+	bool acceptedVPsi;
 	bool doneDoingIFFT;
 	bool triggerNL;
 	bool NLready;
@@ -358,17 +364,19 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	void readFile();
 	void computeEnergies(int p, double d);
 	void startFFT(CkReductionMsg *msg);
-	
+        void sendRedPsiV();
+        void acceptRedPsiV(GSRedPsiMsg *msg);
+        void doneRedPsiVIntegrate();
  private:
 	int forwardTimeKeep;
 	int backwardTimeKeep;
 	int ireset_cg;
         int numReset_cg;
         int istart_typ_cp;
-        int numRecvRedPsi;
 	int countIFFT;
         int countFileOut;
         int countRedPsi;
+        int countRedPsiV;
 	int ecount;
 	int countPsi;
 	int countVPsi;
@@ -385,7 +393,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool initialized;
 	bool allAcceptedPsi;
 	bool acceptedPsi;
-	bool acceptedVPsi;
 	bool allAcceptedVPsi;
         bool doneNewIter;
 	bool acceptedLambda;

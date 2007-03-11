@@ -363,8 +363,10 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
     }//endif
   }//endfor
 
-  packedRedPsi  = (complex *)fftw_malloc(nkx0*sizeof(complex));
-  memset(packedRedPsi, 0, sizeof(complex)*nkx0);
+  packedRedPsi   = (complex *)fftw_malloc(nkx0*sizeof(complex));
+  packedRedPsiV  = (complex *)fftw_malloc(nkx0*sizeof(complex));
+  memset(packedRedPsi,  0, sizeof(complex)*nkx0);
+  memset(packedRedPsiV, 0, sizeof(complex)*nkx0);
 
 //==============================================================================
   }//end routine

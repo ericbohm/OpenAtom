@@ -22,7 +22,7 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
               double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
               double *fictEke,int nkx0_red,int nkx0_uni,int nkx0_zero,
               double *ekeNhc, double *potNHC,double degfree,double degfreeNHC,
-              double gammaNHC)
+              double gammaNHC,int halfStepEvolve)
 //============================================================================
     { // Begin Function 
 //----------------------------------------------------------------------------
@@ -37,16 +37,17 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
    double dt2     = dt*0.5;
    int istrt      = nkx0_red;
    int applyorder;
+   int fwdFlag    = 1;
 
 //============================================================================
 // Update the velocities from time, t-dt/2, to time, t (if not the intial step).
 // Compute the Fictious Kinetic Energy at time, t (e.g. t=0 on initial step).
 
-   if(iteration>1){
+   if(iteration>1 && halfStepEvolve==1){
      applyorder = 2;
      cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
                    mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                   applyorder,iteration,degfree,degfreeNHC,gammaNHC);
+                   applyorder,iteration,degfree,degfreeNHC,gammaNHC,fwdFlag);
    }//endif
 
    get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,vNHC,xNHC,xNHCP,mNHC,
@@ -58,7 +59,7 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
    applyorder = 1;
    cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
                  mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                 applyorder,iteration,degfree,degfreeNHC,gammaNHC);
+                 applyorder,iteration,degfree,degfreeNHC,gammaNHC,fwdFlag);
 
 //============================================================================
 // Update the positions to the next step (t+dt)
@@ -83,7 +84,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
                     double *v0, double *a2, double *a4, double kTCP,
                     int nkx0_red,int nkx0_uni,int nkx0_zero,
                     int applyorder,int iteration,double degfree,
-                    double degfreeNHC,double gammaNHC)
+                    double degfreeNHC,double gammaNHC,int fwdFlag)
 //============================================================================
    { // Begin Function
 //----------------------------------------------------------------------------
@@ -95,6 +96,8 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 #include "../class_defs/allclass_strip_cp.h"
 
    double dt      = gentimeinfo->dt;
+   if(fwdFlag==-1){dt=-dt;}
+
    double dt2     = dt*0.5;
    int istrt0     = nkx0_red;
    int istrt1     = nkx0_red+nkx0_zero;
@@ -108,6 +111,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
      PRINTF("@@@@@@@@@_ERROR_@@@@@@@@@@@\n");
      EXIT(1);
    }//endif
+
 
 //============================================================================
 // Make life simple for gx=0 and g=0
@@ -125,7 +129,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
    if(applyorder==1 && ISOKIN_OPT==1){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
                       len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC);
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC,fwdFlag);
    }//endif
 
 //============================================================================
@@ -141,7 +145,7 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
    if(ISOKIN_OPT==1 && applyorder==2){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
                       len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC);
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC,fwdFlag);
    }//endif
 
 //============================================================================

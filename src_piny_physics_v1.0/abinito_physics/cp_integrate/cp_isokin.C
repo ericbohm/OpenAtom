@@ -101,7 +101,7 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
                   double *m,int len_nhc,int num_nhc,double **xNHC,double **xNHCP,
                   double **vNHC,double **fNHC,double *mNHC,
                   double *v0,double *a2,double *a4, double kT,
-                  double degfree, double degfreeNHC, double gammaNHC)
+                  double degfree, double degfreeNHC, double gammaNHC,int fwdFlag)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -113,6 +113,8 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
 #include "../class_defs/allclass_strip_cp.h"
 
   double dt  = gentimeinfo->dt;
+  if(fwdFlag==-1){dt=-dt;}
+
   int nresp  = cptherm_info->nres_c_nhc;
   int nyosh  = cptherm_info->nyosh_c_nhc;
 

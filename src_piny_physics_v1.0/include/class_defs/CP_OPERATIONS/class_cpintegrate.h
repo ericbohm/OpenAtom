@@ -26,7 +26,7 @@ class CPINTEGRATE{
                            int *,int *, int *, int , int , double **,double **,double**,
                            double **,double *,double *, double *, double *,
                            double ,double , double *,int ,int ,int,
-                           double *,double*,double,double,double);
+                           double *,double*,double,double,double,int);
 
   static void CP_create_mass(int ,int *, int *, int *, double *,int);
 
@@ -62,12 +62,12 @@ class CPINTEGRATE{
                                double **,double **,double **,double **,double *,
                                double *, double *, double *, double ,
                                double *,int ,int ,int , double *, double *,
-                               double ,double , double );
+                               double ,double , double ,int );
 
   static void cp_evolve_vel(int , complex *, complex *,double *,int , int , double **,
                             double **,double **,double **,double *,
                             double *, double *, double *, double ,
-                            int ,int ,int , int ,int ,double , double ,double);
+                            int ,int ,int , int ,int ,double , double ,double,int);
 
   static void get_fictKE(int ,complex *, double *,int , int ,
                          double **,double **,double **,double *,
@@ -81,7 +81,7 @@ class CPINTEGRATE{
 
   static void cp_isoNHC_update(int ,complex *,double *,int ,int ,double **,double **,
                                double **,double **,double *,double *, double *, double *, 
-                               double , double , double ,  double );
+                               double , double , double ,  double ,int);
 
   static void set_yosh(int ,double ,double *,double *,double *,double *);
 

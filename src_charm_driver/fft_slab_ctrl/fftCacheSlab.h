@@ -62,11 +62,13 @@ public:
    double gammaNHC;           // Degrees of freedom degfree/(degfree+1.0)
 
    complex *packedPlaneData;   // Non-zero data pts [numPoints]
+   complex *packedPlaneDataTemp2; 
    complex *packedPlaneDataTemp; 
    complex *packedPlaneDataScr; 
    complex *packedForceData; 
    complex *packedVelData; 
    complex *packedRedPsi;
+   complex *packedRedPsiV;
    int     len_nhc_cp;
    int     num_nhc_cp;
    double  kTCP;

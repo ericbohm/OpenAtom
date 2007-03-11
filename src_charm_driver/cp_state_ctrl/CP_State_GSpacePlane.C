@@ -200,18 +200,18 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->computeCgOverlap();
        RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
     //------------------------------------------------------------------------
-    // (I) Output the states for cp dynamics
+    // (I) Output the states for cp dynamics     
        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 &&
           c->iteration<= config.maxIter){
-            c->writeStateDumpFile();   // wait for output : psiwritecomplete resumes
- 	    if(c->iwrite_now==1){RTH_Suspend();}
+          c->writeStateDumpFile();   // wait for output : psiwritecomplete resumes
+          if(c->iwrite_now==1){RTH_Suspend();}
        }//endif
     //------------------------------------------------------------------------
     // (J) Evolve the electrons to the next step    
        c->integrateModForce();
        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
           c->sendRedPsi();  // Sync Redundant psi entries
-          if(c->finishedRedPsi==0){
+          if(c->iRecvRedPsi==0){
               RTH_Suspend();  // Resume is called in acceptRedPsi
    	  }//endif
           c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
@@ -235,13 +235,19 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->writeStateDumpFile();
        if(c->iwrite_now==1){RTH_Suspend();}// wait : psiwritecomplete resumes
     }//endif
-   //------------------------------------------------------------------------
-   // (C) Norb rotation
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
-      if(c->weneedPsiV()){ //ortho will have told us this
-         c->sendPsiV();
-         RTH_Suspend();    // Wait for new PsiV : resume is called in acceptNewPsiV
-      }//endif
+    //------------------------------------------------------------------------
+    // (C) Velocity Norb rotation
+    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 && c->iteration>0 && 
+       c->iteration<= config.maxIter){
+       if(c->weneedPsiV()){//ortho will have told us this
+          c->sendRedPsiV();      // Sync psiV at time t : resume called in acceptRedPsiV
+          if(c->iRecvRedPsiV==0){
+             RTH_Suspend();       // Resume called in acceptRedPsiV
+	  }//endif
+          c->doneRedPsiVIntegrate(); // tuck away your g=0 plane velocities
+          c->sendPsiV();         // Rotate yourself 
+          RTH_Suspend();         // Wait for new PsiV : resume is called in acceptNewPsiV
+       }//endif
     }//endif
    //------------------------------------------------------------------------
    // (D) Check for Energy reduction completion : should just be a safety
@@ -264,7 +270,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
       RTH_Suspend();     // resume called in acceptEnergy or in acceptAtoms
     }//endif
    //------------------------------------------------------------------------
-   // (G) If you have trigger an exit condition just chill until ckexit
+   // (G) If you have triggered an exit condition just chill until ckexit
     if(c->cleanExitCalled==1){RTH_Suspend();} 
     c->first_step = 0;   // its not the first step anymore!
 //--------------------------------------------------------------------------
@@ -570,6 +576,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 //============================================================================
 
+
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;
   ees_nonlocal         = sim->ees_nloc_on;  
@@ -600,11 +607,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   cpuTimeNow        = 0.0;
   fictEke_total     = 0.0;
 
+  halfStepEvolve      = 1;
   iwrite_now          = 0;
   ireset_cg           = 1;
   numReset_cg         = 0;
   exitFlag            = 0;
-  finishedRedPsi      = 1;  
+  iRecvRedPsi         = 1;  
+  iSentRedPsi         = 1;
+  iRecvRedPsiV        = 0;
+  iSentRedPsiV        = 0;
+
   finishedCpIntegrate = 0;
   if(cp_min_opt==0){finishedCpIntegrate = 1;}// alternate entry point
   doneDoingIFFT       = false;
@@ -620,6 +632,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   countFileOut    = 0;
   countRedPsi     = 0;
+  countRedPsiV    = 0;
   countPsi        = 0;
   countLambda     = 0;
   countVPsi       = 0;
@@ -813,7 +826,10 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|myatom_integrate_flag;
   p|myenergy_reduc_flag;
   p|finishedCpIntegrate;
-  p|finishedRedPsi;
+  p|iRecvRedPsi;
+  p|iSentRedPsi;
+  p|iRecvRedPsiV;
+  p|iSentRedPsiV;
   p|iwrite_now;
   p|ireset_cg;
   p|numReset_cg;
@@ -1091,18 +1107,15 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   memcpy(gs.packedPlaneData, points, sizeof(complex)*gs.numPoints);
   bzero(gs.packedForceData,sizeof(complex)*gs.numFull);
 
-  // A little extra memory of dynamics or if you are creating output
-  if(cp_min_opt==0 || config.stateOutputOn==1){
-    gs.packedPlaneDataScr  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+  if(cp_min_opt==0){
+    gs.packedPlaneDataScr   = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
+    gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
+    memset(gs.packedPlaneDataTemp2, 0, sizeof(complex)*gs.numPoints);
   }//endif
-  
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-  if(cp_min_opt==1){
-    gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-    memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
-  }//endif
-#endif
+
+  gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+  memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
@@ -1261,6 +1274,14 @@ void CP_State_GSpacePlane::startNewIter ()  {
    }//endif
   } //endif
 
+  if(!acceptedVPsi){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Flow of Control Error : Starting new iter before\n");
+      CkPrintf("finishing Vpsi on chare %d %d\n",thisIndex.x,thisIndex.y);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
   doneNewIter = true;
   myenergy_reduc_flag  =0; // energies not reduced for new iter
   myatom_integrate_flag=0; // atoms not integrated on new iter
@@ -1277,7 +1298,10 @@ void CP_State_GSpacePlane::startNewIter ()  {
   // Finished integrate and red psi are safe.
   // You can't get to these until you get passed through this routine
   finishedCpIntegrate = 0;
-  finishedRedPsi      = 1;   if(cp_min_opt==0){finishedRedPsi=0;}
+  iRecvRedPsi      = 1;   if(cp_min_opt==0 && numRecvRedPsi>0){iRecvRedPsi  = 0;}
+  iRecvRedPsiV     = 1;   if(cp_min_opt==0 && numRecvRedPsi>0){iRecvRedPsiV = 0;}
+  iSentRedPsi      = 1;   if(cp_min_opt==0){iSentRedPsi  = 0;}
+  iSentRedPsiV     = 1;   if(cp_min_opt==0){iSentRedPsiV = 0;}
 
   iteration++;   // my iteration # : not exactly in sync with other chares
                  //                  but should agree when chares meet.
@@ -1665,7 +1689,9 @@ void CP_State_GSpacePlane::acceptNLForcesEes(){
 //  I. If the fft forces finished first, you need to resume(they are waiting).
 // II. If the fft forces are not done, hang loose till they finish.
 #ifndef _CP_DEBUG_NONLOC_BARRIER_
-  if(doneDoingIFFT){RTH_Runtime_resume(run_thread);}
+  if(doneDoingIFFT){
+    RTH_Runtime_resume(run_thread);
+  }//endif
 #endif
 //-------------------------------------------------------------------------------
   }//end routine   
@@ -1845,12 +1871,22 @@ void  CP_State_GSpacePlane::sendLambda() {
    doneDoingIFFT         = false;
    doneNewIter           = false;
 
+
 //==============================================================================
 // Scale the variables and launch lambda
 
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+
+  if(cp_min_opt==0){
+    int ncoef           = gs.numPoints;
+    complex *psi_g      = gs.packedPlaneData;
+    complex *psi_g_tmp  = gs.packedPlaneDataTemp;
+    complex *psi_g_tmp2 = gs.packedPlaneDataTemp2;
+    memcpy(psi_g_tmp2,psi_g_tmp,sizeof(complex)*ncoef);
+    memcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
+  }//endif
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1 && cp_min_opt==0){
@@ -2178,9 +2214,9 @@ void CP_State_GSpacePlane::doLambda() {
 
   if(cp_min_opt==0){
     int ncoef          = gs.numPoints;
-    complex *psi_g     = gs.packedPlaneData;
     complex *psi_g_scr = gs.packedPlaneDataScr;
-    memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef);
+    complex *psi_g     = gs.packedPlaneData;
+    memcpy(psi_g,psi_g_scr,sizeof(complex)*ncoef); // overwrite ortho with non-ortho
   }//endif
     
 //==============================================================================
@@ -2299,12 +2335,11 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
 
   complex *psi      = gs.packedPlaneData;
-  complex *vpsi     = gs.packedPlaneDataScr;  // switch definitions
-  complex *vpsi_old = gs.packedVelData;       // to evolve psi to time, t.
+  complex *vpsi     = gs.packedVelData;       // to evolve psi to time, t.
   complex *forces   = gs.packedForceData;
-  double **xNHC     = gs.xNHC_scr;            // switch to evolve to time,t.
-  double **xNHCP    = gs.xNHCP_scr;           // switch to evolve to time,t.
-  double **vNHC     = gs.vNHC_scr;            // switch to evolve to time,t.
+  double **xNHC     = gs.xNHC;
+  double **xNHCP    = gs.xNHCP;
+  double **vNHC     = gs.vNHC;
   double **fNHC     = gs.fNHC;          
   double *mNHC      = gs.mNHC;          
   int len_nhc_cp    = gs.len_nhc_cp;
@@ -2325,7 +2360,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
 //============================================================================
 // Set the file names and write the files
 
-  iwrite_now = 0;
+  iwrite_now     = 0;
   if(config.stateOutputOn==1){
 
     if( ((iteration % ndump_frq)==0) || (iteration==config.maxIter) || 
@@ -2340,15 +2375,12 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
       }//endif
     //------------------------------------------------------------------
     // Update the velocities into scratch as we are between steps
-      if(cp_min_opt==0){
-        memcpy(vpsi,vpsi_old,sizeof(complex)*ncoef);
-        gs.copyNHC();
-        if(iteration>1){
-          CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
-                       len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
-                       gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                       2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC);
-	}//endif
+      if(cp_min_opt==0 && halfStepEvolve ==1){
+ 	 halfStepEvolve = 0;
+         CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
+                      len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                      gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+                      2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC,1);
       }//endif
     //------------------------------------------------------------------
     // Pack the message and send it to your plane 0
@@ -2600,7 +2632,9 @@ void CP_State_GSpacePlane::integrateModForce() {
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
    	       mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
-               nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,gammaNHC);
+               nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,gammaNHC,
+               halfStepEvolve);
+  halfStepEvolve = 1;
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());
@@ -2667,9 +2701,7 @@ void CP_State_GSpacePlane::sendRedPsi() {
   int isend         = thisIndex.y;       // my g-space chare index
   int  *num_send    = RCommPkg[isend].num_send;
   int **lst_send    = RCommPkg[isend].lst_send;
-  int num_recv_tot  = RCommPkg[isend].num_recv_tot;
   int num_send_tot  = RCommPkg[isend].num_send_tot;
-  numRecvRedPsi     = num_recv_tot;
 
   if(finishedCpIntegrate==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2726,9 +2758,9 @@ void CP_State_GSpacePlane::sendRedPsi() {
   }//endif
 
 //==============================================================================
-// If you don't have any receiving to do, you are done.
+// I sent the stuff
 
- if(num_recv_tot==0){finishedRedPsi=1;}
+  iSentRedPsi = 1;
 
 //-----------------------------------------------------------------------------
    }//end routine
@@ -2751,7 +2783,6 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
   int irecv         = thisIndex.y;       // my g-space chare index
   int  *num_recv    = RCommPkg[irecv].num_recv;
   int **lst_recv    = RCommPkg[irecv].lst_recv;
-  int num_recv_tot  = RCommPkg[irecv].num_recv_tot;
 
 //==============================================================================
 // unpack
@@ -2764,9 +2795,8 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
     CkExit();
   }//endif
 
-  if(countRedPsi==0){itemp=0;jtemp=0;}
+  if(countRedPsi==0){jtemp=0;}
   jtemp+= ncoef;
-  if(ncoef>0){itemp++;}
 
   for(int i=0;i<ncoef;i++){
     recvData[lst_recv[isend][i]].re= msgData[i].re;
@@ -2779,21 +2809,17 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
 // Done
 
   countRedPsi++;
-  if(countRedPsi==num_recv_tot){
+  if(countRedPsi==numRecvRedPsi){
     countRedPsi=0;
-    finishedRedPsi++;
-    if(itemp!=num_recv_tot){
-      CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
- 	                                                   num_recv_tot,itemp);
-      CkExit();
-    }//endif
+    iRecvRedPsi=1;
     if(jtemp!=gs.nkx0_red){
       CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
  	                                                   gs.nkx0_red,jtemp);
       CkExit();
     }//endif
-    if(finishedCpIntegrate==1){       // Only suspend if integrate done and Red not
-      RTH_Runtime_resume(run_thread); // Only resume if Red just finished & integrate done
+    // If sent before I received then I resume
+    if(iSentRedPsi==1){ 
+      RTH_Runtime_resume(run_thread); 
     }//endif
   }//endif
 
@@ -2806,7 +2832,6 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::doneRedPsiIntegrate() {
 
-    finishedRedPsi++; //extra points for getting here
     int ncoef    = gs.nkx0_red;
     if(ncoef>0){
       complex *psi     = gs.packedPlaneData;
@@ -2833,19 +2858,15 @@ void CP_State_GSpacePlane::sendPsi() {
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt       = sim->cp_min_opt;
 
-  if(finishedRedPsi==0 || finishedCpIntegrate==0){
+  if(finishedCpIntegrate==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Dude, you can't sendPsi without completing integrate\n");
-    if(cp_min_opt==0){
-      CkPrintf("and sending the Redundant psi values around\n");
-    }//endif
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
 
   if(cp_min_opt==0 && iteration>0){
-    int ncoef  = gs.nkx0_red;
-    if(ncoef>0 && finishedRedPsi!=2){
+    if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, you can't sendPsi without receiving Redpsi\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2924,41 +2945,26 @@ void CP_State_GSpacePlane::sendPsi() {
     }// end routine
 //==============================================================================
 
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void  CP_State_GSpacePlane::sendPsiV() {
-//==============================================================================
-
-  nrotation++;
-  acceptedVPsi=false;
-  complex *data=gs.packedVelData;
-  //  complex *data=tpsi;
-
-  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-     int ncoef     = gs.numPoints;
-     complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
-     complex *psi  = gs.packedPlaneData;     // by orthonormal psi
-     memcpy(scr,psi,sizeof(complex)*ncoef);
-  }//endif
-
-  if(gs.ihave_kx0==1){
-    double rad2i = 1.0/sqrt(2.0);
-    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
-  }//endif
-
-  int numPoints = gs.numPoints;
-  startPairCalcLeft(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
-
-//----------------------------------------------------------------------------
-}// end routine
-//==============================================================================
 
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
+//=============================================================================
+// (0) Fuss with the redundant psis
+
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  int cp_min_opt       = sim->cp_min_opt;
+  if(cp_min_opt==0 && iteration>0){
+    if(iRecvRedPsi!=1 || iSentRedPsi!=1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+  }//endif
+
 //=============================================================================
 // (0) Nan Check and output
 
@@ -3024,6 +3030,20 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
  */
 //==============================================================================
 void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
+//=============================================================================
+// (0) Fuss with the redundant psis
+
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  int cp_min_opt       = sim->cp_min_opt;
+  if(cp_min_opt==0 && iteration>0){
+    if(iRecvRedPsi!=1 || iSentRedPsi!=1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+  }//endif
+
 //=============================================================================
 // (0) Check for Nans
 
@@ -3094,6 +3114,20 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //==============================================================================
 void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
+// (0) Fuss with the redundant psis
+
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  int cp_min_opt       = sim->cp_min_opt;
+  if(cp_min_opt==0 && iteration>0){
+    if(iRecvRedPsi!=1 || iSentRedPsi!=1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
+  }//endif
+
+//=============================================================================
 // (I) If you have got it all : Rescale it, produce some output
 
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
@@ -3136,7 +3170,6 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (D) Go back to the top or exit
 
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
       int i;
@@ -3155,7 +3188,7 @@ void CP_State_GSpacePlane::doNewPsi(){
   }///endif
 
 //=============================================================================
-// (D) Debug psi
+// (E) Debug psi
 
 #ifdef _CP_GS_DUMP_PSI_
   dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
@@ -3202,6 +3235,232 @@ void CP_State_GSpacePlane::doNewPsi(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+void CP_State_GSpacePlane::sendRedPsiV(){
+//==============================================================================
+// I) Local Pointers
+
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+
+  int ncoef         = gSpaceNumPoints;
+  complex *psi      = gs.packedPlaneData;
+  complex *vpsi     = gs.packedVelData;       // to evolve psi to time, t.
+  complex *forces   = gs.packedForceData;
+  double **xNHC     = gs.xNHC;
+  double **xNHCP    = gs.xNHCP;
+  double **vNHC     = gs.vNHC;
+  double **fNHC     = gs.fNHC;          
+  double *mNHC      = gs.mNHC;          
+  int len_nhc_cp    = gs.len_nhc_cp;
+  int num_nhc_cp    = gs.num_nhc_cp;
+  int nkx0_red      = gs.nkx0_red;
+  int nkx0_uni      = gs.nkx0_uni;
+  int nkx0_zero     = gs.nkx0_zero;
+  double kTCP       = gs.kTCP;
+
+//=============================================================================
+// II) Sync yourself with psi by integrating to time t if output has not done it
+//     you have the wrong force but thats OK until you put in a better rotation
+
+  halfStepEvolve = 1; 
+  halfStepEvolve = 0; // do the 1/2 step update now
+  CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
+                             len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                             gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
+                             2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC,1);
+
+//=============================================================================
+// III) We still have these funky g=0 plane guys that may be on other procs and
+//      we have sync those guys, also, or PC won't work correctly
+
+  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  RedundantCommPkg *RCommPkg = sim->RCommPkg;
+
+  complex *sendData = gs.packedVelData;
+  int isend         = thisIndex.y;       // my g-space chare index
+  int  *num_send    = RCommPkg[isend].num_send;
+  int **lst_send    = RCommPkg[isend].lst_send;
+  int num_send_tot  = RCommPkg[isend].num_send_tot;
+
+  int iii=0; int jjj=0;
+  if(num_send_tot>0){ 
+    for(int irecv = 0; irecv < nchareG; irecv ++){
+    
+      int ncoef       = num_send[irecv];
+      jjj += ncoef;
+      if(ncoef>0){
+         GSRedPsiMsg *msg  = new (ncoef,8*sizeof(int)) GSRedPsiMsg;
+         if(config.prioFFTMsg){
+            CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+            *(int*)CkPriorityPtr(msg) = config.rsfftpriority + 
+                                     thisIndex.x*gs.planeSize[0]+thisIndex.y;
+         }//endif
+         if(ncoef>0){iii++;}
+         msg->size        = ncoef;
+         msg->senderIndex = isend;  // my gspace chare index
+         complex *msgData = msg->data;
+         for (int i=0;i<ncoef; i++){msgData[i] = sendData[lst_send[irecv][i]];}
+         gSpacePlaneProxy(thisIndex.x,irecv).acceptRedPsiV(msg);
+      }//endif
+
+    }//endfor
+
+  }//endif : no one to which I have to send
+
+//==============================================================================
+// Check for errors 
+
+  if(iii!=num_send_tot){
+    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+ 	                                           num_send_tot,iii);
+    CkExit();
+  }//endif
+  if(numRecvRedPsi==0 && gs.nkx0_red>0){
+    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+	                                        numRecvRedPsi,gs.nkx0_red);
+    CkExit();
+  }//endif
+  if(jjj != gs.nkx0_uni-gs.nkx0_zero){
+    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+	                                        jjj,gs.nkx0_uni);
+    CkExit();
+  }//endif
+
+//==============================================================================
+// I send the stuff and I need a new velocity
+
+ iSentRedPsiV  = 1;
+ acceptedVPsi = false;
+
+//==============================================================================
+  }//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
+//==============================================================================
+
+  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  RedundantCommPkg *RCommPkg = sim->RCommPkg;
+
+  int ncoef         = msg->size;
+  int isend         = msg->senderIndex;
+  complex *msgData  = msg->data;
+  complex *recvData = gs.packedRedPsiV;
+
+  int irecv         = thisIndex.y;       // my g-space chare index
+  int  *num_recv    = RCommPkg[irecv].num_recv;
+  int **lst_recv    = RCommPkg[irecv].lst_recv;
+
+//==============================================================================
+// unpack
+
+  if(num_recv[isend]!=ncoef){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Number sent not equal to number reciever expected \n");
+    CkPrintf("Sender %d size %d Reciever %d size %d \n",isend,ncoef,irecv,num_recv[isend]);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  if(countRedPsiV==0){jtemp=0;}
+  jtemp+= ncoef;
+
+  for(int i=0;i<ncoef;i++){
+    recvData[lst_recv[isend][i]].re= msgData[i].re;
+    recvData[lst_recv[isend][i]].im=-msgData[i].im;
+  }//endfor
+
+  delete msg;
+
+//==============================================================================
+// Done
+
+  countRedPsiV++;
+  if(countRedPsiV==numRecvRedPsi){
+    countRedPsiV = 0;
+    iRecvRedPsiV  = 1;
+    if(jtemp!=gs.nkx0_red){
+      CkPrintf("Error in GSchare recv cnt %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+ 	                                                   gs.nkx0_red,jtemp);
+      CkExit();
+    }//endif
+    // If sent before I received then I resume
+    if(iSentRedPsiV == 1){
+        RTH_Runtime_resume(run_thread);
+    }//endif
+  }//endif
+
+//-----------------------------------------------------------------------------
+   }//end routine
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
+
+  int ncoef    = gs.nkx0_red;
+  if(ncoef>0){
+    complex *vpsi     = gs.packedVelData;
+    complex *vpsi_red = gs.packedRedPsiV;
+    for(int i=0;i<ncoef;i++){vpsi[i]=vpsi_red[i];}
+  }//endif
+
+}//end routine
+//==============================================================================
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void  CP_State_GSpacePlane::sendPsiV() {
+//==============================================================================
+// Error Check
+
+  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  RedundantCommPkg *RCommPkg = sim->RCommPkg;
+
+  if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, you can't sendPsiV without\n");
+    CkPrintf("sending the Redundant psi values around\n");
+    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
+
+  acceptedVPsi = false;
+
+//==============================================================================
+//
+  nrotation++;
+
+  int ncoef     = gs.numPoints;
+  complex *data = gs.packedVelData;
+  complex *scr  = gs.packedPlaneDataScr;  // replace no-ortho psi 
+  complex *psi  = gs.packedPlaneData;     // by orthonormal psi when norb rotating
+  memcpy(scr,psi,sizeof(complex)*ncoef);
+
+  if(gs.ihave_kx0==1){
+    double rad2i = 1.0/sqrt(2.0);
+    for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
+  }//endif
+
+  int numPoints = gs.numPoints;
+  startPairCalcLeft(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+
+//----------------------------------------------------------------------------
+}// end routine
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
 void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
 //=============================================================================
 // (I) Local pointers
@@ -3209,10 +3468,20 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   int N           = msg->getSize()/sizeof(complex);
   complex *data   = (complex *)msg->getData();
   int offset      = msg->getUserFlag();  if(offset<0){offset=0;}
-  //  CkPrintf("[%d %d] GSP acceptnewpsiv %d \n",thisIndex.x, thisIndex.y,offset);
+
   complex *vpsi   = gs.packedVelData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
+
+  if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, you can't accetPsiV without\n");
+    CkPrintf("sending the Redundant psi values around\n");
+    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
 //=============================================================================
 // (II) Unpack the contribution to newpsi (orthonormal psi)
@@ -3251,10 +3520,20 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   int N           = msg->N;
   complex *data   = msg->result;
   int offset      = msg->myoffset;  if(offset<0){offset=0;}
-  //  CkPrintf("[%d %d] GSP acceptnewpsiv %d \n",thisIndex.x, thisIndex.y,offset);
+
   complex *vpsi   = gs.packedVelData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
+
+  if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkPrintf("Dude, you can't accetPsiV without\n");
+    CkPrintf("sending the Redundant psi values around\n");
+    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    CkExit();
+  }//endif
 
 //=============================================================================
 // (I) Unpack the contribution to newpsi (orthonormal psi)
@@ -3290,12 +3569,15 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // (0) Error check
 //  CkPrintf("[%d %d] GSP doNewPsiV \n",thisIndex.x, thisIndex.y);
+
   CkAssert(countVPsi==AllPsiExpected); 
 
-  if(!acceptedPsi){
+  if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Flow of Control Error : Attempting to v-psi\n");
-    CkPrintf("resume without completing psi\n");
+    CkPrintf("Dude, you can't doNewPsiV without\n");
+    CkPrintf("sending the Redundant psi values around\n");
+    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
   }//endif
@@ -3303,10 +3585,11 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // (I) Reset counters and rescale the kx=0 stuff
 
+  acceptedVPsi    = true;
+  needPsiV        = false;
+  countVPsi       = 0;
+
   complex *vpsi = gs.packedVelData;
-  acceptedVPsi  = true;
-  needPsiV      = false;
-  countVPsi     = 0;
 
   for(int i=0;i<config.numChunksSym;i++){countVPsiO[i]=0;}
   if(gs.ihave_kx0==1){
@@ -3322,6 +3605,34 @@ void CP_State_GSpacePlane::doNewPsiV(){
      contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
      CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),gSpacePlaneProxy));
   */
+
+//=============================================================================
+// III) Replace by finite difference until update is better
+
+ CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+
+ double dt           = sim->dt;
+ double dt2          = 2.0*dt;
+ int ncoef           = gs.numPoints;
+ complex *psi_g      = gs.packedPlaneData;
+ complex *psi_g_tmp  = gs.packedPlaneDataTemp;
+ complex *psi_g_tmp2 = gs.packedPlaneDataTemp2;
+
+ if(iteration>=2){
+   for(int i=0;i<ncoef;i++){
+     double vre = (3.0*psi_g[i].re-4.0*psi_g_tmp[i].re+psi_g_tmp2[i].re)/dt2;
+     double vim = (3.0*psi_g[i].im-4.0*psi_g_tmp[i].im+psi_g_tmp2[i].im)/dt2;
+     vpsi[i].re = vre;
+     vpsi[i].im = vim;
+   }//endfor
+ }else{
+   for(int i=0;i<ncoef;i++){
+     double vre = (psi_g[i].re-psi_g_tmp[i].re)/dt;
+     double vim = (psi_g[i].im-psi_g_tmp[i].im)/dt;
+     vpsi[i].re = vre;
+     vpsi[i].im = vim;
+   }//endfor
+ }//endif
 
 //=============================================================================
 // III) Back to the threaded loop
@@ -3752,7 +4063,7 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 void CP_State_GSpacePlane::requirePsiV() {
 //==============================================================================
 
-  needPsiV=true;
+  needPsiV     = true;
   // when everyone is ready, restart Ortho's backward path
   int foo=1;
   contribute(sizeof(int), &foo, CkReduction::min_int, 
@@ -3766,8 +4077,60 @@ void CP_State_GSpacePlane::requirePsiV() {
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-bool CP_State_GSpacePlane::weneedPsiV() { return needPsiV;}
+bool CP_State_GSpacePlane::weneedPsiV() {
+   if(needPsiV){acceptedVPsi=false;}
+   return needPsiV;
+}
 //==============================================================================
+
+
+//==============================================================================
+// Deprecated routine
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
+    delete msg;
+    CkAbort("GSP do not call acceptAllLambda\n");
+}// end routine
+//==============================================================================
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+void CP_State_GSpacePlane::startNLEes(bool local,int iteration_loc){
+//==============================================================================
+// check and set constants
+
+  if(!local){triggerNL=true;}
+  if(iteration_loc!=iteration){CkPrintf("startNLees broken\n");CkExit();}
+
+//==============================================================================
+// I) Make sure we don't start this before we're ready
+
+  if(NLready && triggerNL){
+      //CkPrintf("GS[%d,%d] triggering NL\n");
+#define _NLEES_PRIO_START_
+#ifdef _NLEES_PRIO_START_OFF_
+      CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+      pp->startNLEes(iteration);
+#else
+      NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
+      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(msg) = config.sfpriority;
+      msg->iteration=iteration;
+      particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
+#endif
+      triggerNL=false;
+      NLready=false;
+  }//endif
+
+//-----------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
 
 
 //==============================================================================
@@ -3832,51 +4195,4 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 
 //-----------------------------------------------------------------------------
    }// end routine : testeke
-//==============================================================================
-
-
-//==============================================================================
-// Deprecated routine
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
-    delete msg;
-    CkAbort("GSP do not call acceptAllLambda\n");
-}// end routine
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_State_GSpacePlane::startNLEes(bool local,int iteration_loc){
-//==============================================================================
-// check and set constants
-
-  if(!local){triggerNL=true;}
-  if(iteration_loc!=iteration){CkPrintf("startNLees broken\n");CkExit();}
-
-//==============================================================================
-// I) Make sure we don't start this before we're ready
-
-  if(NLready && triggerNL){
-      //CkPrintf("GS[%d,%d] triggering NL\n");
-#define _NLEES_PRIO_START_
-#ifdef _NLEES_PRIO_START_OFF_
-      CP_State_ParticlePlane *pp = particlePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
-      pp->startNLEes(iteration);
-#else
-      NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
-      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msg) = config.sfpriority;
-      msg->iteration=iteration;
-      particlePlaneProxy(thisIndex.x, thisIndex.y).lPrioStartNLEes(msg);
-#endif
-      triggerNL=false;
-      NLready=false;
-  }//endif
-
-//-----------------------------------------------------------------------------
-  }//end routine
 //==============================================================================
