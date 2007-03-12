@@ -1356,7 +1356,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       if(rem!=0)
 	rghobjs_per_pe += 1;
     }
-  if(useCentroid && excluded)
+  if(useCentroid && excluded && rhartmap!=NULL)
     {
       // get centroid of rhartmap  use it to sort the avail list
       availprocs->reset();

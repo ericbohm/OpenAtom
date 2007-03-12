@@ -2346,10 +2346,13 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
   if(success == 0) {
 #ifdef USE_INT_MAP
+    MapType3 *RhoRHartImaptablep=NULL;
+    if(ees_eext_on)
+      RhoRHartImaptablep=&RhoRHartImaptable;
     RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable, RhoAvail, 
 				   nchareRhoGHart, config.nchareHartAtmT,
-				   config.useCentroidMapRho,
-				   &RhoRHartImaptable, excludePes);
+				   config.useCentroidMapRho, 
+				   RhoRHartImaptablep, excludePes);
 #else
     RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
 				   config.useCentroidMapRho, &RhoRHartmaptable,
