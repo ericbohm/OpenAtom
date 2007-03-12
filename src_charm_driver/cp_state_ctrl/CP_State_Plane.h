@@ -300,6 +300,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int cleanExitCalled;
         int isuspendNLForces;
         int numRecvRedPsi;
+        int iterRotation;
 	bool acceptedVPsi;
 	bool doneDoingIFFT;
 	bool triggerNL;

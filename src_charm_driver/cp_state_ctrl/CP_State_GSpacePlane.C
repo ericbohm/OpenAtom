@@ -520,7 +520,8 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      if(iteration>1){
        CkPrintf("CpuTime(GSP)= %g\n",cpuTimeNow-cpuTimeOld);
        if(cp_min_opt==0){
-         CkPrintf("Step= %d : Psi-Rotation= %d\n",iteration,nrotation);
+         CkPrintf("Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d\n",
+                   iteration,iterRotation,iteration-iterRotation,nrotation);
        }//endif
      }//endif
   }//endif
@@ -585,6 +586,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   first_step           = 1;
   iteration            = 0;
   nrotation            = 0;
+  iterRotation         = 0;
   myatom_integrate_flag= 0;
   myenergy_reduc_flag  = 0;
   isuspend_energy      = 0;
@@ -3438,6 +3440,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
 //==============================================================================
 //
   nrotation++;
+  iterRotation = iteration+1;
 
   int ncoef     = gs.numPoints;
   complex *data = gs.packedVelData;
