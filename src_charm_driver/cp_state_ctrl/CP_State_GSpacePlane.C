@@ -520,8 +520,9 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      if(iteration>1){
        CkPrintf("CpuTime(GSP)= %g\n",cpuTimeNow-cpuTimeOld);
        if(cp_min_opt==0){
-         CkPrintf("Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d\n",
-                   iteration,iterRotation,iteration-iterRotation,nrotation);
+         int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
+         CkPrintf("Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",
+                   iteration,iterRotation,iteration-iterRotation,nrotation,heavyside);
        }//endif
      }//endif
   }//endif
