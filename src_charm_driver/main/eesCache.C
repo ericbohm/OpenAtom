@@ -197,13 +197,19 @@ void eesCache::registerCacheGSP(int is ,int ip){
   }//endif
 
   int i = nchareGSPProcT;
+  if(nMallSize<=i ){
+    CkPrintf("Bad Mall size in registerCacheGSP %d %d\n",nMallSize,i);
+    CkExit();
+  }//endif
+
   gspStateInd[i]  = is;
   gspPlaneInd[i]  = ip;
   nchareGSPProcT += 1;
 
-  if( (nchareGSPProcT % nMallSize)==0){
-    int *tempS = new int [(nchareGSPProcT+nMallSize)];
-    int *tempP = new int [(nchareGSPProcT+nMallSize)];
+  if(2*nchareGSPProcT >= nMallSize){
+    nMallSize *= 2;
+    int *tempS = new int [nMallSize];
+    int *tempP = new int [nMallSize];
     for(int j=0;j<nchareGSPProcT;j++){
       tempS[j] = gspStateInd[j];
       tempP[j] = gspPlaneInd[j];

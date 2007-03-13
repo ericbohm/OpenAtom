@@ -472,17 +472,18 @@ void AtomsGrp::atomsDone() {
    int ngo           = eesData->nchareGSPProcT;
 
    GSAtmMsg *msg = new  GSAtmMsg;
-   int mySum = 0;
    for(int i=0; i<ngo; i++){
-     mySum += gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     int iadd = gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     if(iadd!=1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
+                myid,iadd,indState[i],indPlane[i]);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+     }//endif
      gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptAtoms(msg); 
    }//endfor
-   if(mySum!=ngo){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Bad registration cache flag on proc %d\n",myid);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-   }//endif
+   
 
  }else{
 
@@ -734,17 +735,17 @@ void EnergyGroup::energyDone(){
    int ngo           = eesData->nchareGSPProcT;
 
    GSAtmMsg *msg = new  GSAtmMsg;
-   int mySum = 0;
    for(int i=0; i<ngo; i++){
-     mySum += gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     int iadd = gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     if(iadd!=1){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
+                myid,iadd,indState[i],indPlane[i]);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+     }//endif
      gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptEnergy(msg); 
    }//endfor
-   if(mySum!=ngo){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Bad registration cache flag on proc %d\n",myid);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-   }//endif
 
  }else{
 
