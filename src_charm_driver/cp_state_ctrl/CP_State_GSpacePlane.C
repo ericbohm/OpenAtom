@@ -1113,12 +1113,18 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   if(cp_min_opt==0){
     gs.packedPlaneDataScr   = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
     gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+    gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
     memset(gs.packedPlaneDataTemp2, 0, sizeof(complex)*gs.numPoints);
+    memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
-  gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
-  memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
+#ifdef  _CP_DEBUG_UPDATE_OFF_
+  if(cp_min_opt==1){
+    gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+    memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
+  }//endif
+#endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
@@ -3742,9 +3748,10 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Flow of Control Error GSP::acceptatoms : \n");
       CkPrintf("Iteration mismatch between atoms and g-space planes\n");
-      CkPrintf("suspend_atms %d suspend_energy %d,iteration_atm %d iteration_gsp %d\n",
+      CkPrintf("suspend_atms %d suspend_energy %d,iteration_gsp %d iteration_atm %d\n",
                 isuspend_atms,isuspend_energy,
                 iteration,atomsGrpProxy.ckLocalBranch()->iteration);
+      CkPrintf("state %d plane %d proc %d\n",thisIndex.x,thisIndex.y,CkMyPe());
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
    }//endif
