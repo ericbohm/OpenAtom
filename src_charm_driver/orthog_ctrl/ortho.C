@@ -230,7 +230,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }//endfor
   }//endif
   // do tolerance check on smat, do_iteration will be called by reduction root
-  if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter!=0){
+  if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("doing tolerance check on SMAT \n");
     }//endif
