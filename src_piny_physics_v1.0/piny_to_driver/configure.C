@@ -1747,11 +1747,19 @@ void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_
     ind=1;
     parse_on_off(dict[ind].keyarg,&localAtomBarrier,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(localAtomBarrier==0){
+      CkPrintf("Local Atom Barrier must be on\n");
+      CkExit();
+    }//
   //-----------------------------------------------------------------------------
   // 2)\localEnergyBarrier{}
     ind=2;
     parse_on_off(dict[ind].keyarg,&localEnergyBarrier,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(localEnergyBarrier==0){
+      CkPrintf("Local Atom Barrier must be on\n");
+      CkExit();
+    }//
   //-----------------------------------------------------------------------------
   // 3)\atmOutputOn{}
     ind=3;
