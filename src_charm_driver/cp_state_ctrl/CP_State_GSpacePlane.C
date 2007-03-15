@@ -200,9 +200,9 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
        c->computeCgOverlap();
        RTH_Suspend(); // wait for cg reduction : psiCgOvlap resumes
     //------------------------------------------------------------------------
-    // (I) Output the states for cp dynamics     
+    // (I) Output the states for cp dynamics  : iter==1 nothing has moved
        if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0 &&
-          c->iteration<= config.maxIter){
+          c->iteration<= config.maxIter && c->iteration>1){
           c->writeStateDumpFile();   // wait for output : psiwritecomplete resumes
           if(c->iwrite_now==1){RTH_Suspend();}
        }//endif
@@ -1112,10 +1112,8 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
   if(cp_min_opt==0){
     gs.packedPlaneDataScr   = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-    gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
-    memset(gs.packedPlaneDataTemp2, 0, sizeof(complex)*gs.numPoints);
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
@@ -1892,8 +1890,6 @@ void  CP_State_GSpacePlane::sendLambda() {
     int ncoef           = gs.numPoints;
     complex *psi_g      = gs.packedPlaneData;
     complex *psi_g_tmp  = gs.packedPlaneDataTemp;
-    complex *psi_g_tmp2 = gs.packedPlaneDataTemp2;
-    memcpy(psi_g_tmp2,psi_g_tmp,sizeof(complex)*ncoef);
     memcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
   }//endif
 
@@ -2637,6 +2633,12 @@ void CP_State_GSpacePlane::integrateModForce() {
       double StartTime=CmiWallTimer();
 #endif
 
+//#define _GLENN_CHECK_DYNAMICS_
+#ifdef _GLENN_CHECK_DYNAMICS_
+  if(iteration==1){bzero(vpsi_g,ncoef*sizeof(complex));}
+  if(thisIndex.x==0&&thisIndex.y==0){CkPrintf("Before Integrate : iteration %d\n",iteration);}
+#endif
+
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -3223,13 +3225,13 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-  if(cp_min_opt==1){
-    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-	      sizeof(complex)*gs.numPoints);
-    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-  }//endif
-#endif      
+//#ifdef  _CP_DEBUG_UPDATE_OFF_
+//  if(cp_min_opt==1){
+//    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+//	      sizeof(complex)*gs.numPoints);
+//    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+//  }//endif
+//#endif      
 
 //==============================================================================
 // Back to the threaded loop.
@@ -3272,11 +3274,14 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 //     you have the wrong force but thats OK until you put in a better rotation
 
   halfStepEvolve = 1; 
+
+#ifdef JUNK
   halfStepEvolve = 0; // do the 1/2 step update now
   CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
                              len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
                              gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
                              2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC,1);
+#endif
 
 //=============================================================================
 // III) We still have these funky g=0 plane guys that may be on other procs and
@@ -3412,12 +3417,21 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 //==============================================================================
 void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
 
-  int ncoef    = gs.nkx0_red;
-  if(ncoef>0){
-    complex *vpsi     = gs.packedVelData;
+  eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  int ncoef         = gs.numPoints;
+  int ncoef_red     = gs.nkx0_red;
+  complex *vpsi     = gs.packedVelData;
+
+  if(ncoef_red>0){
     complex *vpsi_red = gs.packedRedPsiV;
-    for(int i=0;i<ncoef;i++){vpsi[i]=vpsi_red[i];}
+    for(int i=0;i<ncoef_red;i++){vpsi[i]=vpsi_red[i];}
   }//endif
+
+  ake_old = 0.0;
+  for(int i=0;i<ncoef;i++){
+    ake_old   += coef_mass[i]*(vpsi[i].re*vpsi[i].re+vpsi[i].im*vpsi[i].im);
+  }//endfor
 
 }//end routine
 //==============================================================================
@@ -3620,29 +3634,29 @@ void CP_State_GSpacePlane::doNewPsiV(){
 // III) Replace by finite difference until update is better
 
  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+ eesCache *eesData    = eesCacheProxy.ckLocalBranch ();
 
+ double *coef_mass    = eesData->GspData[iplane_ind].coef_mass;
  double dt           = sim->dt;
  double dt2          = 2.0*dt;
  int ncoef           = gs.numPoints;
  complex *psi_g      = gs.packedPlaneData;
  complex *psi_g_tmp  = gs.packedPlaneDataTemp;
- complex *psi_g_tmp2 = gs.packedPlaneDataTemp2;
 
- if(iteration>=2){
-   for(int i=0;i<ncoef;i++){
-     double vre = (3.0*psi_g[i].re-4.0*psi_g_tmp[i].re+psi_g_tmp2[i].re)/dt2;
-     double vim = (3.0*psi_g[i].im-4.0*psi_g_tmp[i].im+psi_g_tmp2[i].im)/dt2;
-     vpsi[i].re = vre;
-     vpsi[i].im = vim;
-   }//endfor
- }else{
-   for(int i=0;i<ncoef;i++){
-     double vre = (psi_g[i].re-psi_g_tmp[i].re)/dt;
-     double vim = (psi_g[i].im-psi_g_tmp[i].im)/dt;
-     vpsi[i].re = vre;
-     vpsi[i].im = vim;
-   }//endfor
+ double ake_new = 0.0;
+ for(int i=0;i<ncoef;i++){
+   double vre = (psi_g[i].re-psi_g_tmp[i].re)/dt;
+   double vim = (psi_g[i].im-psi_g_tmp[i].im)/dt;
+   vpsi[i].re = vre;
+   vpsi[i].im = vim;
+   ake_new   += coef_mass[i]*(vre*vre + vim*vim);
  }//endif
+
+ double scale = sqrt(ake_old/ake_new);
+ for(int i=0;i<ncoef;i++){
+    vpsi[i].re *= scale;
+    vpsi[i].im *= scale;
+ }//endfor
 
 //=============================================================================
 // III) Back to the threaded loop
