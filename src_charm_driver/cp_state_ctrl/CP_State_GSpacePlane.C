@@ -463,35 +463,44 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Unpack
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+
   int cp_min_opt    = sim->cp_min_opt;
   double tol_cp_min = sim->tol_cp_min;
   double tol_cp_dyn = sim->tol_cp_dyn;
+  int natm          = ag->natm;
+  double rnatm      = ((double)natm)/96.0;  // relative to 32 waters
+
   double d0         = ((double *)msg->getData())[0];
   double d1         = ((double *)msg->getData())[1];
          d1         = sqrt(d1); // piny convention
 
   delete msg;  
 
-  fovlap_old        = fovlap; // CG ovlap (all chares need it)
-  fovlap            = d0;  
+//============================================================================
+// Copy old/new : Set new values
+
+  fovlap_old        = fovlap;          // CG ovlap (all chares need it)
   fmagPsi_total_old = fmagPsi_total;  
-  fmagPsi_total     = d1;    // mag of psi force (all chares need it)
+
+  fovlap            = d0;  
+  fmagPsi_total     = d1;              // mag of psi force (all chares need it)
 
 //============================================================================
 // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("MagForPsi   =  %5.8lf\n", d1);
+    CkPrintf("MagForPsi   =  %5.8lf %5.8lf per atom\n", d1,d1/rnatm);
     CkPrintf("Memory      =  %d\n",CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
-  if(cp_min_opt==0 && fmagPsi_total>tol_cp_dyn){
+  if(cp_min_opt==0 && fmagPsi_total>rnatm*tol_cp_dyn){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mag psi force > %.10g too large for CP dynamics. Caio! \n",
-	       tol_cp_dyn);
+      CkPrintf("Mag psi force %.10g > %.10g too large for CP dynamics. Caio! \n",
+	       fmagPsi_total/rnatm,tol_cp_dyn);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
   }//endif
@@ -1117,12 +1126,12 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
-#ifdef  _CP_DEBUG_UPDATE_OFF_
+//#ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
     gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
-#endif
+//#endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
@@ -3226,11 +3235,11 @@ void CP_State_GSpacePlane::doNewPsi(){
 // (E) Reset psi 
 
 //#ifdef  _CP_DEBUG_UPDATE_OFF_
-//  if(cp_min_opt==1){
-//    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
-//	      sizeof(complex)*gs.numPoints);
-//    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
-//  }//endif
+  if(cp_min_opt==1){
+    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+	      sizeof(complex)*gs.numPoints);
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
 //#endif      
 
 //==============================================================================

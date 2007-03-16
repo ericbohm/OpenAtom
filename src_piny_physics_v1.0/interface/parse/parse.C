@@ -192,15 +192,16 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                           cp_dual_grid_opt_on,&(cppseudo->nonlocal),cppseudo); 
 
      if(cp_on==1){
-       cpopts->te_ext         /= (double) ( (cpcoeffs_info->nstate_up
-                                         *cpcoeffs_info->ncoef) );
+       cpopts->te_ext         /= 4.1e6; // empirical scaling factor for h2o 32-70
+	 //                   (double) ( (cpcoeffs_info->nstate_up
+	 //                              *cpcoeffs_info->ncoef) );
        cpvel_samp->div_scal = (double) (2*(cpcoeffs_info->nstate_up)
                                               *cpcoeffs_info->ncoef);
        if(cpopts->cp_lsda==1){
          cpvel_samp->div_scal += (double) (2*(cpcoeffs_info->nstate_dn)
                                                  *cpcoeffs_info->ncoef);
        }//endif
-       PRINTF("\nYour fictious CP temperature is: %gK\n\n",
+       PRINTF("\nYour fictious CP temperature is: %gK : different scaling then PINY\n\n",
                                              cpopts->te_ext);
      }//endif : cp_on
 
