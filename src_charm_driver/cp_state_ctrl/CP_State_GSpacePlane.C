@@ -1126,12 +1126,12 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
-//#ifdef  _CP_DEBUG_UPDATE_OFF_
+#ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
     gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
-//#endif
+#endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
@@ -3234,13 +3234,13 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-//#ifdef  _CP_DEBUG_UPDATE_OFF_
+#ifdef  _CP_DEBUG_UPDATE_OFF_
   if(cp_min_opt==1){
     memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
-//#endif      
+#endif      
 
 //==============================================================================
 // Back to the threaded loop.
