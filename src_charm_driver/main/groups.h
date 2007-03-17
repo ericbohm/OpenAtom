@@ -45,6 +45,7 @@ class AtomsGrp: public Group {
   int iteration;
   int isokin_opt;
   int countAtm;
+  int nAtmMsgRecv;
   double kT;
   double pot_ewd_rs;      // total real space ewald energy
   double eKinetic;        // kinetic energy

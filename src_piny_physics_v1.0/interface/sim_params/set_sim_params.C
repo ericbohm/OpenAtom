@@ -470,6 +470,7 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if((cpopts->te_ext > 3000.0) || (cpopts->te_ext <100.0)) {
      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
      PRINTF("The recommended fictious cp_fict_KE range is 100K - 3000K\n"); 
+     PRINTF("per 4.1x10^6 coefs\n"); 
      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
     }/*endif*/
   /*-----------------------------------------------------------------------*/ 
@@ -773,6 +774,16 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
        if(ifound != 1){
           keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
         cppseudo->ees_eext_on = cppseudo->nonlocal.ees_eext_on;
+  /*-----------------------------------------------------------------------*/ 
+  /* 39)\cp_min_update{on,off} */
+       index=39;
+       ifound = 0;
+       if(strcasecmp(dict[index].keyarg,"on")==0)    {
+          gensimopts->cp_min_update = 1; ifound++;}
+       if(strcasecmp(dict[index].keyarg,"off")==0)    {
+          gensimopts->cp_min_update = 0; ifound++;}
+       if(ifound != 1){
+          keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/

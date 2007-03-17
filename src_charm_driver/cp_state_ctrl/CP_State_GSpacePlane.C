@@ -490,7 +490,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("MagForPsi   =  %5.8lf %5.8lf per atom\n", d1,d1/rnatm);
+    CkPrintf("MagForPsi   =  %5.8lf | %5.8lf per 100 atoms\n", d1,d1/rnatm);
     CkPrintf("Memory      =  %d\n",CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
@@ -1073,7 +1073,8 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   eesCache *eesData     = eesCacheProxy.ckLocalBranch ();
 
-  int cp_min_opt  = sim->cp_min_opt;
+  int cp_min_opt    = sim->cp_min_opt;
+  int cp_min_update = sim->cp_min_update;
 
   if (true == initialized) {
     ckerr << "Attempt to initialize a plane twice" << endl;
@@ -1126,12 +1127,10 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-  if(cp_min_opt==1){
+  if(cp_min_opt==1 && cp_min_update==0){
     gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
-#endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
@@ -2648,6 +2647,20 @@ void CP_State_GSpacePlane::integrateModForce() {
   if(thisIndex.x==0&&thisIndex.y==0){CkPrintf("Before Integrate : iteration %d\n",iteration);}
 #endif
 
+#ifdef _GLENN_CHECK_INTEGRATE_
+  for(int i=0;i<ncoef;i++){
+    if( (k_x[i]==0 &&k_y[i]==1 && k_z[i]==4) ||
+        (k_x[i]==2 &&k_y[i]==1 && k_z[i]==3)){
+     if(thisIndex.x==0 || thisIndex.x==127){
+       CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g %.15g %.15g\n",
+		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],
+  	         psi_g[i].re,psi_g[i].im,
+                 forces[i].re,forces[i].im);
+     }//endif
+   }//endif
+  }//endfor
+#endif
+
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -2655,6 +2668,20 @@ void CP_State_GSpacePlane::integrateModForce() {
                nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,gammaNHC,
                halfStepEvolve);
   halfStepEvolve = 1;
+
+#ifdef _GLENN_CHECK_INTEGRATE_
+  for(int i=0;i<ncoef;i++){
+    if( (k_x[i]==0 &&k_y[i]==1 && k_z[i]==4) ||
+        (k_x[i]==2 &&k_y[i]==1 && k_z[i]==3)){
+     if(thisIndex.x==0 || thisIndex.x==127){
+       CkPrintf(" Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g %.15g %.15g\n",
+		 gs.istate_ind+1,k_x[i],k_y[i],k_z[i],
+  	         psi_g[i].re,psi_g[i].im,
+                 forces[i].re,forces[i].im);
+     }//endif
+   }//endif
+  }//endfor
+#endif
 
 #ifndef CMK_OPTIMIZE
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());
@@ -3138,6 +3165,8 @@ void CP_State_GSpacePlane::doNewPsi(){
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt       = sim->cp_min_opt;
+  int cp_min_update    = sim->cp_min_update;
+
   if(cp_min_opt==0 && iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -3234,13 +3263,11 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-#ifdef  _CP_DEBUG_UPDATE_OFF_
-  if(cp_min_opt==1){
+  if(cp_min_opt==1 && cp_min_update==0){
     memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
-#endif      
 
 //==============================================================================
 // Back to the threaded loop.

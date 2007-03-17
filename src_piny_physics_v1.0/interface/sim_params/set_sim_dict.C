@@ -312,7 +312,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 38;
+  *num_dict = 39;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_cp")-1;
 
 /*========================================================================*/
@@ -385,7 +385,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[11].keyarg,"2");
   /*-----------------------------------------------------------------------*/ 
   /* 12)\cp_fict_KE{#} */
-        strcpy((*dict)[12].error_mes,"a number > 0 ");
+        strcpy((*dict)[12].error_mes,"a number > 0 : per 4.1x10^6 coefs");
         strcpy((*dict)[12].keyword,"cp_fict_KE");
         strcpy((*dict)[12].keyarg,"1000.0");
   /*-----------------------------------------------------------------------*/ 
@@ -526,6 +526,12 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
         i = 38;
         strcpy((*dict)[i].error_mes,"on,off");
         strcpy((*dict)[i].keyword,"cp_eext_ees_opt");
+        strcpy((*dict)[i].keyarg,"off");
+  /*-----------------------------------------------------------------------*/ 
+  /* 39)\cp_min_update{on,off} */
+        i = 39;
+        strcpy((*dict)[i].error_mes,"on,off");
+        strcpy((*dict)[i].keyword,"cp_min_update");
         strcpy((*dict)[i].keyarg,"off");
 
 /*========================================================================*/
@@ -986,7 +992,7 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
   /* 17)\cp_norb_tol */
         strcpy((*dict)[17].error_mes,"a number > 0 ");
         strcpy((*dict)[17].keyword,"cp_norb_tol");
-        strcpy((*dict)[17].keyarg,"1.e-3");
+        strcpy((*dict)[17].keyarg,"0.003");
   /*-----------------------------------------------------------------------*/ 
   /* 18)\cp_ks_rot_frq{#} */
         strcpy((*dict)[18].error_mes,"a number >=0");

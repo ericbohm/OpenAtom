@@ -107,6 +107,20 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     double *qq = fastAtoms.q;
     for(int i=0;i<natm;i++){qq[i]=atoms[i].q;}
 
+//==============================================================================
+// Number of messages to be received when atoms are moved
+
+    int nproc = CkNumPes();
+    int div   = (natm / nproc);
+    int rem   = (natm % nproc);
+
+    nAtmMsgRecv = 0;
+    for(int myid=0;myid<nproc;myid++){
+      int natmNow = div;
+      if(myid< rem){natmNow++;}
+      if(natmNow>0){nAtmMsgRecv++;}
+    }//endfor
+
 //-----------------------------------------------------------------------------
   }//end routine
 //==============================================================================
@@ -357,7 +371,9 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   zeroforces();
 
   if(cp_wave_opt==0 && cp_min_opt==0){
-    sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,natmNow,natmStr,natmEnd);
+    if(natmNow>0){
+      sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,natmNow,natmStr,natmEnd);
+    }//endif
   }else{
     eKinetic                    = 0.0;
     eKineticNhc                 = 0.0;
@@ -375,7 +391,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   }//endif
 
 //-------------------------------------------------------------------------
-}//end routine
+   }//end routine
 //==========================================================================
 
 
@@ -601,7 +617,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // Copy to the fast vectors and phone home
 
-  if(countAtm==CkNumPes()){
+  if(countAtm==nAtmMsgRecv){
      countAtm = 0;
 
      EnergyGroup *eg             = egroupProxy.ckLocalBranch();
