@@ -20,6 +20,7 @@ class GENSIMOPTS {
   int cp_wave_pimd;           // Opt: CP, wave function only               
   int cp_wave_min_pimd;       // Opt: CP min, wave function only           
   int cp_min;                 // Opt: Full CP minimization                 
+  int cp_min_update;          // Opt: Turn on/off updates at each step for debugging
   int cp_wave_min;            // Opt: CP min, wave function only           
   int cp_any_on;              // Opt: Is cp of any type ``on''
   int debug;                  // Opt: Internal use-backdoor chks           
@@ -52,6 +53,7 @@ class GENSIMOPTS {
      cp_wave_pimd     = 0;
      cp_wave_min_pimd = 0;
      cp_min           = 0;
+     cp_min_update    = 0;
      cp_wave_min      = 0;
      cp_any_on        = 0;
      debug            = 0;
@@ -86,6 +88,7 @@ class GENSIMOPTS {
         p | cp_wave_pimd;
         p | cp_wave_min_pimd;
         p | cp_min;
+        p | cp_min_update;
         p | cp_wave_min;
         p | cp_any_on;
         p | debug;
@@ -127,6 +130,7 @@ class GENSIMOPTS {
      fprintf(fp,"cp_wave_pimd %d\n",cp_wave_pimd);
      fprintf(fp,"cp_wave_min_pimd %d\n",cp_wave_min_pimd);
      fprintf(fp,"cp_min %d\n",cp_min);
+     fprintf(fp,"cp_min_update %d\n",cp_min_update);
      fprintf(fp,"cp_wave_min %d\n",cp_wave_min);
      fprintf(fp,"cp_any_on %d\n",cp_any_on);
      fprintf(fp,"debug %d\n",debug);
