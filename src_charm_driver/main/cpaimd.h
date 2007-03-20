@@ -51,11 +51,11 @@ class MapType2 : public IntMap2on2 {
 
 //#define GPSI_BARRIER 1
 
-#define LOAD_BALANCE_STEP 10
+#define LOAD_BALANCE_STEP 100000000
 
 #define PRE_BALANCE_STEP 2
 
-#define FIRST_BALANCE_STEP 10
+#define FIRST_BALANCE_STEP 100000000
 
 #ifndef CMK_OPTIMIZE
 #define TRACE_ON_STEP 4

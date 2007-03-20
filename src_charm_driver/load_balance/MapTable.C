@@ -875,17 +875,18 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 #endif
 }
 
-OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize): nstates(_nstates), orthoGrainSize(_orthograinsize)
+OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
 {
   maptable = _map;
   availprocs = _availprocs;
   int oobjs_per_pe;
   int srcpe = 0, destpe;
+  bool useSublist=true;
+  bool useExclude=true;
   oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count()) + 1;
   int *Pecount= new int [CkNumPes()];
   bzero(Pecount, CkNumPes()*sizeof(int)); 
   int s1 = 0, s2 = 0;
-  PeList *exclusionList = NULL;
   for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
     for(int state2 = 0; state2 < nstates; state2 += orthoGrainSize)
     {
@@ -893,18 +894,34 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       s1 = s1 * sGrainSize;
       s2 = (state2/sGrainSize);
       s2 = s2 * sGrainSize;
-      PeList *thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
-      bool useExclude = true;
-      if(exclusionList != NULL) 
-      {
-	*thisStateBox - *exclusionList;
-	thisStateBox->reindex();
-      }
+      PeList *thisStateBox;
+      if(useSublist)
+	{
+	  thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
+	  useExclude = true;
+	  *thisStateBox - *exclusionList;
+	  thisStateBox->reindex();
+	}
+      else
+	{
+	  thisStateBox=availprocs;
+	}
+      if(thisStateBox->count() == 0)
+	{  // the sublist scheme failed 
+	  CkPrintf("Ortho %d %d ignoring SubList\n", state1, state2);
+	  if(thisStateBox!=availprocs)
+	    delete thisStateBox;
+	  thisStateBox = availprocs;
+	  *thisStateBox - *exclusionList;
+	  thisStateBox->reindex();
+	  useSublist=false;
+	}
 
       if(thisStateBox->count() == 0)
       {
 	CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
-	delete thisStateBox;
+	if(thisStateBox!=availprocs)
+	  delete thisStateBox;
 	thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
 	useExclude = false;
       }
@@ -923,50 +940,65 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       Pecount[destpe]++;	
       if(Pecount[destpe]>=oobjs_per_pe)
       {
-	if(exclusionList==NULL)
+	exclusionList->mergeOne(destpe);
+	if(useExclude)
 	{
-	  exclusionList=new PeList(1);
-	  exclusionList->TheList[0]=destpe;
-        }
-        else
-	  exclusionList->mergeOne(destpe);
-	if(useExclude && thisStateBox->size>1)
-	{
-	  *thisStateBox - *exclusionList;
+	  PeList one(1);
+	  one.TheList[0]=destpe;
+	  *thisStateBox - one;
 	  thisStateBox->reindex();
 	}
-	sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
       }
-      destpe=thisStateBox->findNext();
-      if(thisStateBox->count()==0)
-         thisStateBox->reset();
-      delete thisStateBox;
+      if(thisStateBox!=availprocs)
+	delete thisStateBox;
     }
   delete [] Pecount;
 }
 
-OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap): nstates(_nstates), orthoGrainSize(_orthograinsize)
+OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap, PeList *_avail, PeList *exclude): nstates(_nstates), orthoGrainSize(_orthograinsize)
 {
   maptable = _map;
   int destpe = 0;
+  // map orthohelper near but not on ortho by removing all ortho procs
+  availprocs= new PeList(*_avail);
+  *availprocs-*exclude;
+  //  CkPrintf("exlude for helpers is \n");
+  //  exclude->dump();
+  bool useExclude=true;
+  if(availprocs->count() < ((nstates/orthoGrainSize)*(nstates/orthoGrainSize)))
+    {
+      CkPrintf("There aren't enough processors to effectively parallelize orthoHelpers, you should disable orthoHelpers!!!\n");
+      delete availprocs;
+      availprocs= new PeList(*_avail);
+      availprocs->reset();
+      useExclude=false;
+    }
 
   for(int state1 = 0; state1 < nstates/orthoGrainSize; state1++)
     for(int state2 = 0; state2 < nstates/orthoGrainSize; state2++)
     {
+
 #ifdef USE_INT_MAP
-      destpe = omap->get(state1, state2);
-      if(destpe	== 0)
-        maptable->set(state1, state2, (destpe+1)%CkNumPes());
-      else
-        maptable->set(state1, state2, destpe-1);
+      availprocs->sortSource(omap->get(state1, state2));
+      availprocs->reset();
+      destpe = availprocs->findNext();
+      maptable->set(state1, state2, destpe);
 #else
-      destpe = omap->get(intdual(state1, state2));
-      if(destpe	== 0)
-        maptable->put(intdual(state1, state2))=(destpe+1)%CkNumPes();
-      else
-        maptable->put(intdual(state1, state2))=destpe-1;
+      availprocs->sortSource(omap->get(intdual(state1, state2)));
+      availprocs->reset();
+      destpe = availprocs->findNext();
+      maptable->put(intdual(state1, state2))=destpe;
 #endif
+      if(useExclude)
+	{
+	  PeList one(1);
+	  one.TheList[0]=destpe;
+	  *availprocs - one;
+	  availprocs->reindex();
+	}
+      
     }
+  delete availprocs;
 }
 
 RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoR, int _rhoRsubplanes, int max_states, bool useCentroid, MapType2 *rsmap, PeList *exclude): nchareRhoR(_nchareRhoR), rhoRsubplanes(_rhoRsubplanes)

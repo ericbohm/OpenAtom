@@ -1786,6 +1786,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
    if(ibinary_write_opt==0){
      FILE *fp  = fopen(psiName,"w");
+     CkAssert(fp!=NULL);
      fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
      for(int i=istrt+1;i<ncoef;i++){
        fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
@@ -1800,6 +1801,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==2){
      strcat(psiName,".gz");
      gzFile zfp  = gzopen(psiName,"w");
+     CkAssert(zfp!=NULL);
      gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
      for(int i=istrt+1;i<ncoef;i++){
        gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
@@ -1813,6 +1815,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==3){
      strcat(psiName,".gz");
      gzFile zfp  = gzopen(psiName,"w");
+     CkAssert(zfp!=NULL);
      int n=1;
      gzwrite(zfp,&ncoef_true,sizeof(int));
      gzwrite(zfp,&sizeX,sizeof(int));
@@ -1836,6 +1839,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 #endif
    else{
      FILE *fp  = fopen(psiName,"w");
+     CkAssert(fp!=NULL);
      int n=1;
      fwrite(&ncoef_true,sizeof(int),n,fp);
      fwrite(&sizeX,sizeof(int),n,fp);
@@ -1862,6 +1866,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
     if(ibinary_write_opt==0){
       FILE *fp  = fopen(vpsiName,"w");
+      CkAssert(fp!=NULL);
       fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
         fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
@@ -1876,6 +1881,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==2){
      strcat(vpsiName,".gz");
      gzFile zfp=gzopen(vpsiName,"w");
+     CkAssert(zfp!=NULL);
       gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
         gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
@@ -1890,6 +1896,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==3){
      strcat(vpsiName,".gz");
      gzFile zfp=gzopen(vpsiName,"w");
+     CkAssert(zfp!=NULL);
      int n=1;
      gzwrite(zfp,&ncoef_true,sizeof(int));
      gzwrite(zfp,&sizeX,sizeof(int));
@@ -1913,6 +1920,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 #endif
 else{
       FILE *fp  = fopen(vpsiName,"w");
+      CkAssert(fp!=NULL);
       int n=1;
       fwrite(&ncoef_true,sizeof(int),n,fp);
       fwrite(&sizeX,sizeof(int),n,fp);

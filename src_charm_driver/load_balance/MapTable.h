@@ -368,7 +368,7 @@ class OrthoMapTable : public MapTable2
     int nstates;
     int orthoGrainSize;
 
-    OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize);
+    OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *);
     OrthoMapTable() { }
     void sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap);
 };
@@ -379,7 +379,7 @@ class OrthoHelperMapTable : public MapTable2
     int nstates;
     int orthoGrainSize;
 
-    OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap);
+    OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap, PeList*, PeList*);
     OrthoHelperMapTable() { }
 };
 

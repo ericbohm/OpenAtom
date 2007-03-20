@@ -1330,7 +1330,8 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   PRINT_LINE_STAR;
   PRINTF("Building Ortho Chares\n");
   PRINT_LINE_DASH;printf("\n");
-
+  PeList *excludePes= new PeList(1);
+  excludePes->TheList[0]=CkNumPes();
 
   int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
   int nOrtho= (nstates/config.orthoGrainSize);
@@ -1365,12 +1366,12 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
     success = mf->loadMap("OrthoMap", &Orthomaptable);
 #endif
   }
-
+  PeList *avail= new PeList();
   if(success == 0) {
 #ifdef USE_INT_MAP
-    OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcImaptable, config.nchareG, config.numChunks, config.sGrainSize);
+    OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable, avail, nstates, config.orthoGrainSize, &AsymScalcImaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
 #else
-    OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, availGlobR, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize);
+    OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
 #endif
   }
 
@@ -1418,55 +1419,53 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
    nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
    config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-
-#ifdef USE_INT_MAP
-  OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
-#endif
-
-  success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable);
-#else
-    success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
-#endif
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &OrthoImaptable);
-#else
-    OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable);
-#endif
-  }
-
-  CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
-  CkArrayOptions orthoHOpts;
-  orthoHOpts.setMap(orthoHMap);
-
-  if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&OrthoHelperImaptable);
-#else
-    mf->dumpMap(&OrthoHelpermaptable);
-#endif
-  }
-
   if(config.useOrthoHelpers)
-  {
-    orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
-    make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
-	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
-	ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-  }
-  else
+    {
+#ifdef USE_INT_MAP
+      OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+#endif
+
+      success = 0;
+      if(config.loadMapFiles) {
+	int size[2];
+	size[0] = size[1] = nstates/config.orthoGrainSize;
+	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+	success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable);
+#else
+	success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
+#endif
+      }
+
+      if(success == 0) {
+#ifdef USE_INT_MAP
+	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &OrthoImaptable, avail, excludePes);
+#else
+	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
+#endif
+      }
+
+      CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
+      CkArrayOptions orthoHOpts;
+      orthoHOpts.setMap(orthoHMap);
+
+      if(config.dumpMapFiles) {
+	int size[2];
+	size[0] = size[1] = nstates/config.orthoGrainSize;
+	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+	mf->dumpMap(&OrthoHelperImaptable);
+#else
+	mf->dumpMap(&OrthoHelpermaptable);
+#endif
+      }
+      orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
+      make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
+		      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
+		      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
+		      ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+    }
+  else  //no helpers
   {
     make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
 	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
