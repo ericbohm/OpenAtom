@@ -2423,7 +2423,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
       int *mk_x        = msg->k_x;
       int *mk_y        = msg->k_y;
       int *mk_z        = msg->k_z;
-      if(cp_min_opt==1){
+      if(cp_min_opt==0){
         for(int i=0;i<ncoef;i++){vdata[i] = vpsi[i];}
       }else{
         for(int i=0;i<ncoef;i++){vdata[i] = 0.0;}

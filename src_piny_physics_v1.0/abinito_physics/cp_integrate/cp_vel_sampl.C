@@ -36,19 +36,21 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,i
 //============================================================================
 // Scale the velocities
   
-  int istrt0 = nkx0_red;
-  int istrt  = nkx0_red+nkx0_zero;
-  int iend   = nkx0_red+nkx0_uni;
+  if(istart_typ_cp<3){
+    int istrt0 = nkx0_red;
+    int istrt  = nkx0_red+nkx0_zero;
+    int iend   = nkx0_red+nkx0_uni;
 
-  for(int i=istrt0;i<istrt;i++){v[i].im=0.0;} // zero imaginary part of g=0
+    for(int i=istrt0;i<istrt;i++){v[i].im=0.0;} // zero imaginary part of g=0
 
-  double temp = 0.0;
-  for(int i=istrt0;i<istrt;i++){temp += v[i].getMagSqr()*m[i];}
-  for(int i=istrt;i<iend;i++)  {temp += v[i].getMagSqr()*(2.0*m[i]);}
-  for(int i=iend;i<n;i++)      {temp += v[i].getMagSqr()*m[i];}
+    double temp = 0.0;
+    for(int i=istrt0;i<istrt;i++){temp += v[i].getMagSqr()*m[i];}
+    for(int i=istrt;i<iend;i++)  {temp += v[i].getMagSqr()*(2.0*m[i]);}
+    for(int i=iend;i<n;i++)      {temp += v[i].getMagSqr()*m[i];}
 
-  double scale = sqrt( (degfree*kT)/temp );
-  for(int i=0;i<n;i++){v[i].re *= scale;  v[i].im *= scale;}
+    double scale = sqrt( (degfree*kT)/temp );
+    for(int i=0;i<n;i++){v[i].re *= scale;  v[i].im *= scale;}
+  }//endif
 
 //============================================================================
     }// End function
