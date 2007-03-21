@@ -88,7 +88,7 @@ void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
   }//endif
 
   double degfree    = (double)(2*ncoef_true-ncoef_zero);
-  double degfreeNHC = (double)(num_nhc);     // 1 constraint for each NHC of length 2
+  double degfreeNHC = (double)(num_nhc*nck_nhc);     // 1 constraint for each NHC of length 2
 
 //============================================================================
 
