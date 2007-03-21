@@ -36,7 +36,8 @@ extern int sizeX;
 /* This gets called at the end of the GStatePlane constructor */
 //==============================================================================
 void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits, 
-          int realSpaceUnits, int s_grain, int iplane_ind,int istate_ind) 
+          int realSpaceUnits, int s_grain, int iplane_ind,int istate_ind,
+          int len_nhc_cp, int num_nhc_cp, int nck_nhc_cp) 
 //==============================================================================
    {//begin routine
 //==============================================================================
@@ -77,7 +78,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
    gs->zdim = gs->planeSize[1];
    gs->iplane_ind   = iplane_ind;
    gs->istate_ind   = istate_ind; 
-   gs->initNHC();
+   gs->initNHC(len_nhc_cp,num_nhc_cp,nck_nhc_cp);
 
 //==============================================================================
    }//end routine
@@ -150,7 +151,6 @@ void GStateSlab::pup(PUP::er &p) {
         p|potNHC_ret;
         p|degfree;
         p|degfreeNHC;
-        p|gammaNHC;
 
 	if (p.isUnpacking()) {
            packedPlaneData     = (complex *)fftw_malloc(numPoints*sizeof(complex));
@@ -179,49 +179,53 @@ void GStateSlab::pup(PUP::er &p) {
 	}//endif
 #endif
 
+        p|nck_nhc_cp;
         p|len_nhc_cp;
         p|num_nhc_cp;
         p|kTCP;
         p|tauNHCCP;
-        int nsize   = num_nhc_cp*len_nhc_cp;
+	if (p.isUnpacking()) {
+          initNHC(len_nhc_cp,num_nhc_cp,nck_nhc_cp);
+	}//endif recving
+        int nsize   = num_nhc_cp*len_nhc_cp*nck_nhc_cp;
         double *xt  = new double[nsize];
         double *xtp = new double[nsize];
         double *vt  = new double[nsize];
         double *ft  = new double[nsize];
-	if (!p.isUnpacking()) {
+	if(p.isPacking()){
           int iii=0;
+          for(int k =0;k<num_nhc_cp;k++){
           for(int i =0;i<num_nhc_cp;i++){
           for(int j =0;j<len_nhc_cp;j++){
-            xt[iii]  = xNHC[i][j];
-            xtp[iii] = xNHCP[i][j];
-            vt[iii]  = vNHC[i][j];
-            ft[iii]  = fNHC[i][j];
+            xt[iii]  = xNHC[k][i][j];
+            xtp[iii] = xNHCP[k][i][j];
+            vt[iii]  = vNHC[k][i][j];
+            ft[iii]  = fNHC[k][i][j];
             iii++;
-          }}
-          mNHC  = new double[len_nhc_cp];
-          v0NHC = new double[num_nhc_cp];
-          a2NHC = new double[num_nhc_cp];
-          a4NHC = new double[num_nhc_cp];
+          }}}
 	}//endif sending
         p(xt,nsize);
         p(xtp,nsize);
         p(vt,nsize);
         p(ft,nsize);
+        p(degFreeSplt,nck_nhc_cp);
+        p(istrNHC,nck_nhc_cp);
+        p(iendNHC,nck_nhc_cp);
         p(mNHC,len_nhc_cp);
         p(v0NHC,num_nhc_cp);
         p(a2NHC,num_nhc_cp);
         p(a4NHC,num_nhc_cp);
 	if (p.isUnpacking()) {
-          initNHC();
           int iii=0;
+          for(int k =0;k<nck_nhc_cp;k++){
           for(int i =0;i<num_nhc_cp;i++){
           for(int j =0;j<len_nhc_cp;j++){
-            xNHC[i][j]  = xt[iii];
-            xNHCP[i][j] = xtp[iii];
-            vNHC[i][j]  = vt[iii];
-            fNHC[i][j]  = ft[iii];
+            xNHC[k][i][j]  = xt[iii];
+            xNHCP[k][i][j] = xtp[iii];
+            vNHC[k][i][j]  = vt[iii];
+            fNHC[k][i][j]  = ft[iii];
             iii++;
-          }}
+          }}}
 	}//endif receiving 
         delete []xt;
         delete []xtp;

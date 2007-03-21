@@ -1773,7 +1773,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 void writeStateFile(int ncoef,complex *psi,complex *vpsi,
                     int *k_x,int *k_y,int *k_z,int cp_min_opt,
                     int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName,
-                    int ibinary_write_opt)
+                    int ibinary_write_opt,int iteration, int istate)
 //=============================================================================
   { //begin rotunie
 //=============================================================================
@@ -1783,6 +1783,14 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
   int istrt=0;
   sort_psi_output(ncoef,k_x,k_y,k_z,index,ktemp,&istrt);
   int ncoef_true=ncoef-istrt;
+
+  if(istate==1){
+    char fname[1000];
+    sprintf(fname,"%s/TimeStamp",config.dataPath);
+    FILE *fp = fopen(fname,"w");
+     fprintf(fp,"time step = %d\n",iteration);
+    fclose(fp);
+  }//endif
 
    if(ibinary_write_opt==0){
      FILE *fp  = fopen(psiName,"w");

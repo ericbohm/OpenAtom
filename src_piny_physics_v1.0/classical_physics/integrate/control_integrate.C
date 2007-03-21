@@ -45,9 +45,6 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
 //============================================================================
 // (II) Invoke atom output to dump and config files
 
-   ATOMOUTPUT::ctrl_piny_output(itime,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
-                                iwrite_atm,output_on);
-
    if(cp_min_opt==0 && cp_wave_opt==0){
       for(int i=natmStr;i<natmEnd;i++){
         atoms[i].xold = atoms[i].x;  atoms[i].vxold = atoms[i].vx;

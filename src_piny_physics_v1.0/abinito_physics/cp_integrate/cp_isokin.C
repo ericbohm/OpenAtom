@@ -14,14 +14,30 @@
 //============================================================================
 
 
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
-                        int *num_nhc_ret, double *kTCP_ret,
-                        double *tau_ret,double *mNHC,double *degfree_ret,
-                        double *degfreeNHC_ret,double *gammaNHC_ret,int ncoef_true,
-                        int ncoef_zero,double *v0,double *a2, double *a4)
+void CPINTEGRATE::fetchNHCsize(int *len_nhc,int *num_nhc, int *nck_nhc){
+  CP *cp = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+
+  len_nhc[0]   = cptherm_info->len_c_nhc;
+  num_nhc[0]   = cptherm_info->num_c_nhc_iso;
+  nck_nhc[0]   = cptherm_info->nck_c_nhc;
+
+}
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CPINTEGRATE::initCPNHC(int ncoef_true,int ncoef_zero,
+                        int maxLen,int maxNum, int maxNck,
+                        double *kTCP_ret,double *tau_ret,double *degfree_ret,
+                        double *degfreeNHC_ret,
+                        double *mNHC,double *v0,double *a2, double *a4, double *degFreeSplt,
+                        int *istrNHC, int *iendNHC)
 //============================================================================
   {// Begin Function 
 //============================================================================
@@ -34,6 +50,8 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
 
   int len_nhc   = cptherm_info->len_c_nhc;
   int num_nhc   = cptherm_info->num_c_nhc_iso;
+  int nck_nhc   = cptherm_info->nck_c_nhc;
+
   double Text   = cpopts->te_ext;
   double tau_in = cpopts->cp_tau_nhc;
 
@@ -42,43 +60,47 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
 
 //============================================================================
 
-  if(len_nhc>maxLen){
+  if(len_nhc!=maxLen){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Maximum NHC length is %d < %d\n",maxLen,len_nhc);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-  }//endif
-  if(num_nhc>maxNum){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Maximum NHC number is %d < %d\n",maxNum,num_nhc);
+      CkPrintf("Length is %d not %d. Race condition? Bad pup?\n",maxLen,len_nhc);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
   }//endif
+  if(num_nhc!=maxNum){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
+  if(nck_nhc!=maxNck){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("number of NHC is %d not %d. Race condition? Bad pup?\n",maxNum,num_nhc);
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+  }//endif
+
   if(len_nhc!=2){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Minimum NHC len_nhc is 2 > %d\n",maxNum,num_nhc);
+      CkPrintf("Method requires len_nhc == 2 : len_nhc=%d\n",len_nhc);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
   }//endif
 
   double degfree    = (double)(2*ncoef_true-ncoef_zero);
   double degfreeNHC = (double)(num_nhc);     // 1 constraint for each NHC of length 2
-  double gammaNHC   = degfree/(degfree+1.0); // not used anymore
 
 //============================================================================
 
-  (*len_nhc_ret)    = len_nhc;
-  (*num_nhc_ret)    = num_nhc;
   (*kTCP_ret)       = kT;
   (*tau_ret)        = tau;
   
   double pre        = tau*tau*kT;
-  mNHC[0]           = pre*degfree;  // NHC mass
+  mNHC[0]           = pre*degfree/((double)nck_nhc);  // NHC mass : close enough
   mNHC[1]           = 2.5*pre;      // Double well mass : pos is dimensionless
 
   (*degfree_ret)    = degfree;
   (*degfreeNHC_ret) = degfreeNHC;
-  (*gammaNHC_ret)   = gammaNHC;
 
   for(int i=0;i<num_nhc;i++){
     double r1   = (double)(num_nhc+i+5);
@@ -89,6 +111,22 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
     a4[i]       = a2[i]*a2[i];
   }//endfor
 
+  int div = ncoef_true/nck_nhc;
+  int rem = (ncoef_true % nck_nhc);
+  for(int k=0;k<nck_nhc;k++){
+   int nStr   = div*k;
+   int nNow   = div;
+   if(k>=rem){nStr += rem;}
+   if(k< rem){nStr += k;}
+   if(k< rem){nNow++;}
+   int nEnd   = nNow+nStr;
+   istrNHC[k] = nStr;
+   iendNHC[k] = nEnd;
+   degFreeSplt[k] = (double)2*nNow;
+  }//endfor
+
+  degFreeSplt[0] -= (double)ncoef_zero;
+
 //============================================================================
   }// End function
 //============================================================================
@@ -98,10 +136,11 @@ void CPINTEGRATE::initCPNHC(int npts,int maxLen,int maxNum, int *len_nhc_ret,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
-                  double *m,int len_nhc,int num_nhc,double **xNHC,double **xNHCP,
-                  double **vNHC,double **fNHC,double *mNHC,
-                  double *v0,double *a2,double *a4, double kT,
-                  double degfree, double degfreeNHC, double gammaNHC,int fwdFlag)
+                  double *m,int len_nhc,int num_nhc,int nck_nhc,
+                  double ***xNHC,double ***xNHCP,double ***vNHC,double ***fNHC,
+                  double *mNHC,double *v0,double *a2,double *a4, 
+                  double kT, double degfree, double degfreeNHC, 
+                  double *degFreeSplt, int *istrNHC, int *iendNHC,int fwdFlag)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -119,30 +158,37 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
   int nyosh  = cptherm_info->nyosh_c_nhc;
 
   double dti = dt/((double)nresp);
-  double gkt = degfree*kT;
 
   double wdti[20],wdti2[20],wdti4[20],wdti8[20];
   set_yosh(nyosh,dti,wdti,wdti2,wdti4,wdti8);
 
 //============================================================================
+// Loop over chunks
+
+  for(int k=0;k<nck_nhc;k++){
+   int istr   = istrNHC[k];
+   int iend   = iendNHC[k];
+   double gkt = degFreeSplt[k]*kT;
+
+//============================================================================
 // Precompute the kinetic energy and get initial forces
 
    double ekin = 0.0;
-   for(int i=0;i<n;i++){
+   for(int i=istr;i<iend;i++){
      ekin += m[i]*(v[i].re*v[i].re+v[i].im*v[i].im);
    }//endfor
 
    for(int i=0;i<num_nhc;i++){
-     double ekinNHC = mNHC[0]*vNHC[i][0]*vNHC[i][0]
-                    + mNHC[1]*vNHC[i][1]*vNHC[i][1];
-   }
+     double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
+                    + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
+   }//endfor
 
-   for(int i=0;i<num_nhc;i++){xNHCP[i][0] = 0.0;}
+   for(int i=0;i<num_nhc;i++){xNHCP[k][i][0] = 0.0;}
 
    for(int i=0;i<num_nhc;i++){
-     fNHC[i][0] = (ekin - gkt)/mNHC[0];
-     fNHC[i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
-                  *(xNHCP[i][1]*(xNHCP[i][1]*xNHCP[i][1]-a2[i]));
+     fNHC[k][i][0] = (ekin - gkt)/mNHC[0];
+     fNHC[k][i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
+                  *(xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i]));
    }//endfor
 
 //============================================================================
@@ -155,10 +201,10 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
    // Evolve extended system velocities
     double vsum = 0.0;
     for(int i=0;i<num_nhc;i++){
-      double ffdot = (fNHC[i][0]*fNHC[i][0]*mNHC[0]
-	             +fNHC[i][1]*fNHC[i][1]*mNHC[1])/kT;
-      double pfdot = (fNHC[i][0]*vNHC[i][0]*mNHC[0]
-		     +fNHC[i][1]*vNHC[i][1]*mNHC[1])/kT;
+      double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
+	             +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
+      double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
+		     +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
       double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
       double h, hdot;
       if(arg2 > 1.0e-10){
@@ -174,9 +220,9 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
         hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
   		            +pfdot)*wdti4[iyosh]+1.0;
       }//endif
-      vNHC[i][0] = (vNHC[i][0]+fNHC[i][0]*h)/hdot;
-      vNHC[i][1] = (vNHC[i][1]+fNHC[i][1]*h)/hdot;
-      vsum += vNHC[i][0];
+      vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
+      vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
+      vsum += vNHC[k][i][0];
     }//endfor
    //-----------------------------------------------------------------------
    // Evolve coef velocities
@@ -187,9 +233,9 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
    //-----------------------------------------------------------------------
    // Evolve extended system positions
     for(int i=0;i<num_nhc;i++){
-      xNHC[i][0]  += kT*vNHC[i][0]*wdti2[iyosh];
-      xNHC[i][1]  += vNHC[i][0]*(ekin-gkt)*wdti2[iyosh];
-      xNHCP[i][1] += vNHC[i][1]*wdti2[iyosh];
+      xNHC[k][i][0]  += kT*vNHC[k][i][0]*wdti2[iyosh];
+      xNHC[k][i][1]  += vNHC[k][i][0]*(ekin-gkt)*wdti2[iyosh];
+      xNHCP[k][i][1] += vNHC[k][i][1]*wdti2[iyosh];
     }//endfor
    //-----------------------------------------------------------------------
    // Evolve coef velocities
@@ -198,17 +244,17 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
    //-----------------------------------------------------------------------
    // Compute new forces
     for(int i=0;i<num_nhc;i++){
-      fNHC[i][0] = (ekin - gkt)/mNHC[0];
-      fNHC[i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
-                   *( xNHCP[i][1]*(xNHCP[i][1]*xNHCP[i][1]-a2[i] ));
+      fNHC[k][i][0] = (ekin - gkt)/mNHC[0];
+      fNHC[k][i][1] = -( 4.0*v0[i]/(a4[i]*mNHC[1]) )
+                   *( xNHCP[k][i][1]*(xNHCP[k][i][1]*xNHCP[k][i][1]-a2[i] ));
     }//endfor
    //-----------------------------------------------------------------------
    // Evolve extended system velocities
     for(int i=0;i<num_nhc;i++){
-      double ffdot = (fNHC[i][0]*fNHC[i][0]*mNHC[0]
-	             +fNHC[i][1]*fNHC[i][1]*mNHC[1])/kT;
-      double pfdot = (fNHC[i][0]*vNHC[i][0]*mNHC[0]
-		     +fNHC[i][1]*vNHC[i][1]*mNHC[1])/kT;
+      double ffdot = (fNHC[k][i][0]*fNHC[k][i][0]*mNHC[0]
+	             +fNHC[k][i][1]*fNHC[k][i][1]*mNHC[1])/kT;
+      double pfdot = (fNHC[k][i][0]*vNHC[k][i][0]*mNHC[0]
+		     +fNHC[k][i][1]*vNHC[k][i][1]*mNHC[1])/kT;
       double arg2  = ffdot*wdti4[iyosh]*wdti4[iyosh];
       double h, hdot;
       if(arg2 > 1.0e-10){
@@ -224,15 +270,15 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
         hdot = ((ffdot*pfdot/6.0*wdti4[iyosh]  +ffdot/2.0)*wdti4[iyosh]
   		            +pfdot)*wdti4[iyosh]+1.0;
       }//endif
-      vNHC[i][0] = (vNHC[i][0]+fNHC[i][0]*h)/hdot;
-      vNHC[i][1] = (vNHC[i][1]+fNHC[i][1]*h)/hdot;
+      vNHC[k][i][0] = (vNHC[k][i][0]+fNHC[k][i][0]*h)/hdot;
+      vNHC[k][i][1] = (vNHC[k][i][1]+fNHC[k][i][1]*h)/hdot;
     }//endfor
   }}//endfor :: yoshida, respa loops
 
 //==========================================================================
 // Apply the scaling factor to the coef velocities 
 
-   for(int i=0;i<n;i++){
+   for(int i=istr;i<iend;i++){
      v[i].re *=scale; v[i].im *=scale;
    }//endfor
 
@@ -240,15 +286,19 @@ void CPINTEGRATE::cp_isoNHC_update(int n,complex *v,
 // Avoid roundoff error : Apply constraint exactly
 
    for(int i=0;i<num_nhc;i++){
-     double ekinNHC = mNHC[0]*vNHC[i][0]*vNHC[i][0]
-                    + mNHC[1]*vNHC[i][1]*vNHC[i][1];
+     double ekinNHC = mNHC[0]*vNHC[k][i][0]*vNHC[k][i][0]
+                    + mNHC[1]*vNHC[k][i][1]*vNHC[k][i][1];
 #ifdef _CHECKME_CPDYN_
      PRINTF("bot: ekinNHC %g %g %g\n",ekinNHC,kT,ekin);
 #endif
      double scNHC   = sqrt(kT/ekinNHC);
-     vNHC[i][0]    *= scNHC;
-     vNHC[i][1]    *= scNHC;
+     vNHC[k][i][0]    *= scNHC;
+     vNHC[k][i][1]    *= scNHC;
    }//endfor
+
+//==========================================================================
+
+ }//endfor : kth splt of coefs
 
 //============================================================================
   }//end routine

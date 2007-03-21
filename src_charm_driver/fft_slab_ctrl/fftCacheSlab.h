@@ -17,10 +17,6 @@
 include "../../src_mathlib/mathlib.h"
 #endif
 
-#define LEN_NHC_CP 4;
-#define NUM_NHC_CP 20;
-
-
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -59,7 +55,6 @@ public:
    double potNHC_ret;
    double degfree;            // Degrees of freedom (ncoef_true+num_nhc-1)
    double degfreeNHC;         // Degrees of freedom (num_nhc-1)*len_nhc
-   double gammaNHC;           // Degrees of freedom degfree/(degfree+1.0)
 
    complex *packedPlaneData;   // Non-zero data pts [numPoints]
    complex *packedPlaneDataTemp2; 
@@ -71,17 +66,18 @@ public:
    complex *packedRedPsiV;
    int     len_nhc_cp;
    int     num_nhc_cp;
+   int     nck_nhc_cp;
+   int     *istrNHC;
+   int     *iendNHC;
    double  kTCP;
    double  tauNHCCP;
-   double  **xNHC;
-   double  **xNHCP;
+   double  ***xNHC;
+   double  ***xNHCP;
+   double  ***vNHC;
+   double  ***fNHC;
+   double  *degFreeSplt;
    double  *mNHC;
-   double **vNHC;
-   double **vNHC_scr;
-   double **xNHC_scr;
-   double **xNHCP_scr;
-   double **fNHC;
-   double *v0NHC,*a2NHC,*a4NHC;
+   double  *v0NHC,*a2NHC,*a4NHC;
 
 //==============================================================================
 // Constuctor, Destructor and utilities
@@ -91,65 +87,63 @@ public:
                  packedVelData=NULL;}
    ~GStateSlab();
 
-   void copyNHC(){
+   void initNHC(int _len_nhc_cp, int _num_nhc_cp, int _nck_nhc_cp){
+     nck_nhc_cp = _nck_nhc_cp; 
+     num_nhc_cp = _num_nhc_cp;
+     len_nhc_cp = _len_nhc_cp;
+     xNHC       = new double **[nck_nhc_cp];
+     xNHCP      = new double **[nck_nhc_cp];
+     vNHC       = new double **[nck_nhc_cp];
+     fNHC       = new double **[nck_nhc_cp];
+     for(int k = 0;k<nck_nhc_cp;k++){
+      xNHC[k]   = new double *[num_nhc_cp];
+      xNHCP[k]  = new double *[num_nhc_cp];
+      vNHC[k]   = new double *[num_nhc_cp];
+      fNHC[k]   = new double *[num_nhc_cp];
+      for(int i=0;i<num_nhc_cp;i++){
+        xNHC[k][i]   = new double[len_nhc_cp];
+        xNHCP[k][i]  = new double[len_nhc_cp];
+        vNHC[k][i]   = new double[len_nhc_cp];
+        fNHC[k][i]   = new double[len_nhc_cp];
+      }//endfor
+     }//endfor
+     degFreeSplt = new double[nck_nhc_cp];
+     istrNHC     = new int [nck_nhc_cp];
+     iendNHC     = new int [nck_nhc_cp];
+     mNHC  = new double[len_nhc_cp];
+     v0NHC = new double[num_nhc_cp];
+     a2NHC = new double[num_nhc_cp];
+     a4NHC = new double[num_nhc_cp];
+     for(int k=0;k<nck_nhc_cp;k++){
      for(int i=0;i<num_nhc_cp;i++){
      for(int j=0;j<len_nhc_cp;j++){
-       vNHC_scr[i][j]  = vNHC[i][j];
-       xNHC_scr[i][j]  = xNHC[i][j];
-       xNHCP_scr[i][j] = xNHCP[i][j];
-     }}//endfor
-   }//end routine
-
-   void initNHC(){
-     xNHC      = new double *[20];
-     xNHCP     = new double *[20];
-     vNHC      = new double *[20];
-     xNHC_scr  = new double *[20];
-     xNHCP_scr = new double *[20];
-     vNHC_scr  = new double *[20];
-     fNHC      = new double *[20];
-     for(int i=0;i<20;i++){
-       xNHC[i]     = new double[4];
-       xNHC_scr[i] = new double[4];
-       xNHCP[i]     = new double[4];
-       xNHCP_scr[i] = new double[4];
-       vNHC[i]     = new double[4];
-       vNHC_scr[i] = new double[4];
-       fNHC[i]     = new double[4];
-     }//endfor
-     mNHC  = new double[4];
-     v0NHC = new double[20];
-     a2NHC = new double[20];
-     a4NHC = new double[20];
-     for(int i=0;i<20;i++){
-     for(int j=0;j<4;j++){
-       xNHC[i][j]     = 0.0;
-       xNHC_scr[i][j] = 0.0;
-       xNHCP[i][j]     = 0.0;
-       xNHCP_scr[i][j] = 0.0;
-       vNHC[i][j]     = 0.0;
-       vNHC_scr[i][j] = 0.0;
-       fNHC[i][j]     = 0.0;
-     }}//endfor
+       xNHC[k][i][j]      = 0.0;
+       xNHCP[k][i][j]     = 0.0;
+       vNHC[k][i][j]      = 0.0;
+       fNHC[k][i][j]      = 0.0;
+     }}}//endfor
    }//end routine
 
    void destroyNHC(){
-     for(int i=0;i<num_nhc_cp;i++){
-       delete []xNHC[i];
-       delete []xNHC_scr[i];
-       delete []xNHCP[i];
-       delete []xNHCP_scr[i];
-       delete []vNHC[i];
-       delete []vNHC_scr[i];
-       delete []fNHC[i];
+     for(int k=0;k<nck_nhc_cp;k++){
+      for(int i=0;i<num_nhc_cp;i++){
+       delete []xNHC[k][i];
+       delete []xNHCP[k][i];
+       delete []vNHC[k][i];
+       delete []fNHC[k][i];
+      }//endfor
+       delete []xNHC[k];
+       delete []xNHCP[k];
+       delete []vNHC[k];
+       delete []fNHC[k];
      }//endfor
      delete []xNHC;
-     delete []xNHC_scr;
      delete []xNHCP;
-     delete []xNHCP_scr;
      delete []vNHC;
-     delete []vNHC_scr;
      delete []fNHC;
+     delete []degFreeSplt;
+     delete []istrNHC;
+     delete []iendNHC;
      delete []mNHC;
      delete []v0NHC;
      delete []a2NHC;
@@ -540,7 +534,8 @@ class GSlabInfo {
 // slab initialization helpers
 
 void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits, 
-                    int realSpaceUnits, int s_grain,int iplane_ind,int istate_ind);
+                    int realSpaceUnits, int s_grain,int iplane_ind,int istate_ind,
+                    int len_nhc_cp, int num_nhc_cp,int nck_nhc_cp);
 void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
                        int realSpaceUnits, int stateIndex, int thisPlane);
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,

@@ -44,16 +44,15 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
   char *cpname         = genfilenames->cpname;
   char *cpparname      = genfilenames->cpparname;
   char *dname          = genfilenames->dname;
-
-  int mytime = itime-1;
+  int ntime            = gentimeinfo->ntime; //correct number of time steps
 
 //==========================================================================
 // Write the file now.
 
   int iwrite_atm=0;
-  if(mytime>0 && output_on==1){
+  if(itime>0 && output_on==1){
 
-    if( (mytime % iwrite_confp)==0 ){
+    if( (itime % iwrite_confp)==0 ){
       iwrite_atm++;
       if(myid==0){
         int low = 0; int high = natm;
@@ -61,17 +60,17 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
       }//endif
     }//endif
 
-    if( (mytime % iwrite_par_confp)==0 && low_lim_par<high_lim_par){
+    if( (itime % iwrite_par_confp)==0 && low_lim_par<high_lim_par){
       iwrite_atm++;
       if(myid==0){
         write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
       }//endif
     }//endif
 
-    if( ((mytime-1) % iwrite_dump)==0){
+    if( (itime % iwrite_dump)==0 || itime==ntime){
       iwrite_atm++;
       if(myid==0){
-        write_atom_output_dump(natm,len_nhc,pi_beads,mytime,atoms,atomsNHC);
+        write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC);
       }//endif
     }//endif
 

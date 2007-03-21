@@ -17,12 +17,12 @@
 //============================================================================
 void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
               complex *forces,complex *vpsi,complex *psi,double *cmass, 
-              int *k_x, int *k_y,int *k_z,int len_nhc, int num_nhc,
-              double **fNHC,double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
-              double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
+              int *k_x, int *k_y,int *k_z,int len_nhc, int num_nhc,int nck_nhc,
+              double ***fNHC,double ***vNHC,double ***xNHC,double ***xNHCP,
+              double *mNHC,double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
               double *fictEke,int nkx0_red,int nkx0_uni,int nkx0_zero,
               double *ekeNhc, double *potNHC,double degfree,double degfreeNHC,
-              double gammaNHC,int halfStepEvolve)
+              double *degFreeSplt,int *istrNHC, int *iendNHC,int halfStepEvolve)
 //============================================================================
     { // Begin Function 
 //----------------------------------------------------------------------------
@@ -45,21 +45,23 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 
    if(iteration>1 && halfStepEvolve==1){
      applyorder = 2;
-     cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+     cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
                    mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                   applyorder,iteration,degfree,degfreeNHC,gammaNHC,fwdFlag);
+                   applyorder,iteration,degfree,degfreeNHC,degFreeSplt,
+                   istrNHC,iendNHC,fwdFlag);
    }//endif
 
-   get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,vNHC,xNHC,xNHCP,mNHC,
-              nkx0_red,nkx0_uni,nkx0_zero,fictEke,ekeNhc,gammaNHC,potNHC);
+   get_fictKE(ncoef,vpsi,cmass,len_nhc,num_nhc,nck_nhc,vNHC,xNHC,xNHCP,mNHC,
+              nkx0_red,nkx0_uni,nkx0_zero,fictEke,ekeNhc,potNHC);
 
 //============================================================================
 // Update the velocities from time, t, to time, t+dt/2. 
 
    applyorder = 1;
-   cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+   cp_evolve_vel(ncoef,forces,vpsi,cmass,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
                  mNHC,v0NHC,a2NHC,a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                 applyorder,iteration,degfree,degfreeNHC,gammaNHC,fwdFlag);
+                 applyorder,iteration,degfree,degfreeNHC,degFreeSplt,
+                 istrNHC,iendNHC,fwdFlag);
 
 //============================================================================
 // Update the positions to the next step (t+dt)
@@ -79,12 +81,13 @@ void CPINTEGRATE::CP_integrate_dyn(int ncoef, int istate,int iteration,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
-                    double *cmass,int len_nhc, int num_nhc, double **fNHC,
-                    double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
-                    double *v0, double *a2, double *a4, double kTCP,
+                    double *cmass,int len_nhc, int num_nhc, int nck_nhc, 
+                    double ***fNHC,double ***vNHC,double ***xNHC,double ***xNHCP,
+                    double *mNHC,double *v0, double *a2, double *a4, double kTCP,
                     int nkx0_red,int nkx0_uni,int nkx0_zero,
                     int applyorder,int iteration,double degfree,
-                    double degfreeNHC,double gammaNHC,int fwdFlag)
+                    double degfreeNHC,double *degFreeSplt,
+                    int *istrNHC,int *iendNHC,int fwdFlag)
 //============================================================================
    { // Begin Function
 //----------------------------------------------------------------------------
@@ -128,8 +131,9 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 
    if(applyorder==1 && ISOKIN_OPT==1){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
-                      len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC,fwdFlag);
+                      len_nhc,num_nhc,nck_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,degFreeSplt,
+                      istrNHC,iendNHC,fwdFlag);
    }//endif
 
 //============================================================================
@@ -144,8 +148,9 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 
    if(ISOKIN_OPT==1 && applyorder==2){
      cp_isoNHC_update(ncoef,&vpsi[istrt0],&cmass[istrt0],
-                      len_nhc,num_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
-                      v0,a2,a4,kTCP,degfree,degfreeNHC,gammaNHC,fwdFlag);
+                      len_nhc,num_nhc,nck_nhc,xNHC,xNHCP,vNHC,fNHC,mNHC,
+                      v0,a2,a4,kTCP,degfree,degfreeNHC,degFreeSplt,
+                      istrNHC,iendNHC,fwdFlag);
    }//endif
 
 //============================================================================
@@ -166,10 +171,10 @@ void CPINTEGRATE::cp_evolve_vel(int ncoef_full, complex *forces, complex *vpsi,
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPINTEGRATE::get_fictKE(int n,complex *v, double *m,int len, int num,
-          double **vNHC,double **xNHC,double **xNHCP,double *mNHC,
+void CPINTEGRATE::get_fictKE(int n,complex *v, double *m,int len, int num,int nck,
+          double ***vNHC,double ***xNHC,double ***xNHCP,double *mNHC,
           int nkx0_red,int nkx0_uni,int nkx0_zero,
-          double *ekin_ret,double *ekinNHC_ret,double gamma,double *potNHC_ret)
+          double *ekin_ret,double *ekinNHC_ret,double *potNHC_ret)
 //============================================================================
   {// Begin Function 
 //============================================================================
@@ -183,11 +188,12 @@ void CPINTEGRATE::get_fictKE(int n,complex *v, double *m,int len, int num,
   double potNHC  = 0.0;
 
   if(ISOKIN_OPT==1){
+    for(int k=0;k<nck;k++){
     for(int j=0;j<len;j++){
     for(int i=0;i<num;i++){
-      ekinNHC += mNHC[j]*vNHC[i][j]*vNHC[i][j];
-      potNHC  += xNHC[i][j];
-    }}//endfor
+      ekinNHC += mNHC[j]*vNHC[k][i][j]*vNHC[k][i][j];
+      potNHC  += xNHC[k][i][j];
+    }}}//endfor
   }//endif
 
   for(int i=istrt0;i<istrt;i++){ekin += v[i].getMagSqr()*m[i];}       // g=0

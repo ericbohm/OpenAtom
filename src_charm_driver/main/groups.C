@@ -24,6 +24,7 @@
 #define CHARM_ON
 #include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomoutput.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //----------------------------------------------------------------------------
@@ -323,10 +324,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    double eKineticNhc_loc= 0.0;
    double potNhc_loc     = 0.0;
    int iwrite_atm        = 0;
-   int myoutput_on       = output_on;
-
-   //   CkPrintf("entering atom integrate!\n");
-   if(iteration+1>config.maxIter){myoutput_on = 0;}
+   int myoutput_on       = 0;
 
    int div     = (natm / nproc);
    int rem     = (natm % nproc);
@@ -627,6 +625,22 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
      copySlowToFast();
      outputAtmEnergy();
+
+     // iteration is time of atoms[i].xold
+     // maxIter is 1 more than you need : slightly annoying but livable
+     int output_on = config.atmOutputOn;
+     if(output_on==1 && iteration<=config.maxIter-1){ 
+       int pi_beads   = 1;
+       int iwrite_atm = 0;
+       int myid       = CkMyPe();
+       ATOMOUTPUT::ctrl_piny_output(iteration,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
+                                    &iwrite_atm,output_on);
+       if(myid==0 && iwrite_atm>0){
+         CkPrintf("-----------------------------------\n");
+         CkPrintf("Writing atoms to disk at time %d\n",iteration);
+         CkPrintf("-----------------------------------\n");
+       }//endif
+     }//endif
 
      //everybody has to have received all the atoms before continuing : not just me
      int i=0;

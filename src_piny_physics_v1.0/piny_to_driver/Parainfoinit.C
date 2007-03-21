@@ -104,7 +104,6 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->natm_tot       = natm_tot;
    sim->natm_nl        = natm_nl;
    sim->nlIters        = nlIters;
-   sim->ntime          = ntime;
    sim->dt             = dt;
    sim->vol            = vol;
 
@@ -118,6 +117,12 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->cp_std         = cp_std;
    sim->cp_wave        = cp_wave;
    sim->cp_grad_corr_on= cp_grad_corr_on;
+
+   if(cp_min_opt==0){
+     sim->ntime          = ntime+1;
+   }else{
+     sim->ntime          = ntime;
+   }//endif
 
    sim->tol_norb       = tol_norb;
    sim->tol_cp_min     = tol_cp_min;

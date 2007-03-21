@@ -490,7 +490,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("MagForPsi   =  %5.8lf | %5.8lf per 100 atoms\n", d1,d1/rnatm);
+    CkPrintf("MagForPsi   =  %5.8lf | %5.8lf per entity\n", d1,d1/rnatm);
     CkPrintf("Memory      =  %d\n",CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
@@ -712,8 +712,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   tk_x           = NULL;
   tk_y           = NULL;
   tk_z           = NULL;
+  int len_nhc_cp;
+  int num_nhc_cp;
+  int nck_nhc_cp;
+  CPINTEGRATE::fetchNHCsize(&len_nhc_cp,&num_nhc_cp,&nck_nhc_cp);
   initGStateSlab(&gs,sizeX,size,gSpaceUnits,realSpaceUnits,s_grain,
-                 thisIndex.y,thisIndex.x);
+                 thisIndex.y,thisIndex.x,len_nhc_cp,num_nhc_cp,nck_nhc_cp);
 
 //============================================================================
 // Load Balancing etc
@@ -1170,19 +1174,22 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 //============================================================================
 // Init NHC, Sample velocities 
 
-  int ncoef     = gSpaceNumPoints;
   int ncoef_use = gs.numPoints-gs.nkx0_red;
-  int maxLenNHC = LEN_NHC_CP;
-  int maxNumNHC = NUM_NHC_CP;
-  CPINTEGRATE::initCPNHC(ncoef,maxLenNHC,maxNumNHC,&gs.len_nhc_cp,&gs.num_nhc_cp,
-                         &gs.kTCP,&gs.tauNHCCP,gs.mNHC,&gs.degfree,&gs.degfreeNHC,
-                         &gs.gammaNHC,ncoef_use,gs.nkx0_zero,gs.v0NHC,gs.a2NHC,gs.a4NHC);
+  int maxLenNHC = gs.len_nhc_cp; // double check
+  int maxNumNHC = gs.num_nhc_cp; // double check
+  int maxNckNHC = gs.nck_nhc_cp; // double check
+
+  CPINTEGRATE::initCPNHC(ncoef_use,gs.nkx0_zero,maxLenNHC,maxNumNHC,maxNckNHC,
+                         &gs.kTCP,&gs.tauNHCCP,&gs.degfree,&gs.degfreeNHC,
+                         gs.mNHC,gs.v0NHC,gs.a2NHC,gs.a4NHC,
+                         gs.degFreeSplt,gs.istrNHC,gs.iendNHC);
 
   if(cp_min_opt==0){
    CPINTEGRATE::CPSmplVel(gs.numPoints,coef_mass,gs.packedVelData,
-                          gs.len_nhc_cp,gs.num_nhc_cp,gs.mNHC,gs.vNHC,gs.xNHC,gs.xNHCP,
-                          gs.a2NHC,gs.kTCP,istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,
-                          gs.nkx0_zero,gs.degfree,gs.degfreeNHC,gs.gammaNHC);
+                          gs.len_nhc_cp,gs.num_nhc_cp,gs.nck_nhc_cp,
+                          gs.mNHC,gs.vNHC,gs.xNHC,gs.xNHCP,gs.a2NHC,
+                          gs.kTCP,istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,
+                          gs.nkx0_zero,gs.degfree,gs.degfreeNHC);
   }//endif
 
 #ifdef _CP_DEBUG_PSI_OFF_
@@ -2350,13 +2357,14 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
   complex *psi      = gs.packedPlaneData;
   complex *vpsi     = gs.packedVelData;       // to evolve psi to time, t.
   complex *forces   = gs.packedForceData;
-  double **xNHC     = gs.xNHC;
-  double **xNHCP    = gs.xNHCP;
-  double **vNHC     = gs.vNHC;
-  double **fNHC     = gs.fNHC;          
+  double ***xNHC    = gs.xNHC;
+  double ***xNHCP   = gs.xNHCP;
+  double ***vNHC    = gs.vNHC;
+  double ***fNHC    = gs.fNHC;          
   double *mNHC      = gs.mNHC;          
   int len_nhc_cp    = gs.len_nhc_cp;
   int num_nhc_cp    = gs.num_nhc_cp;
+  int nck_nhc_cp    = gs.nck_nhc_cp;
   int nkx0_red      = gs.nkx0_red;
   int nkx0_uni      = gs.nkx0_uni;
   int nkx0_zero     = gs.nkx0_zero;
@@ -2370,20 +2378,23 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
      CkExit();
   }//endif
 
+  int myiteration = iteration;
+  if(cp_min_opt==0){myiteration=iteration-1;}
+
 //============================================================================
 // Set the file names and write the files
 
   iwrite_now     = 0;
   if(config.stateOutputOn==1){
 
-    if( ((iteration % ndump_frq)==0) || (iteration==config.maxIter) || 
+    if( ((myiteration % ndump_frq)==0) || (iteration==config.maxIter) || 
           exitFlag==1){
     //------------------------------------------------------------------
     // Set the flag and tell the world you are writing
       iwrite_now = 1;
       if(ind_state==1 && ind_chare==1){
         CkPrintf("-----------------------------------\n");
-        CkPrintf("Writing states to disk on step %d\n",iteration);
+        CkPrintf("Writing states to disk at time %d\n",myiteration);
         CkPrintf("-----------------------------------\n");
       }//endif
     //------------------------------------------------------------------
@@ -2391,9 +2402,10 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
       if(cp_min_opt==0 && halfStepEvolve ==1){
  	 halfStepEvolve = 0;
          CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
-                      len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                      len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
                       gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                      2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC,1);
+                      2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
+                      gs.istrNHC,gs.iendNHC,1);
       }//endif
     //------------------------------------------------------------------
     // Pack the message and send it to your plane 0
@@ -2461,6 +2473,9 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
   int cp_min_opt   = (sim->cp_min_opt);
   int ibinary_write_opt = sim->ibinary_write_opt;
 
+  int myiteration = iteration;
+  if(cp_min_opt==0){myiteration=iteration-1;}
+
 //============================================================================
 // Receive the message
 
@@ -2501,7 +2516,8 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
        sprintf(psiName, "%s/newState%d.out", config.dataPath,ind_state);
        sprintf(vpsiName,"%s/newVstate%d.out",config.dataPath,ind_state);
        writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
-                      sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt);
+                      sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
+                      myiteration,ind_state);
      fftw_free(tpsi); tpsi  = NULL;
      fftw_free(tvpsi);tvpsi = NULL;
      fftw_free(tk_x); tk_x  = NULL;
@@ -2562,14 +2578,15 @@ void CP_State_GSpacePlane::integrateModForce() {
   int ncoef          = gs.numPoints;
   int len_nhc        = gs.len_nhc_cp; 
   int num_nhc        = gs.num_nhc_cp;
+  int nck_nhc        = gs.nck_nhc_cp;
   complex *psi_g     = gs.packedPlaneData; 
   complex *forces    = gs.packedForceData; 
   complex *forcesold = gs.packedVelData; // for minimization not cp
   complex *vpsi_g    = gs.packedVelData; // for cp not minimization
-  double **fNHC      = gs.fNHC;
-  double **vNHC      = gs.vNHC;
-  double **xNHC      = gs.xNHC;
-  double **xNHCP     = gs.xNHCP;
+  double ***fNHC     = gs.fNHC;
+  double ***vNHC     = gs.vNHC;
+  double ***xNHC     = gs.xNHC;
+  double ***xNHCP    = gs.xNHCP;
   double *mNHC       = gs.mNHC;
   double *v0NHC      = gs.v0NHC;
   double *a2NHC      = gs.a2NHC;
@@ -2580,7 +2597,10 @@ void CP_State_GSpacePlane::integrateModForce() {
   int nkx0_zero      = gs.nkx0_zero;
   double degfree     = gs.degfree;
   double degfreeNHC  = gs.degfreeNHC;
-  double gammaNHC    = gs.gammaNHC;
+  double *degFreeSplt= gs.degFreeSplt;
+  int *istrNHC       = gs.istrNHC;
+  int *iendNHC       = gs.iendNHC;
+
   double fictEke = 0.0;
   double ekeNhc  = 0.0;
   double potNHC  = 0.0;
@@ -2663,10 +2683,10 @@ void CP_State_GSpacePlane::integrateModForce() {
 
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
-               coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,fNHC,vNHC,xNHC,xNHCP,
+               coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
    	       mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
-               nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,gammaNHC,
-               halfStepEvolve);
+               nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
+	       degFreeSplt,istrNHC,iendNHC,halfStepEvolve);
   halfStepEvolve = 1;
 
 #ifdef _GLENN_CHECK_INTEGRATE_
@@ -3293,13 +3313,14 @@ void CP_State_GSpacePlane::sendRedPsiV(){
   complex *psi      = gs.packedPlaneData;
   complex *vpsi     = gs.packedVelData;       // to evolve psi to time, t.
   complex *forces   = gs.packedForceData;
-  double **xNHC     = gs.xNHC;
-  double **xNHCP    = gs.xNHCP;
-  double **vNHC     = gs.vNHC;
-  double **fNHC     = gs.fNHC;          
+  double ***xNHC    = gs.xNHC;
+  double ***xNHCP   = gs.xNHCP;
+  double ***vNHC    = gs.vNHC;
+  double ***fNHC    = gs.fNHC;          
   double *mNHC      = gs.mNHC;          
   int len_nhc_cp    = gs.len_nhc_cp;
   int num_nhc_cp    = gs.num_nhc_cp;
+  int nck_nhc_cp    = gs.nck_nhc_cp;
   int nkx0_red      = gs.nkx0_red;
   int nkx0_uni      = gs.nkx0_uni;
   int nkx0_zero     = gs.nkx0_zero;
@@ -3314,9 +3335,10 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 #ifdef JUNK
   halfStepEvolve = 0; // do the 1/2 step update now
   CPINTEGRATE::cp_evolve_vel(ncoef,forces,vpsi,coef_mass,
-                             len_nhc_cp,num_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
+                             len_nhc_cp,num_nhc_cp,nck_nhc_cp,fNHC,vNHC,xNHC,xNHCP,mNHC,
                              gs.v0NHC,gs.a2NHC,gs.a4NHC,kTCP,nkx0_red,nkx0_uni,nkx0_zero,
-                             2,iteration,gs.degfree,gs.degfreeNHC,gs.gammaNHC,1);
+                             2,iteration,gs.degfree,gs.degfreeNHC,gs.degFreeSplt,
+                             gs.istrNHC,gs.iendNHC,1);
 #endif
 
 //=============================================================================
@@ -3458,6 +3480,9 @@ void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
   int ncoef         = gs.numPoints;
   int ncoef_red     = gs.nkx0_red;
   complex *vpsi     = gs.packedVelData;
+  int istrt0        = gs.nkx0_red;
+  int istrt         = gs.nkx0_red+gs.nkx0_zero;
+  int iend          = gs.nkx0_red+gs.nkx0_uni;
 
   if(ncoef_red>0){
     complex *vpsi_red = gs.packedRedPsiV;
@@ -3465,9 +3490,15 @@ void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
   }//endif
 
   ake_old = 0.0;
+#ifndef _BETTER_KINET_
   for(int i=0;i<ncoef;i++){
     ake_old   += coef_mass[i]*(vpsi[i].re*vpsi[i].re+vpsi[i].im*vpsi[i].im);
   }//endfor
+#else
+  for(int i=istrt0;i<istrt;i++){ake_old += vpsi[i].getMagSqr()*coef_mass[i];}       // g=0
+  for(int i=istrt;i<iend;i++)  {ake_old += vpsi[i].getMagSqr()*(2.0*coef_mass[i]);} // gx=0
+  for(int i=iend;i<n;i++)      {ake_old += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
+#endif
 
 }//end routine
 //==============================================================================
@@ -3678,15 +3709,27 @@ void CP_State_GSpacePlane::doNewPsiV(){
  int ncoef           = gs.numPoints;
  complex *psi_g      = gs.packedPlaneData;
  complex *psi_g_tmp  = gs.packedPlaneDataTemp;
+ int istrt0          = gs.nkx0_red;
+ int istrt           = gs.nkx0_red+gs.nkx0_zero;
+ int iend            = gs.nkx0_red+gs.nkx0_uni;
 
- double ake_new = 0.0;
  for(int i=0;i<ncoef;i++){
    double vre = (psi_g[i].re-psi_g_tmp[i].re)/dt;
    double vim = (psi_g[i].im-psi_g_tmp[i].im)/dt;
    vpsi[i].re = vre;
    vpsi[i].im = vim;
-   ake_new   += coef_mass[i]*(vre*vre + vim*vim);
  }//endif
+
+ double ake_new = 0.0;
+#ifndef _BETTER_KINET_
+ for(int i=0;i<ncoef;i++){
+   ake_new   += coef_mass[i]*(vpsi[i].re*vpsi[i].re + vpsi[i].im*vpsi[i].im);
+ }//endif
+#else
+ for(int i=istrt0;i<istrt;i++){ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // g=0
+ for(int i=istrt;i<iend;i++)  {ake_new += vpsi[i].getMagSqr()*(2.0*coef_mass[i]);} // gx=0
+ for(int i=iend;i<n;i++)      {ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
+#endif
 
  double scale = sqrt(ake_old/ake_new);
  for(int i=0;i<ncoef;i++){
@@ -3724,10 +3767,14 @@ void CP_State_GSpacePlane::screenOutputPsi(){
   complex *psi      = gs.packedPlaneData;       //orthogonal psi
   if(cp_min_opt==0){psi=gs.packedPlaneDataScr;} //non-orthogonal psi
 
+  int ntime = config.maxIter;
+  if(cp_min_opt==0){ntime-=1;}
+
 //==============================================================================
 // Screen Output
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
+  if(iteration<=ntime){
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
@@ -3737,8 +3784,6 @@ void CP_State_GSpacePlane::screenOutputPsi(){
           if(cp_min_opt==0){
             double vre=vpsi[i].re;
             double vim=vpsi[i].im;
-            if(iteration>1){
-	    }
  	    CkPrintf("VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
@@ -3758,6 +3803,7 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 	}//endif
       }//endfor
     }//endif
+  }//endif
 #endif
 
 //==============================================================================

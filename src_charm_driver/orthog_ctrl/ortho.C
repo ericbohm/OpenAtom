@@ -135,7 +135,11 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	  PRINT_LINE_STAR; CkPrintf("\n");
 	  PRINT_LINE_STAR;
 	}//endif
-	CkPrintf("Beginning Iteration %d \n", numGlobalIter);
+        if(numGlobalIter<config.maxIter){
+  	  CkPrintf("Beginning Iteration %d \n", numGlobalIter);
+	}else{
+  	  CkPrintf("Completing Iteration %d \n", numGlobalIter-1);
+	}//endif
 	PRINT_LINE_DASH;
       }//endif
     }

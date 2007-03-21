@@ -21,7 +21,7 @@ INTERFACE_FILES       = parse.o \
                         set_inter_dict.o get_clong.o set_exclude.o \
                         path_integral_init.o exl_sort.o read_coord.o 
 
-INTERFACE_CP_FILES    = set_wave_params.o set_coef_NHC.o \
+INTERFACE_CP_FILES    = set_wave_params.o  \
                         control_set_cp_ewald.o set_cp_ewald.o \
                         search_base_cp.o \
                         set_vps_dict.o control_vps_params.o \

@@ -1092,7 +1092,7 @@ void set_sim_dict_nhc(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict =18;
+  *num_dict =19;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_nhc")-1;
 
 /*========================================================================*/
@@ -1196,6 +1196,12 @@ void set_sim_dict_nhc(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[18].error_mes,"a number >=1");
         strcpy((*dict)[18].keyword,"atm_num_nhc_iso");
         strcpy((*dict)[18].keyarg,"1");
+  /*---------------------------------------------------------------------*/
+  /*  19)\cp_nhc_chunk{#} */
+        i = 19;
+        strcpy((*dict)[i].error_mes,"a number >= 1 ");
+        strcpy((*dict)[i].keyword,"cp_nhc_chunk");
+        strcpy((*dict)[i].keyarg,"1");
 /*------------------------------------------------------------------------*/
 /*========================================================================*/
 /*                   End Subprogram:                                      */

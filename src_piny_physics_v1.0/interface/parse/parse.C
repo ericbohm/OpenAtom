@@ -306,28 +306,6 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   }//endif
 
 //========================================================================
-// XIII) Set thermostats: Done before reading the coeffs                 
-//                        CP NHC mallocing                                
-//                (interface/coords/set_coef_NHC.c)                       
-
-//  printf("Before coef_nhc \n");  DEBUG_READ_INT
-
-  if(cp_on==1){
-
-     if(cp_md==1){
-
-       set_coef_NHC(cpcoeffs_info,cpopts,cptherm_info,&cp_parse,tot_memory);
-
-     } else {
-
-       cptherm_info->num_c_nhc      = 0;
-       cptherm_info->massiv_flag    = 0;
- 
-     }//endif : cp_md_on
-
-  }//endif : cp_on
-
-//========================================================================
 //   XIV) Initialize path integral transformations:
 
 //  printf("Before path ini \n");  DEBUG_READ_INT

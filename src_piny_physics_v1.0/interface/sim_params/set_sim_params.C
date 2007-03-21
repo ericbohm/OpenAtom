@@ -2036,7 +2036,6 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
    /*-----------------------------------------------------------------------*/ 
   /* 15)\cp_therm_heat_fact{#} */
      sscanf(dict[15].keyarg,"%lg",&real_key_arg);
-     cptherm_info->cp_therm_heat_fact = real_key_arg;
      index=15;
      if(real_key_arg<1.0){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
@@ -2073,7 +2072,14 @@ void set_sim_params_nhc(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      if(int_key_arg<1){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
      }/*endif*/
-
+  /*---------------------------------------------------------------------*/
+  /*  19)\cp_nhc_chunk{#} */
+     index=19;
+     sscanf(dict[19].keyarg,"%d",&int_key_arg);
+     cptherm_info->nck_c_nhc = int_key_arg;
+     if(int_key_arg<1){
+       keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+     }/*endif*/
 
 /*========================================================================*/
     }/*end routine*/ 

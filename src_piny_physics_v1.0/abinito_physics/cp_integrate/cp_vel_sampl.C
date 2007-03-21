@@ -13,11 +13,11 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
-                            double *mNHC,double **vNHC,double **xNHC, double **xNHCP,
+void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,int nck_nhc,
+                            double *mNHC,double ***vNHC,double ***xNHC, double ***xNHCP,
                             double *a2NHC, double kT,int istart_typ_cp,
                             int nkx0_red,int nkx0_uni,int nkx0_zero,
-                            double degfree,double degfreeNHC,double gammaNHC)
+                            double degfree,double degfreeNHC)
 //============================================================================
     {//Begin Function
 //============================================================================
@@ -31,7 +31,7 @@ void CPINTEGRATE::CPSmplVel(int n,double *m,complex *v,int len_nhc,int num_nhc,
        for(int i=0;i<n;i++){v[i].im = vtmp[i];}
      delete [] vtmp;
   }//endif
-  cpSamplNHC(len_nhc,num_nhc,vNHC,xNHC,xNHCP,mNHC,a2NHC,kT);
+  cpSamplNHC(len_nhc,num_nhc,nck_nhc,vNHC,xNHC,xNHCP,mNHC,a2NHC,kT);
 
 //============================================================================
 // Scale the velocities
@@ -98,7 +98,8 @@ void CPINTEGRATE::sampl1DVelOneT(int n, double* v,double* mass,
 //==================================================================== 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==================================================================== 
-void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double **x,double **xp,
+void CPINTEGRATE::cpSamplNHC(int len,int num,int nck,
+                             double*** v,double ***x,double ***xp,
                              double *mass, double *a2,  double  kT)
 //=================================================================== 
    {//begin routine 
@@ -113,38 +114,42 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double **x,double **xp,
 //===================================================================
 // Sample unit gaussian
 
-   int n = num*len;
+   int n = num*len*nck;
    double *temp  = new double[n];
    double *ptemp = temp-1;
 
    gaussran(n,iseed,iseed2,qseed,ptemp);
    int iii=0;
+   for(int k=0;k<nck;k++){
    for(int i=0;i<num;i++){
    for(int j=0;j<len;j++){
-     v[i][j]=temp[iii];
+     v[k][i][j]=temp[iii];
      iii++;
-   }}//endfor
+   }}}//endfor
 
    gaussran(n,iseed,iseed2,qseed,ptemp);
+
    iii=0;
+   for(int k=0;k<nck;k++){   
    for(int i=0;i<num;i++){
    for(int j=0;j<len;j++){
-     xp[i][j]=temp[iii];
+     xp[k][i][j]=temp[iii];
      iii++;
-   }}//endfor
+   }}}//endfor
 
    delete []temp;
 
 //===================================================================
 // Add the width
 
+   for(int k=0;k<nck;k++){
    for(int j=0;j<len;j++){
      double width = sqrt(kT/mass[j]); //kT has boltz
      for(int i=0;i<num;i++){
-       v[i][j]  *= width;
-       xp[i][j] *= sqrt(a2[i]);
+       v[k][i][j]  *= width;
+       xp[k][i][j] *= sqrt(a2[i]);
      }//endfor
-   }//endfor
+   }}//endfor
 
 //===================================================================
 // Apply isokinetic constraint to each dimer
@@ -157,14 +162,15 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,double** v,double **x,double **xp,
      EXIT(1);
    }//endif
 
+   for(int k=0;k<nck;k++){
    for(int i=0;i<num;i++){
-     double ekin = mass[0]*v[i][0]*v[i][0]
-                 + mass[1]*v[i][1]*v[i][1];
+     double ekin = mass[0]*v[k][i][0]*v[k][i][0]
+                 + mass[1]*v[k][i][1]*v[k][i][1];
      double sc   = sqrt(kT/ekin);
-     x[i][0] = 0.0;
-     v[i][0] *= sc;
-     v[i][1] *= sc;
-   }//endfor
+     x[k][i][0] = 0.0;
+     v[k][i][0] *= sc;
+     v[k][i][1] *= sc;
+   }}//endfor
 
 //------------------------------------------------------------------
   } //end routine 
