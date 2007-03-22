@@ -54,7 +54,9 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Tell everyone you are busy 
 
+  PRINTF("  =============================================================\n");
   PRINTF("  Reading charm parallel input from file : %s\n",input_name);
+  PRINTF("  -------------------------------------------------------------\n\n");
 
   if(PINY_MAXWORD!=MAXWORD || PINY_MAXLINE != MAXLINE){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -160,6 +162,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   int nplane_x     = minx+1;
   int nplane_x_rho = 2*minx+1;
+  PRINTF("   nplane = %d and nplane_rho = %d for the current system\n\n",
+         nplane_x,nplane_x_rho);
 
   double temp      = (gExpandFact)*((double)nplane_x);
   nchareG          = ((int)temp);
@@ -208,7 +212,10 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Tell Everyone you are done
 
+  PRINTF("  -------------------------------------------------------------\n");
   PRINTF("  Completed reading charm parallel input from file : %s\n",input_name);
+  PRINTF("  =============================================================\n\n");
+
 
 //----------------------------------------------------------------------------------
    }//end routine
@@ -635,7 +642,7 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
   if(rhoRsubplanes>1){
      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
      PRINTF("   rhoRsubplanes=%d. Disabling rho rs commlib use\n",rhoRsubplanes);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
      useGHartInsRHart  = 0; strcpy(dict[3].keyarg,"off");
      useRHartInsGHart  = 0; strcpy(dict[4].keyarg,"off");
      useGHartInsRhoRP  = 0; strcpy(dict[5].keyarg,"off");
@@ -653,7 +660,7 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
   if(nchareHartAtmT>1  && rhoRsubplanes==1){
      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
      PRINTF("   nchareHartAtmT=%d. Disabling rho hart commlib use\n",nchareHartAtmT);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
      useGHartInsRHart  = 0; strcpy(dict[3].keyarg,"off");
      useRHartInsGHart  = 0; strcpy(dict[4].keyarg,"off");
      useGHartInsRhoRP  = 0; strcpy(dict[5].keyarg,"off");
@@ -1371,7 +1378,7 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
   if(numChunks>numChunksSym) {
      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
      PRINTF("   Cleaning up numchunks > numchunksSym : %d %d\n",numChunks,numChunksSym);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
      numChunksSym=numChunks;
      sprintf(dict[28].keyarg,"%d",numChunksSym);
   }//endif
@@ -1379,7 +1386,7 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
   if(numChunks>numChunksAsym){
      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
      PRINTF("   Cleaning up numchunks > numchunksAsym : %d %d\n",numChunks,numChunksAsym);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
      numChunksAsym=numChunks;
      sprintf(dict[29].keyarg,"%d",numChunksAsym);
   }//endif
@@ -1387,7 +1394,7 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
   if(lambdaGrainSize==nstates && orthoGrainSize!=nstates){
      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
      PRINTF("   Cleaning up lambdaGrainSize==nstates && orthoGrainSize!=nstates\n");
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
      lambdaGrainSize=orthoGrainSize;
      sprintf(dict[10].keyarg,"%d",lambdaGrainSize);
   }//endif
@@ -1899,9 +1906,9 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
         if(orthoGrainSize>32){orthoGrainSize=32;}
         if(orthoGrainSize>sGrainSize){orthoGrainSize=sGrainSize;}
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("   Changing the default choice of orthograinsize from %d\n",iii);
-        PRINTF("   to %d\n",orthoGrainSize);
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   Changing the default choice of orthograinsize\n");
+        PRINTF("             from %d to %d\n",iii,orthoGrainSize);
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
         sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
       }//endif
     }//endif
@@ -1919,7 +1926,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
          PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
          PRINTF("   (sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
          PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
-         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
       }//endif
       lambdaGrainSize=orthoGrainSize;
       sprintf(dict_pc[10].keyarg,"%d",lambdaGrainSize);
@@ -2350,28 +2357,28 @@ void Config::rangeExit(int param, char *name, int iopt){
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       PRINTF("   Chare array expansion factor out of range %g\n",gExpandFact);
       PRINTF("   This probably could work but I'd check first.\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
     if(gExpandFactRho<1.0){
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       PRINTF("   RhoChare array expansion factor out of range %g\n",gExpandFactRho);
       PRINTF("   This probably could work but I'd check first.\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
     if(nchareG<nplane_x){
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       PRINTF("   Too few g-space chares %d %d\n",nplane_x,nchareG);
       PRINTF("   This probably could work but I'd check first.\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
     if(nchareRhoG<nplane_x_rho){
       PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       PRINTF("   Too few rhog-space chares %d %d\n",nplane_x_rho,nchareRhoG);
       PRINTF("   This probably could work but I'd check first.\n");
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
 //===================================================================================
@@ -2449,6 +2456,21 @@ void Config::rangeExit(int param, char *name, int iopt){
                gemmSplitBW, sGrainSize);
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
+    }//endif
+
+    int size1 = (nstates/sGrainSize)*(nstates/sGrainSize)*numChunksSym*nchareG;
+    int size2 = (nstates/sGrainSize)*(nstates/sGrainSize)*numChunksAsym*nchareG;
+    int size3 = (nstates/orthoGrainSize)*(nstates/orthoGrainSize);
+   
+    if(size1>numPes || size2 > numPes || size3 > numPes){
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("      You only have %d processors\n",numPes);
+      PRINTF("      You have asked for %d Symm  PC\n",size1);
+      PRINTF("      You have asked for %d Asymm PC\n",size2);
+      PRINTF("      You have asked for %d orthos  \n",size3);
+      PRINTF("      nstates=%d sGrainSize=%d numChunks=%d %d orhoGrain=%d\n",
+                 nstates,sGrainSize,numChunksSym,numChunksAsym,orthoGrainSize);
+      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
 //===================================================================================
