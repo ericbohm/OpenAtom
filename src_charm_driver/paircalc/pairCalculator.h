@@ -24,7 +24,6 @@ class PairCalcID {
   int nstates; 
   bool Symmetric;
   bool useComlib;
-  bool useEtoM;
   bool useDirectSend;
   bool isDoublePacked;
   bool conserveMemory;
@@ -61,14 +60,13 @@ class PairCalcID {
       delete [] proxyRNotFrom;
   }
 
-  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority, bool _useEtoM, bool _useDirectSend) {
+  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
     Aid = aid;
     GrainSize = grain;
     numChunks = _numChunks;
     nstates = s;
     Symmetric = sym;
     useComlib = _useComlib;
-    useEtoM = _useEtoM;
     useDirectSend = _useDirectSend;
     conserveMemory = _conserveMemory;
     existsRproxy=false;
@@ -120,7 +118,6 @@ class PairCalcID {
     nstates=pid.nstates;
     Symmetric=pid.Symmetric;
     useComlib=pid.useComlib;
-    useEtoM=pid.useEtoM;
     useDirectSend=pid.useDirectSend;
     isDoublePacked=pid.isDoublePacked;
     conserveMemory=pid.conserveMemory;
@@ -151,7 +148,6 @@ class PairCalcID {
     p|nstates;
     p|Symmetric;
     p|useComlib;
-    p|useEtoM;
     p|useDirectSend;
     p|isDoublePacked;
     p|conserveMemory;
@@ -186,29 +182,29 @@ class PairCalcID {
       }
     if(existsLproxy)
       {
-	if(useEtoM)
+	if(useDirectSend)
 	  p|cproxy;
 	PUParray(p,proxyLFrom,numChunks);
-	if(useEtoM)
+	if(useDirectSend)
 	  p|listLFrom;
       }
     if(existsLNotFromproxy)
       {
 	PUParray(p,proxyLNotFrom,numChunks);
-	if(useEtoM)
+	if(useDirectSend)
 	  p|listLNotFrom;
       }
     if(existsRproxy)
       {
 	PUParray(p,proxyRNotFrom,numChunks);
-	if(useEtoM)
+	if(useDirectSend)
 	  p|listRNotFrom;
       }
   }
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, int usePairEtoM, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
