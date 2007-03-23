@@ -113,9 +113,10 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
 #ifdef CMK_VERSION_BLUEGENE
-  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
-#else
+  //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
+#else
+
 #endif
 
 

@@ -13,7 +13,7 @@
 #include "DirectMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #ifdef CMK_VERSION_BLUEGENE
-#include "RectMulticastStrategy.h"
+//#include "RectMulticastStrategy.h"
 #endif
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
