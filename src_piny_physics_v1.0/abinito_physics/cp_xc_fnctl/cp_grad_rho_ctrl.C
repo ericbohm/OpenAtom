@@ -36,7 +36,6 @@ void CPXCFNCTS::CP_getGGAFunctional(
 
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
-    static double gc_cut = 1.0e-6;/* Cutoff for evaluating (grad rho/rho) */
     static double rho_heali;      /* Inverse of healing length on switching fn */
     double srho,dsrho;            /* Switching function and its derivative */
     double rho,rho_cut,g_rho2,g_rhoi,rsw;
@@ -45,9 +44,11 @@ void CPXCFNCTS::CP_getGGAFunctional(
     int cp_lyp   = cpopts->cp_lyp;
 
     double ex,ec,dfx_drho,fx,fc,dfx_dgrho,dfc_drho,dfc_dgrho,dfxc_dgrho;
-    static double beta = 0.0042;
     double unit_gx,unit_gy,unit_gz;
 
+    static double beta = 0.0042;
+
+    double gc_cut = cppseudo->gga_cut;
     double vol    = gencell->vol;
     double vscale = vol/((double)npts);
     
@@ -57,6 +58,13 @@ void CPXCFNCTS::CP_getGGAFunctional(
     ex = ec = 0.0;
     rho_heali = 1.0/(3.9*gc_cut);
     rho_cut   = 0.1*gc_cut;
+
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+    char fname[1000];
+    sprintf(fname,"gradcorr.%d.out",iyPlane_ind);
+    FILE *fp = fopen(fname,"w");
+    fprintf(fp,"vscale %g rho_cut %g\n",vscale,rho_cut);
+#endif
 
 //============================================================================
 // Start Loop over part of grid I have 
@@ -74,6 +82,10 @@ void CPXCFNCTS::CP_getGGAFunctional(
 // Get density and decide if the loop should be done
 
      rho   =  density[i];
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+     fprintf(fp,"rho %g",rho);
+#endif
+
      if(rho > rho_cut){
 
 //----------------------------------------------------------
@@ -82,6 +94,10 @@ void CPXCFNCTS::CP_getGGAFunctional(
         g_rho2 = rhoIRX[i]*rhoIRX[i] 
                + rhoIRY[i]*rhoIRY[i] 
                + rhoIRZ[i]*rhoIRZ[i];
+
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+       fprintf(fp," rhoi %g %g %g grho2 %g",rhoIRX[i],rhoIRY[i],rhoIRZ[i],g_rho2);
+#endif
 
 //----------------------------------------------------------
 // Calculate the switching function and its derivative
@@ -119,6 +135,10 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //----------------------------------------------------------
 // Finish the energy
 
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+       fprintf(fp," fx %g fc %g",fx,fc);
+#endif
+
        ex += fx;
        ec += fc;
 
@@ -144,13 +164,20 @@ void CPXCFNCTS::CP_getGGAFunctional(
       rhoIRZ[i] = 0.0;
 
    } /* Endif density is greater than cutoff */
-         
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+    fprintf(fp,"\n");
+#endif
  }}//endfor
 
 //============================================================================
 // Store the energy
 
    (*exc_gga_ret) = (ex+ec)*vscale;
+
+#ifdef _CPDEBUG_XC_FUNCTIONALS_
+   fprintf(fp,"done %g\n",exc_gga_ret[0]);
+   fclose(fp);
+#endif
 
 //============================================================================
    }/* end function */
