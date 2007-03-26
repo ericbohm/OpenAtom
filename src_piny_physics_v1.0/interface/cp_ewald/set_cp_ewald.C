@@ -1406,7 +1406,7 @@ void set_fftsizes(int nrad_in,int *nrad_ret, int *krad, int fft_opt)
   krad[29]  = 90;
   krad[30]  = 96;
   krad[31]  = 112;
-  if(fft_opt==0){krad[31]  = 100;}
+  //  if(fft_opt==0){krad[31]  = 100;}
   krad[32]  = 112;
   krad[33]  = 120;
   krad[34]  = 128;
