@@ -116,7 +116,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #else
-
+  CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #endif
 
 
