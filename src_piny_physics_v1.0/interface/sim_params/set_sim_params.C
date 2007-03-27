@@ -784,6 +784,11 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
           gensimopts->cp_min_update = 0; ifound++;}
        if(ifound != 1){
           keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+       if(gensimopts->cp_min_update==0){
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   You are in danger! Your cp_min_update is off! \n");
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+       }//
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/

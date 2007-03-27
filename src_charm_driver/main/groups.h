@@ -67,10 +67,16 @@ class AtomsGrp: public Group {
   void StartRealspaceForces();
   void outputAtmEnergy();
   void zeroforces() {
+    double *fx = fastAtoms.fx;
+    double *fy = fastAtoms.fy;
+    double *fz = fastAtoms.fz;
     for(int i=0; i<natm; i++){
       atoms[i].fx = 0;
       atoms[i].fy = 0;
       atoms[i].fz = 0;
+      fx[i]       = 0;
+      fy[i]       = 0;
+      fz[i]       = 0;
     }//endfor
   }//end routine
   void zeronhc(){for(int i=0;i<natm;i++){atomsNHC[i].posKT = 0;}}

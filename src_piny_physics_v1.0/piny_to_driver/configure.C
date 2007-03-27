@@ -743,7 +743,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   //  9)\stateOutputOn{}
     ind=9;
     strcpy((*dict)[ind].keyword,"stateOutputOn");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"off/on");
   //-----------------------------------------------------------------------------
   // 10)\psipriority{}
@@ -905,6 +905,11 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     ind=9;
     parse_on_off(dict[ind].keyarg,&stateOutputOn,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(stateOutputOn==0){
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   You are in a state of danger! Your stateOutput is off! \n");
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+    }//
   //-----------------------------------------------------------------------------
   // 10)\psipriority{}
     ind=10;
@@ -1731,7 +1736,7 @@ void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
   // 3)\atmOutputOn{}
     ind=3;
     strcpy((*dict)[ind].keyword,"atmOutputOn");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1772,7 +1777,11 @@ void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_
     ind=3;
     parse_on_off(dict[ind].keyarg,&atmOutputOn,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-
+    if(atmOutputOn==0){
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   You are in danger! Your atmOutput is off! \n");
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+    }//
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================

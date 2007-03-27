@@ -87,14 +87,6 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
     for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
 
-    zeroforces();
-    if(iextended_on==1 && cp_min_opt==0){
-       zeronhc();
-    }//endif
-
-//==============================================================================
-// A copy of the atoms for fast routines
-
     fastAtoms.natm = natm;
     fastAtoms.q    = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.x    = (double *)fftw_malloc(natm*sizeof(double));
@@ -103,6 +95,15 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
+
+    zeroforces();
+    if(iextended_on==1 && cp_min_opt==0){
+       zeronhc();
+    }//endif
+
+//==============================================================================
+// A copy of the atoms for fast routines
+
 
     copySlowToFast();
     double *qq = fastAtoms.q;
@@ -415,6 +416,7 @@ void AtomsGrp::outputAtmEnergy() {
      if(cp_min_opt==0){
         CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
         CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
+        CkPrintf("atm fmag    = %5.8lf\n",fmag);
         if(iextended_on==1){
           double free_Nhc;
           if(isokin_opt==0){

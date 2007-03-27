@@ -532,7 +532,7 @@ void set_sim_dict_cp(int *num_dict,DICT_WORD *dict[])
         i = 39;
         strcpy((*dict)[i].error_mes,"on,off");
         strcpy((*dict)[i].keyword,"cp_min_update");
-        strcpy((*dict)[i].keyarg,"off");
+        strcpy((*dict)[i].keyarg,"on");
 
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
