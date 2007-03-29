@@ -327,7 +327,6 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric);
 #endif
-  CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric);
   CkArrayIndexMax *elems;
   if(phantom && s1!=s2)
     elems =new CkArrayIndexMax[numZ*numChunks*2];
@@ -345,8 +344,8 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	{
 	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
 	  elems[ecount++]=idx4d;
-	  if(pcid->Symmetric)
-	    CkPrintf("O [%d,%d] initGred section includes %d %d %d %d sym %d\n",orthoX, orthoY,z[numX],s1,s2,chunk,pcid->Symmetric);
+	  //	  if(pcid->Symmetric)
+	  //	    CkPrintf("O [%d,%d] initGred section includes %d %d %d %d sym %d\n",orthoX, orthoY,z[numX],s1,s2,chunk,pcid->Symmetric);
 	}
     }
   }
@@ -365,9 +364,15 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   CProxySection_PairCalculator *sectProxy=&sProxy;
   delete [] elems;
 
-
-
   // and do delegation
+  if(pcid->Symmetric)
+    {
+      pcid->proxySym = sProxy;
+    }
+  else
+    {
+      pcid->proxyAsym = sProxy;
+    }
   if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
     {
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();       
@@ -377,14 +382,6 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
     }
   else
     {
-      if(pcid->Symmetric)
-	{
-	  pcid->proxySym = sProxy;
-	}
-      else
-	{
-	  pcid->proxyAsym = sProxy;
-	}
       if(commlib)
 	{
 	  CkPrintf("NOTE: Rectangular Send In USE\n");

@@ -1006,7 +1006,7 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
 	      *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
 					    // than non prioritized
 	    }
-	  phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize);
+	  phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize, 0);
 	  thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
 
 	}
@@ -1227,7 +1227,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
 	  // than non prioritized
 	}
-      phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize);
+      phantom->init(numExpected*numPoints*2, numPoints, flag_dp, inDataRight, blkSize,0);
       thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
     }
 
@@ -1374,8 +1374,12 @@ PairCalculator::acceptPhantomData(phantomMsg *msg)
       }
   CkAssert(numPoints== msg->numPoints); 
   memcpy(inDataRight, msg->points, numExpected*numPoints*2* sizeof(double));
+  actionType=msg->actionType;
   delete msg;
+  if(actionType==PSIV)
+    multiplyPsiV();
 }
+
 
 //PairCalculator::multiplyResult(int size, double *matrix1, double *matrix2)
 void
@@ -1419,10 +1423,11 @@ PairCalculator::multiplyPsiV()
 	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
 	  // than non prioritized
 	}
-      phantom->init(numExpected*numPoints*2, numPoints, true, inDataRight, blkSize);
+      phantom->init(numExpected*numPoints*2, numPoints, true, inDataRight, blkSize, PSIV);
       thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
     }
-
+#define DO_PSIV_INLINE 1
+#ifndef DO_PSIV_INLINE
   multiplyResultMsg *psiV= new ( grainSize*grainSize,0,0 ) multiplyResultMsg;
   // copy in outData
   CkAssert(outData!=NULL);
@@ -1435,6 +1440,48 @@ PairCalculator::multiplyPsiV()
     {
       thisProxy(thisIndex.w, thisIndex.y, thisIndex.x, thisIndex.z).multiplyResult(psiV);
     }
+#else
+  // we do not need to go through the all of multiplyresult for psiv
+  // all we really need is the setup for the multiplyHelper
+
+     // call helper function to do the math
+  int  size=grainSize*grainSize;
+  bool unitcoef=true;
+  int m_in=numPoints*2;   // rows of op(A)==rows C	 
+  int n_in=grainSize;     // columns of op(B)==columns C 
+  int k_in=grainSize;     // columns op(A) == rows op(B) 
+  double beta(0.0);
+  int orthoX=0;
+  int orthoY=0;
+  //BTransform=T offsets for C and A matrices
+  int BTCoffset=0;
+  int BTAoffset=0;
+  //BTransform=N offsets for C and A matrices
+  int BNCoffset=0;
+  int BNAoffset=0;
+  actionType=PSIV;
+  bwMultiplyHelper(size, outData, NULL, outData, NULL,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta);
+
+  sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
+  if(PCdelayBWSend)
+    {
+      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+    }
+  //collapse this into 1 flag
+  if(amPhantom)
+    sigmsg->otherdata= true;
+  else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
+    sigmsg->otherdata=true;       
+  else
+    sigmsg->otherdata= false;
+  if(gSpaceSum)
+    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+  else
+    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+
+  
+#endif
 }
 
 /**

@@ -27,8 +27,8 @@
 
 #define ALIGN16(x)        (int)((~15)&((x)+15))
 #define BUNDLE_USER_EVENT  
-#define PC_FWD_DGEMM_SPLIT 0 
-#define PC_BWD_DGEMM_SPLIT 0  
+#define PC_FWD_DGEMM_SPLIT 1 
+#define PC_BWD_DGEMM_SPLIT 1  
 // to set split values, use the config parameters: gemmSplitFWk,
 // gemmSplitFWm, etc ... 16 for happier align, 6 good for BG/L?
 
@@ -188,12 +188,14 @@ class phantomMsg : public CMessage_phantomMsg {
   int numPoints;
   double *points;
   int blkSize;
-  void init(int _size, int _numPoints, bool _flag_dp, double *_points, int _blkSize)
+  int actionType;
+  void init(int _size, int _numPoints, bool _flag_dp, double *_points, int _blkSize, int _actionType)
     {
       size=_size;
       numPoints=_numPoints;
       blkSize=_blkSize;
       memcpy(points,_points,size*sizeof(double));
+      actionType=_actionType;
     }
 
 };
