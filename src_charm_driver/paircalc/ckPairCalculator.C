@@ -317,8 +317,8 @@ PairCalculator::PairCalculator(bool sym, int grainSize, int s, int numChunks, Ck
   resultCookies=NULL;
   otherResultCookies=NULL;
   resultCookies=new CkSectionInfo[grainSize];
-  int numOrthoCol=grainSize/orthoGrainSize;
-  int numOrtho=numOrthoCol*numOrthoCol;
+  numOrthoCol=grainSize/orthoGrainSize;
+  numOrtho=numOrthoCol*numOrthoCol;
   orthoCookies=new CkSectionInfo[numOrtho];
   orthoCB=new CkCallback[numOrtho];
   if(PCstreamBWout && !collectAllTiles) 
@@ -386,8 +386,8 @@ PairCalculator::pup(PUP::er &p)
   p|phantomSym;
   p|amPhantom;
   p|useBWBarrier;
-  int numOrthoCol=grainSize/orthoGrainSize;
-  int numOrtho=numOrthoCol*numOrthoCol;
+  p|numOrthoCol;
+  p|numOrtho;
   if (p.isUnpacking()) 
   {
       mynewData=NULL;
@@ -495,16 +495,15 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 // Do not delete msg. Its a nokeep.
 //============================================================================
  
-  int numOrtho=grainSize/orthoGrainSize;
   int orthoIndexX=(msg->orthoX*orthoGrainSize-thisIndex.x)/orthoGrainSize;
   int orthoIndexY=(msg->orthoY*orthoGrainSize-thisIndex.y)/orthoGrainSize;
-  int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
-  //int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
+  int orthoIndex=orthoIndexX*numOrthoCol+orthoIndexY;
+  //int orthoIndex=orthoIndexX*numOrthoCol+orthoIndexY;
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY);
 #endif
 
-  CkAssert(orthoIndex<numOrtho*numOrtho);
+  CkAssert(orthoIndex<numOrtho);
   CkGetSectionInfo(orthoCookies[orthoIndex],msg);
   orthoCB[orthoIndex]=msg->cb;
   mCastGrpIdOrtho=msg->mCastGrpId; 
@@ -516,7 +515,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   }
   
   */
-  if(!symmetric && ++numRecd==numOrtho*numOrtho)
+  if(!symmetric && ++numRecd==numOrtho)
     {
       //      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
@@ -964,9 +963,6 @@ PairCalculator::multiplyForwardStream(bool flag_dp)
   if((numRecd == numExpected * 2 || (symmetric && thisIndex.x==thisIndex.y && numRecd==numExpected)))
     { // we are done
 
-      int numOrtho=grainSize/orthoGrainSize;
-      numOrtho*=numOrtho;
-
       if(streamFW)
 	{
 	  double *scratch= new double[actualPoints];
@@ -1243,16 +1239,15 @@ PairCalculator::sendTiles(bool flag_dp)
 {
   int tilesq=orthoGrainSize*orthoGrainSize;
   CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
-  int numOrtho=grainSize/orthoGrainSize;
   //  for(int orthoX=0; orthoX<numOrtho; orthoX++)
   //    for(int orthoY=0; orthoY<numOrtho; orthoY++)
 
   int progcounter=0;
-  for(int orthoIndex=0;orthoIndex<numOrtho*numOrtho;orthoIndex++)
+  for(int orthoIndex=0;orthoIndex<numOrtho;orthoIndex++)
       {
 	// copy into submatrix, contribute
 	// we need to stride by grainSize and copy by orthoGrainSize
-	//	int orthoIndex=orthoX*numOrtho+orthoY;
+	//	int orthoIndex=orthoX*numOrthoCol+orthoY;
 
 	if(touchedTiles[orthoIndex]==tilesq)
 	  {
@@ -1265,8 +1260,8 @@ PairCalculator::sendTiles(bool flag_dp)
 	    //		outTiles[orthoIndex][i] *= 2.0;
 	    //	    }
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	    int orthoX=orthoIndex/numOrtho;	   
-	    int orthoY=orthoIndex%numOrtho;
+	    int orthoX=orthoIndex/numOrthoCol;	   
+	    int orthoY=orthoIndex%numOrthoCol;
 	    char filename[80];
 	    snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
 	    dumpMatrixDouble(filename, outTiles[orthoIndex], orthoGrainSize, orthoGrainSize,orthoX*orthoGrainSize, orthoY*orthoGrainSize);
@@ -1309,19 +1304,18 @@ PairCalculator::contributeSubTiles(double *fullOutput)
   double *outTile=new double[orthoGrainSize*orthoGrainSize];
   bzero(outTile,sizeof(double)*orthoGrainSize*orthoGrainSize);
   //reuse the same tile each time as contribute makes its own copy
-  int numOrtho=grainSize/orthoGrainSize;
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   dumpMatrixDouble("fullOutput", fullOutput, grainSize, grainSize);
 #endif
   
-  for(int orthoX=0; orthoX<numOrtho; orthoX++)
-    for(int orthoY=0; orthoY<numOrtho; orthoY++)
+  for(int orthoX=0; orthoX<numOrthoCol; orthoX++)
+    for(int orthoY=0; orthoY<numOrthoCol; orthoY++)
       {
 	// copy into submatrix, contribute
 	// we need to stride by grainSize and copy by orthoGrainSize
-	int orthoIndex=orthoX*numOrtho+orthoY;
+	int orthoIndex=orthoX*numOrthoCol+orthoY;
 	int tileStart=orthoX*orthoGrainSize*grainSize+orthoY*orthoGrainSize;
-	CkAssert(orthoIndex<numOrtho*numOrtho);
+	CkAssert(orthoIndex<numOrtho);
 	for(int ystart=0; ystart<orthoGrainSize*orthoGrainSize; ystart+=orthoGrainSize, tileStart+=grainSize)
 	  for(int x=0;x<orthoGrainSize;x++)
 	    {
@@ -1469,8 +1463,6 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
     }
 #endif
   numRecdBW++; 
-  int numOrthoCol=grainSize/orthoGrainSize;
-  int numOrtho=numOrthoCol*numOrthoCol;
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size;i++)
       CkAssert(finite(msg->matrix1[i]));
@@ -1541,11 +1533,17 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       amatrix=matrix1;  // index is 0 in this case, so this is silly
     }
 
-  if (orthoGrainSize==grainSize||actionType==PSIV)
+  if (orthoGrainSize==grainSize)
     { // you were sent the correct section only
       amatrix=matrix1;
       // the other tiles were already collected for PSIV
-      numRecdBW=numOrthoCol*numOrthoCol;
+      numRecdBW=numOrtho;
+    }
+  else if(actionType==PSIV)
+    {
+      amatrix=matrix1;
+      // the other tiles were already collected for PSIV
+      numRecdBW=numOrtho;
     }
   else if (collectAllTiles)
     {
@@ -1616,18 +1614,14 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       beta=1.0;  // need to sum over tiles within orthoY columns
     }
 
-  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV) // have all the input we need  
-   {
+  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV) 
+   { // have all the input we need  
      // call helper function to do the math
-     // purely a readability improver
-
      bwMultiplyHelper(size, matrix1, matrix2, amatrix, amatrix2,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta);
    }
 
-  if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV)  // send results which are complete and not yet sent
-    {
-      // just a readability improver
-
+  if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV) 
+    { // send results which are complete and not yet sent
       bwSendHelper( orthoX, orthoY, numOrthoCol, numOrtho);
     }
 
@@ -2425,8 +2419,6 @@ void PairCalculator::dumpMatrixComplex(const char *infilename, complex *matrix, 
 #ifdef _NAN_CHECK_
 	CkAssert(finite(value));
 	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
-	int numOrthoCol=grainSize/orthoGrainSize;
-	int numOrtho=numOrthoCol*numOrthoCol;
 	CkAssert(tilex+tiley<numOrtho);
 #endif
 	dest[tiley+tilex][tilej*tileSize+tilei]=value;

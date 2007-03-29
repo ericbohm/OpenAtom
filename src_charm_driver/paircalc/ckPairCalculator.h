@@ -27,8 +27,8 @@
 
 #define ALIGN16(x)        (int)((~15)&((x)+15))
 #define BUNDLE_USER_EVENT  
-#define PC_FWD_DGEMM_SPLIT 1 
-#define PC_BWD_DGEMM_SPLIT 1  
+#define PC_FWD_DGEMM_SPLIT 0 
+#define PC_BWD_DGEMM_SPLIT 0  
 // to set split values, use the config parameters: gemmSplitFWk,
 // gemmSplitFWm, etc ... 16 for happier align, 6 good for BG/L?
 
@@ -443,6 +443,9 @@ class PairCalculator: public CBase_PairCalculator {
   /* to support the simpler section reduction*/
   int rck;                   //! count of received cookies
   CkGroupID mCastGrpIdOrtho;  //! group id for multicast manager ortho
+  int numOrthoCol;            //! sGrainSize/orthoGrainSize
+  int numOrtho;               //! number of orthos in our grain = numOrthoCol ^2
+
   CkGroupID mCastGrpId;      //! group id for multicast manager bw
 
   CkSectionInfo *resultCookies;  //! array of bw path section cookies
