@@ -697,12 +697,19 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }else{  //no column reduction results in minimization
       AllLambdaExpected=1;
   }//endif
-  AllLambdaExpected*=config.numChunksAsym;
 
   if(config.gSpaceSum){ // no reductions its all coming direct
-      AllLambdaExpected*=numGrains;
-  }//endif
+    if(cp_min_opt==0 && numGrains>1) 
+	AllLambdaExpected=(2*numGrains-1)*config.numChunksAsym;
+      else
+	AllLambdaExpected=numGrains*config.numChunksAsym*AllLambdaExpected;
 
+  }//endif
+  else
+    {
+      AllLambdaExpected*=config.numChunksAsym;
+
+    }
 //============================================================================
 // Just zero everything for now
 
@@ -2103,7 +2110,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   int       N       = msg->N;
   int offset        = msg->myoffset;
   if(offset<0){offset=0;}
-  //  CkPrintf("[%d %d] accepts lambda %d \n", thisIndex.x, thisIndex.y,offset);
+
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind].ka;
@@ -2116,7 +2123,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 // I) Increment the counter and do some checking
 
   countLambda++;  //lambda arrives in as many as 2 * numChunks reductions
-
+  //  CkPrintf("[%d %d] accepts lambda off %d %d of %d\n", thisIndex.x, thisIndex.y,offset, countLambda, AllLambdaExpected);
 /*
   if(thisIndex.y==0){
     dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,

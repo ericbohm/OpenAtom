@@ -1411,7 +1411,7 @@ PairCalculator::multiplyPsiV()
   // path invocation
 
   // make a message
-  if(phantomSym && symmetric && thisIndex.x!=thisIndex.y) //mirror our data to the phantom
+  if(!amPhantom && phantomSym && symmetric && thisIndex.x!=thisIndex.y) //mirror our data to the phantom
     {
       CkAssert(existsRight);
       //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
