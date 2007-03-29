@@ -786,7 +786,36 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   redPlane = 1;
   if(nchareG>1){
-    redPlane = (thisIndex.x % (nchareG-1));
+#ifdef _FANCY_PLANES_
+    if(CkNumPes()>2*nstates){
+      CkVec <int> usedVec;
+      CkVec <int> peUsedByNLZ;
+      CkVec <int> planeUsedByNLZ;
+      FILE *fp;
+      if(thisIndex.x+1==nstates){fp=fopen();}
+      for(int state=0; state<thisIndex.x;state++){
+        redPlane=nchareG-1;
+        while(redPlane>=0){
+          bool used=false;
+          int thisstateplaneproc=GSImaptable.get(state,redPlane);
+          for(int i=0;i<usedVec.size();i++){
+	    if(usedVec[i]==thisstateplaneproc){used=true;}
+          }//endfor
+	  if(!used || redPlane==0){
+	      peUsedByNLZ.push_back(thisstateplaneproc);
+	      planeUsedByNLZ.push_back(redPlane);
+	      usedVec.push_back(thisstateplaneproc);
+	      redPlane=-1;
+	  }//endif
+	  redPlane--;
+        }//endwhile
+      }//endfor
+    }else{
+      redPlane = (thisIndex.x % (nchareG-1));
+    }//endif
+#else 
+      redPlane = (thisIndex.x % (nchareG-1));
+#endif
     redPlane = (redPlane < 0 ? redPlane+nchareG : redPlane);
     redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
   }//endif
@@ -2520,11 +2549,11 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      countFileOut = 0;
      int ind_state = thisIndex.x+1;
      char psiName[200]; char vpsiName[200];
-       sprintf(psiName, "%s/newState%d.out", config.dataPath,ind_state);
-       sprintf(vpsiName,"%s/newVstate%d.out",config.dataPath,ind_state);
-       writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
-                      sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                      myiteration,ind_state);
+     sprintf(psiName, "%s/state%d.out", config.dataPathOut,ind_state);
+     sprintf(vpsiName,"%s/vState%d.out",config.dataPathOut,ind_state);
+     writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
+                    sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
+                    myiteration,ind_state);
      fftw_free(tpsi); tpsi  = NULL;
      fftw_free(tvpsi);tvpsi = NULL;
      fftw_free(tk_x); tk_x  = NULL;

@@ -678,7 +678,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 25;
+  num_dict[0] = 26;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
 //=================================================================================
@@ -695,7 +695,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   //  1)\dataPath\{}
     ind=1;
     strcpy((*dict)[ind].keyword,"dataPath");
-    strcpy((*dict)[ind].keyarg,"./");    
+    strcpy((*dict)[ind].keyarg,"./STATES");    
     strcpy((*dict)[ind].error_mes,"a directory tree");
   //-----------------------------------------------------------------------------
   //  2)\gBucketSize{}
@@ -843,6 +843,12 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"dumpMapFiles");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 26)\dataPathOut\{}
+    ind=26;
+    strcpy((*dict)[ind].keyword,"dataPathOut");
+    strcpy((*dict)[ind].keyarg,"./STATES_OUT");    
+    strcpy((*dict)[ind].error_mes,"a directory tree");
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -992,6 +998,16 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     ind=25;
     parse_on_off(dict[ind].keyarg,&dumpMapFiles,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 26)\dataPathOut\{}
+    ind=26;
+    strcpy(dataPathOut, dict[ind].keyarg);
+    if(strcasecmp(dataPathOut,dataPath)==0){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   input %s and output %s datapath must differ \n",dataPath,dataPathOut);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
 
 //----------------------------------------------------------------------------------
   }//end routine

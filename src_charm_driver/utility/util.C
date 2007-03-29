@@ -1786,7 +1786,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
   if(istate==1){
     char fname[1000];
-    sprintf(fname,"%s/TimeStamp",config.dataPath);
+    sprintf(fname,"%s/TimeStamp",config.dataPathOut);
     FILE *fp = fopen(fname,"w");
      fprintf(fp,"time step = %d\n",iteration);
     fclose(fp);

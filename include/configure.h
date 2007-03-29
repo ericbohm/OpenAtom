@@ -64,6 +64,7 @@ class Config {
   // state control flags and values
   //----------------------------------
    char dataPath[1024];
+   char dataPathOut[1024];
    int gBucketSize;
    int rBucketSize;
    double gStreamPeriod;
