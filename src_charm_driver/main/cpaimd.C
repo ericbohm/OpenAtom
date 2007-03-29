@@ -111,7 +111,7 @@
 #include "PeList.h"
 #include "MapFile.h"
 #ifdef USE_TOPOMAP
-#include "bgltorus.h"
+#include "TopoManager.h"
 #endif
 #include "TimeKeeper.h"
 //============================================================================
@@ -236,7 +236,7 @@ PeList *excludePes;
 int boxSize;
 #ifdef USE_TOPOMAP
 #if CMK_VERSION_BLUEGENE
-BGLTorusManager *bgltm;
+TopoManager *bgltm;
 #endif
 #endif
 
@@ -554,12 +554,12 @@ main::main(CkArgMsg *msg) {
     PRINT_LINE_STAR; CkPrintf("\n");
 #endif
 #ifdef CMK_VERSION_BLUEGENE
-    CkPrintf("Initializing BGLTorusManager\n");
-    bgltm = BGLTorusManager::getObject();
+    CkPrintf("Initializing TopoManager\n");
+    bgltm = new TopoManager();
     CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
-             bgltm->getXSize(),bgltm->getYSize(),bgltm->getZSize(),
-             bgltm->getXNodeSize(), bgltm->getYNodeSize(),bgltm->getZNodeSize(),
-             bgltm->isVnodeMode());
+             bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(),
+             bgltm->getDimNX(), bgltm->getDimNY(), bgltm->getDimNZ(),
+             bgltm->hasMultipleProcsPerNode());
 #endif
     CkPrintf("Initializing PeList\n");
     
@@ -578,7 +578,7 @@ main::main(CkArgMsg *msg) {
 #ifdef CMK_VERSION_BLUEGENE
 	boxSize=pl;
 	int order;
-	if(findCuboid(bx,by,bz, bgltm->getXSize(), bgltm->getYSize(), bgltm->getZSize(),boxSize, order, bgltm->isVnodeMode()))
+	if(findCuboid(bx, by, bz, bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(), boxSize, order, bgltm->hasMultipleProcsPerNode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it

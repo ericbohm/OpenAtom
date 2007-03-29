@@ -16,7 +16,7 @@ typedef IntMap3 MapType3;
 #endif
 #include "MapTable.h"
 #ifdef CMK_VERSION_BLUEGENE
-    extern 	BGLTorusManager *bgltm;
+extern TopoManager *bgltm;
 #endif      
 
 int MapType2::getCentroid(){
@@ -29,7 +29,7 @@ int MapType2::getCentroid(){
     for(int i=0;i<getXmax();i++)
       for(int j=0;j<getYmax();j++){
 	CkAssert(get(i,j)>=0);
-	  bgltm->getCoordinatesByRank(get(i,j),X, Y, Z);
+	  bgltm->rankToCoordinates(get(i, j), X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
@@ -38,7 +38,7 @@ int MapType2::getCentroid(){
   int avgX=sumX/points;
   int avgY=sumY/points;
   int avgZ=sumZ/points;
-  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
 #else
   int points=0, sum=0;
   for(int i=0;i<getXmax();i++)
@@ -63,7 +63,7 @@ int MapType3::getCentroid(){
       for(int j=0;j<getYmax();j++){
 	for(int k=0;k<getZmax();k++){
 	  CkAssert(get(i,j,k)>=0);
-	  bgltm->getCoordinatesByRank(get(i,j,k),X, Y, Z);
+	  bgltm->rankToCoordinates(get(i, j, k), X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
@@ -73,7 +73,7 @@ int MapType3::getCentroid(){
   int avgX=sumX/points;
   int avgY=sumY/points;
   int avgZ=sumZ/points;
-  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
 #else
   int points=0, sum=0;
   for(int i=0;i<getXmax();i++)
@@ -1541,7 +1541,7 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
   for(int state=0;state<nstates;state++)
     {
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(rsmap->get(state,plane),X, Y, Z);
+      bgltm->rankToCoordinates(rsmap->get(state, plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1550,7 +1550,7 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
   int avgX=sumX/points;
   int avgY=sumY/points;
   int avgZ=sumZ/points;
-  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
   avail->sortSource(bestPe);
   avail->reset();
 }
@@ -1564,7 +1564,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   for(int state=stateX;state<stateX+grainsize;state++)
     {
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(gsmap->get(state,plane), X, Y, Z);
+      bgltm->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1573,7 +1573,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   for(int state=stateY;state<stateY+grainsize;state++)
     {
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(gsmap->get(state,plane), X, Y, Z);
+      bgltm->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1582,7 +1582,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   int avgX=sumX/points;
   int avgY=sumY/points;
   int avgZ=sumZ/points;
-  int bestPe=bgltm->coords2rank(avgX, avgY, avgZ);
+  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
   avail->sortSource(bestPe);
   avail->reset();
 }
@@ -1596,7 +1596,7 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
     for(int chunk=0; chunk<numChunks; chunk++)
     {    
       int X, Y, Z;
-      bgltm->getCoordinatesByRank(smap->get(plane, state1, state2, chunk), X, Y, Z);
+      bgltm->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
       sumX += X;
       sumY += Y;
       sumZ += Z;
@@ -1605,7 +1605,7 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
   int avgX = sumX/points;
   int avgY = sumY/points;
   int avgZ = sumZ/points;
-  int bestPe = bgltm->coords2rank(avgX, avgY, avgZ);
+  int bestPe = bgltm->coordinatesToRank(avgX, avgY, avgZ);
   avail->sortSource(bestPe);
   avail->reset();
 }

@@ -1,8 +1,8 @@
 #include "charm++.h"
 #include "PeList.h"
 #ifdef CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
-extern 	BGLTorusManager *bgltm;
+#include "TopoManager.h"
+extern TopoManager *bgltm;
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -15,9 +15,9 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 
       size=CkNumPes();
       int i=0;
-      int maxX=bgltm->getXSize();
-      int maxY=bgltm->getYSize();
-      int maxZ=bgltm->getZSize();
+      int maxX=bgltm->getDimX();
+      int maxY=bgltm->getDimY();
+      int maxZ=bgltm->getDimZ();
       TheList= new int[size];
       sortIdx= new int[size];
       int numBoxes=0;
@@ -36,7 +36,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int by=0;by<boxY;by++) // make inner planes along X
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			  TheList[i++]=bgltm->coordinatesToRank(bx+x, by+y, bz+z);
 			}
 		}
 	}
@@ -55,7 +55,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			  TheList[i++]=bgltm->coordinatesToRank(bx+x,by+y, bz+z);
 			}
 		}
 
@@ -73,7 +73,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coords2rank(bx+x,by+y, bz+z);
+			  TheList[i++]=bgltm->coordinatesToRank(bx+x,by+y, bz+z);
 			}
 		}
 
@@ -149,11 +149,11 @@ void PeList::rebuild()
 
 void PeList::sortSource(int srcPe)
 {
-  // sort it using bgltm
+  // sort it using TopoManager 
   //  CkPrintf("PRE: sortIndexByHops\n");
   CkAssert(srcPe>=0);
   CkAssert(srcPe<CkNumPes());
-  bgltm->sortIndexByHops(srcPe,TheList,sortIdx,size);
+  bgltm->sortRanksByHops(srcPe, TheList, sortIdx, size);
   //  CkPrintf("POST sortIndexByHops\n");
 
 }

@@ -19,7 +19,7 @@
 #include <math.h>
 
 #ifdef CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
+#include "TopoManager.h"
 #endif
 #include "cklists.h"
 
