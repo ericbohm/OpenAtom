@@ -117,6 +117,7 @@ class PeList
 	{
 	  sortIdx[i]=i;
 	}
+      current=0;
   } 
   inline int exists(int target)
     {

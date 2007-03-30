@@ -568,15 +568,15 @@ main::main(CkArgMsg *msg) {
 
     if(config.useCuboidMap)
       {
-	int l=config.Gstates_per_pe;
-	int m, pl, pm;
-	pl = nstates / l;
-	pm = CkNumPes() / pl;
-	if(pm==0){CkAbort("Choose a larger Gstates_per_pe \n");}
-	m = config.nchareG / pm;
+	if(CkNumPes()%config.nchareG!=0)
+	  {
+	    CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",config.nchareG,CkNumPes());
+	    CkExit();
+	  }
+	int procsPerPlane= CkNumPes() / nchareG;
 	int bx,by,bz;
 #ifdef CMK_VERSION_BLUEGENE
-	boxSize=pl;
+	boxSize=procsPerPlane;
 	int order;
 	if(findCuboid(bx, by, bz, bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(), boxSize, order, bgltm->hasMultipleProcsPerNode()))
 	  {
@@ -926,61 +926,6 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
 //============================================================================
   if (config.useCommlib) {        
 
-    //================================================================
-    if(config.usePairEtoM){
-      //---------------------------------------------------------------
-      int numG=config.nchareG *  config.nstates;
-      int numCalc=config.nchareG  * config.scalc_per_plane * config.numChunksAsym;
-      CkArrayIndexMax *gchares = new CkArrayIndexMax[numG];
-      int index=0;
-      for (i = 0; i < config.nstates; i++) 
-	for (j = 0; j < config.nchareG; j++) {
-	  CkArrayIndex2D idx2d(i,j);
-	  gchares[index++] = idx2d;
-	}//endfor
-      index=0;
-      CkArrayIndexMax *asymcalcchares =  new CkArrayIndexMax[numCalc];
-      int calcs=config.nstates/config.sGrainSize;
-      for (i = 0; i < config.nchareG; i++) 
-	for (j = 0; j < calcs; j++) 
-	  for (k = 0; k < calcs; k++) 
-	    for (l = 0; l < config.numChunksAsym; l++) {
-	      CkArrayIndex4D idx4d(i,j,k,l);
-	      asymcalcchares[index++] = idx4d;
-	    }//endfor
-
-      CharmStrategy *asym_strat = new EachToManyMulticastStrategy
-	(USE_DIRECT, gSpacePlaneProxy.ckGetArrayID(), pairCalcID2.Aid,
-	 numG, gchares, numCalc, asymcalcchares);
-
-      gAsymInstance= ComlibRegister(asym_strat);
-      //---------------------------------------------------------------
-      gchares = new CkArrayIndexMax[numG];
-      index=0;
-      for (i = 0; i < config.nstates; i++) 
-	for (j = 0; j < config.nchareG; j++) {
-	  CkArrayIndex2D idx2d(i,j);
-	  gchares[index++] = idx2d;
-	}//endfor
-      index=0;
-      int numSymCalc= calcs*(calcs+1)/2;       // N(N+1)/2
-      numCalc=config.nchareG  * numSymCalc * config.numChunksSym;
-      CkArrayIndexMax *symcalcchares =  new CkArrayIndexMax[numCalc];
-      for (i = 0; i < config.nchareG; i++) 
-	for (j = 0; j < calcs; j++) 
-	  for (k = j; k < calcs; k++) 
-	    for (l = 0; l < config.numChunksSym; l++) {
-	      CkArrayIndex4D idx4d(i,j,k,l);
-	      symcalcchares[index++] = idx4d;
-	    }//endfor
-
-      CharmStrategy *sym_strat = new EachToManyMulticastStrategy
-	(USE_DIRECT, gSpacePlaneProxy.ckGetArrayID(), pairCalcID1.Aid,
-	 numG, gchares, numCalc, symcalcchares);
-
-      gSymInstance= ComlibRegister(sym_strat);
-      //---------------------------------------------------------------
-    }//endif : pc usePairEtoM
     /*
     //StreamingStrategy *cmstrat = new StreamingStrategy(0.1,10);
     MeshStreamingStrategy *cmstrat = new MeshStreamingStrategy(1,5);
@@ -2311,9 +2256,10 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     rhorhartOpts.setMap(rhorHartMap);
 
     if(config.dumpMapFiles) {
-      int size[2];
-      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
-      MapFile *mf = new MapFile("RhoRHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+      int size[3];
+      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes,
+      size[2] = nchareHartAtmT;				  
+      MapFile *mf = new MapFile("RhoRHartMap", 3, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
       mf->dumpMap(&RhoRHartImaptable);
 #else
