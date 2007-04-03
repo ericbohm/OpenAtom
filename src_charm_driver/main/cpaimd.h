@@ -58,8 +58,8 @@ class MapType2 : public IntMap2on2 {
 #define FIRST_BALANCE_STEP 100000000
 
 #ifndef CMK_OPTIMIZE
-#define TRACE_ON_STEP 4
-#define TRACE_OFF_STEP 7
+#define TRACE_ON_STEP 16
+#define TRACE_OFF_STEP 20
 #endif
 
 #ifndef CmiMemcpy

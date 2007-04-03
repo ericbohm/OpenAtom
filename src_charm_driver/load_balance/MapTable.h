@@ -3,7 +3,7 @@
  *  Date Created: June 4th, 2006
  *
  *  Given all necessary inputs, the MapTable creates a ckhashtable
- *  which maps ckarrayindices to processors.
+ *  or an int array which maps ckarrayindices to processors.
  *
  *  Subclasses are made for each ckarray which needs different input
  *  in its partitioning scheme.

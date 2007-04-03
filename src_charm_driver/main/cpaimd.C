@@ -755,7 +755,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     success = mf->loadMap("SymScalcMap", &SymScalcImaptable);
 #else
@@ -786,7 +786,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     mf->dumpMap(&SymScalcImaptable);
 #else
@@ -807,7 +807,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     success = mf->loadMap("AsymScalcMap", &AsymScalcImaptable);
 #else
@@ -836,7 +836,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     mf->dumpMap(&AsymScalcImaptable);
 #else

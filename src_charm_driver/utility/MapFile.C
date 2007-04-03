@@ -16,7 +16,7 @@ MapFile::MapFile(char* name, int numpes)
 }
 
 
-MapFile::MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t)
+MapFile::MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t, int _stride)
 {
   mapName = (char *)malloc(sizeof(char)*15);
   strcpy(mapName, (const char*)name);
@@ -31,6 +31,7 @@ MapFile::MapFile(char* name, int num, int* size, int numpes, char *order, int x,
   Ymax = y;
   Zmax = z;
   Tmax = t;
+  stride=_stride;
 }
 
 
@@ -44,7 +45,7 @@ void MapFile::setSize(int num, int* size)
 }
 
 
-void MapFile::setAttributes(int num, int* size, char *order, int x, int y, int z, int t)
+void MapFile::setAttributes(int num, int* size, char *order, int x, int y, int z, int t, int _stride)
 {
   numDim = num;
   if(sizeDim==NULL)
@@ -58,6 +59,7 @@ void MapFile::setAttributes(int num, int* size, char *order, int x, int y, int z
   Ymax = y;
   Zmax = z;
   Tmax = t;
+  stride=_stride;
 }
 
 
@@ -83,8 +85,8 @@ void MapFile::dumpMap(MapType4 *map)
     fprintf(fp, "%d ", sizeDim[i]);
   fprintf(fp, "\n%d \n", numProcs);
   for(int i=0; i<sizeDim[0]; i++)
-    for(int j=0; j<sizeDim[1]; j++)
-      for(int k=0; k<sizeDim[2]; k++)
+    for(int j=0; j<sizeDim[1]*stride; j+=stride)
+      for(int k=0; k<sizeDim[2]*stride; k+=stride)
 	for(int l=0; l<sizeDim[3]; l++)
 	  fprintf(fp, "%d %d %d %d %d\n", i, j, k, l, map->get(i, j, k, l));
   fclose(fp);
@@ -162,8 +164,8 @@ int MapFile::loadMap(char *filename, MapType4 *map)
     return 0;
   fscanf(fp, "%s%d%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
   for(int i=0; i<sizeDim[0]; i++)
-    for(int j=0; j<sizeDim[1]; j++)
-      for(int k=0; k<sizeDim[2]; k++)
+    for(int j=0; j<sizeDim[1]*stride; j+=stride)
+      for(int k=0; k<sizeDim[2]*stride; k+=stride)
 	for(int l=0; l<sizeDim[3]; l++)
 	{	
 	  fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe);

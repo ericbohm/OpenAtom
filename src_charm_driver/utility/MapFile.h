@@ -27,15 +27,19 @@ class MapFile
     int Ymax;
     int Zmax;
     int Tmax;
-
+    int stride;         // stride for non dense indices NOTE evil
+                        // hardcoding assuming 4D uses stride in inner
+                        // 2 indices.  There should be a stride for
+                        // each index.
+    
   public:
     MapFile(char* name, int numpes); 
-    MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t); 
+    MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t, int stride=1); 
     MapFile();		// default constructor
     ~MapFile();		// destructor
      
     void setSize(int num, int* size); 
-    void setAttributes(int num, int* size, char *order, int x, int y, int z, int t);
+    void setAttributes(int num, int* size, char *order, int x, int y, int z, int t, int stride);
     void dumpMap(MapType2 *map);
     void dumpMap(MapType3 *map);
     void dumpMap(MapType4 *map);

@@ -39,8 +39,8 @@ class PeList
 #endif
   PeList(int _size): size(_size)
     {
-      TheList = new int [size];
-      sortIdx = new int [size];
+      TheList = new int [size+1];
+      sortIdx = new int [size+1];
       for(int i=0;i<size;i++)
 	{
 	  TheList[i]=i;
@@ -52,8 +52,8 @@ class PeList
     {
       current=0;
       size=inlist.size();
-      TheList = new int [size];
-      sortIdx = new int [size];
+      TheList = new int [size+1];
+      sortIdx = new int [size+1];
       for(int i=0;i<inlist.size();i++)
 	{
 	  TheList[i]=inlist[i];
@@ -64,8 +64,8 @@ class PeList
   PeList(PeList &inlist)
     {
       size=inlist.size;
-      TheList = new int [size];
-      sortIdx = new int [size];
+      TheList = new int [size+1];
+      sortIdx = new int [size+1];
       for(int i=0;i<inlist.size;i++)
 	{
 	  TheList[i]=inlist.TheList[i];
@@ -79,8 +79,8 @@ class PeList
     {
       current=0;
       size=_size;
-      TheList=new int [size];
-      sortIdx=new int [size];
+      TheList=new int [size+1];
+      sortIdx=new int [size+1];
       for(int i=0;i<size;i++)
 	{
 	  TheList[i]=a[i];
@@ -94,8 +94,8 @@ class PeList
       CkAssert(_size<=a->size);
       size=_size;
       current=0;
-      TheList=new int [size];
-      sortIdx=new int [size];
+      TheList=new int [size+1];
+      sortIdx=new int [size+1];
       for(int i=0;i<size;i++)
 	{
 	  TheList[i]=a->TheList[a->sortIdx[i+start]];
@@ -112,11 +112,9 @@ class PeList
   
   inline int count() { return(size-current);  }
   
-  void reindex(){
-      for(int i=0;i<size;i++)
-	{
-	  sortIdx[i]=i;
-	}
+  inline void reindex(){
+      for(int ri=0;ri<size;ri++)
+	sortIdx[ri]=ri;
       current=0;
   } 
   inline int exists(int target)
@@ -136,8 +134,8 @@ class PeList
   {
     // make array large enough for both, paste together
     int newsize=inlist.size+size;
-    int *newlist= new int [newsize];
-    int *newIndex= new int [newsize];
+    int *newlist= new int [newsize+1];
+    int *newIndex= new int [newsize+1];
     int i=0;
     for(; i< size ; i++)
       {
@@ -150,8 +148,8 @@ class PeList
 	newIndex[i]=i;
       }
     size=newsize;
-    delete TheList;
-    delete sortIdx;
+    delete [] TheList;
+    delete [] sortIdx;
     TheList=newlist;
     sortIdx=newIndex;
   }
@@ -170,22 +168,18 @@ class PeList
     if(!found)
       {
 	int newsize=size+1;
-	int *newlist= new int [newsize];
-	int *newIndex= new int [newsize];
-	i=0;
-	for(; i< size ; i++)
+	int *newlist= new int [newsize+1];
+	int *newIndex= new int [newsize+1];
+	for(i=0; i< size ; i++)
 	  {
 	    newlist[i]=TheList[i];
 	    newIndex[i]=sortIdx[i];
 	  }
-	for(; i< newsize ; i++)
-	  {
-	    newlist[i]=pe;
-	    newIndex[i]=i;
-	  }
+	newlist[size]=pe;
+	newIndex[size]=size;
 	size=newsize;
-	delete TheList;
-	delete sortIdx;
+	delete [] TheList;
+	delete [] sortIdx;
 	TheList=newlist;
 	sortIdx=newIndex;
       }
@@ -240,8 +234,8 @@ class PeList
 	newIndex[i]=i;
       }
     size=newsize;
-    delete TheList;
-    delete sortIdx;
+    delete [] TheList;
+    delete [] sortIdx;
     TheList=newlist;
     sortIdx=newIndex;
     return *this; 
@@ -294,8 +288,8 @@ class PeList
 	  else
 	    {
 	      int newSize= size-current;
-	      int *newList = new int[newSize];
-	      int *newSortIdx = new int[newSize];
+	      int *newList = new int[newSize+1];
+	      int *newSortIdx = new int[newSize+1];
 	      for(int i=0; i<newSize;i++)
 		{
 		  // if we just copy in sorted order we end up with a sorted list

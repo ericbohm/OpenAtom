@@ -130,8 +130,6 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 
   // Initialize pelist
   int srcpe=0;
-  int destpe=availprocs->findNext();
-
   if(useCuboidMap)
   {
     // here we require that nchareG tiles
@@ -148,6 +146,11 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
     CkPrintf("procsPerPlan %d gs per pe %d remainder %d\n",procsPerPlane, cubeGstates_per_pe, cubesrem);
     for(int plane=0;plane<nchareG;plane++)
       {
+	// slice us off our plane's processors
+	PeList *planeProcs=new PeList(availprocs,  plane*procsPerPlane, procsPerPlane);
+	if(planeProcs->count()==0)
+	  planeProcs->reset();
+	int destpe=planeProcs->findNext();
 	int workingGsPerPe=cubeGstates_per_pe;
 	bool unallocateRem= (cubesrem) ? true: false;
 	for(int state=0;state<nstates;state+=workingGsPerPe)
@@ -158,8 +161,9 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 
 		  workingGsPerPe--;
 		  unallocateRem=false;
-		  CkPrintf("rem %d complete at state %d gsperpenow %d\n",cubesrem, state, workingGsPerPe);
+		  //		  CkPrintf("rem %d complete at state %d gsperpenow %d\n",cubesrem, state, workingGsPerPe);
 		}
+	    // we should block these better
 	    for(int stateperpe=0;(stateperpe<workingGsPerPe)&&((state+stateperpe)<nstates);stateperpe++)
 	      {
 #ifdef USE_INT_MAP
@@ -168,9 +172,9 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 		maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
 	      }
-	    if(availprocs->count()==0)
-	      availprocs->reset();
-	    destpe=availprocs->findNext();
+	    if(planeProcs->count()==0)
+	      planeProcs->reset();
+	    destpe=planeProcs->findNext();
 	    /*if(availprocs->count()==0)
 	      {
 	      CkPrintf("GSMap created on processor %d\n", CkMyPe());
@@ -180,10 +184,13 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 	      }
 	    */
 	  }
+	delete planeProcs;
       }
   }
   else
   {
+    int destpe=availprocs->findNext();
+
     // foreach statechunk 
     //         foreach state in chunk
     //              map it
@@ -246,7 +253,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
   reverseMap=NULL;
   maptable=_map;
   availprocs=_availprocs;
-
+  availprocs->reset();
   if(planes_per_pe==0)
     CkAbort("Choose a larger Gstates_per_pe\n");
   if(symmetric)
@@ -428,8 +435,10 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	      PeList *thisPlaneBox;
 	      if(useCentroid)
 		{
-		  //		  CkPrintf("plane %d making pelist from plane's pes\n",plane);
+
 		  thisPlaneBox= subListPlane(plane, max_states, gsmap);
+		  //		  CkPrintf("plane %d making pelist with %d pes from plane's pes\n",plane, thisPlaneBox->count());
+		  //		  thisPlaneBox->dump();
 		}
 	      else
 		{
@@ -452,11 +461,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		    if(useCentroid)
 		      {
 			thisPlaneBox->trimUsed();
-			//			CkPrintf("trimmed list for %d %d %d\n", plane, xchunk, ychunk);
-			//			thisPlaneBox->dump();
 			sortByCentroid(thisPlaneBox, plane, xchunk, ychunk, grainsize, gsmap);
-			//			CkPrintf("sorted by centroid\n");
-			//			thisPlaneBox->dump();
 			destpe=thisPlaneBox->findNext();
 			if(thisPlaneBox->count()==0)
 			  thisPlaneBox->reset();
@@ -464,6 +469,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		      }
 		    for(int newdim=0; newdim<numChunksAsym; newdim++)
 		      {
+
 			if(count<scobjs_per_pe)
 			  {
 			    // nothing to see here
@@ -474,8 +480,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			    destpe=thisPlaneBox->findNext();
 			    if(thisPlaneBox->count()==0)
 			      thisPlaneBox->reset();
-
-
+			    
 			    if(rem!=0)
 			      if(procno==rem)
 				scobjs_per_pe-=1;
@@ -556,9 +561,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 
 /** helper function
  */
-PeList * rebuildExclusion(PeList *thisStateBox, PeList *exclusionList, int *Pecount, int rsobjs_per_pe)
+PeList * rebuildExclusion(int *Pecount, int rsobjs_per_pe)
 {
-  delete exclusionList;
+  PeList *exclusionList=NULL;
   for(int exc=0;exc<CkNumPes();exc++)
     {
       if(Pecount[exc]>=rsobjs_per_pe)
@@ -567,16 +572,14 @@ PeList * rebuildExclusion(PeList *thisStateBox, PeList *exclusionList, int *Peco
 	    {
 	      exclusionList=new PeList(1);
 	      exclusionList->TheList[0]=exc;
+	      exclusionList->sortIdx[0]=0;
 	    }
 	  else
 	    {
 	      exclusionList->mergeOne(exc);
-
 	    }
 	}
     }
-  exclusionList->reindex();
-  exclusionList->reset();
   return(exclusionList);
 }
 
@@ -636,12 +639,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  int srsobjs_per_pe=rsobjs_per_pe;
 	  PeList *thisStateBox;
 	  thisStateBox = subListState(state, nchareG, gsmap);
-	  //	  rsobjs_per_pe = sizeZ/thisStateBox->count();
-	  //	  srem=sizeZ%thisStateBox->count();
-	  //	  if(srem)
-	  //	    rsobjs_per_pe++;
-	  //	  CkPrintf("RS state %d pe list for sizez %d planes rsobjperpe %d \n", state, sizeZ,rsobjs_per_pe);
-	  //thisStateBox->dump();
+	  //	  CkPrintf("RS state box has %d procs\n",thisStateBox->count());
 	  bool useExclude=true;
 	  if(exclusionList!=NULL)
 	    {
@@ -653,14 +651,19 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  //	  thisStateBox->dump();
 	  while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
 	    {
-	      CkPrintf("Ran out of procs in RS centroid map increasing rs objects per proc\n");
+	      CkPrintf("State %d  Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,srsobjs_per_pe);
 	      srsobjs_per_pe++;
-	      exclusionList=rebuildExclusion(thisStateBox, exclusionList, Pecount, srsobjs_per_pe);
+	      if(exclusionList!=NULL)
+		delete exclusionList;
+	      exclusionList=rebuildExclusion(Pecount, srsobjs_per_pe);
 	      delete thisStateBox;
 	      thisStateBox = subListState(state, nchareG, gsmap);
-	      *thisStateBox - *exclusionList;
-	      thisStateBox->reindex();
-	      thisStateBox->reset();
+	      if(exclusionList!=NULL){
+		*thisStateBox - *exclusionList;
+		thisStateBox->reindex();
+		thisStateBox->reset();
+	      }
+
 	    }
 	  if(thisStateBox->count()==0)
 	    {
@@ -676,21 +679,28 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	    {
 	      if(thisStateBox->count()==0)
 		thisStateBox->reset();
-	      if(thisStateBox->count()<=0)
+	      while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
 		{
-
 		  srsobjs_per_pe++;
-		  CkPrintf("Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",srsobjs_per_pe);
-		  exclusionList=rebuildExclusion(thisStateBox, exclusionList, Pecount, srsobjs_per_pe);
+		  CkPrintf("State %d Plane %d Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,plane,srsobjs_per_pe);
+		  if(exclusionList!=NULL)
+		    delete exclusionList;
+		  exclusionList=rebuildExclusion( Pecount, srsobjs_per_pe);
 		  delete thisStateBox;
 		  thisStateBox = subListState(state, nchareG, gsmap);
-		  *thisStateBox - *exclusionList;
-		  thisStateBox->reindex();
-		  thisStateBox->reset();
-
+		  if(exclusionList!=NULL)
+		    {
+		      *thisStateBox - *exclusionList;
+		      thisStateBox->reset();
+		      thisStateBox->reindex();
+		    }
 		}
-
+	      if(thisStateBox->count()<=0)
+		{
+		  CkAbort("Ran out of procs in RS centroid map cannot remedy please revise configuration\n");
+		}
 	      destpe = thisStateBox->findNext();
+
 
 #ifdef USE_INT_MAP
 	      maptable->set(state, plane, destpe);
@@ -705,6 +715,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		    {
 		      exclusionList=new PeList(1);
 		      exclusionList->TheList[0]=destpe;
+		      exclusionList->sortIdx[0]=0;
 		    }
 		  else
 		    {
@@ -715,13 +726,6 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		      thisStateBox->reindex();
 		      thisStateBox->reset();
 		    }
-		}
-	      if(useExclude && Pecount[destpe]>srsobjs_per_pe+1)
-		{
-		  CkPrintf("[%d] %d\n", destpe, Pecount[destpe]);
-		  exclusionList->dump();
-		  thisStateBox->dump();
-		  CkAbort("RS has too many chares\n");
 		}
 	    }
 	  delete thisStateBox;
@@ -924,34 +928,42 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	    *state_map-*exclusion;
 	    state_map->reindex();
 	  }
-	  if(usedbyRPP!=NULL)
+	  while(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
 	    {
-	      *state_map-*usedbyRPP;
-	      state_map->reindex();
+	      CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
+	      maxcharesperpe++;
+	      if(usedbyRPP!=NULL)
+		delete usedbyRPP;
+	      usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
+	      delete state_map;
+	      state_map = subListState(state, nchareG, pp_map);
+	      if(usedbyRPP!=NULL){
+		*state_map - *usedbyRPP;
+		state_map->reindex();
+		state_map->reset();
+	      }
+
 	    }
 	  for(int plane=0; plane < sizeZNL; plane++)
 	    {
 	      if(state_map->count()==0)
 		state_map->reset();
-	      if(state_map->count()<=0)
+	      while(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
 		{
-		  CkPrintf("ran out of processors in state %d plane %d\n",state,plane);
-		  CkPrintf("state_map was \n");
+		  CkPrintf("State %d  Ran out of procs in RPP centroid map increasing rpp objects per proc to %d\n",state,maxcharesperpe);
+		  maxcharesperpe++;
+		  if(usedbyRPP!=NULL)
+		    delete usedbyRPP;
+		  usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
 		  delete state_map;
-		  state_map=subListState( state, nchareG, pp_map);
-		  state_map->dump();
+		  state_map = subListState(state, nchareG, pp_map);
 		  if(usedbyRPP!=NULL){
-		    CkPrintf("used is \n");
-		    usedbyRPP->dump();
+		    *state_map - *usedbyRPP;
+		    state_map->reindex();
+		    state_map->reset();
 		  }
-		  if(useExclude[state])
-		    {
-		      CkPrintf("exclusion is \n");
-		      exclusion->dump();
-		    }
-		  CkAbort("Ran out of processors in RPP map\n");
-		}
 
+		}
 	      int destpe=state_map->findNext(); 
 #ifdef USE_INT_MAP
 	      maptable->set(state, plane, destpe);
@@ -1605,12 +1617,10 @@ PeList *subListPlane(int plane, int nstates, MapType2 *smap)
 
       PeList *thisPlane = new PeList(1);
       thisPlane->TheList[0]=smap->get(0,plane);
-      thisPlane->sortIdx[0]=0;
       for(int state=1; state<nstates; state++)
       {
 	thisPlane->mergeOne(smap->get(state,plane));
       }
-      thisPlane->reindex();
       thisPlane->reset();
       return(thisPlane);
 }
