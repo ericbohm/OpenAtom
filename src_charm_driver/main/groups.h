@@ -51,6 +51,8 @@ class AtomsGrp: public Group {
   double eKinetic;        // kinetic energy
   double eKineticNhc;     // NHC kinetic energy
   double potNhc;         // NHC potential energy
+  double **px;
+  double *ftot; 
   Atom *atoms;
   AtomNHC *atomsNHC;
   FastAtoms fastAtoms;

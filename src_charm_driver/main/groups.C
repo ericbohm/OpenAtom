@@ -95,6 +95,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
+    ftot           = (double *)fftw_malloc((3*natm+1)*sizeof(double));
 
     zeroforces();
     if(iextended_on==1 && cp_min_opt==0){
@@ -145,6 +146,7 @@ AtomsGrp::~AtomsGrp(){
      fftw_free(fastAtoms.fx);
      fftw_free(fastAtoms.fy);
      fftw_free(fastAtoms.fz);
+     fftw_free(ftot);
 }
 //==============================================================================
 
@@ -190,9 +192,11 @@ void AtomsGrp::StartRealspaceForces(){
    pot_ewd_rs = 0.0;
 
 #ifndef  _CP_DEBUG_PSI_OFF_
+#ifndef _CP_DEBUG_SCALC_ONLY_ 
    if(myid<natm-1){
      CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs);
    }//endif
+#endif
 #endif
 
 #ifdef _CP_DEBUG_ATMS_
@@ -213,7 +217,6 @@ void AtomsGrp::contributeforces(){
 
   int i,j;
   int myid     = CkMyPe();
-  double *ftot = (double *)malloc((3*natm+1)*sizeof(double));
 
   copyFastToSlow();
   for(i=0,j=0; i<natm; i++,j+=3){
@@ -228,6 +231,7 @@ void AtomsGrp::contributeforces(){
 #endif
   CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), atomsGrpProxy);
   contribute((3*natm+1)*sizeof(double),ftot,CkReduction::sum_double,cb);
+
 
 //==========================================================================
   }//end routine
@@ -281,16 +285,26 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 // Model forces 
 
 #ifdef  _CP_DEBUG_PSI_OFF_
-  double omega  = (0.0241888/15.0); // 15 fs^{-1}
-  double omega2 = omega*omega;
+  double omega    = (0.0241888/15.0); // 15 fs^{-1}
+  double omega2   = omega*omega;
   double pot_harm = 0.0;
+  int npts        = 200;
+  double sigma    = 1.0/sqrt(315777.0*atoms[0].m*omega2/300.0);
+  double dx       = 6.0*sigma/(double)npts;
+
   if(iteration==0){
+    px =  new double *[natm];
+    for(i =0;i<natm;i++){
+      px[i] = new double[npts];
+      for(j=0;j<npts;j++){px[i][j]=0.0;}
+    }//endfor
     for(i=0;i<natm;i++){
       atoms[i].x = 0.0;
       atoms[i].y = 0.0;
       atoms[i].z = 0.0;
     }//endfor
   }//endif
+
   for(i=0;i<natm;i++){
     atoms[i].fx = -omega2*atoms[i].x*atoms[i].m;
     atoms[i].fy = -omega2*atoms[i].y*atoms[i].m;;
@@ -338,12 +352,12 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
 #ifdef  _CP_DEBUG_SCALC_ONLY_ 
   for(i=0;i<natm;i++){
-    atoms[i].xold = atoms[i].x;
-    atoms[i].yold = atoms[i].y;
-    atoms[i].zold = atoms[i].z;
-    atoms[i].fx   = 0.0;
-    atoms[i].fy   = 0.0;
-    atoms[i].fz   = 0.0;
+    fastAtoms.x[i] = atoms[i].x;
+    fastAtoms.y[i] = atoms[i].y;
+    fastAtoms.z[i] = atoms[i].z;
+    atoms[i].fx    = 0.0;
+    atoms[i].fy    = 0.0;
+    atoms[i].fz    = 0.0;
   }/*endfor*/
 #endif
 
@@ -352,11 +366,11 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
                     myoutput_on,natmNow,natmStr,natmEnd);
 
-#ifdef  _CP_DEBUG_SCALC_ONLY_ 
+#ifdef _CP_DEBUG_SCALC_ONLY_ 
   for(i=0;i<natm;i++){
-    atoms[i].x = atoms[i].xold;
-    atoms[i].y = atoms[i].yold;
-    atoms[i].z = atoms[i].zold;
+    atoms[i].x = fastAtoms.x[i];
+    atoms[i].y = fastAtoms.y[i];
+    atoms[i].z = fastAtoms.z[i];
   }/*endfor*/
 #endif
 
@@ -373,7 +387,37 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
      CkPrintf("iteration %d : tot energy %.12g %.12g on %d\n",iteration,etot_atm,
                                                     (eKinetic_loc+pot_harm),myid);
    }//endif
+   for(i=natmStr;i<natmEnd;i++){
+     int i1 = (atoms[i].x+3.0*sigma)/dx;
+     int i2 = (atoms[i].y+3.0*sigma)/dx;
+     int i3 = (atoms[i].z+3.0*sigma)/dx;
+     i1     = (i1 >= 0    ? i1 : 0);
+     i2     = (i2 >= 0    ? i2 : 0);
+     i3     = (i3 >= 0    ? i3 : 0);
+     i1     = (i1 < npts ? i1 : npts-1);
+     i2     = (i2 < npts ? i2 : npts-1);
+     i3     = (i3 < npts ? i3 : npts-1);
+     px[i][i1] += 1.0;
+     px[i][i2] += 1.0;
+     px[i][i3] += 1.0;
+   }//endif
+   if(((iteration+1) % 1000)==0){
+     for(i=natmStr;i<natmEnd;i++){
+       char fname[100];
+       sprintf(fname,"atmtest.dat.%d",i);
+       double anorm = sqrt(2.0/(sigma*sigma*acos(-1.0)));
+       FILE *fp = fopen(fname,"w");
+       for(j =1;j<npts-1;j++){
+         double x   = ((double)(2*j+1))*0.5*dx - 3.0*sigma;
+         double ans = anorm*exp(-0.5*x*x/(sigma*sigma));
+         double cnt = 3.0*((double)(iteration+1));
+         fprintf(fp,"%g %g %g\n",x,(px[i][j]*anorm/cnt),ans);
+       }//endfor       
+       fclose(fp);
+     }//endfor
+   }//endif
 #endif
+   
 
 //============================================================
 // Tuck things that can be tucked.

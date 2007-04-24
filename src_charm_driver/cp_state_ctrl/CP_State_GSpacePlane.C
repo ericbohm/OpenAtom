@@ -1940,7 +1940,6 @@ void  CP_State_GSpacePlane::sendLambda() {
    doneDoingIFFT         = false;
    doneNewIter           = false;
 
-
 //==============================================================================
 // Scale the variables and launch lambda
 
@@ -2728,6 +2727,10 @@ void CP_State_GSpacePlane::integrateModForce() {
   }//endfor
 #endif
 
+#ifdef _CP_DEBUG_SCALC_ONLY_ 
+  bzero(forces,ncoef*sizeof(complex));
+#endif
+
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -3341,11 +3344,6 @@ void CP_State_GSpacePlane::doNewPsi(){
     eesCache *eesData = eesCacheProxy.ckLocalBranch ();
     double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
     memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
-    CPINTEGRATE::CPSmplVel(gs.numPoints,coef_mass,gs.packedVelData,
-                           gs.len_nhc_cp,gs.num_nhc_cp,gs.nck_nhc_cp,
-                           gs.mNHC,gs.vNHC,gs.xNHC,gs.xNHCP,gs.a2NHC,
-                           gs.kTCP,istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,
-                           gs.nkx0_zero,gs.degfree,gs.degfreeNHC);
   }//endif
 #endif
 
