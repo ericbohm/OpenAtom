@@ -3789,11 +3789,14 @@ void CP_State_GSpacePlane::doNewPsiV(){
  for(int i=iend;i<n;i++)      {ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
 #endif
 
+#define _CP_KINET_SCALE_OFF_
+#ifdef _CP_KINET_SCALE_
  double scale = sqrt(ake_old/ake_new);
  for(int i=0;i<ncoef;i++){
     vpsi[i].re *= scale;
     vpsi[i].im *= scale;
  }//endfor
+#endif
 
 //=============================================================================
 // III) Back to the threaded loop
