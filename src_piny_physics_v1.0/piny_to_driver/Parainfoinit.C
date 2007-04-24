@@ -45,6 +45,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nstates         = cpcoeffs_info->nstate_up;
   int ntime           = gentimeinfo->ntime;
   int ibinary_opt     = cpopts->iread_coef_binary;
+  int cp_norb_rot_kescal = cpopts->cp_norb_rot_kescal;
   int ibinary_write_opt= cpopts->iwrite_coef_binary;
   int natm_tot        = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl         = (cppseudo->nonlocal.natm);
@@ -124,6 +125,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      sim->ntime          = ntime;
    }//endif
 
+   sim->cp_norb_rot_kescal = cp_norb_rot_kescal;
    sim->tol_norb       = tol_norb;
    sim->tol_cp_min     = tol_cp_min;
    sim->tol_cp_dyn     = tol_cp_dyn;

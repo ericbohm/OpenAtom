@@ -889,7 +889,7 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 33;
+  *num_dict = 34;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_run")-1;
 
 /*========================================================================*/
@@ -1068,6 +1068,11 @@ void set_sim_dict_run(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[33].error_mes,"a number > 1");
         strcpy((*dict)[33].keyword,"auto_rescale_cp_vel_tol");
         strcpy((*dict)[33].keyarg,"9.0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 34)\cp_norb_rot_kescal */
+        strcpy((*dict)[34].error_mes,"off or on ");
+        strcpy((*dict)[34].keyword,"cp_norb_rot_kescal");
+        strcpy((*dict)[34].keyarg,"off");
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
 /*========================================================================*/

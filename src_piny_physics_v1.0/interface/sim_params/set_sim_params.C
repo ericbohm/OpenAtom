@@ -1858,6 +1858,17 @@ void set_sim_params_run(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
       }/*endif*/
 
+  /*-----------------------------------------------------------------------*/ 
+  /* 34)\cp_norb_rot_kescal */
+      ifound = 0;
+      if(strcasecmp(dict[34].keyarg,"on")==0)   {
+        cpopts->cp_norb_rot_kescal = 1; ifound++;}
+      if(strcasecmp(dict[34].keyarg,"off")==0)  {
+        cpopts->cp_norb_rot_kescal = 0; ifound++;}
+      index=34;
+      if(ifound == 0){
+        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      }/*endif*/
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/

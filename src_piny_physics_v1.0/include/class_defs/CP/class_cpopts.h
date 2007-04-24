@@ -18,6 +18,7 @@ class CPOPTS{
   int cp_gga;                 // Opt: Gga opt                           
   int cp_nonint;              // Opt: Non-interacting elec opt       
   int cp_norb;                // Opt: Norb integration               
+  int cp_norb_rot_kescal;
   int cp_ptens_calc;          // Opt: Calculate CP pressure tensor   
   int cp_init_orthog;         // Opt: Initially orthogonalize WFs    
   int cp_gs,cp_low,cp_normalize;
@@ -81,6 +82,7 @@ class CPOPTS{
       cp_gga          = 0;               
       cp_nonint       = 0;            
       cp_norb         = 0;              
+      cp_norb_rot_kescal = 0;
       cp_ptens_calc   = 0;        
       cp_init_orthog  = 0;       
       cp_gs           = 0;
@@ -131,6 +133,7 @@ class CPOPTS{
       p | cp_gga;
       p | cp_nonint;
       p | cp_norb;
+      p | cp_norb_rot_kescal;
       p | cp_ptens_calc;
       p | cp_init_orthog;
       p | cp_gs;
@@ -193,6 +196,7 @@ class CPOPTS{
      fprintf(fp,"cp_gga %d\n",cp_gga);
      fprintf(fp,"cp_nonint %d\n",cp_nonint);
      fprintf(fp,"cp_norb %d\n",cp_norb);
+     fprintf(fp,"cp_norb_rot_kescal %d\n",cp_norb_rot_kescal);
      fprintf(fp,"cp_ptens_calc %d\n",cp_ptens_calc);
      fprintf(fp,"cp_init_orthog %d\n",cp_init_orthog);
      fprintf(fp,"cp_gs %d\n",cp_gs);

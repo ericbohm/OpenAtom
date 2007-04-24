@@ -389,7 +389,7 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
     CkPrintf("Fict TempNHC=  %.10g K\n", d1); // per g-chare tempNHC
     CkPrintf("Fict EkeNHC =  %.10g K\n", d3); // total NHC kinetic energy
     CkPrintf("Fict PotNHC =  %.10g K\n", d4); // total potNHC
-    //    CkPrintf("Fict EConv  =  %.10g K\n", d2+d3+d4);
+    CkPrintf("Fict EConv  =  %.10g K\n", d2+d3+d4);
   }//endif
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
@@ -1165,7 +1165,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
   if(cp_min_opt==0){
     gs.packedPlaneDataScr   = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));
-    gs.packedPlaneDataTemp = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+    gs.packedPlaneDataTemp  = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     memset(gs.packedPlaneDataScr, 0, sizeof(complex)*gs.numPoints);
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
@@ -1178,7 +1178,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 #ifdef _CP_DEBUG_SCALC_ONLY_
   if(cp_min_opt==0){
     gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
-    memcpy(gs.packedPlaneDataTemp2, points, sizeof(complex)*gs.numPoints);
+    bzero(gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
   }//endif
 #endif
 
@@ -2732,9 +2732,9 @@ void CP_State_GSpacePlane::integrateModForce() {
 
 #ifdef _CP_DEBUG_SCALC_ONLY_ 
   bzero(forces,ncoef*sizeof(complex));
+  psi_g = gs.packedPlaneDataTemp2;
 #endif
 
-#ifndef _CP_DEBUG_SCALC_ONLY_ 
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -2742,12 +2742,6 @@ void CP_State_GSpacePlane::integrateModForce() {
                nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
 	       degFreeSplt,istrNHC,iendNHC,halfStepEvolve);
   halfStepEvolve = 1;
-#else
-  if(cp_min_opt==0){
-    memcpy(psi_g,gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
-  }//endif
-#endif
-
 
 
 #ifdef _GLENN_CHECK_INTEGRATE_
@@ -3551,15 +3545,9 @@ void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
   }//endif
 
   ake_old = 0.0;
-#ifndef _BETTER_KINET_
-  for(int i=0;i<ncoef;i++){
-    ake_old   += coef_mass[i]*(vpsi[i].re*vpsi[i].re+vpsi[i].im*vpsi[i].im);
-  }//endfor
-#else
   for(int i=istrt0;i<istrt;i++){ake_old += vpsi[i].getMagSqr()*coef_mass[i];}       // g=0
   for(int i=istrt;i<iend;i++)  {ake_old += vpsi[i].getMagSqr()*(2.0*coef_mass[i]);} // gx=0
-  for(int i=iend;i<n;i++)      {ake_old += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
-#endif
+  for(int i=iend;i<ncoef;i++)  {ake_old += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
 
 }//end routine
 //==============================================================================
@@ -3782,24 +3770,17 @@ void CP_State_GSpacePlane::doNewPsiV(){
  }//endif
 
  double ake_new = 0.0;
-#ifndef _BETTER_KINET_
- for(int i=0;i<ncoef;i++){
-   ake_new   += coef_mass[i]*(vpsi[i].re*vpsi[i].re + vpsi[i].im*vpsi[i].im);
- }//endif
-#else
  for(int i=istrt0;i<istrt;i++){ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // g=0
  for(int i=istrt;i<iend;i++)  {ake_new += vpsi[i].getMagSqr()*(2.0*coef_mass[i]);} // gx=0
- for(int i=iend;i<n;i++)      {ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
-#endif
+ for(int i=iend;i<ncoef;i++)  {ake_new += vpsi[i].getMagSqr()*coef_mass[i];}       // gx!=0
 
-#define _CP_KINET_SCALE_OFF_
-#ifdef _CP_KINET_SCALE_
- double scale = sqrt(ake_old/ake_new);
- for(int i=0;i<ncoef;i++){
-    vpsi[i].re *= scale;
-    vpsi[i].im *= scale;
- }//endfor
-#endif
+ if(sim->cp_norb_rot_kescal==1){
+   double scale = sqrt(ake_old/ake_new);
+   for(int i=0;i<ncoef;i++){
+     vpsi[i].re *= scale;
+     vpsi[i].im *= scale;
+   }//endfor
+ }//endif
 
 //=============================================================================
 // III) Back to the threaded loop
