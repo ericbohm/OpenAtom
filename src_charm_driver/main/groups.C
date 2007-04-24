@@ -336,10 +336,29 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
    if(myid< rem){natmNow++;}
    int natmEnd = natmNow+natmStr;
 
+#ifdef  _CP_DEBUG_SCALC_ONLY_ 
+  for(i=0;i<natm;i++){
+    atoms[i].xold = atoms[i].x;
+    atoms[i].yold = atoms[i].y;
+    atoms[i].zold = atoms[i].z;
+    atoms[i].fx   = 0.0;
+    atoms[i].fy   = 0.0;
+    atoms[i].fz   = 0.0;
+  }/*endfor*/
+#endif
+
    ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
                     myoutput_on,natmNow,natmStr,natmEnd);
+
+#ifdef  _CP_DEBUG_SCALC_ONLY_ 
+  for(i=0;i<natm;i++){
+    atoms[i].x = atoms[i].xold;
+    atoms[i].y = atoms[i].yold;
+    atoms[i].z = atoms[i].zold;
+  }/*endfor*/
+#endif
 
 //============================================================
   // Debug output

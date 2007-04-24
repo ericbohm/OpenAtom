@@ -389,7 +389,7 @@ void CP_State_GSpacePlane::psiWriteComplete(CkReductionMsg *msg){
     CkPrintf("Fict TempNHC=  %.10g K\n", d1); // per g-chare tempNHC
     CkPrintf("Fict EkeNHC =  %.10g K\n", d3); // total NHC kinetic energy
     CkPrintf("Fict PotNHC =  %.10g K\n", d4); // total potNHC
-    CkPrintf("Fict EConv  =  %.10g K\n", d2+d3+d4);
+    //    CkPrintf("Fict EConv  =  %.10g K\n", d2+d3+d4);
   }//endif
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
@@ -1172,6 +1172,13 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     memcpy(gs.packedPlaneDataTemp, points, sizeof(complex)*gs.numPoints);
   }//endif
 
+#ifdef _CP_DEBUG_SCALC_ONLY_
+  if(cp_min_opt==0){
+    gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
+    memcpy(gs.packedPlaneDataTemp2, points, sizeof(complex)*gs.numPoints);
+  }//endif
+#endif
+
   // Under cp_min veldata is the conjugate gradient : always need it.
   if(istart_typ_cp>=3 && cp_min_opt==0){
     CkAssert(vsize == size);
@@ -1865,6 +1872,10 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
 	     CkCallback(printEnergyEke, NULL));
   myenergy_reduc_flag=0;
+
+#ifdef _CP_DEBUG_SCALC_ONLY_ 
+  bzero(forces,ncoef*sizeof(complex));
+#endif
 
 //========================================================================
 // Debug output
@@ -3324,6 +3335,19 @@ void CP_State_GSpacePlane::doNewPsi(){
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
+
+#ifdef _CP_DEBUG_SCALC_ONLY_
+  if(cp_min_opt==0){
+    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+    double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
+    CPINTEGRATE::CPSmplVel(gs.numPoints,coef_mass,gs.packedVelData,
+                           gs.len_nhc_cp,gs.num_nhc_cp,gs.nck_nhc_cp,
+                           gs.mNHC,gs.vNHC,gs.xNHC,gs.xNHCP,gs.a2NHC,
+                           gs.kTCP,istart_typ_cp,gs.nkx0_red,gs.nkx0_uni,
+                           gs.nkx0_zero,gs.degfree,gs.degfreeNHC);
+  }//endif
+#endif
 
 //==============================================================================
 // Back to the threaded loop.

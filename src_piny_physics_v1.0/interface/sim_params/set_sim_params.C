@@ -785,10 +785,21 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
        if(ifound != 1){
           keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
        if(gensimopts->cp_min_update==0){
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("   You are in danger! Your cp_min_update is off! \n");
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+         PRINTF("You are in danger! Your cp_min_update is off! \n");
+         PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
        }//
+/*========================================================================*/
+
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    double cmass_tau_def = cp_parse->cp_mass_tau_def;
+    double cmass_cut_def = cp_parse->cp_mass_cut_def;
+    double tau_true      = cmass_tau_def*sqrt(cmass_cut_def/CP_EMAGIC);
+    PRINTF("The true cp_mass_tau is %g. The value set %g\n",tau_true,cmass_tau_def);
+    PRINTF("is scale by sqrt(cmass_cut_def/%g)=%g.\n",1.0/(2.0*CP_EMAGIC),
+             sqrt(cmass_cut_def/(2.0*CP_EMAGIC)));
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/
