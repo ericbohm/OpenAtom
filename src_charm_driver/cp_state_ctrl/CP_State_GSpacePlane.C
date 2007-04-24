@@ -2731,15 +2731,21 @@ void CP_State_GSpacePlane::integrateModForce() {
   bzero(forces,ncoef*sizeof(complex));
 #endif
 
-#ifdef _CP_DEBUG_SCALC_ONLY_ 
+#ifndef _CP_DEBUG_SCALC_ONLY_ 
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
    	       mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
                nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
 	       degFreeSplt,istrNHC,iendNHC,halfStepEvolve);
-#endif
   halfStepEvolve = 1;
+#else
+  if(cp_min_opt==0){
+    memcpy(psi_g,gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
+  }//endif
+#endif
+
+
 
 #ifdef _GLENN_CHECK_INTEGRATE_
   for(int i=0;i<ncoef;i++){
@@ -3340,14 +3346,6 @@ void CP_State_GSpacePlane::doNewPsi(){
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif
-
-#ifdef _CP_DEBUG_SCALC_ONLY_
-  if(cp_min_opt==0){
-    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
-    double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
-    memcpy(gs.packedPlaneData,gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
-  }//endif
-#endif
 
 //==============================================================================
 // Back to the threaded loop.
