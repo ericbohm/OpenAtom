@@ -1420,6 +1420,13 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
      sprintf(dict[10].keyarg,"%d",lambdaGrainSize);
   }//endif
 
+  if(PCstreamFWblock>0){
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("   PC forward streaming is broken\n");
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
