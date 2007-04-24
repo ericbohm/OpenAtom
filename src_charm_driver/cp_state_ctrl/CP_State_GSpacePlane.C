@@ -491,7 +491,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 
   if(thisIndex.x==0 && thisIndex.y==0){
     CkPrintf("MagForPsi   =  %5.8lf | %5.8lf per entity\n", d1,d1/rnatm);
-    CkPrintf("Memory      =  %d\n",CmiMemoryUsage());
+    CkPrintf("Memory      =  %ld\n",CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
@@ -660,7 +660,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   countVPsiO= new int[config.numChunksSym];
   for(int i=0;i<config.numChunksSym;i++)
     countVPsiO[i]=0;
-
+  /* figure out how to record the off diag extra lambdas */
+  /* some trickery like psi uses */
+ 
+ 
   countLambdaO= new int[config.numChunksAsym];
   for(int i=0;i<config.numChunksAsym;i++)
     countLambdaO[i]=0;
