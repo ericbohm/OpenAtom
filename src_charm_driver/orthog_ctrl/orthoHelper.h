@@ -45,8 +45,8 @@ public:
   void init(int _size, double *_A, double *_B, double _factorA, double _factorB, double _factorC)
     {
       size=_size;
-      memcpy(A,_A,size*sizeof(double));
-      memcpy(B,_B,size*sizeof(double));
+      CmiMemcpy(A,_A,size*sizeof(double));
+      CmiMemcpy(B,_B,size*sizeof(double));
       factorA=_factorA;
       factorB=_factorB;
       factorC=_factorC;

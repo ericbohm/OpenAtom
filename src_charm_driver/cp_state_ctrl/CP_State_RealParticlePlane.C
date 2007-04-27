@@ -733,7 +733,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
       CkExit();
    }//endif
 
-   memcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
+   CmiMemcpy(zmat,zmat_loc,sizeof(double)*nZmat_in);
 
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces

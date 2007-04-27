@@ -350,7 +350,7 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
   int ncoef  = rho_gs.numPoints;
   CkAssert(ncoef==msg->size);
 
-  memcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
+  CmiMemcpy(rho_gs.packedRho,msg->data,sizeof(complex)*ncoef);
   delete msg;  
 
   densityHere = 1;
@@ -1075,7 +1075,7 @@ void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
    //---------------------------------------------------------
    // FFT back, which generates a send back to RHart
     complex *junk=atmSFtot;
-    atmSFtot=atmSFtotRecv;  // avoid a memcpy : tricky, tricky
+    atmSFtot=atmSFtotRecv;  // avoid a CmiMemcpy : tricky, tricky
     FFTEesFwd(1);
     atmSFtot=junk;
 
@@ -1108,7 +1108,7 @@ void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
   if(countVksTot==nchareHartAtmT){
      countVksTot=0;
      complex *junk=rho_gs.Vks;
-     rho_gs.Vks= VksRecv;  // save a memcpy : tricky, tricky
+     rho_gs.Vks= VksRecv;  // save a CmiMemcpy : tricky, tricky
      FFTVks(); 
      rho_gs.Vks=junk;
   }//endif

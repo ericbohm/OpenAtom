@@ -562,7 +562,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   double StartTime=CmiWallTimer();
 #endif
 
-  rho_rs.uPackScale(dataR,density,volumeFactor);  // can't avoid the memcpy-scaling
+  rho_rs.uPackScale(dataR,density,volumeFactor);  // can't avoid the CmiMemcpy-scaling
   if(rhoRsubplanes>1){
     fftcache->doRhoFFTRxToGx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
   }else{

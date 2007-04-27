@@ -45,7 +45,7 @@ class CompAtmForcMsg: public CkMcastBaseMsg, public CMessage_CompAtmForcMsg {
      {
        nZmat = _nzmat;
        iterNL = _iterNL;
-       memcpy(zmat, _zmat, sizeof(double)* nZmat);
+       CmiMemcpy(zmat, _zmat, sizeof(double)* nZmat);
      }
    friend class CMessage_CompAtmForcMsg;
 };

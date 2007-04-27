@@ -163,8 +163,8 @@ void PeList::sortSource(int srcPe)
 {
   // sort it using CkVec quicksort
   CkVec <int> sortme(size);
-  memcpy(sortme.getVec(), TheList,size*sizeof(int));
+  CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
   sortme.quickSort();
-  memcpy(TheList, sortme.getVec(), size*sizeof(int));
+  CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
 }
 #endif

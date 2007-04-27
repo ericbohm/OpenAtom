@@ -126,7 +126,7 @@ class partialResultMsg : public CMessage_partialResultMsg {
     {
       N=_size;
       myoffset=_myoffset;
-      memcpy(result,_points,N*sizeof(complex));
+      CmiMemcpy(result,_points,N*sizeof(complex));
     }
 
   friend class CMessage_partialResultMsg;
@@ -176,7 +176,7 @@ class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsM
       doPsiV=_doPsiV;
       blkSize=_blkSize;
 
-      memcpy(points,_points,size*sizeof(complex));
+      CmiMemcpy(points,_points,size*sizeof(complex));
     }
   friend class CMessage_calculatePairsMsg;
 
@@ -194,7 +194,7 @@ class phantomMsg : public CMessage_phantomMsg {
       size=_size;
       numPoints=_numPoints;
       blkSize=_blkSize;
-      memcpy(points,_points,size*sizeof(double));
+      CmiMemcpy(points,_points,size*sizeof(double));
       actionType=_actionType;
     }
 
@@ -215,8 +215,8 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
       size2=_size2;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      memcpy(matrix1,_points1,size*sizeof(double));
-      memcpy(matrix2,_points2,size2*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(double));
+      CmiMemcpy(matrix2,_points2,size2*sizeof(double));
       actionType=_actionType;
     }
   void init1(int _size, double *_points1, int _orthoX, int _orthoY,int _actionType)
@@ -225,7 +225,7 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
       size2=0;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      memcpy(matrix1,_points1,size*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(double));
       actionType=_actionType;
       // this field does nothing in minimization
       matrix2=NULL;
@@ -263,7 +263,7 @@ class entireResultMsg : public CMessage_entireResultMsg {
     {
       size=_size;
       symmetric=_symmetric;
-      memcpy(matrix,_points,size*sizeof(double));
+      CmiMemcpy(matrix,_points,size*sizeof(double));
     }
   friend class CMessage_entireResultMsg;
 };
@@ -278,8 +278,8 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
     {
       size=_size;
       symmetric=_symmetric;
-      memcpy(matrix1,_points1,size*sizeof(double));
-      memcpy(matrix2,_points2,size*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(double));
+      CmiMemcpy(matrix2,_points2,size*sizeof(double));
     }
   friend class CMessage_entireResultMsg2;
 };

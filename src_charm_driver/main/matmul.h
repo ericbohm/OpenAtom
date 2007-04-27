@@ -9,7 +9,7 @@
 
 #include "matmul.decl.h"
 #ifndef CmiMemcpy
-#define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
+#define CmiMemcpy(dest, src, size) CmiMemcpy((dest), (src), (size))
 #endif
 
 class matmul:public CBase_matmul {

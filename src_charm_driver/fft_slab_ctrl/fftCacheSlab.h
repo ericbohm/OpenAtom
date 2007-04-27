@@ -387,7 +387,7 @@ class FFTcache: public Group {
      char cacheMemName[1000];
 
     //-----------------------------------------------------------
-    // Generic plane temporaries used everywhere possible to avoid memcpys
+    // Generic plane temporaries used everywhere possible to avoid CmiMemcpys
      complex *tmpData; 
      double  *tmpDataR;
 

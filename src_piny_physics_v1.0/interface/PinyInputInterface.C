@@ -182,12 +182,12 @@ void PinyInputInterface::getAtomPos (int** serial,
   // accessing zeroth element of piny array is invalid and might cause 
   // segmentation violation
   *serial = _serial;
-  memcpy (_x, &(atomPosInit.mdclatoms_pos [1].x [1]), sizeof (double)*nAtoms);
-  memcpy (_y, &(atomPosInit.mdclatoms_pos [1].y [1]), sizeof (double)*nAtoms);
-  memcpy (_z, &(atomPosInit.mdclatoms_pos [1].z [1]), sizeof (double)*nAtoms);
-  memcpy (_vx, &(atomPosInit.mdclatoms_pos [1].vx [1]), sizeof (double)*nAtoms);
-  memcpy (_vy, &(atomPosInit.mdclatoms_pos [1].vy [1]), sizeof (double)*nAtoms);
-  memcpy (_vz, &(atomPosInit.mdclatoms_pos [1].vz [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_x, &(atomPosInit.mdclatoms_pos [1].x [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_y, &(atomPosInit.mdclatoms_pos [1].y [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_z, &(atomPosInit.mdclatoms_pos [1].z [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_vx, &(atomPosInit.mdclatoms_pos [1].vx [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_vy, &(atomPosInit.mdclatoms_pos [1].vy [1]), sizeof (double)*nAtoms);
+  CmiMemcpy (_vz, &(atomPosInit.mdclatoms_pos [1].vz [1]), sizeof (double)*nAtoms);
   
   *x = _x;
   *y = _y,

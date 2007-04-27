@@ -146,7 +146,7 @@ int MapFile::loadMap(char *filename, MapType3 *map)
           map->set(x, y, z, pe);
 #else
 	  CkArrayIndex3D idx3d(x, y, z);
-	  memcpy(intidx, idx3d.index, 3*sizeof(int));
+	  CmiMemcpy(intidx, idx3d.index, 3*sizeof(int));
 	  map->put(inttriple(intidx[0], intidx[1], intidx[2]))=destpe;
 #endif
 	}
@@ -173,7 +173,7 @@ int MapFile::loadMap(char *filename, MapType4 *map)
           map->set(x, y, z, w, pe);
 #else
 	  CkArrayIndex4D idx4d(x, y, z, w);
-	  memcpy(intidx, idx4d.index, 2*sizeof(int));
+	  CmiMemcpy(intidx, idx4d.index, 2*sizeof(int));
 	  map->put(intdual(intidx[0], intidx[1]))=destpe;
 #endif
 	}

@@ -431,7 +431,7 @@ void CP_Rho_GSpacePlane::acceptRhoData() {
          RhoGHartMsg *msg = new (numSplit[i],8*sizeof(int)) RhoGHartMsg;
          msg->size        = numSplit[i];     
          msg->senderIndex = thisIndex.x;
-         memcpy(msg->data,&data_out[istrtSplit[i]],numSplit[i]*sizeof(complex));
+         CmiMemcpy(msg->data,&data_out[istrtSplit[i]],numSplit[i]*sizeof(complex));
     
          if(config.prioFFTMsg){
             CkSetQueueing(msg, CK_QUEUEING_IFIFO);

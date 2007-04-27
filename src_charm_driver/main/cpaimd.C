@@ -1033,7 +1033,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart){
     // For hartree-Ext(g) to vks(r)
     if(config.useGHartInsRhoRP)
       {
-	rhoGElements = new CkArrayIndexMax[numRhoGHart];
+	rhoGElements = new CkArrayIndexMax[numRhoGHart*nchareHartAtmT];
 	for (j= 0; j < nchareHartAtmT; j++) {
 	  for (i = 0; i < numRhoGHart; i++) {
 	    rhoGElements[i+j*numRhoGHart] = CkArrayIndex2D(i,j);

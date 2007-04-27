@@ -108,9 +108,9 @@ void make_rho_runs(CPcharmParaInfo *sim){
     int *kxt        = new int[nPacked];
     int *kyt        = new int[nPacked];
     int *kzt        = new int[nPacked];
-    memcpy(kxt,kx,(nPacked*sizeof(int)));
-    memcpy(kyt,ky,(nPacked*sizeof(int)));
-    memcpy(kzt,kz,(nPacked*sizeof(int)));
+    CmiMemcpy(kxt,kx,(nPacked*sizeof(int)));
+    CmiMemcpy(kyt,ky,(nPacked*sizeof(int)));
+    CmiMemcpy(kzt,kz,(nPacked*sizeof(int)));
 
     int *mapl      = new int[nline_tot];
     for(int i=0;i<nline_tot;i++){mapl[i]=i;}
@@ -1317,10 +1317,10 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     int *kxt        = new int[nPacked];
     int *kyt        = new int[nPacked];
     int *kzt        = new int[nPacked];
-    memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
-    memcpy(kxt,kx,(nPacked*sizeof(int)));
-    memcpy(kyt,ky,(nPacked*sizeof(int)));
-    memcpy(kzt,kz,(nPacked*sizeof(int)));
+    CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    CmiMemcpy(kxt,kx,(nPacked*sizeof(int)));
+    CmiMemcpy(kyt,ky,(nPacked*sizeof(int)));
+    CmiMemcpy(kzt,kz,(nPacked*sizeof(int)));
 
     int jc      = 0;
     int lc      = 0;
@@ -1397,10 +1397,10 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     int *kx_tmp = new int[nline_tot];
     int *ky_tmp = new int[nline_tot];
     int *k_tmp  = new int[mal_size];
-    memcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
-    memcpy(kxt,kx,(nPacked*sizeof(int)));
-    memcpy(kyt,ky,(nPacked*sizeof(int)));
-    memcpy(kzt,kz,(nPacked*sizeof(int)));
+    CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    CmiMemcpy(kxt,kx,(nPacked*sizeof(int)));
+    CmiMemcpy(kyt,ky,(nPacked*sizeof(int)));
+    CmiMemcpy(kzt,kz,(nPacked*sizeof(int)));
 
     int loff = 0;
     int joff = 0;

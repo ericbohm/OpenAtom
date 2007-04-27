@@ -177,7 +177,7 @@
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
 #ifdef CMK_VERSION_BLUEGENE
-#include "builtins.h"
+//#include "builtins.h"
 // void __alignx(int alignment,  const void *address);
 // void _alignx(int alignment,  const void *address);
 // void alignx(int alignment,  const void *address);
@@ -210,7 +210,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
   //  CkAssert ((unsigned int) ret % 8 == 0);
 #ifdef CMK_VERSION_BLUEGENE
-      __alignx(16,ret);
+  //      __alignx(16,ret);
 #endif
   int size0=msgs[0]->getSize();
   int size=size0/sizeof(double);
@@ -241,7 +241,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
       
       inmatrix=(double *) msgs[i]->getData();
 #ifdef CMK_VERSION_BLUEGENE
-      __alignx(16,inmatrix);
+      //      __alignx(16,inmatrix);
 #pragma disjoint(*ret,*inmatrix)
 #pragma unroll(16)
 #endif
@@ -641,14 +641,14 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     CkAssert(offset<numExpected);
     if(streamFW>0)
       { //record offset, copy data
-	memcpy(&(allCaughtLeft[numRecLeft *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	CmiMemcpy(&(allCaughtLeft[numRecLeft *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
 	LeftOffsets[numRecLeft]=offset;
 	LeftRev[offset]=numRecLeft++;
 	streamCaughtL++;
       }
     else
       {
-	memcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	CmiMemcpy(&(inDataLeft[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
       }
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d,%d] Copying into offset*numPoints %d * %d numPoints *2 %d points start %.12g end %.12g\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z, symmetric, offset, numPoints, numPoints*2,msg->points[0].re, msg->points[numPoints-1].im);
@@ -679,14 +679,14 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 
     if(streamFW>0)
       { //record offset, copy data
-	memcpy(&(allCaughtRight[numRecRight *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	CmiMemcpy(&(allCaughtRight[numRecRight *numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
 	RightOffsets[numRecRight]=offset;
 	RightRev[offset]=numRecRight++;
 	streamCaughtR++;
       }
     else
       {
-	memcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
+	CmiMemcpy(&(inDataRight[offset*numPoints*2]), msg->points, numPoints * 2 *sizeof(double));
       }
 
 #ifdef _PAIRCALC_DEBUG_
@@ -1028,17 +1028,17 @@ void PairCalculator::reorder(int * offsetMap, int *revOffsetMap, double *data, d
 	  int currentOffset = off * actualPoints;
 	  int wantOffset = want * actualPoints;
 		    
-	  memcpy(scratch, &(data[currentOffset]), datasize);
-	  memcpy(&(data[currentOffset]), &(data[wantOffset]), datasize);
+	  CmiMemcpy(scratch, &(data[currentOffset]), datasize);
+	  CmiMemcpy(&(data[currentOffset]), &(data[wantOffset]), datasize);
 	  if(want==found) //simple exchange
 	    {
-	      memcpy(&(data[wantOffset]),scratch, datasize);
+	      CmiMemcpy(&(data[wantOffset]),scratch, datasize);
 	    }
 	  else  // three card shuffle
 	    {
 	      int foundOffset = found * actualPoints;
-	      memcpy(&(data[wantOffset]), &(data[foundOffset]), datasize);
-	      memcpy(&(data[foundOffset]),scratch, datasize);
+	      CmiMemcpy(&(data[wantOffset]), &(data[foundOffset]), datasize);
+	      CmiMemcpy(&(data[foundOffset]),scratch, datasize);
 	      // 1 more entry is changed
 	      offsetMap[want]=offsetMap[found];
 	      revOffsetMap[offsetMap[found]]=want;
@@ -1373,7 +1373,7 @@ PairCalculator::acceptPhantomData(phantomMsg *msg)
 #endif
       }
   CkAssert(numPoints== msg->numPoints); 
-  memcpy(inDataRight, msg->points, numExpected*numPoints*2* sizeof(double));
+  CmiMemcpy(inDataRight, msg->points, numExpected*numPoints*2* sizeof(double));
   actionType=msg->actionType;
   delete msg;
   if(actionType==PSIV)
@@ -1767,7 +1767,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 	}
       else
 	{
-	  memcpy(outData, amatrix, size*sizeof(double));
+	  CmiMemcpy(outData, amatrix, size*sizeof(double));
 	}
       // it is safe to reuse this memory 
       // normal backward path has no use for outData
@@ -2113,7 +2113,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	/*
 	  msg->N=numPoints;
 	  msg->myoffset = thisIndex.z; // chunkth
-	  memcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
+	  CmiMemcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
 	*/
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
@@ -2257,7 +2257,7 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	omsg->init(numPoints, thisIndex.z, computed);
 	/*	omsg->N=numPoints;
 		omsg->myoffset = thisIndex.z; // chunkth
-		memcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
+		CmiMemcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
 	*/
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,index+j,thisIndex.w);
@@ -2299,7 +2299,7 @@ PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	  /*
 	    omsg->N=numPoints;
 	    omsg->myoffset = thisIndex.z; // chunkth
-	    memcpy(omsg->result, mynewData+j*numPoints, omsg->N*sizeof(complex) );
+	    CmiMemcpy(omsg->result, mynewData+j*numPoints, omsg->N*sizeof(complex) );
 	  */
 #ifdef _PAIRCALC_DEBUG_
 	  CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);

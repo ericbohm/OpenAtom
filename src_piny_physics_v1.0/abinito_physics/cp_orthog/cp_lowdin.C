@@ -221,13 +221,13 @@ void CPORTHOG::get_iter_Tmat(const double *S,double *Titer,int nstate)
      //--------------------------------
      // scr_mat1 = 0.5*scr_mat1*scr_mat2 = 0.5*scr_mat3*scr_mat2
      alpha = 0.5;  beta  = 0.0;
-     memcpy(scr_mat3,scr_mat1,nstate_sq*sizeof(double));
+     CmiMemcpy(scr_mat3,scr_mat1,nstate_sq*sizeof(double));
      GENMATMUL(scr_mat3,&nstate,&inorm,scr_mat2,&nstate,&itransp,scr_mat1,
                &nstate,&nstate,&nstate,&nstate,&alpha,&beta);
      //--------------------------------
      // Titer = 0.5*scr_mat2*Titer = 0.5*scr_mat2*scr_mat3
      alpha = 0.5;  beta  = 0.0;
-     memcpy(scr_mat3,Titer,nstate_sq*sizeof(double));
+     CmiMemcpy(scr_mat3,Titer,nstate_sq*sizeof(double));
      GENMATMUL(scr_mat2,&nstate,&inorm,scr_mat3,&nstate,&itransp,Titer,
                &nstate,&nstate,&nstate,&nstate,&alpha,&beta);
      //--------------------------------

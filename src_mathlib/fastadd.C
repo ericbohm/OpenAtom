@@ -1,6 +1,6 @@
 //bluegene check
 //Authored by Sameer Kumar 2006/8/12
-#ifdef CMK_VERSION_BLUEGENE
+#if 0
 #include <builtins.h>
 
 //performs the arithmatic a[i] += b[i]
@@ -15,7 +15,7 @@ void fastAdd (double *a, double *b, int nelem) {
 
   if (((unsigned long)a & 0x0f) == 0 && ((unsigned long)a & 0x0f) == 0
       && nelem > 32) {
-    __alignx (16, a);
+        __alignx (16, a);
     __alignx (16, b);
 
 #pragma unroll(16)

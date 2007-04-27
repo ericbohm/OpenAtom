@@ -143,7 +143,7 @@ void transpose(double *data, int m, int n){
   }
   else {
     double *tmp = new double[m * n];
-    memcpy(tmp, data, m * n * sizeof(double));
+    CmiMemcpy(tmp, data, m * n * sizeof(double));
     for(int i = 0; i < m; i++)
       for(int j = 0; j < n; j++)
         data[j * m + i] = tmp[i * n + j];
@@ -479,7 +479,7 @@ void CLA_Matrix::receiveA(CLA_Matrix_msg *msg){
   /* store current part */
   row_count++;
   for(int i = 0; i < m; i++)
-    memcpy(&tmpA[K * i + uk * (msg->fromY / K_stride)], &msg->data[i * msg->d2],
+    CmiMemcpy(&tmpA[K * i + uk * (msg->fromY / K_stride)], &msg->data[i * msg->d2],
      msg->d2 * sizeof(double));
   delete msg;
 
@@ -491,7 +491,7 @@ void CLA_Matrix::receiveA(CLA_Matrix_msg *msg){
 void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
   /* store current part */
   col_count++;
-  memcpy(&tmpB[n * uk * (msg->fromX / K_stride)], msg->data,
+  CmiMemcpy(&tmpB[n * uk * (msg->fromX / K_stride)], msg->data,
    msg->d1 * msg->d2 * sizeof(double));
   delete msg;
 
@@ -689,7 +689,7 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
 /* CLA_Matrix_msg */
 CLA_Matrix_msg::CLA_Matrix_msg(double *data, int d1, int d2, int fromX,
  int fromY){
-  memcpy(this->data, data, d1 * d2 * sizeof(double));
+  CmiMemcpy(this->data, data, d1 * d2 * sizeof(double));
   this->d1 = d1; this->d2 = d2;
   this->fromX = fromX; this->fromY = fromY;
 }

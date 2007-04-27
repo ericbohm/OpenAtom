@@ -339,7 +339,7 @@ void Ortho::resume(){
 	//	CkPrintf("O [%d %d] making copy of orthoT m %d n %d\n",thisIndex.x,thisIndex.y,m,n);
 	if(orthoT==NULL) //allocate if null
 	  { orthoT = new double[m * n];}
-	memcpy(orthoT,A,m*n*sizeof(double));
+	CmiMemcpy(orthoT,A,m*n*sizeof(double));
       }
     int s1=thisIndex.x*m;
     int s2=thisIndex.y*n;
@@ -592,7 +592,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
     */
     if(ortho==NULL)
       ortho= new double[m*n];
-    memcpy(ortho,orthoT,m*n*sizeof(double));
+    CmiMemcpy(ortho,orthoT,m*n*sizeof(double));
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
@@ -891,7 +891,7 @@ void Ortho::step_2_send(void){
 void Ortho::recvStep2(double *step2result, int size){
   // copy our data into the tmp_arr
   
-    memcpy(tmp_arr, step2result, m * n * sizeof(double));
+    CmiMemcpy(tmp_arr, step2result, m * n * sizeof(double));
     step2done=true;
     if(step3done) //end of iteration check
       { 
@@ -908,7 +908,7 @@ void Ortho::recvStep2(double *step2result, int size){
 //============================================================================
 void Ortho::step_3(){
   step = 3;
-  memcpy(B, A, m * n * sizeof(double));
+  CmiMemcpy(B, A, m * n * sizeof(double));
   matA3.multiply(0.5, 0, C, Ortho::tol_cb, (void*) this,
    thisIndex.x, thisIndex.y);
   matB3.multiply(0.5, 0, B, Ortho::tol_cb, (void*) this,

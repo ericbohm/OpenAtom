@@ -45,7 +45,7 @@ class MapType2 : public IntMap2on2 {
 #include "MapTable.h"
 
 #ifdef CMK_VERSION_BLUEGENE
-#include "builtins.h"
+//#include "builtins.h"
 #endif
 
 
@@ -63,7 +63,7 @@ class MapType2 : public IntMap2on2 {
 #endif
 
 #ifndef CmiMemcpy
-#define CmiMemcpy(dest, src, size) memcpy((dest), (src), (size))
+#define CmiMemcpy(dest, src, size) CmiMemcpy((dest), (src), (size))
 #endif
 
 extern MapType2 GSImaptable;
