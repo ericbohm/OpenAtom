@@ -7,7 +7,15 @@
 #include <string.h>
 #include "MapFile.h"
 
-
+MapFile::~MapFile()
+{
+  if (mapName !=NULL)
+    free(mapName);
+  if(sizeDim!=NULL)
+    free(sizeDim);
+  if(mapOrder!=NULL)
+    free(mapOrder);
+}
 MapFile::MapFile(char* name, int numpes)
 {
   mapName = (char *)malloc(sizeof(char)*15);
