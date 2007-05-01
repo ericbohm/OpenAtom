@@ -914,6 +914,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 
 	  // if(states_per_pe>maxcharesperpe)
 	  //	    maxcharesperpe=states_per_pe;
+	  delete state_map;
 	}
       int totcharesperpe=sizeZNL*nstates/CkNumPes()+1;
       maxcharesperpe=(maxcharesperpe>totcharesperpe) ? maxcharesperpe : totcharesperpe;
@@ -1033,6 +1034,95 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 #endif
 }
 
+/*OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
+{
+  maptable = _map;
+  availprocs = _availprocs;
+  int oobjs_per_pe;
+  int srcpe = 0, destpe;
+  bool useSublist=true;
+  bool useExclude=true;
+  oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count());
+  int *Pecount= new int [CkNumPes()];
+  bzero(Pecount, CkNumPes()*sizeof(int)); 
+  int s1 = 0, s2 = 0;
+  for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
+    for(int state2 = state1; state2 < nstates; state2 += orthoGrainSize)
+      {
+	s1 = (state1/sGrainSize);
+	s1 = s1 * sGrainSize;
+	s2 = (state2/sGrainSize);
+	s2 = s2 * sGrainSize;
+	PeList *thisStateBox=NULL;
+	if(useSublist)
+	  {
+	    thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
+	    useExclude = true;
+	    *thisStateBox - *exclusionList;
+	    thisStateBox->reindex();
+	    thisStateBox->reset();
+	  }
+	else
+	  {
+	    thisStateBox=availprocs;
+	  }
+	if(thisStateBox->count() == 0)
+ 	  {  // the sublist scheme failed 
+	    CkPrintf("Ortho %d %d ignoring SubList\n", state1, state2);
+	    if(thisStateBox!=availprocs)
+	      delete thisStateBox;
+	    thisStateBox = availprocs;
+	    *thisStateBox - *exclusionList;
+	    thisStateBox->reindex();
+	    useSublist=false;
+	  }
+
+	if(thisStateBox->count() == 0)
+	  {
+	    CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
+	    if(thisStateBox!=availprocs)
+	      delete thisStateBox;
+	    thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
+	    useExclude = false;
+	  }
+	sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
+	destpe=thisStateBox->findNext();
+	if(thisStateBox->count()==0)
+	  thisStateBox->reset();
+
+#ifdef USE_INT_MAP
+	maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
+#else
+	maptable->put(intdual(state1/orthoGrainSize, state2/orthoGrainSize))=destpe;
+#endif
+	Pecount[destpe]++;
+	if(Pecount[destpe]>=oobjs_per_pe)
+	  {
+	    exclusionList->mergeOne(destpe);
+	  }
+	if(state2!=state1)
+	  {
+	    destpe=thisStateBox->findNext();
+	    if(thisStateBox->count()==0)
+	      thisStateBox->reset();
+#ifdef USE_INT_MAP
+	    maptable->set(state2/orthoGrainSize, state1/orthoGrainSize, destpe);
+#else
+	    maptable->put(intdual(state2/orthoGrainSize, state1/orthoGrainSize))=destpe;
+#endif
+	    Pecount[destpe]++;	
+	    if(Pecount[destpe]>=oobjs_per_pe)
+	      {
+		exclusionList->mergeOne(destpe);
+	      }
+	  }
+	if(thisStateBox!=availprocs)
+	  delete thisStateBox;
+      }
+  delete [] Pecount;
+}
+*/
+
 OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
 {
   maptable = _map;
@@ -1086,10 +1176,12 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       }
 	
       sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
-	
       destpe=thisStateBox->findNext();
       if(thisStateBox->count()==0)
 	thisStateBox->reset();
+
+	
+      //      destpe=minDistCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
 
 #ifdef USE_INT_MAP
       maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
@@ -1151,6 +1243,7 @@ OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orth
 #endif
       if(useExclude)
 	{
+
 	  PeList one(1);
 	  one.TheList[0]=destpe;
 	  *availprocs - one;
@@ -1714,6 +1807,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   avail->reset();
 }
 
+
 void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
 {
   int sumX = 0, sumY = 0, sumZ = 0;
@@ -1735,6 +1829,28 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
   int bestPe = bgltm->coordinatesToRank(avgX, avgY, avgZ);
   avail->sortSource(bestPe);
   avail->reset();
+}
+
+int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
+{
+  int sumX = 0, sumY = 0, sumZ = 0;
+  int points = 0;
+
+  for(int plane=0; plane<nplanes; plane++)
+    for(int chunk=0; chunk<numChunks; chunk++)
+    {    
+      int X, Y, Z;
+      bgltm->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
+      sumX += X;
+      sumY += Y;
+      sumZ += Z;
+      points++;
+    }
+  int avgX = sumX/points;
+  int avgY = sumY/points;
+  int avgZ = sumZ/points;
+  int bestPe = bgltm->coordinatesToRank(avgX, avgY, avgZ);
+  return(avail->minDist(bestPe));
 }
 
 #else
@@ -1787,6 +1903,21 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
   int bestPe = sumPe/points;
   avail->sortSource(bestPe);
   avail->reset();
+}
+
+int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
+{
+  int sumPe = 0;
+  int points = 0;
+
+  for(int plane=0; plane<nplanes; plane++)
+    for(int chunk=0; chunk<numChunks; chunk++)
+    {    
+      sumPe += smap->get(plane, state1, state2, chunk);
+      points++;
+    }
+  int bestPe = sumPe/points;
+  return(avail->minDist(bestPe));
 }
 
 #endif

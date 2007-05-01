@@ -128,6 +128,9 @@ class PeList
 
   void reset(){current=0;} 
 
+  //! return a processor at minumum distance from source
+  int  minDist(int source);
+
   void resort(){   sortSource(TheList[0]);   }; 
 
   void append(PeList &inlist)

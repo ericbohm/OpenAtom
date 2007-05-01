@@ -147,6 +147,11 @@ void PeList::rebuild()
 #ifdef CMK_VERSION_BLUEGENE
 // BG/L specific PeList implementations
 
+int PeList::minDist(int srcPe)
+{
+  return(bgltm->pickClosestRank(srcPe, TheList, size));
+}
+
 void PeList::sortSource(int srcPe)
 {
   // sort it using TopoManager 
@@ -166,5 +171,11 @@ void PeList::sortSource(int srcPe)
   CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
   sortme.quickSort();
   CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
+}
+
+// if not a torus distance is meaningless we just pick the first element
+int PeList::minDist(int srcPe)
+{
+  return(TheList[0]);
 }
 #endif
