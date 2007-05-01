@@ -2046,6 +2046,8 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
     {
       cp_entry= cb_ep_tol;
     }
+  int numToSend=endGrain-startGrain;
+  int permuter=(int) ((float) thisIndex.z/ (float) numChunks) * (float) numToSend;
   if(otherdata){  // we have this othernewdata issue for the symmetric case
     // and the asymmetric dynamic case
     // for the off diagonal elements
@@ -2053,10 +2055,14 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
     int index=thisIndex.x;
     if(amPhantom)
       index=thisIndex.y;
+
     for(int j=startGrain;j<endGrain;j++)
       {
-	complex *computed=&(othernewData[j*numPoints]);
-	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
+	// shift the send order proportional to chunk index
+	int jPermuted=(j+permuter>endGrain) ? (j+permuter-numToSend) : (j+permuter) ;
+	
+	complex *computed=&(othernewData[jPermuted*numPoints]);
+	CkCallback mycb(cp_entry, CkArrayIndex2D(jPermuted+ index ,thisIndex.w), cb_aid);
 	partialResultMsg *msg=new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(gpriority)
 	  {
@@ -2066,7 +2072,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	msg->init(numPoints, thisIndex.z, computed);
 
 #ifdef _PAIRCALC_DEBUG_
-	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,jPermuted,thisIndex.y+jPermuted,thisIndex.w);
 #endif
 
 #ifdef _NAN_CHECK_
@@ -2089,20 +2095,21 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
       CkAssert(mynewData!=NULL);
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
-	complex *computed=&(mynewData[j*numPoints]);
+	int jPermuted=(j+permuter>endGrain) ? (j+permuter-numToSend) : (j+permuter) ;
+	complex *computed=&(mynewData[jPermuted*numPoints]);
 #ifdef _NAN_CHECK_
 	for(int i=0;i<numPoints ;i++)
 	  {
 	    if(!finite(computed[i].re) || !finite(computed[i].im))
 	      {
-		fprintf(stderr,"[%d %d %d %d %d]: sendBWResultColumnDirect nan in computed at %d %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, j,i);
+		fprintf(stderr,"[%d %d %d %d %d]: sendBWResultColumnDirect nan in computed at %d %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, jPermuted,i);
 		CkAssert(finite(computed[i].re));
 		CkAssert(finite(computed[i].im));
 	      }
 	  }
 #endif
 
-	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
+	CkCallback mycb(cp_entry, CkArrayIndex2D(jPermuted+thisIndex.y ,thisIndex.w), cb_aid);
 	partialResultMsg *msg=new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(gpriority)
 	  {
@@ -2113,10 +2120,10 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	/*
 	  msg->N=numPoints;
 	  msg->myoffset = thisIndex.z; // chunkth
-	  CmiMemcpy(msg->result,mynewData+j*numPoints,msg->N*sizeof(complex));
+	  CmiMemcpy(msg->result,mynewData+jPermuted*numPoints,msg->N*sizeof(complex));
 	*/
 #ifdef _PAIRCALC_DEBUG_
-	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,j,thisIndex.y+j,thisIndex.w);
+	CkPrintf("sending partial of size %d offset %d to [%d %d]\n",numPoints,jPermuted,thisIndex.y+jPermuted,thisIndex.w);
 #endif
 
 #ifdef _NAN_CHECK_
