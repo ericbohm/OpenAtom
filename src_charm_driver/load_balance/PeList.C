@@ -149,7 +149,7 @@ void PeList::rebuild()
 
 int PeList::minDist(int srcPe)
 {
-  return(bgltm->pickClosestRank(srcPe, TheList, size));
+  return(TheList[bgltm->pickClosestRank(srcPe, TheList, size)]);
 }
 
 void PeList::sortSource(int srcPe)

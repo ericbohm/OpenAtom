@@ -1175,13 +1175,13 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
 	useExclude = false;
       }
 	
-      sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
+      /*sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
       destpe=thisStateBox->findNext();
       if(thisStateBox->count()==0)
 	thisStateBox->reset();
-
+      */
 	
-      //      destpe=minDistCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
+      destpe=minDistCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
 
 #ifdef USE_INT_MAP
       maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
@@ -1231,14 +1231,10 @@ OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orth
     {
 
 #ifdef USE_INT_MAP
-      availprocs->sortSource(omap->get(state1, state2));
-      availprocs->reset();
-      destpe = availprocs->findNext();
+      destpe=availprocs->minDist(omap->get(state1, state2));
       maptable->set(state1, state2, destpe);
 #else
-      availprocs->sortSource(omap->get(intdual(state1, state2)));
-      availprocs->reset();
-      destpe = availprocs->findNext();
+      destpe=availprocs->minDist(omap->get(intdual(state1, state2)));
       maptable->put(intdual(state1, state2))=destpe;
 #endif
       if(useExclude)
