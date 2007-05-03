@@ -2434,7 +2434,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
 // Set the file names and write the files
 
   iwrite_now     = 0;
-  if(config.stateOutputOn==1){
+  if(config.stateOutput==1){
 
     if( ((myiteration % ndump_frq)==0) || (iteration==config.maxIter) || 
           exitFlag==1){
@@ -3054,7 +3054,7 @@ void CP_State_GSpacePlane::sendPsi() {
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
-      config.stateOutputOn==0){
+      config.stateOutput==0){
       if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
         int i;
         contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
@@ -3303,7 +3303,7 @@ void CP_State_GSpacePlane::doNewPsi(){
   }//endifw
 
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
-     config.stateOutputOn==0){
+     config.stateOutput==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
        int i;
        contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
