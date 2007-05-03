@@ -146,7 +146,7 @@ class Config {
   //==================================
 
   //==================================
-  // mapping control flags and values
+  // Mapping control flags and values
   //----------------------------------
    int torusMap;
    int useCuboidMap;
