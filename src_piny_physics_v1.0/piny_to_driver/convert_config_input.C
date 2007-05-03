@@ -35,10 +35,10 @@ int main(){
   Config config;
   int num_dict_fun;
   int num_dict_rho, num_dict_state, num_dict_pc;
-  int num_dict_nl,  num_dict_gen,   num_dict_atm;
+  int num_dict_nl,  num_dict_gen,   num_dict_map;
   DICT_WORD *dict_fun;
   DICT_WORD *dict_rho, *dict_state, *dict_pc;
-  DICT_WORD *dict_nl, *dict_gen, *dict_atm;
+  DICT_WORD *dict_nl, *dict_gen, *dict_map;
   DICT_WORD word;            
 
   FILE *fp;
@@ -85,7 +85,7 @@ int main(){
   config.set_config_dict_pc   (&num_dict_pc,   &dict_pc);
   config.set_config_dict_nl   (&num_dict_nl,   &dict_nl);
   config.set_config_dict_gen  (&num_dict_gen,  &dict_gen);
-  config.set_config_dict_atm  (&num_dict_atm,  &dict_atm);
+  config.set_config_dict_map  (&num_dict_map,  &dict_map);
 
 //===================================================================================
 // Load the keywords into the dictionary
@@ -94,7 +94,7 @@ int main(){
   config.load_cpaimd_config(dict_state,num_dict_state,keyarg, keyword, nline, ifound);
   config.load_cpaimd_config(dict_pc,   num_dict_pc,   keyarg, keyword, nline, ifound);
   config.load_cpaimd_config(dict_nl,   num_dict_nl,   keyarg, keyword, nline, ifound);
-  config.load_cpaimd_config(dict_atm,  num_dict_atm,  keyarg, keyword, nline, ifound);
+  config.load_cpaimd_config(dict_map,  num_dict_map,  keyarg, keyword, nline, ifound);
   config.load_cpaimd_config(dict_gen,  num_dict_gen,  keyarg, keyword, nline, ifound); 
 
   for(int i=1;i<=nline;i++){
@@ -112,7 +112,7 @@ int main(){
    config.write_cpaimd_config(fp,dict_pc,   num_dict_pc,   dict_fun[3].keyword);
    config.write_cpaimd_config(fp,dict_nl,   num_dict_nl,   dict_fun[4].keyword);
    config.write_cpaimd_config(fp,dict_gen,  num_dict_gen,  dict_fun[5].keyword);
-   config.write_cpaimd_config(fp,dict_atm,  num_dict_atm,  dict_fun[6].keyword);
+   config.write_cpaimd_config(fp,dict_map,  num_dict_map,  dict_fun[6].keyword);
   fclose(fp);
 
   return 1;
@@ -173,10 +173,10 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"charm_conf_gen_def");
     strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
-  //  6)~charm_conf_atm_def[ ]
+  //  6)~charm_conf_map_def[ ]
     ind = 6;
     strcpy((*dict)[ind].error_mes," ");
-    strcpy((*dict)[ind].keyword,"charm_conf_atm_def");
+    strcpy((*dict)[ind].keyword,"charm_conf_map_def");
     strcpy((*dict)[ind].keyarg," ");
 //----------------------------------------------------------------------------------
   }//end routine
@@ -190,7 +190,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 22;
+  num_dict[0] = 25;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -374,7 +374,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 25;
+  num_dict[0] = 19;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -436,9 +436,9 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     sprintf((*dict)[ind].keyarg,"%d",nstates);
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  //  9)\stateOutputOn{}
+  //  9)\stateOutput{}
     ind=9;
-    strcpy((*dict)[ind].keyword,"stateOutputOn");
+    strcpy((*dict)[ind].keyword,"stateOutput");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
@@ -565,7 +565,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 31;
+  num_dict[0] = 30;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -878,7 +878,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 6;
+  num_dict[0] = 8;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -946,11 +946,11 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
+void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 3;
+  num_dict[0] = 10;
   *dict = (DICT_WORD *)malloc(num_dict[0]*sizeof(DICT_WORD))-1;
 
 //=================================================================================
@@ -978,9 +978,9 @@ void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
   //-----------------------------------------------------------------------------
-  // 3)\atmOutputOn{}
+  // 3)\atmOutput{}
     ind=3;
-    strcpy((*dict)[ind].keyword,"atmOutputOn");
+    strcpy((*dict)[ind].keyword,"atmOutput");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
     (*dict)[ind].iflag = 1;
