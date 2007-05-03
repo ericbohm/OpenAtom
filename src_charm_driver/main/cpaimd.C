@@ -1281,7 +1281,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
   int nOrtho= (nstates/config.orthoGrainSize);
     
-  int stride= 1;
+  /*int stride= 1;
   if(config.orthoStride>0)
   {
     if(config.orthoStride==1)
@@ -1292,7 +1292,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
     }
     else
       stride=config.orthoStride;
-  }
+  }*/
   nOrtho *= nOrtho;
 
   availGlobR->reset();
