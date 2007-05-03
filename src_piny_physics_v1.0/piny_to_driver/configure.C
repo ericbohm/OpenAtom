@@ -1653,7 +1653,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
   // 1)\torusMap{}
     ind = 1;
     strcpy((*dict)[ind].keyword,"torusMap");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 2)\useCuboidMap{}
