@@ -252,7 +252,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 
   int nproc         = CkNumPes();
   int myid          = CkMyPe();
-  int output_on     = config.atmOutputOn;
+  int output_on     = config.atmOutput;
 
 //============================================================
 // Copy out the reduction of energy and forces
@@ -543,7 +543,7 @@ void AtomsGrp::atomsDone() {
 //==========================================================================
 // Use the cool new data caching system to say we're done.
 
- if(config.localAtomBarrier){
+ if(1) { // localAtomBarrier
 
    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
    int *indState     = eesData->gspStateInd;
@@ -693,7 +693,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
      // iteration is time of atoms[i].xold
      // maxIter is 1 more than you need : slightly annoying but livable
-     int output_on = config.atmOutputOn;
+     int output_on = config.atmOutput;
      if(output_on==1 && iteration<=config.maxIter-1){ 
        int pi_beads   = 1;
        int iwrite_atm = 0;
@@ -822,7 +822,7 @@ void EnergyGroup::energyDone(){
 // Use the cool new data caching system
 
  int myid          = CkMyPe();
- if(config.localAtomBarrier){
+ if(1) { // localAtomBarrier
 
    eesCache *eesData = eesCacheProxy.ckLocalBranch ();
    int *indState     = eesData->gspStateInd;
