@@ -35,10 +35,10 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   int num_dict_fun;
   int num_dict_rho, num_dict_state, num_dict_pc;
-  int num_dict_nl,  num_dict_gen,   num_dict_atm;
+  int num_dict_nl,  num_dict_gen,   num_dict_map;
   DICT_WORD *dict_fun;
   DICT_WORD *dict_rho, *dict_state, *dict_pc;
-  DICT_WORD *dict_nl, *dict_gen, *dict_atm;
+  DICT_WORD *dict_nl, *dict_gen, *dict_map;
   DICT_WORD word;            
 
   int nline;
@@ -89,7 +89,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   set_config_dict_pc   (&num_dict_pc,   &dict_pc);
   set_config_dict_nl   (&num_dict_nl,   &dict_nl);
   set_config_dict_gen  (&num_dict_gen,  &dict_gen);
-  set_config_dict_atm  (&num_dict_atm,  &dict_atm);
+  set_config_dict_map  (&num_dict_map,  &dict_map);
 
 //===================================================================================
 // Read the input file and fill the dictionaries with user input
@@ -113,8 +113,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                                nkey,nfun_key,input_name);break;
         case 5 : put_word_dict(&word,dict_gen,num_dict_gen,fun_key,nline,
                                nkey,nfun_key,input_name);break;
-        case 6 : put_word_dict(&word,dict_atm,num_dict_atm,fun_key,nline,
-                               nkey,nfun_key,input_name);break;
+        case 6 : put_word_dict(&word,dict_map, num_dict_map, fun_key, nline,
+                               nkey, nfun_key, input_name); break;
       }//end switch
     }// end while 
   }//end while
@@ -127,11 +127,11 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   set_config_params_gen  (dict_gen,  dict_fun[5].keyword,input_name);
   int iflag = 1; if(useCommlib!=1){iflag=0;}  // change default commlib option
 
-  set_config_params_rho  (dict_rho,  dict_fun[1].keyword,input_name,iflag);
-  set_config_params_state(dict_state,dict_fun[2].keyword,input_name,iflag);
-  set_config_params_pc   (dict_pc,   dict_fun[3].keyword,input_name);
-  set_config_params_nl   (dict_nl,   dict_fun[4].keyword,input_name,iflag);
-  set_config_params_atm  (dict_atm,  dict_fun[6].keyword,input_name);
+  set_config_params_rho  (dict_rho,  dict_fun[1].keyword, input_name, iflag);
+  set_config_params_state(dict_state,dict_fun[2].keyword, input_name, iflag);
+  set_config_params_pc   (dict_pc,   dict_fun[3].keyword, input_name);
+  set_config_params_nl   (dict_nl,   dict_fun[4].keyword, input_name, iflag);
+  set_config_params_map  (dict_map,  dict_fun[6].keyword, input_name);
 
   simpleRangeCheck(); // redundant checking
 
@@ -176,7 +176,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Improve user parameters and/or try to optimize unset parameters
 
-  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_atm);
+  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map);
 
 //===================================================================================
 // Final consistency checks
@@ -193,7 +193,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
    write_cpaimd_config(fp,dict_pc,   num_dict_pc,   dict_fun[3].keyword);
    write_cpaimd_config(fp,dict_nl,   num_dict_nl,   dict_fun[4].keyword);
    write_cpaimd_config(fp,dict_gen,  num_dict_gen,  dict_fun[5].keyword);
-   write_cpaimd_config(fp,dict_atm,  num_dict_atm,  dict_fun[6].keyword);
+   write_cpaimd_config(fp,dict_map,  num_dict_map,  dict_fun[6].keyword);
   fclose(fp);
 
 //===================================================================================
@@ -208,6 +208,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   cfree(&dict_pc[1]   ,"Config::readCconfig");
   cfree(&dict_nl[1]   ,"Config::readCconfig");
   cfree(&dict_gen[1]  ,"Config::readCconfig");
+  cfree(&dict_map[1]  ,"Config::readCconfig");
 
 //===================================================================================
 // Tell Everyone you are done
@@ -273,10 +274,10 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"charm_conf_gen_def");
     strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
-  //  6)~charm_conf_atm_def[ ]
+  //  6)~charm_conf_map_def[ ]
     ind = 6;
     strcpy((*dict)[ind].error_mes," ");
-    strcpy((*dict)[ind].keyword,"charm_conf_atm_def");
+    strcpy((*dict)[ind].keyword,"charm_conf_map_def");
     strcpy((*dict)[ind].keyarg," ");
 //----------------------------------------------------------------------------------
   }//end routine
@@ -290,7 +291,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 26;
+  num_dict[0] = 25;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
 //=================================================================================
@@ -337,137 +338,131 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  //  6)\useCentroidMapRho{}
+  //  6)\rhorpriority{}
     ind =   6;
-    strcpy((*dict)[ind].keyword,"useCentroidMapRho");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  //  7)\rhorpriority{}
-    ind =   7;
     strcpy((*dict)[ind].keyword,"rhorpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  //  8)\rhogpriority{}
-    ind =   8;
+  //  7)\rhogpriority{}
+    ind =   7;
     strcpy((*dict)[ind].keyword,"rhogpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  //  9)\gExpandFactRho{}
-    ind =   9;
+  //  8)\gExpandFactRho{}
+    ind =   8;
     strcpy((*dict)[ind].keyword,"gExpandFactRho");
     strcpy((*dict)[ind].keyarg,"1.25");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 10)\lbdensity{}
-    ind =  10;
+  // 9)\lbdensity{}
+    ind =  9;
     strcpy((*dict)[ind].keyword,"lbdensity");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 11)\rhoGHelpers{}
-    ind =  11;
+  // 10)\rhoGHelpers{}
+    ind =  10;
     strcpy((*dict)[ind].keyword,"rhoGHelpers");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 12)\rhoRsubplanes{}
-    ind =  12;
+  // 11)\rhoRsubplanes{}
+    ind =  11;
     strcpy((*dict)[ind].keyword,"rhoRsubplanes");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 13)\useGIns0RhoRP{}
-    ind =  13;
+  // 12)\useGIns0RhoRP{}
+    ind =  12;
     strcpy((*dict)[ind].keyword,"useGIns0RhoRP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 14)\useGIns1RhoRP{}
-    ind =  14;
+  // 13)\useGIns1RhoRP{}
+    ind =  13;
     strcpy((*dict)[ind].keyword,"useGIns1RhoRP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 15)\useGIns2RhoRP{}
-    ind =  15;
+  // 14)\useGIns2RhoRP{}
+    ind =  14;
     strcpy((*dict)[ind].keyword,"useGIns2RhoRP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 16)\useGIns3RhoRP{}
-    ind =  16;
+  // 15)\useGIns3RhoRP{}
+    ind =  15;
     strcpy((*dict)[ind].keyword,"useGIns3RhoRP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 17)\useGByrdInsRhoRBP{}
-    ind =  17;
+  // 16)\useGByrdInsRhoRBP{}
+    ind =  16;
     strcpy((*dict)[ind].keyword,"useGByrdInsRhoRBP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 18)\useRInsRhoGP{}
-    ind =  18;
+  // 17)\useRInsRhoGP{}
+    ind =  17;
     strcpy((*dict)[ind].keyword,"useRInsRhoGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 19)\useRInsIGXRhoGP{}
-    ind =  19;
+  // 18)\useRInsIGXRhoGP{}
+    ind =  18;
     strcpy((*dict)[ind].keyword,"useRInsIGXRhoGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 20)\useRInsIGYRhoGP{}
-    ind =  20;
+  // 19)\useRInsIGYRhoGP{}
+    ind =  19;
     strcpy((*dict)[ind].keyword,"useRInsIGYRhoGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 21)\useRInsIGZRhoGP{}
-    ind =  21;
+  // 20)\useRInsIGZRhoGP{}
+    ind =  20;
     strcpy((*dict)[ind].keyword,"useRInsIGZRhoGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 22)\prioEextFFTMsg{}
-    ind =  22;
+  // 21)\prioEextFFTMsg{}
+    ind =  21;
     strcpy((*dict)[ind].keyword,"prioEextFFTMsg");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 23)\rhoLineOrder{}
-    ind =  23;
+  // 22)\rhoLineOrder{}
+    ind =  22;
     strcpy((*dict)[ind].keyword,"rhoLineOrder");
     strcpy((*dict)[ind].keyarg,"skip");    
     strcpy((*dict)[ind].error_mes,"skip,none,random");
 //----------------------------------------------------------------------------------
-  // 24)\nchareHartAtmT{}
-    ind =  24;
+  // 23)\nchareHartAtmT{}
+    ind =  23;
     strcpy((*dict)[ind].keyword,"nchareHartAtmT");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes," number >=1 and <= natmtype");
   //-----------------------------------------------------------------------------
-  // 25)\rhoSubPlaneBalance{}
-    ind =  25;
+  // 24)\rhoSubPlaneBalance{}
+    ind =  24;
     strcpy((*dict)[ind].keyword,"rhoSubPlaneBalance");
     strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 26)\rhoGToRhoRMsgCombine{}
-    ind =  26;
+  // 25)\rhoGToRhoRMsgCombine{}
+    ind =  25;
     strcpy((*dict)[ind].keyword,"rhoGToRhoRMsgCombine");
     strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
@@ -518,122 +513,117 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useRHartInsGHart=0;}
   //-----------------------------------------------------------------------------
-  //  6)\useCentroidMapRho{}
+  //  6)\rhorpriority{}
     ind =   6;
-    parse_on_off(dict[ind].keyarg,&useCentroidMapRho,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  7)\rhorpriority{}
-    ind =   7;
     sscanf(dict[ind].keyarg,"%d",&rhorpriority);
     if(rhorpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  8)\rhogpriority{}
-    ind =   8;
+  //  7)\rhogpriority{}
+    ind =   7;
     sscanf(dict[ind].keyarg,"%d",&rhogpriority);
     if(rhogpriority<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  9)\gExpandFactRho{}
-    ind =   9;
+  //  8)\gExpandFactRho{}
+    ind =   8;
     sscanf(dict[ind].keyarg,"%lg",&gExpandFactRho);
     if(gExpandFactRho<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 10)\lbdensity{}
-    ind =  10;
+  // 9)\lbdensity{}
+    ind =  9;
     parse_on_off(dict[ind].keyarg,&lbdensity,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 11)\rhoGHelpers{}
-    ind =  11;
+  // 10)\rhoGHelpers{}
+    ind =  10;
     sscanf(dict[ind].keyarg,"%d",&rhoGHelpers);
     if(rhoGHelpers<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 12)\rhoRsubplanes{}
-    ind =  12;
+  // 11)\rhoRsubplanes{}
+    ind =  11;
     sscanf(dict[ind].keyarg,"%d",&rhoRsubplanes);
     if(rhoRsubplanes<=0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 13)\useGIns0RhoRP{}
-    ind =  13;
+  // 12)\useGIns0RhoRP{}
+    ind =  12;
     parse_on_off(dict[ind].keyarg,&useGIns0RhoRP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGIns0RhoRP=0;}
   //-----------------------------------------------------------------------------
-  // 14)\useGIns1RhoRP{}
-    ind =  14;
+  // 13)\useGIns1RhoRP{}
+    ind =  13;
     parse_on_off(dict[ind].keyarg,&useGIns1RhoRP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGIns1RhoRP=0;}
   //-----------------------------------------------------------------------------
-  // 15)\useGIns2RhoRP{}
-    ind =  15;
+  // 14)\useGIns2RhoRP{}
+    ind =  14;
     parse_on_off(dict[ind].keyarg,&useGIns2RhoRP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGIns2RhoRP=0;}
   //-----------------------------------------------------------------------------
-  // 16)\useGIns3RhoRP{}
-    ind =  16;
+  // 15)\useGIns3RhoRP{}
+    ind =  15;
     parse_on_off(dict[ind].keyarg,&useGIns3RhoRP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGIns3RhoRP=0;}
   //-----------------------------------------------------------------------------
-  // 17)\useGByrdInsRhoRBP{}
-    ind =  17;
+  // 16)\useGByrdInsRhoRBP{}
+    ind =  16;
     parse_on_off(dict[ind].keyarg,&useGByrdInsRhoRBP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGByrdInsRhoRBP=0;}
   //-----------------------------------------------------------------------------
-  // 18)\useRInsRhoGP{}
-    ind =  18;
+  // 17)\useRInsRhoGP{}
+    ind =  17;
     parse_on_off(dict[ind].keyarg,&useRInsRhoGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useRInsRhoGP=0;}
   //-----------------------------------------------------------------------------
-  // 19)\useRInsIGXRhoGP{}
-    ind =  19;
+  // 18)\useRInsIGXRhoGP{}
+    ind =  18;
     parse_on_off(dict[ind].keyarg,&useRInsIGXRhoGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useRInsIGXRhoGP=0;}
   //-----------------------------------------------------------------------------
-  // 20)\useRInsIGYRhoGP{}
-    ind =  20;
+  // 19)\useRInsIGYRhoGP{}
+    ind =  19;
     parse_on_off(dict[ind].keyarg,&useRInsIGYRhoGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useRInsIGYRhoGP=0;}
   //-----------------------------------------------------------------------------
-  // 21)\useRInsIGZRhoGP{}
-    ind =  21;
+  // 20)\useRInsIGZRhoGP{}
+    ind =  20;
     parse_on_off(dict[ind].keyarg,&useRInsIGZRhoGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useRInsIGZRhoGP=0;}
   //-----------------------------------------------------------------------------
-  // 22)\prioEextFFTMsg{}
-    ind =  22;
+  // 21)\prioEextFFTMsg{}
+    ind =  21;
     parse_on_off(dict[ind].keyarg,&prioEextFFTMsg,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 23)\rhoLineOrder{}
-    ind =  23;
+  // 22)\rhoLineOrder{}
+    ind =  22;
     ierr= 0;
     if(strcasecmp(dict[ind].keyarg,"none")==0)  {rhoLineOrder =-1; ierr++;}
     if(strcasecmp(dict[ind].keyarg,"skip")==0)  {rhoLineOrder = 0; ierr++;}
     if(strcasecmp(dict[ind].keyarg,"random")==0){rhoLineOrder = 1; ierr++;}
     if(ierr!=1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 24)\nchareHartAtmT{}
-    ind =   24;
+  // 23)\nchareHartAtmT{}
+    ind =   23;
     sscanf(dict[ind].keyarg,"%d",&nchareHartAtmT);
     if(nchareHartAtmT<1 || nchareHartAtmT>natm_typ){
       keyarg_barf(dict,input_name,fun_key,ind);
     }//endif
   //-----------------------------------------------------------------------------
-  // 25)\rhoSubPlaneBalance{}
-    ind =  25;
+  // 24)\rhoSubPlaneBalance{}
+    ind =  24;
     parse_on_off(dict[ind].keyarg,&rhoSubPlaneBalance,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 26)\rhoGToRhoRMsgCombine{}
-    ind =  26;
+  // 25)\rhoGToRhoRMsgCombine{}
+    ind =  25;
     parse_on_off(dict[ind].keyarg,&rhoGToRhoRMsgComb,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 //===================================================================================
@@ -678,7 +668,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 26;
+  num_dict[0] = 19;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_state")-1;
 
 //=================================================================================
@@ -728,124 +718,82 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"1.25");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  //  7)\Gstates_per_pe{}
+  //  7)\stateOutput{}
     ind=7;
-    strcpy((*dict)[ind].keyword,"Gstates_per_pe");
-    sprintf((*dict)[ind].keyarg,"%d",nstates);  
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  //  8)\Rstates_per_pe{}
-    ind=8;
-    strcpy((*dict)[ind].keyword,"Rstates_per_pe");
-    sprintf((*dict)[ind].keyarg,"%d",nstates);
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  //  9)\stateOutputOn{}
-    ind=9;
-    strcpy((*dict)[ind].keyword,"stateOutputOn");
+    strcpy((*dict)[ind].keyword,"stateOutput");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"off/on");
   //-----------------------------------------------------------------------------
-  // 10)\psipriority{}
-    ind=10;
+  //  8)\psipriority{}
+    ind=8;
     strcpy((*dict)[ind].keyword,"psipriority");
     strcpy((*dict)[ind].keyarg,"400000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 11)\prioFFTMsg{}
-    ind=11;
+  //  9)\prioFFTMsg{}
+    ind=9;
     strcpy((*dict)[ind].keyword,"prioFFTMsg");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 12)\rsfftpriority{}
-    ind=12;
+  // 10)\rsfftpriority{}
+    ind=10;
     strcpy((*dict)[ind].keyword,"rsfftpriority");
     strcpy((*dict)[ind].keyarg,"2000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 13)\gsfftpriority{}
-    ind=13;
+  // 11)\gsfftpriority{}
+    ind=11;
     strcpy((*dict)[ind].keyword,"gsfftpriority");
     strcpy((*dict)[ind].keyarg,"1000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 14)\rsifftpriority{}
-    ind=14;
+  // 12)\rsifftpriority{}
+    ind=12;
     strcpy((*dict)[ind].keyword,"rsifftpriority");
     strcpy((*dict)[ind].keyarg,"100000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 15)\gsifftpriority{}
-    ind=15;
+  // 13)\gsifftpriority{}
+    ind=13;
     strcpy((*dict)[ind].keyword,"gsifftpriority");
     strcpy((*dict)[ind].keyarg,"200000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 16)\conserveMemory{}
-    ind=16;
+  // 14)\conserveMemory{}
+    ind=14;
     strcpy((*dict)[ind].keyword,"conserveMemory");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 17)\lbgspace{}
-    ind=17;
+  // 15)\lbgspace{}
+    ind=15;
     strcpy((*dict)[ind].keyword,"lbgspace");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 18)\doublePack{}
-    ind=18;
+  // 16)\doublePack{}
+    ind=16;
     strcpy((*dict)[ind].keyword,"doublePack");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 19)\useCuboidMap{}
-    ind=19;
-    strcpy((*dict)[ind].keyword,"useCuboidMap");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 20)\useCuboidMapRS{}
-    ind=20;
-    strcpy((*dict)[ind].keyword,"useCuboidMapRS");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 21)\useCentroidMap{}
-    ind=21;
-    strcpy((*dict)[ind].keyword,"useCentroidMap");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 22)\useGssInsRealP{}
-    ind=22;
+  // 17)\useGssInsRealP{}
+    ind=17;
     strcpy((*dict)[ind].keyword,"useGssInsRealP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 23)\useMssInsGP{}
-    ind=23;
+  // 18)\useMssInsGP{}
+    ind=18;
     strcpy((*dict)[ind].keyword,"useMssInsGP");
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 24)\loadMapFiles{}
-    ind=24;
-    strcpy((*dict)[ind].keyword,"loadMapFiles");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 25)\dumpMapFiles{}
-    ind=25;
-    strcpy((*dict)[ind].keyword,"dumpMapFiles");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 26)\dataPathOut\{}
-    ind=26;
+  // 19)\dataPathOut\{}
+    ind=19;
     strcpy((*dict)[ind].keyword,"dataPathOut");
     strcpy((*dict)[ind].keyarg,"./STATES_OUT");    
     strcpy((*dict)[ind].error_mes,"a directory tree");
@@ -897,110 +845,75 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     sscanf(dict[ind].keyarg,"%lg",&gExpandFact);
     if(gExpandFact<=0.0){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  7)\Gstates_per_pe{}
+  //  7)\stateOutput{}
     ind=7;
-    sscanf(dict[ind].keyarg,"%d",&Gstates_per_pe);
-    if(Gstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  8)\Rstates_per_pe{}
-    ind=8;
-    sscanf(dict[ind].keyarg,"%d",&Rstates_per_pe);
-    if(Rstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  9)\stateOutputOn{}
-    ind=9;
-    parse_on_off(dict[ind].keyarg,&stateOutputOn,&ierr);
+    parse_on_off(dict[ind].keyarg,&stateOutput,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-    if(stateOutputOn==0){
+    if(stateOutput==0){
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
         PRINTF("   You are in a state of danger! Your stateOutput is off! \n");
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//
   //-----------------------------------------------------------------------------
-  // 10)\psipriority{}
-    ind=10;
+  //  8)\psipriority{}
+    ind=8;
     sscanf(dict[ind].keyarg,"%d",&psipriority);
     if(psipriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 11)\prioFFTMsg{}
-    ind=11;
+  //  9)\prioFFTMsg{}
+    ind=9;
     parse_on_off(dict[ind].keyarg,&prioFFTMsg,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 12)\rsfftpriority{}
-    ind=12;
+  // 10)\rsfftpriority{}
+    ind=10;
     sscanf(dict[ind].keyarg,"%d",&rsfftpriority);
     if(rsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 13)\gsfftpriority{}
-    ind=13;
+  // 11)\gsfftpriority{}
+    ind=11;
     sscanf(dict[ind].keyarg,"%d",&gsfftpriority);
     if(gsfftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 14)\rsifftpriority{}
-    ind=14;
+  // 12)\rsifftpriority{}
+    ind=12;
     sscanf(dict[ind].keyarg,"%d",&rsifftpriority);
     if(rsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 15)\gsifftpriority{}
-    ind=15;
+  // 13)\gsifftpriority{}
+    ind=13;
     sscanf(dict[ind].keyarg,"%d",&gsifftpriority);
     if(gsifftpriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 16)\conserveMemory{}
-    ind=16;
+  // 14)\conserveMemory{}
+    ind=14;
     parse_on_off(dict[ind].keyarg,&conserveMemory,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 17)\lbgspace{}
-    ind=17;
+  // 15)\lbgspace{}
+    ind=15;
     parse_on_off(dict[ind].keyarg,&lbgspace,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 18)\doublePack{}
-    ind=18;
+  // 16)\doublePack{}
+    ind=16;
     parse_on_off(dict[ind].keyarg,&doublePack,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 19)\useCuboidMap{}
-    ind=19;
-    parse_on_off(dict[ind].keyarg,&useCuboidMap,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 20)\useCuboidMapRS{}
-    ind=20;
-    parse_on_off(dict[ind].keyarg,&useCuboidMapRS,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 21)\useCentroidMap{}
-    ind=21;
-    parse_on_off(dict[ind].keyarg,&useCentroidMap,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 22)\useGssInsRealP{}
-    ind=22;
+  // 17)\useGssInsRealP{}
+    ind=17;
     parse_on_off(dict[ind].keyarg,&useGssInsRealP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useGssInsRealP=0;}
   //-----------------------------------------------------------------------------
-  // 23)\useMssInsGP{}
-    ind=23;
+  // 18)\useMssInsGP{}
+    ind=18;
     parse_on_off(dict[ind].keyarg,&useMssInsGP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useMssInsGP=0;}
   //-----------------------------------------------------------------------------
-  // 24)\loadMapFiles{}
-    ind=24;
-    parse_on_off(dict[ind].keyarg,&loadMapFiles,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 25)\dumpMapFiles{}
-    ind=25;
-    parse_on_off(dict[ind].keyarg,&dumpMapFiles,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 26)\dataPathOut\{}
-    ind=26;
+  // 19)\dataPathOut\{}
+    ind=19;
     strcpy(dataPathOut, dict[ind].keyarg);
     if(strcasecmp(dataPathOut,dataPath)==0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -1021,7 +934,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 31;
+  num_dict[0] = 30;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_pc")-1;
 
 //=================================================================================
@@ -1149,74 +1062,68 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
     sprintf((*dict)[ind].keyarg,"%d",nstates);
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 20)\orthoStride{}
+  // 20)\useBWBarrier{}
     ind=20;
-    strcpy((*dict)[ind].keyword,"orthoStride");
-    strcpy((*dict)[ind].keyarg,"0");    
-    strcpy((*dict)[ind].error_mes,"a number >= 0");
-  //-----------------------------------------------------------------------------
-  // 21)\useBWBarrier{}
-    ind=21;
     strcpy((*dict)[ind].keyword,"useBWBarrier");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 22)\phantomSym{}
-    ind=22;
+  // 21)\phantomSym{}
+    ind=21;
     strcpy((*dict)[ind].keyword,"phantomSym");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 23)\lbpaircalc{}
-    ind=23;
+  // 22)\lbpaircalc{}
+    ind=22;
     strcpy((*dict)[ind].keyword,"lbpaircalc");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 24)\lambdapriority{}
-    ind=24;
+  // 23)\lambdapriority{}
+    ind=23;
     strcpy((*dict)[ind].keyword,"lambdapriority");
     strcpy((*dict)[ind].keyarg,"300000000");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 25)\toleranceInterval{}
-    ind=25;
+  // 24)\toleranceInterval{}
+    ind=24;
     strcpy((*dict)[ind].keyword,"toleranceInterval");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 26)\gSpaceSum{}
-    ind=26;
+  // 25)\gSpaceSum{}
+    ind=25;
     strcpy((*dict)[ind].keyword,"gSpaceSum");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 27)\numChunks{}
-    ind=27;
+  // 26)\numChunks{}
+    ind=26;
     strcpy((*dict)[ind].keyword,"numChunks");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 28)\numChunksSym{}
-    ind=28;
+  // 27)\numChunksSym{}
+    ind=27;
     strcpy((*dict)[ind].keyword,"numChunksSym");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 29)\numChunksAsym{}
-    ind=29;
+  // 28)\numChunksAsym{}
+    ind=28;
     strcpy((*dict)[ind].keyword,"numChunksAsym");
     strcpy((*dict)[ind].keyarg,"1");    
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 30)\prioBW{}
-    ind=30;
+  // 29)\prioBW{}
+    ind=29;
     strcpy((*dict)[ind].keyword,"prioBW");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 31)\usePairEtoM{}
-    ind=31;
+  // 30)\usePairEtoM{}
+    ind=30;
     strcpy((*dict)[ind].keyword,"usePairEtoM");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
@@ -1333,63 +1240,58 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
     sscanf(dict[ind].keyarg,"%d",&orthoGrainSize);
     if(orthoGrainSize<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 20)\orthoStride{}
+  // 20)\useBWBarrier{}
     ind=20;
-    sscanf(dict[ind].keyarg,"%d",&orthoStride);
-    if(orthoStride<0){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  // 21)\useBWBarrier{}
-    ind=21;
     parse_on_off(dict[ind].keyarg,&useBWBarrier,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 22)\phantomSym{}
-    ind=22;
+  // 21)\phantomSym{}
+    ind=21;
     parse_on_off(dict[ind].keyarg,&phantomSym,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 23)\lbpaircalc{}
-    ind=23;
+  // 22)\lbpaircalc{}
+    ind=22;
     parse_on_off(dict[ind].keyarg,&lbpaircalc,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 24)\lambdapriority{}
-    ind=24;
+  // 23)\lambdapriority{}
+    ind=23;
     sscanf(dict[ind].keyarg,"%d",&lambdapriority);
     if(lambdapriority<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 25)\toleranceInterval{}
-    ind=25;
+  // 24)\toleranceInterval{}
+    ind=24;
     sscanf(dict[ind].keyarg,"%d",&toleranceInterval);
     if(toleranceInterval<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 26)\gSpaceSum{}
-    ind=26;
+  // 25)\gSpaceSum{}
+    ind=25;
     parse_on_off(dict[ind].keyarg,&gSpaceSum,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 27)\numChunks{}
-    ind=27;
+  // 26)\numChunks{}
+    ind=26;
     sscanf(dict[ind].keyarg,"%d",&numChunks);
     if(numChunks<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 28)\numChunksSym{}
-    ind=28;
+  // 27)\numChunksSym{}
+    ind=27;
     sscanf(dict[ind].keyarg,"%d",&numChunksSym);
     if(numChunksSym<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 29)\numChunksAsym{}
-    ind=29;
+  // 28)\numChunksAsym{}
+    ind=28;
     sscanf(dict[ind].keyarg,"%d",&numChunksAsym);
     if(numChunksAsym<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 30)\prioBW{}
-    ind=30;
+  // 29)\prioBW{}
+    ind=29;
     parse_on_off(dict[ind].keyarg,&prioBW,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  // 31)\usePairEtoM{}
-    ind=31;
+  // 30)\usePairEtoM{}
+    ind=30;
     parse_on_off(dict[ind].keyarg,&usePairEtoM,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 
@@ -1439,7 +1341,7 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 10;
+  num_dict[0] = 9;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_nl")-1;
 
 //=================================================================================
@@ -1509,14 +1411,8 @@ void Config::set_config_dict_nl (int *num_dict ,DICT_WORD **dict){
     if(useCommlib==0){strcpy((*dict)[ind].keyarg,"off");}
     if(useCommlib==1){strcpy((*dict)[ind].keyarg,"on");}
     strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 10)\useRhoExclusionMap{}
-    ind=10;
-    strcpy((*dict)[ind].keyword,"useRhoExclusionMap");
-    strcpy((*dict)[ind].keyarg,"on");
-    strcpy((*dict)[ind].error_mes,"on/off");
 
-//----------------------------------------------------------------------------------
+ //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
 
@@ -1582,12 +1478,6 @@ void Config::set_config_params_nl (DICT_WORD *dict, char *fun_key, char *input_n
     parse_on_off(dict[ind].keyarg,&useMssInsGPP,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(iflag==0 && dict[ind].iuset==0){useMssInsGPP=0;}
-  //-----------------------------------------------------------------------------
-  // 9)\useRhoExclusionMap{}
-    ind=10;
-    parse_on_off(dict[ind].keyarg,&useRhoExclusionMap,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-    if(iflag==0 && dict[ind].iuset==0){useRhoExclusionMap=1;}
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1601,7 +1491,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 7;
+  num_dict[0] = 8;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
 
 //=================================================================================
@@ -1665,7 +1555,13 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
+  // 8)\atmOutput{}
+    ind=8;
+    strcpy((*dict)[ind].keyword,"atmOutput");
+    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].error_mes,"on/off");
 
+//----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
 
@@ -1717,7 +1613,17 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
     ind=7;
     parse_on_off(dict[ind].keyarg,&useTimeKeeper,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-
+  //-----------------------------------------------------------------------------
+  // 8)\atmOutput{}
+    ind=8;
+    parse_on_off(dict[ind].keyarg,&atmOutput,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(atmOutput==0){
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("   You are in danger! Your atmOutput is off! \n");
+        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+    }//
+ 
 //----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
@@ -1726,11 +1632,11 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
+void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 3;
+  num_dict[0] = 10;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1744,24 +1650,67 @@ void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
 // III) Set up the dictionary
   int ind;
   //-----------------------------------------------------------------------------
-  // 1)\localAtomBarrier{}
-    ind=1;
-    strcpy((*dict)[ind].keyword,"localAtomBarrier");
+  // 1)\torusMap{}
+    ind = 1;
+    strcpy((*dict)[ind].keyword,"torusMap");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 2)\localEnergyBarrier{}
-    ind=2;
-    strcpy((*dict)[ind].keyword,"localEnergyBarrier"); 
-    strcpy((*dict)[ind].keyarg,"on");    
+  // 2)\useCuboidMap{}
+    ind = 2;
+    strcpy((*dict)[ind].keyword,"useCuboidMap");
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 3)\atmOutputOn{}
-    ind=3;
-    strcpy((*dict)[ind].keyword,"atmOutputOn");
-    strcpy((*dict)[ind].keyarg,"on");    
+  // 3)\useCuboidMapRS{}
+    ind = 3;
+    strcpy((*dict)[ind].keyword,"useCuboidMapRS");
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
-//----------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------
+  // 4)\useCentroidMap{}
+    ind = 4;
+    strcpy((*dict)[ind].keyword,"useCentroidMap");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  // 5)\useCentroidMapRho{}
+    ind = 5;
+    strcpy((*dict)[ind].keyword,"useCentroidMapRho");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 6)\Gstates_per_pe{}
+    ind = 6;
+    strcpy((*dict)[ind].keyword,"Gstates_per_pe");
+    sprintf((*dict)[ind].keyarg,"%d",nstates);  
+    strcpy((*dict)[ind].error_mes,"a number > 0");
+  //-----------------------------------------------------------------------------
+  // 7)\Rstates_per_pe{}
+    ind = 7;
+    strcpy((*dict)[ind].keyword,"Rstates_per_pe");
+    sprintf((*dict)[ind].keyarg,"%d",nstates);
+    strcpy((*dict)[ind].error_mes,"a number > 0");
+  //-----------------------------------------------------------------------------
+  // 8)\loadMapFiles{}
+    ind=8;
+    strcpy((*dict)[ind].keyword,"loadMapFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 9)\dumpMapFiles{}
+    ind=9;
+    strcpy((*dict)[ind].keyword,"dumpMapFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 10)\useRhoExclusionMap{}
+    ind=10;
+    strcpy((*dict)[ind].keyword,"useRhoExclusionMap");
+    strcpy((*dict)[ind].keyarg,"on");
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+
+
   }//end routine
 //===================================================================================
 
@@ -1769,7 +1718,7 @@ void Config::set_config_dict_atm (int *num_dict ,DICT_WORD **dict){
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_name){
+void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_name){
 //===================================================================================
 
   int ind, ierr; 
@@ -1778,34 +1727,58 @@ void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_
 // Fill the class with data 
 
   //-----------------------------------------------------------------------------
-  // 1)\localAtomBarrier{}
-    ind=1;
-    parse_on_off(dict[ind].keyarg,&localAtomBarrier,&ierr);
+  //  1)\torusMap{}
+    ind = 1;
+    parse_on_off(dict[ind].keyarg, &torusMap, &ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-    if(localAtomBarrier==0){
-      CkPrintf("Local Atom Barrier must be on\n");
-      CkExit();
-    }//
   //-----------------------------------------------------------------------------
-  // 2)\localEnergyBarrier{}
-    ind=2;
-    parse_on_off(dict[ind].keyarg,&localEnergyBarrier,&ierr);
+  //  2)\useCuboidMap{}
+    ind = 2;
+    parse_on_off(dict[ind].keyarg,&useCuboidMap,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-    if(localEnergyBarrier==0){
-      CkPrintf("Local Atom Barrier must be on\n");
-      CkExit();
-    }//
   //-----------------------------------------------------------------------------
-  // 3)\atmOutputOn{}
-    ind=3;
-    parse_on_off(dict[ind].keyarg,&atmOutputOn,&ierr);
+  //  3)\useCuboidMapRS{}
+    ind = 3;
+    parse_on_off(dict[ind].keyarg,&useCuboidMapRS,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-    if(atmOutputOn==0){
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("   You are in danger! Your atmOutput is off! \n");
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
-    }//
-//----------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------
+  //  4)\useCentroidMap{}
+    ind = 4;
+    parse_on_off(dict[ind].keyarg,&useCentroidMap,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  5)\useCentroidMapRho{}
+    ind = 5;
+    parse_on_off(dict[ind].keyarg,&useCentroidMapRho,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  6)\Gstates_per_pe{}
+    ind = 6;
+    sscanf(dict[ind].keyarg,"%d",&Gstates_per_pe);
+    if(Gstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  7)\Rstates_per_pe{}
+    ind = 7;
+    sscanf(dict[ind].keyarg,"%d",&Rstates_per_pe);
+    if(Rstates_per_pe<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  8)\loadMapFiles{}
+    ind = 8;
+    parse_on_off(dict[ind].keyarg,&loadMapFiles,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  9)\dumpMapFiles{}
+    ind = 9;
+    parse_on_off(dict[ind].keyarg,&dumpMapFiles,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 10)\useRhoExclusionMap{}
+    ind=10;
+    parse_on_off(dict[ind].keyarg,&useRhoExclusionMap,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(dict[ind].iuset==0){useRhoExclusionMap=1;}
+  //-----------------------------------------------------------------------------
+
   }//end routine
 //===================================================================================
 
@@ -1840,7 +1813,7 @@ void Config::set_config_params_atm (DICT_WORD *dict, char *fun_key, char *input_
 //=============================================================================
 void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dict_rho,
                             DICT_WORD *dict_state,DICT_WORD *dict_pc,
-                            DICT_WORD *dict_nl,DICT_WORD *dict_atm){
+                            DICT_WORD *dict_nl,DICT_WORD *dict_map){
 //=============================================================================
 
     int sqrtpes    = (int) sqrt((double)numPes);
@@ -2263,10 +2236,8 @@ void Config::simpleRangeCheck(){
 
 //  rangeExit(launchNLeesFromRho,"launchNLeesFromRho",0);
   rangeExit(prioFFTMsg,"prioFFTMsg",1);
-  rangeExit(stateOutputOn,"stateOutputOn",1);
-  rangeExit(atmOutputOn,"atmOutputOn",1);
-  rangeExit(localAtomBarrier,"localAtomBarrier",1);
-  rangeExit(localEnergyBarrier,"localEnergyBarrier",1);
+  rangeExit(stateOutput,"stateOutput",1);
+  rangeExit(atmOutput,"atmOutput",1);
   rangeExit(lbpaircalc,"lbpaircalc",1);
   rangeExit(lbgspace,"lbgspace",1);
   rangeExit(lbdensity,"lbgspace",1);
