@@ -32,16 +32,11 @@ class Config {
   //==================================
   // density control flags and values
   //----------------------------------
-    int rhoGToRhoRMsgComb;
-    int rhoSubPlaneBalance;
-    int nchareHartAtmT;
-    int rhoLineOrder;
     int rhorHartpriority;
     int rhogHartpriority;
     int useGHartInsRhoRP;
     int useGHartInsRHart;
     int useRHartInsGHart;
-    int useCentroidMapRho;
     int rhorpriority;
     int rhogpriority;
     double gExpandFactRho;
@@ -58,21 +53,22 @@ class Config {
     int useRInsIGYRhoGP;
     int useRInsIGZRhoGP;
     int prioEextFFTMsg;
+    int rhoLineOrder;
+    int nchareHartAtmT;
+    int rhoSubPlaneBalance;
+    int rhoGToRhoRMsgComb;
   //==================================
 
   //==================================
   // state control flags and values
   //----------------------------------
    char dataPath[1024];
-   char dataPathOut[1024];
    int gBucketSize;
    int rBucketSize;
    double gStreamPeriod;
    double rStreamPeriod;
    double gExpandFact;
-   int Gstates_per_pe;
-   int Rstates_per_pe;
-   int stateOutputOn;
+   int stateOutput;
    int psipriority;
    int prioFFTMsg;
    int rsfftpriority;
@@ -82,13 +78,9 @@ class Config {
    int conserveMemory;
    int lbgspace;
    int doublePack;
-   int useCuboidMap;
-   int useCuboidMapRS;
-   int useCentroidMap;
-   int loadMapFiles;
-   int dumpMapFiles;
    int useGssInsRealP;
    int useMssInsGP;
+   char dataPathOut[1024];
   //==================================
 
   //==================================
@@ -113,7 +105,6 @@ class Config {
    int gemmSplitBW;
    int gemmSplitOrtho;
    int orthoGrainSize;
-   int orthoStride;
    int useBWBarrier;
    int phantomSym;
    int lbpaircalc;
@@ -139,7 +130,6 @@ class Config {
    int launchNLeesFromRho;
    int useGssInsRealPP;
    int useMssInsGPP;
-   int useRhoExclusionMap;
   //==================================
 
   //==================================
@@ -152,14 +142,22 @@ class Config {
    int useGMulticast;
    int numMulticastMsgs;
    int useCommlibMulticast;
+   int atmOutput;
   //==================================
 
   //==================================
-  // Atom control flags and values
+  // mapping control flags and values
   //----------------------------------
-   int localAtomBarrier;
-   int localEnergyBarrier;
-   int atmOutputOn;
+   int torusMap;
+   int useCuboidMap;
+   int useCuboidMapRS;
+   int useCentroidMap;
+   int useCentroidMapRho;
+   int Gstates_per_pe;
+   int Rstates_per_pe;
+   int loadMapFiles;
+   int dumpMapFiles;
+   int useRhoExclusionMap;
   //==================================
 
   //==================================
@@ -167,31 +165,31 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char* ,int , int , int , int , int ,int ,int , int , int, int ,int);
-   void readStateInfo(int &,int &, int &, int &, int &, int &,
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int);
+   void readStateInfo(int &, int &, int &, int &, int &, int &,
                       const char *, int);
    void simpleRangeCheck();
-   void rangeExit(int , char *, int );
-   void Finale(int ,int ,int ,int,int);
+   void rangeExit(int, char *, int);
+   void Finale(int, int, int, int, int);
 
-   void set_config_dict_fun    (int *  ,DICT_WORD **);
-   void set_config_dict_gen    (int *  ,DICT_WORD **);
-   void set_config_dict_rho    (int *  ,DICT_WORD **);
-   void set_config_dict_state  (int *  ,DICT_WORD **);
-   void set_config_dict_pc     (int *  ,DICT_WORD **);
-   void set_config_dict_nl     (int *  ,DICT_WORD **);
-   void set_config_dict_atm    (int *  ,DICT_WORD **);
+   void set_config_dict_fun    (int *, DICT_WORD **);
+   void set_config_dict_gen    (int *, DICT_WORD **);
+   void set_config_dict_rho    (int *, DICT_WORD **);
+   void set_config_dict_state  (int *, DICT_WORD **);
+   void set_config_dict_pc     (int *, DICT_WORD **);
+   void set_config_dict_nl     (int *, DICT_WORD **);
+   void set_config_dict_map    (int *, DICT_WORD **);
 
    void set_config_params_gen  (DICT_WORD *, char *, char *);
-   void set_config_params_rho  (DICT_WORD *, char *, char *,int);
-   void set_config_params_state(DICT_WORD *, char *, char *,int);
+   void set_config_params_rho  (DICT_WORD *, char *, char *, int);
+   void set_config_params_state(DICT_WORD *, char *, char *, int);
    void set_config_params_pc   (DICT_WORD *, char *, char *);
-   void set_config_params_nl   (DICT_WORD *, char *, char *,int);
-   void set_config_params_atm  (DICT_WORD *, char *, char *);
-   void guesstimateParmsConfig (int ,DICT_WORD *,DICT_WORD *,DICT_WORD *,DICT_WORD *,
-                                          DICT_WORD *,DICT_WORD *);
-   void write_cpaimd_config    (FILE *,DICT_WORD *, int , char *);
-   void load_cpaimd_config (DICT_WORD *,  int , PINY_NAME *, PINY_NAME *, int ,int *);
+   void set_config_params_nl   (DICT_WORD *, char *, char *, int);
+   void set_config_params_map  (DICT_WORD *, char *, char *);
+   void guesstimateParmsConfig (int, DICT_WORD *, DICT_WORD *, DICT_WORD *, 
+				     DICT_WORD *, DICT_WORD *,DICT_WORD *);
+   void write_cpaimd_config    (FILE *, DICT_WORD *, int, char *);
+   void load_cpaimd_config (DICT_WORD *, int, PINY_NAME *, PINY_NAME *, int, int *);
   //==================================
 
 //-----------------------------------------------------------------------------------
