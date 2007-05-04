@@ -1,5 +1,6 @@
 #include "charm++.h"
 #include "PeList.h"
+#include <algorithm>
 #ifdef CMK_VERSION_BLUEGENE
 #include "TopoManager.h"
 extern TopoManager *bgltm;
@@ -12,7 +13,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
     {
 
       current=0;
-
+      sorted=false;
       size=CkNumPes();
       int i=0;
       int maxX=bgltm->getDimX();
@@ -119,6 +120,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 
 PeList::PeList() // default constructor
     {
+      sorted=true;
       current=0;
       size=CkNumPes();
       TheList= new int[size+1];
@@ -133,6 +135,7 @@ PeList::PeList() // default constructor
 
 void PeList::rebuild()
 {
+  sorted=true;
   current=0;
   size=CkNumPes();
   for(int i=0;i<size;i++)
@@ -151,7 +154,14 @@ int PeList::minDist(int srcPe)
 {
   return(TheList[bgltm->pickClosestRank(srcPe, TheList, size)]);
 }
-
+int *PeList::pelower_bound(int pe)
+{
+  return(std::lower_bound(&TheList[0],&TheList[size],pe));
+}
+bool PeList::binsearch(int pe)
+{
+  return(std::binary_search(&TheList[0],&TheList[size],pe));
+}
 void PeList::sortSource(int srcPe)
 {
   // sort it using TopoManager 

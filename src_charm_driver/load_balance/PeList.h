@@ -31,6 +31,7 @@ class PeList
   int *sortIdx;
   int current;
   int size;
+  bool sorted;  //! if pe list is kept in sorted order we can bin search it
   PeList();  //default constructor
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -39,6 +40,7 @@ class PeList
 #endif
   PeList(int _size): size(_size)
     {
+      sorted=true;
       TheList = new int [size+1];
       sortIdx = new int [size+1];
       for(int i=0;i<size;i++)
@@ -50,6 +52,7 @@ class PeList
     }
   PeList(CkVec <int> inlist)
     {
+      sorted=false;
       current=0;
       size=inlist.size();
       TheList = new int [size+1];
@@ -64,6 +67,7 @@ class PeList
   PeList(PeList &inlist)
     {
       size=inlist.size;
+      sorted=inlist.sorted;
       TheList = new int [size+1];
       sortIdx = new int [size+1];
       for(int i=0;i<inlist.size;i++)
@@ -77,6 +81,7 @@ class PeList
 
   PeList(int _size, int *a)
     {
+      sorted=false;
       current=0;
       size=_size;
       TheList=new int [size+1];
@@ -90,6 +95,7 @@ class PeList
 
   PeList(PeList *a, int start, int _size)
     {
+      sorted=false;
       CkAssert(start<a->size);
       CkAssert(_size<=a->size);
       size=_size;
@@ -156,28 +162,73 @@ class PeList
     TheList=newlist;
     sortIdx=newIndex;
   }
+  bool binsearch(int pe);
 
-  void mergeOne(int pe)
+  inline bool find(int pe)
+    {
+      bool found=false;
+      if(sorted)
+	{ // bin search
+	  found=binsearch(pe);
+	}
+      else // brute
+	{
+	  int i=0;
+	  while(!found && i< size)
+	    {
+	      if(TheList[i]==pe)
+		{
+		  found=true;
+		}
+	      i++;
+	    }
+	}
+      return(found);
+    }
+  int *pelower_bound(int pe);
+  inline void mergeOne(int pe)
   {
     
     // make array large enough for both, paste together
-    int i=0;
-    bool found=false;
-    for(; i< size ; i++)
-      {
-	if(TheList[i]==pe)
-	  found=true;
+    if(sorted)
+      { // maintain sort order by insertion
+	int *loc=pelower_bound(pe);
+	if(*loc!=pe)
+	  { // not already present
+	    if(*loc==TheList[size])
+	      { // 
+		appendOne(pe);
+	      }
+	    else
+	      {
+		int newsize=size+1;
+		int *newlist= new int [newsize+1];
+		int *newIndex= new int [newsize+1];
+		int location=loc-TheList;
+		CmiMemcpy(newlist,TheList,location*sizeof(int));
+		newlist[location]=pe;
+		CmiMemcpy(&newlist[location+1],loc,(size-location)*sizeof(int));
+		// your index is shot
+		bzero(newIndex,(newsize+1)*sizeof(int));
+	      }
+	  }
       }
-    if(!found)
+    else
       {
+	bool found=find(pe);
+	if(!found)
+	  {
+	    appendOne(pe);
+	  }
+      }
+  }
+  inline void appendOne(int pe)
+    {
 	int newsize=size+1;
 	int *newlist= new int [newsize+1];
 	int *newIndex= new int [newsize+1];
-	for(i=0; i< size ; i++)
-	  {
-	    newlist[i]=TheList[i];
-	    newIndex[i]=sortIdx[i];
-	  }
+	CmiMemcpy(&newlist[0],&TheList[0],sizeof(int)*size);
+	CmiMemcpy(&newIndex[0],&sortIdx[0],sizeof(int)*size);
 	newlist[size]=pe;
 	newIndex[size]=size;
 	size=newsize;
@@ -185,12 +236,8 @@ class PeList
 	delete [] sortIdx;
 	TheList=newlist;
 	sortIdx=newIndex;
-      }
-  }
-
-
+    }
   inline int findNext()        // return next available, increment liststart
-    //int findNext()        // return next available, increment liststart 
   {
     
 #ifdef CMK_VERSION_BLUEGENE
@@ -220,7 +267,7 @@ class PeList
 
 
   // need to rebuild your sortIdx after set union
-  PeList &operator+(PeList &inlist) { 
+  inline PeList &operator+(PeList &inlist) { 
     // make array large enough for both, paste together
     int newsize=inlist.size+size;
     int *newlist= new int [newsize];
@@ -245,7 +292,7 @@ class PeList
   }
   
   // need to rebuild your sortIdx after unary set difference
-  PeList &operator-(PeList &inlist) {
+  inline PeList &operator-(PeList &inlist) {
     for(int i=0; i< inlist.size;i++)
       {
 	int j=0;
@@ -265,14 +312,17 @@ class PeList
     return *this;
   }
 
-  void remove(int pos)
+  inline void remove(int pos)
     {
       if(pos < size)
 	{
+	  /*
 	  for (int i=pos; i<size-1; i++)
 	    {
 	      TheList[i] = TheList[i+1];
 	    }
+	  */
+	  CmiMemcpy(&TheList[pos],&TheList[pos+1],(size-(pos+1))*sizeof(int));
 	  size--;
 	}
     }
@@ -336,5 +386,7 @@ class PeList
 
 
 };
+
+
 
 #endif
