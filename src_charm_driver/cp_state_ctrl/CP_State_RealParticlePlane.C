@@ -171,7 +171,6 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 // Choose reduction plane reasonably intelligently
 
   int *red_pl       = new int[nstates];
-#ifdef USE_TOPOMAP
   //foreach state, try to find a new proc for each state's reduction plane
   CkVec <int> usedVec;
   for(int state=0; state<nstates;state++){
@@ -208,12 +207,11 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   }//endif
   reductionPlaneNum = red_pl[thisIndex.x];
 	    */
-#else
-  for(int i=0; i<nstates;i++){
+  
+  /*for(int i=0; i<nstates;i++){ ifndef USE_TOPOMAP
     red_pl[i] = calcReductionPlaneNum(thisIndex.x);
   }//endif
-  reductionPlaneNum = calcReductionPlaneNum(thisIndex.x);
-#endif
+  reductionPlaneNum = calcReductionPlaneNum(thisIndex.x); */
 
 //============================================================================
 // Build section reductions

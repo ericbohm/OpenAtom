@@ -176,7 +176,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   //--------------------------------------------------------------------------
   // Compute all reduction planes for all chares
 
-#ifdef USE_TOPOMAP
   int *red_pl = new int[nstates];
   CkVec <int> usedVec;
   for(int state=0; state<nstates;state++){
@@ -236,9 +235,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   }//endfor
   reductionPlaneNum    = red_pl[thisIndex.x];
   */
-#else
-  reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x);
-#endif
+  
+  // reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x); ifndef USE_TOPOMAP
 
   //--------------------------------------------------------------------------
   // If you are a reduction plane, set up your comm with your guys and the
@@ -251,11 +249,8 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
       CkArrayIndex2D idx(0, reductionPlaneNum);  // plane# = this plane#
       for (int j = 0; j < nstates; j++) {
 	idx.index[0] = j;
-#ifdef USE_TOPOMAP
 	idx.index[1] = red_pl[j];
-#else
-	idx.index[1] = calcReductionPlaneNum(j);
-#endif
+	// idx.index[1] = calcReductionPlaneNum(j); ifndef USE_TOPOMAP
 	elems[j] = idx;
       }//endfor
 
@@ -270,9 +265,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
       delete [] elems;
 
   }//endif
-#ifdef USE_TOPOMAP
   delete [] red_pl;
-#endif
 
 //============================================================================
 // No load balancing and no atsyncing either!
