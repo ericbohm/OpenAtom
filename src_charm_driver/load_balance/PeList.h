@@ -18,9 +18,7 @@
 
 #include <math.h>
 
-#ifdef CMK_VERSION_BLUEGENE
 #include "TopoManager.h"
-#endif
 #include "cklists.h"
 
 
@@ -34,10 +32,8 @@ class PeList
   bool sorted;  //! if pe list is kept in sorted order we can bin search it
   PeList();  //default constructor
 
-#ifdef CMK_VERSION_BLUEGENE
  //! boxy constructor for BG/L
   PeList(int boxX, int boxY, int boxZ, int order);
-#endif
   PeList(int _size): size(_size)
     {
       sorted=true;

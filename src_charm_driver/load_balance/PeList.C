@@ -1,12 +1,9 @@
 #include "charm++.h"
 #include "PeList.h"
 #include <algorithm>
-#ifdef CMK_VERSION_BLUEGENE
 #include "TopoManager.h"
 extern TopoManager *bgltm;
-#endif
 
-#ifdef CMK_VERSION_BLUEGENE
 //! construct the list by iterating through boxes which are sub
 //! partitions 
 PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
@@ -114,9 +111,6 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 	}
     }
 
-#endif
-
-
 
 PeList::PeList() // default constructor
     {
@@ -147,13 +141,6 @@ void PeList::rebuild()
 }
 
 
-#ifdef CMK_VERSION_BLUEGENE
-// BG/L specific PeList implementations
-
-int PeList::minDist(int srcPe)
-{
-  return(TheList[bgltm->pickClosestRank(srcPe, TheList, size)]);
-}
 int *PeList::pelower_bound(int pe)
 {
   return(std::lower_bound(&TheList[0],&TheList[size],pe));
@@ -162,6 +149,9 @@ bool PeList::binsearch(int pe)
 {
   return(std::binary_search(&TheList[0],&TheList[size],pe));
 }
+
+// BG/L specific PeList implementations
+#ifdef CMK_VERSION_BLUEGENE
 void PeList::sortSource(int srcPe)
 {
   // sort it using TopoManager 
@@ -171,6 +161,11 @@ void PeList::sortSource(int srcPe)
   bgltm->sortRanksByHops(srcPe, TheList, sortIdx, size);
   //  CkPrintf("POST sortIndexByHops\n");
 
+}
+
+int PeList::minDist(int srcPe)
+{
+  return(TheList[bgltm->pickClosestRank(srcPe, TheList, size)]);
 }
 #else
 // alternate form in non BG/L case (just an ordered list)
