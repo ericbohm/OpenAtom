@@ -12,8 +12,7 @@
 
 #ifndef _CPAIMD_H
 #define _CPAIMD_H
-#define USE_TOPOMAP 1
-#define MAP_DEBUG 1
+//#define MAP_DEBUG 1
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
