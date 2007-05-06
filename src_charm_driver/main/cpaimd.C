@@ -110,9 +110,7 @@
 #include "MultiRingMulticast.h"
 #include "PeList.h"
 #include "MapFile.h"
-#ifdef USE_TOPOMAP
 #include "TopoManager.h"
-#endif
 #include "TimeKeeper.h"
 //============================================================================
 #include "../include/debug_flags.h"
@@ -234,11 +232,7 @@ PeList *availGlobR;
 PeList *availGlobG;
 PeList *excludePes;
 int boxSize;
-#ifdef USE_TOPOMAP
-#if CMK_VERSION_BLUEGENE
 TopoManager *bgltm;
-#endif
-#endif
 
 //============================================================================
 
@@ -547,20 +541,18 @@ main::main(CkArgMsg *msg) {
     //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
     //    }//endfor
 
-#ifdef USE_TOPOMAP
-    PRINT_LINE_STAR; CkPrintf("\n");
-  CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-  CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
-    PRINT_LINE_STAR; CkPrintf("\n");
-#endif
-#ifdef CMK_VERSION_BLUEGENE
-    CkPrintf("Initializing TopoManager\n");
-    bgltm = new TopoManager();
-    CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
+    if(config.torusMap==1) {
+      PRINT_LINE_STAR; CkPrintf("\n");
+      CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+      CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
+      PRINT_LINE_STAR; CkPrintf("\n");
+      CkPrintf("Initializing TopoManager\n");
+      bgltm = new TopoManager();
+      CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
              bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(),
              bgltm->getDimNX(), bgltm->getDimNY(), bgltm->getDimNZ(),
              bgltm->hasMultipleProcsPerNode());
-#endif
+    }
     CkPrintf("Initializing PeList\n");
     
     PeList *gfoo;
@@ -575,23 +567,23 @@ main::main(CkArgMsg *msg) {
 	  }
 	int procsPerPlane= CkNumPes() / nchareG;
 	int bx,by,bz;
-#ifdef CMK_VERSION_BLUEGENE
-	boxSize=procsPerPlane;
-	int order;
-	if(findCuboid(bx, by, bz, bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(), boxSize, order, bgltm->hasMultipleProcsPerNode()))
+        if(config.torusMap==1) {
+	  boxSize=procsPerPlane;
+	  int order;
+	  if(findCuboid(bx, by, bz, bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(), boxSize, order, bgltm->hasMultipleProcsPerNode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
 	  }
-	else
+	  else
 	  {
 	    CkPrintf("no box for %d\n",boxSize);
 	    config.useCuboidMap=0;
 	    gfoo= new PeList;  // heap it
 	  }
-#else
-	gfoo= new PeList;  // heap it
-#endif
+	}
+	else
+	  gfoo= new PeList;  // heap it
       }
     else
       gfoo= new PeList;  // heap it
@@ -1496,16 +1488,14 @@ void main::doneInit(CkReductionMsg *msg){
 
       // kick off file reading in gspace
       CkPrintf("Initiating import of states\n");
-#ifdef USE_TOPOMAP
-  for(int s=0;s<nstates;s++){
-    gSpacePlaneProxy(s,planeUsedByNLZ[s]).readFile();
-  }//endfor
+      for(int s=0;s<nstates;s++) {
+        gSpacePlaneProxy(s,planeUsedByNLZ[s]).readFile();
+      } //endfor
 
-#else
-	for(int s=0;s<nstates;s++){
-	    gSpacePlaneProxy(s,0).readFile();
-	}//endfor
-#endif
+      /* for(int s=0;s<nstates;s++){ ifndef USE_TOPOMAP
+        gSpacePlaneProxy(s,0).readFile();
+      }//endfor */
+
     }//endif
     if (done_init >= 4) {
       if (done_init == 4){ 
