@@ -26,6 +26,7 @@
 
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
+
 #include "CLA_Matrix.h"
 
 extern MapType2 OrthoHelperImaptable;
@@ -42,14 +43,14 @@ public:
   double factorA;
   double factorB;
   double factorC;
-  void init(int _size, double *_A, double *_B, double _factorA, double _factorB, double _factorC)
+  void init(int insize, double * inA, double * inB, double infactorA, double infactorB, double infactorC)
     {
-      size=_size;
-      CmiMemcpy(A,_A,size*sizeof(double));
-      CmiMemcpy(B,_B,size*sizeof(double));
-      factorA=_factorA;
-      factorB=_factorB;
-      factorC=_factorC;
+      size=insize;
+      memcpy(A,inA,size*sizeof(double));
+      memcpy(B,inB,size*sizeof(double));
+      factorA=infactorA;
+      factorB=infactorB;
+      factorC=infactorC;
     }
 
 #ifdef CMK_VERSION_BLUEGENE
