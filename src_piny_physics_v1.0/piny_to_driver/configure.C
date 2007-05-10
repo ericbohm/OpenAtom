@@ -1865,7 +1865,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //=============================================================================
 // gstates_per_pe not set
     
-    igo = dict_state[7].iuset;
+    igo = dict_map[6].iuset;
 
     if(numPes!=1 && igo==0){
       if(numPes<=128){
@@ -1878,13 +1878,13 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	}//endif
       }//endif
       if(Gstates_per_pe==0){Gstates_per_pe=1;}
-      sprintf(dict_state[7].keyarg,"%d",Gstates_per_pe);
+      sprintf(dict_map[6].keyarg,"%d",Gstates_per_pe);
     }//endif : Gstates_per_pe not set
 
 //=============================================================================
 // rstates_per_pe not set
 
-    igo = dict_state[8].iuset;
+    igo = dict_map[7].iuset;
 
     if(numPes!=1 && igo==0){
       if(numPes<=128){
@@ -1895,7 +1895,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if (Rstates_per_pe==0){
         Rstates_per_pe=1;
       }//endif
-      sprintf(dict_state[8].keyarg,"%d",Rstates_per_pe);
+      sprintf(dict_map[7].keyarg,"%d",Rstates_per_pe);
     }//endif : Rstates_per_pe not set
 
 //=============================================================================
