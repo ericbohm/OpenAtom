@@ -146,7 +146,7 @@ class MapTable2
     }
   
   //! return processor at topological center of this list
-  int getCentroid();
+  int getCentroid(int torusMap);
   
 };
 
@@ -204,7 +204,7 @@ class MapTable3
     }
   
   //! return processor at topological center of this list
-  int getCentroid();
+  int getCentroid(int torusMap);
   
 };
 
