@@ -17,10 +17,9 @@
 #define _PELIST_H
 
 #include <math.h>
-
+#include "configure.h"
 #include "TopoManager.h"
 #include "cklists.h"
-
 
 class PeList 
 {
@@ -29,11 +28,12 @@ class PeList
   int *sortIdx;
   int current;
   int size;
-  bool sorted;  //! if pe list is kept in sorted order we can bin search it
+  bool sorted;  // if pe list is kept in sorted order we can bin search it
   PeList();  //default constructor
 
- //! boxy constructor for BG/L
+  // boxy constructor for BG/L
   PeList(int boxX, int boxY, int boxZ, int order);
+
   PeList(int _size): size(_size)
     {
       sorted=true;
@@ -46,6 +46,7 @@ class PeList
 	}
       current=0;
     }
+
   PeList(CkVec <int> inlist)
     {
       sorted=false;
@@ -158,6 +159,7 @@ class PeList
     TheList=newlist;
     sortIdx=newIndex;
   }
+  
   bool binsearch(int pe);
 
   inline bool find(int pe)
@@ -181,7 +183,9 @@ class PeList
 	}
       return(found);
     }
+
   int *pelower_bound(int pe);
+
   inline void mergeOne(int pe)
   {
     
@@ -218,6 +222,7 @@ class PeList
 	  }
       }
   }
+
   inline void appendOne(int pe)
     {
 	int newsize=size+1;
@@ -233,31 +238,10 @@ class PeList
 	TheList=newlist;
 	sortIdx=newIndex;
     }
-  inline int findNext()        // return next available, increment liststart
-  {
-    
-#ifdef CMK_VERSION_BLUEGENE
-    if(current>=size)
-      {
-	//CkPrintf("hey why is current %d >= size %d\n",current, size);
-	current=0;
-      }
-    CkAssert(current<size);
-    CkAssert(sortIdx[current]<size);
-    int value=TheList[sortIdx[current]]; 
-    //    TheList.remove(sortIdx[0]);
-    //    sortIdx.remove(0);
-#else
-    int value=TheList[current]; 
-    //    TheList.remove(0);
-#endif
-    current++;
-    return(value); 
-  };						
 
+  int findNext();       // return next available, increment liststart
 
   void sortSource(int srcPe); // implementation depends on BG/L or not
-
 
   PeList &operator=(PeList &inlist) {TheList=inlist.TheList; sortIdx=inlist.sortIdx;return *this;}   
 
