@@ -232,7 +232,7 @@ PeList *availGlobR;
 PeList *availGlobG;
 PeList *excludePes;
 int boxSize;
-TopoManager *bgltm;
+TopoManager *topoMgr;
 
 //============================================================================
 
@@ -547,11 +547,11 @@ main::main(CkArgMsg *msg) {
       CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
       PRINT_LINE_STAR; CkPrintf("\n");
       CkPrintf("Initializing TopoManager\n");
-      bgltm = new TopoManager();
+      topoMgr = new TopoManager();
       CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
-             bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(),
-             bgltm->getDimNX(), bgltm->getDimNY(), bgltm->getDimNZ(),
-             bgltm->hasMultipleProcsPerNode());
+             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
+             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
+             topoMgr->hasMultipleProcsPerNode());
     }
     CkPrintf("Initializing PeList\n");
     
@@ -570,7 +570,7 @@ main::main(CkArgMsg *msg) {
         if(config.torusMap==1) {
 	  boxSize=procsPerPlane;
 	  int order;
-	  if(findCuboid(bx, by, bz, bgltm->getDimX(), bgltm->getDimY(), bgltm->getDimZ(), boxSize, order, bgltm->hasMultipleProcsPerNode()))
+	  if(findCuboid(bx, by, bz, topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(), boxSize, order, topoMgr->hasMultipleProcsPerNode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
