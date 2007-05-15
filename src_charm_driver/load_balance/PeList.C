@@ -2,20 +2,22 @@
 #include "PeList.h"
 #include <algorithm>
 #include "TopoManager.h"
-extern TopoManager *bgltm;
+extern TopoManager *topoMgr;
+extern Config config;
 
 //! construct the list by iterating through boxes which are sub
 //! partitions 
 PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
-    {
-
+{
+  if(config.torusMap==1)
+  {
       current=0;
       sorted=false;
       size=CkNumPes();
       int i=0;
-      int maxX=bgltm->getDimX();
-      int maxY=bgltm->getDimY();
-      int maxZ=bgltm->getDimZ();
+      int maxX=topoMgr->getDimX();
+      int maxY=topoMgr->getDimY();
+      int maxZ=topoMgr->getDimZ();
       TheList= new int[size];
       sortIdx= new int[size];
       int numBoxes=0;
@@ -34,7 +36,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int by=0;by<boxY;by++) // make inner planes along X
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coordinatesToRank(bx+x, by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z);
 			}
 		}
 	}
@@ -53,7 +55,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coordinatesToRank(bx+x,by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x,by+y, bz+z);
 			}
 		}
 
@@ -71,7 +73,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		      for(int bx=0;bx<boxX;bx++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=bgltm->coordinatesToRank(bx+x,by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x,by+y, bz+z);
 			}
 		}
 
@@ -109,7 +111,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 	      sortIdx[i+end]=i+end;
 	    }
 	}
-    }
+  }
+  else
+    CkAbort("You shouldn't be calling this function\n");
+}
 
 
 PeList::PeList() // default constructor
@@ -150,37 +155,55 @@ bool PeList::binsearch(int pe)
   return(std::binary_search(&TheList[0],&TheList[size],pe));
 }
 
-// BG/L specific PeList implementations
-#ifdef CMK_VERSION_BLUEGENE
 void PeList::sortSource(int srcPe)
 {
+  if(config.torusMap==1) {
   // sort it using TopoManager 
   //  CkPrintf("PRE: sortIndexByHops\n");
   CkAssert(srcPe>=0);
   CkAssert(srcPe<CkNumPes());
-  bgltm->sortRanksByHops(srcPe, TheList, sortIdx, size);
+  topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
   //  CkPrintf("POST sortIndexByHops\n");
-
-}
-
-int PeList::minDist(int srcPe)
-{
-  return(TheList[bgltm->pickClosestRank(srcPe, TheList, size)]);
-}
-#else
-// alternate form in non BG/L case (just an ordered list)
-void PeList::sortSource(int srcPe)
-{
+  }
+  else {
+  // alternate form in non BG/L case (just an ordered list)
   // sort it using CkVec quicksort
   CkVec <int> sortme(size);
   CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
   sortme.quickSort();
   CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
+  }
 }
 
-// if not a torus distance is meaningless we just pick the first element
 int PeList::minDist(int srcPe)
 {
-  return(TheList[0]);
+  if(config.torusMap==1)
+    return(TheList[topoMgr->pickClosestRank(srcPe, TheList, size)]);
+  else
+    return(TheList[0]);
+  // if not a torus distance is meaningless we just pick the first element
 }
-#endif
+
+int PeList::findNext()        // return next available, increment liststart
+{
+    int value; 
+    if(config.torusMap==1) { 
+    if(current>=size)
+      {
+	//CkPrintf("hey why is current %d >= size %d\n",current, size);
+	current=0;
+      }
+    CkAssert(current<size);
+    CkAssert(sortIdx[current]<size);
+    value=TheList[sortIdx[current]]; 
+    //    TheList.remove(sortIdx[0]);
+    //    sortIdx.remove(0);
+    }
+    else {
+    value=TheList[current]; 
+    //    TheList.remove(0);
+    }
+    current++;
+    return(value); 
+}
+
