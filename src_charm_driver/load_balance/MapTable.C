@@ -15,79 +15,84 @@ typedef IntMap4 MapType4;
 typedef IntMap3 MapType3;
 #endif
 #include "MapTable.h"
-#ifdef CMK_VERSION_BLUEGENE
-extern TopoManager *bgltm;
-#endif      
+extern TopoManager *topoMgr;
+extern Config config;
 
-int MapType2::getCentroid(){
-#ifdef CMK_VERSION_BLUEGENE
-  int points=0;
-  int  sumX=0;
-  int sumY=0;
-  int sumZ=0;
-  int X=0,Y=0,Z=0;
-    for(int i=0;i<getXmax();i++)
-      for(int j=0;j<getYmax();j++){
-	CkAssert(get(i,j)>=0);
-	  bgltm->rankToCoordinates(get(i, j), X, Y, Z);
+int MapType2::getCentroid(int torusMap) {
+  int points, bestPe;
+  if(torusMap==1) {
+    int sumX=0;
+    int sumY=0;
+    int sumZ=0;
+    int X=0,Y=0,Z=0;
+    points=0;
+      for(int i=0;i<getXmax();i++)
+        for(int j=0;j<getYmax();j++) {
+	  CkAssert(get(i,j)>=0);
+	  topoMgr->rankToCoordinates(get(i, j), X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
 	  points++;
 	}
-  int avgX=sumX/points;
-  int avgY=sumY/points;
-  int avgZ=sumZ/points;
-  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
-#else
-  int points=0, sum=0;
-  for(int i=0;i<getXmax();i++)
-    for(int j=0;j<getYmax();j++){
+    int avgX=sumX/points;
+    int avgY=sumY/points;
+    int avgZ=sumZ/points;
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+  }
+  else {
+    int sum=0;
+    points=0;
+    for(int i=0;i<getXmax();i++)
+    for(int j=0;j<getYmax();j++) {
 	CkAssert(get(i,j)>=0);
 	sum+=get(i,j);
 	points++;
-      }
-  int bestPe=sum/points;
-#endif      
-  return(bestPe);
+    }
+    bestPe=sum/points;
   }
+  return(bestPe);
+}
 
-int MapType3::getCentroid(){
-#ifdef CMK_VERSION_BLUEGENE
-  int points=0;
-  int  sumX=0;
-  int sumY=0;
-  int sumZ=0;
-  int X=0,Y=0,Z=0;
+int MapType3::getCentroid(int torusMap) {
+  int points, bestPe;
+  if(torusMap==1) {
+    int sumX=0;
+    int sumY=0;
+    int sumZ=0;
+    int X=0,Y=0,Z=0;
+    points=0;
     for(int i=0;i<getXmax();i++)
-      for(int j=0;j<getYmax();j++){
-	for(int k=0;k<getZmax();k++){
+      for(int j=0;j<getYmax();j++) {
+	for(int k=0;k<getZmax();k++) {
 	  CkAssert(get(i,j,k)>=0);
-	  bgltm->rankToCoordinates(get(i, j, k), X, Y, Z);
+	  topoMgr->rankToCoordinates(get(i, j, k), X, Y, Z);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
 	  points++;
 	}
-    }
-  int avgX=sumX/points;
-  int avgY=sumY/points;
-  int avgZ=sumZ/points;
-  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
-#else
-  int points=0, sum=0;
-  for(int i=0;i<getXmax();i++)
-    for(int j=0;j<getYmax();j++){
-      for(int k=0;k<getZmax();k++){
-	CkAssert(get(i,j,k)>=0);
-	sum+=get(i,j,k);
-	points++;
       }
-    }
-  int bestPe=sum/points;
-#endif      
-  return(bestPe);
+    int avgX=sumX/points;
+    int avgY=sumY/points;
+    int avgZ=sumZ/points;
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
   }
+  else {
+    int sum=0;
+    points=0;
+    for(int i=0;i<getXmax();i++)
+      for(int j=0;j<getYmax();j++){
+        for(int k=0;k<getZmax();k++){
+	  CkAssert(get(i,j,k)>=0);
+	  sum+=get(i,j,k);
+	  points++;
+        }
+      }
+    bestPe=sum/points;
+  }
+  return(bestPe);
+}
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
 		       int _nchareG, int _nstates,  
@@ -1429,7 +1434,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(useCentroid)
     {
       // get centroid of rsmap  use it to sort the avail list
-      availprocs->sortSource(rhorsmap->getCentroid());
+      availprocs->sortSource(rhorsmap->getCentroid(config.torusMap));
       availprocs->reset();
     }
   PeList *avail= new PeList(*availprocs);
@@ -1641,7 +1646,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
     {
       // get centroid of rhartmap  use it to sort the avail list
       availprocs->reset();
-      availprocs->sortSource(rhartmap->getCentroid());
+      availprocs->sortSource(rhartmap->getCentroid(config.torusMap));
       availprocs->reset();
     }
   int destpe=availprocs->findNext();
@@ -1746,174 +1751,161 @@ PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapTyp
       return(thisState);
 }
 
-#ifdef CMK_VERSION_BLUEGENE
-
 
 void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)
 {
-  int sumX=0, sumY=0, sumZ=0;
-  int points=0;
-      
-  for(int state=0;state<nstates;state++)
+  int points=0, bestPe;
+  if(config.torusMap==1) {
+    int sumX=0, sumY=0, sumZ=0;
+    for(int state=0;state<nstates;state++)
     {
       int X, Y, Z;
-      bgltm->rankToCoordinates(rsmap->get(state, plane), X, Y, Z);
+      topoMgr->rankToCoordinates(rsmap->get(state, plane), X, Y, Z);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
       points++;
     }
-  int avgX=sumX/points;
-  int avgY=sumY/points;
-  int avgZ=sumZ/points;
-  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
-  avail->sortSource(bestPe);
-  avail->reset();
-}
-
-
-void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
-{
-  int sumX=0, sumY=0, sumZ=0;
-  int points=0;
-      
-  for(int state=stateX;state<stateX+grainsize;state++)
-    {
-      int X, Y, Z;
-      bgltm->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
-      sumX+=X;
-      sumY+=Y;
-      sumZ+=Z;
-      points++;
-    }
-  for(int state=stateY;state<stateY+grainsize;state++)
-    {
-      int X, Y, Z;
-      bgltm->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
-      sumX+=X;
-      sumY+=Y;
-      sumZ+=Z;
-      points++;
-    }
-  int avgX=sumX/points;
-  int avgY=sumY/points;
-  int avgZ=sumZ/points;
-  int bestPe=bgltm->coordinatesToRank(avgX, avgY, avgZ);
-  avail->sortSource(bestPe);
-  avail->reset();
-}
-
-
-void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
-{
-  int sumX = 0, sumY = 0, sumZ = 0;
-  int points = 0;
-
-  for(int plane=0; plane<nplanes; plane++)
-    for(int chunk=0; chunk<numChunks; chunk++)
-    {    
-      int X, Y, Z;
-      bgltm->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
-      sumX += X;
-      sumY += Y;
-      sumZ += Z;
-      points++;
-    }
-  int avgX = sumX/points;
-  int avgY = sumY/points;
-  int avgZ = sumZ/points;
-  int bestPe = bgltm->coordinatesToRank(avgX, avgY, avgZ);
-  avail->sortSource(bestPe);
-  avail->reset();
-}
-
-int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
-{
-  int sumX = 0, sumY = 0, sumZ = 0;
-  int points = 0;
-
-  for(int plane=0; plane<nplanes; plane++)
-    for(int chunk=0; chunk<numChunks; chunk++)
-    {    
-      int X, Y, Z;
-      bgltm->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
-      sumX += X;
-      sumY += Y;
-      sumZ += Z;
-      points++;
-    }
-  int avgX = sumX/points;
-  int avgY = sumY/points;
-  int avgZ = sumZ/points;
-  int bestPe = bgltm->coordinatesToRank(avgX, avgY, avgZ);
-  return(avail->minDist(bestPe));
-}
-
-#else
-// arguably meaningless in non torus case but it was easy to implement
-void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
-{
-  int sumPe=0;
-  int points=0;
-  for(int state=stateX;state<stateX+grainsize;state++)
-    {
-      sumPe+=gsmap->get(state,plane);
-      points++;
-    }
-  for(int state=stateY;state<stateY+grainsize;state++)
-    {
-      sumPe+=gsmap->get(state,plane);
-      points++;
-    }
-  int bestPe=sumPe/points;
-  avail->sortSource(bestPe);
-  avail->reset();
-}
-
-
-void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)
-{
-  int sumPe=0;
-  int points=0;
-  for(int state=0;state<nstates;state++)
+    int avgX=sumX/points;
+    int avgY=sumY/points;
+    int avgZ=sumZ/points;
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
+  else {
+    int sumPe=0;
+    for(int state=0;state<nstates;state++)
     {
       sumPe+=rsmap->get(state,plane);
       points++;
     }
-  int bestPe=sumPe/points;
-  avail->sortSource(bestPe);
-  avail->reset();
+    bestPe=sumPe/points;
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
 }
+
+
+void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap)
+{
+  int points=0, bestPe;
+      
+  if(config.torusMap==1) {
+    int sumX=0, sumY=0, sumZ=0;
+    for(int state=stateX;state<stateX+grainsize;state++)
+    {
+      int X, Y, Z;
+      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
+    }
+    for(int state=stateY;state<stateY+grainsize;state++)
+    {
+      int X, Y, Z;
+      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
+      sumX+=X;
+      sumY+=Y;
+      sumZ+=Z;
+      points++;
+    }
+    int avgX=sumX/points;
+    int avgY=sumY/points;
+    int avgZ=sumZ/points;
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
+  else {
+    int sumPe=0;
+    for(int state=stateX;state<stateX+grainsize;state++)
+    {
+      sumPe+=gsmap->get(state,plane);
+      points++;
+    }
+    for(int state=stateY;state<stateY+grainsize;state++)
+    {
+      sumPe+=gsmap->get(state,plane);
+      points++;
+    }
+    bestPe=sumPe/points;
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
+}
+
 
 void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
 {
-  int sumPe = 0;
-  int points = 0;
+  int points=0, bestPe;
+  if(config.torusMap==1) {
+    int sumX = 0, sumY = 0, sumZ = 0;
 
-  for(int plane=0; plane<nplanes; plane++)
-    for(int chunk=0; chunk<numChunks; chunk++)
-    {    
-      sumPe += smap->get(plane, state1, state2, chunk);
-      points++;
-    }
-  int bestPe = sumPe/points;
-  avail->sortSource(bestPe);
-  avail->reset();
+    for(int plane=0; plane<nplanes; plane++)
+      for(int chunk=0; chunk<numChunks; chunk++)
+      {  
+        int X, Y, Z;
+        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
+        sumX += X;
+        sumY += Y;
+        sumZ += Z;
+        points++;
+      }
+    int avgX = sumX/points;
+    int avgY = sumY/points;
+    int avgZ = sumZ/points;
+    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
+  else {
+    int sumPe = 0;
+    for(int plane=0; plane<nplanes; plane++)
+      for(int chunk=0; chunk<numChunks; chunk++)
+      {
+        sumPe += smap->get(plane, state1, state2, chunk);
+        points++;
+      }
+    bestPe = sumPe/points;
+    avail->sortSource(bestPe);
+    avail->reset();
+  }
 }
 
 int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int state2, int numChunks, MapType4 *smap)
 {
-  int sumPe = 0;
-  int points = 0;
+  int points=0, bestPe;
+  if(config.torusMap==1) {
+    int sumX = 0, sumY = 0, sumZ = 0;
 
-  for(int plane=0; plane<nplanes; plane++)
-    for(int chunk=0; chunk<numChunks; chunk++)
-    {    
-      sumPe += smap->get(plane, state1, state2, chunk);
-      points++;
-    }
-  int bestPe = sumPe/points;
-  return(avail->minDist(bestPe));
+    for(int plane=0; plane<nplanes; plane++)
+      for(int chunk=0; chunk<numChunks; chunk++)
+      {    
+        int X, Y, Z;
+        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
+        sumX += X;
+        sumY += Y;
+        sumZ += Z;
+        points++;
+      }
+    int avgX = sumX/points;
+    int avgY = sumY/points;
+    int avgZ = sumZ/points;
+    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    return(avail->minDist(bestPe));
+  }
+  else {
+    int sumPe = 0;
+    for(int plane=0; plane<nplanes; plane++)
+      for(int chunk=0; chunk<numChunks; chunk++)
+      {
+        sumPe += smap->get(plane, state1, state2, chunk);
+        points++;
+      }
+    bestPe = sumPe/points;
+    return(avail->minDist(bestPe));
+  }
 }
 
-#endif
