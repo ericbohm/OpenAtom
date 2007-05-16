@@ -1830,6 +1830,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
          int i=1;
          double mypow=1;
          while((mypow=pow(2.0, (double)i)) <= low_x_size){i++;}
+      sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers);
          gExpandFact = mypow / (double) low_x_size;
          nchareG     = (int)( gExpandFact * (double) low_x_size);
          sprintf(dict_state[6].keyarg,"%g",gExpandFact);
@@ -2005,6 +2006,26 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
       sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers);
     }//endif
+
+//============================================================================
+// Turn torusMap on on BG/L
+
+#ifdef CMK_VERSION_BLUEGENE
+    igo = dict_map[1].iuset;
+
+    if(igo==0) {
+      torusMap = 1; 
+      sprintf(dict_map[1].keyarg, "%d", torusMap);
+      useCuboidMap = 1;
+      sprintf(dict_map[2].keyarg, "%d", useCuboidMap);
+      useCuboidMapRS = 1;
+      sprintf(dict_map[3].keyarg, "%d", useCuboidMapRS);
+      useCentroidMap = 1;
+      sprintf(dict_map[4].keyarg, "%d", useCentroidMap);
+      useCentroidMapRho = 1;
+      sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
+    }
+#endif
 
 //============================================================================
    }//end routine
