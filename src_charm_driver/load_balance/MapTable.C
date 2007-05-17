@@ -1664,7 +1664,7 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
       for(int chunk=0; chunk<nchareRhoGHart; chunk+=rghobjs_per_pe)
 	{
 	  //      CkAssert(exclude->exists(destpe)<0);
-	  if(rem>1)
+ 	  if(rem>1 && rghobjs_per_pe>1)
 	    if(chunk==rem*rghobjs_per_pe)
 	      rghobjs_per_pe -= 1; 
 	  for(int i=chunk;((i<chunk+rghobjs_per_pe)&&(i<nchareRhoGHart));i++)
