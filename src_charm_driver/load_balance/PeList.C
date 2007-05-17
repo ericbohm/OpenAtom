@@ -11,6 +11,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 {
   if(config.torusMap==1)
   {
+    CkPrintf("Ordering processors along long axis %d\n",order);
       current=0;
       sorted=false;
       size=CkNumPes();
@@ -157,22 +158,24 @@ bool PeList::binsearch(int pe)
 
 void PeList::sortSource(int srcPe)
 {
-  if(config.torusMap==1) {
-  // sort it using TopoManager 
-  //  CkPrintf("PRE: sortIndexByHops\n");
-  CkAssert(srcPe>=0);
-  CkAssert(srcPe<CkNumPes());
-  topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
-  //  CkPrintf("POST sortIndexByHops\n");
-  }
-  else {
-  // alternate form in non BG/L case (just an ordered list)
-  // sort it using CkVec quicksort
-  CkVec <int> sortme(size);
-  CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
-  sortme.quickSort();
-  CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
-  }
+  if(config.torusMap==1) 
+    {
+      // sort it using TopoManager 
+      //  CkPrintf("PRE: sortIndexByHops\n");
+      CkAssert(srcPe>=0);
+      CkAssert(srcPe<CkNumPes());
+      topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
+      //  CkPrintf("POST sortIndexByHops\n");
+    }
+  else 
+    {
+      // alternate form in non BG/L case (just an ordered list)
+      // sort it using CkVec quicksort
+      CkVec <int> sortme(size);
+      CmiMemcpy(sortme.getVec(), TheList,size*sizeof(int));
+      sortme.quickSort();
+      CmiMemcpy(TheList, sortme.getVec(), size*sizeof(int));
+    }
 }
 
 int PeList::minDist(int srcPe)

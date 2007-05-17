@@ -678,6 +678,9 @@ main::main(CkArgMsg *msg) {
     delete rfoo;
     delete gfoo;
     delete excludePes;
+    //    delete availGlobR;
+    //    delete availGlobG;
+
 //============================================================================
 
     newtime=CmiWallTimer();
@@ -753,6 +756,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #else
     success = mf->loadMap("SymScalcMap", &SymScalcmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -784,6 +788,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #else
     mf->dumpMap(&SymScalcmaptable);
 #endif
+    delete mf;
   }
 
   //-------------------------------------------------------------
@@ -805,6 +810,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #else
     success = mf->loadMap("AsymScalcMap", &AsymScalcmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -834,6 +840,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #else
     mf->dumpMap(&AsymScalcmaptable);
 #endif
+    delete mf;
   }
 
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
@@ -1286,6 +1293,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
       stride=config.orthoStride;
   }*/
   nOrtho *= nOrtho;
+  double Timer=CmiWallTimer();
 
   availGlobR->reset();
 #ifdef USE_INT_MAP
@@ -1302,6 +1310,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #else
     success = mf->loadMap("OrthoMap", &Orthomaptable);
 #endif
+    delete mf;
   }
   PeList *avail= new PeList();
   if(success == 0) {
@@ -1311,6 +1320,8 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
     OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
 #endif
   }
+  double newtime=CmiWallTimer();
+  CkPrintf("OrthoMap created in %g\n", newtime-Timer);
 
   //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
   CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew();
@@ -1333,6 +1344,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #else
     mf->dumpMap(&Orthomaptable);
 #endif
+    delete mf;
   }
 
   // extra triangle ortho elements are really a waste of our time
@@ -1361,6 +1373,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #ifdef USE_INT_MAP
       OrthoHelperImaptable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
 #endif
+      double Timer=CmiWallTimer();
 
       success = 0;
       if(config.loadMapFiles) {
@@ -1372,6 +1385,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #else
 	success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
 #endif
+	delete mf;
       }
 
       if(success == 0) {
@@ -1381,6 +1395,8 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
 #endif
       }
+      double newtime=CmiWallTimer();
+      CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
 
       CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew();
       CkArrayOptions orthoHOpts;
@@ -1395,6 +1411,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #else
 	mf->dumpMap(&OrthoHelpermaptable);
 #endif
+	delete mf;
       }
       orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
       make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
@@ -1456,7 +1473,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
     lambdaProxy.makeSections(indexSize, indexZ);
 
   }
-
+  delete avail;
 //============================================================================
   }//end routine 
 //============================================================================
@@ -1593,6 +1610,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 #else
     success = mf->loadMap("GSMap", &GSmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -1626,6 +1644,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 #else
     mf->dumpMap(&GSmaptable);
 #endif
+    delete mf;
   }
 
  //---------------------------------------------------------------------------
@@ -1647,6 +1666,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 #else
     success = mf->loadMap("RSMap", &RSmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -1682,6 +1702,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 #else
     mf->dumpMap(&RSmaptable);
 #endif
+    delete mf;
   }
 
  //--------------------------------------------------------------------------------
@@ -1976,6 +1997,7 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 #else
     success = mf->loadMap("RPPMap", &RPPmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -2032,6 +2054,7 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 #else
     mf->dumpMap(&RPPmaptable);
 #endif
+    delete mf;
   }
 
 }
@@ -2130,6 +2153,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     success = mf->loadMap("RhoRSMap", &RhoRSmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -2155,6 +2179,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     mf->dumpMap(&RhoRSmaptable);
 #endif
+    delete mf;
   }
 
   //---------------------------------------------------------------------------
@@ -2179,6 +2204,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     success = mf->loadMap("RhoGSMap", &RhoGSmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -2202,6 +2228,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     mf->dumpMap(&RhoGSmaptable);
 #endif
+    delete mf;
   }
 
 
@@ -2229,6 +2256,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
       success = mf->loadMap("RhoRHartMap", &RhoRHartmaptable);
 #endif
+      delete mf;
     }
     if(success == 0) {
 #ifdef USE_INT_MAP
@@ -2255,6 +2283,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
       mf->dumpMap(&RhoRHartmaptable);
 #endif
+      delete mf;
     }
   } //endif : ees_ext_on
   CkPrintf("RhoRHartMap built %d x %d x %d\n",nchareRhoRHart, config.rhoRsubplanes, config.nchareHartAtmT);
@@ -2277,6 +2306,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     success = mf->loadMap("RhoGHartMap", &RhoGHartmaptable);
 #endif
+    delete mf;
   }
 
   if(success == 0) {
@@ -2309,6 +2339,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 #else
     mf->dumpMap(&RhoGHartmaptable);
 #endif
+    delete mf;
   }
 
   //============================================================================
@@ -2570,6 +2601,10 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 
     }
   CkPrintf("minD %d maxD %d\n",minD, maxD);
+  if(config.useCuboidMapRS)
+    {
+      CkPrintf("Using long prisms for useCuboidMapRS\n");
+    }
   order=0;
   double cubert= cbrt((double) volume);
   int cubetrunc= (int) cubert;

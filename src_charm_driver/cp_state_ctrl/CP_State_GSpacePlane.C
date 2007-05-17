@@ -1381,7 +1381,15 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
 //============================================================================
 // Check Load Balancing, Increment counter, set done flags equal to false.
-
+/*  if(iteration=3)
+    {
+      CmiMemoryMark();
+    }
+  if(iteration=4)
+    {
+      CmiMemorySweep("GSP");
+    }
+*/
 #ifndef CMK_OPTIMIZE
   if(iteration==TRACE_ON_STEP ){traceBegin();}
   if(iteration==TRACE_OFF_STEP){traceEnd();}

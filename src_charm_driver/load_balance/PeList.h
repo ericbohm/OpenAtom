@@ -207,9 +207,15 @@ class PeList
 		int location=loc-TheList;
 		CmiMemcpy(newlist,TheList,location*sizeof(int));
 		newlist[location]=pe;
-		CmiMemcpy(&newlist[location+1],loc,(size-location)*sizeof(int));
+		CmiMemcpy(&newlist[location+1],loc,(size-(location))*sizeof(int));
 		// your index is shot
 		bzero(newIndex,(newsize+1)*sizeof(int));
+		delete [] TheList;
+		delete [] sortIdx;
+		TheList=newlist;
+		sortIdx=newIndex;
+		size=newsize;
+		current=0;
 	      }
 	  }
       }

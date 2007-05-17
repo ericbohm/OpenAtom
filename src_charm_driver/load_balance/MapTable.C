@@ -259,6 +259,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
   maptable=_map;
   availprocs=_availprocs;
   availprocs->reset();
+
   if(planes_per_pe==0)
     CkAbort("Choose a larger Gstates_per_pe\n");
   if(symmetric)
@@ -466,7 +467,11 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		    if(useCentroid)
 		      {
 			thisPlaneBox->trimUsed();
+			//			CkPrintf("plane %d xchunk %d ychunk %d trim\n",plane,xchunk,ychunk);
+			//			thisPlaneBox->dump();
 			sortByCentroid(thisPlaneBox, plane, xchunk, ychunk, grainsize, gsmap);
+			//			CkPrintf("plane %d xchunk %d ychunk %d sortbycentroid\n",plane,xchunk,ychunk);
+			//			thisPlaneBox->dump();
 			destpe=thisPlaneBox->findNext();
 			if(thisPlaneBox->count()==0)
 			  thisPlaneBox->reset();
@@ -644,14 +649,16 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  int srsobjs_per_pe=rsobjs_per_pe;
 	  PeList *thisStateBox;
 	  thisStateBox = subListState(state, nchareG, gsmap);
-	  //	  CkPrintf("RS state box has %d procs\n",thisStateBox->count());
+	  //	  CkPrintf("RS state %d box has %d procs\n",state,thisStateBox->count());
+	  //	  bool useExclude=false;
 	  bool useExclude=true;
-	  if(exclusionList!=NULL)
+	  if(exclusionList!=NULL && useExclude)
 	    {
 	      *thisStateBox - *exclusionList;
 	      thisStateBox->reindex();
 	      thisStateBox->reset();
 	    }
+	  //	  CkPrintf("RS state %d box has %d procs after exclusion\n",state,thisStateBox->count());
 	  //	  CkPrintf("RS state %d pe list after exclude \n",state);
 	  //	  thisStateBox->dump();
 	  while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
@@ -693,7 +700,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		  exclusionList=rebuildExclusion( Pecount, srsobjs_per_pe);
 		  delete thisStateBox;
 		  thisStateBox = subListState(state, nchareG, gsmap);
-		  if(exclusionList!=NULL)
+		  if(exclusionList!=NULL && useExclude)
 		    {
 		      *thisStateBox - *exclusionList;
 		      thisStateBox->reset();
@@ -1815,8 +1822,6 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
     int avgY=sumY/points;
     int avgZ=sumZ/points;
     bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
-    avail->sortSource(bestPe);
-    avail->reset();
   }
   else {
     int sumPe=0;
@@ -1831,9 +1836,10 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
       points++;
     }
     bestPe=sumPe/points;
-    avail->sortSource(bestPe);
-    avail->reset();
   }
+  avail->sortSource(bestPe);
+  avail->reset();
+
 }
 
 
