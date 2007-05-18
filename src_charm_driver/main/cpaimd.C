@@ -531,7 +531,11 @@ main::main(CkArgMsg *msg) {
     int m, pl, pm;
     pl = nstates / l;
     pm = CkNumPes() / pl;
-    if(pm==0){CkAbort("Choose a larger Gstates_per_pe \n");}
+    if(pm==0)
+      {
+	CkPrintf("Choose a larger Gstates_per_pe than %d such that numprocs %d/ (nstates %d /config.Gstates_per_pe %d) is > 0\n", config.Gstates_per_pe,CkNumPes(), nstates, l);
+	CkAssert(CkNumPes() / (nstates/config.Gstates_per_pe)>0) ;
+    		}
     m = config.nchareG / pm;
 
     planes_per_pe=m;
