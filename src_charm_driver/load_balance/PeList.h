@@ -193,30 +193,28 @@ class PeList
     if(sorted)
       { // maintain sort order by insertion
 	int *loc=pelower_bound(pe);
-	if(*loc!=pe)
+	if(loc==&(TheList[size])|| loc==NULL)
+	  { // 
+	    appendOne(pe);
+	  }
+	else if(loc[0] !=pe && loc[1] !=pe && (loc==TheList || ((loc>TheList) && (loc[-1] !=pe))))
 	  { // not already present
-	    if(*loc==TheList[size])
-	      { // 
-		appendOne(pe);
-	      }
-	    else
-	      {
-		int newsize=size+1;
-		int *newlist= new int [newsize+1];
-		int *newIndex= new int [newsize+1];
-		int location=loc-TheList;
-		CmiMemcpy(newlist,TheList,location*sizeof(int));
-		newlist[location]=pe;
-		CmiMemcpy(&newlist[location+1],loc,(size-(location))*sizeof(int));
-		// your index is shot
-		bzero(newIndex,(newsize+1)*sizeof(int));
-		delete [] TheList;
-		delete [] sortIdx;
-		TheList=newlist;
-		sortIdx=newIndex;
-		size=newsize;
-		current=0;
-	      }
+	    int newsize=size+1;
+	    int *newlist= new int [newsize+1];
+	    int *newIndex= new int [newsize+1];
+	    int location=loc-TheList;
+	    if(loc!=TheList) // there are things before location
+	      CmiMemcpy(newlist,TheList,location*sizeof(int));
+	    newlist[location]=pe;
+	    CmiMemcpy(&newlist[location+1],loc,(size-(location))*sizeof(int));
+	    // your index is shot
+	    bzero(newIndex,(newsize+1)*sizeof(int));
+	    delete [] TheList;
+	    delete [] sortIdx;
+	    TheList=newlist;
+	    sortIdx=newIndex;
+	    size=newsize;
+	    current=0;
 	  }
       }
     else

@@ -397,7 +397,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			  if(availprocs->count()==0)
 			    availprocs->reset();
 
-			  if(rem!=0)
+			  if(rem!=0 &&scobjs_per_pe>1)
 			    if(procno==rem)
 			      scobjs_per_pe-=1;
 #ifdef USE_INT_MAP
@@ -491,7 +491,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			    if(thisPlaneBox->count()==0)
 			      thisPlaneBox->reset();
 			    
-			    if(rem!=0)
+			    if(rem!=0&& scobjs_per_pe>1)
 			      if(procno==rem)
 				scobjs_per_pe-=1;
 			    count=0;
@@ -1723,6 +1723,7 @@ PeList *subListPlane(int plane, int nstates, MapType2 *smap)
 	thisPlane->mergeOne(smap->get(state,plane));
       }
       thisPlane->reset();
+      thisPlane->reindex();
       return(thisPlane);
 }
 
