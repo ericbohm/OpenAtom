@@ -32,6 +32,8 @@ class Config {
   //==================================
   // density control flags and values
   //----------------------------------
+    int nchareHartAtmT;
+    int rhoLineOrder;
     int rhorHartpriority;
     int rhogHartpriority;
     int useGHartInsRhoRP;
@@ -53,8 +55,6 @@ class Config {
     int useRInsIGYRhoGP;
     int useRInsIGZRhoGP;
     int prioEextFFTMsg;
-    int rhoLineOrder;
-    int nchareHartAtmT;
     int rhoSubPlaneBalance;
     int rhoGToRhoRMsgComb;
   //==================================
@@ -158,6 +158,14 @@ class Config {
    int loadMapFiles;
    int dumpMapFiles;
    int useRhoExclusionMap;
+   int fakeTorus;
+   int torusDimX;  // use these to do torus logic testing
+   int torusDimY;
+   int torusDimZ;
+   int torusDimNX;
+   int torusDimNY;
+   int torusDimNZ;
+
   //==================================
 
   //==================================
