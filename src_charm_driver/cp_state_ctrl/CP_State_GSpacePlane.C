@@ -790,7 +790,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   redPlane = 1;
   if(nchareG>1){
 #ifdef _FANCY_PLANES_
-    if(CkNumPes()>2*nstates){
+    if(config.numPes>2*nstates){
       CkVec <int> usedVec;
       CkVec <int> peUsedByNLZ;
       CkVec <int> planeUsedByNLZ;

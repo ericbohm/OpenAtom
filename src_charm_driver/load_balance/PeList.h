@@ -47,18 +47,28 @@ class PeList
       current=0;
     }
 
+
   PeList(CkVec <int> inlist)
     {
-      sorted=false;
+      inlist.quickSort();
+      sorted=true;
       current=0;
       size=inlist.size();
       TheList = new int [size+1];
       sortIdx = new int [size+1];
-      for(int i=0;i<inlist.size();i++)
-	{
-	  TheList[i]=inlist[i];
-	  sortIdx[i]=i;
+      TheList[0]=inlist[0];
+      int count=0;
+      for(int i=1;i<inlist.size();i++)
+	{ //remove duplicates from sorted list
+	  if(inlist[i]!=TheList[count])
+	    {
+	      count++;
+	      TheList[count]=inlist[i];
+	      sortIdx[count]=count;
+	    }
+	  
 	}
+      size=count;
     }
 
   PeList(PeList &inlist)
@@ -192,22 +202,37 @@ class PeList
     // make array large enough for both, paste together
     if(sorted)
       { // maintain sort order by insertion
-	if(size==1 && pe!=TheList[0])
+	if(size==1 && pe>TheList[0])
 	  {
 	    appendOne(pe);
 	  }
 	else{
 	  int *loc=pelower_bound(pe);
-	  if(loc==&(TheList[size])|| loc==NULL)
+	  int location=loc-TheList;
+
+	  if(location>=size || loc==NULL)
 	    { // 
 	      appendOne(pe);
 	    }
-	  else if(loc[0] !=pe && loc[1] !=pe && (loc==TheList || ((loc>TheList) && (loc[-1] !=pe))))
+	  else if ((loc>TheList) && (loc[-1] ==pe))
+	    {
+	      // do nothing
+	    }
+	  else if(TheList[location] ==pe)
+	    {
+	      // do nothing
+	    }
+	  
+	  else if((size>1) &&(location<size-1) && (TheList[location+1]==pe))
+	    {
+	      // do nothing
+	    }
+	  else
 	    { // not already present
+
 	      int newsize=size+1;
 	      int *newlist= new int [newsize+1];
 	      int *newIndex= new int [newsize+1];
-	      int location=loc-TheList;
 	      if(loc!=TheList) // there are things before location
 		CmiMemcpy(newlist,TheList,location*sizeof(int));
 	      newlist[location]=pe;
@@ -306,13 +331,13 @@ class PeList
     {
       if(pos < size)
 	{
-	  /*
+
 	  for (int i=pos; i<size-1; i++)
 	    {
 	      TheList[i] = TheList[i+1];
 	    }
-	  */
-	  CmiMemcpy(&TheList[pos],&TheList[pos+1],(size-(pos+1))*sizeof(int));
+
+	  //	  CmiMemcpy(&TheList[pos],&TheList[pos+1],(size-(pos+1))*sizeof(int));
 	  size--;
 	}
     }

@@ -221,23 +221,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 
   reductionPlaneNum = red_pl[thisIndex.x];
 
-  /*
-  int *red_pl = new int[nstates];
-  int l       = Gstates_per_pe;
-
-  int pl = nstates / l;
-  int pm = CkNumPes() / pl; if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
-  int m  = (nchareG / pm);
-
-  int planes_per_pe = m;
-  for(int i=0; i<nstates;i++){
-    red_pl[i]=((i % Gstates_per_pe)*planes_per_pe)%nchareG;
-  }//endfor
-  reductionPlaneNum    = red_pl[thisIndex.x];
-  */
-  
-  // reductionPlaneNum    = calcReductionPlaneNum(thisIndex.x); ifndef USE_TOPOMAP
-
   //--------------------------------------------------------------------------
   // If you are a reduction plane, set up your comm with your guys and the
   // the other reduction planes. Store your cookie to eat later.

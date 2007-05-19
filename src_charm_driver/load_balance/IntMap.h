@@ -21,6 +21,7 @@
 
 #ifndef _INTMAP_H_
 #define _INTMAP_H_
+extern int numPes;
 
 
 class IntMap4 {
@@ -152,7 +153,7 @@ class IntMap4 {
       CkAssert(X/keyStep<keyXmax);
       CkAssert(Y/keyStep<keyYmax);
       CkAssert(Z<keyZmax);
-      CkAssert(CkNumPes()>value);
+      CkAssert(numPes>value);
       Map[W][X/keyStep][Y/keyStep][Z]=value;
     }
     void dump()
@@ -252,7 +253,7 @@ class IntMap3 {
       CkAssert(X<keyXmax);
       CkAssert(Y<keyYmax);
       CkAssert(Z<keyZmax);
-      CkAssert(CkNumPes()>value);
+      CkAssert(numPes>value);
       Map[X][Y][Z]=value;
     }
     int getCentroid(int torusMap);
@@ -331,7 +332,7 @@ class IntMap2on2 {
     }
     //    inline &int put(int X, int Y){&(Map[X][Y]);}
     inline void set(int X, int Y, int value){
-      CkAssert(CkNumPes()>value);
+      CkAssert(numPes>value);
       CkAssert(X<keyXmax);
       CkAssert(Y<keyYmax);
       Map[X][Y]=value;
@@ -400,7 +401,7 @@ class IntMap2on1 {
     }
     //    inline &int put(int X, int Y){&(Map[X][Y]);}
     inline void set(int X, int Y, int value){
-      CkAssert(CkNumPes()>value);
+      CkAssert(numPes>value);
       CkAssert(X<keyXmax);
       CkAssert(Y<keyYmax);
       Map[Y*keyXmax +X]=value;

@@ -138,12 +138,12 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
   if(useCuboidMap)
   {
     // here we require that nchareG tiles
-    if(CkNumPes()%nchareG!=0)
+    if(config.numPes%nchareG!=0)
       {
-	CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",nchareG,CkNumPes());
+	CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",nchareG,config.numPes);
 	CkExit();
       }
-    int procsPerPlane= CkNumPes() / nchareG;
+    int procsPerPlane= config.numPes / nchareG;
     int cubeGstates_per_pe= nstates/procsPerPlane;
     int cubesrem=nstates%procsPerPlane;
     if(cubesrem)
@@ -233,7 +233,7 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
   CkPrintf("GSMap created on processor %d\n", CkMyPe());
   dump();
   int size[2] = {128, 12};
-  MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+  MapFile *mf = new MapFile("GSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
   mf->dumpMap(maptable);
 #endif
 }
@@ -574,7 +574,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 PeList * rebuildExclusion(int *Pecount, int rsobjs_per_pe)
 {
   PeList *exclusionList=NULL;
-  for(int exc=0;exc<CkNumPes();exc++)
+  for(int exc=0;exc<config.numPes;exc++)
     {
       if(Pecount[exc]>=rsobjs_per_pe)
 	{
@@ -605,11 +605,11 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
   maptable=_map;
   availprocs=_availprocs;
   availprocs->reset();
-  int *Pecount= new int [CkNumPes()];
+  int *Pecount= new int [config.numPes];
 
-  bzero(Pecount, CkNumPes() *sizeof(int));
+  bzero(Pecount, config.numPes *sizeof(int));
 
-  rsobjs_per_pe = nstates*sizeZ/CkNumPes();
+  rsobjs_per_pe = nstates*sizeZ/config.numPes;
   l=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / l;
   if(nstates % l == 0)
@@ -639,7 +639,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
     availprocs->reset();	
   if(useCuboidMap)
     {
-      int srem= nstates*sizeZ%CkNumPes();
+      int srem= nstates*sizeZ%config.numPes;
       if(srem)
 	rsobjs_per_pe++;
       // place all the states box by box
@@ -825,7 +825,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   PeList *RPPlist=availprocs;
   states_per_pe=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / states_per_pe;
-  if(exclusion==NULL || exclusion->count()==0 || CkNumPes() <=exclusion->count() )
+  if(exclusion==NULL || exclusion->count()==0 || config.numPes <=exclusion->count() )
     useExclusion=false;
   int afterExclusion=availprocs->count();
   if(useExclusion)
@@ -889,9 +889,9 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       //      PeList **maps= new PeList* [nstates];
       // this code is too memory hoggy
       int maxcharesperpe=0;
-      int *usedPes= new int[CkNumPes()];
+      int *usedPes= new int[config.numPes];
       bool *useExclude= new bool[nstates];
-      bzero(usedPes, CkNumPes() * sizeof(int));
+      bzero(usedPes, config.numPes * sizeof(int));
       for(int state=0; state < nstates ; state++)
 	{
 	  // have variable number of exclusions per list
@@ -899,11 +899,12 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	  // for the border cases
 	  //maps[state]= subListState( state, nchareG, pp_map);
 	  PeList *state_map=subListState( state, nchareG, pp_map);
+	  CkAssert(state_map->count()>0);
 	  if(useExclusion)
 	    {
 	      *state_map-*exclusion;
 	      state_map->reindex();
-	      if(sizeZNL/state_map->count() > states_per_pe)
+	      if(state_map->count()==0 || sizeZNL/state_map->count() > states_per_pe)
 		{ //not enough for exclusion
 		  delete state_map;
 		  state_map=subListState( state, nchareG, pp_map);
@@ -928,7 +929,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	  //	    maxcharesperpe=states_per_pe;
 	  delete state_map;
 	}
-      int totcharesperpe=sizeZNL*nstates/CkNumPes()+1;
+      int totcharesperpe=sizeZNL*nstates/config.numPes+1;
       maxcharesperpe=(maxcharesperpe>totcharesperpe) ? maxcharesperpe : totcharesperpe;
       //      maxcharesperpe++;
       PeList *usedbyRPP=NULL;
@@ -1055,8 +1056,8 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
   bool useSublist=true;
   bool useExclude=true;
   oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count());
-  int *Pecount= new int [CkNumPes()];
-  bzero(Pecount, CkNumPes()*sizeof(int)); 
+  int *Pecount= new int [config.numPes];
+  bzero(Pecount, config.numPes*sizeof(int)); 
   int s1 = 0, s2 = 0;
   for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
     for(int state2 = state1; state2 < nstates; state2 += orthoGrainSize)
@@ -1144,8 +1145,8 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
   bool useSublist=true;
   bool useExclude=true;
   oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count());
-  int *Pecount= new int [CkNumPes()];
-  bzero(Pecount, CkNumPes()*sizeof(int)); 
+  int *Pecount= new int [config.numPes];
+  bzero(Pecount, config.numPes*sizeof(int)); 
   int s1 = 0, s2 = 0;
   for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
     for(int state2 = 0; state2 < nstates; state2 += orthoGrainSize)
@@ -1292,8 +1293,8 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(availprocs->count()==0)
     availprocs->reset();
   int destpe;
-  int *Pecount= new int [CkNumPes()];
-  bzero(Pecount, CkNumPes()*sizeof(int)); 
+  int *Pecount= new int [config.numPes];
+  bzero(Pecount, config.numPes*sizeof(int)); 
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   if(useCentroid) 
@@ -1354,7 +1355,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	delete thisPlaneBox;
       }
       // now include the partially filled processors
-      for(int i=0; i<CkNumPes();i++)
+      for(int i=0; i<config.numPes;i++)
 	{
 	  if(Pecount[i]>0)
 	    { 
@@ -1700,7 +1701,7 @@ void MapTable2::makeReverseMap()
     CkHashtableIterator *it=maptable->iterator();
     it->seekStart();
     intdual *key;
-    reverseMap= new CkVec <intdual> [CkNumPes()];
+    reverseMap= new CkVec <intdual> [config.numPes];
     while(it->hasNext())
       {
 	it->next((void **) &key);

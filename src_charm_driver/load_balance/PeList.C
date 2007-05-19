@@ -11,14 +11,15 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 {
   if(config.torusMap==1)
   {
-    CkPrintf("Ordering processors along long axis %d\n",order);
+
       current=0;
       sorted=false;
-      size=CkNumPes();
+      size=config.numPes;
       int i=0;
       int maxX=topoMgr->getDimX();
       int maxY=topoMgr->getDimY();
       int maxZ=topoMgr->getDimZ();
+      CkPrintf("Ordering processors along long axis %d in %d X %d X %d\n",order, maxX, maxY, maxZ);
       TheList= new int[size];
       sortIdx= new int[size];
       int numBoxes=0;
@@ -87,9 +88,9 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
       // that fit in the mesh
       int end=numBoxes* boxX*boxY*boxZ;
       // fill out remainder 
-      if(i<CkNumPes())
+      if(i<config.numPes)
 	{
-	  PeList remainder(CkNumPes());
+	  PeList remainder(config.numPes);
 	  for(int i=0; i< size;i++)
 	    {
 	      int j=0;
@@ -122,7 +123,7 @@ PeList::PeList() // default constructor
     {
       sorted=true;
       current=0;
-      size=CkNumPes();
+      size=config.numPes;
       TheList= new int[size+1];
       sortIdx= new int[size+1];
       for(int i=0;i<size;i++)
@@ -137,7 +138,7 @@ void PeList::rebuild()
 {
   sorted=true;
   current=0;
-  size=CkNumPes();
+  size=config.numPes;
   for(int i=0;i<size;i++)
     {
       TheList[i]=i;
@@ -163,7 +164,7 @@ void PeList::sortSource(int srcPe)
       // sort it using TopoManager 
       //  CkPrintf("PRE: sortIndexByHops\n");
       CkAssert(srcPe>=0);
-      CkAssert(srcPe<CkNumPes());
+      CkAssert(srcPe<config.numPes);
       topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
       //  CkPrintf("POST sortIndexByHops\n");
     }

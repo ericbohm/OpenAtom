@@ -12,7 +12,8 @@ mainmodule cpaimd {
 	readonly int Ortho_UE_error;
 	readonly bool Ortho_use_local_cb;
 	readonly int TimeKeeperID;
-	
+	readonly int numPes;
+	readonly bool fakeTorus;
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
 	readonly CkVec <CkGroupID> mCastGrpIds;
 	initproc registersumFastDouble(void);	

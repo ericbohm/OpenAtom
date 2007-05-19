@@ -123,6 +123,14 @@
 
 int TimeKeeperID=0;
 vector <string> TimeKeeperNames;
+
+//============================================================================
+/** \defgroup torus_vars Defining the size of the torus, handy when debugging torus map logic on non torus architectures.
+ */
+int numPes;
+bool fakeTorus;
+//============================================================================
+
 //============================================================================
 /** 
  * \defgroup  piny_vars Defining all Charm++ readonly variables for PINY physics 
@@ -418,17 +426,19 @@ main::main(CkArgMsg *msg) {
     int natm_typ       = sim->natm_typ;
 
 //============================================================================    
-/* Invoke Ramkumar input class */
+/* Invoke parallel driver input class */
 
     PRINT_LINE_STAR;
     CkPrintf("Cpaimd-Charm-Driver input started \n");
     PRINT_LINE_DASH; CkPrintf("\n");
     Timer=CmiWallTimer();
     double phase1start=Timer;
-    int numProc = CkNumPes();
+    numPes = CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
-                      sim->ntime,ibinary_opt,natm_nl,fftopt,numProc,natm_typ,ees_eext_opt);
-
+                      sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,ees_eext_opt);
+    fakeTorus        = config.fakeTorus>0;
+    if(fakeTorus)
+      numPes=config.torusDimX*config.torusDimY*config.torusDimZ;
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
     size2d sizeYZ    = size2d(sim->sizeY,sim->sizeZ);
@@ -530,11 +540,11 @@ main::main(CkArgMsg *msg) {
     int l=config.Gstates_per_pe;
     int m, pl, pm;
     pl = nstates / l;
-    pm = CkNumPes() / pl;
+    pm = config.numPes / pl;
     if(pm==0)
       {
-	CkPrintf("Choose a larger Gstates_per_pe than %d such that numprocs %d/ (nstates %d /config.Gstates_per_pe %d) is > 0\n", config.Gstates_per_pe,CkNumPes(), nstates, l);
-	CkAssert(CkNumPes() / (nstates/config.Gstates_per_pe)>0) ;
+	CkPrintf("Choose a larger Gstates_per_pe than %d such that numprocs %d/ (nstates %d /config.Gstates_per_pe %d) is > 0\n", config.Gstates_per_pe,config.numPes, nstates, l);
+	CkAssert(config.numPes / (nstates/config.Gstates_per_pe)>0) ;
     		}
     m = config.nchareG / pm;
 
@@ -551,7 +561,17 @@ main::main(CkArgMsg *msg) {
       CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
       PRINT_LINE_STAR; CkPrintf("\n");
       CkPrintf("Initializing TopoManager\n");
-      topoMgr = new TopoManager();
+      if(config.fakeTorus)
+	{
+	  topoMgr = new TopoManager(config.torusDimX, config.torusDimY, 
+				    config.torusDimZ, config.torusDimNX, 
+				    config.torusDimNY, config.torusDimNZ); 
+				    
+	}
+      else
+	{
+	  topoMgr = new TopoManager();
+	}
       CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
              topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
              topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
@@ -564,12 +584,12 @@ main::main(CkArgMsg *msg) {
 
     if(config.useCuboidMap)
       {
-	if(CkNumPes()%config.nchareG!=0)
+	if(config.numPes%config.nchareG!=0)
 	  {
-	    CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",config.nchareG,CkNumPes());
+	    CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",config.nchareG,config.numPes);
 	    CkExit();
 	  }
-	int procsPerPlane= CkNumPes() / nchareG;
+	int procsPerPlane= config.numPes / nchareG;
 	int bx,by,bz;
         if(config.torusMap==1) {
 	  boxSize=procsPerPlane;
@@ -595,11 +615,12 @@ main::main(CkArgMsg *msg) {
       rfoo=new PeList(*gfoo);
     else
       rfoo= new PeList;  // heap it
-
+    
     availGlobG=rfoo;
     availGlobR=gfoo;
     newtime=CmiWallTimer();
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
+    //    availGlobG->dump();
     Timer=newtime;
     TimeKeeperProxy= CProxy_TimeKeeper::ckNew(0);    
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
@@ -627,7 +648,7 @@ main::main(CkArgMsg *msg) {
 	  plane--;
 	}
     }
-
+    peUsedByNLZ.quickSort();
 //============================================================================    
 // Transfer parameters from physics to driver
 //    read in atoms : create atoms group 
@@ -754,7 +775,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     success = mf->loadMap("SymScalcMap", &SymScalcImaptable);
 #else
@@ -786,7 +807,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+    MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     mf->dumpMap(&SymScalcImaptable);
 #else
@@ -808,7 +829,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     success = mf->loadMap("AsymScalcMap", &AsymScalcImaptable);
 #else
@@ -838,7 +859,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     int size[4];
     size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
     size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, CkNumPes(), "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+    MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
 #ifdef USE_INT_MAP
     mf->dumpMap(&AsymScalcImaptable);
 #else
@@ -1279,7 +1300,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   PRINTF("Building Ortho Chares\n");
   PRINT_LINE_DASH;printf("\n");
   PeList *excludePes= new PeList(1);
-  excludePes->TheList[0]=CkNumPes();
+  excludePes->TheList[0]=config.numPes;
 
   int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
   int nOrtho= (nstates/config.orthoGrainSize);
@@ -1289,7 +1310,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   {
     if(config.orthoStride==1)
     {
-      CkNumPes()/(nOrtho*nOrtho+1); 
+      config.numPes/(nOrtho*nOrtho+1); 
       if(stride<1)
         stride=1;
     }
@@ -1308,7 +1329,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   if(config.loadMapFiles) {
     int size[2];
     size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("OrthoMap", &OrthoImaptable);
 #else
@@ -1342,7 +1363,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&OrthoImaptable);
 #else
@@ -1383,7 +1404,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
       if(config.loadMapFiles) {
 	int size[2];
 	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
 	success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable);
 #else
@@ -1409,7 +1430,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
       if(config.dumpMapFiles) {
 	int size[2];
 	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
 	mf->dumpMap(&OrthoHelperImaptable);
 #else
@@ -1458,7 +1479,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   {
     int chunks = (nstates + config.lambdaGrainSize - 1) / config.lambdaGrainSize;
     int nLambda= (nstates/config.lambdaGrainSize);
-    int stride= CkNumPes()/(nOrtho*nOrtho+1); 
+    int stride= config.numPes/(nOrtho*nOrtho+1); 
     if(stride<1)
       stride=1;
 
@@ -1608,7 +1629,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareG;
-    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("GSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("GSMap", &GSImaptable);
 #else
@@ -1642,7 +1663,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareG;
-    MapFile *mf = new MapFile("GSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("GSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&GSImaptable);
 #else
@@ -1664,7 +1685,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareR;
-    MapFile *mf = new MapFile("RSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("RSMap", &RSImaptable);
 #else
@@ -1700,7 +1721,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareR;
-    MapFile *mf = new MapFile("RSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RSImaptable);
 #else
@@ -1824,7 +1845,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 	CkPrintf("Making SF non-EES\n");
 	int *nsend       = new int[nchareG];
 	int **listpe     = new int * [nchareG];
-	int numproc      = CkNumPes();
+	int numproc      = config.numPes;
 	int *gspace_proc = new int [numproc];
    
 	for(int i =0;i<numproc;i++){gspace_proc[i]=0;}
@@ -1995,7 +2016,7 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareRPP;
-    MapFile *mf = new MapFile("RPPMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("RPPMap", &RPPImaptable);
 #else
@@ -2052,7 +2073,7 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareRPP;
-    MapFile *mf = new MapFile("RPPMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RPPImaptable);
 #else
@@ -2106,7 +2127,6 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   // Nuke some procs from the list : reset, nuke, reset if you run out
 
   availGlobR->reset();
-   
   PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
@@ -2151,7 +2171,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
-    MapFile *mf = new MapFile("RhoRSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("RhoRSMap", &RhoRSImaptable);
 #else
@@ -2177,7 +2197,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
-    MapFile *mf = new MapFile("RhoRSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RhoRSImaptable);
 #else
@@ -2202,7 +2222,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoG; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("RhoGSMap", &RhoGSImaptable);
 #else
@@ -2226,7 +2246,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoG; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGSMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RhoGSImaptable);
 #else
@@ -2254,7 +2274,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
       int size[3];
       size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
       size[2] = nchareHartAtmT;
-      MapFile *mf = new MapFile("RhoRHartMap", 3, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+      MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
       success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable);
 #else
@@ -2281,7 +2301,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
       int size[3];
       size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes,
       size[2] = nchareHartAtmT;				  
-      MapFile *mf = new MapFile("RhoRHartMap", 3, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+      MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
       mf->dumpMap(&RhoRHartImaptable);
 #else
@@ -2304,7 +2324,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
-    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable);
 #else
@@ -2337,7 +2357,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGHartMap", 2, size, CkNumPes(), "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RhoGHartImaptable);
 #else

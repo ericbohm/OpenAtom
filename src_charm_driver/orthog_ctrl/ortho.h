@@ -88,6 +88,7 @@
 
 extern MapType2 OrthoImaptable;
 extern CkHashtableT <intdual, int> Orthomaptable;
+extern bool fakeTorus;
 
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
@@ -383,11 +384,18 @@ class OrthoMap : public CkArrayMapTable2 {
     inline int procNum(int, const CkArrayIndex &iIndex)
     {
       int *index=(int *) iIndex.data();
+      int proc;
 #ifdef USE_INT_MAP
-      return(maptable->get(index[0],index[1]));
+      proc=maptable->get(index[0],index[1]);
 #else
-      return(maptable->get(intdual(index[0],index[1])));
+      proc=maptable->get(intdual(index[0],index[1]));
 #endif
+      if(fakeTorus)
+	return(proc%CkNumPes());
+      else
+	return(proc);
+	
+
     }
 };
 
