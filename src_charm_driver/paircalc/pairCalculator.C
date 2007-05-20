@@ -691,6 +691,9 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 
 // create multicast proxies
 void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("     Calc Left symm=%d\n", pcid->Symmetric);
+#endif
   CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
   int s1, s2;

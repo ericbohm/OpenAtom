@@ -30,7 +30,7 @@
 #define PC_FWD_DGEMM_SPLIT 1 
 #define PC_BWD_DGEMM_SPLIT 1  
 // to set split values, use the config parameters: gemmSplitFWk,
-// gemmSplitFWm, etc ... 16 for happier align, 6 good for BG/L?
+// gemmSplitFWm, etc ... 16 for happier align, factor of 6 good for BG/L?
 
 #else
 

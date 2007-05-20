@@ -2538,25 +2538,34 @@ void Config::rangeExit(int param, char *name, int iopt){
       EXIT(1);
     }//endif
 
-    if(gemmSplitFWk > sGrainSize){
+    if(gemmSplitFWk %2 !=0){
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("   gemmSplitFWk %d must not be greater than sGrainSize %d !\n",
-               gemmSplitFWk, sGrainSize);
+       PRINTF("   gemmSplitFWk %d must be an even number !\n",
+               gemmSplitFWk);
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
     }//endif
 
-    if(gemmSplitFWm > sGrainSize){
+    if(gemmSplitOrtho %2 !=0){
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("   gemmSplitFWm %d must not be greater than sGrainSize %d !\n",
+       PRINTF("   gemmSplitOrtho %d must be an even number !\n",
+               gemmSplitOrtho);
+       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       EXIT(1);
+    }//endif
+
+
+    if((gemmSplitFWm %2 !=0) || gemmSplitFWm > sGrainSize){
+       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("   gemmSplitFWm %d must be an even number less than sGrainSize %d !\n",
                gemmSplitFWm, sGrainSize);
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
     }//endif
 
-    if(gemmSplitBW > sGrainSize){
+    if((gemmSplitBW %2 !=0) || gemmSplitBW > sGrainSize){
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("   gemmSplitBW %d must not be greater than sGrainSize %d !\n",
+       PRINTF("   gemmSplitBW %d must be an even number greater than sGrainSize %d !\n",
                gemmSplitBW, sGrainSize);
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
