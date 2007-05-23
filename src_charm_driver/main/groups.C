@@ -263,8 +263,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   double pot_ewd_rs = ftot[3*natm];
   double fmag = 0.0;
   for(i=0,j=0;i<natm;i++,j+=3){
-    atoms[i].fx = ftot[j];
-    atoms[i].fy = ftot[j+1];
+    atoms[i].fx = ftot[j];    atoms[i].fy = ftot[j+1];
     atoms[i].fz = ftot[j+2];
     fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
 #ifdef _CP_DEBUG_ATMS_

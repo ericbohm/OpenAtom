@@ -241,6 +241,7 @@ mainmodule cpaimd {
                 entry void registrationDone(CkReductionMsg *msg);
 	};
 
+	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
 		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
                 entry void recvFromEesGPP(NLFFTMsg *);
@@ -406,6 +407,12 @@ mainmodule cpaimd {
 	group SCalcMap: CkArrayMap {
 		entry SCalcMap(bool);
 	};
+
+	/** 
+	  *  A place to hold the fftw plans or sizes for essl.
+	  *  Preallocated space for ffts some of which retain their data  
+	  *  across entry method calls.  Does no messaging.
+	  */	
 	group FFTcache {
 		entry FFTcache(size2d , int , int , int , 
                    int , int , int , int , int , int , int ,
@@ -428,39 +435,97 @@ mainmodule cpaimd {
                    int ,  int ,  int , int );
 	};
 
+	/** Place to hold the computed structure factor.
+	  * 
+	  */ 
 	group StructFactCache {
 		entry void acceptStructFact(StructFactorMsg *msg);
 
 		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max);
 	};
-        array [3D] StructureFactor {
+
+	// This is what is used if NOT using ees for nonlocal structure factor comp
+        array [3D] StructureFactor { 
 	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
 	        entry void acceptDestination(int nsend, int destinations[nsend]);
          	entry void computeSF(SFDummyMsg *msg);
 		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
 	};
 
+	// various chares use CkLocal to access the atoms:
+	// Rho_RHart RhoGHart StructureFactor RealParticlePlane
+	// ParticlePlane RealSpacePlane GSpacePlane  
+	// EJB: this could perhaps be better implemented in an MSA
 	group AtomsGrp {
 		entry AtomsGrp(int natm, int natm_nl,int len_nhc,
                                int iextended_on,int cp_min_opt,int cp_wave_opt,
                                int isokin_opt,
                                double kT,Atom atoms[natm],AtomNHC atomsNHC[natm]);
-                entry void StartRealspaceForces();
+
+
+	     /** trigger force computation 	
+		* based on real forces available in each processor's chare	
+		* then contribute to global group reduction -> recvContribute
+		*/
+                entry void StartRealspaceForces();  	
+
+	     /*** 
+		* Apply forces to each processor's copy of the atoms.
+		* This is parallelized so that a subset of the atoms
+		* are computed on each processor and their results broadcast
+		* to AtmGroup->acceptAtoms().
+		* Move the atoms each processor is responsible
+                * for. Set various energyGroup members.
+		* contribute to group reduction ->atomsDone
+		*/	
                 entry void recvContribute(CkReductionMsg *);
+
+
+	     /***
+		* Increment the iteration counters in atoms and eesData
+		* call gSpacePlane()->acceptAtoms 
+		* That is done via localbranch to all co-located gSpacePlanes
+		* in the localBarrier scheme.  Used to be via messages.
+		* This permits the new step to advance with the new Psi.
+		*/
                 entry void atomsDone(CkReductionMsg *);
+
+	     /***
+	        * Take packed message of a chunk of the atoms with
+	        * updated positions. Update local copy of atoms.
+		* Update local energyGroup members.
+		* Print atom energies when we have all of them.   		
+		* Do file output of atoms if desired.
+		*/
                 entry void acceptAtoms(AtomMsg *);
 	};
 
+	// The physics configuration, both input, and derived, is kept
+	// here.  This data is effectively readonly.
 	group CPcharmParaInfoGrp {
 		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
 	};
 
+	// The global energies are stored here.
 	group EnergyGroup {
 		entry EnergyGroup();
+		/***
+		   * CP_StateGspacePlane(0,0) calls this to replicate the 
+		   * energies everywhere for consistency and tolerance
+		   * checking.
+		   */
 		entry void updateEnergiesFromGS(EnergyStruct es);
+		/***
+		   * call CP_StateGSpacePlane()->acceptEnergy
+		   * on all co-located gspace chares which allows
+		   * the new step to advance with new psi			
+		   */
                 entry void energyDone(CkReductionMsg *);
 	};
-	
+
+	/** 
+	  *  A place to hold the computed ees planewise data on each proc
+	  */	
 	group eesCache {
 		entry eesCache(int,int,int,int,int,int);
 	};
