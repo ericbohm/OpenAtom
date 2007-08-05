@@ -2414,12 +2414,14 @@ void Config::rangeExit(int param, char *name, int iopt){
 //===================================================================================
 // Code deficiency checks
 
+#ifdef _CUBIC_BOXES_ONLY_
     if(nkf1!=nkf2 || nkf1!=nkf3){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   Only Cubic boxes for now\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
+#endif
 
     if(doublePack!= 1){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

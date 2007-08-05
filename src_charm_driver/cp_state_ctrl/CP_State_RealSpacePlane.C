@@ -118,7 +118,8 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits,
     iplane_ind  = thisIndex.y;
     forwardTimeKeep=_rfortime;
     backwardTimeKeep=_rbacktime;
-    initRealStateSlab(&rs, size, gSpaceUnits, realSpaceUnits, thisIndex.x, thisIndex.y);
+    initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
+                       realSpaceUnits, thisIndex.x, thisIndex.y);
 
     gproxy = gSpacePlaneProxy;
     if (config.useMssInsGP){
@@ -595,7 +596,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
       if(config.prioFFTMsg){
 	  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg) = config.gsifftpriority+thisIndex.x*rs.planeSize[0];
+	  *(int*)CkPriorityPtr(msg) = config.gsifftpriority+thisIndex.x*rs.ngrid_a;
       }//endif
 
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
@@ -666,12 +667,12 @@ void CP_State_RealSpacePlane::printData() {
     sprintf(str, "RSP%dx%d.out", thisIndex.x, thisIndex.y);
     FILE *outfile = fopen(str, "w");
     int ioff = 0;
-    for (int i = 0; i < rs.planeSize[0]; i++) {
-      for (int j = 0; j < rs.planeSize[1]; j++){
+    for (int i = 0; i < rs.ngrid_b; i++) {
+      for (int j = 0; j < rs.ngrid_a; j++){
          fprintf(outfile, "%10.5lf", rs.planeArr[(j+ioff)].getMagSqr());
          fprintf(outfile, "\n");
       }
-      ioff += rs.planeSize[0];
+      ioff += rs.ngrid_a;
     }
     fclose(outfile);
 }

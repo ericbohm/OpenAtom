@@ -121,6 +121,7 @@ class CPcharmParaInfo {
    double vol,dt,tol_norb,tol_cp_min;
    double tol_cp_dyn;
    int fftopt;
+   int kx_max,ky_max,kz_max; 
    int cp_norb_rot_kescal;
    int ndump_frq;
    int istart_typ_cp;
@@ -215,6 +216,9 @@ class CPcharmParaInfo {
      tol_cp_dyn   = s.tol_cp_dyn;
      dt           = s.dt;
      fftopt       = s.fftopt;
+     kx_max       = s.kx_max;
+     ky_max       = s.ky_max;
+     kz_max       = s.kz_max; 
      cp_norb_rot_kescal = s.cp_norb_rot_kescal;
      ndump_frq    = s.ndump_frq;
      istart_typ_cp= s.istart_typ_cp;
@@ -505,7 +509,7 @@ class CPcharmParaInfo {
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
-      p|fftopt;     p|cp_norb_rot_kescal;
+      p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal;
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_min_cg; p|rhoRsubplanes;

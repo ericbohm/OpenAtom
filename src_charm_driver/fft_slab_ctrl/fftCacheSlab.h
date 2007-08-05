@@ -163,9 +163,10 @@ public:
 //==============================================================================
 class RealStateSlab {
 public:
-	size2d planeSize;         // size of the state in Z*X 
 	complex *planeArr;
         double *planeArrR;   //planeArr cast to double
+        int ngrid_a;
+        int ngrid_b;
 	int thisState;    
 	int thisPlane;      
 	int numPlanesToExpect;
@@ -360,7 +361,9 @@ class FFTcache: public Group {
  public:
     //-----------------------------------------------------------
     // FFT-Sizes and Ees method Options
-     size2d planeSize;  
+     int ngrida;
+     int ngridb;
+     int ngridc;
      int ngridaEext;    
      int ngridbEext;
      int ngridcEext;
@@ -417,7 +420,9 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // The constructor 
-     FFTcache(size2d planeSIZE, int _ngridaEext, int _ngridbEext, int _ngridcEext, 
+     FFTcache(size2d planeSIZE, 
+                   int _ngrida, int _ngridb, int _ngridc, 
+                   int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
                    int _ees_NL_on, int _nlines_max, int _nlines_max_rho,
                    int _nchareGState, int _nchareRState,
@@ -536,8 +541,8 @@ class GSlabInfo {
 void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits, 
                     int realSpaceUnits, int s_grain,int iplane_ind,int istate_ind,
                     int len_nhc_cp, int num_nhc_cp,int nck_nhc_cp);
-void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
-                       int realSpaceUnits, int stateIndex, int thisPlane);
+void initRealStateSlab(RealStateSlab *rs, int ngrid_a, int ngrid_b, int ngrid_c,
+                       int gSpaceUnits, int realSpaceUnits, int stateIndex, int thisPlane);
 void initRhoRealSlab(RhoRealSlab *rho_rs, int xdim, int ydim, int zdim,
                      int xdimA, int ydimA, int myIndexX,int myIndexY,
                      int rhoRsubplanes);

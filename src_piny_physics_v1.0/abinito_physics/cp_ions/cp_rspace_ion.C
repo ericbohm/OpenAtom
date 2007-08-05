@@ -38,6 +38,7 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
   double alp_ewd = genewald->alp_ewd;
   double *hmati  = gencell->hmati;
   double *hmat   = gencell->hmat;
+  int    iperd   = gencell->iperd;
   double *q      = atoms->q;
   double *x      = atoms->x;
   double *y      = atoms->y;
@@ -75,15 +76,38 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
      double talp2    = 2.0*alp_ewd*alp_ewd;
      double palp     = p*alp_ewd;
      double hmat_min = 0.5*MIN3(hmat[1],hmat[5],hmat[9]);
+
      for(int iatm = ist; iatm < iend; iatm++){
        for(int jatm = iatm+1; jatm < natm; jatm++){
 
          double dx = x[iatm]-x[jatm];
          double dy = y[iatm]-y[jatm];
          double dz = z[iatm]-z[jatm];
-         dx -= NINT(dx*hmati[1])*hmat[1];
-         dy -= NINT(dy*hmati[5])*hmat[5];
-         dz -= NINT(dz*hmati[9])*hmat[9];
+         if(iperd==3){
+          double da = dx*hmati[1]+dy*hmati[4]+dz*hmati[7];
+          double db = dx*hmati[2]+dy*hmati[5]+dz*hmati[8];
+          double dc = dx*hmati[3]+dy*hmati[6]+dz*hmati[9];
+          da -= NINT(da);
+          db -= NINT(db);
+          dc -= NINT(dc);
+  	  dx  = da*hmat[1]+db*hmat[4]+dc*hmat[7];
+          dy  = da*hmat[2]+db*hmat[5]+dc*hmat[8];
+          dz  = da*hmat[3]+db*hmat[6]+dc*hmat[9];
+	 }//endif
+         if(iperd==2){
+          double da = dx*hmati[1]+dy*hmati[4];
+	  double db = dx*hmati[2]+dy*hmati[5];
+          da -= NINT(da);
+          db -= NINT(db);
+  	  dx  = da*hmat[1]+db*hmat[4];
+          dy  = da*hmat[2]+db*hmat[5];
+          dz  = da*hmat[3]+db*hmat[6];
+	 }//endif
+         if(iperd==1){
+	  double da = dx*hmati[1];
+          da -= NINT(da);
+  	  dx  = da*hmat[1];
+	 }//endif
          double r2 = dx*dx+dy*dy+dz*dz;
          double r  = sqrt(r2);
 

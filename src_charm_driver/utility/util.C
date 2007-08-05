@@ -60,7 +60,10 @@ void make_rho_runs(CPcharmParaInfo *sim){
    double *hmati     = gencell->hmati;
    double ecut4      = 8.0*cpcoeffs_info->ecut; // convert to Ryd extra factor of 2.0
 
-   get_rho_kvectors(ecut4,hmati,&kx,&ky,&kz,&nline_tot,&nPacked,sizeX,sizeY,sizeZ);
+   int ka_max = 2*(sim->kx_max);
+   int kb_max = 2*(sim->ky_max);
+   int kc_max = 2*(sim->kz_max);
+   get_rho_kvectors(ecut4,hmati,&kx,&ky,&kz,&nline_tot,&nPacked,ka_max,kb_max,kc_max);
 
 //===================================================================================
 // Reorder the kvectors to produce better balance for the lines : 
@@ -92,7 +95,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     ic++;
     if(ic!=nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Toasty Line Flip-lines!\n");
+      CkPrintf("Toasty Rho Line Flip-lines!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -105,6 +108,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
     int nz          = sim->sizeZ;
     int nx_ext      = sim->ngrid_eext_a;
     int ny_ext      = sim->ngrid_eext_b;
+    int nz_ext      = sim->ngrid_eext_c;
+
     int *kxt        = new int[nPacked];
     int *kyt        = new int[nPacked];
     int *kzt        = new int[nPacked];
@@ -148,7 +153,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
     }//endfor
     if(jc!=nPacked)  {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Toasty Line Flip-pts!\n");  
+      CkPrintf("Toasty Rho Line Flip-pts!\n");  
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -190,7 +195,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
     if(ic!=nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Toasty Line Flip-lines.b!\n");
+      CkPrintf("Toasty Line Rho Flip-lines.b!\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
@@ -209,8 +214,13 @@ void make_rho_runs(CPcharmParaInfo *sim){
     if(curr_z<0){curr_z+=nz;}
     int tmpz           = curr_z;
     int nline_tot_now  = 1;
-    CkVec<RunDescriptor> runs;
 
+    CkVec<RunDescriptor> runs;
+ 
+    if(kz[0]>=0){ // add neg half-line of size 0
+       runs.push_back(RunDescriptor(curr_x,curr_y,0,run_length_sum,0,1,nz));
+       nrun_tot      +=1;
+    }//endif
     for(int pNo=1;pNo<nPacked;pNo++) {
       int x = kx[pNo];
       int y = ky[pNo];
@@ -231,23 +241,28 @@ void make_rho_runs(CPcharmParaInfo *sim){
         //            for a line with only a 0 add a zero length descriptor
         //            to represent the missing negative part of the line.
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
-        nrun_tot      +=1;
+        nrun_tot       +=1;
         run_length_sum += run_length;
+        if((curr_x!=x || curr_y!=y) && kz[pNo-1]<0){ // add pos half-line of size 0
+          runs.push_back(RunDescriptor(curr_x,curr_y,0,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+	}//endif
+        if((curr_x!=x || curr_y!=y) && kz[pNo]>=0){ // add neg half-line of size 0
+          runs.push_back(RunDescriptor(x,y,0,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+	}//endif
         curr_x          = x;
         curr_y          = y;
         curr_z          = z;
         tmpz            = z;
         run_length      = 1;
-        if(kz[pNo]==0 && kz[(pNo-1)]>=0){ // test the new line to see if it is of length 1
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
-          nrun_tot      +=1;
-	}//endif
       }//endif
       if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
         nline_tot_now++;
         if( (nrun_tot-1)/2 != nline_tot_now-1){
+          CkPrintf("\n");
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	  CkPrintf("Broken Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
+	  CkPrintf("Broken Rho Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
 		   kx[pNo],ky[pNo],kz[pNo],kx[(pNo-1)],ky[(pNo-1)],kz[(pNo-1)],
                    nrun_tot-1,nline_tot_now-1);
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -261,7 +276,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
     if(run_length_sum!=nPacked){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("The rundescriptor didn't assign all pts to rho runs \n"); 
+       CkPrintf("The rho rundescriptor didn't assign all pts to rho runs \n"); 
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
@@ -287,19 +302,23 @@ void make_rho_runs(CPcharmParaInfo *sim){
 	CkPrintf("or you will not be a happy camper :\n");
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
-      }//endfor 
-      if(Desi1->z!=0 || Desi1->length == 0){
-        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("The rho rundescriptor MUST have 2nd z ==0 and len>0\n");
-        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkExit(); 
-      }
+      }//endif
       if(Desi->z==0 && Desi->length != 0){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("The rho rundescriptor with 1st z == 0 must have 0 lngth\n");
+        CkPrintf("%d %d %d : %d %d %d\n",Desi->x,Desi->y,Desi->z,
+		                         Desi1->x,Desi1->y,Desi1->z);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
-      }
+      }//endif
+      if(Desi1->z<0 || (Desi->z<=nz/2 && Desi->length != 0)){
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkPrintf("The rho rundescriptor MUST have 1st z <=0 and 2nd >=0\n");
+        CkPrintf("%d %d %d : %d %d %d\n",Desi->x,Desi->y,Desi->z,
+		                         Desi1->x,Desi1->y,Desi1->z);
+        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        CkExit(); 
+      }//endif
     }//endfor
 
 //===================================================================================
@@ -748,19 +767,19 @@ void make_rho_runs(CPcharmParaInfo *sim){
 
 void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
                       int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
-                      int sizeX, int sizeY, int sizeZ)
+                      int ka_max, int kb_max, int kc_max)
 
 //============================================================================
   {//begin routine
 //============================================================================
-// count the k-vectors
-
+// count the k-vectors : preserve nice symmetry for non-cubic boxes even
+//                       though you need more kvectors   
+ 
+  int iii;
   double tpi  = 2.0*M_PI;
-  int ka_max  = sizeX/2-1;
-  int kb_max  = sizeY/2-1;
-  int kc_max  = sizeZ/2-1;
 
   int nPacked = 0;
+  int nPacked_np = 0;
   for(int ka=0;ka<=ka_max;ka++){
     for(int kb=-kb_max;kb<=kb_max;kb++){
       for(int kc=-kc_max;kc<=kc_max;kc++){
@@ -769,9 +788,16 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
         double gz = tpi*(ka*hmati[7] + kb*hmati[8] + kc*hmati[9]);
         double g2 = gx*gx+gy*gy+gz*gz;
         if(g2<=ecut4){nPacked++;}
-      }//endfor
-    }//endfor
-  }//endfor
+        if(g2<=ecut4){
+          nPacked_np++;
+          if(ka==0 && kb<0){nPacked_np--;}
+          if(ka==0 && kb==0 && kc<=0){nPacked_np--;}
+        }
+      }//endfor:kc
+    }//endfor:kb
+  }//endfor:ka
+
+  CkPrintf("Rho kvectors perfect sphere %d : %d %d %d\n",nPacked_np,ka_max,kb_max,kc_max);
 
 //============================================================================
 // fill the k-vectors
@@ -783,19 +809,19 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
   int ic = 0;
   for(int ka=0;ka<=ka_max;ka++){
     for(int kb=-kb_max;kb<=kb_max;kb++){
-     for(int kc=-kc_max;kc<=kc_max;kc++){
-       double gx = tpi*(ka*hmati[1] + kb*hmati[2] + kc*hmati[3]);
-       double gy = tpi*(ka*hmati[4] + kb*hmati[5] + kc*hmati[6]);
-       double gz = tpi*(ka*hmati[7] + kb*hmati[8] + kc*hmati[9]);
-       double g2 = gx*gx+gy*gy+gz*gz;
-       if(g2<=ecut4){
-         kx[ic]=ka;
-         ky[ic]=kb;
-         kz[ic]=kc;
-         ic++;
-       }//endif
-     }//endfor
-   }//endfor
+      for(int kc=-kc_max;kc<=kc_max;kc++){
+        double gx = tpi*(ka*hmati[1] + kb*hmati[2] + kc*hmati[3]);
+        double gy = tpi*(ka*hmati[4] + kb*hmati[5] + kc*hmati[6]);
+        double gz = tpi*(ka*hmati[7] + kb*hmati[8] + kc*hmati[9]);
+        double g2 = gx*gx+gy*gy+gz*gz;
+        if(g2<=ecut4){
+          kx[ic]=ka;
+          ky[ic]=kb;
+          kz[ic]=kc;
+          ic++;
+	}/*endif*/
+      }//endfor
+    }//endfor
  }//endfor
 
 //============================================================================
@@ -885,6 +911,11 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
     if(curr_z<0){curr_z+=nz;}
     int tmpz           = curr_z;
     int nline_tot_now  = 1;
+
+    if(kz[0]>=0){ // add neg half-line of size 0
+      runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
+      nrun_tot      +=1;
+    }//endif
  
     for(int pNo=1;pNo<nPacked;pNo++) {
       int x = kx[pNo];
@@ -908,21 +939,26 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
         runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
         nrun_tot      +=1;
         run_length_sum += run_length;
+        if((curr_x!=x || curr_y!=y) && kz[pNo-1]<0){ // add pos half-line of size 0
+          runs.push_back(RunDescriptor(curr_x,curr_y,0,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+	}//endif
+        if((curr_x!=x || curr_y!=y) && kz[pNo]>=0){ // add neg half-line of size 0
+          runs.push_back(RunDescriptor(x,y,0,run_length_sum,0,1,nz));
+          nrun_tot      +=1;
+
+	}//endif
         curr_x          = x;
         curr_y          = y;
         curr_z          = z;
         tmpz            = z;
         run_length      = 1;
-        if(kz[pNo]==0 && kz[(pNo-1)]>=0){// test the new line to see if it of length 0
-          runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,0,1,nz));
-          nrun_tot      +=1;
-	}//endif
       }//endif
       if(kx[pNo]!=kx[(pNo-1)] || ky[pNo]!=ky[(pNo-1)] ){
         nline_tot_now++;
         if( (nrun_tot-1)/2 != nline_tot_now-1){
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	  CkPrintf("Broken Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
+	  CkPrintf("Broken State Run Desscriptor : %d %d %d : %d %d %d: %d %d\n",
 		   kx[pNo],ky[pNo],kz[pNo],kx[(pNo-1)],ky[(pNo-1)],kz[(pNo-1)],
                    nrun_tot-1,nline_tot_now-1);
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -936,14 +972,14 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 
     if(run_length_sum!=nPacked){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("The rundescriptor didn't assign all pts to runs %s\n",fromFile); 
+       CkPrintf("The state rundescriptor didn't assign all pts to runs %s\n",fromFile); 
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
 
     if((nrun_tot %2)!=0 || nrun_tot != 2*nline_tot){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("The rundescriptor MUST find an even number of half-lines\n");
+      CkPrintf("The state rundescriptor MUST find an even number of half-lines\n");
       CkPrintf("The rundescriptor MUST find the correct number of lines\n");
       CkPrintf("%d %d %d %d %s\n",nrun_tot,nrun_tot/2,nline_tot,
                                   nline_tot_now,fromFile);
@@ -956,23 +992,27 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
       RunDescriptor *Desi1 = &runs[(i+1)];
       if( (Desi->x != Desi1->x) || (Desi->y != Desi1->y) ){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("The rundescriptor MUST pair up the half-lines\n");
+        CkPrintf("The state rundescriptor MUST pair up the half-lines\n");
         CkPrintf("or you will not be a happy camper : %s\n",fromFile);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
-      }//endfor
+      }//endif
       if(Desi->z==0 && Desi->length != 0){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("The rundescriptor with 1st z == 0 must have 0 lngth\n");
+        CkPrintf("The state rundescriptor with 1st z == 0 must have 0 lngth\n");
+        CkPrintf("%d %d %d : %d %d %d\n",Desi->x,Desi->y,Desi->z,
+		                         Desi1->x,Desi1->y,Desi1->z);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
-      }
-      if(Desi1->z!=0 || Desi1->length == 0){
+      }//endif
+      if(Desi1->z<0 || (Desi->z<=nz/2 && Desi->length != 0)){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-        CkPrintf("The rundescriptor MUST have 2nd z == 0\n");
+        CkPrintf("The state rundescriptor MUST have 1st z <=0 and 2nd >=0\n");
+        CkPrintf("%d %d %d : %d %d %d\n",Desi->x,Desi->y,Desi->z,
+		                         Desi1->x,Desi1->y,Desi1->z);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit(); 
-      }
+      }//endif
     }//endfor
 
 //===================================================================================
@@ -998,7 +1038,7 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 
     if(ic!=nline_tot){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("Incorrect number of lines : %s\n",fromFile);
+       CkPrintf("Incorrect number of (state) lines : %s\n",fromFile);
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
@@ -1561,6 +1601,36 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkPrintf("Mismatch in allowed gspace chare arrays %d %d %d\n",
              mychareG,nchareG,config.nchareG);
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+    }//endif
+
+    int kx_min = kx[0];
+    int kx_max = kx[0];
+    int ky_min = ky[0];
+    int ky_max = ky[0];
+    int kz_min = kz[0];
+    int kz_max = kz[0];
+    for(int i = 1;i<numData;i++){
+      kx_min = (kx_min <= kx[i] ? kx_min : kx[i]);
+      ky_min = (ky_min <= ky[i] ? ky_min : ky[i]);
+      kz_min = (kz_min <= kz[i] ? kz_min : kz[i]);
+      kx_max = (kx_max >= kx[i] ? kx_max : kx[i]);
+      ky_max = (ky_max >= ky[i] ? ky_max : ky[i]);
+      kz_max = (kz_max >= kz[i] ? kz_max : kz[i]);
+    }//endfor
+    kx_max = (kx_max >= -kx_min ? kx_max : -kx_min);
+    ky_max = (ky_max >= -ky_min ? ky_max : -ky_min);
+    kz_max = (kz_max >= -kz_min ? kz_max : -kz_min);
+
+    sim->kx_max = kx_max;
+    sim->ky_max = ky_max;
+    sim->kz_max = kz_max;
+
+    if(2*kx_max >= sizeX/2 || 2*ky_max >= sizeY/2 || 2*kz_max >= sizeZ/2){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Bad FFT sizes : (%d,%d), (%d,%d), (%d,%d)\n",
+                 2*kx_max,sizeX/2,2*ky_max,sizeY/2,2*kz_max,sizeZ/2);
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif

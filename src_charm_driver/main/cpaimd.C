@@ -1711,7 +1711,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts;
   realSpaceOpts.setMap(rsMap);
-  size2d sizeRealPlane(sizeYZ[1], sizeX);
+  size2d sizeRealPlane(sizeYZ[0], sizeX);
   int rforward=keeperRegister(string("RealSpaceForward"));
   int rbackward=keeperRegister(string("RealSpaceBackward"));
 
@@ -1767,6 +1767,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
                          numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
 
   fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
+   		     sim->sizeX,sim->sizeY,sim->sizeZ,
                      ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
                      ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
                      sim->nlines_max, sim->nlines_max_rho,

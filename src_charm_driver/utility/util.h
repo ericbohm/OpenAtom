@@ -162,7 +162,7 @@ void make_rho_runs(CPcharmParaInfo *sim);
 
 void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret, 
                       int **kz_ret, int *nline_tot_ret, int *nPacked_ret,
-                      int sizeX, int sizeY, int sizeZ);
+                      int ka_max, int kb_max, int kc_max);
 //===================================================================================
 
 

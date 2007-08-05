@@ -926,6 +926,28 @@ void countkvec3d_sm(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
   }
   *nktot = icount;
 
+  icount = 0;
+  for(ka=0;ka<=kmax_cp[1];ka++){
+    aka = (double) ka;
+    kbmin = -kmax_cp[2];
+    if(ka==0){kbmin=0;}
+    for(kb=kbmin;kb<=kmax_cp[2];kb++){
+      akb = (double) kb;
+      kcmin = -kmax_cp[3];
+      if(ka==0&&kb==0){kcmin=1;}
+      for(kc=kcmin;kc<=kmax_cp[3];kc++){
+	akc = (double) kc;
+        xk = (aka * hmatik[1] + akb * hmatik[2] + akc * hmatik[3]) * tpi;
+        yk = (aka * hmatik[4] + akb * hmatik[5] + akc * hmatik[6]) * tpi;
+        zk = (aka * hmatik[7] + akb * hmatik[8] + akc * hmatik[9]) * tpi;
+	tryme = (xk * xk + yk * yk + zk * zk) * .5;
+	if (tryme <= ecut) {icount++;}
+      }//endfor
+    }//endfor
+  }//endfor
+
+  PRINTF("Small kvector counts : %d versus %d\n",nktot[0],icount);
+
 /*--------------------------------------------------------------------------*/
   } /* countkvec3d_sm */
 /*==========================================================================*/

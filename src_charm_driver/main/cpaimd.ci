@@ -414,7 +414,7 @@ mainmodule cpaimd {
 	  *  across entry method calls.  Does no messaging.
 	  */	
 	group FFTcache {
-		entry FFTcache(size2d , int , int , int , 
+		entry FFTcache(size2d , int , int , int , int , int , int , 
                    int , int , int , int , int , int , int ,
                    int nchareGState, int nchareRState,
                    int nchareGNL,    int nchareRNL, 

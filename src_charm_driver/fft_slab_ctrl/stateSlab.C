@@ -383,8 +383,8 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
 //==============================================================================
 /* This gets called at the end of the CP_State_RealSpacePlane constructor */
 //==============================================================================
-void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits, 
-                       int realSpaceUnits, int stateIndex, int planeIndex)
+void initRealStateSlab(RealStateSlab *rs, int ngrid_a,int ngrid_b, int ngrid_c,
+                       int gSpaceUnits, int realSpaceUnits, int stateIndex, int planeIndex)
 //==============================================================================
    {//begin routine
 //==============================================================================
@@ -402,13 +402,12 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
      CkExit();
    }//endif
 
-   rs->planeSize  = planeSize;         // FFTSize Y and Z, sizeX is global
-   rs->thisState  = stateIndex;        // my state (I)
-   rs->thisPlane  = planeIndex;        // my plane (z)
-   rs->nsize      = planeSize[0]*sizeX; // when fft is completed
+   rs->thisState  = stateIndex;                // my state (I)
+   rs->thisPlane  = planeIndex;                // my plane (z)
+   rs->nsize      = ngrid_a*ngrid_b;             // when fft is completed
    rs->numPlanesToExpect = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-   int rsize_a    = planeSize[0]*(planeSize[1]/2+1);
-   int rsize_b    = planeSize[1]*(planeSize[0]/2+1);
+   int rsize_a    = ngrid_a*(ngrid_b/2+1);
+   int rsize_b    = ngrid_b*(ngrid_a/2+1);
    rs->rsize      = (rsize_a > rsize_b ? rsize_a : rsize_b);
 
    if(config.doublePack)  {
@@ -416,8 +415,12 @@ void initRealStateSlab(RealStateSlab *rs, size2d planeSize, int gSpaceUnits,
    }else{
       rs->size = rs->nsize;
    }//endif
+
    rs->planeArr  = (complex *) fftw_malloc(rs->size * sizeof(complex));
    rs->planeArrR = reinterpret_cast<double*> (rs->planeArr);
+
+   rs->ngrid_a = ngrid_a;
+   rs->ngrid_b = ngrid_b;
 
 //==============================================================================    
    }//end routine
@@ -441,7 +444,8 @@ RealStateSlab::~RealStateSlab() {
 //==============================================================================
 void RealStateSlab::pup(PUP::er &p) {
 //==============================================================================
-  p|planeSize;
+  p|ngrid_a;
+  p|ngrid_b;
   p|size;
   if (p.isUnpacking()) {
       planeArr = (complex *) fftw_malloc(size*sizeof(complex));

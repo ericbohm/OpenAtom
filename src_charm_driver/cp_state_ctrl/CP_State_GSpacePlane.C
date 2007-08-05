@@ -4353,8 +4353,14 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 
    eke/=2.0;
    eke2/=2.0;
-   CkPrintf("%.12g %.12g %.12g %.12g: %d : true eke\n",eke,eke2,norm,norm2,index);
 
+   if(index==0){
+     CkPrintf("hmati :");
+     for(int i=1;i<=9;i++){CkPrintf(" %g",hmati[i]);}
+     CkPrintf("\n");
+   }/*endif*/
+
+   CkPrintf("%.12g %.12g %.12g %.12g: %d : eke\n",eke,eke2,norm,norm2,index);
 //-----------------------------------------------------------------------------
    }// end routine : testeke
 //==============================================================================
