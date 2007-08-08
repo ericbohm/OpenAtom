@@ -31,6 +31,8 @@ class PhysicsParamTransfer{
   static void get_Sfgrp_params(int ,int ,int ,int *, int *, int *);
   static void get_Sfgrp_max(int , int, int *);
 
+  static void fetch_state_kvecs(int *,int *, int *,int,int);
+
 };
 //==========================================================================
 

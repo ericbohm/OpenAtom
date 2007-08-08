@@ -522,7 +522,8 @@ void setkvec3d(int nktot,double ecut,int *kmaxv,double *hmatik,
 
 void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
                   int *kastore, int *kbstore, int *kcstore, 
-		  int *ibreak1, int *ibreak2, double *gmin, double *gmax)
+		  int *ibreak1, int *ibreak2, double *gmin, double *gmax, 
+                  int iopt)
 
 /*==========================================================================*/
 /*       Begin routine */
@@ -542,10 +543,12 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
 /*==========================================================================*/
 /* SETUP THE KVECTORS */
   
-  for(i=1;i<=nktot;i++){
+  if(iopt==1){
+    for(i=1;i<=nktot;i++){
       ibreak1[i] = 0;
       ibreak2[i] = 0;
-  }
+    }//endfor
+  }//endif
 
   *gmin = 10000.0;
   *gmax = .0;
@@ -642,15 +645,12 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
 	kastore[icount] = ka;
 	kbstore[icount] = kb;
 	kcstore[icount] = kc;
-	if (kc == kcmin) {
-	  ibreak1[icount] = 1;
-	}
-	if (kc < kcmax) {
-	  ibreak2[icount] = 1;
-	}
-      }
-    }
-  }
+	if (kc == kcmin && iopt==1) {ibreak1[icount] = 1;}
+	if (kc < kcmax  && iopt==1) {ibreak2[icount] = 1;}
+      }//endfor:kc
+    }//endfor:kb
+  }//endfor:ka
+
   if(nktot!=icount){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("Mismatch number of small kvectors\n");
@@ -659,7 +659,7 @@ void setkvec3d_sm(int nktot,double ecut,int *kmax_cp,double *hmatik,
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        FFLUSH(stdout);
        EXIT(1);
-  }
+  }//endif
 
   ++icount;
   kastore[icount] = 0;

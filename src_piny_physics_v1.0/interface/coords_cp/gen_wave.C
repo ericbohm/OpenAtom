@@ -13,51 +13,60 @@
 #include "../proto_defs/proto_handle_entry.h"
 
 #include "../class_defs/CP/class_gen_wave.h"
-#include "../proto_defs/proto_gen_wave.h"
-//========================================================================
-
-
 
 //========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
 //========================================================================
-GEN_WAVE::GEN_WAVE()
-{
-   int natm_typ_cp = 0;
-   int nsplin      = 0;
-   double dg       = 0.0;
-
-   int *iatm_atm_typ_cp = NULL;  // natm_typ_cp
-   int *iatm_state_str  = NULL;  // nab_initio
-   int *iatm_state_end  = NULL;  // nab_initio
-
-   int *n_ang           = NULL;  // natm_typ_cp
-   int *nstate_up_atm   = NULL;  // natm_typ_cp
-   int *nstate_dn_atm   = NULL;  // natm_typ_cp
-
-   double ***gpsi0   = NULL;     // natm_typ_cp x 3 x nsplin
-   double ***gpsi1   = NULL;
-   double ***gpsi2   = NULL;
-   double ***gpsi3   = NULL;
-   double **gpsi_now = NULL;    // natm_typ_cp x 3
-   double *gpsi00    = NULL;    // natm_typ_cp
-
-}// end routine
-//========================================================================
-
-
+// Simple constructor
 //========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //========================================================================
-GEN_WAVE::~GEN_WAVE( )
-{
+GEN_WAVE::GEN_WAVE(){
+
+   natm_typ_cp = 0;
+   nsplin      = 0;
+   cp_lda      = 0;
+   cp_lsda     = 0;
+
+   dg          = 0.0;
+   gmin        = 0.0;
+   gmax        = 0.0;
+
+   n_ang           = NULL;  // natm_typ_cp
+   iatm_atm_typ_cp = NULL;  // nab_initio
+   iatm_state_str  = NULL;  // nab_initio
+   iatm_state_end  = NULL;  // nab_initio
+
+
+   gpsi0           = NULL;     // natm_typ_cp x 3 x nsplin
+   gpsi1           = NULL;
+   gpsi2           = NULL;
+   gpsi3           = NULL;
+   gpsi_now        = NULL;    // natm_typ_cp x 3
+   gpsi00          = NULL;    // natm_typ_cp
+
+//========================================================================
+   }// end routine
+//========================================================================
+
+
+//========================================================================
+// Simple destructor
+//========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//========================================================================
+GEN_WAVE::~GEN_WAVE( ){
 
   if(natm_typ_cp>0){
 
-    cfree(&(iatm_atm_typ_cp[1]),"gen_wave_destructor");
     cfree(&(n_ang[1]),"gen_wave_destructor");
-    cfree(&(nstate_up_atm[1]),"gen_wave_destructor");
-    cfree(&(nstate_dn_atm[1]),"gen_wave_destructor");
+    cfree(&(iatm_atm_typ_cp[1]),"gen_wave_destructor");
+    cfree(&(iatm_state_str[1]),"gen_wave_destructor");
+    cfree(&(iatm_state_end[1]),"gen_wave_destructor");
+
+    cfree(&(gpsi00[1]),"gen_wave_destructor");
+    cfree_mat(gpsi_now,1,natm_typ_cp,1,3);
 
     int i,j;
     for(i=1; i <= natm_typ_cp; i++){
@@ -77,78 +86,72 @@ GEN_WAVE::~GEN_WAVE( )
     cfree(&(gpsi2[1]),"gen_wave_destructor");
     cfree(&(gpsi3[1]),"gen_wave_destructor");
 
-    cfree_mat(gpsi_now,1,natm_typ_cp,1,3);
-    cfree(&(gpsi00[1]),"gen_wave_destructor");
-
   }//endif
 
- } // end routine destructor
+//========================================================================
+  } // end routine destructor
 //========================================================================
 
 
+//========================================================================
+// Initialize the gen_wave data structures
 //========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //========================================================================
-
-void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
-                           CPCOEFFS_INFO *cpcoeffs_info,
-                           int nsplin /* from cppseudo->nsplin_g*/,
-                           double gmin,double gmax, /*from cpewald->gmin gmax*/
-                           MDATOM_MAPS *mdatom_maps,NAME *vps_name)
-
+void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_info,
+                            int nsplin_in, double gmin_in,double gmax_in, 
+			    int *iatm_atm_typ, int natm_typ,NAME *vps_name,
+                            int cp_lda_in, int cp_lsda_in)
 //========================================================================
-{ //begin routine
+  { //begin routine
 //========================================================================
 //             Local variable declarations                               
   
   int i,j,k,iatm;
   int ind1,ind2,n;
-
-  int    nab_initio   = cpatom_maps->nab_initio;
-  int   *cp_atm_lst   = cpatom_maps->cp_atm_lst;
-  int   *cp_vlnc_up   = cpatom_maps->cp_vlnc_up;
-  int   *cp_vlnc_dn   = cpatom_maps->cp_vlnc_dn;
-
-  int nstate_up       = cpcoeffs_info->nstate_up;
-  int nstate_dn       = cpcoeffs_info->nstate_dn; 
-
-  int cp_lsda         = 0;
-  int cp_lda          = 1;
-
-//----------------------------------------------------------------------
-//----------------------------------------------------------------------
-// Occupation Number Variables 
-
-  double *occ_dn      = cpcoeffs_info->occ_dn;
-  double *occ_up      = cpcoeffs_info->occ_up;
-  int iocc;
-
-//----------------------------------------------------------------------
-// Atom label Variables 
-
   int iflag;
 
-  int *iatm_atm_typ   = mdatom_maps->iatm_atm_typ;
-  int natm_typ        = mdatom_maps->natm_typ;
+  nsplin            = nsplin_in;
+  gmin              = gmin_in;
+  gmax              = gmax_in;
+  cp_lda            = cp_lda_in;
+  cp_lsda           = cp_lsda_in;
+  nab_initio        = cpatom_maps->nab_initio;
+
+  int   *cp_atm_lst = cpatom_maps->cp_atm_lst;
+  int   *cp_vlnc_up = cpatom_maps->cp_vlnc_up;
+  int   *cp_vlnc_dn = cpatom_maps->cp_vlnc_dn;
+
+  int nstate_up     = cpcoeffs_info->nstate_up;
+  int nstate_dn     = cpcoeffs_info->nstate_dn; 
+
+  double *g;
 
 //====================================================================
 
-  CkPrintf("\n-----------------------------------------\n");
-  CkPrintf("GEN_WAVE_INIT \n");
-  CkPrintf("-----------------------------------------\n");
+  PRINTF("\n");
+  PRINT_LINE_STAR
+  PRINTF("Initializing GenWave\n");
+  PRINT_LINE_DASH;PRINTF("\n");
 
 //=======================================================================
 // Check Sum of cp_valences is equal to the number of states in set file  
-//=======================================================================
 
- if( nab_initio == 0){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("There are no ab initio atoms \n");
-     CkPrintf("Please check whether you should have assigned some atoms \n");
-     CkPrintf("to be ab initio.  To proceed would be pointless.\n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
- }
+  if(cp_lda!=1 && cp_lsda !=0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("GenWave does not support lsda\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
+
+  if(nab_initio == 0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("There are no ab initio atoms \n");
+     PRINTF("Please check whether you should have assigned some atoms \n");
+     PRINTF("to be ab initio.  To proceed would be pointless.\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
 
   int  nstate_up_gw = 0;
   int  nstate_dn_gw = 0;
@@ -158,45 +161,44 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
    nstate_dn_gw += cp_vlnc_dn[iatm];
   }//endfor
 
-
   if( nstate_up_gw != nstate_up ){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("The number of states up not equal to what is in the set file\n");
-     CkPrintf("%d here and %d from the set file\n",nstate_up_gw, nstate_up);
-     CkPrintf("Please check the values of cp_valence_up in the parm files\n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("The number of states up not equal to what is in the set file\n");
+     PRINTF("%d here and %d from the set file\n",nstate_up_gw, nstate_up);
+     PRINTF("Please check the values of cp_valence_up in the parm files\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
   }//endif
 
   if( nstate_dn_gw != nstate_dn  && cp_lsda==1){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("The number of states dn not equal to what is in the set file\n");
-     CkPrintf("%d here and %d from the set file\n",nstate_dn_gw, nstate_dn);
-     CkPrintf("Please check the values of cp_valence_dn in the parm files\n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("The number of states dn not equal to what is in the set file\n");
+     PRINTF("%d here and %d from the set file\n",nstate_dn_gw, nstate_dn);
+     PRINTF("Please check the values of cp_valence_dn in the parm files\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
   }//endif
 
   if( nstate_dn_gw != nstate_dn  && cp_lda==1){
-     CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
-     CkPrintf("The number of states dn not equal to value in the set file.\n");
-     CkPrintf("This is OK only if you have some unit occupation numbers. \n");
-     CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
-     CkExit();
+     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+     PRINTF("The number of states dn not equal to value in the set file.\n");
+     PRINTF("This is OK only if you have some unit occupation numbers. \n");
+     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+     EXIT(1);
   }//endif
 
   if( nstate_dn_gw > nstate_dn  && cp_lda==1){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("The number of dn nstates is assumed <= up nstates \n");
-     CkPrintf("in gen_wave under LDA. Since you already have the warning\n" );
-     CkPrintf("about occupation numbers and states what you have to do is\n" );
-     CkPrintf("check the values of cp_valence_(dn/up) in the parm files\n");
-     CkPrintf("to ensure that the up states get the extra occupation \n");
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("The number of dn nstates is assumed <= up nstates \n");
+     PRINTF("in gen_wave under LDA. Since you already have the warning\n" );
+     PRINTF("about occupation numbers and states what you have to do is\n" );
+     PRINTF("check the values of cp_valence_(dn/up) in the parm files\n");
+     PRINTF("to ensure that the up states get the extra occupation \n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
   }//endif
 
-//-----------------------------------------------------------------
+//=======================================================================
 // check that the value assigned for cp_valence_up is same for 
 // for all atoms of the same atm_typ                         
 
@@ -206,81 +208,65 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
      ind2 = cp_atm_lst[j];
      if( iatm_atm_typ[ind2] == iatm_atm_typ[ind1] &&
          cp_vlnc_up[ind2] != cp_vlnc_up[ind1]){
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkPrintf("There are two different assigned values for    \n");
-     CkPrintf("cp_valence_up for the same atom type           \n");
-     CkPrintf("atom numbers %d and %d \n",ind1,ind2);
-     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-     CkExit();
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("There are two different assigned values for    \n");
+     PRINTF("cp_valence_up for the same atom type           \n");
+     PRINTF("atom numbers %d and %d \n",ind1,ind2);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
      }//endif
 
    if( cp_lsda == 1 && iatm_atm_typ[ind2] == iatm_atm_typ[ind1] &&
        cp_vlnc_dn[ind2] != cp_vlnc_dn[ind1]){
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("There are two different assigned values for    \n");
-       CkPrintf("cp_valence_dn for the same atom type           \n");
-       CkPrintf("atom numbers %d and %d \n",ind1,ind2);
-       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkExit();
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("There are two different assigned values for    \n");
+       PRINTF("cp_valence_dn for the same atom type           \n");
+       PRINTF("atom numbers %d and %d \n",ind1,ind2);
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       EXIT(1);
       }//endif
     }//endfor
   }//endfor
 
 //=======================================================================
-// Create number of ab initio atom types natm_typ_cp and make list       
-//=======================================================================
+// Count the number CP atom types
 
-   natm_typ_cp = 1;
-
-   for(i=2; i<= nab_initio; i++){
-     iflag = 0;
-     ind1 = cp_atm_lst[i];
+  natm_typ_cp = 1;
+  for(i=2; i<= nab_initio; i++){
+    iflag = 0;
+    ind1 = cp_atm_lst[i];
     for(j=i-1; j >= 1; j--){
-     ind2 = cp_atm_lst[j];
-     if( iatm_atm_typ[ind2] == iatm_atm_typ[ind1] ) {
-       iflag = 0;break;
-     }else{
-      iflag = 1;
-     }//endif
+      ind2 = cp_atm_lst[j];
+      if( iatm_atm_typ[ind2] == iatm_atm_typ[ind1] ) {
+        iflag = 0;break;
+      }else{
+        iflag = 1;
+      }//endif
     }//endfor
-     natm_typ_cp += iflag;
-   }//endfor
+    natm_typ_cp += iflag;
+  }//endfor
 
-//-----------------------------------------------------------------------
-// malloc list iatm_atm_typ_cp holds index for what cp_atm_typ this is   
-// malloc fname_ps length natm_typ_cp  holds names of pseud files        
-
+//=======================================================================
+// malloc 
    
-   int *iatm_atm_typ_cp = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_atm_typ_cp = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_state_str  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_state_end  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
 
-   int *iatm_state_str = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  NAME *fname_ps = (NAME *) cmalloc(natm_typ_cp*sizeof(NAME),"gen_wave_init")-1;
 
-   int *iatm_state_end = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
-
-   NAME *fname_ps = (NAME *) cmalloc(natm_typ_cp*sizeof(NAME),"gen_wave_init")-1;
-
-   nstate_up_atm = (int *) cmalloc(natm_typ_cp*sizeof(int ),"gen_wave_init") -1;
-   nstate_dn_atm = (int *) cmalloc(natm_typ_cp*sizeof(int ),"gen_wave_init") -1;
-
-//-----------------------------------------------------------------------
-// Assign cp_atm_types  and values for nstate_up_atm nstate_dn_atm       
-
-// Assign first element in arrays 
-
-  iatm_atm_typ_cp[1] = 1;
-
-  strcpy(fname_ps[1],vps_name[iatm_atm_typ[cp_atm_lst[1]]]);
-
-  nstate_up_atm[1] = cp_vlnc_up[cp_atm_lst[1]];
-  nstate_dn_atm[1] = cp_vlnc_dn[cp_atm_lst[1]];
+//=======================================================================
+// Assign cp_atm_types 
 
   int tag = 1;  // used as counter for unique cp atom types 
+  iatm_atm_typ_cp[1] = 1;
+  strcpy(fname_ps[1],vps_name[iatm_atm_typ[cp_atm_lst[1]]]);
 
   for(i=2; i<= nab_initio; i++){
     iflag = 0;
     ind1 = cp_atm_lst[i];
-   for(j=i-1; j >= 1; j--){
-    ind2 = cp_atm_lst[j];
+    for(j=i-1; j >= 1; j--){
+      ind2 = cp_atm_lst[j];
       if( iatm_atm_typ[ind1] == iatm_atm_typ[ind2] ){
         iatm_atm_typ_cp[i] = iatm_atm_typ_cp[j];
         iflag = 0;
@@ -288,154 +274,145 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
       }else{
         iflag = 1;
       }//endif
-   }//endfor
+    }//endfor
     tag += iflag;
-   if(iflag == 1){
+    if(iflag == 1){
       iatm_atm_typ_cp[i] = tag;
       strcpy(fname_ps[tag],vps_name[iatm_atm_typ[ind1]]);
-      nstate_up_atm[tag] = cp_vlnc_up[ind1];
-      nstate_dn_atm[tag] = cp_vlnc_dn[ind1];
-   }//endif
+    }//endif
   }//endfor
 
 //=========================================================================
-//  malloc some local memory using parameters given in initial input file  
+//  Malloc memory for Bessel transform of radial wavefunctions.
 
-   n_ang  = (int *) cmalloc(natm_typ_cp*sizeof(int ),"gen_wave_init") -1;
+  n_ang    = (int *) cmalloc(natm_typ_cp*sizeof(int ),"gen_wave_init") -1;
+  gpsi_now = cmall_mat(1,natm_typ_cp,1,3,"gen_wave_init");
+  gpsi00   = (double *) cmalloc(natm_typ_cp*sizeof(double),"gen_wave_init") -1;
 
+  gpsi0 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
+  gpsi1 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
+  gpsi2 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
+  gpsi3 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
 
-//===========================================================================
-//!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//        do NOT change this 3d malloc to the cmall_tens3                    
-//           UNLESS you want to BREAK this code                              
-//!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//         nsplin rows 3 columns natm_typ_cp dimensions                      
-
-   gpsi0 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
-   gpsi1 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
-   gpsi2 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
-   gpsi3 = (double ***) cmalloc(natm_typ_cp*sizeof(double **),"gen_wave_init")-1;
-
- for(i=1; i<= natm_typ_cp; i++){
-  gpsi0[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
-  gpsi1[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
-  gpsi2[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
-  gpsi3[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
-   for(j=1; j<=3; j++){
-    gpsi0[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
-    gpsi1[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
-    gpsi2[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
-    gpsi3[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
-   }//endfor
- }//endfor
-
-   gpsi_now = cmall_mat(1,natm_typ_cp,1,3,"gen_wave_init");
-   gpsi00   = (double *) cmalloc(natm_typ_cp*sizeof(double),"gen_wave_init") -1;
-
-//===========================================================================
-// assign the occupation numbers  and rocc_sum matrices                      
-//===========================================================================
-
-   for(i=1; i<= nstate_up; i++){
-     occ_up[i] = 0.0;
-     occ_dn[i] = 0.0;
-   }//endfor
-
-   for(i=1; i<= nstate_up_gw; i++){
-     occ_up[i] = 1.0;
-   }
-
-   for(i=1; i<= nstate_dn_gw; i++){
-     occ_dn[i] = 1.0;
-   }
-
-   if(cp_lda==1){
-    for(i=1; i<= nstate_up; i++){
-     occ_up[i] += occ_dn[i];
+  for(i=1; i<= natm_typ_cp; i++){
+    gpsi0[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
+    gpsi1[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
+    gpsi2[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
+    gpsi3[i] = (double **) cmalloc(3*sizeof(double *),"gen_wave_init")-1;
+    for(j=1; j<=3; j++){
+      gpsi0[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
+      gpsi1[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
+      gpsi2[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
+      gpsi3[i][j] = (double *) cmalloc(nsplin*sizeof(double ),"gen_wave_init")-1;
     }//endfor
-   }//endif cp_lda
+  }//endfor
+
+//===========================================================================
+// assign the occupation numbers 
+
+  double *occ_dn = (double *) cmalloc(nstate_up*sizeof(double),"gen_wave_init") -1;
+  double *occ_up = (double *) cmalloc(nstate_up*sizeof(double),"gen_wave_init") -1;
+
+  for(i=1; i<= nstate_up; i++){
+    occ_up[i] = 0.0;
+    occ_dn[i] = 0.0;
+  }//endfor
+
+  for(i=1; i<= nstate_up_gw; i++){
+    occ_up[i] = 1.0;
+  }//endfor
+
+  for(i=1; i<= nstate_dn_gw; i++){
+    occ_dn[i] = 1.0;
+  }//endfor
+
+  if(cp_lda==1){
+    for(i=1; i<= nstate_up; i++){
+      occ_up[i] += occ_dn[i];
+    }//endfor
+  }//endif cp_lda
 
 //=========================================================================
 // bessel transform the radial wave functions and spline the result        
 // nsplin rows 3 columns natm_typ dimensions  [d][c][r]                    
-//=========================================================================
 
- for(i=1; i<= natm_typ_cp; i++){
-   splin_btrans(nsplin,gpsi0[i],gpsi1[i],gpsi2[i],gpsi3[i],
-                gmin,gmax,&dg,
-                &(gpsi00[i]),&(n_ang[i]),
-                fname_ps[i],i);
- }//endfor
+  dg = (gmax-gmin)/(double)(nsplin);
+  g  = (double *) cmalloc(nsplin*sizeof(double),"splin_btrans") -1;
 
-//===========================================================================
-// Create map what states does this atom have
+  for(i=1; i<= nsplin; i++){
+    g[i] = dg*(double)(i-1) + gmin;
+  }//endfor
 
- iatm_state_str[1] = 1;
- iatm_state_end[1] = iatm_state_str[1] + cp_vlnc_up[iatm_atm_typ_cp[1]];
-
- for(i=2; i<= nab_initio; i++){
-  iatm_state_str[i] = iatm_state_end[i-1] + 1;
-  iatm_state_end[i] = iatm_state_str[i] + cp_vlnc_up[iatm_atm_typ_cp[i]];
- }
+  for(i=1; i<= natm_typ_cp; i++){
+    splin_btrans(g,gpsi0[i],gpsi1[i],gpsi2[i],gpsi3[i],
+                &(gpsi00[i]),&(n_ang[i]),fname_ps[i]);
+  }//endfor
+ 
+  cfree(&g[1],"gen_wave");
+  cfree(&(fname_ps[1]),"fill_gw_gpsi");
 
 //===========================================================================
-// free locally assigned memory 
+// Create map : Which states are assigned to each atom's radial psi.
 
-   cfree(&(fname_ps[1]),"fill_gw_gpsi");
+  iatm_state_str[1] = 1;
+  iatm_state_end[1] = iatm_state_str[1] + cp_vlnc_up[1]-1;
+
+  for(i=2; i<= nab_initio; i++){
+    iatm_state_str[i] = iatm_state_end[i-1] + 1;
+    iatm_state_end[i] = iatm_state_str[i] + cp_vlnc_up[i]-1;
+  }//endfor
 
 //===========================================================================
 
-  CkPrintf("\n-----------------------------------------\n");
-  CkPrintf("Completed Initializing GEN_WAVE class       \n");
-  CkPrintf("-----------------------------------------\n");
+  PRINTF("\n");PRINT_LINE_DASH
+  PRINTF("Completed Initializing GEN_WAVE\n");
+  PRINT_LINE_STAR;PRINTF("\n");
 
 //==========================================================================
   } //  end routine
 //==========================================================================
 
-  void GEN_WAVE::create_coefs(const int *k_x,const int *k_y,const int *k_z,
-			      int gSpaceSize,int state_ind,
-			      complex *gspace_coefs)
-
 
 //========================================================================
- {//begin routine
+// Create a KS state in g-space using radial wavefunctions
+//========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//========================================================================
+void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
+		            int gSpaceSize,int state_ind_m1,complex *gspace_coefs,
+                            double *xfull, double *yfull, double *zfull)
+//========================================================================
+   {//begin routine
 //========================================================================
 
-  MDATOMS      *mdatoms      = MDATOMS::get();  
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
-#include "../class_defs/allclass_strip_mdatoms.h"
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-  int nab_initio   = cpatom_maps->nab_initio;
-  int nsplin_g     = cppseudo->nsplin_g;
+//----------------------------------------------------------------------
+
+  int nab_initio_g = cpatom_maps->nab_initio;
   int *cp_atm_lst  = cpatom_maps->cp_atm_lst;
-  double gw_gmin   = cpewald->gw_gmin; 
-  double gw_gmax   = cpewald->gw_gmax;
 
-  CPYLM_CONS ylm_cons = *cpylm_cons;
+  double rt_fpi    = cpylm_cons->rt_fpi;
+  double pi        = M_PI;
+  double tpi       = 2.0*pi;
+  double rad2      = sqrt(2.0);
 
+  double psi_r[21],psi_i[21];
+  double ylmr[21],ylmi[21];
 
-  double *psi_r,*psi_i; // length(20)
-  double *ylmr,*ylmi;   // length(20)
-
-  ylmr  = (double *) cmalloc(20*sizeof(double),"gen_wave_init")-1;
-  ylmi  = (double *) cmalloc(20*sizeof(double),"gen_wave_init")-1;
-
-  psi_r    = (double *) cmalloc(20*sizeof(double),"gen_wave_init")-1;
-  psi_i    = (double *) cmalloc(20*sizeof(double),"gen_wave_init")-1;
-
-//----------------------------------------------------------------------
-// ylm constants                                                       
-
-   double pi         = 3.14159265358979323846;
-   double tpi        = 2.0*pi;
+  if(nab_initio_g!=nab_initio){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("GenWave :  bad number of ab initio atoms %d %d\n",
+               nab_initio_g,nab_initio);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
 
 //----------------------------------------------------------------------
-
   double *cp_box_center     =  gencell->cp_box_center;
   double *cp_box_center_rel =  gencell->cp_box_center_rel;
   double *hmat              =  gencell->hmat_cp;
@@ -445,100 +422,103 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
   double  vol               =  gencell->vol_cp;
   double volrt              =  sqrt(vol);
 
-//----------------------------------------------------------------------
+  int state_ind             =  state_ind_m1+1;
 
-  double rad2 = sqrt(2.0);
-  double qseed=103481.0;
+//=========================================================================
+// I need a random seed
 
-//=======================================================================
-// Assign positions array length of only number of ab initio atoms       
-//=======================================================================
+  long seed=103481;
+  double xx;
+  for(int i=1;i<=state_ind;i++){xx = altRandom(&seed);}
+  seed = (long)(1.e6*xx);
+  while(seed<10){seed*=10.0;}
 
-   double *x,*y,*z;
+//=========================================================================
+// Which atom's radial psi forms this KS state
 
-   x = (double *) cmalloc(nab_initio*sizeof(double ),"gen_wave_init") -1;
-   y = (double *) cmalloc(nab_initio*sizeof(double ),"gen_wave_init") -1;
-   z = (double *) cmalloc(nab_initio*sizeof(double ),"gen_wave_init") -1;
-
-  int i,iatm;
-  for(i=1; i<=nab_initio; i++){
-   iatm = cp_atm_lst[i];
-   printf("ERROR- need to assign positions- where is mdclatoms_pos ?\n");
-   exit(1);
-#ifdef FOUND_CLASS_DEF
-   x[i] = mdclatoms_pos->x[iatm];
-   y[i] = mdclatoms_pos->y[iatm];
-   z[i] = mdclatoms_pos->z[iatm];
-#endif
+  int my_atom = 0;
+  for(int i=1;i<=nab_initio;i++){
+    if(state_ind>=iatm_state_str[i] &&
+       state_ind<=iatm_state_end[i]){my_atom=i;}
   }//endfor
 
-  double xtrans,ytrans,ztrans;
+  if(my_atom==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("YIKES GEN_WAVE can't find an atomic psi for the present state\n");
+    PRINTF("atom= %d state=%d nab_atom=%d\n",my_atom,state_ind_m1,nab_initio);
+    for(int i=1;i<=nab_initio;i++){
+      PRINTF("  iatm=%d state_low=%d state_high=%d\n",i,iatm_state_str[i],iatm_state_end[i]);
+    }//endfor
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
-   xtrans = cp_box_center[1] - cp_box_center_rel[1];
-   ytrans = cp_box_center[2] - cp_box_center_rel[2];
-   ztrans = cp_box_center[3] - cp_box_center_rel[3];
+  int ipart = my_atom;
+  int is    = state_ind - iatm_state_str[ipart] + 1;
+  int ityp  = iatm_atm_typ_cp[ipart];
+  int iatm  = cp_atm_lst[ipart];
+
+  double x  = xfull[iatm];
+  double y  = yfull[iatm];
+  double z  = zfull[iatm];
 
 //=========================================================================
 // get the wave functions in g space                                       
-//=========================================================================
 
- for( i=0; i < gSpaceSize; i++){
+  double anorm = 0.0;
+  for(int i=0; i < gSpaceSize; i++){
 
 //-------------------------------------------------------------------------
 // get g vectors                                                           
 
-   double gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
-   double gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
-   double gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
-   double g2 = gx*gx + gy*gy + gz*gz;
-
-   double g  = sqrt(g2);
+    double gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
+    double gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
+    double gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
+    double g2 = gx*gx + gy*gy + gz*gz;
+    double g  = sqrt(g2);
   
 //-------------------------------------------------------------------------
-//  get ylm                                                               
-
-    get_ylm(gx,gy,gz,g,ylmr,ylmi,&ylm_cons);
-
-//-------------------------------------------------------------------------
 //  get the spherical bessel tranform of the radial wave functions         
-//  at this g space point using the spline.                                
+//  at this g space point using the spline and the spherical harmonics
 
-   for(iatm=1; iatm <= natm_typ_cp; iatm++){
-    get_gpsi(g,nsplin_g,
-             gpsi0[iatm],gpsi1[iatm],gpsi2[iatm],gpsi3[iatm],
-             gpsi_now[iatm],gw_gmin,dg,n_ang[iatm]);
-   }//endfor
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){   
+       gpsi_now[ityp][1] = gpsi00[ityp];
+       gpsi_now[ityp][2] = 0.0;
+       gpsi_now[ityp][3] = 0.0;
+       for(int j=1;j<=8;j++){ylmr[j]=0;ylmi[j]=0;}
+       ylmr[1] = rt_fpi;
+    }else{
+       get_gpsi(g,gpsi0[ityp],gpsi1[ityp],gpsi2[ityp],gpsi3[ityp],
+                gpsi_now[ityp],n_ang[ityp]);
+       get_ylm(gx,gy,gz,g,ylmr,ylmi,cpylm_cons);
+    }//endif
 
-  int istate_up = 0;
-  int istate_dn = 0;
-  int ipart;
-  for(ipart = 1; ipart <= nab_initio; ipart++){
 //  S STATE                                                                
-     psi_r[1] = ylmr[1]*gpsi_now[iatm_atm_typ_cp[ipart]][1]/volrt; 
-     psi_i[1] = 0.0;
+    psi_r[1] = ylmr[1]*gpsi_now[ityp][1]/volrt; 
+    psi_i[1] = 0.0;
 
 // SPHERICALIZED P BAND                                                   
     double p_a,p_b,p_c;
-    if(n_ang[iatm_atm_typ_cp[ipart]] >= 1){
+    if(n_ang[ityp] >= 1){
       int itemp;
-      itemp = (int) (3.0*ran_essl(&qseed));
+      itemp = (int) (3.0*altRandom(&seed));
       itemp = MAX(itemp,0);
       itemp = MIN(itemp,2);
       switch(itemp){
        case 0:
-        p_c = -ylmr[2]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_b = -rad2*ylmr[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_a = -rad2*ylmi[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
+        p_c = -ylmr[2]*gpsi_now[ityp][2]/volrt;
+        p_b = -rad2*ylmr[3]*gpsi_now[ityp][2]/volrt;
+        p_a = -rad2*ylmi[3]*gpsi_now[ityp][2]/volrt;
        break;
        case 1:
-        p_a = -ylmr[2]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_c = -rad2*ylmr[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_b = -rad2*ylmi[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
+        p_a = -ylmr[2]*gpsi_now[ityp][2]/volrt;
+        p_c = -rad2*ylmr[3]*gpsi_now[ityp][2]/volrt;
+        p_b = -rad2*ylmi[3]*gpsi_now[ityp][2]/volrt;
        break;
        case 2:
-        p_b = -ylmr[2]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_a = -rad2*ylmr[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
-        p_c = -rad2*ylmi[3]*gpsi_now[iatm_atm_typ_cp[ipart]][2]/volrt;
+        p_b = -ylmr[2]*gpsi_now[ityp][2]/volrt;
+        p_a = -rad2*ylmr[3]*gpsi_now[ityp][2]/volrt;
+        p_c = -rad2*ylmi[3]*gpsi_now[ityp][2]/volrt;
        break;
       }//end switch
       psi_r[2] = 0.0;
@@ -549,80 +529,87 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
       psi_i[4] = (p_b-p_a)/rad2;
     }//endif
 //  D BAND                                                                  
-   if(n_ang[iatm_atm_typ_cp[ipart]] >= 2){
-     psi_r[5] = -ylmr[5]*gpsi_now[iatm_atm_typ_cp[ipart]][3]/volrt;
-     psi_i[5] = 0.0;
-     psi_r[6] = -rad2*ylmr[6]*gpsi_now[iatm_atm_typ_cp[ipart]][3]/volrt;
-     psi_i[6] = 0.0;
-     psi_r[7] = -rad2*ylmi[6]*gpsi_now[iatm_atm_typ_cp[ipart]][3]/volrt;
-     psi_i[7] = 0.0;
-     psi_r[8] = -rad2*ylmr[8]*gpsi_now[iatm_atm_typ_cp[ipart]][3]/volrt;
-     psi_i[8] = 0.0;
-     psi_r[9] = -rad2*ylmi[8]*gpsi_now[iatm_atm_typ_cp[ipart]][3]/volrt;
-     psi_i[9] = 0.0;
-   }//endif
-
+    if(n_ang[ityp] >= 2){
+      psi_r[5] = -ylmr[5]*gpsi_now[ityp][3]/volrt;
+      psi_i[5] = 0.0;
+      psi_r[6] = -rad2*ylmr[6]*gpsi_now[ityp][3]/volrt;
+      psi_i[6] = 0.0;
+      psi_r[7] = -rad2*ylmi[6]*gpsi_now[ityp][3]/volrt;
+      psi_i[7] = 0.0;
+      psi_r[8] = -rad2*ylmr[8]*gpsi_now[ityp][3]/volrt;
+      psi_i[8] = 0.0;
+      psi_r[9] = -rad2*ylmi[8]*gpsi_now[ityp][3]/volrt;
+      psi_i[9] = 0.0;
+    }//endif
+ 
 //---------------------------------------------------------------------------
 //  structure factor                                                         
+
     double helr,heli;
- if( g != 0.000){  // G != 0
-    double dx,dy,dz;
-    dx  = x[ipart] - cp_box_center[1];
-    dy  = y[ipart] - cp_box_center[2];
-    dz  = z[ipart] - cp_box_center[3];
+    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){
+      helr = 1.00;
+      heli = 0.00;
+    }else{
+      double dx,dy,dz;
+      dx  = x;
+      dy  = y;
+      dz  = z;
+#ifdef _QM_MM_
+      dx  = x - cp_box_center[1];
+      dy  = y - cp_box_center[2];
+      dz  = z - cp_box_center[3];
 
-    double asx,asy,asz;
-    asx = dx*hmati_big[1]+dy*hmati_big[4]+dz*hmati_big[7];
-    asy = dx*hmati_big[2]+dy*hmati_big[5]+dz*hmati_big[8];
-    asz = dx*hmati_big[3]+dy*hmati_big[6]+dz*hmati_big[9];
+      double asx,asy,asz;
+      asx = dx*hmati_big[1]+dy*hmati_big[4]+dz*hmati_big[7];
+      asy = dx*hmati_big[2]+dy*hmati_big[5]+dz*hmati_big[8];
+      asz = dx*hmati_big[3]+dy*hmati_big[6]+dz*hmati_big[9];
 
-    double sx,sy,sz;
-    sx  = asx - NINT(asx);
-    sy  = asy - NINT(asy);
-    sz  = asz - NINT(asz);
-    dx  = sx*hmat_big[1] + sy*hmat_big[4] + sz*hmat_big[7] + cp_box_center_rel[1];
-    dy  = sx*hmat_big[2] + sy*hmat_big[5] + sz*hmat_big[8] + cp_box_center_rel[2];
-    dz  = sx*hmat_big[3] + sy*hmat_big[6] + sz*hmat_big[9] + cp_box_center_rel[3];
+      double sx,sy,sz;
+      sx  = asx - NINT(asx);
+      sy  = asy - NINT(asy);
+      sz  = asz - NINT(asz);
+      dx  = sx*hmat_big[1] + sy*hmat_big[4] + sz*hmat_big[7] + cp_box_center_rel[1];
+      dy  = sx*hmat_big[2] + sy*hmat_big[5] + sz*hmat_big[8] + cp_box_center_rel[2];
+      dz  = sx*hmat_big[3] + sy*hmat_big[6] + sz*hmat_big[9] + cp_box_center_rel[3];
+#endif
 
-    double atemp,btemp,ctemp,arg;
+      double atemp,btemp,ctemp,arg;
+      atemp = dx*hmati[1] + dy*hmati[4] + dz*hmati[7];
+      btemp = dx*hmati[2] + dy*hmati[5] + dz*hmati[8];
+      ctemp = dx*hmati[3] + dy*hmati[6] + dz*hmati[9];
 
-    atemp = dx*hmati[1] + dy*hmati[4] + dz*hmati[7];
-    btemp = dx*hmati[2] + dy*hmati[5] + dz*hmati[8];
-    ctemp = dx*hmati[3] + dy*hmati[6] + dz*hmati[9];
+      arg   = (k_x[i]*atemp + k_y[i]*btemp + k_z[i]*ctemp)*tpi;
 
-    arg = (k_x[i]*atemp + k_y[i]*btemp + k_z[i]*ctemp)*tpi;
+      helr  = cos(arg);
+      heli  = sin(arg);
+    }//endif G=0 
 
-    helr = cos(arg);
-    heli = sin(arg);
-   }else{
-    helr = 1.00;
-    heli = 0.00;
-   }//endif G=0 
+//-------------------------------------------------------------------------
+//  construct the coeff and the contribution to the norm 
 
-//=========================================================================
-//  construct the coeff                                                    
-
-    int is = state_ind - iatm_state_str[ipart] + 1;
     gspace_coefs[i].re = helr*psi_r[is] - heli*psi_i[is];
     gspace_coefs[i].im = heli*psi_r[is] + helr*psi_i[is];
 
+    double wght = 2.0;
+    if(k_x[i]==0)wght=1.0;
+    anorm += (gspace_coefs[i].re*gspace_coefs[i].re+
+              gspace_coefs[i].im*gspace_coefs[i].im)*wght;
 
-  }//endfor nab_initio
+  }//endfor:gSpaceSize
 
- }//endfor:gSpaceSize
+//=========================================================================
+// Give this guy norm=2
 
-//-----------------------------------------------------------------------
-// Free locally assigned memory
+#ifdef _DEBUG_GEN_AVE_
+  PRINTF("state %d seed %d ipart %d is %d ityp %d: %g %g %g : %g : %g\n",
+          state_ind,seed,ipart,is,ityp,x,y,z,anorm,vol);
+#endif
 
- cfree(&(x[1]),"create_coef");
- cfree(&(y[1]),"create_coef");
- cfree(&(z[1]),"create_coef");
-
- cfree(&(ylmr[1]),"create_coef");
- cfree(&(ylmi[1]),"create_coef");
-
- cfree(&(psi_r[1]),"create_coef");
- cfree(&(psi_i[1]),"create_coef");
+  anorm  = sqrt(2.0/anorm);
+  for(int i=0; i < gSpaceSize; i++){
+    gspace_coefs[i].re *= anorm;
+    gspace_coefs[i].im *= anorm;
+  }//endfor
 
 //==========================================================================
   }// end routine
@@ -630,97 +617,84 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,
 
 
 //==========================================================================
-
+// Control the spline fit of the radial wavefunction
 //==========================================================================
-
-void  splin_btrans(int nsplin, double **gpsi0, double **gpsi1,
-                   double **gpsi2, double **gpsi3,
-                   double gmin, double gmax, double *dg,
-		   double *gpsi00, int *pn_ang, char *fname_ps, int atm)
-                    
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void GEN_WAVE::splin_btrans(double *g,double **gpsi0, double **gpsi1,
+                            double **gpsi2, double **gpsi3,
+         	            double *gpsi00, int *n_ang_out, char *fname_ps)
 //==========================================================================
   {//begin routine
 //==========================================================================
 
- double *g,*r,*rphi; // length nsplin 
+  double *r,*rphi; // length nr
 
- int iii;
- int i,ir,iang_now;
- int iang,nr;
- int n_ang;
- double rmax,xx,dr;
- int n_ang1;
- FILE *fp_name_ps;
-
- //========================================================================
- // Set up the g's 
-
-   g   = (double *) cmalloc(nsplin*sizeof(double),"splin_btrans") -1;
-   *dg = (gmax-gmin)/(double)(nsplin);
-
-   for(i=1; i<= nsplin; i++){
-     g[i] = (*dg)*(double)(i-1) + gmin;
-   }//endfor
+  int iii;
+  int i,ir,iang_now;
+  int iang,nr;
+  int n_ang_now;
+  double rmax,xx,dr;
+  int n_ang1;
+  FILE *fp_name_ps;
 
 //========================================================================
 // Set up the r's 
 
-   fp_name_ps = cfopen(fname_ps,"r");
-   fscanf(fp_name_ps,"%d %lg %d ",&nr,&rmax,&n_ang);
-   readtoendofline(fp_name_ps);
-   readtoendofline(fp_name_ps);
+  fp_name_ps = cfopen(fname_ps,"r");
 
-   *pn_ang = n_ang;
+    fscanf(fp_name_ps,"%d %lg %d ",&nr,&rmax,&n_ang_now);
+    readtoendofline(fp_name_ps);
+    readtoendofline(fp_name_ps);
 
-  r    = (double *) cmalloc(nr*sizeof(double),"splin_btrans") -1;
-  rphi = (double *) cmalloc(nr*sizeof(double),"splin_btrans") -1;
+    n_ang_out[0] = n_ang_now;
 
-  dr = rmax/(double)(nr);
+    r    = (double *) cmalloc(nr*sizeof(double),"splin_btrans") -1;
+    rphi = (double *) cmalloc(nr*sizeof(double),"splin_btrans") -1;
 
-  for(ir=1; ir<= nr; ir++){
-    r[ir] = (double)(ir-1)*dr;
-  }//endfor
+    dr = rmax/(double)(nr);
+
+    for(ir=1; ir<= nr; ir++){r[ir] = (double)(ir-1)*dr;}
   
 //========================================================================
 // Set up the gpsi's 
    
-  n_ang1 = (*pn_ang) + 1;
+    n_ang1 = n_ang_now + 1;
 
-  for(iang=1; iang <= n_ang1; iang++){
-   for(ir=1; ir<= nr; ir++){
-     fscanf(fp_name_ps,"%lg %lg ",&xx,&(rphi[ir]));
-   }//endfor
+    for(iang=1; iang <= n_ang1; iang++){
 
-    iang_now = iang-1;
+      for(ir=1; ir<= nr; ir++){
+        fscanf(fp_name_ps,"%lg %lg ",&xx,&(rphi[ir]));
+      }//endfor
 
-   bess_trans(rphi,nr,dr,r,gpsi0[iang],nsplin,g,iang_now,gpsi00);
-   fit_spline(gpsi0[iang],gpsi1[iang],gpsi2[iang],gpsi3[iang],g,nsplin);
-  }//endfor
+      iang_now = iang-1;
+      bess_trans(rphi,nr,dr,r,gpsi0[iang],g,iang_now,gpsi00);
+      fit_spline(gpsi0[iang],gpsi1[iang],gpsi2[iang],gpsi3[iang],g);
 
-    fclose(fp_name_ps);
+    }//endfor
+
+  fclose(fp_name_ps);
 
 //========================================================================
 // free locally assigned memory                                          
 
-    cfree(&(g[1]),"spline-b-trans");
-    cfree(&(r[1]),"spline-b-trans");
-    cfree(&(rphi[1]),"spline-b-trans");
+  cfree(&(r[1]),"spline-b-trans");
+  cfree(&(rphi[1]),"spline-b-trans");
 
 //==========================================================================
   }//end routine
 //==========================================================================
 
 
-
 //==========================================================================
+// Spherical bessel transform of the radial wavefunction
 //==========================================================================
-
-void bess_trans(double *v_rphi,int nr,double dr,double *r,
-                double *fv_rphi,int nsplin_g,double *g,
-                int iang,double *gzero)
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-{//begin routine
+void GEN_WAVE::bess_trans(double *v_rphi,int nr,double dr,double *r,
+                          double *fv_rphi,double *g,int iang,double *gzero)
+//==========================================================================
+  {//begin routine
 //==========================================================================
 
 
@@ -737,7 +711,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
    fpi = 4.0*pi;
    fpidr = fpi*dr;
 
-  for(ig=1; ig <= nsplin_g; ig++){
+  for(ig=1; ig <= nsplin; ig++){
     fv_rphi[ig] = 0.0;
   }//endfor
 
@@ -749,7 +723,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
   }//endfor
 
 // l=0 or local, g ne 0 ----------------------------------------------------
-   for(ig=1; ig <= nsplin_g; ig++){
+   for(ig=1; ig <= nsplin; ig++){
      for(ir=2; ir <= nr; ir++){
         arg = r[ir]*g[ig];
         rj0 = sin(arg)/arg*r[ir];
@@ -760,7 +734,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
 
    if(iang == 1){
 // l=1, g ne 0 --------------------------------------------------------------
-   for(ig=1; ig <= nsplin_g; ig++){
+   for(ig=1; ig <= nsplin; ig++){
      for(ir=2 ; ir <= nr; ir++){
        arg = r[ir]*g[ig];
        rj1 = (sin(arg)/arg - cos(arg))/arg*r[ir];
@@ -771,7 +745,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
 
    if(iang == 2){
 //  l=2, g ne 0 ------------------------------------------------------------
-   for(ig=1; ig <= nsplin_g; ig++){
+   for(ig=1; ig <= nsplin; ig++){
      for(ir=2; ir <= nr; ir++){  
         arg = r[ir]*g[ig];
         rj2 = ((3.0/(arg*arg)-1.0)*sin(arg)-3.0*cos(arg)/arg)/arg*r[ir];
@@ -782,7 +756,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
 
   if(iang == 3){
 //  l=3, g ne 0 ---------------------------------------------------------- 
-   for(ig=1; ig <= nsplin_g; ig++){
+   for(ig=1; ig <= nsplin; ig++){
      for(ir=2; ir <= nr; ir++){
        arg = r[ir]*g[ig];
        rj3 = ((15.0/(arg*arg) - 6.0)*sin(arg)/arg + 
@@ -794,24 +768,31 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
 
 
 //==========================================================================
-}//end routine
+  }//end routine
 //==========================================================================
 
-
 //==========================================================================
+// Do the spline lookup of the radial wavefunction
 //==========================================================================
-
- void get_gpsi(double g,int nsplin,
-               double **gpsi0,double **gpsi1,double **gpsi2,double **gpsi3,
-               double *gpsi_now,double gmin,double dg,int n_ang)
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-{//begin routine
+ void GEN_WAVE::get_gpsi(double g,double **gpsi0,double **gpsi1,
+                         double **gpsi2,double **gpsi3,double *gpsi_now,
+                         int n_ang_now)
+//==========================================================================
+  {//begin routine
 //==========================================================================
 
 
    double partem1,partem2,partem3,partem4,h,h0;
    int iii,iang,i;
+
+   if(g<gmin || g>gmax){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("g value out of range in spline %g %g %g\n",g,gmin,gmax);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
 
    iii = int((g-gmin)/dg + 1);
    iii = MIN(iii,nsplin);
@@ -820,7 +801,7 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
    h0  = (double)(iii-1)*dg+gmin;
    h = g-h0;
 
-   for(iang =1; iang <= (n_ang+1); iang++){
+   for(iang =1; iang <= (n_ang_now+1); iang++){
      partem1 = gpsi0[iang][iii];
      partem2 = gpsi1[iang][iii];
      partem3 = gpsi2[iang][iii];
@@ -835,29 +816,30 @@ void bess_trans(double *v_rphi,int nr,double dr,double *r,
 
 
 //==========================================================================
+// Spline the radial wavefunctions
 //==========================================================================
-
-void  fit_spline(double *c0i,double *c1i,double *c2i,
-                 double *c3i,double *xi,int nsplin)
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-{//begin routine
+void GEN_WAVE::fit_spline(double *c0i,double *c1i,double *c2i,
+                          double *c3i,double *xi)
 //==========================================================================
-//  positions                                                              
-// spline coefficients, c(i,1)=function values                             
-
-   int iii;
+   {//begin routine
+//==========================================================================
 // temporary vectors                                                       
    double *d,*diag; //length nsplin
+
 // temporary scalars                                                       
    double c0,c1,c2,c3,g,divdf1,divdf3,dx;
+
 // temporary integers                                                      
+   int iii;
    int m,mm1,mp1,i,ip1,n;
 
 //malloc local memory 
-    d    = (double *) cmalloc(nsplin*sizeof(double ),"fit_spline") -1;
-    diag = (double *) cmalloc(nsplin*sizeof(double ),"fit_spline") -1;
+   d    = (double *) cmalloc(nsplin*sizeof(double ),"fit_spline") -1;
+   diag = (double *) cmalloc(nsplin*sizeof(double ),"fit_spline") -1;
 
+//==========================================================================
 // fit the spline                                                          
 
 //  1st approximate initial and final derivatives                          
@@ -902,10 +884,10 @@ void  fit_spline(double *c0i,double *c1i,double *c2i,
     c3i[i] = divdf3/(dx*dx);
   }//endfor
 
-
+//==========================================================================
 // free locally assigned memory 
-    cfree(&(d[1]),"fit_spline");
-    cfree(&(diag[1]),"fit_spline");
+  cfree(&(d[1]),"fit_spline");
+  cfree(&(diag[1]),"fit_spline");
 
 //==========================================================================
   }//end routine
@@ -913,11 +895,12 @@ void  fit_spline(double *c0i,double *c1i,double *c2i,
 
 
 //==========================================================================
+// Compute some spherical harmonics
 //==========================================================================
-
-void get_ylm(double xk,double yk,double zk,double g,
-             double *ylmr,double *ylmi,CPYLM_CONS *ylm_cons)
-
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void GEN_WAVE::get_ylm(double xk,double yk,double zk,double g,
+                       double *ylmr,double *ylmi,CPYLM_CONS *ylm_cons)
 //========================================================================
   {//begin routine
 //========================================================================

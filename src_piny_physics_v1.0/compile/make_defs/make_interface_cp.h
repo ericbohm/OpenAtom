@@ -158,6 +158,17 @@ control_scale_cp.o    :  $(STANDARD) $(DEFINES) \
 	$(COBJ_CARE) $(CODE)/interface/vel_sampl_cp/control_scale_cp.C
 
 #------------------------------------------------------------------
+gen_wave.o  :  $(STANDARD) $(DEFINES) \
+                         $(CLASS_GEN) $(CLASS_CP) $(TYP_PAR) \
+                         $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
+                         $(CLASS_MDINTRA) \
+                         $(CLASS_CP_GEN_WAVE)  \
+                         $(VPS_ENT) $(SEARCH_ENT) $(INTRA_LOC) $(VPS_LOC) \
+                         $(HANDLE_ENT) $(FRND_ENT) $(MATH) \
+                         $(CODE)/interface/coords_cp/gen_wave.C
+	$(ECHO) $@
+	$(COBJ_CARE) $(CODE)/interface/coords_cp/gen_wave.C
+
 #==================================================================
 
 

@@ -1638,17 +1638,14 @@ void make_cp_atom_list(CPATOM_MAPS *cpatom_maps,CPPSEUDO *cppseudo,
      if(cp_atm_flag[i]==1){nab_initio++;}
    }//endfor
 
-#ifdef _QMMM_STUFF_
-   int *cp_atm_lst = (int *)cmalloc(nab_initio*sizeof(int),"make_cp_atom_list")-1;
-
+   int *cp_atm_lst  = (int *)cmalloc(nab_initio*sizeof(int),"make_cp_atom_list")-1;
    int j = 1;
    for(int i=1;i<=natm_tot;i++){
      if(cp_atm_flag[i]==1){cp_atm_lst[j]=i;j++;}
    }//endfor
 
-   cppseudo->cp_atm_list = cp_atm_lst;
-   cppseudo->nab_initio  = nab_initio;
-#endif
+   cpatom_maps->cp_atm_lst = cp_atm_lst;
+   cpatom_maps->nab_initio = nab_initio;
 
    if(nab_initio!=natm_tot){
        PRINTF("All Atoms must be Abinitio\n");

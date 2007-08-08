@@ -52,6 +52,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
 
+  int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
 
   double vol          = gencell->vol;
@@ -91,12 +92,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      EXIT(1);
    }//endif
 
-   if(istart_typ_cp ==0){
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("No gen-wave restarts yet. Sorry\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
-   }//endif
+   int gen_wave=0;
+   if(istart_typ_cp ==0){gen_wave=1;}
 
 //========================================================================
 
@@ -109,6 +106,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->vol            = vol;
 
    sim->fftopt         = fftopt;
+   sim->ncoef          = ncoef;
 
    sim->cp_min_update  = cp_min_update;
    sim->cp_min_opt     = cp_min_opt;
@@ -124,6 +122,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    }else{
      sim->ntime          = ntime;
    }//endif
+
+   sim->gen_wave=gen_wave; 
 
    sim->cp_norb_rot_kescal = cp_norb_rot_kescal;
    sim->tol_norb       = tol_norb;
@@ -195,11 +195,12 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   int *ka       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
   int *kb       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
   int *kc       = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
-  int *ibrk1    = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
-  int *ibrk2    = (int *)cmalloc((nktot+1)*sizeof(int),"parainfo")-1;
+
+  int *ibrk1=NULL;
+  int *ibrk2=NULL;
   double gmin,gmax;
 
-  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax);
+  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
 
   int cp_para_typ=0;
 
@@ -244,8 +245,6 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
   cfree(&ka[1],"parainfo");
   cfree(&kb[1],"parainfo");
   cfree(&kc[1],"parainfo");
-  cfree(&ibrk1[1],"parainfo");
-  cfree(&ibrk2[1],"parainfo");
 
 //========================================================================
 
@@ -550,5 +549,55 @@ void PhysicsParamTransfer::control_new_mapping_function(CPcharmParaInfo *sim,
    sim->lines_per_chareG = lines_per_chareG;
 
 //========================================================================
-  }
+  }//end routine
+//========================================================================
+
+
+
+//========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//========================================================================
+
+void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
+                                             int ncoef,int doublePack)
+
+//========================================================================
+  {//begin routine
+//========================================================================
+// Local variables 
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP *cp                     = CP::get();
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+  int nktot     = cpewald->nktot_sm;
+  int *kmax     = cpewald->kmax_cp_dens_cp_box;
+  int *ibrk1=NULL;
+  int *ibrk2=NULL;
+
+  double ecut   = cpcoeffs_info->ecut;
+  double *hmati = gencell->hmati;
+  double gmin,gmax;
+
+//========================================================================
+
+  if(doublePack==0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Fix parainfoinit.C (fetch_state_kvecs) for k-points\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
+  if(nktot+1!=ncoef){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Internal error in parainfoinit(fetch_state_kvec) %d vs %d\n",nktot+1,ncoef);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
+  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+
+//========================================================================
+  }//end routine
 //========================================================================

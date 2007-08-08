@@ -65,6 +65,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 //============================================================================
 
 
@@ -119,7 +120,8 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
   while(1) {
  //===========================================================================
  // (I) Compute the forces and coef evolution code block
-    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1 || c->first_step!=1){
+    if((scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1 &&
+        scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave==0) || c->first_step!=1){
     //------------------------------------------------------------------------
     // (A) Start new iteration : Reset counters
 #ifdef _CP_DEBUG_PSI_OFF_  // only move the atoms 
@@ -231,7 +233,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    //------------------------------------------------------------------------
    // (B) Output the states for minimization
     if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 1 &&
-       c->iteration<= config.maxIter){
+       c->iteration<= config.maxIter && c->iteration>0){
        c->writeStateDumpFile();
        if(c->iwrite_now==1){RTH_Suspend();}// wait : psiwritecomplete resumes
     }//endif
@@ -584,7 +586,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
-
+  int gen_wave    = sim->gen_wave;
 //============================================================================
 
 
@@ -631,6 +633,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   finishedCpIntegrate = 0;
   if(cp_min_opt==0){finishedCpIntegrate = 1;}// alternate entry point
+  if(gen_wave==1){finishedCpIntegrate = 1;}// alternate entry point
   doneDoingIFFT       = false;
   allgdoneifft        = false;
   triggerNL           = false;
@@ -971,19 +974,26 @@ void CP_State_GSpacePlane::readFile() {
 //============================================================================
 // Local pointers
 
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int numData       = config.numData;
   int ibinary_opt   = sim->ibinary_opt;
   int istart_typ_cp = sim->istart_typ_cp;
+  int gen_wave      = sim->gen_wave;
+  int ncoef         = sim->ncoef;
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->sortedRunDescriptors;
   int *npts_lgrp    = sim->npts_per_chareG;
   int *nline_lgrp   = sim->nlines_per_chareG;
   int *istrt_lgrp   = NULL;
   int *iend_lgrp    = NULL;
 
-  int ngridaNL      =  sim->ngrid_nloc_a;
-  int ngridbNL      =  sim->ngrid_nloc_b;
-  int ngridcNL      =  sim->ngrid_nloc_c;
+  int nx            = sizeX;
+  int ny            = sim->sizeY;
+  int nz            = sim->sizeZ;
+  int ngridaNL      = sim->ngrid_nloc_a;
+  int ngridbNL      = sim->ngrid_nloc_b;
+  int ngridcNL      = sim->ngrid_nloc_c;
 
 //============================================================================
 // Set the file name using the config path and state number
@@ -1000,7 +1010,7 @@ void CP_State_GSpacePlane::readFile() {
   int *kx=  (int *)fftw_malloc(numData*sizeof(int));
   int *ky=  (int *)fftw_malloc(numData*sizeof(int));
   int *kz=  (int *)fftw_malloc(numData*sizeof(int));
-  int nlines_tot,nplane,nx,ny,nz;
+  int nlines_tot,nplane;
 
   if(istart_typ_cp>=3){
     sprintf(fname, "%s/vState%d.out", config.dataPath, ind_state + 1);
@@ -1008,9 +1018,23 @@ void CP_State_GSpacePlane::readFile() {
             kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,1);
   }//endif
 
-  sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
-  readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
-            kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
+  if(gen_wave==0){
+    sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
+    readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
+              kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
+  }else{
+    kx -= 1;  ky -= 1; kz -=1;
+    PhysicsParamTransfer::fetch_state_kvecs(kx,ky,kz,ncoef,config.doublePack);
+    kx += 1;  ky += 1; kz +=1;
+    processState(numData,ncoef,complexPoints,fname,ibinary_opt,&nlines_tot,
+                 &nplane,kx,ky,kz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
+                 0,0,0,ny); 
+    double *xfull =atomsGrpProxy.ckLocalBranch()->fastAtoms.x-1;
+    double *yfull =atomsGrpProxy.ckLocalBranch()->fastAtoms.y-1;
+    double *zfull =atomsGrpProxy.ckLocalBranch()->fastAtoms.z-1;
+    cpgen_wave->create_coefs(kx,ky,kz,numData,ind_state,complexPoints,
+                             xfull,yfull,zfull);
+  }//*endif
 
   if(config.low_x_size != nplane && config.doublePack){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -3297,7 +3321,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (B) Generate some screen output of orthogonal psi
 
-  screenOutputPsi();
+  if(iteration>0){screenOutputPsi();}
 
 //=============================================================================
 // (D) Go back to the top or exit
@@ -3346,8 +3370,14 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (E) Reset psi 
 
-  if(cp_min_opt==1 && cp_min_update==0){
+  if(cp_min_opt==1 && cp_min_update==0 && iteration>0){
     CmiMemcpy(gs.packedPlaneData,gs.packedPlaneDataTemp,
+	      sizeof(complex)*gs.numPoints);
+    memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
+  }//endif
+
+  if(cp_min_opt==1 && cp_min_update==0 && iteration==0){
+    CmiMemcpy(gs.packedPlaneDataTemp,gs.packedPlaneData,
 	      sizeof(complex)*gs.numPoints);
     memset(gs.packedVelData,0,sizeof(complex)*gs.numPoints);
   }//endif

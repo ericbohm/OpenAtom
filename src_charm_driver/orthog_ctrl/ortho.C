@@ -114,6 +114,7 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  int gen_wave   = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
 #ifdef _CP_SUBSTEP_TIMING_
   if(timeKeep>0)
     {
@@ -127,7 +128,9 @@ void Ortho::start_calc(CkReductionMsg *msg){
     {
       if(cp_min_opt==1){
 	PRINT_LINE_DASH;
-	CkPrintf("Iteration %d done\n", numGlobalIter+1);
+        int iii = numGlobalIter;
+        if(gen_wave==0){iii+=1;}
+	CkPrintf("Iteration %d done\n",iii);
 	PRINT_LINE_STAR; CkPrintf("\n");
 	PRINT_LINE_STAR; 
       }else{
@@ -261,8 +264,11 @@ void Ortho::collect_results(void){
 // Output Timings and debug information then increment iteration counter
 
     int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    int iprintout;
-    if(cp_min_opt==1){iprintout=config.maxIter-1;}else{iprintout=config.maxIter;}
+    int gen_wave    = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
+
+    int iprintout   = config.maxIter;
+    if(cp_min_opt==1 && gen_wave==0){iprintout-=1;}
+
     int itime       = numGlobalIter;
     if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
 

@@ -141,6 +141,8 @@ class CPcharmParaInfo {
    int ngrid_eext_a, ngrid_eext_b, ngrid_eext_c; 
    int nstates;
    int ntime;
+   int gen_wave;
+   int ncoef;
    int ibinary_opt;
    int ibinary_write_opt;
    int nplane_x;   // # of non-zero planes of gx
@@ -244,6 +246,8 @@ class CPcharmParaInfo {
      ngrid_eext_b = s.ngrid_eext_b; 
      ngrid_eext_c = s.ngrid_eext_c; 
      ntime        = s.ntime;
+     gen_wave     = s.gen_wave;
+     ncoef        = s.ncoef;
      ibinary_opt  = s.ibinary_opt;
      ibinary_write_opt = s.ibinary_write_opt;
      nplane_x     = s.nplane_x;
@@ -518,7 +522,8 @@ class CPcharmParaInfo {
       p|ngrid_nloc_a;  p|ngrid_nloc_b;   p|ngrid_nloc_c;
       p|ngrid_eext_a;  p|ngrid_eext_b;   p|ngrid_eext_c;
       p|nplane_x;   p|nchareG;    p|natm_tot;    p|natm_nl;
-      p|nstates;    p|ntime;      p|ibinary_opt; p|ibinary_write_opt;
+      p|nstates;    p|ntime;      p|gen_wave; p|ncoef;
+      p|ibinary_opt; p|ibinary_write_opt;
       p|natm_typ;   p|natm_nl;    p|numSfGrps; p|nlIters; 
       p|nmem_zmat_tot; p|nmem_zmat_max;
       p|natm_nl_grp_max;  p|nlines_tot; p|npts_tot;

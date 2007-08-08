@@ -28,7 +28,7 @@ void setkvec3d_res(int , double *,
 /*               Proto for setkvec3d_sm:                                    */ 
 
 void setkvec3d_sm(int ,double ,int *,double *,int *, int *, int *, 
-		  int *, int *, double *, double *);
+		  int *, int *, double *, double *,int );
 
 /*==========================================================================*/
 /*               Proto for radixme:                                         */ 

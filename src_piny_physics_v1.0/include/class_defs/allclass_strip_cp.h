@@ -9,6 +9,6 @@
   CPATOM_PME     *cpatom_pme     = &(cp->cpatom_pme);
   CPVEL_SAMP     *cpvel_samp     = &(cp->cpvel_samp);
   CPYLM_CONS     *cpylm_cons     = &(cp->cpylm_cons);
-//  GEN_WAVE       *cpgen_wave     = &(cp->cpgen_wave); // not yet
+  GEN_WAVE       *cpgen_wave     = &(cp->cpgen_wave); // not yet
 
   

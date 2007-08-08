@@ -25,7 +25,7 @@ INTERFACE_CP_FILES    = set_wave_params.o  \
                         control_set_cp_ewald.o set_cp_ewald.o \
                         search_base_cp.o \
                         set_vps_dict.o control_vps_params.o \
-                        weight_node_gauss_hermite.o
+                        weight_node_gauss_hermite.o gen_wave.o
 
 INTERFACE_INTRA_FILES = close_intra_params.o control_intra_params.o \
                         control_res_params.o fetch_residue.o \

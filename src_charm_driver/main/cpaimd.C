@@ -435,7 +435,8 @@ main::main(CkArgMsg *msg) {
     double phase1start=Timer;
     numPes = CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
-                      sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,ees_eext_opt);
+                      sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
+                      ees_eext_opt,sim->gen_wave,sim->ncoef);
     fakeTorus        = config.fakeTorus>0;
     if(fakeTorus)
       numPes=config.torusDimX*config.torusDimY*config.torusDimZ;

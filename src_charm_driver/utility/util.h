@@ -175,9 +175,9 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
 
 void readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int );
 
-void readStateIntoRuns(int , complex *, CkVec<RunDescriptor> &, 
+void readStateIntoRuns(int , int,complex *, CkVec<RunDescriptor> &, 
                        const char *,int ,int *,int *,int *,int *,int *,int *,
-                       int **, int **, int **,int **,int **,int);
+                       int **, int **, int **,int **,int **,int,int,int,int,int);
 
 void readState(int nPacked, complex *arrCP, const char *fromFile,
 	       int ibinary_opt, int *nline_tot_ret,int *nplane_ret, int *kx, 
@@ -199,6 +199,9 @@ void getSplitDecomp(int *,int *,int *, int , int ,int );
 void create_subPlane_decomp(int ,int *,int *,int ,int *,int *,int *,int **, int );
 void score_subPlane_decomp(int ,int , int *,int *, int *,int **, int *);
 void create_gx_decomp(int , int , int *, int *,int ,int *);
+
+void processState(int , int, complex *, const char *,int ,int *,int *, int *, int *, 
+  	          int *, int *,int *,int *,int *, int ,int ,int,int);
 
 //===================================================================================
 

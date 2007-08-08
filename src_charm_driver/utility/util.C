@@ -15,6 +15,7 @@
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
+#include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 extern Config config;
 extern int sizeX;
 #if CMK_PROJECTIONS_USE_ZLIB
@@ -850,13 +851,14 @@ void get_rho_kvectors(double ecut4, double *hmati, int **kx_ret, int **ky_ret,
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 
-void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs, 
+void readStateIntoRuns(int nPacked, int ncoef,complex *arrCP, CkVec<RunDescriptor> &runs, 
                        const char *fromFile,int ibinary_opt,
                        int *nline_tot_ret,int *nplane_ret,
                        int *istrt_lgrp,int *iend_lgrp,
                        int *npts_lgrp,int *nline_lgrp,
                        int **kx_line_ret, int **ky_line_ret,
-                       int **kx_ret,int **ky_ret, int **kz_ret, int iget_decomp)
+                       int **kx_ret,int **ky_ret, int **kz_ret, int iget_decomp,
+                       int gen_wave,int nx_in, int ny_in , int nz_in)
 
 //===================================================================================
     {//begin routine
@@ -876,17 +878,38 @@ void readStateIntoRuns(int nPacked, complex *arrCP, CkVec<RunDescriptor> &runs,
 //===================================================================================
 // First read in the state and k-vectors : allows parsing of doublePack option
 
+    int doublePack = config.doublePack;
     int nx,ny,nz;
     int *kx= new int [nPacked];
     int *ky= new int [nPacked];
     int *kz= new int [nPacked];
-    int nktot = 0;
-    readState(nPacked, arrCP, fromFile, ibinary_opt, nline_tot_ret, 
-              nplane_ret, kx, ky, kz, &nx, &ny, &nz,
-              istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp,0);
+
+    if(gen_wave==0){
+       readState(nPacked,arrCP,fromFile,ibinary_opt,nline_tot_ret, 
+                 nplane_ret,kx,ky,kz,&nx,&ny,&nz,
+                 istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp,0);
+    }else{
+      nx = nx_in;
+      ny = ny_in;
+      nz = nz_in;
+      kx -= 1;  ky -= 1; kz -=1;
+      PhysicsParamTransfer::fetch_state_kvecs(kx,ky,kz,ncoef,doublePack);
+      kx += 1;  ky += 1; kz +=1;
+      processState(nPacked,ncoef,arrCP,fromFile,ibinary_opt,nline_tot_ret,
+                   nplane_ret,kx,ky,kz,
+                   istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp,0,0,ny); 
+    }//endif
+
     int nplane    = (*nplane_ret);
     int nline_tot = (*nline_tot_ret);
     int nchareG   = config.nchareG;
+
+    if(nx!=nx_in || ny!=ny_in || nz!=nz_in){
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("Bad State fft size Input\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkExit();
+    }//endif
 
 //===================================================================================
 // Read the state into the rundescriptor puppy dog
@@ -1079,7 +1102,6 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 //===================================================================================
 // A little screen output for the fans
 
-    int nchareG = config.nchareG;
     char stuff[25];
     if(iget_vstate==0){
       strcpy(stuff,"coef");
@@ -1271,13 +1293,56 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
        fclose(fp);
     }//endif
 
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
+     CkPrintf("Done reading %s state from file: %s\n",stuff,fromFile);
+#endif
+
+//===================================================================================
+
+    processState(nPacked,nktot,arrCP,fromFile,ibinary_opt,nline_tot_ret,nplane_ret,kx,ky,kz, 
+                 istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,iget_decomp,iget_vstate,1,ny); 
+
+    *nx_ret = nx;
+    *ny_ret = ny;
+    *nz_ret = nz;
+
+//----------------------------------------------------------------------------------
+  }//end routine
+//===================================================================================
+
+
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+
+void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,int ibinary_opt,
+  	          int *nline_tot_ret,int *nplane_ret, int *kx, int *ky, int *kz, 
+                  int *istrt_lgrp,int *iend_lgrp,int *npts_lgrp,int *nline_lgrp,
+                  int iget_decomp,int iget_vstate, int iopt,int ny) {
+
+//===================================================================================
+// Set up some variables 
+
+#ifdef _CP_DEBUG_UTIL_VERBOSE_
+     CkPrintf("Proceesing %s state %s\n",stuff,fromFile);
+#endif
+
+    int nchareG = config.nchareG;
+
+    char stuff[25];
+    if(iget_vstate==0){
+      strcpy(stuff,"coef");
+    }else{
+      strcpy(stuff,"velocity");
+    }/*endif*/
+
 //===================================================================================
 // Add the bottom half of plane zero because the code likes to have it.
 // Eventually add reordering for non-doublePack case.
 
     if(config.doublePack){
        int n_ret;
-       ParaGrpParse::flip_data_set(nktot,&n_ret,kx,ky,kz,arrCP);
+       ParaGrpParse::flip_data_set(nktot,&n_ret,kx,ky,kz,arrCP,iopt);
        if(n_ret!=nPacked){
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           CkPrintf("Bad num pts in readState() %s: %d %d \n",nktot,n_ret,fromFile); 
@@ -1285,6 +1350,9 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
           CkExit();
        }//endif
     }//endif
+
+//===================================================================================
+// Process the state data
 
     int nline_tot = 1;
     int nplane    = 1;
@@ -1353,11 +1421,15 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
       CkExit();
     }//endif
 
-    complex *arrCPt = new complex[nPacked];
+    complex *arrCPt;
+    if(iopt==1){
+      arrCPt = new complex[nPacked];
+      CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    }//endif
+
     int *kxt        = new int[nPacked];
     int *kyt        = new int[nPacked];
     int *kzt        = new int[nPacked];
-    CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
     CmiMemcpy(kxt,kx,(nPacked*sizeof(int)));
     CmiMemcpy(kyt,ky,(nPacked*sizeof(int)));
     CmiMemcpy(kzt,kz,(nPacked*sizeof(int)));
@@ -1370,7 +1442,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
           kx[l]    = kxt[lt];
           ky[l]    = kyt[lt];
           kz[l]    = kzt[lt];
-          arrCP[l] = arrCPt[lt];
+          if(iopt==1){arrCP[l] = arrCPt[lt];}
 	}//endfor
         jc+=npts_line[j];
         lc++;
@@ -1437,7 +1509,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     int *kx_tmp = new int[nline_tot];
     int *ky_tmp = new int[nline_tot];
     int *k_tmp  = new int[mal_size];
-    CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));
+    if(iopt==1){CmiMemcpy(arrCPt,arrCP,(nPacked*sizeof(complex)));}
     CmiMemcpy(kxt,kx,(nPacked*sizeof(int)));
     CmiMemcpy(kyt,ky,(nPacked*sizeof(int)));
     CmiMemcpy(kzt,kz,(nPacked*sizeof(int)));
@@ -1455,7 +1527,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
         int istrt = istrt_line[(kx_ind[l]+loff)];
         int iend  = iend_line[(kx_ind[l]+loff)];
         for(int j=istrt,jk=joff;j<iend;j++,jk++){
-          arrCP[jk] = arrCPt[j];
+          if(iopt==1){arrCP[jk] = arrCPt[j];}
           kx[jk]    = kxt[j];
           ky[jk]    = kyt[j];
           kz[jk]    = kzt[j];
@@ -1481,23 +1553,25 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 // Debug output
 
 #ifdef _CP_DEBUG_LINE_
-    double norm = 0;
-    for(int i=1;i<nPacked;i++){
-       double wght_now = 2.0;
-       if(kx[i]==0 && ky[i]<0){wght_now=0.0;}
-       if(kx[i]==0 && ky[i]==0 && kz[i]<0){wght_now=0.0;}
-       if(kx[i]==0 && ky[i]==0 && kz[i]==0){wght_now=1.0;}
-       norm += (wght_now)*arrCP[i].getMagSqr();
+    if(iopt==1){
+      double norm = 0;
+      for(int i=1;i<nPacked;i++){
+        double wght_now = 2.0;
+        if(kx[i]==0 && ky[i]<0){wght_now=0.0;}
+        if(kx[i]==0 && ky[i]==0 && kz[i]<0){wght_now=0.0;}
+        if(kx[i]==0 && ky[i]==0 && kz[i]==0){wght_now=1.0;}
+        norm += (wght_now)*arrCP[i].getMagSqr();
+      }//endfor
+      double normt = 0;
+      for(int i=1;i<nPacked;i++){
+        double wght_now = 2.0;
+        if(kxt[i]==0 && kyt[i]<0){wght_now=0.0;}
+        if(kxt[i]==0 && kyt[i]==0 && kzt[i]<0){wght_now=0.0;}
+        if(kxt[i]==0 && kyt[i]==0 && kzt[i]==0){wght_now=1.0;}
+        normt += (wght_now)*arrCPt[i].getMagSqr();
+      }//endif
+      CkPrintf("state : %g %g\n",norm,normt);
     }//endif
-    double normt = 0;
-    for(int i=1;i<nPacked;i++){
-       double wght_now = 2.0;
-       if(kxt[i]==0 && kyt[i]<0){wght_now=0.0;}
-       if(kxt[i]==0 && kyt[i]==0 && kzt[i]<0){wght_now=0.0;}
-       if(kxt[i]==0 && kyt[i]==0 && kzt[i]==0){wght_now=1.0;}
-       normt += (wght_now)*arrCPt[i].getMagSqr();
-    }//endif
-    CkPrintf("state : %g %g\n",norm,normt);
 #endif
 
 //===================================================================================
@@ -1517,11 +1591,8 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
 
     *nplane_ret    = nplane;
     *nline_tot_ret = nline_tot;
-    *nx_ret        = nx;
-    *ny_ret        = ny;
-    *nz_ret        = nz;
 
-    delete [] arrCPt;
+    if(iopt==1){delete [] arrCPt;}
     delete [] kxt;
     delete [] kyt;
     delete [] kzt;
@@ -1536,7 +1607,7 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
     delete [] kx_ind;
 
 #ifdef _CP_DEBUG_UTIL_VERBOSE_
-     CkPrintf("Done reading %s state from file: %s\n",stuff,fromFile);
+     CkPrintf("Done proceesing %s state %s\n",stuff,fromFile);
 #endif
 
 //----------------------------------------------------------------------------------
@@ -1564,8 +1635,11 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int sizeXNL        = sim->ngrid_nloc_a;
     int nxNL           = sim->ngrid_nloc_a;
     int nyNL           = sim->ngrid_nloc_b;
+    int gen_wave       = sim->gen_wave; 
+    int ncoef          = sim->ncoef;
     int doublePack     = config.doublePack;
     double gExpandFact = config.gExpandFact;
+
 
 //============================================================================
 // Get the complex data, Psi(g) and the run descriptor (z-lines in g-space)
@@ -1583,9 +1657,10 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     int *ky           = NULL;
     int *kz           = NULL;
 
-    readStateIntoRuns(numData,complexPoints,runDescriptorVec,fname,ibinary_opt,
+    readStateIntoRuns(numData,ncoef,complexPoints,runDescriptorVec,fname,ibinary_opt,
                       &nline_tot,&(sim->nplane_x),istrt_lgrp,iend_lgrp,
-                      npts_lgrp,nline_lgrp,&kx_line,&ky_line,&kx,&ky,&kz,1);
+                      npts_lgrp,nline_lgrp,&kx_line,&ky_line,&kx,&ky,&kz,1,gen_wave,
+                      sizeX,sizeY,sizeZ);
     int nplane  = sim->nplane_x;
 
     if(config.low_x_size != nplane && config.doublePack){

@@ -24,6 +24,7 @@ class Config {
     int numFFTPoints;     // size number of r-grid    (piny)
     int numData;          // size number of g-grid    (piny)
     int ees_eext_opt;     // ees eext option on/off   (piny)
+    int gen_wave;         // generate initial states  (piny)
     int nchareG;          // num state g-space chares (driver)
     int nchareRhoG;       // num rho g-space chares   (driver)
     int scalc_per_plane;  // num of scalcs g-plane    (driver)
@@ -173,9 +174,9 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int);
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int);
    void readStateInfo(int &, int &, int &, int &, int &, int &,
-                      const char *, int);
+                      const char *, int,int,int,int,int);
    void simpleRangeCheck();
    void rangeExit(int, char *, int);
    void Finale(int, int, int, int, int);

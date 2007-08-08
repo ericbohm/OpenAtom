@@ -17,9 +17,9 @@
 #include "standard_include.h"
 
 #include "../class_defs/allclass_gen.h"
-#include "../class_defs/allclass_cp.h"
 #include "../class_defs/allclass_mdintegrate.h"
 #include "../class_defs/allclass_mdatoms.h"
+#include "../class_defs/allclass_cp.h"
 #include "../class_defs/allclass_mdinter.h"
 #include "../class_defs/allclass_mdintra.h"
 #include "../class_defs/typedefs_par.h"
@@ -69,7 +69,7 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
 //------------------------------------------------------------------------
 
-  int iii,nstate2,nstate,ncoef;
+  int iii,nstate,ncoef;
   int iextended_on,ewald_on;
   int cp_on,pimd_on,cp_md,isurf_on;
   int nchrg,iperd,pi_beads,pme_on;
@@ -253,17 +253,23 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                        mdclatoms_info->natm_tot,cpatom_maps->nab_initio,
                        cpopts->cp_ptens_calc,cp_dual_grid_opt_on,
                        cp_parse.cp_ecut);
-
    //----------------------------------------------------------------------
    // These are obsolete and can be nuked eventually
 
       ncoef   = cpcoeffs_info->ncoef;
       nstate  = cpcoeffs_info->nstate_up;
-      nstate2 = nstate*nstate;
       cpcoeffs_info->occ_up      =  (double *)
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
       cpcoeffs_info->occ_dn      = (double *)
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
+   //----------------------------------------------------------------------
+    if(gensimopts->istart_cp==0){
+      cpgen_wave->fill_gw_gpsi(cpatom_maps,cpcoeffs_info,cppseudo->nsplin_g,
+		               cppseudo->gmin_spl,cppseudo->gmax_spl,
+			       mdatom_maps->iatm_atm_typ,mdatom_maps->natm_typ,
+                               &filename_parse.vps_name[0],
+                               cpopts->cp_lda,cpopts->cp_lsda);
+    }//endif
   }//endif : cp_on
 
 //========================================================================

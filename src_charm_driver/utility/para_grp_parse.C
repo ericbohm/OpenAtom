@@ -176,7 +176,7 @@ void ParaGrpParse::get_chareG_line_prms(int nktot, int nchareG,int nline,
 //==========================================================================
 
 void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *kz,
-                                complex *data)
+                                complex *data,int iopt)
 
 //==========================================================================
     {//begin routine 
@@ -190,13 +190,15 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   int *kxt = (int *)malloc(nplane0*sizeof(int));
   int *kyt = (int *)malloc(nplane0*sizeof(int));
   int *kzt = (int *)malloc(nplane0*sizeof(int));
-  complex *datat = (complex *)malloc(nplane0*sizeof(complex));
+
+  complex *datat;
+  if(iopt==1){datat = (complex *)malloc(nplane0*sizeof(complex));}
 
   for(int i=0;i<nplane0-1;i++){
     kxt[i]= kx[i];
     kyt[i]= ky[i];
     kzt[i]= kz[i];
-    datat[i]= data[i];
+    if(iopt==1){datat[i]= data[i];}
     if(kx[i]!=0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Error while flipping piny dblpack data set\n");
@@ -207,7 +209,7 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   kxt[(nplane0-1)]   = kx[(nktot-1)];
   kyt[(nplane0-1)]   = ky[(nktot-1)];
   kzt[(nplane0-1)]   = kz[(nktot-1)];
-  datat[(nplane0-1)] = data[(nktot-1)];
+  if(iopt==1){datat[(nplane0-1)] = data[(nktot-1)];}
 
   if(kx[(nktot-1)]!=0 || ky[(nktot-1)] || kz[(nktot-1)]){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -223,7 +225,7 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
     kx[(i+nplane0)]   = kx[i];
     ky[(i+nplane0)]   = ky[i];
     kz[(i+nplane0)]   = kz[i];
-    data[(i+nplane0)] = data[i];
+    if(iopt==1){data[(i+nplane0)] = data[i];}
   }//endfor
 
 //==========================================================================
@@ -235,8 +237,10 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
     kx[i]      =  kxt[ind];
     ky[i]      = -kyt[ind];
     kz[i]      = -kzt[ind];
-    data[i].re =  datat[ind].re;
-    data[i].im = -datat[ind].im;
+    if(iopt==1){
+      data[i].re =  datat[ind].re;
+      data[i].im = -datat[ind].im;
+    }//endif
     if(kx[i]!=0 || ky[i]<ky[i1]){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_Error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Error while flipping piny dblpack data set\n");
@@ -248,7 +252,7 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
   kx[(nplane0-1)]   = kxt[(nplane0-1)];
   ky[(nplane0-1)]   = kyt[(nplane0-1)];
   kz[(nplane0-1)]   = kzt[(nplane0-1)];
-  data[(nplane0-1)] = datat[(nplane0-1)];
+  if(iopt==1){data[(nplane0-1)] = datat[(nplane0-1)];}
 
   if(nktot>=nplane0+1){
     if(kx[nplane0]!= 0 || ky[nplane0]!=0 || kz[nplane0]!=1){
@@ -270,10 +274,12 @@ void ParaGrpParse::flip_data_set(int nktot, int *n_ret, int *kx, int *ky, int *k
 // Exit
 
   (*n_ret) = (nktot+nplane0-1);
+
   free(kxt);
   free(kyt);
   free(kzt);
-  free(datat);
+
+  if(iopt==1){free(datat);}
 
 //==========================================================================
    }//end routine

@@ -17,8 +17,10 @@
 
 #include "standard_include.h"
 #include "../../include/configure.h"
+#include "../../include/CPcharmParaInfo.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 #include "../proto_defs/proto_handle_entry.h"
+#include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 #if CMK_PROJECTIONS_USE_ZLIB
 #include "zlib.h"
 #endif
@@ -28,7 +30,8 @@
 //===================================================================================
 void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
                         int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
-                        int numPes_in, int natm_typ_in,int ees_eext_opt_in)
+                        int numPes_in, int natm_typ_in,int ees_eext_opt_in,
+                        int gen_wave_in,int ncoef)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -77,6 +80,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   numPes       = numPes_in;
   natm_typ     = natm_typ_in;
   ees_eext_opt = ees_eext_opt_in;
+  gen_wave     = gen_wave_in;
 
 //===================================================================================
 // Set up the dictionaries
@@ -140,10 +144,17 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   int sizex,sizey,sizez,nPacked,minx,maxx;
 
-  sprintf (fname, "%s/state1.out", dataPath);
-  PRINTF("   Opening state file : %s\n",fname);
-    readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt);
-  PRINTF("   Closing state file : %s\n\n",fname);
+  if(gen_wave==0){
+    sprintf (fname, "%s/state1.out", dataPath);
+    PRINTF("   Opening state file : %s\n",fname);
+  }//endif
+
+  readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt,
+                nkf1,nkf2,nkf3,ncoef);
+
+  if(gen_wave==0){
+    PRINTF("   Closing state file : %s\n\n",fname);
+  }//endif
 
   if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -2117,7 +2128,8 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, int &nz,
-                            const char *fromFile, int ibinary_opt) {
+                           const char *fromFile, int ibinary_opt,
+                           int nkf1, int nkf2, int nkf3,int ncoef) {
 //===================================================================================
 // Check for errors
 
@@ -2140,8 +2152,9 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 //===================================================================================
 // Read the file
 
-  int nktot,nplane0,n=1;
+ int nktot,nplane0,n=1;
 
+ if(gen_wave==0){
  //---------------------------------------------------------------------------------
  // Ascii
   if(ibinary_opt==0){
@@ -2311,15 +2324,45 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
       fclose(fp);
 
   }//endif::binary
+ }//endif::gen_wave
 
 //===================================================================================
-// Set a few parameters
+// If we are generating the wave function from scratch
+
+ if(gen_wave==1){
+   nx    = nkf1;
+   ny    = nkf2;
+   nz    = nkf3;
+   nktot = ncoef;
+
+   int *ka       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
+   int *kb       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
+   int *kc       = (int *)cmalloc(nktot*sizeof(int),"parainfo")-1;
+
+   PhysicsParamTransfer::fetch_state_kvecs(ka,kb,kc,nktot,doublePack);
+
+   nplane0 = 0;
+   minx    = ka[1]; 
+   maxx    = ka[1];
+   for(int i=1;i<=nktot;i++){
+     if(ka[i]<minx){minx=ka[i];}
+     if(ka[i]>maxx){maxx=ka[i];}
+     if(ka[i]==0){nplane0++;}
+   }//endfor
+
+   cfree(&ka[1],"configures.C"); 
+   cfree(&kb[1],"configures.C"); 
+   cfree(&kc[1],"configures.C"); 
+
+ }//endif
+
+//===================================================================================
+// Set a few parameters before you go home
 
   if(minx<0){minx+=nx;}
   n    = minx; 
   minx = maxx; 
   maxx = n;
-
   if(doublePack){nPacked=nktot+nplane0-1;}
 
 //----------------------------------------------------------------------------------

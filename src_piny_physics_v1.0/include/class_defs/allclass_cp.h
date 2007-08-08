@@ -51,7 +51,7 @@ class CP {
   CPATOM_PME    cpatom_pme;
   CPVEL_SAMP    cpvel_samp;
   CPYLM_CONS    cpylm_cons;
-// GEN_WAVE      cpgen_wave; // not yet
+  GEN_WAVE      cpgen_wave; 
 
 //-------------------------------------------------------------------------
   CP(){num_pup=0;};
@@ -79,6 +79,7 @@ class CP {
    cpatom_pme.state_class_out();
    cpvel_samp.state_class_out();
    cpylm_cons.state_class_out();
+   cpgen_wave.state_class_out();
    PRINT_LINE_STAR;
    PRINTF("\n");
   }// end routine
@@ -98,6 +99,7 @@ class CP {
     cpatom_pme.pup(p);
     cpvel_samp.pup(p);
     cpylm_cons.pup(p);
+    cpgen_wave.pup(p);
     num_pup++;
     if(num_pup==2){
      PUP_PRINTF("\n");
