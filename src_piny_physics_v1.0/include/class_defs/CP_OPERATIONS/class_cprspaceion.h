@@ -23,7 +23,7 @@ class CPRSPACEION{
  //---------------------------------------------------------------------------
  // Functions
 
-static void CP_getionforce(const int , FastAtoms *, int , int, double *);
+static void CP_getionforce(const int , FastAtoms *, int , int, double *, double *, double *);
 
 //---------------------------------------------------------------------------
    }; //CPRSPACEION

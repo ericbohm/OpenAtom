@@ -10,7 +10,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int nproc,
-                                 double *pot_ewd_ret)
+                                 double *pot_ewd_ret, double *vself_ret, double *vbgr_ret)
 //============================================================================
   { /* Begin Function */
 //----------------------------------------------------------------------------
@@ -36,9 +36,13 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
 
   int natm_piny  = mdclatoms_info->natm_tot; 
   double alp_ewd = genewald->alp_ewd;
+  double ecut    = genewald->ecut;
+
   double *hmati  = gencell->hmati;
   double *hmat   = gencell->hmat;
+  double  vol    = gencell->vol;
   int    iperd   = gencell->iperd;
+
   double *q      = atoms->q;
   double *x      = atoms->x;
   double *y      = atoms->y;
@@ -145,7 +149,31 @@ void CPRSPACEION::CP_getionforce(const int natm,FastAtoms *atoms,int myid, int n
        CmiNetworkProgress();
      }//endfor : iatm
    }//endif : there is work to do 
-  *pot_ewd_ret = pot_ewd;
+  pot_ewd_ret[0] = pot_ewd;
+
+//============================================================================
+
+  if(myid==0){
+    double q2sum = 0.0;
+    double qsum  = 0.0;
+    for(int i=0;i<natm_piny;i++){
+      q2sum += q[i]*q[i];
+      qsum  += q[i];
+    }//endfor
+    double vself = -(q2sum*alp_ewd)/sqrt(M_PI);
+    double vbgr  = -(0.5*qsum*qsum*M_PI)/(alp_ewd*alp_ewd*vol);
+
+    double kcut = sqrt(2.0*ecut);
+    double arg  = kcut/(2.0*alp_ewd);
+    double eee  = exp(-arg*arg);
+    double tt   = 1.0/(1.0+p*arg);
+    double self_erfc = ((((((((e9*tt+e8)*tt+e7)*tt+e6)*tt+e5)*tt
+                             +e4)*tt+e3)*tt+e2)*tt+e1)*tt*eee;
+    double self_erf  = 1.0-self_erfc;
+
+    vself_ret[0] = vself*self_erf;
+    vbgr_ret[0]  = vbgr;
+  }//endif
 
 //============================================================================
 

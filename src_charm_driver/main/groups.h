@@ -48,6 +48,7 @@ class AtomsGrp: public Group {
   int nAtmMsgRecv;
   double kT;
   double pot_ewd_rs;      // total real space ewald energy
+  double vself, vbgr;
   double eKinetic;        // kinetic energy
   double eKineticNhc;     // NHC kinetic energy
   double potNhc;         // NHC potential energy

@@ -190,11 +190,13 @@ void AtomsGrp::StartRealspaceForces(){
    int myid   = CkMyPe();
    int nproc  = CkNumPes();
    pot_ewd_rs = 0.0;
+   vself      = 0.0;
+   vbgr       = 0.0;
 
 #ifndef  _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
    if(myid<natm-1){
-     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs);
+     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr);
    }//endif
 #endif
 #endif
@@ -475,6 +477,8 @@ void AtomsGrp::outputAtmEnergy() {
 
   if(myid==0){
      CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs_now);
+     CkPrintf("EWALD_SELF  = %5.8lf\n",vself);
+     CkPrintf("EWALD_BGR   = %5.8lf\n",vbgr);
      if(cp_min_opt==0){
         CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
         CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
