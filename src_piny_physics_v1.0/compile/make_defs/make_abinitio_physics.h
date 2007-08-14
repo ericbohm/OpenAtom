@@ -141,13 +141,4 @@ cp_lowdin.o :  $(STANDARD) $(FFTW) \
 	$(ECHO) $@
 	$(COBJ_TEST) $(CODE)/abinito_physics/cp_orthog/cp_lowdin.C
 
-#------------------------------------------------------------------
-gen_wave.o    :  $(STANDARD) $(COMPLEX) $(TYP_PAR) \
-               $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDATM) \
-               $(MATH) $(HANDLE_ENT)\
-               $(GEN_WAVE) \
-               $(CODE)/interface/coords_cp/gen_wave.C
-	$(ECHO) $@
-	$(COBJ_TEST) $(CODE)/interface/coords_cp/gen_wave.C
-
 #===================================================================
