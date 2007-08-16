@@ -211,13 +211,11 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     //------------------------------------------------------------------------
     // (J) Evolve the electrons to the next step    
        c->integrateModForce();
-       if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0){
-          c->sendRedPsi();  // Sync Redundant psi entries
-          if(c->iRecvRedPsi==0){
-              RTH_Suspend();  // Resume is called in acceptRedPsi
-   	  }//endif
-          c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
+       c->sendRedPsi();  // Sync Redundant psi entries
+       if(c->iRecvRedPsi==0){
+          RTH_Suspend();  // Resume is called in acceptRedPsi
        }//endif
+       c->doneRedPsiIntegrate(); // after integrate AND acceptRedPsi
 #endif  // you are moving everyting
     }// endif determine entry point
  //==========================================================================
@@ -1390,9 +1388,9 @@ void CP_State_GSpacePlane::startNewIter ()  {
   // Finished integrate and red psi are safe.
   // You can't get to these until you get passed through this routine
   finishedCpIntegrate = 0;
-  iRecvRedPsi      = 1;   if(cp_min_opt==0 && numRecvRedPsi>0){iRecvRedPsi  = 0;}
+  iRecvRedPsi      = 1;   if(numRecvRedPsi>0){iRecvRedPsi  = 0;}
   iRecvRedPsiV     = 1;   if(cp_min_opt==0 && numRecvRedPsi>0){iRecvRedPsiV = 0;}
-  iSentRedPsi      = 1;   if(cp_min_opt==0){iSentRedPsi  = 0;}
+  iSentRedPsi      = 0;
   iSentRedPsiV     = 1;   if(cp_min_opt==0){iSentRedPsiV = 0;}
 
   iteration++;   // my iteration # : not exactly in sync with other chares
@@ -3019,7 +3017,7 @@ void CP_State_GSpacePlane::sendPsi() {
     CkExit();
   }//endif
 
-  if(cp_min_opt==0 && iteration>0){
+  if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, you can't sendPsi without receiving Redpsi\n");
@@ -3110,7 +3108,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt       = sim->cp_min_opt;
-  if(cp_min_opt==0 && iteration>0){
+  if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");
@@ -3189,7 +3187,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt       = sim->cp_min_opt;
-  if(cp_min_opt==0 && iteration>0){
+  if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");
@@ -3274,7 +3272,7 @@ void CP_State_GSpacePlane::doNewPsi(){
   int cp_min_opt       = sim->cp_min_opt;
   int cp_min_update    = sim->cp_min_update;
 
-  if(cp_min_opt==0 && iteration>0){
+  if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Dude, you can't acceptPsi without receiving Redpsi\n");

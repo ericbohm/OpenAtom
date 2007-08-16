@@ -56,6 +56,7 @@ class CPINTEGRATE{
   static void cpSamplNHC(int ,int ,int,double*** ,double ***, double ***,double *, double *, 
                          double  );
 
+  static void CPrandomPsi(int , int , complex *);
   //-------------------------------------------------------------------------
   // cp_dynamics.C
   static void CP_integrate_dyn(int , int ,int ,complex *,complex *,complex *,double *, 

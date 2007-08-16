@@ -177,3 +177,27 @@ void CPINTEGRATE::cpSamplNHC(int len,int num,int nck,
 //------------------------------------------------------------------
   } //end routine 
 //=================================================================== 
+
+//============================================================================
+// Avoid linear dependencies : add a little random noise
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CPINTEGRATE::CPrandomPsi(int n, int ntot, complex *psi){
+//============================================================================
+  MDINTEGRATE  *mdintegrate  = MDINTEGRATE::get();                  
+#include "../class_defs/allclass_strip_mdintegrate.h"
+   double *qseed  =  &(mdvel_samp->qseed);
+   long   *iseed  =  &(mdvel_samp->iseed);
+   long   *iseed2 =  &(mdvel_samp->iseed2);
+
+   for(int i=0;i<n;i++){
+     double xxx  = altRandom(iseed)-0.5;
+     double yyy  = altRandom(iseed)-0.5;
+     double size = (psi[i].re*psi[i].re+psi[i].im*psi[i].im)*1.e-05;
+     psi[i].re += xxx*size;
+     psi[i].im += yyy*size;
+   }//endfor
+//============================================================================
+  }//end routine
+//============================================================================

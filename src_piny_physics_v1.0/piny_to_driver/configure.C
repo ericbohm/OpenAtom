@@ -156,6 +156,17 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
     PRINTF("   Closing state file : %s\n\n",fname);
   }//endif
 
+  sprintf (fname, "%s/ChkDirExistOAtom", dataPathOut);
+  FILE *fpck = fopen(fname,"w");
+  if(fpck==NULL){
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("   Output directory, %s , is not present\n",dataPathOut);
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+  fclose(fpck);
+  
+
   if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("   Incorrect FFT size in state files.\n");

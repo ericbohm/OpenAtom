@@ -132,7 +132,7 @@ void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,int *k_z,
   double cmass_cut_def = cpcoeffs_info->ecut_mass;
   double tpi           = 2.0*M_PI;
  
-  double cmass0;
+  double cmass0,pre,pre1,rat,swit;
   double gx,gy,gz,g2;
   double wght,wght_now;
 
@@ -147,6 +147,8 @@ void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,int *k_z,
 
    cmass_tau_def /= TIME_CONV;
    cmass0         = (2.0*cmass_tau_def*cmass_tau_def)*CP_EMAGIC;
+   pre            = 10.0*cmass_cut_def;
+   pre1           = 1.0-pre;
 
    wght           = 1.0;
    if(mydoublePack==1){wght=2.0;}
@@ -165,7 +167,9 @@ void CPINTEGRATE::CP_create_mass(int nktot,int *k_x,int *k_y,int *k_z,
 
      wght_now = (k_x[i]==0 ? 1.0 : wght);
      if(g2 > cmass_cut_def) {
-       cmass[i] = wght_now*cmass0*g2/cmass_cut_def;
+       rat      = 1.0/g2;
+       swit     = pre1*rat + pre;  //=1 at g2=cmass_cut : = 10*cmass_cut_def at g2=infty
+       cmass[i] = (wght_now*g2)*(cmass0/cmass_cut_def);
 #ifdef DEBUG_MASS
        if(k_x[i]==3 && k_y[i]==3 && k_z[i]==3){
          PRINTF("3 3 3 %g %g %g %g %g\n",wght_now,cmass0,g2,cmass_cut_def,cmass[i]);
