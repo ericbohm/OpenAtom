@@ -1778,10 +1778,18 @@ void create_non_local_list(CPPSEUDO *cppseudo,int natm_tot,
     PRINTF("   In the l=%d channel: there are %d active atom types\n",
               lang,natm_typ_lang[lang1]);
     if( (natm_typ_lang[lang1]>0) && (lang!=0) ){
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("Sorry, only l=0 non-locality accepted for now\n");
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-    }/*endif*/
+      if(ees_on==1 && lang>=2){
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("l>=2 non-locality experimental at present\n");
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+      }//endif
+      if(ees_on==0){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("l!=0 non-locality only supported with ees\n");
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
+    }//endif
   }/*endfor*/
 
 /*=========================================================================*/

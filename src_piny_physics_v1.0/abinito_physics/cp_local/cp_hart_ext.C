@@ -1009,6 +1009,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
   //----------------------------------------------
   // Local pseudo-potential information
+  int nsplin_g_tot     = cppseudo->nsplin_g_tot;
   int nsplin_g         = cppseudo->nsplin_g;
   int n_rad_max        = cppseudo->n_rad_max;
   int n_ang_max        = cppseudo->n_ang_max;

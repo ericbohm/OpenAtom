@@ -746,6 +746,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
   double rt_fpi     = cpylm_cons->rt_fpi;
   double rt_thrfpi  = cpylm_cons->rt_thrfpi;
   double rt_threpi  = cpylm_cons->rt_threpi;
+  rt_threpi        *= sqrt(2.0);
 
   int nfreq = 100;
 
@@ -784,9 +785,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
             g   = sqrt(g2);
             if(g!=0.0){
               ctheta   = zk/g;
-              y10      =  rt_thrfpi*ctheta;
-              dy_re[i] = d_re[i]*y10;
-              dy_im[i] = d_im[i]*y10;
+              y10      = rt_thrfpi*ctheta;
+              dy_re[i] = -d_im[i]*y10;
+              dy_im[i] =  d_re[i]*y10;
 	    }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
@@ -811,8 +812,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               stheta = gs/g;
               cphi   = (gs==0.0 ? 1.0 : xk/gs);
               y11    =  rt_threpi*stheta*cphi;
-              dy_re[i] = d_re[i]*y11;
-              dy_im[i] = d_re[i]*y11;
+              dy_re[i] = -d_im[i]*y11;
+              dy_im[i] =  d_re[i]*y11;
 	    }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
@@ -837,8 +838,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               stheta = gs/g;
               sphi   = (gs==0.0 ? 0.0 : yk/gs);
               y11    =  rt_threpi*stheta*sphi;
-              dy_re[i] = d_re[i]*y11;
-              dy_im[i] = d_re[i]*y11;
+              dy_re[i] = -d_im[i]*y11;
+              dy_im[i] =  d_re[i]*y11;
 	    }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
@@ -1083,10 +1084,13 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
                +zmat[(j+4)]*zmat[(j+4)]);
    }//endfor
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
+
    cp_enl_tot[0] += (cp_enl*vnormVol);
+
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
+
 //==========================================================================
 // Atom forces
 

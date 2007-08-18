@@ -860,17 +860,18 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    double  StartTime=CmiWallTimer();
 #endif    
 
-   CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
+   double cp_enl_now = 0.0;
+   CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl_now,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
  		      projPsiR,projPsiRScr,plane_index,nBreakJ,sBreakJ,
                       myPlane,thisIndex.x,fastAtoms);
+   cp_enl += cp_enl_now;
+
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesEnergyAtmForcR_, StartTime, CmiWallTimer());    
 #endif
 
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast
-
-
 
    if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_

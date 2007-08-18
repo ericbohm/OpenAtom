@@ -153,6 +153,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                 nkf1,nkf2,nkf3,ncoef);
 
   if(gen_wave==0){
+    sprintf (fname, "%s/state1.out", dataPath);
     PRINTF("   Closing state file : %s\n\n",fname);
   }//endif
 
