@@ -786,8 +786,8 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
   // 14)\conserveMemory{}
     ind=14;
     strcpy((*dict)[ind].keyword,"conserveMemory");
-    strcpy((*dict)[ind].keyarg,"off");    
-    strcpy((*dict)[ind].error_mes,"on/off");
+    strcpy((*dict)[ind].keyarg,"0");    
+    strcpy((*dict)[ind].error_mes,"-1 to optimize for speed 0 for normal or 1 to minimize footprint");
   //-----------------------------------------------------------------------------
   // 15)\lbgspace{}
     ind=15;
@@ -910,8 +910,8 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
   //-----------------------------------------------------------------------------
   // 14)\conserveMemory{}
     ind=14;
-    parse_on_off(dict[ind].keyarg,&conserveMemory,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    sscanf(dict[ind].keyarg,"%d",&conserveMemory);
+    if(conserveMemory<-1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 15)\lbgspace{}
     ind=15;
@@ -957,7 +957,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 30;
+  num_dict[0] = 32;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_pc")-1;
 
 //=================================================================================
@@ -974,25 +974,25 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 1)\usePairDirectSend{}
     ind=1;
     strcpy((*dict)[ind].keyword,"usePairDirectSend");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 2)\PCCollectTiles{}
     ind=2;
     strcpy((*dict)[ind].keyword,"PCCollectTiles");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 3)\PCdelayBWSend{}
     ind=3;
     strcpy((*dict)[ind].keyword,"PCdelayBWSend");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 4)\PCstreamBWout{}
     ind=4;
     strcpy((*dict)[ind].keyword,"PCstreamBWout");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 5)\PCstreamFWblock{}
@@ -1094,7 +1094,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 21)\phantomSym{}
     ind=21;
     strcpy((*dict)[ind].keyword,"phantomSym");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 22)\lbpaircalc{}
@@ -1118,7 +1118,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 25)\gSpaceSum{}
     ind=25;
     strcpy((*dict)[ind].keyword,"gSpaceSum");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 26)\numChunks{}
@@ -1150,6 +1150,20 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"usePairEtoM");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 31)\invsqr_tolerance{}
+    ind=31;
+    strcpy((*dict)[ind].keyword,"invsqr_tolerance");
+    sprintf((*dict)[ind].keyarg,"%0.16g",1e-15);
+    strcpy((*dict)[ind].error_mes,"a number > 0.0");
+  //-----------------------------------------------------------------------------
+  // 32)\invsqr_max_iter{}
+    ind=32;
+    strcpy((*dict)[ind].keyword,"invsqr_max_iter");
+    sprintf((*dict)[ind].keyarg,"%d",10);
+    strcpy((*dict)[ind].error_mes,"a number >= 0");
+  //-----------------------------------------------------------------------------
+
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1317,6 +1331,20 @@ void Config::set_config_params_pc  (DICT_WORD *dict, char *fun_key, char *input_
     ind=30;
     parse_on_off(dict[ind].keyarg,&usePairEtoM,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 31)\invsqr_tolerance{}
+    ind=31;
+    sscanf(dict[ind].keyarg,"%lg",&invsqr_tolerance);
+    if(invsqr_tolerance<=1e-100){
+      //      CkPrintf("what the hell is wrong with %.15g \n",invsqr_tolerance);
+      keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 32)\invsqr_max_iter{}
+    ind=32;
+    sscanf(dict[ind].keyarg,"%d",&invsqr_max_iter);
+    if(invsqr_max_iter<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+
 
 //===================================================================================
 // Clean up the user input
@@ -2406,7 +2434,6 @@ void Config::simpleRangeCheck(){
   rangeExit(PCdelayBWSend,"PCdelayBWSend",1);    
   rangeExit(PCstreamBWout,"PCstreamBWout",1);
   rangeExit(doublePack,"doublePack",1);
-  rangeExit(conserveMemory,"conserveMemory",1);
   rangeExit(fftprogresssplit,"fftprogresssplit",0);
   rangeExit(fftprogresssplitReal,"fftprogresssplitReal",0);
   rangeExit(rhoGHelpers,"rhoGHelpers",0);
@@ -2414,6 +2441,8 @@ void Config::simpleRangeCheck(){
   rangeExit(numMulticastMsgs,"numMulticastMsgs",0);
   rangeExit(PCSpanFactor,"numMulticastMsgs",0);
   rangeExit(toleranceInterval,"toleranceInterval;",0);
+  //  rangeExit(invsqr_tolerance,"invsqr_tolerance;",0);
+  rangeExit(invsqr_max_iter,"invsqr_max_iter;",0);
   rangeExit(numChunks,"numChunks;",0);
   rangeExit(phantomSym,"phantomSym;",1);
   rangeExit(gSpaceSum,"gSpaceSum;",1);
@@ -2559,23 +2588,37 @@ void Config::rangeExit(int param, char *name, int iopt){
       EXIT(1);
     }//endif
 
-    if (nstates % sGrainSize != 0){
+    if((PCCollectTiles && PCstreamBWout)||(!PCCollectTiles && ! PCstreamBWout)) {
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   number of states should be divisible by S matrix grain-size\n");
+      PRINTF("   Must PCCollectTiles and PCstreamBWout are mutually exclusive.   Choose one (PCstreamBWout is usually faster).\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }
+
+    if (nstates % sGrainSize > sGrainSize/4 ){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Your remainder should be less than 1/4 of your grainsize\n   Or Load Imbalance will substantially degrade performance\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }
+    if (nstates % sGrainSize != 0 && !gSpaceSum){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Must enable gSpaceSum to support number of states not divisible\n    by S matrix grain-size\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
 
+
     if (sGrainSize %orthoGrainSize != 0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   S matrix grain-size should be divisible by orthoGrainSize\n");
+      PRINTF("   S matrix grain-size must be divisible by orthoGrainSize\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
 
     if (sGrainSize %lambdaGrainSize != 0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   S matrix grain-size should be divisible by lambdaGrainSize\n");
+      PRINTF("   S matrix grain-size must be divisible by lambdaGrainSize\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
@@ -2590,7 +2633,6 @@ void Config::rangeExit(int param, char *name, int iopt){
     if(phantomSym && !gSpaceSum){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   Current implementation of phantomSym requires gSpaceSum\n");
-      PRINTF("   The price of midnight hacking sessions.\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif

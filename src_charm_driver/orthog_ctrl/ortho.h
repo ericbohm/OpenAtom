@@ -42,12 +42,6 @@
  * little ortho can run once it gets its input, while the scalcs would
  * have to assemble their inputs from multiple multicasts.  
  *
- * The assembling approach allows for the later introduction of
- * streaming computations, where the scalc does its multiply using
- * each orthograin submatrix as it arrives.  Considering how messy the
- * backward path is already, introducing that streaming will require
- * significant correctness testing.
- *
  * Implementation details for this require that each ortho object
  * participate in a section which has a section multicast client
  * directed to the sGrainSize PC section.  The converse PC sGrainSize
@@ -67,7 +61,18 @@
  * number of processors is greater than 2 * the number of ortho
  * chares.
  * 
- * 
+ * Allowing sgrainsize choices which are nstates % sgrainsize != 0
+ * forces us to handle remainder logic.  To avoid overlap/straddle
+ * issues between ortho and PC, we still enforce sgrainssize %
+ * orthograinsize ==0.  Complexity cost here comes in two forms.
+ * 1. Now ortho tiles are not guaranteed to be of uniform size.  The
+ * remainder states which will reside in the last row and column will
+ * result in tiles larger than orthograinsize*orthograinsize.
+ * 2. Ortho tiles are not guaranteed to be square.  Ortho tiles for
+ * the last row and column of PC will have M x N size where M != N.
+ *
+ * The total multiply itself will still of course be nstates X
+ * nstates.
 ********************************************************************************/
 
 //============================================================================
@@ -121,6 +126,8 @@ class Ortho : public CBase_Ortho{
   void step_2_send(void);
 
   void recvStep2(double *step2result, int size);
+
+  void sendOrthoTtoAsymm();
 
   // get our copy of the pcproxy
   void setPCproxy(CProxySection_PairCalculator inproxy);
@@ -304,19 +311,23 @@ class Ortho : public CBase_Ortho{
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;
-  /* Note, for now m and n are always equal. When we move to chunks not all
-   * having the same grain size, these will not be the same and there will
-   * probably be some debugging to do.
-   */
   int m, n;
+  double invsqr_tolerance;
+  int invsqr_max_iter;
   CLA_Matrix_interface matA1, matB1, matC1, matA2, matB2, matC2, matA3,
    matB3, matC3;
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   double *savedtmat;
 #endif
+#ifdef _CP_ORTHO_DEBUG_COMPARE_LMAT_
+  double *savedlmat;
+#endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
   double *savedsmat;
+#endif
+#ifdef _CP_ORTHO_DEBUG_COMPARE_GMAT_
+  double *savedgmat;
 #endif
 
 };

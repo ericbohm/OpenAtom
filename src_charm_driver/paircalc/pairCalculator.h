@@ -217,6 +217,10 @@ extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int 
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
+extern "C" void sendMatrix( int n, double *ptr1, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
+
+
+
 
 void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 

@@ -82,14 +82,13 @@
 //#define _CP_DEBUG_NON_LOCAL_ONLY_
 //#define _CP_DEBUG_OLDFORCE_
 //#define _CP_DEBUG_LMAT_
-//#define _CP_DEBUG_LMAT_
 //#define _CP_DEBUG_STATEG_VERBOSE_
 //#define _CP_DEBUG_DYNAMICS_
 //#define _CP_DEBUG_ORTHO_OFF_
 //#define _CP_DEBUG_SFNL_OFF_
 //#define _CP_DEBUG_PSI_OFF_
 #define _CP_DEBUG_COEF_SCREEN_
-#define _CP_DEBUG_UPDATE_OFF_
+//#define _CP_DEBUG_UPDATE_OFF_
 //#define _CP_DEBUG_NONLOC_BARRIER_
 
 //=============================================================================
@@ -110,8 +109,10 @@
 // src_charm_driver/orthog_ctrl/ortho.C
 //#define _CP_DEBUG_SMAT_
 //#define _CP_DEBUG_TMAT_
+//#define _CP_ORTHO_DUMP_LMAT_
 //#define _CP_ORTHO_DUMP_SMAT_
 //#define _CP_ORTHO_DUMP_TMAT_
+//#define _CP_ORTHO_DEBUG_COMPARE_LMAT_
 //#define _CP_ORTHO_DEBUG_COMPARE_SMAT_
 //#define _CP_ORTHO_DEBUG_COMPARE_TMAT_ 
 

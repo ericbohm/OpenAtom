@@ -259,7 +259,7 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
   maptable=_map;
   availprocs=_availprocs;
   availprocs->reset();
-
+  int maxstateindex=max_states/grainsize*grainsize;
   if(planes_per_pe==0)
     CkAbort("Choose a larger Gstates_per_pe\n");
   if(symmetric)
@@ -307,8 +307,8 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		    thisPlaneBox->reset();
 
 		}
-	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-		for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
+	      for(int xchunk=0; xchunk<maxstateindex; xchunk=xchunk+grainsize)
+		for(int ychunk=xchunk; ychunk<maxstateindex; ychunk=ychunk+grainsize)
 		  { // could find centroid here
 		    if(useCentroid)
 		      {
@@ -366,8 +366,8 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	{
 	  for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 	    for(int newdim=0; newdim<numChunksSym; newdim++)
-	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-		for(int ychunk=xchunk; ychunk<max_states; ychunk=ychunk+grainsize)
+	      for(int xchunk=0; xchunk<maxstateindex; xchunk=xchunk+grainsize)
+		for(int ychunk=xchunk; ychunk<maxstateindex; ychunk=ychunk+grainsize)
 		  //for(int newdim=0; newdim<numChunksSym; newdim++)
 		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 		    {
@@ -461,8 +461,8 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 		    thisPlaneBox->reset();
 		}
 
-	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-		for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+	      for(int xchunk=0; xchunk<maxstateindex; xchunk=xchunk+grainsize)
+		for(int ychunk=0; ychunk<maxstateindex; ychunk=ychunk+grainsize)
 		  { // could find centroid here
 		    if(useCentroid)
 		      {
@@ -518,8 +518,8 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 	{
 	  for(int pchunk=0; pchunk<nchareG; pchunk=pchunk+planes_per_pe)
 	    for(int newdim=0; newdim<numChunksAsym; newdim++)
-	      for(int xchunk=0; xchunk<max_states; xchunk=xchunk+grainsize)
-		for(int ychunk=0; ychunk<max_states; ychunk=ychunk+grainsize)
+	      for(int xchunk=0; xchunk<maxstateindex; xchunk=xchunk+grainsize)
+		for(int ychunk=0; ychunk<maxstateindex; ychunk=ychunk+grainsize)
 		  for(int plane=pchunk; plane<pchunk+planes_per_pe && plane<nchareG; plane++)
 		    {
 		      CkArrayIndex4D idx4d(plane, xchunk, ychunk, newdim);
@@ -1047,94 +1047,6 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 #endif
 }
 
-/*OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
-{
-  maptable = _map;
-  availprocs = _availprocs;
-  int oobjs_per_pe;
-  int srcpe = 0, destpe;
-  bool useSublist=true;
-  bool useExclude=true;
-  oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count());
-  int *Pecount= new int [config.numPes];
-  bzero(Pecount, config.numPes*sizeof(int)); 
-  int s1 = 0, s2 = 0;
-  for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
-    for(int state2 = state1; state2 < nstates; state2 += orthoGrainSize)
-      {
-	s1 = (state1/sGrainSize);
-	s1 = s1 * sGrainSize;
-	s2 = (state2/sGrainSize);
-	s2 = s2 * sGrainSize;
-	PeList *thisStateBox=NULL;
-	if(useSublist)
-	  {
-	    thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
-	    useExclude = true;
-	    *thisStateBox - *exclusionList;
-	    thisStateBox->reindex();
-	    thisStateBox->reset();
-	  }
-	else
-	  {
-	    thisStateBox=availprocs;
-	  }
-	if(thisStateBox->count() == 0)
- 	  {  // the sublist scheme failed 
-	    CkPrintf("Ortho %d %d ignoring SubList\n", state1, state2);
-	    if(thisStateBox!=availprocs)
-	      delete thisStateBox;
-	    thisStateBox = availprocs;
-	    *thisStateBox - *exclusionList;
-	    thisStateBox->reindex();
-	    useSublist=false;
-	  }
-
-	if(thisStateBox->count() == 0)
-	  {
-	    CkPrintf("Ortho %d %d ignoring exclusion\n", state1, state2);
-	    if(thisStateBox!=availprocs)
-	      delete thisStateBox;
-	    thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
-	    useExclude = false;
-	  }
-	sortByCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
-	destpe=thisStateBox->findNext();
-	if(thisStateBox->count()==0)
-	  thisStateBox->reset();
-
-#ifdef USE_INT_MAP
-	maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
-#else
-	maptable->put(intdual(state1/orthoGrainSize, state2/orthoGrainSize))=destpe;
-#endif
-	Pecount[destpe]++;
-	if(Pecount[destpe]>=oobjs_per_pe)
-	  {
-	    exclusionList->mergeOne(destpe);
-	  }
-	if(state2!=state1)
-	  {
-	    destpe=thisStateBox->findNext();
-	    if(thisStateBox->count()==0)
-	      thisStateBox->reset();
-#ifdef USE_INT_MAP
-	    maptable->set(state2/orthoGrainSize, state1/orthoGrainSize, destpe);
-#else
-	    maptable->put(intdual(state2/orthoGrainSize, state1/orthoGrainSize))=destpe;
-#endif
-	    Pecount[destpe]++;	
-	    if(Pecount[destpe]>=oobjs_per_pe)
-	      {
-		exclusionList->mergeOne(destpe);
-	      }
-	  }
-	if(thisStateBox!=availprocs)
-	  delete thisStateBox;
-      }
-  delete [] Pecount;
-}
-*/
 
 OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
 {
@@ -1144,17 +1056,23 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
   int srcpe = 0, destpe;
   bool useSublist=true;
   bool useExclude=true;
-  oobjs_per_pe = (nstates/orthoGrainSize)*(nstates/orthoGrainSize)/(availprocs->count());
+  int maxorthoindex=(nstates/orthoGrainSize-1);
+  int northo=(maxorthoindex+1)*(maxorthoindex+1);
+  oobjs_per_pe = northo/(availprocs->count());
   int *Pecount= new int [config.numPes];
   bzero(Pecount, config.numPes*sizeof(int)); 
   int s1 = 0, s2 = 0;
-  for(int state1 = 0; state1 < nstates; state1 += orthoGrainSize)
-    for(int state2 = 0; state2 < nstates; state2 += orthoGrainSize)
+  int maxpcstateindex=(nstates/sGrainSize-1)*sGrainSize;
+  int maxorthostateindex=(nstates/orthoGrainSize-1)*orthoGrainSize;
+  for(int state1 = 0; state1 <= maxorthostateindex; state1 += orthoGrainSize)
+    for(int state2 = 0; state2 <= maxorthostateindex; state2 += orthoGrainSize)
     {
       s1 = (state1/sGrainSize);
       s1 = s1 * sGrainSize;
+      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
       s2 = (state2/sGrainSize);
       s2 = s2 * sGrainSize;
+      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
       PeList *thisStateBox;
       if(useSublist)
 	{
@@ -1195,11 +1113,14 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       */
 	
       destpe=minDistCentroid(thisStateBox, nplanes, s1, s2, numChunks, scalcmap);
-
+      int os1 = (state1/orthoGrainSize);
+      os1 = (os1>maxorthoindex) ? maxorthoindex :os1;
+      int os2=(state2/orthoGrainSize);
+      os2 = (os2>maxorthoindex) ? maxorthoindex :os2;
 #ifdef USE_INT_MAP
-      maptable->set(state1/orthoGrainSize, state2/orthoGrainSize, destpe);
+      maptable->set(os1, os2, destpe);
 #else
-      maptable->put(intdual(state1/orthoGrainSize, state2/orthoGrainSize))=destpe;
+      maptable->put(intdual(os1, os2))=destpe;
 #endif
       Pecount[destpe]++;	
       if(Pecount[destpe]>=oobjs_per_pe)
@@ -1238,9 +1159,9 @@ OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orth
       availprocs->reset();
       useExclude=false;
     }
-
-  for(int state1 = 0; state1 < nstates/orthoGrainSize; state1++)
-    for(int state2 = 0; state2 < nstates/orthoGrainSize; state2++)
+  int maxorthoindex=(nstates/orthoGrainSize-1);
+  for(int state1 = 0; state1 < maxorthoindex; state1++)
+    for(int state2 = 0; state2 < maxorthoindex; state2++)
     {
 
 #ifdef USE_INT_MAP
@@ -1802,7 +1723,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
       
   if(config.torusMap==1) {
     int sumX=0, sumY=0, sumZ=0;
-    for(int state=stateX;state<stateX+grainsize;state++)
+    for(int state=stateX;(state<stateX+grainsize)&&(state<config.nstates);state++)
     {
       int X, Y, Z;
       topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
@@ -1811,7 +1732,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
       sumZ+=Z;
       points++;
     }
-    for(int state=stateY;state<stateY+grainsize;state++)
+    for(int state=stateY;(state<stateY+grainsize)&&(state<config.nstates);state++)
     {
       int X, Y, Z;
       topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
@@ -1827,12 +1748,12 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
   }
   else {
     int sumPe=0;
-    for(int state=stateX;state<stateX+grainsize;state++)
+    for(int state=stateX;(state<stateX+grainsize)&&(state<config.nstates);state++)
     {
       sumPe+=gsmap->get(state,plane);
       points++;
     }
-    for(int state=stateY;state<stateY+grainsize;state++)
+    for(int state=stateY;(state<stateY+grainsize)&&(state<config.nstates);state++)
     {
       sumPe+=gsmap->get(state,plane);
       points++;

@@ -119,17 +119,17 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #endif
 
-
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
-
+  CkAssert(mapid);
   if(sym)
     for(int numX = 0; numX < numZ; numX ++){
-      for (int s1 = 0; s1 < s; s1 += grainSize) {
+      for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) {
 	int s2start=(phantomSym) ? 0 : s1;
-	for (int s2 = s2start; s2 < s; s2 += grainSize) {
+	for (int s2 = s2start; s2 <= maxpcstateindex; s2 += grainSize) {
 	  for (int c = 0; c < numChunks; c++) {
 	    if(mapid) {
 #ifdef _PAIRCALC_CREATE_DEBUG_
@@ -155,8 +155,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   else
     {
       for(int numX = 0; numX < numZ; numX ++){
-	for (int s1 = 0; s1 < s; s1 += grainSize) {
-	  for (int s2 = 0; s2 < s; s2 += grainSize) {
+	for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) {
+	  for (int s2 = 0; s2 <= maxpcstateindex; s2 += grainSize) {
 	    for (int c = 0; c < numChunks; c++) {
 	      if(mapid) {
 #ifdef _PAIRCALC_CREATE_DEBUG_
@@ -205,20 +205,22 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   int s2=state/pcid->GrainSize*pcid->GrainSize;
+  s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
 									       plane, plane, 1,
-									       0, nstates-GrainSize, GrainSize,
+									       0, maxpcstateindex, GrainSize,
 									       s2, s2, 1,
 									       chunk, chunk,1);
   CkSectionID sid=sectProxy.ckGetSectionID();
   int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
-  CkAssert(order);
+  //  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  //  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
@@ -233,12 +235,16 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
   int GrainSize=pcid->GrainSize;
   int s1=state / GrainSize * GrainSize; //column
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+
   int nstates=pcid->nstates;
   // all nondiagonal elements 
   // so we'll have to make this the tedious explicit way
+
   CkArrayIndexMax *elems= new CkArrayIndexMax[nstates/GrainSize-1];
   int ecount=0;
-  for(int s2 =0; s2<nstates; s2+=GrainSize)
+  for(int s2 =0; s2<=maxpcstateindex; s2+=GrainSize)
     {
       if(s1!=s2)
 	{
@@ -266,11 +272,15 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
-  int s2=state/pcid->GrainSize*pcid->GrainSize; //row
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  int s2=state/pcid->GrainSize*pcid->GrainSize;
+  s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
+
   int GrainSize=pcid->GrainSize;
+  int s2range= (s2==0) ? 1 : GrainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
 									       plane, plane, 1,
-									       0, s2, GrainSize,
+									       0, s2, s2range,
 									       s2, s2, 1,
 									       chunk, chunk, 1);
   CkSectionID sid=sectProxy.ckGetSectionID();
@@ -291,23 +301,29 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
-  int s1=state/pcid->GrainSize*pcid->GrainSize; //column
-  int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
-  CkAssert(s1+GrainSize<nstates);
+  int s1=state / GrainSize * GrainSize; //column
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+
+  int nstates=pcid->nstates;
+  int s2start=s1+GrainSize;
+  s2start= (s2start>maxpcstateindex) ? maxpcstateindex : s2start;
+  int s2range= (s2start==maxpcstateindex) ? 1 : GrainSize;
+  CkAssert(s2start<nstates);
   CProxySection_PairCalculator sectProxy = 
       CProxySection_PairCalculator::ckNew(pcid->Aid,  
 					  plane, plane, 1,
 					  s1, s1, 1,
-					  s1+GrainSize, nstates-GrainSize, GrainSize,
+					  s2start, maxpcstateindex, s2range,
 					  chunk, chunk, 1);
 
   CkSectionID sid=sectProxy.ckGetSectionID();
   int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
-  CkAssert(order);
+  //  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  //  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
@@ -350,15 +366,21 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
     }
   }
   int numOrtho=pcid->GrainSize/orthoGrainSize;
-  int orthoIndexX=(orthoX*orthoGrainSize-s1)/orthoGrainSize;
-  int orthoIndexY=(orthoY*orthoGrainSize-s2)/orthoGrainSize;
+  int maxorthostateindex=(pcid->nstates/orthoGrainSize-1)*orthoGrainSize;
+  int orthoIndexX=(orthoX*orthoGrainSize);
+
+  orthoIndexX= (orthoIndexX>maxorthostateindex) ? maxorthostateindex : orthoIndexX;
+  int orthoIndexY=(orthoY*orthoGrainSize);
+  orthoIndexY= (orthoIndexY>maxorthostateindex) ? maxorthostateindex : orthoIndexY;
+  orthoIndexX-=s1;
+  orthoIndexY-=s2;
   int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
 
   int newListStart=orthoIndex;
   if(newListStart> ecount)
     newListStart= newListStart % ecount;
-  bool order=reorder_elem_list( elems, ecount, newListStart);
-  CkAssert(order);
+  //  bool order=reorder_elem_list( elems, ecount, newListStart);
+  //  CkAssert(order);
   // now that we have the section, make the proxy
   CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   CProxySection_PairCalculator *sectProxy=&sProxy;
@@ -466,7 +488,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    }
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	  if(pcid->Symmetric && myPlane==0)
-	    dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,myS,chunk,pcid->Symmetric);
+	    dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcid->Symmetric);
 #endif
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
@@ -504,7 +526,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 	      if(pcid->Symmetric && myPlane==0)
-		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,myS,chunk,pcid->Symmetric);
+		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
 #endif
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
@@ -586,7 +608,7 @@ void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim
   FILE *loutfile = fopen(filename, "w");
   for(int i=0;i<xdim;i++)
     for(int j=0;j<ydim;j++)
-      fprintf(loutfile,"%d %d %.12g\n",i,j,matrix[i*ydim+j]);
+      fprintf(loutfile,"%d %d %.12g\n",x+i,y+j,matrix[i*ydim+j]);
   fclose(loutfile);
 }
 
@@ -701,8 +723,9 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   int numChunks =  pcid->numChunks;
   int nstates = pcid->nstates;
   int symmetric = pcid->Symmetric;
-
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   s1 = (myS/grainSize) * grainSize;
+  s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
     //create multicast proxy array section list 
     if(symmetric)
@@ -717,7 +740,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	    int erowcount=0;
 	    int ecount=0;
 	    CkArrayIndex4D idx(myPlane,0,0,chunk);
-	    for(s2 = 0; s2 < nstates; s2 += grainSize){
+	    for(s2 = 0; s2 <= maxpcstateindex; s2 += grainSize){
 	      if(s1 <= s2)
 		{
 		  idx.index[1]=s1;
@@ -788,12 +811,12 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	    pcid->proxyLFrom[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,  
 								      myPlane, myPlane, 1,
 								      s1, s1, 1,
-								      0, nstates-grainSize, grainSize,
+								      0, maxpcstateindex, grainSize,
 								      chunk, chunk, 1);
 	    pcid->existsLproxy=true;      
 	    if(pcid->useDirectSend && chunk==0)
 	      {
-		for(s2 = 0; s2 < nstates; s2 += grainSize){
+		for(s2 = 0; s2 <= maxpcstateindex; s2 += grainSize){
 		  pcid->listLFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,chunk));
 		}
 	      }
@@ -918,9 +941,10 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
   int numChunks =  pcid->numChunks;
   int nstates = pcid->nstates;
   bool symmetric = pcid->Symmetric;
-
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   CkAssert(symmetric == false);
   s2 = (myS/grainSize) * grainSize;
+  s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
   //create multicast proxy list 
   if(!pcid->existsRproxy)
     {
@@ -933,12 +957,12 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 	  pcid->proxyRNotFrom[c] = 
 	    CProxySection_PairCalculator::ckNew(pcid->Aid,  
 						myPlane, myPlane, 1,
-						0, nstates-grainSize, grainSize,
+						0, maxpcstateindex, grainSize,
 						s2, s2, 1,
 						c, c, 1);
 	  if(pcid->useDirectSend && c==0)
 	    {
-	      for(int s1 = 0; s1 < nstates; s1 += grainSize){
+	      for(int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize){
 		pcid->listRNotFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,c));
 	      }
 	    }
@@ -1033,6 +1057,37 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
     pcid->proxyAsym.multiplyResult(omsg);
   }
 }
+
+
+/* Send orthoT now that we have it so it will be ready when Asymm
+   starts this iteration.  */
+void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("     Calc SendMatrix (orthoT)\n");
+#endif
+
+    multiplyResultMsg *omsg;
+
+    if(priority>0)
+      {
+	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
+	*(int*)CkPriorityPtr(omsg) = priority;    
+	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+      }
+    else
+      {
+	omsg=new ( n,0 ) multiplyResultMsg;
+      }
+    omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+#ifdef _NAN_CHECK_
+    for(int i=0;i<n ;i++)
+      {
+	CkAssert(finite(omsg->matrix1[i]));
+      }
+#endif
+    pcid->proxyAsym.acceptOrthoT(omsg);
+}
+
 
 #ifdef ROTATE_LIST
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)

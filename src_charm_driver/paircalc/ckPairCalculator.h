@@ -289,7 +289,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, bool conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -335,19 +335,23 @@ class PairCalculator: public CBase_PairCalculator {
 
 
     }
+
   void multiplyForwardStream(bool flag_dp);
   void sendTiles(bool flag_dp);
+  void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
   void multiplyForward(bool);
   void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
   void acceptPairData(calculatePairsMsg *msg);
   void acceptPhantomData(phantomMsg *msg);
+  void acceptOrthoT(multiplyResultMsg *msg);
   void multiplyResult(multiplyResultMsg *msg);
   void multiplyPsiV();
+  void bwMultiplyDynOrthoT();
   void multiplyResultI(multiplyResultMsg *msg);
-  void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta);
-  void bwSendHelper(int orthoX, int orthoY, int numOrthoCol, int numOrtho);
+  void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
+  void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
   void sendBWResult(sendBWsignalMsg *msg);
   void sendBWResultDirect(sendBWsignalMsg *msg);
   void sendBWResultColumn(bool other, int startGrain, int endGrain);
@@ -355,8 +359,8 @@ class PairCalculator: public CBase_PairCalculator {
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
   void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
-  void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0 );
-  void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0);
+  void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0, int xtra1=0, int xtra2=0);
+  void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0, int iter=0);
   void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
   void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
   void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
@@ -365,9 +369,16 @@ class PairCalculator: public CBase_PairCalculator {
 
   int numRecd;               //! number of messages received
   int numRecdBW;               //! number of messages received BW
-  int numExpected;           //! number of messages expected
+  int numRecdBWOT;               //! number of messages received BW orthoT
+  int numExpected;           //! number of messages expected all
+  int numExpectedX;           //! number of messages expected x-axis
+  int numExpectedY;           //! number of messages expected y-axis
   int grainSize;             //! number of states per chare
-  int orthoGrainSize;        //! number of states per ortho tile
+  int grainSizeX;             //! number of states per chare x-axis
+  int grainSizeY;             //! number of states per chare y-axis
+  int orthoGrainSize;        //! number of states per ortho tile lower-bound
+  int orthoGrainSizeRemX;    //! sgrainSizeX % orthoGrainSize
+  int orthoGrainSizeRemY;    //! sgrainSizeY % orthoGrainSize
   int blkSize;               //! number points in gspace plane
   int numStates;             //! total number of states
   int numPoints;             //! number of points in this chunk
@@ -400,10 +411,14 @@ class PairCalculator: public CBase_PairCalculator {
   int *touchedTiles;         //! tracker to detect when tiles are full
   
   bool symmetric;            //! if true, one triangle is missing
-  bool conserveMemory;       //! free up matrices when not in use
+  int conserveMemory;       //! free up matrices when not in use
   bool lbpaircalc;
+  bool notOnDiagonal;              //! being on or off diagonal changes many things
+  bool symmetricOnDiagonal;     //! diagonal symmetric special case
+
   bool phantomSym;           //! phantoms exist to balance the BW path
 			     //otherdata work
+
 
   bool amPhantom;            //! consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
   
@@ -445,8 +460,9 @@ class PairCalculator: public CBase_PairCalculator {
   /* to support the simpler section reduction*/
   int rck;                   //! count of received cookies
   CkGroupID mCastGrpIdOrtho;  //! group id for multicast manager ortho
-  int numOrthoCol;            //! sGrainSize/orthoGrainSize
-  int numOrtho;               //! number of orthos in our grain = numOrthoCol ^2
+  int numOrthoCol;            //! sGrainSizeX/orthoGrainSize
+  int numOrthoRow;            //! sGrainSizeY/orthoGrainSize
+  int numOrtho;               //! number of orthos in our grain = numOrthoCol*numOrthoRow
 
   CkGroupID mCastGrpId;      //! group id for multicast manager bw
 
@@ -480,5 +496,5 @@ class PairCalculator: public CBase_PairCalculator {
 CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs);
 CkReductionMsg *sumBlockGrain(int nMsg, CkReductionMsg **msgs);
 
-
+void manmult(int numrowsA, int numRowsB, int rowLength, double *A, double *B, double *C, double alpha);
 #endif

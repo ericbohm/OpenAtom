@@ -92,6 +92,8 @@ class Config {
    int PCdelayBWSend;
    int PCstreamBWout;
    int PCstreamFWblock;
+   double invsqr_tolerance;
+   int invsqr_max_iter;
    int useOrthoDirect;
    int useOrthoHelpers;
    int useOrthoSection;

@@ -28,8 +28,16 @@ extern CkReduction::reducerType sumFastDoubleType;
 int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
  CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
  CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
- int M, int K, int N, int m, int k, int n, int strideM, int strideK,
- int strideN, CkCallback cbA, CkCallback cbB,
+		    int M, //nstates
+		    int K, //nstates
+		    int N, //nstates
+		    int m, //orthograinsize
+		    int k, //orthograinsize
+		    int n, //orthograinsize
+		    int strideM, // 1
+		    int strideK, // 1
+		    int strideN, // 1 
+		    CkCallback cbA, CkCallback cbB,
  CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho){
   /* validate arguments */
   if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
@@ -51,12 +59,20 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
   A->setProxy(pa);
   B->setProxy(pb);
   C->setProxy(pc);
-
+  
   /* populate arrays */
   int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
   int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
   int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
-
+  if(M%m!=0)
+    M_chunks--;
+  if(K%k!=0)
+    K_chunks--;
+  if(N%n!=0)
+    N_chunks--;
+  //  correct for number of chunks
+  
+  // just the size of the border elements
   if(algorithm == MM_ALG_2D){
     for(int i = 0; i < M_chunks; i++)
       for(int j = 0; j < K_chunks; j++)
@@ -171,42 +187,50 @@ CLA_Matrix::CLA_Matrix(int M, int K, int N, int m, int k, int n,
   M_chunks = (M + m - 1) / m;
   K_chunks = (K + k - 1) / k;
   N_chunks = (N + n - 1) / n;
+  if(M%m!=0)
+    M_chunks--;
+  if(K%k!=0)
+    K_chunks--;
+  if(N%n!=0)
+    N_chunks--;
+  //  correct for number of chunks
+
   algorithm = MM_ALG_2D;
   usesAtSync = CmiFalse;
   setMigratable(false);
   /* figure out size of our sections */
   if(part == MULTARG_A){
     if(thisIndex.x == (M_chunks - 1) * strideM){
-      this->m = M % m;
+      this->m = m + M % m;
       if(this->m == 0) this->m = m;
     }
     else this->m = m;
     if(thisIndex.y == (K_chunks - 1) * strideK){
-      this->k = K % k;
+      this->k = k + K % k;
       if(this->k == 0) this->k = k;
     }
     else this->k = k;
     this->n = n;
   } else if(part == MULTARG_B) {
     if(thisIndex.x == (K_chunks - 1) * strideK){
-      this->k = K % k;
+      this->k = k + K % k;
       if(this->k == 0) this->k = k;
     }
     else this->k = k;
     if(thisIndex.y == (N_chunks - 1) * strideN){
-      this->n = N % n;
+      this->n = n + N % n;
       if(this->n == 0) this->n = n;
     }
     else this->n = n;
     this->m = m;
   } else if(part == MULTARG_C) {
     if(thisIndex.x == (M_chunks - 1) * strideM){
-      this->m = M % m;
+      this->m = m + M % m;
       if(this->m == 0) this->m = m;
     }
     else this->m = m;
     if(thisIndex.y == (N_chunks - 1) * strideN){
-      this->n = N % n;
+      this->n = n + N % n;
       if(this->n == 0) this->n = n;
     }
     else this->n = n;
@@ -535,22 +559,22 @@ void CLA_Matrix::multiply(){
 #endif
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<Ksplit; i++)
-    for(int j=0; j<m; j++)
-      CkAssert(finite(tmpA[i*m+j]));
+  for(int in=0; in<Ksplit; in++)
+    for(int jn=0; jn<m; jn++)
+      CkAssert(finite(tmpA[in*m+jn]));
 
-  for(int i=0; i<n; i++)
-    for(int j=0; j<Ksplit; j++)
-      CkAssert(finite(tmpB[i*K+j]));
+  for(int in=0; in<n; in++)
+    for(int jn=0; jn<Ksplit; jn++)
+      CkAssert(finite(tmpB[in*K+jn]));
 #endif
 
   DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
         dest,&m);
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<m; i++)
-    for(int j=0; j<n; j++)
-      CkAssert(finite(dest[i*n+j]));
+  for(int in=0; in<m; in++)
+    for(int jn=0; jn<n; jn++)
+      CkAssert(finite(dest[in*n+jn]));
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
@@ -578,26 +602,26 @@ void CLA_Matrix::multiply(){
 #endif
 
 #ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
+    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
 #endif
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<Ksplit; i++)
-    for(int j=0; j<m; j++)
-      CkAssert(finite(tmpA[aoff+i*m+j]));
+    for(int in=0; in<Ksplit; in++)
+      for(int jn=0; jn<m; jn++)
+	CkAssert(finite(tmpA[aoff+in*m+jn]));
 
-  for(int i=0; i<n; i++)
-    for(int j=0; j<Ksplit; j++)
-      CkAssert(finite(tmpB[boff+i*K+j]));
+    for(int in=0; in<n; in++)
+      for(int jn=0; jn<Ksplit; jn++)
+	CkAssert(finite(tmpB[boff+in*Ksplit+jn]));
 #endif
 
     DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
           &tmpB[boff], &n, &betap, dest, &m);
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<m; i++)
-    for(int j=0; j<n; j++)
-      CkAssert(finite(dest[i*n+j]));
+    for(int in=0; in<m; in++)
+      for(int jn=0; jn<n; jn++)
+	CkAssert(finite(dest[in*n+jn]));
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
@@ -625,22 +649,22 @@ void CLA_Matrix::multiply(){
 #endif
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<K; i++)
-    for(int j=0; j<m; j++)
-      CkAssert(finite(tmpA[i*m+j]));
+  for(int in=0; in<K; in++)
+    for(int jn=0; jn<m; jn++)
+      CkAssert(finite(tmpA[in*m+jn]));
 
-  for(int i=0; i<n; i++)
-    for(int j=0; j<K; j++)
-      CkAssert(finite(tmpB[i*K+j]));
+  for(int in=0; in<n; in++)
+    for(int jn=0; jn<K; jn++)
+      CkAssert(finite(tmpB[in*K+jn]));
 #endif
 
      DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
    dest, &m);
 
 #ifdef _NAN_CHECK_
-  for(int i=0; i<m; i++)
-    for(int j=0; j<n; j++)
-      CkAssert(finite(dest[i*n+j]));
+  for(int in=0; in<m; in++)
+    for(int jn=0; jn<n; jn++)
+      CkAssert(finite(dest[in*n+jn]));
 #endif
 
 #ifndef CMK_OPTIMIZE

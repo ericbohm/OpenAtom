@@ -1305,19 +1305,6 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 
   int chunks = (nstates + config.orthoGrainSize - 1) / config.orthoGrainSize;
   int nOrtho= (nstates/config.orthoGrainSize);
-    
-  /*int stride= 1;
-  if(config.orthoStride>0)
-  {
-    if(config.orthoStride==1)
-    {
-      config.numPes/(nOrtho*nOrtho+1); 
-      if(stride<1)
-        stride=1;
-    }
-    else
-      stride=config.orthoStride;
-  }*/
   nOrtho *= nOrtho;
   double Timer=CmiWallTimer();
 
@@ -1459,10 +1446,15 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
 
   int timekeep=keeperRegister("Ortho S to T");
-  for (int s1 = 0; s1 < nstates; s1 += config.orthoGrainSize)
-    for (int s2 = 0; s2 < nstates; s2 += config.orthoGrainSize) {
+  int maxorthoindex=(nstates/config.orthoGrainSize-1);
+  int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
+  for (int s1 = 0; s1 <= maxorthostateindex; s1 += config.orthoGrainSize)
+    for (int s2 = 0; s2 <= maxorthostateindex; s2 += config.orthoGrainSize) {
       int indX = s1 / config.orthoGrainSize;
       int indY = s2 / config.orthoGrainSize;
+      indX = (indX>maxorthoindex) ? maxorthoindex : indX;
+      indY = (indY>maxorthoindex) ? maxorthoindex : indY;
+
       orthoProxy(indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
       matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep);
       if(config.useOrthoHelpers)

@@ -197,5 +197,5 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
 #define SUCCESS			0
 #define ERR_INVALID_ALG		-1
 #define ERR_INVALID_DIM		-2
-
+void transpose(double *data, int m, int n);
 #endif

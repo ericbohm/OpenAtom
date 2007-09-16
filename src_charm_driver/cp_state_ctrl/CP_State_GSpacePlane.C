@@ -673,10 +673,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
  //---------------------------------------------
  // Symm PC accounting 
+  int remainder=nstates%s_grain;
+  int sizeoflastgrain=s_grain+remainder;
+  int lastgrain=nstates-sizeoflastgrain;
   int ourgrain    = thisIndex.x/s_grain*s_grain; 
   if(nstates == s_grain){
      AllPsiExpected=1;
   }else{ 
+    //    if(ourgrain<lastgrain){ // corner has no extras
     if(ourgrain<(nstates-s_grain)){ // corner has no extras
        AllPsiExpected=2;
     }else{
@@ -704,10 +708,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   if(config.gSpaceSum){ // no reductions its all coming direct
     if(cp_min_opt==0 && numGrains>1) 
-	AllLambdaExpected=(2*numGrains-1)*config.numChunksAsym;
-      else
-	AllLambdaExpected=numGrains*config.numChunksAsym*AllLambdaExpected;
-
+      { AllLambdaExpected=(2*numGrains-1)*config.numChunksAsym;}
+    else
+      { AllLambdaExpected=numGrains*config.numChunksAsym*AllLambdaExpected;}
   }//endif
   else
     {
@@ -2017,18 +2020,18 @@ void  CP_State_GSpacePlane::sendLambda() {
       loadMatrixDouble("psiBf",(double *)savedpsiBf, 1, 
                         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
-
+  double testvalue=0.00000001;
   for(int i=0;i<gs.numPoints;i++){
-      if(fabs(force[i].re-savedlambdaBf[i].re)>0.0001){
+      if(fabs(force[i].re-savedlambdaBf[i].re)>testvalue){
 	  fprintf(stderr, "GSP [%d,%d] %d element lambda  %.10g not %.10g\n",
                   thisIndex.x, thisIndex.y,i, force[i].re, savedlambdaBf[i].re);
       }//endif
-      CkAssert(fabs(force[i].re-savedlambdaBf[i].re)<0.0001);
-      CkAssert(fabs(force[i].im-savedlambdaBf[i].im)<0.0001);
+      CkAssert(fabs(force[i].re-savedlambdaBf[i].re)<testvalue);
+      CkAssert(fabs(force[i].im-savedlambdaBf[i].im)<testvalue);
   }//endfor
   for(int i=0;i<gs.numPoints;i++){
-      CkAssert(fabs(psi[i].re-savedpsiBf[i].re)<0.0001);
-      CkAssert(fabs(psi[i].im-savedpsiBf[i].im)<0.0001);
+      CkAssert(fabs(psi[i].re-savedpsiBf[i].re)<testvalue);
+      CkAssert(fabs(psi[i].im-savedpsiBf[i].im)<testvalue);
   }//endfor
 #endif
 
@@ -2195,18 +2198,8 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 // I) Increment the counter and do some checking
 
   countLambda++;  //lambda arrives in as many as 2 * numChunks reductions
-  //  CkPrintf("[%d %d] accepts lambda off %d %d of %d\n", thisIndex.x, thisIndex.y,offset, countLambda, AllLambdaExpected);
-/*
-  if(thisIndex.y==0){
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,
-                     thisIndex.y,thisIndex.x,thisIndex.x,0,false);
-  }//endif
 
-  if(thisIndex.y==0){
-      CkPrintf("LAMBDA [%d %d], offset %d chunkoffset %d N %d countLambdao %d\n", 
-                thisIndex.x, thisIndex.y, offset, chunkoffset, N, countLambdaO[offset]);
-  }//endif
-*/
+  //  CkPrintf("GSP [%d,%d] acceptLambda N %d offset %d countLambda %d expecting %d\n",thisIndex.x,thisIndex.y,N,offset,countLambda,AllLambdaExpected);
 
 //=============================================================================
 // (II) Add it in to our forces : Careful about offsets, doublepack and cpmin/cp
@@ -2334,14 +2327,15 @@ void CP_State_GSpacePlane::doLambda() {
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  double testvalue=0.00000001;
   if(savedlambdaAf==NULL){ // load it
       savedlambdaAf= new complex[gs.numPoints];
       loadMatrixDouble("lambdaAf",(double *)savedlambdaAf, 1, 
                         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){
-      CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<0.0001);
-      CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<0.0001);
+      CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<testvalue);
+      CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<testvalue);
   }//endfor
 #endif
 
@@ -3061,18 +3055,19 @@ void CP_State_GSpacePlane::sendPsi() {
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  double testvalue=0.00000001;
   if(savedpsiBfp==NULL){ // load it
       savedpsiBfp= new complex[gs.numPoints];
       loadMatrixDouble("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,
                         thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){
-      if(fabs(psi[i].re-savedpsiBfp[i].re)>0.0001){
+      if(fabs(psi[i].re-savedpsiBfp[i].re)>testvalue){
 	  fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",
                   thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiBfp[i].re);
       }//endif
-      CkAssert(fabs(psi[i].re-savedpsiBfp[i].re)<0.0001);
-      CkAssert(fabs(psi[i].im-savedpsiBfp[i].im)<0.0001);
+      CkAssert(fabs(psi[i].re-savedpsiBfp[i].re)<testvalue);
+      CkAssert(fabs(psi[i].im-savedpsiBfp[i].im)<testvalue);
   }//endfor
 #endif
 
@@ -3199,7 +3194,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //=============================================================================
 // (0) Check for Nans
 
-//  CkPrintf("GSP [%d,%d] acceptNewPsi\n",thisIndex.x,thisIndex.y);
+
 
   int N           = msg->N;
   complex *data   = msg->result;
@@ -3245,6 +3240,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 
   countPsi++;         //psi arrives in as many as 2 *numblock * numgrain reductions
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
+  //
   if(countPsi==AllPsiExpected){ 
     doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
@@ -3346,22 +3342,23 @@ void CP_State_GSpacePlane::doNewPsi(){
 
 #ifdef _CP_GS_DUMP_PSI_
   dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
-                    thisIndex.x,0,false);    
+                    thisIndex.x,iteration,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
+  double testvalue=0.00000001;
   if(savedpsiAf==NULL){
       savedpsiAf= new complex[gs.numPoints];
       loadMatrixDouble("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,
                         thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){
-      if(fabs(psi[i].re-savedpsiAf[i].re)>0.0001){
+      if(fabs(psi[i].re-savedpsiAf[i].re)>testvalue){
         fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",
         thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiAf[i].re);
       }//endif
-      CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<0.0001);
-      CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<0.0001);
+      CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<testvalue);
+      CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<testvalue);
   }//endfor
 #endif
 

@@ -83,10 +83,9 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     //			end_t = CmiWallTimer();
     double error = *((double *) msg->getData());
     delete msg;
-    iterations++;
     error = sqrt(error / (nstates * nstates));
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
-    if(error > INVSQR_TOLERANCE && iterations < INVSQR_MAX_ITER){
+    if(error > invsqr_tolerance && iterations < invsqr_max_iter){
       //				start_t = CmiWallTimer();
       if(config.useOrthoSection)
 	{
@@ -147,7 +146,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
       }//endif
     }
   got_start = true;
-  int chunksize = m;
   double *S = (double*) msg->getData();
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
@@ -158,13 +156,17 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
   step = 0;
   iterations = 0;
-  int s1=thisIndex.x*m;
-  int s2=thisIndex.y*n;
-  if(m!=config.sGrainSize)
+  int s1=thisIndex.x * config.orthoGrainSize;
+  int s2=thisIndex.y * config.orthoGrainSize;
+  int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
+  if(config.orthoGrainSize!=config.sGrainSize)
     {
       // do something clever
       s1=s1/config.sGrainSize*config.sGrainSize;
       s2=s2/config.sGrainSize*config.sGrainSize;
+      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
+
     }
   if(s1 < s2)   
     {
@@ -172,13 +174,23 @@ void Ortho::start_calc(CkReductionMsg *msg){
       //make a copy
       CkReductionMsg *omsg=CkReductionMsg::buildNew(msg->getSize(),msg->getData());
       // transpose it
+      /*
       double *dest= (double*) omsg->getData();;
       double tmp;
-      for(int i = 0; i < chunksize; i++)
-	for(int j = i + 1; j < chunksize; j++){
-	  tmp = dest[i * chunksize + j];
-	  dest[i * chunksize + j] = dest[j*chunksize + i];
-	  dest[j * chunksize + i] = tmp;
+      for(int i = 0; i < m; i++)
+	for(int j = i + 1; j < n; j++){
+	  tmp = dest[i * n + j];
+	  dest[i * n + j] = dest[j*m + i];
+	  dest[j * m + i] = tmp;
+	}
+      */
+      // simple out of place scheme
+
+      double *dest= (double*) omsg->getData();;
+      double tmp;
+      for(int i = 0; i < m; i++)
+	for(int j = 0; j < n; j++){
+	  dest[j * m + i] = S[i *n + j];
 	}
       thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
 
@@ -192,28 +204,18 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
     }
 
-#ifdef _CP_DEBUG_SMAT_
-  char fname[80];
-  snprintf(fname,80,"smatrix.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
-  FILE *outfile = fopen(fname, "w");
-  for(int i=0; i<chunksize; i++){
-    for(int j=0; j<chunksize; j++){
-      fprintf(outfile, "[%d %d] %.12g \n", i + chunksize*thisIndex.x+1, j+chunksize*thisIndex.y+1, S[i*chunksize+j]);
-    }
-  }
-  fclose(outfile);
-#endif
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("smat",(double *)S, chunksize, chunksize,thisIndex.x,thisIndex.y,0,0,false);     
+    dumpMatrixDouble("smat",(double *)S, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+
 #endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
   if(savedsmat==NULL)
     { // load it
-      savedsmat= new double[chunksize*chunksize];
-      loadMatrixDouble("smat",(double *)savedsmat, chunksize, chunksize,thisIndex.x,thisIndex.y,0,0,false);     
+      savedsmat= new double[m*n];
+      loadMatrixDouble("smat",(double *)savedsmat, m, n,numGlobalIter, thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
     }
-  for(int i=0;i<chunksize*chunksize;i++)
+  for(int i=0;i<m*n;i++)
     {
       if(fabs(S[i]-savedsmat[i])>0.0001)
 	{
@@ -347,25 +349,29 @@ void Ortho::resume(){
 	  { orthoT = new double[m * n];}
 	CmiMemcpy(orthoT,A,m*n*sizeof(double));
       }
-    int s1=thisIndex.x*m;
-    int s2=thisIndex.y*n;
-    if(m!=config.sGrainSize)
+    int s1=thisIndex.x * config.orthoGrainSize;
+    int s2=thisIndex.y * config.orthoGrainSize;
+    int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
+
+    if(config.orthoGrainSize!=config.sGrainSize)
       {
 	// do something clever
 	s1=s1/config.sGrainSize*config.sGrainSize;
 	s2=s2/config.sGrainSize*config.sGrainSize;
+	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+	s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
       }
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
 #ifdef _CP_ORTHO_DUMP_TMAT_
-    dumpMatrixDouble("tmat",(double *)A, m, n,thisIndex.x,thisIndex.y,0,0,false);     
+    dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
 #endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   if(savedtmat==NULL)
     { // load it
       savedtmat= new double[m*n];
-      loadMatrixDouble("tmat",(double *)savedtmat, m, n, thisIndex.x,thisIndex.y,0,0,false);     
+      loadMatrixDouble("tmat",(double *)savedtmat, m, n, numGlobalIter, thisIndex.x * orthoGrainSize,thisIndex.y*orthoGrainSize,0,false);     
     }
   for(int i=0;i<m*n;i++)
     {
@@ -385,19 +391,25 @@ void Ortho::resume(){
       finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.y, thisIndex.x, actionType, 0);
     else if(thisIndex.y > thisIndex.x && config.phantomSym)
       {
-	int chunksize = m;
-	double *dest= (double*) A;
+	transpose(A,m,n);
+	/*	double *dest= (double*) A;
 	double tmp;
-	for(int i = 0; i < chunksize; i++)
-	  for(int j = i + 1; j < chunksize; j++){
-	    tmp = dest[i * chunksize + j];
-	    dest[i * chunksize + j] = dest[j*chunksize + i];
-	    dest[j * chunksize + i] = tmp;
+	for(int i = 0; i < m; i++)
+	  for(int j = i + 1; j < n; j++){
+	    tmp = dest[i * n + j];
+	    dest[i * n + j] = dest[j * m + i];
+	    dest[j * m + i] = tmp;
 	  }
-
+	*/
 	// we have a transposed copy of what scalc wants
 	finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
+#ifdef _CP_ORTHO_DUMP_TMAT_
+	dumpMatrixDouble("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+
+#endif
       }
+
+
 #ifdef _CP_SUBSTEP_TIMING_
     if(timeKeep>0)
       {
@@ -406,11 +418,26 @@ void Ortho::resume(){
 	contribute(sizeof(double),&oend,CkReduction::max_double, cb , timeKeep);
       }
 #endif
-
+    /* this should be triggered by psi after sym fw path is done */
+  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt && !config.PCCollectTiles)
+    {
+      sendOrthoTtoAsymm();
+    }
 //----------------------------------------------------------------------------
    }//end routine
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void Ortho::sendOrthoTtoAsymm(){
+//============================================================================
+  int actionType=0; //normal
+  sendMatrix(m * n, orthoT, &oPairCalcID2, thisIndex.x, thisIndex.y,0,oPairCalcID2.priority-1 );
+
+}
+//============================================================================
 
 
 //============================================================================
@@ -516,16 +543,26 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   double *lambda = (double *)msg->getData();
   int lambdaCount = msg->getSize()/sizeof(double);
 
-#ifdef _CP_DEBUG_LMAT_
-  char lmstring[80];
-  snprintf(lmstring,80,"lmatrix_t:%d_%d_%d.out",numGlobalIter,thisIndex.x,thisIndex.y);
-  FILE *fp = fopen(lmstring,"w");
-  for(int i=0; i<m; i++){
-    for(int j=0; j<n; j++){
-      fprintf(fp, "[%d %d] %.12g \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, lambda[i*n+j]);
+#ifdef _CP_ORTHO_DUMP_LMAT_
+    dumpMatrixDouble("lmat",lambda, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+
+#endif
+#ifdef _CP_ORTHO_DEBUG_COMPARE_LMAT_
+  if(savedlmat==NULL)
+    { // load it
+      savedlmat= new double[m*n];
+      loadMatrixDouble("lmat",(double *)savedlmat, m, n,numGlobalIter, thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
     }
-  }
-  fclose(fp);
+  for(int i=0;i<m*n;i++)
+    {
+      if(fabs(lambda[i]-savedlmat[i])>0.0001)
+	{
+	  fprintf(stderr, "O [%d,%d] %d element ortho %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, lambda[i], savedlmat[i]);
+	}
+
+      CkAssert(fabs(lambda[i]-savedlmat[i])<0.0001);
+      CkAssert(fabs(lambda[i]-savedlmat[i])<0.0001);
+    }
 #endif
 
   // revise this to do a matmul replacing multiplyforgamma
@@ -550,52 +587,6 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	  }
 	toleranceCheckOrthoT=false;
       }
-    /*
-    if(numGlobalIter <10)
-      {
-	// evil orthO hack
-	CkPrintf("WARNING!!!!! Evil Ortho hack is in play!\n");
-	double denominator=nstates*nstates*10;	      
-	if(thisIndex.x!=thisIndex.y)
-	  { //not on diagonal
-	    for(int i=0;i<m;i++)
-	      for(int j=0;j<n;j++)
-		{
-		  double numerator=((i+thisIndex.x*m) - (j+thisIndex.y*n) * (i+thisIndex.x*m) - (j+thisIndex.y*n)); 
-		  orthoT[i*n+j]= numerator/denominator;
-		}
-	  }
-	else 
-	  { // on diagonal
-	    for(int i=0;i<m;i++)
-	      for(int j=0;j<n;j++)
-		{
-		  double numerator=((i+thisIndex.x*m) - (j+thisIndex.y*n) * (i+thisIndex.x*m) - (j+thisIndex.y*n)); 
-		  if(i!=j)
-		    orthoT[i*n+j]=numerator/denominator;
-		  else
-		    orthoT[i*n+j]=1.0+numerator/denominator;
-		}
-	  }
-
-      }
-
-    if(thisIndex.x!=thisIndex.y)
-      { //not on diagonal
-	bzero(orthoT,m*n*sizeof(double));
-      }
-    else 
-      { // on diagonal
-	for(int i=0;i<m;i++)
-	  for(int j=0;j<n;j++)
-	    {
-	      if(i!=j)
-		orthoT[i*n+j]=0.0;	      
-	      else
-		orthoT[i*n+j]=1.0;	      
-	    }
-      }
-    */
     if(ortho==NULL)
       ortho= new double[m*n];
     CmiMemcpy(ortho,orthoT,m*n*sizeof(double));
@@ -636,13 +627,16 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ){
 
-  int s1=thisIndex.x*m;
-  int s2=thisIndex.y*n;
-  if(m!=config.sGrainSize)
+  int s1=thisIndex.x * config.orthoGrainSize;
+  int s2=thisIndex.y * config.orthoGrainSize;
+  int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
+  if(config.orthoGrainSize!=config.sGrainSize)
     {
       // do something clever
       s1=s1/config.sGrainSize*config.sGrainSize;
       s2=s2/config.sGrainSize*config.sGrainSize;
+      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
     }
   
   // m and n are orthograinsize which must be <=config.sGrainSize
@@ -684,20 +678,43 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 //============================================================================
 void Ortho::gamma_done(){
 //============================================================================
-//  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g %g\n",thisIndex.x, thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
-#ifdef _CP_DEBUG_GMAT_
-    char fname[80];
-    snprintf(fname,80,"gamma.out_ortho_t:%d_%d_%d",numGlobalIter,thisIndex.x,thisIndex.y);
-    FILE *outfile = fopen(fname, "w");
-    for(int i=0; i<m; i++){
-      for(int j=0; j<n; j++){
-	fprintf(outfile, "[%d %d] %.12g \n", i + n*thisIndex.x+1, j+n*thisIndex.y+1, B[i*n+j]);
-      }
-    }
-    fclose(outfile);
+//  CkPrintf("[%d %d] sending ortho %g %g %g %g gamma %g %g %g
+//%g\n",thisIndex.x,
+//thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
+
+#ifdef _CP_ORTHO_DUMP_GMAT_
+    dumpMatrixDouble("gmat",(double *)B, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+
 #endif
 
-    finishPairCalcSection2(m * n, B, ortho, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
+    //CkAbort("HEY I ONLY WANT ONE DYNAMICS STEP");
+
+#ifdef _CP_ORTHO_DEBUG_COMPARE_GMAT_
+  if(savedgmat==NULL)
+    { // load it
+      savedgmat= new double[m*n];
+      loadMatrixDouble("gmat",(double *)savedgmat, m, n,numGlobalIter,thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
+    }
+  for(int i=0;i<m*n;i++)
+    {
+      if(fabs(S[i]-savedgmat[i])>0.0001)
+	{
+	  fprintf(stderr, "O [%d,%d] %d element ortho %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, S[i], savedgmat[i]);
+	}
+
+      CkAssert(fabs(S[i]-savedgmat[i])<0.0001);
+      CkAssert(fabs(S[i]-savedgmat[i])<0.0001);
+    }
+#endif
+  if(config.PCCollectTiles)
+    {
+      // if not streaming we might as well just lockstep these
+      finishPairCalcSection2(m * n, B, ortho, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
+    }
+  else // orthoT was already sent ahead for processing
+    {
+      finishPairCalcSection(m * n, B, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
+    }
 
 //----------------------------------------------------------------------------
   }// end routine
@@ -738,16 +755,31 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
 //============================================================================
 /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
-  this->m = m;
-  this->n = n;
+  
+  invsqr_max_iter=config.invsqr_max_iter;
+  invsqr_tolerance=config.invsqr_tolerance;
+  if(invsqr_tolerance==0)
+    invsqr_tolerance=INVSQR_TOLERANCE;
+  if(invsqr_max_iter==0)
+    invsqr_tolerance=INVSQR_MAX_ITER;
   this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
   this->matA2 = matA2; this->matB2 = matB2; this->matC2 = matC2;
   this->matA3 = matA3; this->matB3 = matB3; this->matC3 = matC3;
   timeKeep=timekeep;
-  A = new double[m * n];
-  B = new double[m * n];
-  C = new double[m * n];
-  tmp_arr = new double[m * n];
+  int borderOrtho= config.nstates / config.orthoGrainSize-1;
+  int remOrtho = config.nstates%config.orthoGrainSize;
+  if(thisIndex.x==borderOrtho)
+    this->m = m + remOrtho;
+  else
+    this->m = m;
+  if(thisIndex.y==borderOrtho)
+    this->n = n + remOrtho;
+  else
+    this->n = n;
+  A = new double[this->m * this->n];
+  B = new double[this->m * this->n];
+  C = new double[this->m * this->n];
+  tmp_arr = new double[this->m * this->n];
   step2done=false;
   step3done=false;
   step = 0;
@@ -764,7 +796,7 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   oPairCalcID2=pairCalcID2;
   if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
     {
-      int numOrtho=config.nstates/m;
+      int numOrtho=config.nstates/config.orthoGrainSize;
       multiproxy = 
       CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
 				 0, numOrtho-1,1,
@@ -801,8 +833,14 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
   wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
+#ifdef _CP_ORTHO_DEBUG_COMPARE_GMAT_
+  savedgmat=NULL;
+#endif
 #ifdef _CP_ORTHO_DEBUG_COMPARE_SMAT_
   savedsmat=NULL;
+#endif
+#ifdef _CP_ORTHO_DEBUG_COMPARE_LMAT_
+  savedlmat=NULL;
 #endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
@@ -829,6 +867,12 @@ void Ortho::do_iteration(void){
     for(int i = 0; i < n; i++)
       C[i * n + i] = 3;
   }
+#ifdef _CP_ORTHO_DUMP_SMAT_
+    dumpMatrixDouble("step1:A:",(double *)A, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step1:B:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step1:C:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+#endif
+
   matA1.multiply(-1, 1, A, Ortho::step_2_cb, (void*) this,
    thisIndex.x, thisIndex.y);
   CmiNetworkProgress();
@@ -859,6 +903,12 @@ void Ortho::step_2(void){
     }
   else
     {
+#ifdef _CP_ORTHO_DUMP_SMAT_
+    dumpMatrixDouble("step2:A:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step2:B:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    //    dumpMatrixDouble("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+#endif
+
       step = 2;
       matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
@@ -915,6 +965,12 @@ void Ortho::recvStep2(double *step2result, int size){
 void Ortho::step_3(){
   step = 3;
   CmiMemcpy(B, A, m * n * sizeof(double));
+#ifdef _CP_ORTHO_DUMP_SMAT_
+    dumpMatrixDouble("step3:A:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step3:B:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step3:C:",(double *)A, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+#endif
+
   matA3.multiply(0.5, 0, C, Ortho::tol_cb, (void*) this,
    thisIndex.x, thisIndex.y);
   matB3.multiply(0.5, 0, B, Ortho::tol_cb, (void*) this,
@@ -961,6 +1017,7 @@ void Ortho::tolerance_check(){
     }
   else
     contribute(sizeof(double), &ret, CkReduction::sum_double);
+  iterations++;
 }
 
 
