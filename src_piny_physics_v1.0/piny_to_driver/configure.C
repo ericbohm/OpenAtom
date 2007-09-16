@@ -2623,6 +2623,12 @@ void Config::rangeExit(int param, char *name, int iopt){
       EXIT(1);
     }//endif
 
+    if (nstates % sGrainSize >= orthoGrainSize ){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Your remainder should be less than orthograinsize\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }
     if(usePairEtoM==1 && useCommlib!=1){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   EachToMany pairCalc requires Commlib!\n");
