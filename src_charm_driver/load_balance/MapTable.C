@@ -18,6 +18,8 @@ typedef IntMap3 MapType3;
 extern TopoManager *topoMgr;
 extern Config config;
 
+//============================================================================
+
 int MapType2::getCentroid(int torusMap) {
   int points, bestPe;
   if(torusMap==1) {
@@ -137,17 +139,24 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
   int srcpe=0;
   if(useCuboidMap)
   {
+    int *Pecount= new int [config.numPes];
+    bzero(Pecount, config.numPes *sizeof(int));
+    PeList *exclusionList = NULL;
+
     // here we require that nchareG tiles
     if(config.numPes%nchareG!=0)
       {
-	CkPrintf("To use CuboidMap nchareG %d should be chosen as a factor of numprocs %d\n",nchareG,config.numPes);
+	CkPrintf("To use CuboidMap nchareG %d should be set as a factor of numprocs %d using gExpandFact\n",nchareG,config.numPes);
 	CkExit();
       }
     int procsPerPlane= config.numPes / nchareG;
     int cubeGstates_per_pe= nstates/procsPerPlane;
+    int charesperpe=nchareG*nstates/config.numPes;
     int cubesrem=nstates%procsPerPlane;
     if(cubesrem)
       cubeGstates_per_pe++;
+    if(cubesrem)
+      charesperpe++;
     CkPrintf("procsPerPlan %d gs per pe %d remainder %d\n",procsPerPlane, cubeGstates_per_pe, cubesrem);
     for(int plane=0;plane<nchareG;plane++)
       {
@@ -158,6 +167,7 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 	int destpe=planeProcs->findNext();
 	int workingGsPerPe=cubeGstates_per_pe;
 	bool unallocateRem= (cubesrem) ? true: false;
+	// non power of two systems need some exclusion logic
 	for(int state=0;state<nstates;state+=workingGsPerPe)
 	  {
 	    if(unallocateRem)
@@ -166,8 +176,9 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 
 		  workingGsPerPe--;
 		  unallocateRem=false;
-		  //		  CkPrintf("rem %d complete at state %d gsperpenow %d\n",cubesrem, state, workingGsPerPe);
+		  //CkPrintf("rem %d complete at state %d gsperpenow %d\n",cubesrem, state, workingGsPerPe);
 		}
+	    
 	    // we should block these better
 	    for(int stateperpe=0;(stateperpe<workingGsPerPe)&&((state+stateperpe)<nstates);stateperpe++)
 	      {
@@ -176,10 +187,37 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 #else
 		maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
+		Pecount[destpe]++;
+		if(Pecount[destpe]>=charesperpe)
+		  {
+		    if(exclusionList==NULL)
+		      {
+			exclusionList=new PeList(1);
+			exclusionList->TheList[0]=destpe;
+			exclusionList->sortIdx[0]=0;
+		      }
+		    else
+		      {
+			exclusionList->mergeOne(destpe);
+			PeList one(1);
+			one.TheList[0]=destpe;
+			*planeProcs - one;
+			planeProcs->reindex();
+			planeProcs->reset();
+		      }
+		  }
+		if(((stateperpe+1<workingGsPerPe)&&((state+stateperpe+1)<nstates)) || state+workingGsPerPe<nstates)
+		  {
+		    // we will need another proc from this list
+		    destpe=planeProcs->findNext();
+		    if(planeProcs->count()==0)
+		      {
+			planeProcs->reset();
+			if(planeProcs->count()==0)
+			  CkPrintf("GSMap exceeding count on plane %d state %d after pe %d workingGsPerPe %d cubesrem %d\n",state,plane,destpe, workingGsPerPe, cubesrem);
+		      }
+		  }
 	      }
-	    if(planeProcs->count()==0)
-	      planeProcs->reset();
-	    destpe=planeProcs->findNext();
 	    /*if(availprocs->count()==0)
 	      {
 	      CkPrintf("GSMap created on processor %d\n", CkMyPe());
@@ -191,6 +229,9 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 	  }
 	delete planeProcs;
       }
+    delete [] Pecount;
+    if(exclusionList!=NULL)
+      delete exclusionList;
   }
   else
   {
@@ -639,17 +680,26 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
     availprocs->reset();	
   if(useCuboidMap)
     {
-      int srem= nstates*sizeZ%config.numPes;
+      int srem= nstates * sizeZ % config.numPes;
       if(srem)
 	rsobjs_per_pe++;
-      // place all the states box by box
+
+      // exclusion mapping has the sad side effect of increasing the
+      // number of exclusions with the state and plane number
+      // until you end up increasing the cap too high
+      // Topo mapping is less important than even distribution
+      // so if you go over the cap, use the master list instead of the
+      // state box.
+      PeList *myavail=new PeList(*availprocs);
       PeList *exclusionList = NULL;
       for(int state=0; state < nstates; state++)
 	{
+	  
 	  int srsobjs_per_pe=rsobjs_per_pe;
 	  PeList *thisStateBox;
 	  thisStateBox = subListState(state, nchareG, gsmap);
-	  //	  CkPrintf("RS state %d box has %d procs\n",state,thisStateBox->count());
+	  int samplePe=thisStateBox->TheList[0];
+	  //  CkPrintf("RS state %d box has %d procs rsobjs_per_pe %d\n",state,thisStateBox->count(), rsobjs_per_pe);
 	  //	  bool useExclude=false;
 	  bool useExclude=true;
 	  if(exclusionList!=NULL && useExclude)
@@ -658,24 +708,21 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	      thisStateBox->reindex();
 	      thisStateBox->reset();
 	    }
-	  //	  CkPrintf("RS state %d box has %d procs after exclusion\n",state,thisStateBox->count());
-	  //	  CkPrintf("RS state %d pe list after exclude \n",state);
+	  //CkPrintf("RS state %d box has %d procs after exclusion\n",state,thisStateBox->count());
+	  // CkPrintf("RS state %d pe list after exclude \n",state);
 	  //	  thisStateBox->dump();
 	  while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
 	    {
-	      CkPrintf("State %d  Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,srsobjs_per_pe);
-	      srsobjs_per_pe++;
-	      if(exclusionList!=NULL)
-		delete exclusionList;
-	      exclusionList=rebuildExclusion(Pecount, srsobjs_per_pe);
+	      CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
+	      *myavail - *exclusionList;
 	      delete thisStateBox;
-	      thisStateBox = subListState(state, nchareG, gsmap);
+	      thisStateBox=new PeList(*myavail);
 	      if(exclusionList!=NULL){
 		*thisStateBox - *exclusionList;
 		thisStateBox->reindex();
 		thisStateBox->reset();
 	      }
-
+	      thisStateBox->sortSource(samplePe);
 	    }
 	  if(thisStateBox->count()==0)
 	    {
@@ -693,26 +740,26 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		thisStateBox->reset();
 	      while(thisStateBox->count()<=0 && srsobjs_per_pe<=sizeZ*nstates)
 		{
-		  srsobjs_per_pe++;
-		  CkPrintf("State %d Plane %d Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,plane,srsobjs_per_pe);
-		  if(exclusionList!=NULL)
-		    delete exclusionList;
-		  exclusionList=rebuildExclusion( Pecount, srsobjs_per_pe);
+		  CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
+		  *myavail - *exclusionList;
 		  delete thisStateBox;
-		  thisStateBox = subListState(state, nchareG, gsmap);
-		  if(exclusionList!=NULL && useExclude)
-		    {
-		      *thisStateBox - *exclusionList;
-		      thisStateBox->reset();
-		      thisStateBox->reindex();
-		    }
+		  thisStateBox=new PeList(*myavail);
+		  if(exclusionList!=NULL){
+		    *thisStateBox - *exclusionList;
+		    thisStateBox->reindex();
+		    thisStateBox->reset();
+		  }
+		  thisStateBox->sortSource(samplePe);
 		}
-	      if(thisStateBox->count()<=0)
-		{
-		  CkAbort("Ran out of procs in RS centroid map cannot remedy please revise configuration\n");
-		}
-	      destpe = thisStateBox->findNext();
+	      if(useExclude && thisStateBox->count()<=0)
+		{ // surrender
+		  useExclude=false;
+		  delete thisStateBox;
+		  CkAbort("RS cuboid map hopeless please examine configuration\n");
 
+		}
+
+	      destpe = thisStateBox->findNext();
 
 #ifdef USE_INT_MAP
 	      maptable->set(state, plane, destpe);
@@ -744,7 +791,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	}
       if(exclusionList!=NULL)
 	delete exclusionList;
-
+      delete myavail;
     }
   else
     {
