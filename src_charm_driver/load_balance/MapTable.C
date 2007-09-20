@@ -1207,8 +1207,8 @@ OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orth
       useExclude=false;
     }
   int maxorthoindex=(nstates/orthoGrainSize-1);
-  for(int state1 = 0; state1 < maxorthoindex; state1++)
-    for(int state2 = 0; state2 < maxorthoindex; state2++)
+  for(int state1 = 0; state1 <= maxorthoindex; state1++)
+    for(int state2 = 0; state2 <= maxorthoindex; state2++)
     {
 
 #ifdef USE_INT_MAP

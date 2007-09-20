@@ -139,6 +139,7 @@ class CkArrayMapTable2 : public CkArrayMap
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -169,6 +170,7 @@ class CkArrayMapTable3 : public CkArrayMap
 #else
     proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -201,6 +203,7 @@ class CkArrayMapTable4 : public CkArrayMap
 	int *index=(int *) iIndex.data();
 	proc=maptable->get(intdual(index[0], index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -254,6 +257,7 @@ class GSMap: public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -305,6 +309,7 @@ class RSMap: public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -351,6 +356,7 @@ class RPPMap: public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -416,6 +422,7 @@ class SCalcMap : public CkArrayMapTable4 {
     int *index=(int *) iIndex.data();
     proc=maptable->get(intdual(index[0], index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -462,6 +469,7 @@ class RhoRSMap : public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -498,6 +506,7 @@ class RhoGSMap : public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -546,6 +555,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
 #else
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
@@ -591,6 +601,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
 #else
     proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
+    CkAssert(proc>=0);
     if(fakeTorus)
       return(proc%CkNumPes());
     else
