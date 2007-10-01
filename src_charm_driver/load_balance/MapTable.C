@@ -187,45 +187,54 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
 #else
 		maptable->put(intdual(state+stateperpe, plane))=destpe;
 #endif
-		Pecount[destpe]++;
-		if(Pecount[destpe]>=charesperpe)
+		if(cubesrem)
 		  {
-		    if(exclusionList==NULL)
+		    Pecount[destpe]++;
+		    if(Pecount[destpe]>=charesperpe)
 		      {
-			exclusionList=new PeList(1);
-			exclusionList->TheList[0]=destpe;
-			exclusionList->sortIdx[0]=0;
+			if(exclusionList==NULL)
+			  {
+			    exclusionList=new PeList(1);
+			    exclusionList->TheList[0]=destpe;
+			    exclusionList->sortIdx[0]=0;
+			  }
+			else
+			  {
+			    exclusionList->mergeOne(destpe);
+			    PeList one(1);
+			    one.TheList[0]=destpe;
+			    *planeProcs - one;
+			    planeProcs->reindex();
+			    planeProcs->reset();
+			  }
 		      }
-		    else
+		    if(((stateperpe+1<workingGsPerPe)&&((state+stateperpe+1)<nstates)) || state+workingGsPerPe<nstates)
 		      {
-			exclusionList->mergeOne(destpe);
-			PeList one(1);
-			one.TheList[0]=destpe;
-			*planeProcs - one;
-			planeProcs->reindex();
-			planeProcs->reset();
-		      }
-		  }
-		if(((stateperpe+1<workingGsPerPe)&&((state+stateperpe+1)<nstates)) || state+workingGsPerPe<nstates)
-		  {
-		    // we will need another proc from this list
-		    destpe=planeProcs->findNext();
-		    if(planeProcs->count()==0)
-		      {
-			planeProcs->reset();
+			// we will need another proc from this list
+			destpe=planeProcs->findNext();
 			if(planeProcs->count()==0)
-			  CkPrintf("GSMap exceeding count on plane %d state %d after pe %d workingGsPerPe %d cubesrem %d\n",state,plane,destpe, workingGsPerPe, cubesrem);
+			  {
+			    planeProcs->reset();
+			    if(planeProcs->count()==0)
+			      CkPrintf("GSMap exceeding count on plane %d state %d after pe %d workingGsPerPe %d cubesrem %d\n",state,plane,destpe, workingGsPerPe, cubesrem);
+			  }
 		      }
 		  }
 	      }
-	    /*if(availprocs->count()==0)
+	    if(!cubesrem)
 	      {
-	      CkPrintf("GSMap created on processor %d\n", CkMyPe());
-	      dump();
-	      CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
-	      CkExit();
+		if(planeProcs->count()==0)
+		  planeProcs->reset();
+		destpe=planeProcs->findNext();
 	      }
-	    */
+		/*if(availprocs->count()==0)
+		  {
+		  CkPrintf("GSMap created on processor %d\n", CkMyPe());
+		  dump();
+		  CkPrintf("GSMap ran out of nodes on plane %d state %d\n", plane, state);
+		  CkExit();
+		  }
+		*/
 	  }
 	delete planeProcs;
       }
@@ -923,7 +932,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       /*  
        * RPP(s,*) <-> PP(s,*)  
        */
-
+      bool neednewexc=false;
       // make all the maps
       // subtract the exclusion from each 
       // keep the smallest count as the max charesperpe
@@ -975,6 +984,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       //      maxcharesperpe++;
       PeList *usedbyRPP=NULL;
       CkPrintf("RPP maxcharesperpe is %d\n",maxcharesperpe);
+      PeList *excludedBigmap=NULL;
       for(int state=0; state < nstates ; state++)
 	{
 	  PeList *state_map=subListState( state, nchareG, pp_map);
@@ -989,12 +999,22 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	      // use the RPPlist
 	      CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
 	      delete state_map;
-	      state_map = new PeList(*RPPlist);
-	      if(usedbyRPP!=NULL){
-		*state_map - *usedbyRPP;
-		state_map->reindex();
-		state_map->reset();
-	      }
+	      if(!neednewexc && excludedBigmap!=NULL)
+		{
+		  state_map= new  PeList(*excludedBigmap);
+		 }
+	      else
+		{
+		  state_map = new PeList(*RPPlist);
+		  if(usedbyRPP!=NULL){
+		    *state_map - *usedbyRPP;
+		    state_map->reindex();
+		    state_map->reset();
+		    if(excludedBigmap!=NULL)
+		      delete excludedBigmap;
+		    excludedBigmap=new PeList(*state_map);
+		  }
+		}
 	      if(state_map->count()<=0)
 		{
 		  maxcharesperpe++;
@@ -1009,30 +1029,44 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		    state_map->reindex();
 		    state_map->reset();
 		  }
-		  // ADD SORT here
-		  state_map->sortSource(pp_map->get(state,0));
-
+		  if(excludedBigmap!=NULL)
+		    delete excludedBigmap;
+		  excludedBigmap= new PeList(*state_map);
+		  neednewexc=false;
 		}
+	      // ADD SORT here
+	      state_map->sortSource(pp_map->get(state,0));
 	    }
 	  for(int plane=0; plane < sizeZNL; plane++)
 	    {
 	      if(state_map->count()==0)
 		state_map->reset();
-	      while(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
+	      if(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
 		{
 		  CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
 		  delete state_map;
-		  state_map = new PeList(*RPPlist);
-		  // ADD SORT here
-		  if(usedbyRPP!=NULL){
-		    *state_map - *usedbyRPP;
-		    state_map->reindex();
-		    state_map->reset();
-		  }
+		  if(!neednewexc && excludedBigmap!=NULL)
+		    {
+		      state_map= new PeList(*excludedBigmap);
+		    }
+		  else
+		    {
+		      state_map = new PeList(*RPPlist);
+		      if(usedbyRPP!=NULL){
+			*state_map - *usedbyRPP;
+			state_map->reindex();
+			state_map->reset();
+			if(excludedBigmap!=NULL)
+			  delete excludedBigmap;
+			excludedBigmap= new PeList(*state_map);
+			neednewexc=false;
+		      }
+		    }
 		  if(state_map->count()<=0)
 		    {
 		      maxcharesperpe++;
 		      CkPrintf("plane %d  Ran out of procs in RPP centroid using full RPPlist and bumping maxcharesperpe to %d\n",state, maxcharesperpe);
+		      
 		      if(usedbyRPP!=NULL)
 			delete usedbyRPP;
 		      usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
@@ -1041,8 +1075,12 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		      *state_map - *usedbyRPP;
 		      state_map->reindex();
 		      state_map->reset();
+		      if(excludedBigmap!=NULL)
+			delete excludedBigmap;
+		      excludedBigmap= new PeList(*state_map);
+		      neednewexc=false;
 		    }
-		  state_map->sortSource(pp_map->get(state,plane));
+		  state_map->sortSource(pp_map->get(state,0));
 		}
 	      int destpe=state_map->findNext(); 
 #ifdef USE_INT_MAP
@@ -1053,6 +1091,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	      usedPes[destpe]++;
 	      if(usedPes[destpe]>maxcharesperpe)
 		{
+		  neednewexc=true;
 		  if(usedbyRPP==NULL)
 		    { 
 		      usedbyRPP= new PeList(1);
@@ -1066,8 +1105,6 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		  *state_map - *usedbyRPP;
 		  state_map->reindex();
 		  state_map->reset();
-
-		  
 		}
 	    }
 	  delete state_map;
@@ -1075,7 +1112,8 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       delete usedbyRPP;
       delete [] usedPes;
       delete [] useExclude;
-
+      if(excludedBigmap!=NULL)
+	delete excludedBigmap;
     }
   else
     {

@@ -335,6 +335,14 @@ main::main(CkArgMsg *msg) {
 	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
 	unlink(tidyphysfname);
 	strncpy(tidyphysfname,simfname,1024);
+	strncat(tidyphysfname,".coords.out",20);
+	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
+	unlink(tidyphysfname);
+	strncpy(tidyphysfname,msg->argv[2],1024);
+	strncat(tidyphysfname,".out",20);
+	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
+	unlink(tidyphysfname);
+	strncpy(tidyphysfname,simfname,1024);
 	strncat(tidyphysfname,".confp",20);
 	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);
 	unlink(tidyphysfname);
