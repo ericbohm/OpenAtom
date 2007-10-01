@@ -761,6 +761,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
   availGlobG->reset();
   bool maptype=true;
   int achunks=config.numChunksAsym;
+  bool cp_need_orthoT= (sim->cp_min_opt==1) ? false: true;
   if(config.phantomSym)
     { // evil trickery to use asym map code for phantom sym
       maptype=false;
@@ -900,7 +901,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     pairCalcID1.beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
     pairCalcID1.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
 #endif
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW);
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false);
 
     CkArrayIndex2D myindex(0, 0);
     if(config.gSpaceSum)
@@ -919,7 +920,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     pairCalcID2.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
 #endif
 
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, orthomCastGrpId, orthoRedGrpId,config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, orthomCastGrpId, orthoRedGrpId,config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW, cp_need_orthoT);
     
 
 //============================================================================ 
@@ -1368,6 +1369,10 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   // So we need to copy their mirror elements data into them.
   // then when complete they need to know not to call finishpaircalc.
   // Because their redundant data has nowhere to go.
+
+  // We've made use of them anyway to handle: lambda reduction, the
+  // gamma multiply, and communication balancing for phantoms, so they
+  // aren't completely horrible.
 
   /* create matrix multiplication objects */
   CLA_Matrix_interface matA1, matB1, matC1;

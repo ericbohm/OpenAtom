@@ -315,6 +315,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
                         int,int,int,int,int,int,int);
         void startNLEes(bool,int);
         void launchAtoms();
+	void launchOrthoT();
 	void syncpsi();
 	void requirePsiV();
 	void doFFT();

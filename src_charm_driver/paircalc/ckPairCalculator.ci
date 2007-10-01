@@ -51,7 +51,7 @@ module ckPairCalculator {
 
 	array [4D] PairCalculator {
 
- 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw);
+ 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT);
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);

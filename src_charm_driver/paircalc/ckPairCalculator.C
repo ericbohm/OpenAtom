@@ -257,7 +257,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW)
+PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -301,6 +301,8 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
   numRecLeft = 0;
   streamCaughtR=0;
   streamCaughtL=0;
+  lbpaircalc=_lbpaircalc;
+  expectOrthoT=_expectOrthoT;
   amPhantom=(phantomSym && (thisIndex.y<thisIndex.x) && symmetric ) ? true : false;
   /*  if(amPhantom)
     { // ye old switcheroo for the phantoms
@@ -416,6 +418,7 @@ PairCalculator::pup(PUP::er &p)
   p|PCdelayBWSend;
   p|gSpaceSum;
   p|gpriority;
+  p|expectOrthoT;
   p|phantomSym;
   p|amPhantom;
   p|useBWBarrier;
@@ -768,21 +771,34 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     }
   else if (numRecd == numExpected)
     {
-    if(!msg->doPsiV)
-      {  //normal behavior
-	actionType=0;
-	multiplyForward(msg->flag_dp);	
-	if(!symmetric && numRecdBWOT==numOrtho)
-	  { // we must also multiply orthoT by Fpsi
-	    bwMultiplyDynOrthoT();
-	  }
-
-      }
-    else
-      {
-	// tolerance correction psiV
-	multiplyPsiV();
-      }
+      if(!msg->doPsiV)
+	{  //normal behavior
+	  actionType=0;
+	  if(!expectOrthoT || numRecdBWOT==numOrtho)
+	    {
+	      multiplyForward(msg->flag_dp);	
+	    }
+	  else
+	    {
+	      if(expectOrthoT)
+		CkPrintf("GAMMA BEAT ORTHOT, holding\n");
+	    }
+	  if(expectOrthoT && numRecdBWOT==numOrtho)
+	    { // we must also multiply orthoT by Fpsi
+	      bwMultiplyDynOrthoT();
+	      //	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
+	      numRecdBWOT=0;
+	    }
+	}
+      else
+	{
+	  // tolerance correction psiV
+	  multiplyPsiV();
+	}
+    }
+  else
+    {
+      //      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);
     }
   //nokeep message not deleted
 }
@@ -1323,7 +1339,10 @@ PairCalculator::multiplyForward(bool flag_dp)
     {
       numRecd = 0; 
     }
-
+  else
+    {
+      CkAbort("how did we get into multiplyfoward with mismatch numRecd?\n");
+    }
       
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
@@ -1517,7 +1536,10 @@ PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
 // Do not delete msg. Its a nokeep.
 //============================================================================
   //collect orthoT from matrix2
+  CkAssert(expectOrthoT);
+  
   numRecdBWOT++; 
+  //  CkPrintf("[%d,%d,%d,%d,%d] acceptOrthoT, numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size;i++)
       CkAssert(finite(msg->matrix1[i]));
@@ -1544,7 +1566,17 @@ PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
 
   int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemX : orthoGrainSize;
   int matrixSize=grainSizeX*grainSizeY;
+
   collectTile(false, true, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBWOT, matrixSize, matrix2, matrix1);
+  if ((numRecdBWOT==numOrtho) && (numRecd == numExpected))
+    { // forward path beat orthoT
+      CkPrintf("GAMMA beat orthoT, multiplying\n");
+      actionType=0;
+      multiplyForward(false);	
+      bwMultiplyDynOrthoT();
+      numRecdBWOT=0;
+    }
+
 }
 
 
@@ -1763,7 +1795,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   int n_in=grainSizeY;     // columns of op(B)==columns C 
   int k_in=grainSizeX;     // columns op(A) == rows op(B) 
   double beta(0.0);
-  if(numRecdBWOT==numOrtho && !notOnDiagonal)
+  if(expectOrthoT && !notOnDiagonal)
     beta=1.0;  // need to subtract fpsi*orthoT
   // default these to 0, will be set for streaming comp if !collectAllTiles
   //BTransform=T offsets for C and A matrices
@@ -2458,6 +2490,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
     if(notOnDiagonal)
       dumpMatrixComplex("bwg2modata",othernewData,numExpectedX,numPoints,0,ystart,streamCaughtR);
 #endif
+
 }
 
 void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int orthoGrainSizeX, int orthoGrainSizeY)
@@ -2627,7 +2660,6 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
       numRecdBW=0;
-      numRecdBWOT=0;
 #ifdef _CP_SUBSTEP_TIMING_
       if((pairCalcID1.backwardTimerID>0)||(pairCalcID2.backwardTimerID>0))
 	{

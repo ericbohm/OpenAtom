@@ -289,7 +289,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -419,7 +419,8 @@ class PairCalculator: public CBase_PairCalculator {
   bool phantomSym;           //! phantoms exist to balance the BW path
 			     //otherdata work
 
-
+  bool expectOrthoT;         //! orthoT should arrive before end of
+			     //  fwd path
   bool amPhantom;            //! consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
   
   bool useBWBarrier;

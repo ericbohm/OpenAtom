@@ -401,6 +401,7 @@ class OrthoMap : public CkArrayMapTable2 {
 #else
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
+      CkAssert(proc>=0);
       if(fakeTorus)
 	return(proc%CkNumPes());
       else

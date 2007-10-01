@@ -273,6 +273,11 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
    // (G) If you have triggered an exit condition just chill until ckexit
     if(c->cleanExitCalled==1){RTH_Suspend();} 
     c->first_step = 0;   // its not the first step anymore!
+    /*    if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt == 0)
+      {// send orthoT now
+	c->launchOrthoT();
+      }
+    */
 //--------------------------------------------------------------------------
    }//end while: Go back to top of the loop now (no suspending : no pausing)
 //============================================================================
@@ -3382,6 +3387,21 @@ void CP_State_GSpacePlane::doNewPsi(){
 
   RTH_Runtime_resume(run_thread);
 
+//----------------------------------------------------------------------------
+  }//end routine
+//==============================================================================
+
+
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+//! dynamics triggers send of orthoT to asymm calc when psi is done
+void CP_State_GSpacePlane::launchOrthoT(){
+//=============================================================================
+  CkPrintf("[%d,%d] launchOrthoT \n",thisIndex.x, thisIndex.y);
+  if(thisIndex.x==0 && thisIndex.y==0)
+    orthoProxy.sendOrthoTtoAsymm();
 //----------------------------------------------------------------------------
   }//end routine
 //==============================================================================

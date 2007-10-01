@@ -73,7 +73,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  bool streamBWout, bool delayBWSend, int streamFW, 
 			  bool useDirectSend, bool gSpaceSum, int gpriority, 
 			  bool phantomSym, bool useBWBarrier, 
-			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW)
+			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW,
+			  bool expectOrthoT)
 			   {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
@@ -101,7 +102,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
     options.setMap(*mapid);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, 
 						       gemmSplitFWk, gemmSplitFWm, 
-						       gemmSplitBW,
+						       gemmSplitBW,expectOrthoT,
 						       options);
   }
 
@@ -136,7 +137,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 	      pairCalculatorProxy(z[numX],s1,s2,c).
-		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW  );
+		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT );
 	    }
 	    else
 	      {
@@ -144,7 +145,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW , proc);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -163,14 +164,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW );
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT);
 	      }
 	      else{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW , proc);
+		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -340,9 +341,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 
 {
   int ecount=0;
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric);
-#endif
+
   CkArrayIndexMax *elems;
   if(phantom && s1!=s2)
     elems =new CkArrayIndexMax[numZ*numChunks*2];
@@ -351,6 +350,9 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   //add chunk loop
   for(int chunk = numChunks-1; chunk >=0; chunk--){
     for(int numX = numZ-1; numX >=0; numX--){
+#ifdef _PAIRCALC_DEBUG_
+      CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d plane %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numX);
+#endif
       if(phantom && s1!=s2)
 	{
 	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);

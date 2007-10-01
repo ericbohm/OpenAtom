@@ -423,6 +423,7 @@ void Ortho::resume(){
     {
       sendOrthoTtoAsymm();
     }
+
 //----------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -434,6 +435,7 @@ void Ortho::resume(){
 void Ortho::sendOrthoTtoAsymm(){
 //============================================================================
   int actionType=0; //normal
+  //  CkPrintf("[%d,%d] sending orthoT\n",thisIndex.x,thisIndex.y);
   sendMatrix(m * n, orthoT, &oPairCalcID2, thisIndex.x, thisIndex.y,0,oPairCalcID2.priority-1 );
 
 }

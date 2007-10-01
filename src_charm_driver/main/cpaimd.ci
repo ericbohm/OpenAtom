@@ -344,6 +344,7 @@ mainmodule cpaimd {
   		entry void collect_error(CkReductionMsg *msg);
 		entry void ready();
 		entry void all_ready();
+		entry void sendOrthoTtoAsymm();
       };
 
 	group OrthoMap : CkArrayMap {
