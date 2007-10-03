@@ -690,8 +690,8 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
   if(useCuboidMap)
     {
       int srem= nstates * sizeZ % config.numPes;
-      if(srem)
-	rsobjs_per_pe++;
+      //      if(srem)
+      //	rsobjs_per_pe++;
 
       // exclusion mapping has the sad side effect of increasing the
       // number of exclusions with the state and plane number
@@ -699,6 +699,9 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
       // Topo mapping is less important than even distribution
       // so if you go over the cap, use the master list instead of the
       // state box.
+
+      // this has the effect of creating an imbalance
+
       PeList *myavail=new PeList(*availprocs);
       PeList *exclusionList = NULL;
       for(int state=0; state < nstates; state++)
@@ -723,7 +726,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	  if(thisStateBox->count()<=0)
 	    {
 	      CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
-	      *myavail - *exclusionList;
+	      //	      *myavail - *exclusionList;
 	      delete thisStateBox;
 	      thisStateBox=new PeList(*myavail);
 	      thisStateBox->reindex();
@@ -747,9 +750,25 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	     if(thisStateBox->count()<=0)
 		{
 		  CkPrintf("State %d  Ran out of procs in RS centroid map scheme, spilling over to master list\n",state,srsobjs_per_pe);
-		  *myavail - *exclusionList;
 		  delete thisStateBox;
 		  thisStateBox=new PeList(*myavail);
+		  if(myavail->count()<=0)
+		    {
+		      srsobjs_per_pe++;
+		      CkPrintf("State %d  Ran out of procs in master, bumping srsobjs_per_pe\n",state,srsobjs_per_pe);
+		      delete thisStateBox;
+		      delete myavail;
+		      myavail= new PeList(*availprocs);
+		      if(exclusionList!=NULL)
+			delete exclusionList;
+			
+		      exclusionList=rebuildExclusion(Pecount, srsobjs_per_pe);
+		      if(exclusionList!=NULL)
+			{
+			  *myavail - *exclusionList;
+			}
+		      thisStateBox = new PeList(*myavail);
+		    }
 		  thisStateBox->reindex();
 		  thisStateBox->reset();
 		  thisStateBox->sortSource(samplePe);
@@ -785,8 +804,10 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 		      PeList one(1);
 		      one.TheList[0]=destpe;
 		      *thisStateBox - one;
+		      *myavail-one;
 		      thisStateBox->reindex();
 		      thisStateBox->reset();
+		      
 		    }
 		}
 	    }
@@ -893,7 +914,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       if(useExclusion && afterExclusion > (sizeZNL+nstates)*2)
 	{ // set states_per_pe to fit the exclusion
 
-	  states_per_pe=totalChares/afterExclusion/2;
+	  states_per_pe=(int) ((float) (totalChares/afterExclusion))*0.75;
 	  CkPrintf("RPP adjusting states per pe from %d to %d to use density exclusion to stay within %d processors\n",Rstates_per_pe, states_per_pe, exclusion->count());
 	  *RPPlist-*exclusion;
 	  RPPlist->reindex();
@@ -938,7 +959,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       // keep the smallest count as the max charesperpe
       //      PeList **maps= new PeList* [nstates];
       // this code is too memory hoggy
-      int maxcharesperpe=0;
+      int maxcharesperpe=states_per_pe;
       int *usedPes= new int[config.numPes];
       bool *useExclude= new bool[nstates];
       bzero(usedPes, config.numPes * sizeof(int));
@@ -1024,7 +1045,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		  usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
 		  delete state_map;
 		  state_map = new PeList(*RPPlist);
-		  if(usedbyRPP!=NULL){
+		  if(usedbyRPP!=NULL && usedbyRPP->count()>0){
 		    *state_map - *usedbyRPP;
 		    state_map->reindex();
 		    state_map->reset();
@@ -1041,7 +1062,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 	    {
 	      if(state_map->count()==0)
 		state_map->reset();
-	      if(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
+	      while(state_map->count()<=0 && maxcharesperpe<=sizeZNL*nstates)
 		{
 		  CkPrintf("State %d  Ran out of procs in RPP centroid using full RPPlist\n",state);
 		  delete state_map;
@@ -1072,15 +1093,19 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		      usedbyRPP=rebuildExclusion(usedPes, maxcharesperpe);
 		      delete state_map;
 		      state_map = new PeList(*RPPlist);
-		      *state_map - *usedbyRPP;
-		      state_map->reindex();
-		      state_map->reset();
+		      if(usedbyRPP!=NULL)
+			{
+			  *state_map - *usedbyRPP;
+			  state_map->reindex();
+			  state_map->reset();
+			}
 		      if(excludedBigmap!=NULL)
 			delete excludedBigmap;
 		      excludedBigmap= new PeList(*state_map);
 		      neednewexc=false;
 		    }
 		  state_map->sortSource(pp_map->get(state,0));
+		  state_map->reset();
 		}
 	      int destpe=state_map->findNext(); 
 #ifdef USE_INT_MAP
@@ -1102,7 +1127,14 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 		  usedbyRPP->reindex();
 		  exclusion->mergeOne(destpe);
 		  exclusion->reindex();
-		  *state_map - *usedbyRPP;
+		  PeList thisOne(1);
+		  thisOne.TheList[0]=destpe;
+		  if(excludedBigmap!=NULL)
+		    {
+		      neednewexc=false;
+		      *excludedBigmap-thisOne;
+		    }
+		  *state_map - thisOne;
 		  state_map->reindex();
 		  state_map->reset();
 		}
@@ -1162,7 +1194,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
   bool useExclude=true;
   int maxorthoindex=(nstates/orthoGrainSize-1);
   int northo=(maxorthoindex+1)*(maxorthoindex+1);
-  oobjs_per_pe = northo/(availprocs->count());
+  oobjs_per_pe = northo/(config.numPes);
   int *Pecount= new int [config.numPes];
   bzero(Pecount, config.numPes*sizeof(int)); 
   int s1 = 0, s2 = 0;
@@ -1177,7 +1209,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       s2 = (state2/sGrainSize);
       s2 = s2 * sGrainSize;
       s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-      PeList *thisStateBox;
+      PeList *thisStateBox=NULL;
       if(useSublist)
 	{
 	  thisStateBox = subListState2(s1, s2, nplanes, numChunks, scalcmap);
@@ -1196,9 +1228,9 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
 	  if(thisStateBox!=availprocs)
 	    delete thisStateBox;
 	  thisStateBox = availprocs;
-	  *thisStateBox - *exclusionList;
-	  thisStateBox->reindex();
-	  useSublist=false;
+	  //*thisStateBox - *exclusionList;
+	  //thisStateBox->reindex();
+	  //useSublist=false;
 	}
 
       if(thisStateBox->count() == 0)
@@ -1231,12 +1263,12 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
       {
 	exclusionList->mergeOne(destpe);
 	if(useExclude)
-	{
-	  PeList one(1);
-	  one.TheList[0]=destpe;
-	  *thisStateBox - one;
-	  thisStateBox->reindex();
-	  thisStateBox->reset();
+	  {
+	    PeList one(1);
+	    one.TheList[0]=destpe;
+	    *availprocs - one;
+	    availprocs->reindex();
+	    availprocs->reset();
 	}
       }
       if(thisStateBox!=availprocs)
