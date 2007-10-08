@@ -1687,7 +1687,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 17;
+  num_dict[0] = 18;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1802,6 +1802,13 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     sprintf((*dict)[ind].keyarg,"%d",1);  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
+  // 18)\useStrictCuboid{}
+    ind = 18;
+    strcpy((*dict)[ind].keyword,"useStrictCuboid");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+
   }//end routine
 //===================================================================================
 
@@ -1903,6 +1910,11 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     ind = 17;
     sscanf(dict[ind].keyarg,"%d",&torusDimNZ);
     if(torusDimNZ<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  18)\useStrictCuboid{}
+    ind = 18;
+    parse_on_off(dict[ind].keyarg,&useStrictCuboid,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
 
 
@@ -2447,6 +2459,7 @@ void Config::simpleRangeCheck(){
   rangeExit(phantomSym,"phantomSym;",1);
   rangeExit(gSpaceSum,"gSpaceSum;",1);
   rangeExit(useCuboidMap,"useCuboidMap;",1);
+  rangeExit(useStrictCuboid,"useStrictCuboid;",1);
   rangeExit(useCuboidMapRS,"useCuboidMapRS;",1);
   rangeExit(useCentroidMap,"useCentroidMap;",1);
   rangeExit(loadMapFiles,"loadMapFiles:",1);

@@ -154,6 +154,7 @@ class Config {
    int torusMap;
    int useCuboidMap;
    int useCuboidMapRS;
+   int useStrictCuboid;
    int useCentroidMap;
    int useCentroidMapRho;
    int Gstates_per_pe;
