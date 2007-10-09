@@ -1,15 +1,16 @@
 #===============================================================================
-CHARMBASE           = $(HOME)/charm
+CHARMBASE           = $(HOME)/work/charm
 
 CHARMC              = $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) -DDUAL_FFTW \
-			-I/usr/local/packages/zlib/include -L/usr/local/packages/zlib/lib -lz
+                      -I/usr/local/packages/zlib.old/include \
+                      -I/usr/include/g++/backward
 CPAIMD_DRV_SRC      = $(CPAIMD)/src_charm_driver
 CPAIMDDP_DRV_SRC    = $(CPAIMD)/srcdp_charm_driver
 MAKE_CPAIMD_DRV_INC = $(CPAIMD)/src_charm_driver/compile
 MAKE_CPAIMDDP_DRV_INC = $(CPAIMD)/srcdp_charm_driver/compile
 CHARMLIB            = -module CkMulticast \
 			-L$(FFT_HOME)/lib -module commlib -ldfftw \
-			-ldrfftw -lm 
+			-ldrfftw -lm -L/usr/local/packages/zlib.old/lib -lz 
 
 #===============================================================================
 
@@ -24,6 +25,7 @@ CPAIMD_DRV_OBJS = \
       $(CPAIMD_DRV_SRC)/compile/ortho.o \
       $(CPAIMD_DRV_SRC)/compile/util.o  \
       $(CPAIMD_DRV_SRC)/compile/sim_subroutines.o \
+      $(CPAIMD_DRV_SRC)/compile/paircalc.o \
       $(CPAIMD_DRV_SRC)/compile/map.o
 
 #===============================================================================

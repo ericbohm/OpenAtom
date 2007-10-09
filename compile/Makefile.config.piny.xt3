@@ -10,11 +10,13 @@ PINY_INTERFACE_ROUT  = $(PINY_PHY)/interface
 # header files for PINY physics
 
 PHYSICS_INC   = $(PINY_PHY)/include/class_defs
+#STANDARD_INC  = $(PINY_PHY)/include/ibm_noessl_par
 STANDARD_INC  = $(PINY_PHY)/include/pentium_par
 
 #=====================================================================
 # make file for the PINY physics
 
+#MAKE_PHYS_INC = $(PINY_PHY)/compile/ibm_noessl_par
 MAKE_PHYS_INC = $(PINY_PHY)/compile/pentium_par
 
 #=====================================================================
