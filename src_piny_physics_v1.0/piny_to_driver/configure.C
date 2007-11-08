@@ -2151,6 +2151,25 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     }//endif
 
 //============================================================================
+// Turn topo options off if torusMap is off
+
+    igo = dict_map[1].iuset;
+
+    if(igo==1 && torusMap==0) {
+      sprintf(dict_map[1].keyarg, "%d", torusMap);
+      useCuboidMap = 0;
+      sprintf(dict_map[2].keyarg, "%d", useCuboidMap);
+      useCuboidMapRS = 0;
+      sprintf(dict_map[3].keyarg, "%d", useCuboidMapRS);
+      useCentroidMap = 0;
+      sprintf(dict_map[4].keyarg, "%d", useCentroidMap);
+      useCentroidMapRho = 0;
+      sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
+      useStrictCuboid = 0;
+      sprintf(dict_map[18].keyarg, "%d", useStrictCuboid);
+    }
+
+//============================================================================
 // Turn torusMap on on BG/L
 
 #ifdef CMK_VERSION_BLUEGENE
