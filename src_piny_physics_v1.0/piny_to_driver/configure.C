@@ -1928,10 +1928,18 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
 //=============================================================================
 /**
  * Guesses decent values for configuration parameters based on user
- * set values, system size, and the number of processes available.
+ * set values, system size, and the number of cores available.
  *
  * For large pe runs, scheme is thus: 
- *    1. find power2 nchareG. (typically 32 or 64)
+ *    1. find nchareG which is a multiple of at least one torus dimension
+ *      a. on BG you can just choose a convenient power of 2 and it
+ *         will work well for most torus cases.
+ *      b. BGW full machine runs have the 20 or 40 (VN) rack dimension
+ *         water256 scales better using multiple of that in
+ *         nchareG. YMMV.  This result is not reproduced by the
+ *         guesstimate code, if you have access to >=20480 processors a
+ *         little time tweaking the config file yourself is a good idea.
+ *
  *    2. determine numchunks and grainsize
  *      a. find numPes()/nchareG.
  *      b. set sGrainsize to nstates, set numchunks to 1
@@ -1942,11 +1950,30 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
  *       go for numPes and this system (constrained by nstates,
  *       nplanes, nchareg
  *    5. if numPes is large enable gSpaceSum, cuboid mapping,
- *       centroid mapping, useDirectSend and probably a few other things
+ *       centroid mapping, useDirectSend and probably a few other
+ *       things
+ *    6. if nstates%2=0 and useCuboid then useStrictCuboid=1 unless
+ *       user set it off in config.
+ *     
+ *      
  *
- * Supported parameters: sGrainSize, gExpandFact, gExpandFactRho,
- * fftprogresssplit, fftprogresssplitReal, numSfGrps, numSfDups,
- * rhoGHelpers, numMulticastMsgs
+ *  for nonpower of 2 systems the scheme is revised:
+ * 
+ *    1. find a grainsize which meets the following constraints where:
+ *      nstates%grainsize=remainder
+ *
+ *      a. the remainder is less than 8 (the smallest remotely
+ *         justifiable choice for orthograinsize).  
+ *      b. the grainsize has a factor small enough for either
+ *         orthograinsize^2==numprocs, or orthograinsize^2==numprocs/2
+ *         and enable orthohelpers.  with orthograinsize > remainder
+ *      c. odd numbers should work, but will slightly degrade your
+ *         ability to keep the double hummer pipeline loaded in which
+ *          will reduce your flops so you should avoid them.
+ *       
+ * Supported parameters: sGrainSize, orthoGrainSize, gExpandFact,
+ * gExpandFactRho, fftprogresssplit, fftprogresssplitReal, numSfGrps,
+ * numSfDups, rhoGHelpers, numMulticastMsgs
 
  */
 //=============================================================================
@@ -1972,28 +1999,49 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(numPes>low_x_size){
          int i=1;
          double mypow=1;
-         while((mypow=pow(2.0, (double)i)) <= low_x_size){i++;}
-      sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers);
+	 int targetNchare=low_x_size;
+	 // need a way to increase the targetNchare so that
+	 // nChareG * (nstates/sGrainSize)^2 * numChunks = numPes
+	 // without going overboard on the planes, grains, or chunks.
+	 // in the general case we haven't determined any of these
+	 // variables yet.  
+
+	 // roughly speaking the desired nchare goes as sqrtpes)
+	 if(low_x_size<sqrtpes) targetNchare=sqrtpes / low_x_size * low_x_size;
+         while((mypow=pow(2.0, (double)i)) <= targetNchare){i++;}
+
+	 sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers); 	 // WTF is this for?
+
          gExpandFact = mypow / (double) low_x_size;
          nchareG     = (int)( gExpandFact * (double) low_x_size);
          sprintf(dict_state[6].keyarg,"%g",gExpandFact);
       }//endif
     }//endif : gexpandfact not set
 
+    
     nchareG  = (int)(gExpandFact*(double)low_x_size);
-
+    CkPrintf("nchareG now %d based on gExpandFact %.5g\n", nchareG, gExpandFact);
 //=============================================================================
 // numChunks, numChunksSym, numChunksAsym, sgrainsize are not set
 
     igo = (dict_pc[27].iuset+dict_pc[28].iuset+dict_pc[29].iuset+dict_pc[14].iuset);
-
     if(igo==0){
        int numGrains = nstates/sGrainSize;
        numGrains    *=numGrains;
        numChunks     = numPes/(nchareG*numGrains);
        if(numChunks<1){numChunks=1;}
-       while(numChunks>16){
-          sGrainSize = sGrainSize/2;
+       int remainder;
+       while(numChunks>8){
+	 if(!isPow2(nstates)) // not a power of two, find a good grainsize
+	   // allowing for remainder
+	   {
+	     sGrainSize = sGrainSize/2;
+	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPes);
+	   }
+	 else
+	   {  //
+	     sGrainSize = sGrainSize/2;
+	   }
           numGrains  = nstates/sGrainSize;
           numGrains *= numGrains;
           numChunks  = numPes/(nchareG*numGrains);
@@ -2004,7 +2052,20 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
        sprintf(dict_pc[27].keyarg,"%d",numChunks);
        sprintf(dict_pc[28].keyarg,"%d",numChunksSym);
        sprintf(dict_pc[29].keyarg,"%d",numChunksAsym);
+       sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
+       if(gemmSplitFWk>sGrainSize) gemmSplitFWk=sGrainSize;
+       if(gemmSplitFWm>sGrainSize) gemmSplitFWm=sGrainSize;
+       if(gemmSplitOrtho>orthoGrainSize) gemmSplitOrtho=orthoGrainSize;
+       if(gemmSplitOrtho%2!=0) gemmSplitOrtho-=1;
+       if(gemmSplitFWk%2!=0) gemmSplitFWk-=1;
+       if(gemmSplitFWm%2!=0) gemmSplitFWm-=1;
+       sprintf(dict_pc[15].keyarg,"%d",gemmSplitFWk);
+       sprintf(dict_pc[16].keyarg,"%d",gemmSplitFWm);
+       sprintf(dict_pc[17].keyarg,"%d",gemmSplitOrtho);
     }//endif : chunks not set
+    else{
+      CkPrintf("guesstimate using user defined PC decomp\n");
+    }
 
 //=============================================================================
 // gstates_per_pe not set
@@ -2627,9 +2688,9 @@ void Config::rangeExit(int param, char *name, int iopt){
       EXIT(1);
     }
 
-    if (nstates % sGrainSize > sGrainSize/4 ){
+    if (nstates % sGrainSize > sGrainSize/2 ){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   Your remainder should be less than 1/4 of your grainsize\n   Or Load Imbalance will substantially degrade performance\n");
+      PRINTF("   Your remainder should be less than 1/2 of your grainsize\n   Or Load Imbalance will substantially degrade performance\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }
@@ -2813,3 +2874,81 @@ void Config::write_cpaimd_config(FILE *fp,DICT_WORD *dict, int num_dict, char *f
 //========================================================================
    }//end routine 
 //========================================================================
+
+// PRE: input sGrainSize is upper bound, nstates & numpes >0
+// POST: 
+//     oGrainSize is a factor of sGrainSize
+//     (nstates/ograinsize)^<=numPes
+//     remainder= nstates%sGrainSize
+//     remainder < sGrainSize/2
+//     remainder < orthoGrainSize
+//     remainder returned from function
+int Config::approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes)
+{
+
+
+  // we refine grainSize to something with enough factors
+  // for orthograinsize, orthograinsize must be factor of
+  // sgrain.  So this breaks down to a factorization
+  // problem on possible sGrainSizes.  sGrainSize can
+  // generally be assumed to be 5 digits max, but we will
+  // have to check a bunch of sGrainSizes, so doing it fast
+  // will be rewarded.  Our factorization problem is
+  // simplified by the fact that we don't care if
+  // our factors are primes, but increased by the fact that
+  // we need one with a factor that meets the
+  // numograin~=numproc constraint.
+
+  // We can actually leap more directly to hunting for the right
+  // factor by operating in reverse.  Take the sqrt of the number of
+  // processors and jigger that to find a factor of nstates
+  int numograin=nstates/oGrainSize;
+  int sqrtpes    = (int) sqrt((double)numPes);
+  oGrainSize=nstates/sqrtpes;
+
+  // our candidate is a lower bound on ograinsize, we can go larger
+  // and leave some processors empty.
+  // Empirically we know that finer granularity than ograinsize
+  // 8 is extremely unlikely to improve performance.
+  if (oGrainSize<8) oGrainSize=8;
+  
+
+
+  // Our actual constraint here is that ograinsize must be a
+  // factor of sgrainsize, while minimizing the remainder
+
+
+  // given our ograin lower bound and sgrain upper bound
+  // we have an n^2 approach to step them towards each other until we
+  // find a match.  
+  int sGrainSizeLB=sGrainSize/2;
+  int remainder=nstates%sGrainSize;
+  int sGrainSizeUB=sGrainSize;
+  CkPrintf("Approx given sGrainSize %d, nstates %d, numProcs %d \n",sGrainSize,nstates, numPes);
+  for(  ; oGrainSize<=sGrainSize; oGrainSize++)
+    {
+
+      //TODO: this is accelerated by only testing multiples of oGrainSize
+      int cand=sGrainSizeUB/oGrainSize*oGrainSize;
+      remainder=nstates%cand;
+      for(sGrainSize=cand; ((sGrainSize>sGrainSizeLB) &&
+
+			    (remainder<sGrainSize/4) && (remainder<oGrainSize))
+				      ;sGrainSize-=oGrainSize)
+	{
+	  CkPrintf("Approx trying oGrainSize %d sGrainSize %d \n",oGrainSize, sGrainSize);
+	  remainder=nstates%sGrainSize;
+	  if((remainder<sGrainSize/4) && (remainder<oGrainSize)) 
+	    {
+	      CkPrintf("Approx remainder %d \n",remainder);
+      
+	      return(remainder);
+	    }
+	}
+    }
+  // you are screwed
+  return(-1);
+}
+
+
+

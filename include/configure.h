@@ -200,8 +200,18 @@ class Config {
    void set_config_params_map  (DICT_WORD *, char *, char *);
    void guesstimateParmsConfig (int, DICT_WORD *, DICT_WORD *, DICT_WORD *, 
 				     DICT_WORD *, DICT_WORD *,DICT_WORD *);
+   int approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes);
    void write_cpaimd_config    (FILE *, DICT_WORD *, int, char *);
    void load_cpaimd_config (DICT_WORD *, int, PINY_NAME *, PINY_NAME *, int, int *);
+   bool isPow2(int input){
+     int y=0;
+     for(int x=0;x<32;x++){
+       y = 1<<x;
+       if(y==input){return true;}
+     }//endfor
+     return false;
+   }
+//============================================================================
   //==================================
 
 //-----------------------------------------------------------------------------------
