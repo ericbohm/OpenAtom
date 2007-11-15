@@ -796,8 +796,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //============================================================================
 // Pick a reduction plane
 
-  redPlane = 1;
+  redPlane = 0;
   if(nchareG>1){
+     redPlane = 1;
 #ifdef _FANCY_PLANES_
     if(config.numPes>2*nstates){
       CkVec <int> usedVec;
@@ -2463,6 +2464,7 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
 // Set the file names and write the files
 
   iwrite_now     = 0;
+
   if(config.stateOutput==1){
 
     if( ((myiteration % ndump_frq)==0) || (iteration==config.maxIter) || 
