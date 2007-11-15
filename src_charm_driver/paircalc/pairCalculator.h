@@ -253,4 +253,6 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 
 
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart);
+bool reorder_elem_list_4D(CkArrayIndex4D *elems, int numelems, int newstart);
+bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart);
 #endif

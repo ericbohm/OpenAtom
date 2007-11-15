@@ -344,8 +344,8 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
   numOrthoCol=grainSizeX/orthoGrainSize;
   numOrthoRow=grainSizeY/orthoGrainSize;
   numOrtho=numOrthoCol*numOrthoRow;
-  orthoCookies=new CkSectionInfo[numOrtho];
-  orthoCB=new CkCallback[numOrtho];
+  orthoCookies=new CkSectionInfo[numOrtho*2];
+  orthoCB=new CkCallback[numOrtho*2];
   if(PCstreamBWout && !collectAllTiles) 
     {
       columnCount= new int[numOrthoCol];
@@ -364,9 +364,9 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
       RightOffsets= new int[numExpectedY];
       LeftRev = new int[numExpectedX];
       RightRev = new int[numExpectedY];
-      touchedTiles= new int[numOrtho];
+      touchedTiles= new int[numOrtho*2];
       bzero(touchedTiles,numOrtho*sizeof(int));
-      outTiles = new double *[numOrtho];
+      outTiles = new double *[numOrtho*2];
       for(int i=0;i<numOrtho;i++)
 	outTiles[i]= new double[orthoGrainSize*orthoGrainSize];
     }
@@ -547,8 +547,8 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY);
 #endif
-
-  CkAssert(orthoIndex<numOrtho);
+ // numOrtho here is numOrtho per sGrain
+  CkAssert(orthoIndex<numOrtho*2);
   CkGetSectionInfo(orthoCookies[orthoIndex],msg);
   orthoCB[orthoIndex]=msg->cb;
   mCastGrpIdOrtho=msg->mCastGrpId; 

@@ -220,8 +220,8 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
   int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
-  //  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
-  //  CkAssert(order);
+  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
+  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
@@ -243,7 +243,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
   // all nondiagonal elements 
   // so we'll have to make this the tedious explicit way
 
-  CkArrayIndexMax *elems= new CkArrayIndexMax[nstates/GrainSize-1];
+  CkArrayIndex4D *elems= new CkArrayIndex4D[nstates/GrainSize];
   int ecount=0;
   for(int s2 =0; s2<=maxpcstateindex; s2+=GrainSize)
     {
@@ -256,7 +256,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
   int newListStart=state%GrainSize;
   if(newListStart> ecount)
     newListStart= newListStart % ecount;
-  bool order=reorder_elem_list( elems, ecount, newListStart);
+  bool order=reorder_elem_list_4D( elems, ecount, newListStart);
   CkAssert(order);
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   delete [] elems;
@@ -288,7 +288,7 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
   int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
+  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
@@ -323,8 +323,8 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
   int newListStart=state%GrainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
-  //  bool order=reorder_elem_list( sid._elems, sid._nElems, newListStart);
-  //  CkAssert(order);
+  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
+  CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
   return sectProxy;
@@ -341,17 +341,13 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 
 {
   int ecount=0;
-
-  CkArrayIndexMax *elems;
-  if(phantom && s1!=s2)
-    elems =new CkArrayIndexMax[numZ*numChunks*2];
-  else
-    elems =new CkArrayIndexMax[numZ*numChunks];
+  //  CkPrintf("initOneRedSect for s1 %d s2 %d ortho %d %d sym %d planes %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numZ);
+  CkArrayIndex4D *elems=new CkArrayIndex4D[numZ*numChunks*2];
   //add chunk loop
   for(int chunk = numChunks-1; chunk >=0; chunk--){
     for(int numX = numZ-1; numX >=0; numX--){
 #ifdef _PAIRCALC_DEBUG_
-      CkPrintf("initGred for s1 %d s2 %d ortho %d %d sym %d plane %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numX);
+      CkPrintf("initOneRedSect for s1 %d s2 %d ortho %d %d sym %d plane %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numX);
 #endif
       if(phantom && s1!=s2)
 	{
@@ -362,12 +358,11 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	{
 	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
 	  elems[ecount++]=idx4d;
-	  //	  if(pcid->Symmetric)
-	  //	    CkPrintf("O [%d,%d] initGred section includes %d %d %d %d sym %d\n",orthoX, orthoY,z[numX],s1,s2,chunk,pcid->Symmetric);
+	  //	  CkPrintf("O [%d,%d] initGred section includes %d %d %d %d sym %d\n",orthoX, orthoY,z[numX],s1,s2,chunk,pcid->Symmetric);
 	}
     }
   }
-  int numOrtho=pcid->GrainSize/orthoGrainSize;
+  int numOrthoCol=pcid->GrainSize/orthoGrainSize;
   int maxorthostateindex=(pcid->nstates/orthoGrainSize-1)*orthoGrainSize;
   int orthoIndexX=(orthoX*orthoGrainSize);
 
@@ -376,13 +371,13 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   orthoIndexY= (orthoIndexY>maxorthostateindex) ? maxorthostateindex : orthoIndexY;
   orthoIndexX-=s1;
   orthoIndexY-=s2;
-  int orthoIndex=orthoIndexX*numOrtho+orthoIndexY;
+  int orthoIndex=orthoIndexX*numOrthoCol+orthoIndexY;
 
   int newListStart=orthoIndex;
   if(newListStart> ecount)
     newListStart= newListStart % ecount;
-  //  bool order=reorder_elem_list( elems, ecount, newListStart);
-  //  CkAssert(order);
+  bool order=reorder_elem_list_4D( elems, ecount, newListStart);
+  CkAssert(order);
   // now that we have the section, make the proxy
   CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   CProxySection_PairCalculator *sectProxy=&sProxy;
@@ -737,8 +732,8 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
 	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
 	  {
-	    CkArrayIndexMax *elems= new CkArrayIndexMax[nstates/grainSize];
-	    CkArrayIndexMax *elemsfromrow= new CkArrayIndexMax[nstates/grainSize];
+	    CkArrayIndex4D *elems= new CkArrayIndex4D[nstates/grainSize];
+	    CkArrayIndex4D *elemsfromrow= new CkArrayIndex4D[nstates/grainSize];
 	    int erowcount=0;
 	    int ecount=0;
 	    CkArrayIndex4D idx(myPlane,0,0,chunk);
@@ -1113,6 +1108,21 @@ bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
 
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
 {
+  //  CkPrintf("reordering list of %d elems\n", numelems);
+  std::random_shuffle(elems,elems+numelems);
+  return(true);
+}
+
+bool reorder_elem_list_4D(CkArrayIndex4D *elems, int numelems, int newstart)
+{
+  //  CkPrintf("reordering list of %d elems\n", numelems);
+  std::random_shuffle(elems,elems+numelems);
+  return(true);
+}
+
+bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart)
+{
+  //  CkPrintf("reordering list of %d elems\n", numelems);
   std::random_shuffle(elems,elems+numelems);
   return(true);
 }

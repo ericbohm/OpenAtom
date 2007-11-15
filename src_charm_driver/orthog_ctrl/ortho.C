@@ -96,6 +96,13 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 	thisProxy.do_iteration();
     }
     else{
+      if(iterations>=config.invsqr_max_iter)
+	{
+	  CkPrintf("Ortho reached max_iter %d with residual of %.10g, which is greater than invsqr_tolerance %.10g!\nEither increase invsqr_max_iter or invsqr_tolerance.\n  If this is not the first step in a GenWave try lowering your timestep\n",config.invsqr_max_iter, error, config.invsqr_tolerance);
+	  CkAbort("invsqr_tolerance not met within invsqr_max_iter\n");
+	}
+
+
       if(config.useOrthoSection)
 	{
 	  orthoMtrigger *tmsg= new orthoMtrigger;
