@@ -594,7 +594,8 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
     if(k_x[i]==0)wght=1.0;
     anorm += (gspace_coefs[i].re*gspace_coefs[i].re+
               gspace_coefs[i].im*gspace_coefs[i].im)*wght;
-
+    if(i%30==0)
+      CmiNetworkProgress();
   }//endfor:gSpaceSize
 
 //=========================================================================

@@ -1064,6 +1064,7 @@ void CP_State_GSpacePlane::readFile() {
       fftw_free(vdataToBeSent);
 
       ioff += numPoints;
+      CmiNetworkProgress();
   }//endfor : loop over all possible chares in g-space (pencils)
 
   CkAssert(numData==ioff);
