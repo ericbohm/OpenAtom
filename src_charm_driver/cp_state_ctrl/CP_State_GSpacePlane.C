@@ -748,39 +748,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     setMigratable(false);
   }//endif
 
-//============================================================================
-// Section Reductions and SF proxy creation
 
-  real_proxy = realSpacePlaneProxy;
-  if (config.useGssInsRealP){
-     ComlibAssociateProxy(&gssInstance,real_proxy);
-  }//endif
-
-  // create structure factor proxy
-  if(thisIndex.x==0 && ees_nonlocal==0){
-      // dups must be less than the number of states because thats
-      // the maximum number of time you can duplicate a plane
-      int dups=config.numSfDups;
-      if(config.numSfDups>nstates){dups=nstates;}
-      CkVec <CkArrayIndex3D> sfelems;
-      for(int dup=0;dup<dups; dup++){ //each dup
-	  for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
-	      sfelems.push_back(CkArrayIndex3D(atm, thisIndex.y,dup));
-	  }//endfor : atm groups
-      }//endfor : dup groups
-      sfCompSectionProxy = 
-	CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
-					     (CkArrayIndexMax *) 
-					     sfelems.getVec(), sfelems.size());
-  }//endif : state=0 
-
-//============================================================================
-// Register with the cache : Eric's multiple reduction schemes ensure its done
-//                           before we need it.
-
-   registrationFlag  = 1;
-   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
-   eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
    savedvksBf=NULL;
    savedforceBf=NULL;
@@ -1144,8 +1112,45 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     CkPrintf("initGSpace %d.%d %d\n",thisIndex.x,thisIndex.y,size);
 #endif
 
+
+
+
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   eesCache *eesData     = eesCacheProxy.ckLocalBranch ();
+
+//============================================================================
+// Section Reductions and SF proxy creation
+
+  real_proxy = realSpacePlaneProxy;
+  if (config.useGssInsRealP){
+     ComlibAssociateProxy(&gssInstance,real_proxy);
+  }//endif
+
+  // create structure factor proxy
+  if(thisIndex.x==0 && ees_nonlocal==0){
+      // dups must be less than the number of states because thats
+      // the maximum number of time you can duplicate a plane
+      int dups=config.numSfDups;
+      if(config.numSfDups>nstates){dups=nstates;}
+      CkVec <CkArrayIndex3D> sfelems;
+      for(int dup=0;dup<dups; dup++){ //each dup
+	  for(int atm=0;atm<config.numSfGrps; atm++){ //each atm
+	      sfelems.push_back(CkArrayIndex3D(atm, thisIndex.y,dup));
+	  }//endfor : atm groups
+      }//endfor : dup groups
+      sfCompSectionProxy = 
+	CProxySection_StructureFactor::ckNew(sfCompProxy.ckGetArrayID(),
+					     (CkArrayIndexMax *) 
+					     sfelems.getVec(), sfelems.size());
+  }//endif : state=0 
+
+//============================================================================
+// Register with the cache : Eric's multiple reduction schemes ensure its done
+//                           before we need it.
+
+   registrationFlag  = 1;
+
+   eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
 
   int cp_min_opt    = sim->cp_min_opt;
   int cp_min_update = sim->cp_min_update;

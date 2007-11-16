@@ -244,6 +244,7 @@ mainmodule cpaimd {
 	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
 		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+	        entry void init();
                 entry void recvFromEesGPP(NLFFTMsg *);
                 entry void recvZMatEes(CkReductionMsg *);
                 entry [nokeep] void computeAtmForcEes(CompAtmForcMsg *msg);

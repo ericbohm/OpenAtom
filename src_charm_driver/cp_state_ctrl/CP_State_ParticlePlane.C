@@ -144,6 +144,44 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   zmatrix_fx    = NULL; zmatrix_fy    = NULL; zmatrix_fz    = NULL;
   zmatrixSum_fx = NULL; zmatrixSum_fy = NULL; zmatrixSum_fz = NULL;
 
+
+
+//============================================================================
+// No load balancing and no atsyncing either!
+
+  setMigratable(false);
+  usesAtSync           = CmiFalse;
+
+//============================================================================
+// report your status to main
+
+  int constructed=1;
+  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  savedprojpsiBf=NULL;
+  savedprojpsiBfsend=NULL;
+  savedprojpsiGBf=NULL;
+#endif
+//---------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//  InitKVectors creates local k vectors for this chare and mallocs some memory.//
+/// It is invoked from CP_State_GSpacePlane::initGSpace()
+//  It also takes care of the array section creation which needs to
+//  wait for the doneInsertion phase
+//
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
+//============================================================================
+
+
+
 //============================================================================
 // Comlib to talk to realPP : used when ees_enl_on==1
 
@@ -151,7 +189,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   if (config.useGssInsRealPP){
       ComlibAssociateProxy(&gssPInstance,realPP_proxy);
   }//endif
-
 //============================================================================
 //  Register with the SFCache
 
@@ -249,38 +286,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 
   }//endif
   delete [] red_pl;
-
-//============================================================================
-// No load balancing and no atsyncing either!
-
-  setMigratable(false);
-  usesAtSync           = CmiFalse;
-
-//============================================================================
-// report your status to main
-
-  int constructed=1;
-  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
-#ifdef _CP_GS_DEBUG_COMPARE_VKS_
-  savedprojpsiBf=NULL;
-  savedprojpsiBfsend=NULL;
-  savedprojpsiGBf=NULL;
-#endif
-//---------------------------------------------------------------------------
-   }//end routine
-//============================================================================
-
-
-//============================================================================
-//  InitKVectors creates local k vectors for this chare and mallocs some memory.
-/// It is invoked from CP_State_GSpacePlane::initGSpace()
-//  It could be done in the constructor but this is really fine.
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
-//============================================================================
 
     numLines        = gss->numLines;
     numFullNL       = gss->numFullNL;

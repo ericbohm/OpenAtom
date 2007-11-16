@@ -145,6 +145,36 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   launchFFT        = false;
   countZ           = 0;      // Zmat communication counter
 
+
+
+//============================================================================
+// No migration: No atSync load-balancing act
+
+  setMigratable(false);
+  usesAtSync = CmiFalse;
+#ifdef _CP_GS_DEBUG_COMPARE_VKS_
+  savedprojpsiC=NULL;
+  savedProjpsiCScr=NULL;
+  savedProjpsiRScr=NULL;
+  savedzmat=NULL;
+  savedmn=NULL;
+  saveddmn_x=NULL;
+  saveddmn_y=NULL;
+  saveddmn_z=NULL;
+  savedigrid=NULL;
+#endif
+//----------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+//============================================================================
+// Post construction initialization.
+// you can't make sections until the multicast manager is done
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealParticlePlane::init(){
+
 //============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache
 
@@ -166,6 +196,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 		  realParticlePlaneProxy);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
+
 
 //============================================================================
 // Choose reduction plane reasonably intelligently
@@ -212,6 +243,7 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
     red_pl[i] = calcReductionPlaneNum(thisIndex.x);
   }//endif
   reductionPlaneNum = calcReductionPlaneNum(thisIndex.x); */
+
 
 //============================================================================
 // Build section reductions
@@ -262,25 +294,9 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
      ComlibAssociateProxy(&mssPInstance,gPP_proxy);
   }//endif
 
-//============================================================================
-// No migration: No atSync load-balancing act
 
-  setMigratable(false);
-  usesAtSync = CmiFalse;
-#ifdef _CP_GS_DEBUG_COMPARE_VKS_
-  savedprojpsiC=NULL;
-  savedProjpsiCScr=NULL;
-  savedProjpsiRScr=NULL;
-  savedzmat=NULL;
-  savedmn=NULL;
-  saveddmn_x=NULL;
-  saveddmn_y=NULL;
-  saveddmn_z=NULL;
-  savedigrid=NULL;
-#endif
-//----------------------------------------------------------------------------
-  }//end routine
-//============================================================================
+}
+
 
 
 //============================================================================

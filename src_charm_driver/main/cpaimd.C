@@ -1531,6 +1531,9 @@ void main::doneInit(CkReductionMsg *msg){
 
     if (done_init == 3){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
+
+      realParticlePlaneProxy.init();
+
       // its completion triggers the final phase
 
       // kick off file reading in gspace
@@ -1612,12 +1615,82 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int sGrainSize      = config.sGrainSize; 
   int numChunks       = config.numChunks;
 
+  //Need our maps to exist before anyone tries to use them
+
 //============================================================================
 
-  PRINT_LINE_STAR;
-  PRINTF("Building G-space (%d %d) and R-space (%d %d/%d) state Chares\n",
-          nstates,nchareG,nstates,nchareR,nchareRPP);
-  PRINT_LINE_DASH;printf("\n");
+  //============================================================================
+  //need some groups to exist before we kick off the state which use them
+ //--------------------------------------------------------------------------------
+ // Groups : no placement required 
+
+
+  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
+  CkPrintf("created sfcache proxy\n");
+  sfCompProxy  = CProxy_StructureFactor::ckNew();
+  CkPrintf("created sfcomp proxy\n");
+  eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
+                                         nstates,nchareRhoG);
+  CkPrintf("created eescache proxy\n");
+
+
+  int nchareRRhoTot  = nchareR*(config.rhoRsubplanes);
+  int nchareRHartTot = nchareRHart*(config.rhoRsubplanes);
+
+  int *numGState     = sim->nlines_per_chareG;
+  int *numGNL        = sim->nlines_per_chareG;
+  int *numGRho       = sim->nlines_per_chareRhoG;
+  int *numGEext      = sim->nlines_per_chareRhoGEext;
+
+  int *numRXState    = new int [nchareR];
+  int *numRYState    = new int [nchareR];
+  int *numRXNL       = new int [nchareR];
+  int *numRYNL       = new int [nchareR];
+  for(int i=0;i<nchareR;i++){
+    numRXState[i] = sim->sizeY;
+    numRYState[i] = sim->nplane_x;
+    numRXNL[i]    = ngridbNl;
+    numRYNL[i]    = sim->nplane_x;
+  }//endfor
+
+  int *numRXRho      = new int [nchareRRhoTot];
+  int *numRYRho      = new int [nchareRRhoTot];
+  int *numRXEext     = new int [nchareRHartTot];
+  int *numRYEext     = new int [nchareRHartTot];
+  int *numSubGx      = sim->numSubGx;
+  size2d sizeRealPlane(sizeYZ[0], sizeX);
+
+  create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
+                         sim->nplane_rho_x,sim->sizeY,ngridbEext,
+                         numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
+
+  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
+   		     sim->sizeX,sim->sizeY,sim->sizeZ,
+                     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
+                     ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
+                     sim->nlines_max, sim->nlines_max_rho,
+                     config.nchareG,nchareR,
+                     config.nchareG,nchareRPP, 
+                     nchareRhoG,    nchareR,    nchareRRhoTot,
+                     nchareGHart,   nchareRHart,nchareRHartTot,
+                     numGState,     numRXState, numRYState,
+                     numGNL,        numRXNL,    numRYNL,
+                     numGRho,       numRXRho,   numRYRho,
+                     numGEext,      numRXEext,  numRYEext,
+  		     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
+                     config.rhoRsubplanes);
+  CkPrintf("created fftcache proxy\n");
+  delete [] numRXState;
+  delete [] numRYState;
+  delete [] numRXNL;
+  delete [] numRYNL;
+  delete [] numRXRho;
+  delete [] numRYRho;
+  delete [] numRXEext;
+  delete [] numRYEext;
+
+
+
 
 //============================================================================
 // Instantiate the Chares with placement determined by the maps
@@ -1625,6 +1698,10 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
  //---------------------------------------------------------------------------
  // state g-space
 
+  PRINT_LINE_STAR;
+  PRINTF("Building G-space (%d %d) and R-space (%d %d/%d) state Chares\n",
+          nstates,nchareG,nstates,nchareR,nchareRPP);
+  PRINT_LINE_DASH;printf("\n");
   availGlobG->reset();
 #ifdef USE_INT_MAP
   GSImaptable.buildMap(nstates, nchareG);
@@ -1657,13 +1734,28 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   double newtime=CmiWallTimer();
   CkPrintf("GSMap created in %g\n", newtime-Timer);
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
-  CkArrayOptions gSpaceOpts;
+  CkArrayOptions gSpaceOpts(nstates,nchareG);
   int gforward=keeperRegister(string("GSpaceForward"));
   int gbackward=keeperRegister(string("GSpaceBackward"));
   gSpaceOpts.setMap(gsMap);
   gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
                      sizeX, sizeYZ, 1, 1, sGrainSize, numChunks,  gforward, 
 		     gbackward, gSpaceOpts);
+  gSpacePlaneProxy.doneInserting();
+ //--------------------------------------------------------------------------------
+ // We bind the particlePlane array to the gSpacePlane array migrate together
+
+  //  CkArrayOptions particleOpts(nstates,nchareG);
+  CkArrayOptions particleOpts(nstates,nchareG);
+  particleOpts.setMap(gsMap); // the maps for both the arrays are the same
+  particleOpts.bindTo(gSpacePlaneProxy);
+  particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(
+                       nchareG, sizeYZ[0], sizeYZ[1],ngridaNl,ngridbNl,ngridcNl,
+                       1, numSfGrps, natm_nl, natm_nl_grp_max, nstates, 
+                       nchareG, Gstates_per_pe, numIterNL, ees_nonlocal_on, 
+                       particleOpts);
+  particlePlaneProxy.doneInserting();
+
 
   if(config.dumpMapFiles) {
     int size[2];
@@ -1714,15 +1806,14 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   CkPrintf("RSMap created in %g\n", newtime-Timer);
   Timer=newtime;
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
-  CkArrayOptions realSpaceOpts;
+  CkArrayOptions realSpaceOpts(nstates,nchareR);
   realSpaceOpts.setMap(rsMap);
-  size2d sizeRealPlane(sizeYZ[0], sizeX);
   int rforward=keeperRegister(string("RealSpaceForward"));
   int rbackward=keeperRegister(string("RealSpaceBackward"));
 
   realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane, 
 	1, 1, ngrida, ngridb, ngridc, rforward, rbackward,realSpaceOpts);
-  
+    realSpacePlaneProxy.doneInserting();  
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareR;
@@ -1740,109 +1831,6 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 
   availGlobR->reset();
 
- //--------------------------------------------------------------------------------
- // Groups : no placement required 
-
-  int nchareRRhoTot  = nchareR*(config.rhoRsubplanes);
-  int nchareRHartTot = nchareRHart*(config.rhoRsubplanes);
-
-  int *numGState     = sim->nlines_per_chareG;
-  int *numGNL        = sim->nlines_per_chareG;
-  int *numGRho       = sim->nlines_per_chareRhoG;
-  int *numGEext      = sim->nlines_per_chareRhoGEext;
-
-  int *numRXState    = new int [nchareR];
-  int *numRYState    = new int [nchareR];
-  int *numRXNL       = new int [nchareR];
-  int *numRYNL       = new int [nchareR];
-  for(int i=0;i<nchareR;i++){
-    numRXState[i] = sim->sizeY;
-    numRYState[i] = sim->nplane_x;
-    numRXNL[i]    = ngridbNl;
-    numRYNL[i]    = sim->nplane_x;
-  }//endfor
-
-  int *numRXRho      = new int [nchareRRhoTot];
-  int *numRYRho      = new int [nchareRRhoTot];
-  int *numRXEext     = new int [nchareRHartTot];
-  int *numRYEext     = new int [nchareRHartTot];
-  int *numSubGx      = sim->numSubGx;
-  create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
-                         sim->nplane_rho_x,sim->sizeY,ngridbEext,
-                         numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
-
-  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
-   		     sim->sizeX,sim->sizeY,sim->sizeZ,
-                     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
-                     ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
-                     sim->nlines_max, sim->nlines_max_rho,
-                     config.nchareG,nchareR,
-                     config.nchareG,nchareRPP, 
-                     nchareRhoG,    nchareR,    nchareRRhoTot,
-                     nchareGHart,   nchareRHart,nchareRHartTot,
-                     numGState,     numRXState, numRYState,
-                     numGNL,        numRXNL,    numRYNL,
-                     numGRho,       numRXRho,   numRYRho,
-                     numGEext,      numRXEext,  numRYEext,
-  		     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
-                     config.rhoRsubplanes);
-  CkPrintf("created fftcache proxy\n");
-  delete [] numRXState;
-  delete [] numRYState;
-  delete [] numRXNL;
-  delete [] numRYNL;
-  delete [] numRXRho;
-  delete [] numRYRho;
-  delete [] numRXEext;
-  delete [] numRYEext;
-
-  sfCacheProxy = CProxy_StructFactCache::ckNew(numSfGrps,natm_nl,natm_nl_grp_max);
-  CkPrintf("created sfcache proxy\n");
-  sfCompProxy  = CProxy_StructureFactor::ckNew();
-  CkPrintf("created sfcomp proxy\n");
-  eesCacheProxy = CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
-                                         nstates,nchareRhoG);
-  CkPrintf("created eescache proxy\n");
- //--------------------------------------------------------------------------------
- // We bind the particlePlane array to the gSpacePlane array migrate together
-
-  //  CkArrayOptions particleOpts(nstates,nchareG);
-  CkArrayOptions particleOpts;
-  particleOpts.setMap(gsMap); // the maps for both the arrays are the same
-  particleOpts.bindTo(gSpacePlaneProxy);
-  particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(
-                       nchareG, sizeYZ[0], sizeYZ[1],ngridaNl,ngridbNl,ngridcNl,
-                       1, numSfGrps, natm_nl, natm_nl_grp_max, nstates, 
-                       nchareG, Gstates_per_pe, numIterNL, ees_nonlocal_on, 
-                       particleOpts);
-
- //--------------------------------------------------------------------------------
- // Insert the planes in the particle plane array, gSpacePlane array
-
-  CkPrintf("Making (nstates=%d)x(nchareG=%d) gspace objects\n\n",nstates,nchareG);
-  for (int s = 0; s < nstates; s++){
-    for (int x = 0; x <nchareG; x++){
-        gSpacePlaneProxy(s, x).insert(sizeX, sizeYZ, 1,1,sGrainSize,numChunks,gforward, gbackward);
-        particlePlaneProxy(s, x).insert(sizeX, sizeYZ[0], sizeYZ[1],   
-                                        ngridaNl,ngridbNl,ngridcNl,1,
-   				        numSfGrps, natm_nl, natm_nl_grp_max,
-				        nstates,nchareG,config.Gstates_per_pe,
-                                        numIterNL,ees_nonlocal_on);
-    }//endfor
-  }//endfor
-
-  gSpacePlaneProxy.doneInserting();
-  particlePlaneProxy.doneInserting();
-
- //--------------------------------------------------------------------------------    
- // Insert the planes in the real space plane array
-
-    for (int s = 0;  s < nstates; s++){
-      for (int y = 0; y < nchareR; y += 1){
-         realSpacePlaneProxy(s, y).insert(sizeRealPlane,1,1,ngrida,ngridb,ngridc, rforward, rbackward);
-      }//endfor
-    }//endfor
-    realSpacePlaneProxy.doneInserting();
   //--------------------------------------------------------------------------------
   // Do a fancy dance to determine placement of structure factors
     CkPrintf("Making SF non-EES\n");
@@ -2056,20 +2044,12 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
       delete nlexcludePes;
     }
   Timer=newtime;
-  CkArrayOptions pRealSpaceOpts;
+  CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
   pRealSpaceOpts.setMap(rspMap);
   realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
                                 ngridaNl,ngridbNl,ngridcNl,
                                 numIterNL,zmatSizeMax,Rstates_per_pe,
 		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
-
-  for (int s = 0;  s < nstates; s++){
-    for (int y = 0; y < ngridcNl; y += 1){
-      realParticlePlaneProxy(s, y).insert(ngridaNl,ngridbNl,ngridcNl,
-					  numIterNL,zmatSizeMax,Rstates_per_pe,
-					  nchareG,ees_nonlocal_on);
-    }//endfor
-  }//endfor
   realParticlePlaneProxy.doneInserting();
   printf("\n");
   PRINT_LINE_DASH;

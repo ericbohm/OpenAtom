@@ -931,6 +931,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
   // Functions
    CP_State_RealParticlePlane(CkMigrateMessage *m) {}
    CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+   void init();
   ~CP_State_RealParticlePlane();
    void launchFFTControl(int );
    void pup(PUP::er &);
