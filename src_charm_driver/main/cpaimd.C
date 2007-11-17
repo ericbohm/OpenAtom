@@ -635,29 +635,33 @@ main::main(CkArgMsg *msg) {
     init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 
-    CkVec <int> usedVec;
+    int *usedProc= new int[CkNumPes()];
+    memset(usedProc,0,sizeof(int)*CkNumPes());
+    int charperpe=nstates/CkNumPes();
+    if(nstates%CkNumPes()!=0)  charperpe++;
+    if(charperpe<1) charperpe=1;
     for(int state=0; state<nstates;state++){
       int plane=nchareG-1;
       while(plane>=0)
         {
           bool used=false;
           int thisstateplaneproc=GSImaptable.get(state,plane);
-          for(int i=0;i<usedVec.size();i++)
-            {
-              if(usedVec[i]==thisstateplaneproc)
+	  if(usedProc[thisstateplaneproc]>charperpe);
+	  {
                 used=true;
 	    }
 	  if(!used || plane==0)
 	    {
 	      peUsedByNLZ.push_back(thisstateplaneproc);
 	      planeUsedByNLZ.push_back(plane);
-	      usedVec.push_back(thisstateplaneproc);
+	      usedProc[thisstateplaneproc]++;
 	      plane=-1;
 	    }
 	  plane--;
 	}
     }
     peUsedByNLZ.quickSort();
+    delete [] usedProc;
 //============================================================================    
 // Transfer parameters from physics to driver
 //    read in atoms : create atoms group 

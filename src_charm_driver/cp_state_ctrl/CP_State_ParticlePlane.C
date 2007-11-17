@@ -213,23 +213,28 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
   //--------------------------------------------------------------------------
   // Compute all reduction planes for all chares
 
+
+
   int *red_pl = new int[nstates];
-  CkVec <int> usedVec;
+  int *usedProc= new int[CkNumPes()];
+  memset(usedProc,0,sizeof(int)*CkNumPes());
+  int charperpe=nstates/CkNumPes();
+  if(nstates%CkNumPes()!=0)  charperpe++;
+  if(charperpe<1) charperpe=1;
   for(int state=0; state<nstates;state++){
     int plane=nchareG-1;
     while(plane>=0)
       {
 	bool used=false;
 	int thisstateplaneproc=GSImaptable.get(state,plane);
-	for(int i=0;i<usedVec.size();i++)
-	  {
-	    if(usedVec[i]==thisstateplaneproc)
-	      used=true;
-	  }
+	if(usedProc[thisstateplaneproc]>charperpe);
+	{
+	  used=true;
+	}
 	if(!used || plane==0)
 	  {
 	    red_pl[state]=plane;
-	    usedVec.push_back(thisstateplaneproc);
+	    usedProc[thisstateplaneproc]++;
 	    plane=-1;
 	  }
 	plane--;
@@ -241,21 +246,19 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
       {
         bool used=false;
         int thisstateplaneproc=GSImaptable.get(state,plane);
-        for(int i=0;i<usedVec.size();i++)
-          {
-            if(usedVec[i]==thisstateplaneproc)
-              used=true;
-          }
+	if(usedProc[thisstateplaneproc]>charperpe);
+	{
+	  used=true;
+	}
         if(!used || (plane+1==nchareG))
           {
-            usedVec.push_back(thisstateplaneproc);
+	    usedProc[thisstateplaneproc]++;
             red_pl[state]=plane;
             plane=nchareG;
           }
         plane++;
       }
   }
-
   reductionPlaneNum = red_pl[thisIndex.x];
 
   //--------------------------------------------------------------------------
