@@ -260,7 +260,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
       }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
-
+  delete [] usedProc;
   //--------------------------------------------------------------------------
   // If you are a reduction plane, set up your comm with your guys and the
   // the other reduction planes. Store your cookie to eat later.

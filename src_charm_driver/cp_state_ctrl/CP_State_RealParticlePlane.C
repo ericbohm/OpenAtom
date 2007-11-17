@@ -203,22 +203,25 @@ void CP_State_RealParticlePlane::init(){
 
   int *red_pl       = new int[nstates];
   //foreach state, try to find a new proc for each state's reduction plane
-  CkVec <int> usedVec;
+  int *usedProc= new int[CkNumPes()];
+  memset(usedProc,0,sizeof(int)*CkNumPes());
+  int charperpe=nstates/CkNumPes();
+  if(nstates%CkNumPes()!=0)  charperpe++;
+  if(charperpe<1) charperpe=1;
   for(int state=0; state<nstates;state++){
     int plane=0;
     while(plane<nChareR)
       {
         bool used=false;
         int thisstateplaneproc=RPPImaptable.get(state,plane);
-        for(int i=0;i<usedVec.size()&&i<nstates;i++)
-          {
-            if(usedVec[i]==thisstateplaneproc)
-              used=true;
-          }
+	if(usedProc[thisstateplaneproc]>charperpe);
+	{
+	  used=true;
+	}
+
         if(!used || (plane+1==nChareR))
           {
-            if(!used)
-              usedVec.push_back(thisstateplaneproc);
+	    usedProc[thisstateplaneproc]++;
             red_pl[state]=plane;
             plane=nChareR;
           }
@@ -226,7 +229,7 @@ void CP_State_RealParticlePlane::init(){
       }
   }
   reductionPlaneNum = red_pl[thisIndex.x];
-
+  delete [] usedProc;
 	    /* old less reliable method
   int l             = Rstates_per_pe;
   int pl            = (nstates / l);
