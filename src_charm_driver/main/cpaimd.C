@@ -550,11 +550,11 @@ main::main(CkArgMsg *msg) {
     int m, pl, pm;
     pl = nstates / l;
     pm = config.numPes / pl;
-    if(pm==0)
-      {
-	CkPrintf("Choose a larger Gstates_per_pe than %d such that numprocs %d/ (nstates %d /config.Gstates_per_pe %d) is > 0\n", config.Gstates_per_pe,config.numPes, nstates, l);
-	CkAssert(config.numPes / (nstates/config.Gstates_per_pe)>0) ;
-    		}
+    if(pm == 0) {
+      CkPrintf("Choose a larger Gstates_per_pe than %d such that { no. of processors [%d] / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 \n", 
+      l, config.numPes, nstates, l);
+      CkAssert(config.numPes / (nstates/l) > 0);
+    }
     m = config.nchareG / pm;
 
     planes_per_pe=m;

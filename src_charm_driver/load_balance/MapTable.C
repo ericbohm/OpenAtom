@@ -108,7 +108,7 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
   state_load = 0.0;
   int l, m, pl, pm, srem, rem, i=0;
 
-  l=Gstates_per_pe;		// no of states in one chunk
+  l = Gstates_per_pe;		// no of states in one chunk
   pl = nstates / l;		// no of procs on y axis
   if(nstates % l == 0)
     srem = 0;
@@ -116,14 +116,16 @@ GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs,
   {
     while(pow(2.0, (double)i) < pl)
       i++;
-    pl = (int) pow(2.0, (double)(i-1));             // make it same as the nearest smaller power of 2
+    pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
     srem = nstates % pl;
   }
   pm = availprocs->count() / pl;		// no of procs on x axis
         
-  if(!useCuboidMap && pm==0)
-  CkAbort("Choose a larger Gstates_per_pe\n");
-        
+  if(!useCuboidMap && pm == 0) {
+    CkPrintf("Choose a larger Gstates_per_pe than %d such that { no. of processors [%d] / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 \n", 
+    l, availprocs->count(), nstates, l);
+    CkAssert(availprocs->count() / (nstates/l) > 0);
+  }
   m = nchareG / pm;		// no of planes in one chunk
   rem = nchareG % pm;		// remainder of planes left to be mapped
         
@@ -310,8 +312,8 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
   availprocs=_availprocs;
   availprocs->reset();
   int maxstateindex=max_states/grainsize*grainsize;
-  if(planes_per_pe==0)
-    CkAbort("Choose a larger Gstates_per_pe\n");
+  if(planes_per_pe == 0)
+    CkAbort("Choose a larger nChareG to avoid this crash\n");
   if(symmetric)
     {
       for(int i=1; i<=max_states/grainsize; i++)
@@ -673,8 +675,11 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
     }
   pm = availprocs->count() / pl;
         
-  if(pm==0)
-    CkAbort("Choose a larger Rstates_per_pe\n");
+  if(pm == 0) {
+    CkPrintf("Choose a larger Rstates_per_pe than %d such that { no. of processors [%d] / (no. of states [%d] / Rstates_per_pe [%d]) } is > 0 \n",
+    l, availprocs->count(), nstates, l);
+    CkAssert(availprocs->count() / (nstates/l) > 0);
+  }
 
   m = sizeZ / pm;
   rem = sizeZ % pm;
@@ -983,8 +988,11 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
     }
   pm = RPPlist->count() / pl;
         
-  if(pm==0)
-    CkAbort("Choose a larger Rstates_per_pe\n");
+  if(pm == 0) {
+    CkPrintf("Choose a larger Rstates_per_pe than %d such that { [%d] / (no. of states [%d] / Rstates_per_pe [%d]) } is > 0 \n", Rstates_per_pe,
+    RPPlist->count(), nstates, Rstates_per_pe);
+    CkAssert(RPPlist->count() / (nstates/Rstates_per_pe) > 0);
+  }
 
   m = sizeZNL / pm;
   rem = sizeZNL % pm;
