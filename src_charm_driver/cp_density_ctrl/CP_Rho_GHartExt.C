@@ -820,7 +820,7 @@ void CP_Rho_GHartExt::getHartEextEes(){
 #endif
 #ifdef _CP_GHART_VERBOSE_
     CkPrintf("Ghart %d %d iter %d Here in hartees: EwaldRecip : %.10g on\n",
-              thisIndex.x,thisIndex.z,iterAtmTyp,ewd_ret,CkMyPe());
+              thisIndex.x,thisIndex.y,iterAtmTyp,ewd_ret,CkMyPe());
 #endif
   }//endif
      

@@ -761,8 +761,8 @@ void CP_Rho_GSpacePlane::RhoGSendRhoRall() {
 //============================================================================
 
 #ifdef _CP_DEBUG_RHOG_VERBOSE_
-  CkPrintf("Communicating data from RhoG to RhoR : %d %d %d\n",
-	   thisIndex.x,thisIndex.y,iopt);
+  CkPrintf("Communicating data from RhoG to RhoR : %d %d\n",
+	   thisIndex.x,thisIndex.y);
 #endif
 
 //============================================================================
