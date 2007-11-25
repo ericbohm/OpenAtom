@@ -200,21 +200,40 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
     }//endif
   }//endif
 
-//==================================================================================
-// Register in the cache : contribute to a reduction to be sure everyone is done
-
-  if(ees_eext_on==1){
-     eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-     eesData->registerCacheGHart(thisIndex.x,nPacked,rho_gs.k_x,rho_gs.k_y,rho_gs.k_z);
-     int i=1;
-     CkCallback cb(CkIndex_CP_Rho_GHartExt::registrationDone(NULL),rhoGHartExtProxy);
-     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-  }//endif
 
 //==================================================================================
 // Set some proxies, set the migratable flag
 
   setMigratable(false);
+
+  usesAtSync = CmiTrue;
+  if(config.lbdensity){
+    setMigratable(true);
+  }else{
+    setMigratable(false);
+  }//endif
+
+//---------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+
+//============================================================================
+// Post constructor initialization
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GHartExt::init(){
+//==================================================================================
+// Register in the cache : contribute to a reduction to be sure everyone is done
+
+  if(ees_eext_on==1){
+     eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+     eesData->registerCacheGHart(thisIndex.x,rho_gs.nPacked,rho_gs.k_x,rho_gs.k_y,rho_gs.k_z);
+     int i=1;
+     CkCallback cb(CkIndex_CP_Rho_GHartExt::registrationDone(NULL),rhoGHartExtProxy);
+     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  }//endif
 
   rhoRealProxy_com = rhoRealProxy;
   if(config.useGHartInsRhoRP){
@@ -227,16 +246,9 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
      ComlibAssociateProxy(&commGHartRHartIns0,rhoRHartProxy_com0);
      ComlibAssociateProxy(&commGHartRHartIns1,rhoRHartProxy_com1);
   }//endif
-
-  usesAtSync = CmiTrue;
-  if(config.lbdensity){
-    setMigratable(true);
-  }else{
-    setMigratable(false);
-  }//endif
-
+  
 //---------------------------------------------------------------------------
-  }//end routine
+}//end routine
 //============================================================================
 
 //============================================================================

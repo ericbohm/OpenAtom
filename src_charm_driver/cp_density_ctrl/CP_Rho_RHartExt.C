@@ -127,6 +127,15 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   nptsA        = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
   nptsExpndA   = 2*myNplane_rho*ngridb;            // memory size for fft in doubles
 
+
+//---------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_RHartExt::init(){
 //============================================================================
 // Malloc data sets : Register in the cache
 
@@ -135,7 +144,7 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   if(ees_eext_on==1){
     csize        = (ngrida/2+1)*myNgridb;  // complex variable size
  
-    eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
+    eesCache *eesData  = eesCacheProxy.ckLocalBranch();
     eesData->registerCacheRHart(thisIndex.x);
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
@@ -162,7 +171,8 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
     }//endif
 
     int i=1;
-    CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),rhoRHartExtProxy);
+    //    CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),rhoRHartExtProxy);
+    CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),thisProxy);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
@@ -173,6 +183,7 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
   if (config.useRHartInsGHart){
     ComlibAssociateProxy(&commRHartGHartIns,rhoGHartProxy_com);          
   }//endif
+
 
 //---------------------------------------------------------------------------
   }//end routine

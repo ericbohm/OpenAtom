@@ -29,9 +29,9 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
-                        int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
+                         int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
                         int numPes_in, int natm_typ_in,int ees_eext_opt_in,
-                        int gen_wave_in,int ncoef)
+                        int gen_wave_in,int ncoef, int cp_min_opt)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -204,7 +204,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Final consistency checks
 
-  Finale(nkf1,nkf2,nkf3,nplane_x,nplane_x_rho);
+  Finale(nkf1,nkf2,nkf3,nplane_x,nplane_x_rho,cp_min_opt);
 
 //===================================================================================
 // Output your parameter choices to the screen
@@ -1160,7 +1160,7 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 32)\invsqr_max_iter{}
     ind=32;
     strcpy((*dict)[ind].keyword,"invsqr_max_iter");
-    sprintf((*dict)[ind].keyarg,"%d",10);
+    sprintf((*dict)[ind].keyarg,"%d",1000);
     strcpy((*dict)[ind].error_mes,"a number >= 0");
   //-----------------------------------------------------------------------------
 
@@ -2587,7 +2587,7 @@ void Config::rangeExit(int param, char *name, int iopt){
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
-  void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho){
+  void Config::Finale(int nkf1,int nkf2,int nkf3,int nplane_x,int nplane_x_rho, int cp_min_opt){
 //===================================================================================
 // Code deficiency checks
 
@@ -2680,6 +2680,15 @@ void Config::rangeExit(int param, char *name, int iopt){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
+
+
+    if(PCCollectTiles && cp_min_opt!=1)
+      {
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Must NOT PCCollectTiles in dynamics\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+      }
 
     if((PCCollectTiles && PCstreamBWout)||(!PCCollectTiles && ! PCstreamBWout)) {
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

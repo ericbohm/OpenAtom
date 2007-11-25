@@ -98,61 +98,6 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
       recvCountFromRRho=sizeZ;
     }//endif
 
-    //make section proxy
-    if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
-      if(config.nchareRhoG<config.nchareG)
-	{
-	  // just divvy them up as well as we can
-	  int gperrho=config.nchareG/config.nchareRhoG;
-	  int grem= config.nchareG%config.nchareRhoG;
-	  int startplane=thisIndex.x*gperrho;
-	  int endplane=startplane;
-	  if(gperrho>1)
-	    endplane=startplane+gperrho;
-	  //dump the remainders into the 0th section
-	  if(grem>0 && thisIndex.x<grem)
-	    { // manual section creation for our share plus remainder
-	      CkArrayIndexMax *elems= new CkArrayIndexMax[config.nstates*(gperrho+grem)];
-	      int ecount=0;
-	      //our usual share
-	      for(int plane=startplane;plane<=endplane;plane++)
-		for(int state =0; state<config.nstates;state++)
-		{
-		  CkArrayIndex2D idx2d(state,plane);
-		  elems[ecount++]=idx2d;
-		}
-	      // the overflow
-	      int plane=config.nchareRhoG+thisIndex.x;
-	      for(int state =0; state<config.nstates;state++)
-		{
-		  CkArrayIndex2D idx2d(state,plane);
-		  elems[ecount++]=idx2d;
-		}
-	      //	      for(int i=0;i<ecount;i++)
-	      //		CkPrintf("nl sect %d %d\n",elems[i].data()[0],elems[i].data()[1]);
-	      nlsectproxy =
-		CProxySection_CP_State_GSpacePlane::ckNew(gSpacePlaneProxy.
-							  ckGetArrayID(),
-							  elems,ecount);
-	      delete elems;
-	    }
-	  else
-	    {
-	      nlsectproxy = CProxySection_CP_State_GSpacePlane::
-		ckNew(gSpacePlaneProxy.ckGetArrayID(),
-		      0, config.nstates-1, 1,startplane, endplane, 1);
-	      //	      CkPrintf("nl sect state 0 through %d plane %d through %d\n",config.nstates-1,startplane, endplane);
-	    }
-	}
-      else
-	{
-	  if(thisIndex.x<config.nchareG){
-	    nlsectproxy = CProxySection_CP_State_GSpacePlane::
-	      ckNew(gSpacePlaneProxy.ckGetArrayID(),
-		    0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
-	  }//endif
-	}
-    }//endif
 
 //============================================================================
 // Deal with the run descriptors then malloc
@@ -224,6 +169,80 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
       istrt_pts    += num_pts;
     }//endfor
 
+
+    usesAtSync = CmiTrue;
+    if(config.lbdensity){
+      setMigratable(true);
+    }else{
+      setMigratable(false);
+    }//endif
+
+//---------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+//post constructor initialization
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_GSpacePlane::init()
+{
+    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    //make section proxy
+    if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
+      if(config.nchareRhoG<config.nchareG)
+	{
+	  // just divvy them up as well as we can
+	  int gperrho=config.nchareG/config.nchareRhoG;
+	  int grem= config.nchareG%config.nchareRhoG;
+	  int startplane=thisIndex.x*gperrho;
+	  int endplane=startplane;
+	  if(gperrho>1)
+	    endplane=startplane+gperrho;
+	  //dump the remainders into the 0th section
+	  if(grem>0 && thisIndex.x<grem)
+	    { // manual section creation for our share plus remainder
+	      CkArrayIndexMax *elems= new CkArrayIndexMax[config.nstates*(gperrho+grem)];
+	      int ecount=0;
+	      //our usual share
+	      for(int plane=startplane;plane<=endplane;plane++)
+		for(int state =0; state<config.nstates;state++)
+		{
+		  CkArrayIndex2D idx2d(state,plane);
+		  elems[ecount++]=idx2d;
+		}
+	      // the overflow
+	      int plane=config.nchareRhoG+thisIndex.x;
+	      for(int state =0; state<config.nstates;state++)
+		{
+		  CkArrayIndex2D idx2d(state,plane);
+		  elems[ecount++]=idx2d;
+		}
+	      //	      for(int i=0;i<ecount;i++)
+	      //		CkPrintf("nl sect %d %d\n",elems[i].data()[0],elems[i].data()[1]);
+	      nlsectproxy =
+		CProxySection_CP_State_GSpacePlane::ckNew(gSpacePlaneProxy.
+							  ckGetArrayID(),
+							  elems,ecount);
+	      delete [] elems;
+	    }
+	  else
+	    {
+	      nlsectproxy = CProxySection_CP_State_GSpacePlane::
+		ckNew(gSpacePlaneProxy.ckGetArrayID(),
+		      0, config.nstates-1, 1,startplane, endplane, 1);
+	      //	      CkPrintf("nl sect state 0 through %d plane %d through %d\n",config.nstates-1,startplane, endplane);
+	    }
+	}
+      else
+	{
+	  if(thisIndex.x<config.nchareG){
+	    nlsectproxy = CProxySection_CP_State_GSpacePlane::
+	      ckNew(gSpacePlaneProxy.ckGetArrayID(),
+		    0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
+	  }//endif
+	}
+    }//endif
 //============================================================================
 // Set up proxies and set migration options
 
@@ -243,16 +262,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     if(config.useGByrdInsRhoRBP)
        ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
 
-    usesAtSync = CmiTrue;
-    if(config.lbdensity){
-      setMigratable(true);
-    }else{
-      setMigratable(false);
-    }//endif
-
-//---------------------------------------------------------------------------
-   }//end routine
-//============================================================================
+}
 
 
 //============================================================================

@@ -169,20 +169,54 @@ FFTcache::FFTcache(size2d planeSIZE,
                                     &unit, &ngridc,nchareGState,&nsplitG,numGState);
     initFFTholder  (&bwdZPlanState, &iopt,&nwork1,&nwork2,&scale,&mnus,&ngridc,
                                     &unit, &ngridc,nchareGState,&nsplitG,numGState);
+    char wisstring[1024];
+    snprintf(wisstring,1024,"fftwwisdom_%d.dat",CkNumPes());
     if(iopt==0){
-        size[0] = ngrida; size[1] = ngridb; size[2] = 1; 
-        fwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
-                                   FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
-        bwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_REAL_TO_COMPLEX,
-                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-        fwdYPlanState.fftwPlan  =  fftw_create_plan(ngridb, FFTW_FORWARD, 
-                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-        bwdYPlanState.fftwPlan =   fftw_create_plan(ngridb, FFTW_BACKWARD, 
-                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-        fwdZPlanState.fftwPlan  =  fftw_create_plan(ngridc,FFTW_FORWARD, 
-                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
-        bwdZPlanState.fftwPlan  =  fftw_create_plan(ngridc,FFTW_BACKWARD, 
-                                   FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
+      /**
+       * If there is a wisdom file already made for this decomp, load
+       * it.  We assume here that the rho decomposition choice changes
+       * only with the number of processors.  It should be noted that
+       * those engaging in serious rho parameter tuning would do well
+       * to delete their wisdom files.  FFTW will make a new plan if
+       * the wisdom file doesn't address the size of a plan anyway so
+       * this probably isn't a big deal.
+       */
+
+      FILE *wisdomFile=fopen(wisstring,"r");
+      if(wisdomFile ==NULL && CkMyPe()==0)
+	{
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
+	  CkPrintf("Can't open wisdom file %s plan creation will take a little longer\n",wisstring);
+	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
+	}
+      else{
+	if(fftw_import_wisdom_from_file(wisdomFile)==FFTW_SUCCESS)
+	  {
+	    // only print this once
+	    if(CkMyPe()==0)  CkPrintf("[%d] FFTCache loaded FFTW Wisdom %s\n",CkMyPe(),wisstring);
+	  }
+	else
+	  {
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    CkPrintf("Wisdom load failed!\n");
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  }
+
+	fclose(wisdomFile);
+      }
+      size[0] = ngrida; size[1] = ngridb; size[2] = 1; 
+      fwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_COMPLEX_TO_REAL, 
+						    FFTW_MEASURE | FFTW_IN_PLACE|FFTW_USE_WISDOM);
+      bwdXPlanState.rfftwPlan = rfftwnd_create_plan(1, (const int*)size, FFTW_REAL_TO_COMPLEX,
+						    FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      fwdYPlanState.fftwPlan  =  fftw_create_plan(ngridb, FFTW_FORWARD, 
+						  FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      bwdYPlanState.fftwPlan =   fftw_create_plan(ngridb, FFTW_BACKWARD, 
+						  FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      fwdZPlanState.fftwPlan  =  fftw_create_plan(ngridc,FFTW_FORWARD, 
+						  FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
+      bwdZPlanState.fftwPlan  =  fftw_create_plan(ngridc,FFTW_BACKWARD, 
+						  FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM); 
     }//endif
 
 //==============================================================================
@@ -356,7 +390,21 @@ FFTcache::FFTcache(size2d planeSIZE,
         bwdZPlanEext.fftwPlan  =  fftw_create_plan(ngridcEext,FFTW_BACKWARD, 
                                        FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM);
     }//end switch
-
+    if(iopt==0 && CkMyPe()==0)
+      {
+	FILE *wisdomFile=fopen(wisstring,"w");
+	if(wisdomFile ==NULL)
+	  {
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	    CkPrintf("Can't open wisdom file %s for writing\n",wisstring);
+	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	  }
+	else{
+	  fftw_export_wisdom_to_file(wisdomFile);
+	  CkPrintf("Wisdom %s written\n",wisstring);
+	  fclose(wisdomFile);
+	}
+      }// end if opt==0
 //------------------------------------------------------------------------------
    }//end routine
 //==============================================================================

@@ -176,7 +176,27 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
     for(int i=0;i<5;i++){countIntGtoR[i]=0;}//ctrls bkc-int-transpose rho(gx,y,z):gx/z->yz
     for(int i=0;i<5;i++){countIntRtoG[i]=0;}//ctrls fwd-int-transpose rho(gx,y,z):yz->gx/z
 
+
 //============================================================================
+// Migration
+
+    usesAtSync = CmiTrue;
+   //    if(config.lbdensity){
+   //      setMigratable(true);
+   //    }else{
+    setMigratable(false);
+   //    }//endif
+
+//============================================================================
+   }//end routine
+//============================================================================
+
+/** post constructor initialization */
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_Rho_RealSpacePlane::init(){
+
 // make sections in the realSpacePlane array. These will be used when 
 // computing real-space densities and multicasting v_ks values 
 
@@ -230,21 +250,7 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCom
 	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
     if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
-
-//============================================================================
-// Migration
-
-    usesAtSync = CmiTrue;
-   //    if(config.lbdensity){
-   //      setMigratable(true);
-   //    }else{
-    setMigratable(false);
-   //    }//endif
-
-//============================================================================
-   }//end routine
-//============================================================================
-
+}
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

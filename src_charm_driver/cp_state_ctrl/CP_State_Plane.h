@@ -527,6 +527,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int recvCountFromGHartExt;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
 	CP_Rho_RealSpacePlane(int, size2d, bool,int,int,int);
+	void init();
        ~CP_Rho_RealSpacePlane();
 	void pup(PUP::er &);
 	void acceptDensity(CkReductionMsg *);
@@ -592,6 +593,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	CP_Rho_GSpacePlane(int, size2d, int, int, bool);
 	~CP_Rho_GSpacePlane();
 	void run();
+	void init();
 	void acceptRhoData(RhoGSFFTMsg *msg);
 	void acceptRhoData(); // refine the name
 	void ResumeFromSync();
@@ -696,7 +698,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
 	CP_Rho_RHartExt(CkMigrateMessage *m) {}
 	CP_Rho_RHartExt(int , int , int , int , int );
 	~CP_Rho_RHartExt();
-
+	void init();
 	void pup(PUP::er &p);
         void startEextIter();
 	void computeAtmSF();
@@ -721,6 +723,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
  public:
 	CP_Rho_GHartExt(CkMigrateMessage *m) {}
 	CP_Rho_GHartExt(size2d,int , int , int , int ,int );
+	void init();
 	~CP_Rho_GHartExt();
 	void pup(PUP::er &);
 	void acceptData(RhoGHartMsg *msg);

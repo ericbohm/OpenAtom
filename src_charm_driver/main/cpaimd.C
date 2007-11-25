@@ -444,7 +444,7 @@ main::main(CkArgMsg *msg) {
     numPes = CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
-                      ees_eext_opt,sim->gen_wave,sim->ncoef);
+                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt);
     fakeTorus        = config.fakeTorus>0;
     if(fakeTorus)
       numPes=config.torusDimX*config.torusDimY*config.torusDimZ;
@@ -1532,12 +1532,21 @@ void main::doneInit(CkReductionMsg *msg){
       PRINT_LINE_STAR; printf("\n");
       Timer=newtime;
     }//endif
+    if (done_init==1)
+      { // kick off post constructor inits
 
+	rhoRealProxy.init();
+	rhoGProxy.init();
+	rhoGHartExtProxy.init();
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_eext_on)
+	{rhoRHartExtProxy.init();}
+
+
+      }
     if (done_init == 3){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
-
-      realParticlePlaneProxy.init();
-
+      if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
+	{realParticlePlaneProxy.init();}
       // its completion triggers the final phase
 
       // kick off file reading in gspace
@@ -1557,7 +1566,7 @@ void main::doneInit(CkReductionMsg *msg){
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
 	  }else{
-            CkPrintf("Running Open Atom CP Dynamics: \n");
+            CkPrintf("Running Open Atom CP Dynamiics: \n");
 	  }//endif
           PRINT_LINE_STAR; CkPrintf("\n");
           PRINT_LINE_STAR;
@@ -1619,7 +1628,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int sGrainSize      = config.sGrainSize; 
   int numChunks       = config.numChunks;
 
-  //Need our maps to exist before anyone tries to use them
+  //Need our maps and groups to exist before anyone tries to use them
 
 //============================================================================
 
@@ -2179,8 +2188,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew();
-  //CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
-  CkArrayOptions rhorsOpts;
+  CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
+  //CkArrayOptions rhorsOpts;
   rhorsOpts.setMap(rhorsMap);
 
 
@@ -2230,7 +2239,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew();
-  CkArrayOptions rhogsOpts;
+  CkArrayOptions rhogsOpts(nchareRhoG,1);
+  //CkArrayOptions rhogsOpts;
   rhogsOpts.setMap(rhogsMap);
 
   if(config.dumpMapFiles) {
@@ -2251,8 +2261,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   // if there aren't enough free procs refresh the avail list;
   if(nchareRhoRHart*nchareHartAtmT > RhoAvail->count())
     RhoAvail->reset();
-  //  CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
-  CkArrayOptions rhorhartOpts;
+  CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
+  //CkArrayOptions rhorhartOpts;
     
   if(ees_eext_on) {
 #ifdef USE_INT_MAP
@@ -2340,8 +2350,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   }
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew();
-  //  CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
-  CkArrayOptions rhoghartOpts;
+  CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
+  //  CkArrayOptions rhoghartOpts;
   rhoghartOpts.setMap(rhogHartMap);
 
   if(config.dumpMapFiles) {
@@ -2368,11 +2378,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
 						     ees_eext_on, ngrid_eext_c, rhokeeper,
 						     rhorsOpts);
-    for (int i = 0; i < nchareRhoR; i++){
+  /*    for (int i = 0; i < nchareRhoR; i++){
       for (int j = 0; j < config.rhoRsubplanes; j++){
 	rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy, ees_eext_on, ngrid_eext_c, rhokeeper);
       } //endfor
     } //endfor
+    */
   rhoRealProxy.doneInserting();
   rhoRealProxy.setReductionClient(printEnergyEexc, 0);
   //--------------------------------------------------------------------------
@@ -2380,22 +2391,23 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
 					       1, dummy, 
 					       rhogsOpts);
-  for (int i = 0; i < nchareRhoG; i++){
+  /*  for (int i = 0; i < nchareRhoG; i++){
     rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
   }//endfor
+  */
   rhoGProxy.doneInserting();
   //--------------------------------------------------------------------------
   // insert rhoghart
   rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
 						   ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
-
+  /*
   for (int k = 0; k < nchareHartAtmT; k++){
     for (int i = 0; i < nchareRhoGHart; i++){
       rhoGHartExtProxy(i,k).insert(sizeYZ,ngrid_eext_a,ngrid_eext_b,
 				   ngrid_eext_c,ees_eext_on,natmTyp);
     }//endfor
   }//endfor
-
+  */
   rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
   rhoGHartExtProxy.doneInserting();
   //--------------------------------------------------------------------------
@@ -2403,7 +2415,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   if(ees_eext_on){
     rhoRHartExtProxy = CProxy_CP_Rho_RHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
 						     ngrid_eext_c,ees_eext_on,natmTyp,rhorhartOpts);
-
+    /*
     for (int k = 0; k < nchareHartAtmT; k++){
       for (int i = 0; i < nchareRhoRHart; i++){
 	for (int j = 0; j < config.rhoRsubplanes; j++){
@@ -2412,7 +2424,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 	}//endfor
       }//endfor
     }//endfor
-
+    */
     rhoRHartExtProxy.doneInserting();
   }//endif
 
@@ -2566,11 +2578,15 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane){
+  int proc;
 #ifdef USE_INT_MAP
-	return GSImaptable.get(state, plane);
+  proc=GSImaptable.get(state, plane);
 #else
-	return GSmaptable.get(intdual(state, plane));
+  proc= GSmaptable.get(intdual(state, plane));
 #endif
+  if(config.fakeTorus)
+    proc=proc%CkNumPes();
+  return(proc);
 }
 //============================================================================
 

@@ -177,12 +177,12 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int);
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int);
    void readStateInfo(int &, int &, int &, int &, int &, int &,
                       const char *, int,int,int,int,int);
    void simpleRangeCheck();
    void rangeExit(int, char *, int);
-   void Finale(int, int, int, int, int);
+   void Finale(int, int, int, int, int, int);
 
    void set_config_dict_fun    (int *, DICT_WORD **);
    void set_config_dict_gen    (int *, DICT_WORD **);

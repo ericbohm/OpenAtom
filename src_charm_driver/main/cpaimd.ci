@@ -271,6 +271,7 @@ mainmodule cpaimd {
 
 	array [2D] CP_Rho_RealSpacePlane {	
 		entry CP_Rho_RealSpacePlane(int, size2d, bool,int,int, int);
+		entry void init();
                 entry void exitForDebugging();
 		entry void acceptDensity(CkReductionMsg *m);
 		entry void acceptGradRhoVks(RhoRSFFTMsg *msg);
@@ -284,6 +285,7 @@ mainmodule cpaimd {
 	};
        array [3D] CP_Rho_RHartExt {
                 entry CP_Rho_RHartExt(int, int, int,int,int);
+		entry void init();
                 entry void startEextIter();
                 entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
                 entry void registrationDone(CkReductionMsg *msg);
@@ -294,6 +296,7 @@ mainmodule cpaimd {
 
 	array [2D] CP_Rho_GSpacePlane {
 		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool);
+		entry void init();
 		entry void acceptRhoData(RhoGSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
                 entry void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
@@ -304,6 +307,7 @@ mainmodule cpaimd {
 	array [2D] CP_Rho_GHartExt {
 		entry CP_Rho_GHartExt(size2d,int,int,int,int,int);
 		entry void acceptData(RhoGHartMsg *msg);
+		entry void init();
 		entry void isAtSync(int);
 		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
                 entry void registrationDone(CkReductionMsg *msg);

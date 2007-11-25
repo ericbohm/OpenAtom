@@ -330,14 +330,14 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkAbort("kx=0 should be stored first | kx_srt !=0\n");
   }//endif
   
   if(nkx0!=nkx0_uni+nkx0_red){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Incorrect count of redundant guys\n");
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkAbort("Incorrect count of redundant guys\n");
   }//endif
 
   for(i=0;i<nkx0;i++){  
@@ -345,7 +345,7 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("kx should be stored consecutively and first\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkAbort("kx should be stored consecutively and first\n");
     }//endif
   }//endif
 
@@ -354,7 +354,7 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("ky <0 should be stored first\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkAbort("ky <0 should be stored first\n");
     }//endif
   }//endfor
 
@@ -363,7 +363,7 @@ void GStateSlab::setKRange(int n, int *k_x, int *k_y, int *k_z){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("ky <0 should be stored first\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkAbort("ky <0 should be stored first\n");
     }//endif
   }//endfor
 
