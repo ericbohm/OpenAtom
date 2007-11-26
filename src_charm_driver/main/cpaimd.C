@@ -603,7 +603,7 @@ main::main(CkArgMsg *msg) {
         if(config.torusMap==1) {
 	  boxSize=procsPerPlane;
 	  int order;
-	  if(findCuboid(bx, by, bz, topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(), boxSize, order, topoMgr->hasMultipleProcsPerNode()))
+	  if(findCuboid(bx, by, bz, order, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT(), boxSize, topoMgr->hasMultipleProcsPerNode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
@@ -2609,7 +2609,7 @@ void mapOutput()
 //============================================================================
 // return the cuboid x,y,z of a subpartition exactly matching that volume
 //============================================================================
-bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume, int &order, int vn){
+bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn){
 //============================================================================
   int maxD=maxX;
   int minD=maxX;
@@ -2627,7 +2627,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
       maxD = (maxY>maxD) ? maxY : maxD;
       maxD = (maxZ>maxD) ? maxZ : maxD;
       minD = (maxY<minD) ? maxY : minD;
-      minD = (maxZ<maxD) ? maxZ : minD;
+      minD = (maxZ<minD) ? maxZ : minD;
 
     }
   CkPrintf("minD %d maxD %d\n",minD, maxD);
@@ -2636,7 +2636,10 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
       CkPrintf("Using long prisms for useCuboidMapRS\n");
     }
   order=0;
-  double cubert= cbrt((double) volume);
+  // We are reducing the volume by half and then finding the dimensions of the
+  // box in terms of the no. of nodes and not processors
+  int redVol = volume / maxT;
+  double cubert= cbrt((double) redVol);
   int cubetrunc= (int) cubert;
   x=y=z=cubetrunc;
   if(cubetrunc>minD)
@@ -2645,11 +2648,11 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
     cubetrunc=maxY;
   if(cubetrunc>maxZ)
     cubetrunc=maxZ;
-  if(volume==x*y*z && !config.useCuboidMapRS)
+  if(redVol==x*y*z && !config.useCuboidMapRS)
     return true;
   bool switchSet=false;
-  CkAssert(volume>0);
-  switch (volume) // for the common values we just pick cuboids we like
+  CkAssert(redVol>0);
+  switch (redVol) // for the common values we just pick cuboids we like
     {
     case 1: 
       x=1; y=1; z=1; switchSet=true; break;
@@ -2825,7 +2828,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
   // its something weird so try a best fit
   int start=cubetrunc-1;
   if(config.useCuboidMapRS)
-    x=(volume>=maxX)? maxX: cubetrunc;
+    x = (redVol>=maxX) ? maxX : cubetrunc;
   else
     x=cubetrunc;
   for(; x<=maxX;x++)
@@ -2834,7 +2837,7 @@ bool findCuboid(int &x, int &y, int &z, int maxX, int maxY, int maxZ, int volume
 	{
 	  for(z=start; z<=maxZ;z++)
 	    {
-	      if(volume==x*y*z)
+	      if(redVol==x*y*z)
 		return true;
 	    }
 	}

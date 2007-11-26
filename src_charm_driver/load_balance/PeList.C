@@ -16,9 +16,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
       sorted=false;
       size=config.numPes;
       int i=0;
-      int maxX=topoMgr->getDimX();
-      int maxY=topoMgr->getDimY();
-      int maxZ=topoMgr->getDimZ();
+      int maxX=topoMgr->getDimNX();
+      int maxY=topoMgr->getDimNY();
+      int maxZ=topoMgr->getDimNZ();
+      int maxT=topoMgr->getDimNT();
       CkPrintf("Ordering processors along long axis %d in %d X %d X %d\n",order, maxX, maxY, maxZ);
       TheList= new int[size];
       sortIdx= new int[size];
@@ -36,9 +37,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  for(int bx=0;bx<boxX;bx++)
 		    for(int bz=0;bz<boxZ;bz++)
 		      for(int by=0;by<boxY;by++) // make inner planes along X
+			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
 			}
 		}
 	}
@@ -55,9 +57,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  for(int by=0;by<boxY;by++)
 		    for(int bz=0;bz<boxZ;bz++)
 		      for(int bx=0;bx<boxX;bx++)
+			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=topoMgr->coordinatesToRank(bx+x,by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
 			}
 		}
 
@@ -73,9 +76,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  for(int bz=0;bz<boxZ;bz++)
 		    for(int by=0;by<boxY;by++)
 		      for(int bx=0;bx<boxX;bx++)
+			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
-			  TheList[i++]=topoMgr->coordinatesToRank(bx+x,by+y, bz+z);
+			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
 			}
 		}
 
@@ -86,7 +90,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 	}
       // size is actually boxsize times the number of whole boxes
       // that fit in the mesh
-      int end=numBoxes* boxX*boxY*boxZ;
+      int end=numBoxes*boxX*boxY*boxZ;
       // fill out remainder 
       if(i<config.numPes)
 	{

@@ -26,12 +26,12 @@ int MapType2::getCentroid(int torusMap) {
     int sumX=0;
     int sumY=0;
     int sumZ=0;
-    int X=0,Y=0,Z=0;
+    int X=0,Y=0,Z=0,T=0;
     points=0;
       for(int i=0;i<getXmax();i++)
         for(int j=0;j<getYmax();j++) {
 	  CkAssert(get(i,j)>=0);
-	  topoMgr->rankToCoordinates(get(i, j), X, Y, Z);
+	  topoMgr->rankToCoordinates(get(i, j), X, Y, Z, T);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
@@ -40,7 +40,7 @@ int MapType2::getCentroid(int torusMap) {
     int avgX=sumX/points;
     int avgY=sumY/points;
     int avgZ=sumZ/points;
-    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
   }
   else {
     int sum=0;
@@ -62,13 +62,13 @@ int MapType3::getCentroid(int torusMap) {
     int sumX=0;
     int sumY=0;
     int sumZ=0;
-    int X=0,Y=0,Z=0;
+    int X=0,Y=0,Z=0,T=0;
     points=0;
     for(int i=0;i<getXmax();i++)
       for(int j=0;j<getYmax();j++) {
 	for(int k=0;k<getZmax();k++) {
 	  CkAssert(get(i,j,k)>=0);
-	  topoMgr->rankToCoordinates(get(i, j, k), X, Y, Z);
+	  topoMgr->rankToCoordinates(get(i, j, k), X, Y, Z, T);
 	  sumX+=X;
 	  sumY+=Y;
 	  sumZ+=Z;
@@ -78,7 +78,7 @@ int MapType3::getCentroid(int torusMap) {
     int avgX=sumX/points;
     int avgY=sumY/points;
     int avgZ=sumZ/points;
-    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
   }
   else {
     int sum=0;
@@ -1921,8 +1921,8 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
     int sumX=0, sumY=0, sumZ=0;
     for(int state=0;state<nstates;state++)
     {
-      int X, Y, Z;
-      topoMgr->rankToCoordinates(rsmap->get(state, plane), X, Y, Z);
+      int X, Y, Z, T;
+      topoMgr->rankToCoordinates(rsmap->get(state, plane), X, Y, Z, T);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1931,7 +1931,7 @@ void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapTyp
     int avgX=sumX/points;
     int avgY=sumY/points;
     int avgZ=sumZ/points;
-    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
     avail->sortSource(bestPe);
     avail->reset();
   }
@@ -1957,8 +1957,8 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
     int sumX=0, sumY=0, sumZ=0;
     for(int state=stateX;(state<stateX+grainsize)&&(state<config.nstates);state++)
     {
-      int X, Y, Z;
-      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
+      int X, Y, Z, T;
+      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z, T);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1966,8 +1966,8 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
     }
     for(int state=stateY;(state<stateY+grainsize)&&(state<config.nstates);state++)
     {
-      int X, Y, Z;
-      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z);
+      int X, Y, Z, T;
+      topoMgr->rankToCoordinates(gsmap->get(state, plane), X, Y, Z, T);
       sumX+=X;
       sumY+=Y;
       sumZ+=Z;
@@ -1976,7 +1976,7 @@ void SCalcMapTable::sortByCentroid(PeList *avail, int plane, int stateX, int sta
     int avgX=sumX/points;
     int avgY=sumY/points;
     int avgZ=sumZ/points;
-    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
   }
   else {
     int sumPe=0;
@@ -2007,8 +2007,8 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
     for(int plane=0; plane<nplanes; plane++)
       for(int chunk=0; chunk<numChunks; chunk++)
       {  
-        int X, Y, Z;
-        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
+        int X, Y, Z, T;
+        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z, T);
         sumX += X;
         sumY += Y;
         sumZ += Z;
@@ -2017,7 +2017,7 @@ void OrthoMapTable::sortByCentroid(PeList *avail, int nplanes, int state1, int s
     int avgX = sumX/points;
     int avgY = sumY/points;
     int avgZ = sumZ/points;
-    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
     avail->sortSource(bestPe);
     avail->reset();
   }
@@ -2044,8 +2044,8 @@ int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int s
     for(int plane=0; plane<nplanes; plane++)
       for(int chunk=0; chunk<numChunks; chunk++)
       {    
-        int X, Y, Z;
-        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z);
+        int X, Y, Z, T;
+        topoMgr->rankToCoordinates(smap->get(plane, state1, state2, chunk), X, Y, Z, T);
         sumX += X;
         sumY += Y;
         sumZ += Z;
@@ -2054,7 +2054,7 @@ int OrthoMapTable::minDistCentroid(PeList *avail, int nplanes, int state1, int s
     int avgX = sumX/points;
     int avgY = sumY/points;
     int avgZ = sumZ/points;
-    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ);
+    bestPe = topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
     return(avail->minDist(bestPe));
   }
   else {
