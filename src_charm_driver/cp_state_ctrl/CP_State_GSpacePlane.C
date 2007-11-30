@@ -801,6 +801,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
     redPlane = (redPlane > nchareG-1 ? redPlane-nchareG : redPlane);
   }//endif
 
+  registrationFlag  = 1;
+  eesCache *eesData     = eesCacheProxy.ckLocalBranch ();
+
+  eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
+
+
 //============================================================================
 // Contribute to the reduction telling main we are done
 
@@ -1148,10 +1154,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 //============================================================================
 // Register with the cache : Eric's multiple reduction schemes ensure its done
 //                           before we need it.
-
-   registrationFlag  = 1;
-
-   eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
 
   int cp_min_opt    = sim->cp_min_opt;
   int cp_min_update = sim->cp_min_update;
