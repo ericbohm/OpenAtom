@@ -1,11 +1,18 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** \file CP_Rho_RHartExc.C
+/** \file CP_Rho_RHartExt.C
  *
- *  This is a description of the "life" of a CP_Rho_RHartExc  object
+ *  This is a description of the "life" of a CP_Rho_RHartExt object
  *
- * FIll in details here
+ *  Fill in details here
  */ 
 //============================================================================
 

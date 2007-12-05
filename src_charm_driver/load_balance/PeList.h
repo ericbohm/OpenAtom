@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 /** \file PeList.h
  *  Author: Eric J Bohm
  *  Date Created: May 31, 2006
@@ -7,10 +14,8 @@
  *  supported provide union and disjoint operations.  
  * 
  *  Implemented on ckvec.
- *
  *  Used to find the nearest available processor from a given processor.
- *  
- *  Uses bgltorus manager for hopcount sorting if available.
+ *  Uses TopoManager for hopcount sorting if available.
  */
 
 #ifndef _PELIST_H

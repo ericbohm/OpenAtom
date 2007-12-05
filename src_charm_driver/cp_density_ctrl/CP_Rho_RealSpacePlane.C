@@ -1,7 +1,14 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** \file CP_Rho_RealSpacePlane
+/** \file CP_Rho_RealSpacePlane.C
  * This is the description of the "life" of a CP_Rho_RealSpacePlane object.
  *
  * At the start of the program, the constructor CP_Rho_RealSpacePlane() is called.

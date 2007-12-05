@@ -1,7 +1,14 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-/** \file CP_Rho_GHartExc.C
+/** \file CP_Rho_GHartExt.C
  *
  *  This is a description of the "life" of a CP_Rho_GHartExc  object
  * 

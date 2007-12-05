@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -12,79 +19,11 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+
 /** \mainpage
-<TABLE width="100%" border="0" cellspacing="0" cellpadding="5">
-<TR bgcolor="#1C097D"><TD><font color="#FFFFFF" size="4"><table width=100%><tr><td><font size=6 color="#FFFFFF">Ab Initio Molecular Dynamics
-</font></td><td align=right><img src="../images/image.jpg"></td></tr></table></FONT></TD></TR>
-<TR bgcolor="#FFFFFF"><TD><br>Many important problems in material science, chemistry, solid-state physics, and biophysics require a modeling
- approach based on fundamental quantum mechanical principles. A particular approach that has proved to be relatively
- efficient and useful is Car-Parrinello ab initio molecular dynamics (CPAIMD). Parallelization of this approach beyond a
- few hundred processors is challenging, due to the complex dependencies among various subcomputations, which lead to
- complex communication optimization and load balancing problems. We are parallelizing CPAIMD using Charm++. The computation is modeled using 
- a large number of virtual processors, which are mapped flexibly to
- available processors with assistance from the Charm++ runtime system.
- <br>
- <br>
- This project is a large NSF funded collaboration involving us (PPL : Laxmikant Kale)
- and Drs. Roberto Car, Michael Klein, Glenn Martyna, Mark Tuckerman, Nick Nystrom and Josep Torrellas.
- <br>
- 
- <center>
- <img src="../images/Slide1.JPG">
- </center>
-
- 
- 
-<br>&nbsp;</TD></TR>
-<TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">Software</FONT></TD></TR>
-<TR bgcolor="#FFFFFF"><TD>Currently we have a Charm++ implementation of the core of the CP method. You
- can check out the latest build using CVS. The code is available under the
- module name "leanCP". Charm++ and <a href="http://www.fftw.org">FFTW</a>
- are required to run the code.   
-</TD></TR>
-<TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">People</FONT></TD></TR>
-<TR bgcolor="#FFFFFF"><TD><UL>
-<LI><A href="mailto:ebohm AT uiuc.edu
-">Eric Bohm</A></LI>
-<LI><A href="mailto:bhatele2 AT uiuc.edu
-">Abhinav Bhatele</A></LI>
-
-<LI><A href="mailto:kale AT cs.uiuc.edu
-">L. V. Kale</A></LI>
-<LI><A href="mailto:kunzman2 AT uiuc.edu
-">David Kunzman</A></LI>
-<LI><A href="mailto:skumar2 AT uiuc.edu
-">Sameer Kumar</A></LI>
-
-</UL>
-</TD></TR>
-<TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">Papers</FONT></TD></TR>
-<TR bgcolor="#FFFFFF"><TD><UL>
-<LI><A href="/papers/CpaimdTR03.shtml">03-06
-</A>&nbsp;&nbsp;&nbsp;Ramkumar Vadali, L. V. Kale, Glenn Martyna, Mark Tuckerman,&nbsp;&nbsp;<B>Scalable Parallelization of Ab Initio Molecular Dynamics</B>,
-&nbsp;&nbsp;<I>Technical Report, communicated to SC 2003</I></LI>
-
-</UL>
-</TD></TR>
-<TR bgcolor="#1C097D"><TD><FONT color="#FFFFFF" size="4">Related Links</FONT></TD></TR>
-<TR bgcolor="#FFFFFF"><TD><UL>
-<LI><A href="http://homepages.nyu.edu/~mt33/PINY_MD/PINY.html">PINY MD</A></LI>
-<LI><a href="http://charm.cs.uiuc.edu/presentations/cpaimd03/cpaimd.ppt">Presentation on latest state of the code</a></LI>
-
-</UL>
-</TD></TR>
-<tr bgcolor=#1C097D><td><table width=100%><tr bgcolor=#1C097D>
-<td><font color=white>This page maintained by  <A href="mailto:ebohm AT uiuc.edu
-">Eric Bohm</A>.</font></td>
-
-<td align=right><font color=white>Back to the <A HREF="/research" onclick="document.research.submit();return false;">PPL Research Page</A></font></td>
-</tr></table></td></tr>
-</TABLE>
-</td></tr></table>
+ *  OpenAtom <A HREF="http://charm.cs.uiuc.edu/OpenAtom">Webpage</A>.
  *
- * end of mainpage
  */
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

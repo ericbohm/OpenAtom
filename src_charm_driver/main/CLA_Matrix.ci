@@ -1,4 +1,4 @@
-/**
+/** \file CLA_Matrix.ci
  * Module: CLA_Matrix
  * Purpose: dense matrix-matrix multiplication
  *
