@@ -21,7 +21,7 @@
 //============================================================================
 
 /** \mainpage
- *  OpenAtom <A HREF="http://charm.cs.uiuc.edu/OpenAtom">Webpage</A>.
+ *  OpenAtom <A HREF="http://ccharm.cs.uiuc.edu/OpenAtom">Webpage</A>.
  *
  */
 
