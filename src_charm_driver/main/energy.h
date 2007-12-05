@@ -1,6 +1,16 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
+/** \file energy.h
+ *
+ */
+
 #ifndef _ENERGY_H_
 #define _ENERGY_H_
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

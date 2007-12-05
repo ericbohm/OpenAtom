@@ -1,4 +1,14 @@
-/**
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+/** \file TimeKeeper.h
  *
  *  A place to collect substep times.  Each participating chare will
  *  register with the timekeeper on processor 0.  Giving its name and
@@ -13,6 +23,7 @@
  *  The timekeeper will print out the delta time and name for each substep
  *  when it has the min and max.
  */
+
 #include <vector>
 #include <string>
 extern Config config;
