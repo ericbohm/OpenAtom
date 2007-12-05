@@ -1,3 +1,19 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/** \file moduleinit.C
+ *
+ */
+//==============================================================================
+
+
 extern void _registercommlib(void);
 extern void _registerCkMulticast(void);
 extern void _registerDummyLB(void);

@@ -1,28 +1,32 @@
-/*
-** orthoHelper.h
-** 
-**
-**
-** Made by Eric Bohm
-** Login   <bohm@localhost.localdomain>
-** 
-** Started on  Mon Sep 11 12:12:53 2006 Eric Bohm
-** Last update Mon Sep 11 12:12:53 2006 Eric Bohm
-**
-** orthoHelper is just a chare array to host the 2nd multiply of the
-** S->T method.  It should be mapped adjacent to ortho such that
-** ortho(x,y) and orthoHelper(x,y) are on different processors which
-** are only one away.  This assumes that ortho itself is mapped with a
-** stride greater than 1. Orthohelper should only be used if numProcs
-** >= 2 x numOrtho chares, otherwise we expect the parallelism gains
-** would be lost to communication overhead.
-**
-** OrthoHelper is triggered by being given the result of multiply 1 by
-** Ortho.  It then computes multiply 2 and returns it to the ortho
-** chares who sent it the multiply 1 input.  This is a simple point to
-** point communication ortho(x,y) <-> orthoHelper(x,y).   Ortho then
-** proceeds as normal through the S->T process.
-*/
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
+/** \file orthoHelper.h
+ *
+ *  Made by Eric Bohm
+ *  Login   <bohm@localhost.localdomain>
+ *  
+ *  Started on  Mon Sep 11 12:12:53 2006 Eric Bohm
+ *  Last update Mon Sep 11 12:12:53 2006 Eric Bohm
+ *
+ *  orthoHelper is just a chare array to host the 2nd multiply of the
+ *  S->T method.  It should be mapped adjacent to ortho such that
+ *  ortho(x,y) and orthoHelper(x,y) are on different processors which
+ *  are only one away.  This assumes that ortho itself is mapped with a
+ *  stride greater than 1. Orthohelper should only be used if numProcs
+ *  >= 2 x numOrtho chares, otherwise we expect the parallelism gains
+ *  would be lost to communication overhead.
+ *
+ *  OrthoHelper is triggered by being given the result of multiply 1 by
+ *  Ortho.  It then computes multiply 2 and returns it to the ortho
+ *  chares who sent it the multiply 1 input.  This is a simple point to
+ *  point communication ortho(x,y) <-> orthoHelper(x,y).   Ortho then
+ *  proceeds as normal through the S->T process.
+ */
 
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
