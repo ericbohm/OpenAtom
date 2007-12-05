@@ -2117,7 +2117,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
         if(orthoGrainSize>sGrainSize){orthoGrainSize=sGrainSize;}
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
         PRINTF("   Changing the default choice of orthograinsize\n");
-        PRINTF("             from %d to %d\n",iii,orthoGrainSize);
+        //PRINTF("             from %d to %d\n",iii,orthoGrainSize);
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
         sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
       }//endif
@@ -2135,7 +2135,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(igo==1){
          PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
          PRINTF("   (sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
-         PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
+         //PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
          PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
       }//endif
       lambdaGrainSize=orthoGrainSize;
