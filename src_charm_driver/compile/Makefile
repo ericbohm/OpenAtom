@@ -33,8 +33,8 @@ FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
 	 -I../paircalc  -I$(SRC_COMPILE)\
          -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
 
-LIB    = -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib -lfftw \
-         -lrfftw -lm $(LOCAL_LIB)            #-memory paranoid
+LIB    = -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib  \
+          -lm $(LOCAL_LIB)            #-memory paranoid
 #===========================================================================
 PCHEADERS= $(PAIRCALC)/pairCalculator.h\
 	$(PAIRCALC)/pairutil.h \

@@ -1476,12 +1476,19 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	}
 
 	if(thisPlaneBox->count()==0)
-	{
-	    CkPrintf("Rho RS %d ignoring exclusion\n",chunk);
-	    delete thisPlaneBox;
-	    thisPlaneBox = subListPlane(chunk, max_states, rsmap);
-	    useExclude=false;
-	}
+	  {	
+	    CkPrintf("Rho RS %d ignoring plane sublist\n",chunk);
+	    thisPlaneBox = new PeList(*availprocs);
+	    if(exclusionList!=NULL) {
+	      *thisPlaneBox - *exclusionList;
+	      thisPlaneBox->reindex();
+	    }
+	    if(thisPlaneBox->count()==0)
+	      {
+		CkPrintf("Rho RS %d ignoring plane sublist and exclusion\n",chunk);
+		thisPlaneBox = new PeList(*availprocs);
+	      }
+	  }
 	sortByCentroid(thisPlaneBox, chunk, max_states, rsmap);
 	// CkPrintf("RhoR %d has %d procs from RS plane\n",chunk,thisPlaneBox->count());
 	

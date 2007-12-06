@@ -1948,8 +1948,10 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   PeList *nlexcludePes;
   if(config.useRhoExclusionMap)
     nlexcludePes=exclusion;
-  else
+  else if(config.useReductionExclusionMap)
     nlexcludePes= new PeList(peUsedByNLZ);   
+  else
+    nlexcludePes= new PeList(0);
 
   int Rstates_per_pe  = config.Rstates_per_pe;
   availGlobG->reset();
@@ -2068,31 +2070,34 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   PeList *RhoAvail= new PeList(*availGlobR);
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
-   
-  excludePes= new PeList(peUsedByNLZ);   
-  if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size()<RhoAvail->count()){
+  excludePes= new PeList(0);   
 
-    CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
-	     peUsedByNLZ.size(),RhoAvail->count());
-    //       nlz.dump();
-    *RhoAvail-*excludePes; //unary minus
-    RhoAvail->reindex();
-    CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
-  }//endif
+  if(config.useReductionExclusionMap)
+    {
+      if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size() <
+	  RhoAvail->count()){
 
-  //------------------------------------------------------------------------
-  // subtract processors used by other nonscaling chares
+	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
+		 peUsedByNLZ.size(),RhoAvail->count());
+	//       nlz.dump();
+	*RhoAvail-*excludePes; //unary minus
+	RhoAvail->reindex();
+	CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
+      }//endif
 
-  if(ees_nonlocal_on==0){
-    if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
-      CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
-	       peUsedBySF.size(),RhoAvail->count());
-      PeList sf(peUsedBySF);
-      *RhoAvail-sf;
-      RhoAvail->reindex();
-    }//endif
-  }//endif
+      //------------------------------------------------------------------------
+      // subtract processors used by other nonscaling chares
 
+      if(ees_nonlocal_on==0){
+	if( nchareRhoR*config.rhoRsubplanes+peUsedBySF.size()<RhoAvail->count()){
+	  CkPrintf("subtracting %d SF nodes from %d for RhoR Map\n",
+		   peUsedBySF.size(),RhoAvail->count());
+	  PeList sf(peUsedBySF);
+	  *RhoAvail-sf;
+	  RhoAvail->reindex();
+	}//endif
+      }//endif
+    }
   if(RhoAvail->count()>2) { RhoAvail->reindex(); }
 
   //============================================================================
