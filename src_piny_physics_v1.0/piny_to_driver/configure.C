@@ -2074,6 +2074,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
        sprintf(dict_pc[15].keyarg,"%d",gemmSplitFWk);
        sprintf(dict_pc[16].keyarg,"%d",gemmSplitFWm);
        sprintf(dict_pc[17].keyarg,"%d",gemmSplitOrtho);
+       dict_pc[19].iuset=1;
     }//endif : chunks not set
     else{
       CkPrintf("guesstimate using user defined PC decomp\n");
