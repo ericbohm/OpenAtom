@@ -31,7 +31,7 @@
 void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
                          int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
                         int numPes_in, int natm_typ_in,int ees_eext_opt_in,
-                        int gen_wave_in,int ncoef, int cp_min_opt)
+                        int gen_wave_in,int ncoef, int cp_min_opt, int nchareRhoRHart)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -199,7 +199,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Improve user parameters and/or try to optimize unset parameters
 
-  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map);
+  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, nchareRhoRHart, nplane_x_rho);
 
 //===================================================================================
 // Final consistency checks
@@ -1991,7 +1991,8 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
 //=============================================================================
 void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dict_rho,
                             DICT_WORD *dict_state,DICT_WORD *dict_pc,
-                            DICT_WORD *dict_nl,DICT_WORD *dict_map){
+                            DICT_WORD *dict_nl,DICT_WORD *dict_map, 
+				    int nchareRhoRHart, int nplane_x_rho){
 //=============================================================================
   if(fakeTorus)
     { //
@@ -2159,18 +2160,87 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //=============================================================================
 // Gexpandfact rho
 
-    igo = dict_rho[9].iuset;
+    // In an ideal universe rhoRS, RhoGS, rhoRhart, rhoGhart are all
+    // mapped to their own processor.  However, at the upper limit you
+    // can only make rho pieces so small before communication overhead
+    // swamps any possibly parallel overlap.  So we must cap the
+    // decomposition. At the lower limit you want to choose parameters
+    // so that the heaviest hitters, rhors and rhog, can be exclusion
+    // mapped.  As numproc increases we need to gradually increase
+    // gExpandFactRho, the number of subplanes, and the hart atm
+    // type.  
 
+    // Missing here is the logic for when ghelpers should be
+    // increased.  Difficulty in that primarily lies in the fact that
+    // it is unclear under what conditions ghelpers is useful when
+    // using the modern EES method.  We're not even going to try to
+    // optimize for non-EES, anyone using that creaky old stuff is on
+    // their own. -EJB
+    
+    igo = dict_rho[9].iuset+dict_rho[11].iuset;
+    int nchareRhoR      = sizez;
     if(igo==0){ 
-       if(numPes>low_x_size*4){
-         gExpandFactRho   = 1.0+fabs((double) (numPes/2-low_x_size*4)/ (double)( numPes));
-       }else{
-         if(numPes>low_x_size){
-           gExpandFactRho = 1.0+(double) sqrtpes/ (double)( numPes);
-         }//endif
-       }//endif
+      int numRS=nchareRhoR*rhoRsubplanes;
+      if(numPes <numRS*3){
+	useReductionExclusionMap=0;
+	sprintf(dict_map[19].keyarg,"%d",useReductionExclusionMap);
+	CkPrintf("Disabling reduction exclusion map, too few processors to matter\n");
+      }
+      else
+	{
+	  useReductionExclusionMap=1;
+	  sprintf(dict_map[19].keyarg,"%d",useReductionExclusionMap);
+	  CkPrintf("Enabling reduction exclusion map\n");
+	}
+	
+
+      bool notdone=true;
+      int usedPes=numRS;
+      if(useReductionExclusionMap) usedPes+=nchareG;
+      while(numPes>usedPes && notdone)
+	{
+
+	  // trick here is to keep bumping up both subplanes and
+	  // expandfact
+	  int target=numPes-usedPes;
+	  if(numPes>numRS && nchareRhoR>nchareRhoG)
+	    { // bring up expandfact to fill in 
+	      if(target>nplane_x_rho && target <= numRS)
+		{
+
+		  gExpandFactRho= (double) target / double (nplane_x_rho);
+		  double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
+		  nchareRhoG       = ((int)temp_rho);
+		  notdone=false;
+		  usedPes=nchareRhoG+numRS;
+		  if(useReductionExclusionMap) usedPes+=nchareG;
+		}
+	    }
+	  else if (numPes>usedPes && numPes >nchareRhoR*(rhoRsubplanes+1) && (numPes >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT))
+	    {
+	      numRS= (++rhoRsubplanes)*nchareRhoR;
+	      usedPes=nchareRhoG+numRS;
+	      if(useReductionExclusionMap) usedPes+=nchareG;
+	    }
+		   
+	  if (numPes>numRS && nchareRhoR<=nchareRhoG)
+	    { // keep ncharerhog close to numRS
+	      int target=numPes-numRS;
+	      if(target>numRS)
+		target=numRS;
+	      gExpandFactRho= (double) target / double (nplane_x_rho);
+	      double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
+	      nchareRhoG       = ((int)temp_rho);
+	      usedPes=nchareRhoG+numRS;
+	      if(useReductionExclusionMap) usedPes+=nchareG;
+	    }	   
+       }//endwhile
        sprintf(dict_rho[9].keyarg,"%g",gExpandFactRho);
+       sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
+       sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
     }//endif
+    double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
+    nchareRhoG       = ((int)temp_rho);
 
 //=============================================================================
 // numsfgrps

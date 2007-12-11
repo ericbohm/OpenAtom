@@ -383,7 +383,7 @@ main::main(CkArgMsg *msg) {
     numPes = CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
-                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt);
+                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c);
     fakeTorus        = config.fakeTorus>0;
     if(fakeTorus)
       numPes=config.torusDimX*config.torusDimY*config.torusDimZ;

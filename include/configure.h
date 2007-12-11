@@ -189,7 +189,7 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int);
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int,int);
    void readStateInfo(int &, int &, int &, int &, int &, int &,
                       const char *, int,int,int,int,int);
    void simpleRangeCheck();
@@ -211,7 +211,8 @@ class Config {
    void set_config_params_nl   (DICT_WORD *, char *, char *, int);
    void set_config_params_map  (DICT_WORD *, char *, char *);
    void guesstimateParmsConfig (int, DICT_WORD *, DICT_WORD *, DICT_WORD *, 
-				     DICT_WORD *, DICT_WORD *,DICT_WORD *);
+				     DICT_WORD *, DICT_WORD *,DICT_WORD *, 
+				int, int );
    int approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes);
    void write_cpaimd_config    (FILE *, DICT_WORD *, int, char *);
    void load_cpaimd_config (DICT_WORD *, int, PINY_NAME *, PINY_NAME *, int, int *);
