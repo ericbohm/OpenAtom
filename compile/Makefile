@@ -36,19 +36,18 @@ full_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
 	$(CHARMC) -o ../binary/OpenAtom \
 		  -language charm++ $(CHARMLIB) \
-                  -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
-                  -lconv-util -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)  
-
+                  -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
+                  -L$(FFT_HOME)/lib -lconv-util -lrfftw -lfftw \
+		  $(MATH_LIB) $(LNK_OPTS)  
 
 #===============================================================================
 proj_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
 	$(CHARMC) -o ../binary/cpaimd.prj.x \
 		  -language charm++ $(CHARMLIB) \
-                  -L../binary -lCharmDriver -lPinyInterface -lMyMathLib\
-	          -tracemode projections -tracemode summary \
-                  -lconv-util -lrfftw -lfftw $(MATH_LIB)  $(LNK_OPTS)
-
+                  -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
+	          -tracemode projections -tracemode summary -lconv-util \
+		  -L$(FFT_HOME)/lib -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)
 
 #===============================================================================
 clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
