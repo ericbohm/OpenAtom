@@ -1,9 +1,7 @@
 #-----------------------------------
 # general directories for full code
 #-----------------------------------
-
-include ../../../compile/Makefile.config.gen
-include ../../../compile/Makefile.config.charm
+include ../../../compile/Makefile.config
 
 #-------------------------------
 # user specific directories piny
