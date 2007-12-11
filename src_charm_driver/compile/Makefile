@@ -1,63 +1,65 @@
-#=====================================================================
-include ../../compile/Makefile.config.gen
-include ../../compile/Makefile.config.charm
-include ../../compile/Makefile.config.piny
-#=====================================================================
-
-
 #===========================================================================
-RM    = /bin/rm -f
-ECHO  = /bin/echo "making"
-HEAD  = ..
-MAIN  = ../main
-TOPINC  = ../../include
-STATE = ../cp_state_ctrl
-RHO   = ../cp_density_ctrl
-STRUCTFACT   = ../structure_factor
-ORTHO = ../orthog_ctrl
-UTIL  = ../utility
-FFTSLAB  = ../fft_slab_ctrl
-PAIRCALC  = ../paircalc
-MATH  = ../mathlib
-PHYSICS = ../../src_piny_physics_v1.0/
-LOADB = ../load_balance
-SRC_COMPILE = ../compile
+include ../../compile/Makefile.config
 #===========================================================================
 
 
 #===========================================================================
-FLAGS  = -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib \
-         -I$(HEAD) -I$(MAIN) -I$(STATE) -I$(RHO) \
-         -I$(ORTHO) -I$(UTIL) -I$(MATH) -I$(LOADB) \
-	 -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) \
-	 -I../paircalc  -I$(SRC_COMPILE)\
-         -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
-
-LIB    = -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib  \
-          -lm $(LOCAL_LIB)            #-memory paranoid
+RM		= /bin/rm -f
+ECHO		= /bin/echo "making"
+HEAD		= ..
+MAIN		= ../main
+TOPINC		= ../../include
+STATE		= ../cp_state_ctrl
+RHO		= ../cp_density_ctrl
+STRUCTFACT	= ../structure_factor
+ORTHO		= ../orthog_ctrl
+UTIL		= ../utility
+FFTSLAB		= ../fft_slab_ctrl
+PAIRCALC	= ../paircalc
+MATH		= ../mathlib
+PHYSICS		= ../../src_piny_physics_v1.0/
+LOADB		= ../load_balance
+SRC_COMPILE	= ../compile
 #===========================================================================
-PCHEADERS= $(PAIRCALC)/pairCalculator.h\
+
+
+#===========================================================================
+FLAGS	= \
+	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) \
+	-I$(MAIN) -I$(STATE) -I$(RHO) -I$(ORTHO) -I$(UTIL) -I$(MATH) \
+	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I../paircalc \
+	-I$(SRC_COMPILE) -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
+
+LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
+	-lm $(LOCAL_LIB) #-memory paranoid
+#===========================================================================
+
+
+#===========================================================================
+PCHEADERS = \
+	$(PAIRCALC)/pairCalculator.h \
 	$(PAIRCALC)/pairutil.h \
-	$(PAIRCALC)/ckPairCalculator.h\
-	$(MAIN)/ckPairCalculator.decl.h\
+	$(PAIRCALC)/ckPairCalculator.h \
+	$(MAIN)/ckPairCalculator.decl.h \
 	$(MAIN)/ckPairCalculator.def.h
-
 #===========================================================================
 
-OBJS   = ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
-         StructFactorCache.o  StructureFactor.o \
-	 CP_State_GSpacePlane.o CP_State_ParticlePlane.o  \
-         CP_State_RealParticlePlane.o \
-         CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
-	 CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o \
-         util.o ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o  eesCache.o \
-         groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o
 
-OBJS_DECL = ../main/cpaimd.decl.h
-OBJS_DEF = ../main/cpaimd.decl.h
-TARGET_EXE = ../../binary/CharmDriver.x
-TARGET_LIB = ../../binary/libCharmDriver.a
 #===========================================================================
+OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
+	StructFactorCache.o  StructureFactor.o CP_State_GSpacePlane.o \
+	CP_State_ParticlePlane.o CP_State_RealParticlePlane.o \
+	CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
+	CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o util.o \
+	ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
+	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o
+
+OBJS_DECL	= ../main/cpaimd.decl.h
+OBJS_DEF 	= ../main/cpaimd.decl.h
+TARGET_EXE	= ../../binary/CharmDriver.x
+TARGET_LIB 	= ../../binary/libCharmDriver.a
+#===========================================================================
+
 
 #===========================================================================
 CHARMLIBS:
@@ -93,6 +95,7 @@ exe:	$(OBJS_DECL) $(OBJS)
         $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
+
 #===========================================================================
 ../main/CLA_Matrix.decl.h : $(MAIN)/CLA_Matrix.ci
 	$(ECHO) $@
@@ -100,8 +103,8 @@ exe:	$(OBJS_DECL) $(OBJS)
 	/bin/cp -f CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.decl.h
 	/bin/cp -f CLA_Matrix.def.h $(MAIN)/CLA_Matrix.def.h
 #---------------------------------------------------------------------------
-CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C $(MAIN)/CLA_Matrix.h \
-          $(ORTHO)/ortho.h 
+CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C \
+	$(MAIN)/CLA_Matrix.h $(ORTHO)/ortho.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
@@ -109,306 +112,237 @@ ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
 	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
 	cp ckPairCalculator.decl.h ckPairCalculator.def.h ../main
 
-ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
-	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS) $(OPT_FORT)
+ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C \
+	$(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
+	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 
-pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h $(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h
-	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS) $(OPT_FORT)
+pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h\
+	$(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h
+	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
+#===========================================================================
+
 
 #===========================================================================
-driverlib:	CHARMLIBS $(OBJS_DECL) $(OBJS) 
+driverlib: CHARMLIBS $(OBJS_DECL) $(OBJS) 
 	$(CHARMC) -o $(TARGET_LIB) $(OBJS) $(LIB) -language charm++ \
-        -module CkMulticast \
-        $(OPTS) $(FLAGS) $(OPT_FORT) 
+        -module CkMulticast $(OPTS) $(FLAGS) $(OPT_FORT) 
 
-cpaimd:    $(OBJS_DECL) $(OBJS)
+cpaimd: $(OBJS_DECL) $(OBJS)
 	$(CHARMC) -o cpaimd $(OBJS) $(LIB) -language charm++ \
-	 -module CkMulticast \
-	 $(OPTS) $(FLAGS) $(OPT_FORT)
-
+	-module CkMulticast $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
 
 
 #===========================================================================
-../main/cpaimd.decl.h : $(MAIN)/cpaimd.ci
+../main/cpaimd.decl.h: $(MAIN)/cpaimd.ci
 	$(ECHO) $@
 	$(CHARMC) $(MAIN)/cpaimd.ci $(OPTS) $(FLAGS) $(OPT_FORT)
 	/bin/cp -f cpaimd.decl.h $(MAIN)/cpaimd.decl.h
 	/bin/cp -f cpaimd.def.h $(MAIN)/cpaimd.def.h
 #---------------------------------------------------------------------------
-cpaimd.o : $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
-	$(MAIN)/ReductionClients.h \
-	$(MAIN)/TimeKeeper.h \
-	$(ORTHO)/ortho.h $(ORTHO)/lambda.h $(FFTSLAB)/fftCacheSlab.h \
+cpaimd.o: $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
+	$(MAIN)/ReductionClients.h $(MAIN)/TimeKeeper.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
-	$(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/eesDataClass.h \
-	$(TOPINC)/debug_flags.h \
-	$(TOPINC)/RunDescriptor.h \
-	$(LOADB)/PeList.h \
-	$(LOADB)/MapTable.h \
+	$(ORTHO)/ortho.h $(ORTHO)/lambda.h $(FFTSLAB)/fftCacheSlab.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(LOADB)/PeList.h $(LOADB)/MapTable.h $(LOADB)/IntMap.h \
 	$(UTIL)/MapFile.h \
-	$(LOADB)/IntMap.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/cpaimd.C -O -g $(FLAGS) $(OPT_FORT)
 #  higher than -O is a waste of time here
 #---------------------------------------------------------------------------
 CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
-                        $(STATE)/CP_State_Plane.h \
-                        $(MAIN)/cpaimd.decl.h \
-                        $(MAIN)/cpaimd.def.h \
-	                $(TOPINC)/CPcharmParaInfo.h \
-                        $(TOPINC)/eesDataClass.h \
-			$(TOPINC)/debug_flags.h \
-			$(TOPINC)/RunDescriptor.h \
-			$(FFTSLAB)/fftCacheSlab.h \
-			$(STRUCTFACT)/StructureFactor.h \
-			$(STRUCTFACT)/StructFactorCache.h \
-			$(MAIN)/groups.h \
-                        $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h  \
-			$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpintegrate.h 
-
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h  \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpintegrate.h 
 	$(ECHO) $@
-	$(CHARMC) -c $(STATE)/CP_State_GSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(STATE)/CP_State_GSpacePlane.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_State_ParticlePlane.o: $(STATE)/CP_State_ParticlePlane.C \
-                          $(STATE)/CP_State_Plane.h \
-                          $(STRUCTFACT)/StructureFactor.h \
-                          $(STRUCTFACT)/StructFactorCache.h \
-                          $(MAIN)/cpaimd.decl.h \
-                          $(MAIN)/cpaimd.def.h \
-	                  $(TOPINC)/CPcharmParaInfo.h \
-	                  $(TOPINC)/eesDataClass.h \
-                          $(TOPINC)/debug_flags.h \
-			  $(TOPINC)/RunDescriptor.h \
-			  $(FFTSLAB)/fftCacheSlab.h \
-			  $(MAIN)/groups.h \
-			  $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-         $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cplocal.h
+	$(STATE)/CP_State_Plane.h \
+	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cplocal.h
 	$(ECHO) $@
-	$(CHARMC) -c $(STATE)/CP_State_ParticlePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
-
-
+	$(CHARMC) -c $(STATE)/CP_State_ParticlePlane.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_State_RealParticlePlane.o: $(STATE)/CP_State_RealParticlePlane.C \
-                          $(STATE)/CP_State_Plane.h \
-                          $(MAIN)/cpaimd.decl.h \
-                          $(MAIN)/cpaimd.def.h \
-                          $(TOPINC)/CPcharmParaInfo.h \
-	                  $(TOPINC)/eesDataClass.h \
-				$(TOPINC)/debug_flags.h \
-				$(TOPINC)/RunDescriptor.h \
-				$(FFTSLAB)/fftCacheSlab.h \
-				$(MAIN)/groups.h \
-				$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-         $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cplocal.h
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cplocal.h
 	$(ECHO) $@
-	$(CHARMC) -c $(STATE)/CP_State_RealParticlePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
-
+	$(CHARMC) -c $(STATE)/CP_State_RealParticlePlane.C $(OPTS) $(FLAGS)\
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_State_RealSpacePlane.o: $(STATE)/CP_State_RealSpacePlane.C \
-                           $(STATE)/CP_State_Plane.h \
-                           $(MAIN)/cpaimd.decl.h \
-                           $(TOPINC)/CPcharmParaInfo.h \
-			   $(TOPINC)/debug_flags.h \
-			   $(TOPINC)/RunDescriptor.h \
-			   $(MAIN)/cpaimd.def.h \
-			   $(FFTSLAB)/fftCacheSlab.h \
-			   $(MAIN)/groups.h 
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
+	$(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h
 	$(ECHO) $@
-	$(CHARMC) -c $(STATE)/CP_State_RealSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(STATE)/CP_State_RealSpacePlane.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_Rho_RealSpacePlane.o: $(RHO)/CP_Rho_RealSpacePlane.C \
-                         $(STATE)/CP_State_Plane.h \
-                         $(MAIN)/cpaimd.decl.h \
-                         $(TOPINC)/CPcharmParaInfo.h \
-	 		 $(TOPINC)/debug_flags.h \
-	 		 $(TOPINC)/RunDescriptor.h \
-                         $(MAIN)/cpaimd.def.h \
-                         $(FFTSLAB)/fftCacheSlab.h \
-                         $(MAIN)/groups.h \
-                         $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
+	$(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 	$(ECHO) $@
-	$(CHARMC) -c $(RHO)/CP_Rho_RealSpacePlane.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(RHO)/CP_Rho_RealSpacePlane.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
-		      $(STATE)/CP_State_Plane.h \
-                      $(MAIN)/cpaimd.decl.h \
-                      $(MAIN)/cpaimd.def.h \
-                      $(TOPINC)/CPcharmParaInfo.h \
-		      $(TOPINC)/debug_flags.h \
-		      $(TOPINC)/RunDescriptor.h \
-		      $(FFTSLAB)/fftCacheSlab.h \
-		      $(MAIN)/groups.h \
-		      $(MAIN)/cpaimd.h \
-		      $(STATE)/CP_State_Plane.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
-
+	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 	$(ECHO) $@
 	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 CP_Rho_GHartExt.o: $(RHO)/CP_Rho_GHartExt.C \
-		      $(STATE)/CP_State_Plane.h \
-                      $(MAIN)/cpaimd.decl.h \
-                      $(MAIN)/cpaimd.def.h \
-                      $(TOPINC)/CPcharmParaInfo.h \
-	              $(TOPINC)/eesDataClass.h \
-		      $(TOPINC)/debug_flags.h \
-		      $(TOPINC)/RunDescriptor.h \
-		      $(FFTSLAB)/fftCacheSlab.h \
-		      $(MAIN)/groups.h \
-		      $(MAIN)/cpaimd.h \
-		      $(STATE)/CP_State_Plane.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
-
+	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 	$(ECHO) $@
 	$(CHARMC) -c $(RHO)/CP_Rho_GHartExt.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-
-#---------------------------------------------------------------------------
 CP_Rho_RHartExt.o: $(RHO)/CP_Rho_RHartExt.C \
-		      $(STATE)/CP_State_Plane.h \
-                      $(MAIN)/cpaimd.decl.h \
-                      $(MAIN)/cpaimd.def.h \
-                      $(TOPINC)/CPcharmParaInfo.h \
-	              $(TOPINC)/eesDataClass.h \
-		      $(TOPINC)/debug_flags.h \
-		      $(TOPINC)/RunDescriptor.h \
-		      $(FFTSLAB)/fftCacheSlab.h \
-		      $(MAIN)/groups.h \
-		      $(MAIN)/cpaimd.h \
-		      $(STATE)/CP_State_Plane.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
-		      $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
-
+	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 	$(ECHO) $@
 	$(CHARMC) -c $(RHO)/CP_Rho_RHartExt.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-util.o: $(UTIL)/util.C $(UTIL)/util.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-        $(TOPINC)/CPcharmParaInfo.h   
+util.o: $(UTIL)/util.C $(UTIL)/util.h $(TOPINC)/debug_flags.h \
+	$(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h   
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/util.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-MapFile.o: $(UTIL)/MapFile.C $(UTIL)/MapFile.h $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-        $(TOPINC)/CPcharmParaInfo.h $(LOADB)/MapTable.h
+MapFile.o: $(UTIL)/MapFile.C $(UTIL)/MapFile.h $(TOPINC)/debug_flags.h \
+	$(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h \
+	$(LOADB)/MapTable.h
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/MapFile.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 para_grp_parse.o: $(UTIL)/para_grp_parse.C $(UTIL)/para_grp_parse.h \
-                  $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-                  $(TOPINC)/CPcharmParaInfo.h   
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(TOPINC)/CPcharmParaInfo.h   
 	$(ECHO) $@
 	$(CHARMC) -c $(UTIL)/para_grp_parse.C $(OPTS) $(FLAGS) $(OPT_FORT)
-#-------------------------------------jjjjjjjjjjjjjjj--------------------------------------
-map.o:  $(LOADB)/map.C 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h  \
-        $(TOPINC)/CPcharmParaInfo.h  
-	$(ECHO) $@
-	$(CHARMC) -c $(LOADB)/map.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-PeList.o:  $(LOADB)/PeList.C $(LOADB)/PeList.h $(TOPINC)/debug_flags.h \
-           $(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h
+PeList.o: $(LOADB)/PeList.C $(LOADB)/PeList.h $(TOPINC)/debug_flags.h \
+	$(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/PeList.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-MapTable.o:  $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h \
-             $(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h \
-		$(LOADB)/IntMap.h
+MapTable.o: $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h\
+	$(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h \
+	$(LOADB)/IntMap.h
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/MapTable.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-TopoMap.o:  $(LOADB)/TopoMap.C $(LOADB)/PeList.h $(LOADB)/IntMap.h \
-            $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-	    $(LOADB)/MapTable.h  $(TOPINC)/CPcharmParaInfo.h 
-	$(ECHO) $@
-	$(CHARMC) -c $(LOADB)/TopoMap.C $(OPTS) $(FLAGS) $(OPT_FORT)
-#---------------------------------------------------------------------------
 ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
-	 $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-         $(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cporthog.h  \
-         $(TOPINC)/CPcharmParaInfo.h 
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cporthog.h \
+	$(TOPINC)/CPcharmParaInfo.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(ORTHO)/ortho.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
-#---------------------------------------------------------------------------
 lambda.o: $(ORTHO)/lambda.C $(ORTHO)/lambda.h $(MAIN)/cpaimd.decl.h \
-	 $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-         $(TOPINC)/CPcharmParaInfo.h 
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+        $(TOPINC)/CPcharmParaInfo.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(ORTHO)/lambda.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 StructureFactor.o: $(STRUCTFACT)/StructureFactor.h \
-	$(STRUCTFACT)/StructureFactor.C \
-	$(TOPINC)/debug_flags.h \
-        $(TOPINC)/RunDescriptor.h \
-	$(STRUCTFACT)/StructFactorCache.h \
-	$(MAIN)/cpaimd.decl.h \
-	$(MAIN)/cpaimd.def.h \
+	$(STRUCTFACT)/StructureFactor.C $(STRUCTFACT)/StructFactorCache.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
 	$(FFTSLAB)/fftCacheSlab.h \
-	$(MAIN)/groups.h \
-	$(MAIN)/cpaimd.h \
 	$(UTIL)/util.h 
 	$(ECHO) $@
-	$(CHARMC) -c $(STRUCTFACT)/StructureFactor.C $(OPTS) $(FLAGS) $(OPT_FORT)
+	$(CHARMC) -c $(STRUCTFACT)/StructureFactor.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
 StructFactorCache.o: $(HEAD)/structure_factor/StructFactorCache.h \
-        $(HEAD)/structure_factor/StructFactorCache.C \
-	$(STRUCTFACT)/StructureFactor.h \
-	$(MAIN)/cpaimd.decl.h \
-        $(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/debug_flags.h \
+        $(STRUCTFACT)/StructFactorCache.C $(STRUCTFACT)/StructureFactor.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+        $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
         $(TOPINC)/RunDescriptor.h \
-	$(MAIN)/cpaimd.def.h \
 	$(FFTSLAB)/fftCacheSlab.h \
-	$(MAIN)/groups.h \
-	$(MAIN)/cpaimd.h \
 	$(UTIL)/util.h 
 	$(ECHO) $@
-	$(CHARMC) -c $(STRUCTFACT)/StructFactorCache.C $(OPTS) $(FLAGS) $(OPT_FORT)
-
+	$(CHARMC) -c $(STRUCTFACT)/StructFactorCache.C $(OPTS) $(FLAGS) \
+	$(OPT_FORT)
 #---------------------------------------------------------------------------
-fftCache.o: $(FFTSLAB)/fftCacheSlab.h $(FFTSLAB)/fftCache.C\
-	$(MAIN)/cpaimd.decl.h \
-        $(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/debug_flags.h \
+fftCache.o: $(FFTSLAB)/fftCacheSlab.h $(FFTSLAB)/fftCache.C \
+        $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
         $(TOPINC)/RunDescriptor.h \
-	$(MAIN)/cpaimd.decl.h 
+	$(MAIN)/cpaimd.decl.h
 	$(ECHO) $@
 	$(CHARMC) -c $(FFTSLAB)/fftCache.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 eesCache.o: $(MAIN)/eesCache.h $(MAIN)/eesCache.C \
-	$(MAIN)/cpaimd.decl.h \
-        $(TOPINC)/eesDataClass.h \
-        $(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/debug_flags.h \
-        $(TOPINC)/RunDescriptor.h \
+        $(TOPINC)/eesDataClass.h $(TOPINC)/CPcharmParaInfo.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
 	$(MAIN)/cpaimd.decl.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/eesCache.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 stateSlab.o: $(FFTSLAB)/fftCacheSlab.h $(FFTSLAB)/stateSlab.C\
-	$(MAIN)/cpaimd.decl.h \
-        $(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/debug_flags.h \
+        $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
         $(TOPINC)/RunDescriptor.h \
 	$(MAIN)/cpaimd.decl.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(FFTSLAB)/stateSlab.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 rhoSlab.o: $(FFTSLAB)/fftCacheSlab.h $(FFTSLAB)/rhoSlab.C\
-	$(MAIN)/cpaimd.decl.h \
-        $(TOPINC)/CPcharmParaInfo.h \
-	$(TOPINC)/debug_flags.h \
+        $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
         $(TOPINC)/RunDescriptor.h \
 	$(MAIN)/cpaimd.decl.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(FFTSLAB)/rhoSlab.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 groups.o: $(MAIN)/groups.C $(MAIN)/groups.h \
-          $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-          $(TOPINC)/CPcharmParaInfo.h
+        $(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+        $(TOPINC)/CPcharmParaInfo.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/groups.C $(OPTS) $(FLAGS) $(OPT_FORT)
 #===========================================================================
