@@ -21,7 +21,7 @@ LOCAL_LIBS	= -L/bgl/local/lib -L/bgwhome3/gmartyna/dev/mylibs \
 # Compile options
 #-------------------------------------------------------------------------------
 DBG_FLAG	= 
-OPTS		= $(DBG_FLAG) -DCMK_OPTIMIZE=1 -qarch=440 -qtune=440
+OPTS		= $(DBG_FLAG) -O3 -DCMK_OPTIMIZE=1 -qarch=440 -qtune=440
 MATH_OPTS	= -O3 -qarch=440d -qtune=440 -qhot=simd -qhot=vector
 RUNCOMMAND	= ../OpenAtom
 #-------------------------------------------------------------------------------
