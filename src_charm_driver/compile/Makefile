@@ -152,8 +152,7 @@ cpaimd.o: $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(UTIL)/MapFile.h \
 	$(STRUCTFACT)/StructureFactor.h $(STRUCTFACT)/StructFactorCache.h
 	$(ECHO) $@
-	$(CHARMC) -c $(MAIN)/cpaimd.C -O -g $(FLAGS) $(OPT_FORT)
-#  higher than -O is a waste of time here
+	$(CHARMC) -c $(MAIN)/cpaimd.C $(FLAGS) $(OPT_FORT)
 #---------------------------------------------------------------------------
 CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
 	$(STATE)/CP_State_Plane.h \
