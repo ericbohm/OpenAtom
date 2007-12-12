@@ -213,7 +213,7 @@ void CP_State_RealParticlePlane::init(){
     while(plane<nChareR)
       {
         bool used=false;
-        int thisstateplaneproc=RPPImaptable.get(state,plane);
+        int thisstateplaneproc=RPPImaptable.get(state,plane)%CkNumPes();
 	if(usedProc[thisstateplaneproc]>charperpe);
 	{
 	  used=true;

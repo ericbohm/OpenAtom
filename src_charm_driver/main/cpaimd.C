@@ -513,17 +513,18 @@ main::main(CkArgMsg *msg) {
 	{
 	  topoMgr = new TopoManager(config.torusDimX, config.torusDimY, 
 				    config.torusDimZ, config.torusDimNX, 
-				    config.torusDimNY, config.torusDimNZ); 
+				    config.torusDimNY, config.torusDimNZ);
+
 				    
 	}
       else
 	{
 	  topoMgr = new TopoManager();
 	}
-      CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d .........\n", 
+      CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d t %d.........\n", 
              topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
              topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
-             topoMgr->hasMultipleProcsPerNode());
+             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
     }
     CkPrintf("Initializing PeList\n");
     
@@ -584,7 +585,7 @@ main::main(CkArgMsg *msg) {
       while(plane>=0)
         {
           bool used=false;
-          int thisstateplaneproc=GSImaptable.get(state,plane);
+          int thisstateplaneproc=GSImaptable.get(state,plane)%CkNumPes();
 	  if(usedProc[thisstateplaneproc]>charperpe);
 	  {
                 used=true;

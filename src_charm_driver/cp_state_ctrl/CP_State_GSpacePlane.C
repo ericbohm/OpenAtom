@@ -778,7 +778,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
         redPlane=nchareG-1;
         while(redPlane>=0){
           bool used=false;
-          int thisstateplaneproc=GSImaptable.get(state,redPlane);
+          int thisstateplaneproc=GSImaptable.get(state,redPlane)%CkNumPes();
           for(int i=0;i<usedVec.size();i++){
 	    if(usedVec[i]==thisstateplaneproc){used=true;}
           }//endfor

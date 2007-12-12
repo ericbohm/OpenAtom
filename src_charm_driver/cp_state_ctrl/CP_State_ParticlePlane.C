@@ -216,17 +216,18 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 
 
   int *red_pl = new int[nstates];
-  int *usedProc= new int[CkNumPes()];
-  memset(usedProc,0,sizeof(int)*CkNumPes());
-  int charperpe=nstates/CkNumPes();
-  if(nstates%CkNumPes()!=0)  charperpe++;
+  int numProcs=CkNumPes();
+  int *usedProc= new int[numProcs];
+  memset(usedProc,0,sizeof(int)*numProcs);
+  int charperpe=nstates/numProcs;
+  if(nstates%numProcs!=0)  charperpe++;
   if(charperpe<1) charperpe=1;
   for(int state=0; state<nstates;state++){
     int plane=nchareG-1;
     while(plane>=0)
       {
 	bool used=false;
-	int thisstateplaneproc=GSImaptable.get(state,plane);
+	int thisstateplaneproc=GSImaptable.get(state,plane)%numProcs;
 	if(usedProc[thisstateplaneproc]>charperpe);
 	{
 	  used=true;
@@ -245,7 +246,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
     while(plane<nchareG)
       {
         bool used=false;
-        int thisstateplaneproc=GSImaptable.get(state,plane);
+        int thisstateplaneproc=GSImaptable.get(state,plane)%CkNumPes();
 	if(usedProc[thisstateplaneproc]>charperpe);
 	{
 	  used=true;

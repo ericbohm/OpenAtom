@@ -199,7 +199,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Improve user parameters and/or try to optimize unset parameters
 
-  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, nchareRhoRHart, nplane_x_rho);
+  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, nchareRhoRHart, nplane_x_rho, natm_typ);
 
 //===================================================================================
 // Final consistency checks
@@ -649,37 +649,6 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     ind =  25;
     parse_on_off(dict[ind].keyarg,&rhoGToRhoRMsgComb,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
-//===================================================================================
-// Clean up 
-
-  if(rhoRsubplanes>1){
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-     PRINTF("   rhoRsubplanes=%d. Disabling rho rs commlib use\n",rhoRsubplanes);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
-     useGHartInsRHart  = 0; strcpy(dict[3].keyarg,"off");
-     useRHartInsGHart  = 0; strcpy(dict[4].keyarg,"off");
-     useGHartInsRhoRP  = 0; strcpy(dict[5].keyarg,"off");
-     useGIns0RhoRP     = 0; strcpy(dict[13].keyarg,"off");
-     useGIns1RhoRP     = 0; strcpy(dict[14].keyarg,"off");
-     useGIns2RhoRP     = 0; strcpy(dict[15].keyarg,"off");
-     useGIns3RhoRP     = 0; strcpy(dict[16].keyarg,"off");
-     useGByrdInsRhoRBP = 0; strcpy(dict[17].keyarg,"off");
-     useRInsRhoGP      = 0; strcpy(dict[18].keyarg,"off");
-     useRInsIGXRhoGP   = 0; strcpy(dict[19].keyarg,"off");
-     useRInsIGYRhoGP   = 0; strcpy(dict[20].keyarg,"off");
-     useRInsIGZRhoGP   = 0; strcpy(dict[21].keyarg,"off");
-  }//endif
-
-  if(nchareHartAtmT>1  && rhoRsubplanes==1){
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-     PRINTF("   nchareHartAtmT=%d. Disabling rho hart commlib use\n",nchareHartAtmT);
-     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
-     useGHartInsRHart  = 0; strcpy(dict[3].keyarg,"off");
-     useRHartInsGHart  = 0; strcpy(dict[4].keyarg,"off");
-     useGHartInsRhoRP  = 0; strcpy(dict[5].keyarg,"off");
-  }//endif
-
-//----------------------------------------------------------------------------------
   }//end routine
 //===================================================================================
 
@@ -1016,13 +985,13 @@ void Config::set_config_dict_pc (int *num_dict ,DICT_WORD **dict){
   // 8)\useOrthoSection{}
     ind=8;
     strcpy((*dict)[ind].keyword,"useOrthoSection");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 9)\useOrthoSectionRed{}
     ind=9;
     strcpy((*dict)[ind].keyword,"useOrthoSectionRed");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 10)\lambdaGrainSize{}
@@ -1992,7 +1961,7 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
 void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dict_rho,
                             DICT_WORD *dict_state,DICT_WORD *dict_pc,
                             DICT_WORD *dict_nl,DICT_WORD *dict_map, 
-				    int nchareRhoRHart, int nplane_x_rho){
+				    int nchareRhoRHart, int nplane_x_rho, int natm_typ){
 //=============================================================================
   if(fakeTorus)
     { //
@@ -2023,8 +1992,6 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	 if(low_x_size<sqrtpes) targetNchare=sqrtpes / low_x_size * low_x_size;
          while((mypow=pow(2.0, (double)i)) <= targetNchare){i++;}
 
-	 sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers); 	 // WTF is this for?
-
          gExpandFact = mypow / (double) low_x_size;
          nchareG     = (int)( gExpandFact * (double) low_x_size);
          sprintf(dict_state[6].keyarg,"%g",gExpandFact);
@@ -2054,6 +2021,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	 else
 	   {  //
 	     sGrainSize = sGrainSize/2;
+	     remainder=approxFactor(nstates,sGrainSize, orthoGrainSize,numPes);
 	   }
           numGrains  = nstates/sGrainSize;
           numGrains *= numGrains;
@@ -2181,21 +2149,23 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     int nchareRhoR      = sizez;
     if(igo==0){ 
       int numRS=nchareRhoR*rhoRsubplanes;
+      int numGH=nchareRhoG*rhoGHelpers;
       if(numPes <numRS*3){
 	useReductionExclusionMap=0;
-	sprintf(dict_map[19].keyarg,"%d",useReductionExclusionMap);
+	
+	strcpy(dict_map[19].keyarg,"off");
 	CkPrintf("Disabling reduction exclusion map, too few processors to matter\n");
       }
       else
 	{
 	  useReductionExclusionMap=1;
-	  sprintf(dict_map[19].keyarg,"%d",useReductionExclusionMap);
+	  strcpy(dict_map[19].keyarg,"on");
 	  CkPrintf("Enabling reduction exclusion map\n");
 	}
-	
 
       bool notdone=true;
       int usedPes=numRS;
+      int maxSubplanes=20; // arbitary choice, but probably good
       if(useReductionExclusionMap) usedPes+=nchareG;
       while(numPes>usedPes && notdone)
 	{
@@ -2203,44 +2173,74 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	  // trick here is to keep bumping up both subplanes and
 	  // expandfact
 	  int target=numPes-usedPes;
+	  if(numRS<target) target=numRS;
 	  if(numPes>numRS && nchareRhoR>nchareRhoG)
 	    { // bring up expandfact to fill in 
-	      if(target>nplane_x_rho && target <= numRS)
+	      if(target>nplane_x_rho && target <= numRS && gExpandFactRho< (double) nplane_x_rho)
 		{
 
-		  gExpandFactRho= (double) target / double (nplane_x_rho);
+		  gExpandFactRho*= (double) target / double (nplane_x_rho);
 		  double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
 		  nchareRhoG       = ((int)temp_rho);
-		  notdone=false;
+		  //notdone=false;
 		  usedPes=nchareRhoG+numRS;
 		  if(useReductionExclusionMap) usedPes+=nchareG;
 		}
 	    }
-	  else if (numPes>usedPes && numPes >nchareRhoR*(rhoRsubplanes+1) && (numPes >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT))
+	  if (numPes>usedPes && numPes >nchareRhoR*(rhoRsubplanes+1) && (numPes >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT) &&(rhoRsubplanes<maxSubplanes))
 	    {
 	      numRS= (++rhoRsubplanes)*nchareRhoR;
 	      usedPes=nchareRhoG+numRS;
 	      if(useReductionExclusionMap) usedPes+=nchareG;
 	    }
+	  else
+	    {
+	      notdone=false;
+	    }
 		   
-	  if (numPes>numRS && nchareRhoR<=nchareRhoG)
+	  if (numPes>numRS && nchareRhoR<=nchareRhoG && gExpandFactRho< (double) nplane_x_rho)
 	    { // keep ncharerhog close to numRS
 	      int target=numPes-numRS;
-	      if(target>numRS)
-		target=numRS;
+	      if(target>numRS) target=numRS;
 	      gExpandFactRho= (double) target / double (nplane_x_rho);
+	      if ( gExpandFactRho > double (nplane_x_rho))
+		{
+		  gExpandFactRho=(double)nplane_x_rho;
+		}
 	      double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
 	      nchareRhoG       = ((int)temp_rho);
 	      usedPes=nchareRhoG+numRS;
 	      if(useReductionExclusionMap) usedPes+=nchareG;
 	    }	   
+	  else
+	    {
+	      notdone=false;
+	    }
+	  if(ees_eext_opt==1 && (nchareHartAtmT< natm_typ) && 
+	     (nchareRhoRHart* (rhoRsubplanes)* (nchareHartAtmT+1)<=numPes/2))
+	    {
+	      nchareHartAtmT++;
+	    }
        }//endwhile
-       sprintf(dict_rho[9].keyarg,"%g",gExpandFactRho);
+      if(rhoRsubplanes>1)
+	{
+	  rhoLineOrder=-1;
+	  strcpy(dict_map[22].keyarg,"none");
+	  rhoSubPlaneBalance=1;
+	  strcpy(dict_map[24].keyarg,"on");
+	  rhoGToRhoRMsgComb=1;
+	  strcpy(dict_map[25].keyarg,"on");
+	}
+
        sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
-       sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
+       sprintf(dict_rho[23].keyarg,"%d",nchareHartAtmT);
+       sprintf(dict_rho[8].keyarg,"%g",gExpandFactRho);
+       CkPrintf("rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
     }//endif
     double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
     nchareRhoG       = ((int)temp_rho);
+
+
 
 //=============================================================================
 // numsfgrps
@@ -2286,12 +2286,21 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //=============================================================================
 // Fix rhoGHelpers : ranges from 1 to numPes/numChareRhoG
 
-    igo = dict_rho[11].iuset;
+    igo = dict_rho[10].iuset;
 
     if(igo==0){
-      int temp_rho  = (int) (gExpandFactRho*2.0*((double) low_x_size + 1.0));
-      if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
-      sprintf(dict_rho[11].keyarg,"%d",rhoGHelpers);
+      if(ees_eext_opt==1)
+	{
+	  //rhoGHelpers=rhoRsubplanes/2;
+	  //leave rhoghelpers alone
+	}
+      else
+	{
+	  int temp_rho  = (int) (gExpandFactRho*2.0*((double) low_x_size + 1.0));
+	  if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
+	}
+      sprintf(dict_rho[10].keyarg,"%d",rhoGHelpers);
+	  
     }//endif
 
 //============================================================================
@@ -2307,7 +2316,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       sprintf(dict_map[3].keyarg, "%d", useCuboidMapRS);
       useCentroidMap = 0;
       sprintf(dict_map[4].keyarg, "%d", useCentroidMap);
-      //      useCentroidMapRho = 0;
+      //      useCentroidMapRho = 0; works ok on nontorus
       //      sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
       useStrictCuboid = 0;
       sprintf(dict_map[18].keyarg, "%d", useStrictCuboid);
@@ -2332,6 +2341,40 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
     }
 #endif
+
+
+//===================================================================================
+// Clean up 
+
+  if(rhoRsubplanes>1){
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   rhoRsubplanes=%d. Disabling rho rs commlib use\n",rhoRsubplanes);
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+     useGHartInsRHart  = 0; strcpy(dict_rho[3].keyarg,"off");
+     useRHartInsGHart  = 0; strcpy(dict_rho[4].keyarg,"off");
+     useGHartInsRhoRP  = 0; strcpy(dict_rho[5].keyarg,"off");
+     useGIns0RhoRP     = 0; strcpy(dict_rho[12].keyarg,"off");
+     useGIns1RhoRP     = 0; strcpy(dict_rho[13].keyarg,"off");
+     useGIns2RhoRP     = 0; strcpy(dict_rho[14].keyarg,"off");
+     useGIns3RhoRP     = 0; strcpy(dict_rho[15].keyarg,"off");
+     useGByrdInsRhoRBP = 0; strcpy(dict_rho[16].keyarg,"off");
+     useRInsRhoGP      = 0; strcpy(dict_rho[17].keyarg,"off");
+     useRInsIGXRhoGP   = 0; strcpy(dict_rho[18].keyarg,"off");
+     useRInsIGYRhoGP   = 0; strcpy(dict_rho[19].keyarg,"off");
+     useRInsIGZRhoGP   = 0; strcpy(dict_rho[20].keyarg,"off");
+  }//endif
+
+  if(nchareHartAtmT>1  && rhoRsubplanes==1){
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+     PRINTF("   nchareHartAtmT=%d. Disabling rho hart commlib use\n",nchareHartAtmT);
+     PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+     useGHartInsRHart  = 0; strcpy(dict_rho[3].keyarg,"off");
+     useRHartInsGHart  = 0; strcpy(dict_rho[4].keyarg,"off");
+     useGHartInsRhoRP  = 0; strcpy(dict_rho[5].keyarg,"off");
+  }//endif
+
+//----------------------------------------------------------------------------------
+
 
 //============================================================================
    }//end routine
@@ -2796,7 +2839,7 @@ void Config::rangeExit(int param, char *name, int iopt){
 
     if (sGrainSize %orthoGrainSize != 0){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   S matrix grain-size must be divisible by orthoGrainSize\n");
+      PRINTF("   S matrix grain-size %d must be divisible by orthoGrainSize %d\n",sGrainSize, orthoGrainSize);
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
@@ -2919,6 +2962,8 @@ void Config::rangeExit(int param, char *name, int iopt){
     }//endif
 
 //----------------------------------------------------------------------------------
+
+
   }//end routine
 //===================================================================================
 
@@ -3003,8 +3048,6 @@ int Config::approxFactor(int nstates,int &sGrainSize, int &oGrainSize,int numPes
   // Empirically we know that finer granularity than ograinsize
   // 8 is extremely unlikely to improve performance.
   if (oGrainSize<8) oGrainSize=8;
-  
-
 
   // Our actual constraint here is that ograinsize must be a
   // factor of sgrainsize, while minimizing the remainder
