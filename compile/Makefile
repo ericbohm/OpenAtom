@@ -7,7 +7,12 @@ include ./Makefile.config
 # general definitions
 #-------------------------------------------------------------------------------
 TARGET = binary/cpaimd
-
+ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
+  FFT_INC = -lrfftw -lfftw
+else
+  FFT_INC = -ldrfftw -ldfftw
+endif
+    
 #===============================================================================
 all: full_code
 
@@ -37,7 +42,7 @@ full_code: physics cpaimd_driver mymathlib
 	$(CHARMC) -o ../binary/OpenAtom \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
-                  -L$(FFT_HOME)/lib -lconv-util -lrfftw -lfftw \
+                  -L$(FFT_HOME)/lib $(FFT_INC) -lconv-util \
 		  $(MATH_LIB) $(LNK_OPTS)  
 
 #===============================================================================
