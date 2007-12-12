@@ -43,7 +43,7 @@ BLAS_FORT	= ../no_blas_routines.h
 LAPACK_FORT	= ../no_lapack_routines.h
 EISPACK_FORT	= ../eispack_routines.h
 IBM_ESSL_DUMMY	= 
-MATH_LIB	= -lacml
+MATH_LIB	= $(LOCAL_LIBS) -lacml
 #===============================================================================
 
 #===============================================================================
