@@ -2,13 +2,13 @@
 #-------------------------------------------------------------------------------
 # Configurable Options
 #-------------------------------------------------------------------------------
-CHARMBASE	= $(HOME)/charm
-LNK_OPTS	= -lz -lm -memory gnu
+CHARMBASE	= /import/data2/projects/tg/namd/opt-charm/charm
+LNK_OPTS	= -lz -lm -memory os
 #-------------------------------------------------------------------------------
 DUAL_FFTW	= -DDUAL_FFTW_OFF
-FFT_HOME	= $(HOME)/fftw
+FFT_HOME	= /opt/apps/fftw/fftw-2.1.5
 #-------------------------------------------------------------------------------
-LOCAL_LIBS	=
+LOCAL_LIBS	= -L$(TACC_MKL_LIB)
 #===============================================================================
 
 
@@ -39,11 +39,11 @@ AUTOTEST	= $(VALID_EXEC)
 #-------------------------------------------------------------------------------
 # Fortran Source / Optimized Libraries
 #-------------------------------------------------------------------------------
-BLAS_FORT	= ../blas_routines.h
-LAPACK_FORT	= ../lapack_routines.h
+BLAS_FORT	= ../no_blas_routines.h
+LAPACK_FORT	= ../no_lapack_routines.h
 EISPACK_FORT	= ../eispack_routines.h
 IBM_ESSL_DUMMY	= 
-MATH_LIB	= $(LOCAL_LIBS)
+MATH_LIB	= $(LOCAL_LIBS) -lmkl_em64t -lguide
 #===============================================================================
 
 #===============================================================================
