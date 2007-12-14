@@ -2179,7 +2179,8 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	      if(target>nplane_x_rho && target <= numRS && gExpandFactRho< (double) nplane_x_rho)
 		{
 
-		  gExpandFactRho*= (double) target / double (nplane_x_rho);
+		  gExpandFactRho= (double) target / double (nplane_x_rho);
+		  //		  CkPrintf("i1 rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
 		  double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
 		  nchareRhoG       = ((int)temp_rho);
 		  //notdone=false;
@@ -2202,12 +2203,14 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	    { // keep ncharerhog close to numRS
 	      int target=numPes-numRS;
 	      if(target>numRS) target=numRS;
-	      gExpandFactRho= (double) target / double (nplane_x_rho);
+
 	      if ( gExpandFactRho > double (nplane_x_rho))
 		{
 		  gExpandFactRho=(double)nplane_x_rho;
 		}
+	      if(gExpandFactRho>rhoRsubplanes) gExpandFactRho=(double) rhoRsubplanes;
 	      double temp_rho  = (gExpandFactRho)*((double)nplane_x_rho);
+	      //	      CkPrintf("i2 rhoRsubplanes now %d gExpandFactRho now %g nchareHartAtmT now %d making numRS %d nchareRhoG %d\n",rhoRsubplanes, gExpandFactRho, nchareHartAtmT, numRS, nchareRhoG);
 	      nchareRhoG       = ((int)temp_rho);
 	      usedPes=nchareRhoG+numRS;
 	      if(useReductionExclusionMap) usedPes+=nchareG;
@@ -2225,11 +2228,11 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(rhoRsubplanes>1)
 	{
 	  rhoLineOrder=-1;
-	  strcpy(dict_map[22].keyarg,"none");
+	  strcpy(dict_rho[22].keyarg,"none");
 	  rhoSubPlaneBalance=1;
-	  strcpy(dict_map[24].keyarg,"on");
+	  strcpy(dict_rho[24].keyarg,"on");
 	  rhoGToRhoRMsgComb=1;
-	  strcpy(dict_map[25].keyarg,"on");
+	  strcpy(dict_rho[25].keyarg,"on");
 	}
 
        sprintf(dict_rho[11].keyarg,"%d",rhoRsubplanes);
