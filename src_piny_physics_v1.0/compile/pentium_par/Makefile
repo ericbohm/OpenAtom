@@ -35,7 +35,7 @@ include make_head.h
 #==========================
 # Compiler commands
 #==========================
-FOBJ            = $(FC) $(FFLAGS) $(COPTS) -I$(INCLUDES) -c -o $@
+FOBJ            = $(FC) $(FFLAGS) $(FOPTS) -I$(INCLUDES) -c -o $@
 COBJ            = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_TEST       = $(CC) $(CFLAGS) $(OPT_FULL) -I$(INCLUDES) $(TFLAGS) -c -o $@
 COBJ_FUSS       = $(CC) $(CFLAGS) $(DBG_FLAG) -I$(INCLUDES) $(TFLAGS) -c -o $@
