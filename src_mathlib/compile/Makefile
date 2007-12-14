@@ -13,17 +13,17 @@ MAIN  = ../main
 
 #===========================================================================
 FLAGS  = 
-MATH   = ../
+MATH   = ..
 #===========================================================================
 
 #===========================================================================
-OBJS_REQ = random_num_gen.o genmatmul.o fastadd.o altRandom.o
+OBJS_REQ= random_num_gen.o genmatmul.o fastadd.o altRandom.o
 include $(BLAS_FORT)
 include $(LAPACK_FORT)
 include $(EISPACK_FORT)
 include $(EISPACK_FORT)
-OBJS = $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) $(OBJS_IBM_ESSL) \
-       lst_sort_clean.o ibm_essl_dummy.o
+OBJS 	= $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) \
+	$(OBJS_IBM_ESSL) lst_sort_clean.o ibm_essl_dummy.o
 TARGET_LIB = ../../binary/libMyMathLib.a
 #===========================================================================
 
