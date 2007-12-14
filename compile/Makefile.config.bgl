@@ -20,8 +20,8 @@ LOCAL_LIBS	= -L/bgl/local/lib -L/bgwhome3/gmartyna/dev/mylibs \
 # Compile options
 #-------------------------------------------------------------------------------
 DBG_FLAG	= 
-FOPTS           = $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1
-COPTS           = $(DBG_FLAG) -O3
+FOPTS           = $(DBG_FLAG) -O3
+COPTS           = $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1
 OPTS            = $(FOPTS) $(COPTS) -qarch=440 -qtune=440
 MATH_OPTS	= -O3 -qarch=440d -qtune=440 -qhot=simd -qhot=vector
 RUNCOMMAND	= ../OpenAtom
@@ -95,7 +95,7 @@ CPAIMD_DRV_SRC		= $(CPAIMD)/src_charm_driver
 MAKE_CPAIMD_DRV_INC	= $(CPAIMD)/src_charm_driver/compile
 CHARMLIB		= -module CkMulticast -module commlib
 FORT			= $(CHARMC) -f77
-F_COMPILER		= $(FORT) $(COPTS) 
+F_COMPILER		= $(FORT) $(FOPTS) 
 F_COMPILER_NOPT		= $(FORT) $(DBG_FLAG)
 #===============================================================================
 
