@@ -274,6 +274,11 @@ void make_rho_runs(CPcharmParaInfo *sim){
     // Record the last run of z.
     runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
     run_length_sum += run_length;
+    if(kz[nPacked-1]<0){ // add pos half-line of size 0
+       runs.push_back(RunDescriptor(curr_x,curr_y,0,run_length_sum,0,1,nz));
+       nrun_tot      +=1;
+    }//endif
+
 
     if(run_length_sum!=nPacked){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -992,6 +997,10 @@ void readStateIntoRuns(int nPacked, int ncoef,complex *arrCP, CkVec<RunDescripto
     // Record the last run of z.
     runs.push_back(RunDescriptor(curr_x,curr_y,curr_z,run_length_sum,run_length,1,nz));
     run_length_sum += run_length;
+    if(kz[nPacked-1]<0){ // add pos half-line of size 0
+       runs.push_back(RunDescriptor(curr_x,curr_y,0,run_length_sum,0,1,nz));
+       nrun_tot      +=1;
+    }//endif
 
     if(run_length_sum!=nPacked){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
