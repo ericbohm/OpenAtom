@@ -51,10 +51,10 @@ MATH_LIB	= $(LOCAL_LIBS) -lacml
 #-------------------------------------------------------------------------------
 # PINY physics directories: forcefield, abinitio, interface 
 #-------------------------------------------------------------------------------
-PINY_PHY		= $(CPAIMD)/src_piny_physics_v1.0
-PINY_CPAIMD_ROUT	= $(PINY_PHY)/abinito_physics
-PINY_FORCEFIELD_ROUT	= $(PINY_PHY)/classical_physics
-PINY_INTERFACE_ROUT	= $(PINY_PHY)/interface
+PINY_PHY                = $(CPAIMD)/src_piny_physics_v1.0
+PINY_CPAIMD_ROUT        = $(PINY_PHY)/abinito_physics
+PINY_FORCEFIELD_ROUT    = $(PINY_PHY)/classical_physics
+PINY_INTERFACE_ROUT     = $(PINY_PHY)/interface
 #-------------------------------------------------------------------------------
 # header files for PINY physics
 #-------------------------------------------------------------------------------
