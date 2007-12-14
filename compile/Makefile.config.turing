@@ -18,12 +18,12 @@ LOCAL_LIBS	=
 # Compile options
 #-------------------------------------------------------------------------------
 DBG_FLAG	= 
-FOPTS           = $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
-		-mdynamic-no-pic -mpowerpc-gpopt -mtune=G5 -mcpu=G5 -mpowerpc64
-COPTS           = $(DBG_FLAG) -O3 -funroll-all-loops -fsched-interblock \
+FOPTS           = $(DBG_FLAG) -O3 -funroll-all-loops -fsched-interblock \
 		-falign-loops=16 -falign-jumps=16 -falign-functions=16 \
 		-falign-jumps-max-skip=15 -falign-loops-max-skip=15 \
 		-force_cpusubtype_ALL -ffast-math
+COPTS           = $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
+		-mdynamic-no-pic -mpowerpc-gpopt -mtune=G5 -mcpu=G5 -mpowerpc64
 OPTS            = $(FOPTS) $(COPTS)
 MATH_OPTS	=
 RUNCOMMAND	= ../OpenAtom
@@ -96,7 +96,7 @@ CPAIMD_DRV_SRC		= $(CPAIMD)/src_charm_driver
 MAKE_CPAIMD_DRV_INC	= $(CPAIMD)/src_charm_driver/compile
 CHARMLIB		= -module CkMulticast -module commlib
 FORT			= $(CHARMBASE)/bin/charmc -f77
-F_COMPILER		= $(FORT) $(COPTS) -qstrict -qextname
+F_COMPILER		= $(FORT) $(FOPTS) -qstrict -qextname
 F_COMPILER_NOPT		= $(FORT) $(DBG_FLAG)
 #===============================================================================
 
