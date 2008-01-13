@@ -1215,10 +1215,10 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   }//endif
 
 #ifdef _CP_DEBUG_SCALC_ONLY_
-  if(cp_min_opt==0){
+  //  if(cp_min_opt==0){
     gs.packedPlaneDataTemp2 = (complex *)fftw_malloc(gs.numPoints*sizeof(complex));  
     bzero(gs.packedPlaneDataTemp2,sizeof(complex)*gs.numPoints);
-  }//endif
+    //  }//endif
 #endif
 
   // Under cp_min veldata is the conjugate gradient : always need it.
