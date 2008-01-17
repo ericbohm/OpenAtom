@@ -11,6 +11,7 @@ cat head proto_coords_cp_entry          > ../proto_defs/proto_coords_cp_entry.h
 cat head proto_coords_local             > ../proto_defs/proto_coords_local.h
 cat head proto_coords_entry             > ../proto_defs/proto_coords_entry.h
 cat head proto_cp_ewald_entry           > ../proto_defs/proto_cp_ewald_entry.h
+cat head proto_cp_ewald_corrs           > ../proto_defs/proto_cp_ewald_corrs.h
 cat head proto_cp_ewald_local           > ../proto_defs/proto_cp_ewald_local.h
 cat head proto_energy_cp_entry          > ../proto_defs/proto_energy_cp_entry.h
 cat head proto_energy_cp_local          > ../proto_defs/proto_energy_cp_local.h

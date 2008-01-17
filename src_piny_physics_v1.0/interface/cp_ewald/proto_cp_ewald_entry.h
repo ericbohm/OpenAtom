@@ -17,3 +17,4 @@ void init_cp_dual_pme_bw(GENEWALD *,CPEWALD *,int );
 
 void init_cp_atom_pme_bw(GENEWALD * ,CPEWALD *);
 
+void setput_nd_ewd_corrs(GENEWALD *, GENCELL *);

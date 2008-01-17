@@ -131,6 +131,7 @@ class CPcharmParaInfo {
 
    double vol,dt,tol_norb,tol_cp_min;
    double tol_cp_dyn;
+   int iperd;
    int fftopt;
    int kx_max,ky_max,kz_max; 
    int cp_norb_rot_kescal;
@@ -228,6 +229,7 @@ class CPcharmParaInfo {
      tol_cp_min   = s.tol_cp_min;
      tol_cp_dyn   = s.tol_cp_dyn;
      dt           = s.dt;
+     iperd        = s.iperd;
      fftopt       = s.fftopt;
      kx_max       = s.kx_max;
      ky_max       = s.ky_max;
@@ -524,6 +526,7 @@ class CPcharmParaInfo {
      CkPrintf("CPcharmParaInfo pup\n");
 #endif
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
+      p|iperd;
       p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal;
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;

@@ -27,11 +27,11 @@
 
 /*----------------------------------------------------------------------*/
 
-extern "C" {void DCFFTI_GENERIC(int *,double *,int *);}
+extern "C" {void DCFFTI_GENERIC(int *,double *);}
 
-extern "C" {void DCFFTF_GENERIC(int *,double *,double *,int *);}
+extern "C" {void DCFFTF_GENERIC(int *,double *,double *);}
 
-extern "C" {void DCFFTB_GENERIC(int *,double *,double *,int *);}
+extern "C" {void DCFFTB_GENERIC(int *,double *,double *);}
 
 /*----------------------------------------------------------------------*/
 

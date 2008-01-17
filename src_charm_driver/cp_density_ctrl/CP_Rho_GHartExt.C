@@ -1,3 +1,4 @@
+//============================================================================
 /*****************************************************************************
  * $Source$
  * $Author$
@@ -45,6 +46,7 @@
 
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
+#include "../../src_piny_physics_v1.0/include/proto_defs/proto_cp_ewald_corrs.h"
 
 //============================================================================
 
@@ -90,6 +92,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
   rhoRsubplanes  = config.rhoRsubplanes;
   rhoGHelpers    = config.rhoGHelpers;
   nchareHartAtmT = config.nchareHartAtmT;
+  iperd          = sim->iperd;
 
   ngridaEext     = _ngridaEext; 
   ngridbEext     = _ngridbEext; 
@@ -242,6 +245,21 @@ void CP_Rho_GHartExt::init(){
      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
+//==================================================================================
+// Set up periodicity corrections if necessary
+
+  rho_gs.iperd = iperd;
+  if(iperd!=3){
+    int nPacked     = rho_gs.nPacked;
+    rho_gs.perdCorr = (double *)fftw_malloc(nPacked*sizeof(double));
+    setput_nd_eext_corrs(nPacked,rho_gs.k_x,rho_gs.k_y,rho_gs.k_z,rho_gs.perdCorr);
+  }//endif
+
+//==================================================================================
+// Set some proxies, set the migratable flag
+
+  setMigratable(false);
+
   rhoRealProxy_com = rhoRealProxy;
   if(config.useGHartInsRhoRP){
      ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
@@ -289,6 +307,7 @@ void CP_Rho_GHartExt::pup(PUP::er &p){
   ArrayElement2D::pup(p);
   rho_gs.pup(p);
 
+  p|iperd;
   p|rhoRsubplanes;
   p|ngridaEext;
   p|ngridbEext;
@@ -422,8 +441,9 @@ void CP_Rho_GHartExt::HartExtVksG() {
    double  StartTime=CmiWallTimer();
 #endif    
 
+   double *perdCorr = rho_gs.perdCorr;
    CPLOCAL::CP_hart_eext_calc(numPoints,rho,natm,fastAtoms,vks,
-                              &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,
+                              &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,perdCorr,
                               thisIndex.x);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
@@ -815,8 +835,9 @@ void CP_Rho_GHartExt::getHartEextEes(){
 #ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
+  double *perdCorr = rho_gs.perdCorr;
   CPLOCAL::eesHartEextGchare(ncoef,iterAtmTypFull,rho,vks,atmSF,atmSFtot,
-                             b_re,b_im,&ehart_ret,&eext_ret,k_x,k_y,k_z,myChareG);
+                             b_re,b_im,&ehart_ret,&eext_ret,k_x,k_y,k_z,perdCorr,myChareG);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesHartExcG_, StartTime, CmiWallTimer());    
 #endif
@@ -833,7 +854,8 @@ void CP_Rho_GHartExt::getHartEextEes(){
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
-    CPLOCAL::eesEwaldGchare(ncoef,atmSFtot,b_re,b_im,&ewd_ret,k_x,k_y,k_z,myChareG);
+    double *perdCorr = rho_gs.perdCorr;
+    CPLOCAL::eesEwaldGchare(ncoef,atmSFtot,b_re,b_im,&ewd_ret,k_x,k_y,k_z,perdCorr,myChareG);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
 #endif
@@ -1078,7 +1100,8 @@ void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
-    CPLOCAL::eesEwaldGchare(ncoef,atmSFtotRecv,b_re,b_im,&ewd_ret,k_x,k_y,k_z,myChareG);
+    double *perdCorr = rho_gs.perdCorr;
+    CPLOCAL::eesEwaldGchare(ncoef,atmSFtotRecv,b_re,b_im,&ewd_ret,k_x,k_y,k_z,perdCorr,myChareG);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
 #endif

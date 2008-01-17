@@ -263,6 +263,7 @@ class RhoGSlab {
 	int numFull;
 	int numPoints;
 	int nPacked;
+        int iperd;
 	RunDescriptor *runs;
 
 	complex *Rho;       // Is big enough to be expanded!
@@ -272,7 +273,7 @@ class RhoGSlab {
 	complex *packedRho;
         complex *packedVks;
         complex *Vks;       // Is big enough to be expanded!
-	                    
+        double *perdCorr;	                    
  
         int *k_x, *k_y, *k_z;
 
@@ -286,19 +287,25 @@ class RhoGSlab {
 	RhoGSlab() { //initialization paranoia
 	    sizeX= sizeY= sizeZ=runsToBeSent= numRuns= numLines=numFull=0;
 	    numPoints= nPacked=size=xdim=ydim= zdim=0; 
-	    k_x=NULL;
-	    k_y=NULL;
-	    k_z=NULL;
-	    Rho=NULL;       
-	    divRhoX=NULL;   
-	    divRhoY=NULL;   
-	    divRhoZ=NULL;   
-	    packedRho=NULL;
-	    packedVks=NULL;
-	    Vks=NULL;       
-	    runs=NULL;
-	}
+            iperd = 3;
+
+	    k_x      = NULL;
+	    k_y      = NULL;
+	    k_z      = NULL;
+            perdCorr = NULL;
+
+	    Rho      = NULL;       
+	    divRhoX  = NULL;   
+	    divRhoY  = NULL;   
+	    divRhoZ  = NULL;   
+	    packedRho= NULL;
+	    packedVks= NULL;
+	    Vks      = NULL;       
+	    runs     = NULL;
+	}//end constructor
+
 	~RhoGSlab();
+
 	void setKVectors(int *n);
         void divRhoGdot(double *,double ,complex *);
         void createWhiteByrd(double *, double );

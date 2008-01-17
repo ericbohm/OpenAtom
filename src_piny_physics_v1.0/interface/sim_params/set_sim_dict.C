@@ -725,7 +725,7 @@ void set_sim_dict_vpot(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 25;
+  *num_dict = 27;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_vpot")-1;
 
 /*========================================================================*/
@@ -865,6 +865,15 @@ void set_sim_dict_vpot(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[25].keyword,"inter_calc_opt");
         strcpy((*dict)[25].keyarg,"spline");
   /*-----------------------------------------------------------------------*/ 
+  /*  26)\nkvec_perd_fix{#} */
+        strcpy((*dict)[26].error_mes,"a number >=1");
+        strcpy((*dict)[26].keyword,"nkvec_perd_fix");
+        strcpy((*dict)[26].keyarg,"2");
+  /*-----------------------------------------------------------------------*/ 
+  /*  27)\nkvec_perd_expnd{#} */
+        strcpy((*dict)[27].error_mes,"a number >=1");
+        strcpy((*dict)[27].keyword,"nkvec_perd_expnd");
+        strcpy((*dict)[27].keyarg,"3");
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
 /*========================================================================*/
@@ -1932,6 +1941,3 @@ void set_sim_dict_rdf(int *num_dict,DICT_WORD *dict[])
  /*========================================================================*/
  } /* end routine set_sim_dict_rdf */
  /*========================================================================*/
-
-
-

@@ -36,6 +36,7 @@ extern CProxy_AtomsGrp             atomsGrpProxy;
 extern CProxy_EnergyGroup          egroupProxy;
 extern CProxy_StructFactCache      sfCacheProxy;
 extern CProxy_eesCache             eesCacheProxy;
+extern CProxy_CPcharmParaInfoGrp   scProxy;
 
 //----------------------------------------------------------------------------
 
@@ -95,7 +96,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
-    ftot           = (double *)fftw_malloc((3*natm+1)*sizeof(double));
+    ftot           = (double *)fftw_malloc((3*natm+2)*sizeof(double));
 
     zeroforces();
     if(iextended_on==1 && cp_min_opt==0){
@@ -192,11 +193,12 @@ void AtomsGrp::StartRealspaceForces(){
    pot_ewd_rs = 0.0;
    vself      = 0.0;
    vbgr       = 0.0;
+   potPerdCorr= 0.0;
 
 #ifndef  _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
    if(myid<natm-1){
-     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr);
+     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
    }//endif
 #endif
 #endif
@@ -226,13 +228,14 @@ void AtomsGrp::contributeforces(){
     ftot[j+1] = atoms[i].fy;
     ftot[j+2] = atoms[i].fz;
   }//endfor
-  ftot[3*natm]=pot_ewd_rs;
+  ftot[3*natm]  =pot_ewd_rs;
+  ftot[3*natm+1]=potPerdCorr;
 
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
 #endif
   CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), atomsGrpProxy);
-  contribute((3*natm+1)*sizeof(double),ftot,CkReduction::sum_double,cb);
+  contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
 
 
 //==========================================================================
@@ -262,7 +265,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside recv forces %d : %d\n",myid,natm);
 #endif
-  double pot_ewd_rs = ftot[3*natm];
+  double pot_ewd_rs_loc = ftot[3*natm];
+  double potPerdCorrLoc = ftot[3*natm+1];
   double fmag = 0.0;
   for(i=0,j=0;i<natm;i++,j+=3){
     atoms[i].fx = ftot[j];    atoms[i].fy = ftot[j+1];
@@ -424,7 +428,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 // Tuck things that can be tucked.
 
 
-  eg->estruct.eewald_real     = pot_ewd_rs;  
+  eg->estruct.eewald_real     = pot_ewd_rs_loc;  
   eg->estruct.fmag_atm        = fmag;
 
 //============================================================
@@ -467,6 +471,7 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
   EnergyGroup *eg       = egroupProxy.ckLocalBranch();
+  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
   double eKineticNhc    = eg->estruct.eKineticNhc_atm;
@@ -474,11 +479,19 @@ void AtomsGrp::outputAtmEnergy() {
   double pot_ewd_rs_now = eg->estruct.eewald_real;
   double potNhc         = eg->estruct.potNhc_atm;
   double free_atm       = 3*((double)natm);
+  int iperd             = sim->iperd;
 
   if(myid==0){
-     CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs_now);
-     CkPrintf("EWALD_SELF  = %5.8lf\n",vself);
-     CkPrintf("EWALD_BGR   = %5.8lf\n",vbgr);
+     if(iperd!=0){
+       CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs_now);
+       CkPrintf("EWALD_SELF  = %5.8lf\n",vself);
+       CkPrintf("EWALD_BGR   = %5.8lf\n",vbgr);
+       if(iperd!=3){
+         CkPrintf("EWALD_Perd  = %5.8lf\n",potPerdCorr);
+       }//endif
+     }else{
+       CkPrintf("ATM_COUL    = %5.8lf\n",pot_ewd_rs_now);
+     }//endif
      if(cp_min_opt==0){
         CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
         CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));

@@ -54,7 +54,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
   int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
-
+  int iperd           = gencell->iperd;
+  
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
   double tol_norb     = cpconstrnt->c_tolnorb;
@@ -105,6 +106,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->dt             = dt;
    sim->vol            = vol;
 
+   sim->iperd          = iperd;
    sim->fftopt         = fftopt;
    sim->ncoef          = ncoef;
 

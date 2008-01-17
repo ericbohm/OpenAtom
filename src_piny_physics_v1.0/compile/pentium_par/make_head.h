@@ -24,7 +24,7 @@ LIB      = $(ECODE)/libPinyInterface.a
 #--------------------------
 CHARMC   = $(CHARMBASE)/bin/charmc 
 
-FC       = $(CHARMC) -f77
+FC       = $(CHARMC) -f77 -fno-second-underscore
 CC       = $(CHARMC) 
 LC       = $(CHARMC)
 OPT_FULL = $(OPTS) 

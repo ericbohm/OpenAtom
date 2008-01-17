@@ -190,7 +190,9 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                           (gentimeinfo->int_res_ter),mdpart_mesh,mdecor,
                           (cpopts->cp_lsda),(genminopts->cp_min_diis),
                           cp_dual_grid_opt_on,&(cppseudo->nonlocal),cppseudo); 
-
+     // extension of ewald sum at edges due to slow convergence of correction kernel
+     if(iperd>0 && iperd<3){setput_nd_ewd_corrs(genewald,gencell);}
+     // cp parameters
      if(cp_on==1){
        cpopts->te_ext         /= 4.1e6; // empirical scaling factor for h2o 32-70
 	 //                   (double) ( (cpcoeffs_info->nstate_up
@@ -204,7 +206,6 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
        PRINTF("\nYour fictious CP temperature is: %gK : different scaling then PINY\n\n",
                                              cpopts->te_ext);
      }//endif : cp_on
-
   }//endif : charged periodic systems and/or CP
   genewald->ewald_on = ewald_on;
 

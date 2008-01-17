@@ -1,13 +1,12 @@
 
-      SUBROUTINE DCFFTI_GENERIC (n,wsave,isave)
+      SUBROUTINE DCFFTI_GENERIC (n,wsave)
       double precision wsave(*)
-      integer isave(*)
 c
       if (n .eq. 1) return
 c
       iw1 = n+n+1
       iw2 = iw1+n+n
-      call dcfti1_GENERIC (n,wsave(iw1),isave)
+      call dcfti1_GENERIC (n,wsave(iw1),wsave(iw2))
 c
       return
       end
@@ -84,15 +83,14 @@ c
 
 
 
-      SUBROUTINE DCFFTF_GENERIC (n,c,wsave,isave)
+      SUBROUTINE DCFFTF_GENERIC (n,c,wsave)
       double precision c(*), wsave(*)
-      integer isave(*)
 c
       if (n .eq. 1) return
 c
       iw1 = n+n+1
       iw2 = iw1+n+n
-      call dcftf1_GENERIC (n,c,wsave,wsave(iw1),isave)
+      call dcftf1_GENERIC (n,c,wsave,wsave(iw1),wsave(iw2))
 c
       return
       end
@@ -512,15 +510,14 @@ c
       end
 
 
-      SUBROUTINE DCFFTB_GENERIC (n,c,wsave,isave)
+      SUBROUTINE DCFFTB_GENERIC (n,c,wsave)
       double precision c(*), wsave(*)
-      integer isave(*)
 c
       if (n .eq. 1) return
 c
       iw1 = n+n+1
       iw2 = iw1+n+n
-      call dcftb1_GENERIC (n,c,wsave,wsave(iw1),isave)
+      call dcftb1_GENERIC (n,c,wsave,wsave(iw1),wsave(iw2))
 c
       return
       end

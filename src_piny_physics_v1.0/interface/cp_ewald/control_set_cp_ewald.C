@@ -168,6 +168,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
 
    ewald->nktot            = ewald->nktot;
    ewald->ecut             = 4.0*ecut_now;
+   ewald->nka_max          = kmaxv[1];
+   ewald->nkb_max          = kmaxv[2];
    ewald->nkc_max          = kmaxv[3];
    ecor->ecut              = 4.0*ecut_now;
 

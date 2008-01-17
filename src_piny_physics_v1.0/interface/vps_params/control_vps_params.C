@@ -1451,7 +1451,7 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
              -  ztot*fpi*(
                         exp((-0.25*g2/(alpha_conv_dual*alpha_conv_dual))))/g2
                );
-    } /* endfor */
+       }/* endfor */
        falpha_12        = 4.0*alpha_1*alpha_1;
        falpha_22        = 4.0*alpha_2*alpha_2; 
        falpha_conv_dual = 4.0*alpha_conv_dual*alpha_conv_dual; 

@@ -22,7 +22,7 @@ INTERFACE_FILES       = parse.o \
                         path_integral_init.o exl_sort.o read_coord.o 
 
 INTERFACE_CP_FILES    = set_wave_params.o  \
-                        control_set_cp_ewald.o set_cp_ewald.o \
+                        control_set_cp_ewald.o set_cp_ewald.o set_perd_corrs.o \
                         search_base_cp.o \
                         set_vps_dict.o control_vps_params.o \
                         weight_node_gauss_hermite.o gen_wave.o

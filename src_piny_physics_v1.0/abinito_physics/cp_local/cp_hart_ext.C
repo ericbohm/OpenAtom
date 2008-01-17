@@ -22,7 +22,7 @@
 void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
                                 complex *vks, double *ehart_ret,double *eext_ret,
                                 double *ewd_ret,int *k_x, int *k_y, int *k_z, 
-                                int index)
+                                double *perdCorr,int index)
 //============================================================================
 // Function:  Hartree and External potentials
 //
@@ -209,6 +209,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
   // II. Use these to construct the Hartree energy and its potential
 
        HartreeFact = fpi/(g2*vol);
+       if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
        ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
 
        vks[i] = rho[i]*HartreeFact;
@@ -233,6 +234,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
        vext  = complex(0.0,0.0);
        double vsave = 0;
        for(int iatm = 0; iatm < natm; iatm++){
+         if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[i]/vol;} // charge on electron is -1
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
          if(iatm_typ[(iatm+1)]==2){
            vsave  = vtemp[iatm];
@@ -248,6 +250,8 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
   // IV. Use structure factor to evaluate external potential
 
        EwdFact    = fpi*exp(-g2/falp2)/(g2*vol);
+       if(iperd!=3){EwdFact += perdCorr[i]/vol;}
+       if(iperd==0){EwdFact=0.0;}
        EwdEnergy += EwdFact*sewd.getMagSqr()*wght_now;
 
        double sumr   = sewd.re*EwdFact*wght_now;
@@ -267,7 +271,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
          fy[iatm]         += (sry*h[iatm].im - siy*h[iatm].re);
          fz[iatm]         += (srz*h[iatm].im - siz*h[iatm].re); 
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
-        if(iatm_typ[(iatm+1)]==2){
+         if(iatm_typ[(iatm+1)]==2){
  	   rho_temp_r = ( rho_r*vtemp[iatm] );
    	   rho_temp_i = (-rho_i*vtemp[iatm] );
            srx = (gx*rho_temp_r);
@@ -279,18 +283,18 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
            fxt[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
            fyt[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
            fzt[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
-        }//endif
-        rho_temp_r = sumr*q[iatm];
-        rho_temp_i = sumi*q[iatm];
-        srx = (gx*rho_temp_r);
-        sry = (gy*rho_temp_r);
-        srz = (gz*rho_temp_r);
-        six = (gx*rho_temp_i);
-        siy = (gy*rho_temp_i);
-        siz = (gz*rho_temp_i);
-        fxt_ewd[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
-        fyt_ewd[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
-        fzt_ewd[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
+         }//endif
+         rho_temp_r = sumr*q[iatm];
+         rho_temp_i = sumi*q[iatm];
+         srx = (gx*rho_temp_r);
+         sry = (gy*rho_temp_r);
+         srz = (gz*rho_temp_r);
+         six = (gx*rho_temp_i);
+         siy = (gy*rho_temp_i);
+         siz = (gz*rho_temp_i);
+         fxt_ewd[iatm] +=  (srx*h[iatm].im - six*h[iatm].re);
+         fyt_ewd[iatm] +=  (sry*h[iatm].im - siy*h[iatm].re);
+         fzt_ewd[iatm] +=  (srz*h[iatm].im - siz*h[iatm].re);
 #endif
        }/*endfor*/
 
@@ -323,6 +327,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
      for(int iatm=0;iatm< natm; iatm++){
         sewd.re    += q[iatm];   
         vtemp[iatm] = gzvps[iatm_typ[(iatm+1)]]/vol;
+	if(iperd!=3){vtemp[iatm] -= q[iatm]*perdCorr[izero]/vol;} // charge on electron is -1
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
         if(iatm_typ[(iatm+1)]==2){
           vext.re += vtemp[iatm];
@@ -335,6 +340,9 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
      vks[i].re  = vext.re;
      vks[i].im  = 0.0;
      eext += (vext.re*rho[i].re);
+     if(iperd!=0 && iperd!=3){
+       EwdEnergy += 0.5*sewd.re*sewd.re*perdCorr[izero]/vol;
+     }//endif
 #ifdef _CP_DEBUG_VKS_HART_EEXT_
      fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g\n",
 		rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im);
@@ -409,7 +417,7 @@ void CPLOCAL::CP_get_vpsnow(int *index_atm,int nsplin_g,
   double partem4;
   if(natm_typ>200){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("vemp_atyp hard coded too small in cp_hart_ext.C\n");
+    PRINTF("vtemp_atyp hard coded too small in cp_hart_ext.C : %d > 200\n",natm_typ);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     FFLUSH(stdout); EXIT(1);
   }//endif
@@ -983,7 +991,8 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
                                 complex *sfAtmTypG, complex *sfAtmTotG,
                                 double *b_re, double *b_im,
                                 double *ehart_ret,double *eext_ret,
-                                int *k_x,int *k_y,int *k_z,int index)
+                                int *k_x,int *k_y,int *k_z,double *perdCorr,
+                                int index)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -1081,6 +1090,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
    // II. Use these to construct the Hartree energy and its potential
        if(ityp==1){
           HartreeFact = fpi/(g2*vol);
+          if(iperd!=3){HartreeFact += perdCorr[i]/vol;}
           ehart      += HartreeFact*rho[i].getMagSqr()*wght_now;
           vks[i]     += rho[i]*HartreeFact;
        }/*endif*/
@@ -1105,6 +1115,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
        double partem3 = vps2[index_now];
        double partem4 = vps3[index_now];
        double vtemp   = (((partem4*h+partem3)*h+partem2)*h + partem1)/vol;
+       if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
        vext.re        = temp_r*vtemp;
        vext.im        = temp_i*vtemp;
        eext          += (rho[i]*vext).re*wght_now;
@@ -1148,6 +1159,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
     //------------------------------------------------------
     // Atm-electron interaction
      double vtemp = gzvps[ityp]/vol;
+     if(iperd!=3){vtemp -= q_typ[ityp]*perdCorr[i]/vol;} // charge on electron is -1
      vext.re      = vtemp*temp_r;
      vext.im      = 0.0;
      eext        += (rho[i].re*vext.re);
@@ -1196,7 +1208,8 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 //==========================================================================
 void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
                              double *b_re, double *b_im,double *ewd_ret,
-                             int *k_x, int *k_y, int *k_z,int index)
+                             int *k_x, int *k_y, int *k_z,
+                             double *perdCorr,int index)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -1207,6 +1220,7 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
  // Cell information
   double *hmati   = gencell->hmati;
   double vol      = gencell->vol;
+  int    iperd    = gencell->iperd;
 
  // Ewald and g-space constants
   double alp_ewd  = genewald->alp_ewd;
@@ -1256,6 +1270,8 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
      // Compute Ewald energy
       wght_now = (k_x[i]==0 ? 1.0 : wght);
       preg     = fpi*exp(-g2/falp2)/(g2*vol);
+      if(iperd!=3){preg += perdCorr[i]/vol;}
+      if(iperd==0){preg=0.0;}
       smag     = sfAtmTotG[i].getMagSqr();
       bmag     = (b_re[i]*b_re[i]+b_im[i]*b_im[i]);
       vnow    += (bmag*smag*preg*wght_now);
@@ -1427,3 +1443,5 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
 //==========================================================================
   }//end routine
 //==========================================================================
+
+

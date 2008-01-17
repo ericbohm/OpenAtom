@@ -1136,6 +1136,7 @@ void set_sim_params_vpot(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 #include "../class_defs/allclass_strip_gen.h"
 
   int ifound,index;
+  int    int_key_arg;
   double real_key_arg;
 
 /*========================================================================*/
@@ -1391,7 +1392,21 @@ void set_sim_params_vpot(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     index=25;
     if(ifound != 1){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
-  /*-----------------------------------------------------------------------*/
+  /*-----------------------------------------------------------------------*/ 
+  /*  26)\nkvec_perd_fix{#} */
+    index=26;
+    sscanf(dict[index].keyarg,"%d",&int_key_arg); 
+    genewald->nfix_para = int_key_arg;
+    if(int_key_arg<=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+  /*-----------------------------------------------------------------------*/ 
+  /*  27)\nkvec_perd_expnd{#} */
+    index=27;
+    sscanf(dict[index].keyarg,"%d",&int_key_arg); 
+    genewald->nfix_perp = int_key_arg;
+    if(int_key_arg<=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/
@@ -2186,6 +2201,7 @@ void set_sim_params_vol(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       sscanf(dict[3].keyarg,"%lg",&real_key_arg);
       gencell->iperd = (int)(real_key_arg);
     }/*endif*/
+    genewald->iperd = gencell->iperd;
     index=3;
     if(gencell->iperd == 4 && cp_dual_grid_opt_on >= 1){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

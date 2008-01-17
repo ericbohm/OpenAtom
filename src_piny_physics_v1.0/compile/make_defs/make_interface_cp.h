@@ -70,6 +70,14 @@ control_set_cp_ewald.o : $(STANDARD) $(DEFINES) \
 	$(COBJ_CARE) $(CODE)/interface/cp_ewald/control_set_cp_ewald.C
 
 #------------------------------------------------------------------
+set_perd_corrs.o : $(STANDARD) $(DEFINES) \
+                   $(CLASS_GEN) $(CPEWALD_ENTRY) \
+                   $(CPEWALD_CORR) $(MATH) $(FRND_ENT) \
+                   $(CODE)/interface/cp_ewald/set_perd_corrs.C
+	$(ECHO) $@
+	$(COBJ_CARE) $(CODE)/interface/cp_ewald/set_perd_corrs.C
+
+#------------------------------------------------------------------
 set_cp_ewald.o     :     $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(CLASS_CP) \

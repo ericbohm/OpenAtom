@@ -431,7 +431,7 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
   double xx;
   for(int i=1;i<=state_ind;i++){xx = altRandom(&seed);}
   seed = (long)(1.e6*xx);
-  while(seed<10){seed*=10.0;}
+  while(seed<10){seed*=10;}
 
 //=========================================================================
 // Which atom's radial psi forms this KS state

@@ -146,6 +146,7 @@ RhoGSlab::~RhoGSlab(){
   if(k_x !=NULL) fftw_free(k_x);
   if(k_y !=NULL) fftw_free(k_y);
   if(k_z !=NULL) fftw_free(k_z);
+  if(perdCorr!=NULL)fftw_free(perdCorr);
 
 }
 //==============================================================================
@@ -155,6 +156,7 @@ RhoGSlab::~RhoGSlab(){
 //==============================================================================
 void RhoGSlab::pup(PUP::er &p) {
   // local bools so we only bother with non null objects
+  p|iperd;
   p|sizeX;
   p|sizeY;
   p|sizeZ;
@@ -227,7 +229,8 @@ void RhoGSlab::pup(PUP::er &p) {
       k_x  = (int *)fftw_malloc(numPoints*sizeof(int));
       k_y  = (int *)fftw_malloc(numPoints*sizeof(int));
       k_z  = (int *)fftw_malloc(numPoints*sizeof(int));
-
+      perdCorr = NULL;
+      if(iperd!=3){perdCorr = (double *)fftw_malloc(numPoints*sizeof(double));}
   }//endif : unpacking malloc
 
   if(RhoMake)       PUParray(p,Rho,numFull);
@@ -242,6 +245,7 @@ void RhoGSlab::pup(PUP::er &p) {
   PUParray(p,k_x,numPoints);
   PUParray(p,k_y,numPoints);
   PUParray(p,k_z,numPoints);
+  if(iperd!=3){PUParray(p,perdCorr,numPoints);}
 
 //------------------------------------------------------------------------------
   }//end intense pupping experience

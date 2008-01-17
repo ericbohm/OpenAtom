@@ -750,6 +750,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         int registrationFlag;
         int launchFlag;
         int CountDebug;
+        int iperd;
         complex *atmSF;
         complex *atmSFtot;
         double ehart_ret;
