@@ -175,12 +175,10 @@ class Config {
    int useRhoExclusionMap;
    int useReductionExclusionMap;
    int fakeTorus;
-   int torusDimX;  // use these to do torus logic testing
-   int torusDimY;
-   int torusDimZ;
-   int torusDimNX;
+   int torusDimNX;	// use these to do torus logic testing
    int torusDimNY;
    int torusDimNZ;
+   int torusDimNT;
 
   //==================================
 

@@ -1656,7 +1656,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 19;
+  num_dict[0] = 17;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1735,51 +1735,39 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
-  // 12)\torusDimX{}
+  // 12)\torusDimNX{}
     ind = 12;
-    strcpy((*dict)[ind].keyword,"torusDimX");
-    sprintf((*dict)[ind].keyarg,"%d",1);  
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 13)\torusDimY{}
-    ind = 13;
-    strcpy((*dict)[ind].keyword,"torusDimY");
-    sprintf((*dict)[ind].keyarg,"%d",1);  
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 14)\torusDimZ{}
-    ind = 14;
-    strcpy((*dict)[ind].keyword,"torusDimZ");
-    sprintf((*dict)[ind].keyarg,"%d",1);  
-    strcpy((*dict)[ind].error_mes,"a number > 0");
-  //-----------------------------------------------------------------------------
-  // 15)\torusDimNX{}
-    ind = 15;
     strcpy((*dict)[ind].keyword,"torusDimNX");
     sprintf((*dict)[ind].keyarg,"%d",1);  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 16)\torusDimNY{}
-    ind = 16;
+  // 13)\torusDimNY{}
+    ind = 13;
     strcpy((*dict)[ind].keyword,"torusDimNY");
     sprintf((*dict)[ind].keyarg,"%d",1);  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 17)\torusDimNZ{}
-    ind = 17;
+  // 14)\torusDimNZ{}
+    ind = 14;
     strcpy((*dict)[ind].keyword,"torusDimNZ");
     sprintf((*dict)[ind].keyarg,"%d",1);  
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
-  // 18)\useStrictCuboid{}
-    ind = 18;
+  // 15)\torusDimNT{}
+    ind = 15;
+    strcpy((*dict)[ind].keyword,"torusDimNT");
+    sprintf((*dict)[ind].keyarg,"%d",1);  
+    strcpy((*dict)[ind].error_mes,"a number > 0");
+  //-----------------------------------------------------------------------------
+  // 16)\useStrictCuboid{}
+    ind = 16;
     strcpy((*dict)[ind].keyword,"useStrictCuboid");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   //-----------------------------------------------------------------------------
-  // 19)\useReductionExclusionMap{}
-    ind=19;
+  // 17)\useReductionExclusionMap{}
+    ind = 17;
     strcpy((*dict)[ind].keyword,"useReductionExclusionMap");
     strcpy((*dict)[ind].keyarg,"on");
     strcpy((*dict)[ind].error_mes,"on/off");
@@ -1856,44 +1844,34 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     parse_on_off(dict[ind].keyarg, &fakeTorus, &ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  12)\torusDimX{}
+  //  12)\torusDimNX{}
     ind = 12;
-    sscanf(dict[ind].keyarg,"%d",&torusDimX);
-    if(torusDimX<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  13)\torusDimY{}
-    ind = 13;
-    sscanf(dict[ind].keyarg,"%d",&torusDimY);
-    if(torusDimY<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  14)\torusDimZ{}
-    ind = 14;
-    sscanf(dict[ind].keyarg,"%d",&torusDimZ);
-    if(torusDimZ<1){keyarg_barf(dict,input_name,fun_key,ind);}
-  //-----------------------------------------------------------------------------
-  //  15)\torusDimNX{}
-    ind = 15;
     sscanf(dict[ind].keyarg,"%d",&torusDimNX);
     if(torusDimNX<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  16)\torusDimNY{}
-    ind = 16;
+  //  13)\torusDimNY{}
+    ind = 13;
     sscanf(dict[ind].keyarg,"%d",&torusDimNY);
     if(torusDimNY<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  17)\torusDimNZ{}
-    ind = 17;
+  //  14)\torusDimNZ{}
+    ind = 14;
     sscanf(dict[ind].keyarg,"%d",&torusDimNZ);
     if(torusDimNZ<1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //  18)\useStrictCuboid{}
-    ind = 18;
+  //  15)\torusDimNT{}
+    ind = 15;
+    sscanf(dict[ind].keyarg,"%d",&torusDimNT);
+    if(torusDimNT<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  16)\useStrictCuboid{}
+    ind = 16;
     parse_on_off(dict[ind].keyarg,&useStrictCuboid,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   //-----------------------------------------------------------------------------
-  // 19)\useReductionExclusionMap{}
-    ind=19;
+  //  17)\useReductionExclusionMap{}
+    ind = 17;
     parse_on_off(dict[ind].keyarg,&useReductionExclusionMap,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(dict[ind].iuset==0){useReductionExclusionMap=1;}
@@ -1965,8 +1943,8 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //=============================================================================
   if(fakeTorus)
     { //
-      numPes=torusDimX*torusDimY*torusDimZ;
-      CkPrintf("Using Fake torus proc %d X %d X %d, node %d X %d X %d numPes %d\n",torusDimX, torusDimY, torusDimZ, torusDimNX, torusDimNY, torusDimNZ, numPes);
+      numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
+      CkPrintf("Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
     int sqrtpes    = (int) sqrt((double)numPes);
     int sqrtstates = (int) sqrt((double)nstates);

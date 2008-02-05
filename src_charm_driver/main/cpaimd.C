@@ -386,7 +386,7 @@ main::main(CkArgMsg *msg) {
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c);
     fakeTorus        = config.fakeTorus>0;
     if(fakeTorus)
-      numPes=config.torusDimX*config.torusDimY*config.torusDimZ;
+      numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
     size2d sizeYZ    = size2d(sim->sizeY,sim->sizeZ);
@@ -509,18 +509,13 @@ main::main(CkArgMsg *msg) {
       CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
       PRINT_LINE_STAR; CkPrintf("\n");
       CkPrintf("Initializing TopoManager\n");
-      if(config.fakeTorus)
-	{
-	  topoMgr = new TopoManager(config.torusDimX, config.torusDimY, 
-				    config.torusDimZ, config.torusDimNX, 
-				    config.torusDimNY, config.torusDimNZ);
-
-				    
-	}
-      else
-	{
-	  topoMgr = new TopoManager();
-	}
+      if(config.fakeTorus) {
+	topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
+				  config.torusDimNZ, config.torusDimNT);
+      }
+      else {
+	topoMgr = new TopoManager();
+      }
       CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d t %d.........\n", 
              topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
              topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
