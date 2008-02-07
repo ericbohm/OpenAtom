@@ -538,7 +538,7 @@ main::main(CkArgMsg *msg) {
         if(config.torusMap==1) {
 	  boxSize=procsPerPlane;
 	  int order;
-	  if(findCuboid(bx, by, bz, order, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT(), boxSize, topoMgr->getProcsPerNode()))
+	  if(findCuboid(bx, by, bz, order, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT(), boxSize, topoMgr->hasMultipleProcsPerNode()))
 	  {
 	    CkPrintf("Using %d,%d,%d dimensions for box %d mapping order %d\n",bx,by,bz, boxSize, order);
 	    gfoo= new PeList(bx,by,bz, order);  // heap it
