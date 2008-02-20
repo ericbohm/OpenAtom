@@ -31,6 +31,7 @@ class PairCalcID {
   bool existsLproxy;
   bool existsLNotFromproxy;
   bool existsRproxy;
+  bool isBcast;
   CkVec <CkGroupID> mCastGrpId;
   CkGroupID orthomCastGrpId;
   CkGroupID orthoRedGrpId;
@@ -130,6 +131,7 @@ class PairCalcID {
     orthomCastGrpId=pid.orthomCastGrpId;
     orthoRedGrpId=pid.orthoRedGrpId;
     cproxy=pid.cproxy;
+    isBcast=pid.isBcast;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
     backwardTimerID=pid.backwardTimerID;
@@ -155,6 +157,7 @@ class PairCalcID {
     p|existsLproxy;
     p|existsLNotFromproxy;
     p|existsRproxy;
+    p|isBcast;
     p|mCastGrpId;
     p|orthomCastGrpId;
     p|orthoRedGrpId;
@@ -180,10 +183,9 @@ class PairCalcID {
 	    proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
 	  }
       }
+    p|cproxy;
     if(existsLproxy)
       {
-	if(useDirectSend)
-	  p|cproxy;
 	PUParray(p,proxyLFrom,numChunks);
 	if(useDirectSend)
 	  p|listLFrom;

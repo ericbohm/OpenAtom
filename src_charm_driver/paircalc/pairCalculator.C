@@ -362,6 +362,16 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	}
     }
   }
+  if(pcid->GrainSize==pcid->nstates)
+    {
+      CkPrintf("O [%d,%d] initGred using bcast\n",orthoX, orthoY);
+      pcid->isBcast=true;
+      pcid->cproxy=CProxy_PairCalculator(pcid->Aid);
+    }
+  else
+    {
+      pcid->isBcast=false;
+    }
   int numOrthoCol=pcid->GrainSize/orthoGrainSize;
   int maxorthostateindex=(pcid->nstates/orthoGrainSize-1)*orthoGrainSize;
   int orthoIndexX=(orthoX*orthoGrainSize);
@@ -381,7 +391,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   // now that we have the section, make the proxy
   CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   CProxySection_PairCalculator *sectProxy=&sProxy;
-  delete [] elems;
+  //  delete [] elems;
 
   // and do delegation
   if(pcid->Symmetric)
@@ -999,7 +1009,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
   else
     ComlibAssociateProxy(&mcastInstanceACP,pcid->proxyAsym);
   */
-
+    multiplyResultMsg *omsg;
   if(ptr2==NULL){
 #ifdef _NAN_CHECK_
     for(int i=0;i<n ;i++)
@@ -1010,9 +1020,6 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	  CkAssert(finite(ptr1[i]));
       }
 #endif
-
-    multiplyResultMsg *omsg;
-
     if(priority>0)
       {
 	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
@@ -1030,13 +1037,8 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	CkAssert(finite(omsg->matrix1[i]));
       }
 #endif
-    if(pcid->Symmetric)
-      pcid->proxySym.multiplyResult(omsg);
-    else
-      pcid->proxyAsym.multiplyResult(omsg);
   }
   else {
-    multiplyResultMsg *omsg;
     if(priority>0)
       {
 	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
@@ -1048,11 +1050,18 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	omsg=new ( n,n ) multiplyResultMsg;
       }
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
-  if(pcid->Symmetric)
-    pcid->proxySym.multiplyResult(omsg);
-  else
-    pcid->proxyAsym.multiplyResult(omsg);
   }
+  if(!pcid->isBcast)
+    {
+      if(pcid->Symmetric)
+	pcid->proxySym.multiplyResult(omsg);
+      else
+	pcid->proxyAsym.multiplyResult(omsg);
+    }
+  else
+    {
+      pcid->cproxy.multiplyResult(omsg);
+    }
 }
 
 
