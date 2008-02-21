@@ -3,7 +3,7 @@
 # Configurable Options
 #-------------------------------------------------------------------------------
 CHARMBASE	= $(HOME)/charm
-LNK_OPTS	= -lz -lm -memory gnu
+LNK_OPTS	= -lz -memory gnu
 #-------------------------------------------------------------------------------
 DUAL_FFTW	= -DDUAL_FFTW_OFF
 FFT_HOME	= /bgl/local/fftw-2.1.5
