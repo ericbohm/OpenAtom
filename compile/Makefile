@@ -6,7 +6,7 @@ include ./Makefile.config
 #===============================================================================
 # general definitions
 #-------------------------------------------------------------------------------
-TARGET = binary/cpaimd
+TARGET = ../binary/OpenAtom
 ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
   FFT_INC = -lrfftw -lfftw
 else
@@ -39,24 +39,34 @@ mymathlib:
 #===============================================================================
 full_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o ../binary/OpenAtom \
+	$(CHARMC) -o $(TARGET) \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
                   -L$(FFT_HOME)/lib $(FFT_INC) -lconv-util \
-		  $(MATH_LIB) $(LNK_OPTS)  
+		  $(MATH_LIB) $(LNK_OPTS)
+	cp charmrun ../binary/
 
 #===============================================================================
 proj_code: physics cpaimd_driver mymathlib
 	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o ../binary/cpaimd.prj.x \
+	$(CHARMC) -o $(TARGET).prj \
 		  -language charm++ $(CHARMLIB) \
                   -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
-	          -tracemode projections -tracemode summary -lconv-util \
+	          -tracemode projections -lconv-util \
+		  -L$(FFT_HOME)/lib $(FFT_INC) $(MATH_LIB) $(LNK_OPTS)
+
+#===============================================================================
+sum_code: physics cpaimd_driver mymathlib
+	cd $(CPAIMD)/compile; \
+	$(CHARMC) -o $(TARGET).sum \
+		  -language charm++ $(CHARMLIB) \
+                  -L../binary -lCharmDriver -lPinyInterface -lMyMathLib \
+	          -tracemode summary -lconv-util \
 		  -L$(FFT_HOME)/lib -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)
 
 #===============================================================================
 clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
-	/bin/rm -rf ../binary/OpenAtom
+	/bin/rm -rf $(TARGET) $(TARGET).prj
 
 clean_cpaimd_driver:
 	cd $(MAKE_CPAIMD_DRV_INC); make clean; 
