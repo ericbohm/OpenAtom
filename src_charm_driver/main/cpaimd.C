@@ -2296,7 +2296,7 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
 
   if(config.dumpMapFiles) {
     int size[2];
-    size[0] = nchareRhoGHart; size[1] = 1;
+    size[0] = nchareRhoGHart; size[1] =  nchareHartAtmT;
     MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&RhoGHartImaptable);
