@@ -311,6 +311,10 @@ class IntMap2on2 {
       {
 	  p|keyXmax;
 	  p|keyYmax;
+	  CkAssert(keyXmax>0);
+	  CkAssert(keyYmax>0);
+	  CkAssert(keyXmax<1000000);
+	  CkAssert(keyYmax<1000000);
 	  if(p.isUnpacking())
 	    Map=new int*[keyXmax];
 	  for(int x=0;x<keyXmax;x++)
