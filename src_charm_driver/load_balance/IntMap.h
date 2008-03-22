@@ -285,6 +285,10 @@ class IntMap2on2 {
     }
     IntMap2on2(int keyX, int keyY): keyXmax(keyX), keyYmax(keyY) 
       {
+	  CkAssert(keyXmax>0);
+	  CkAssert(keyYmax>0);
+	  CkAssert(keyXmax<1000000);
+	  CkAssert(keyYmax<1000000);
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
@@ -295,6 +299,10 @@ class IntMap2on2 {
       }
     void buildMap(int keyX=1, int keyY=1)
       {
+	  CkAssert(keyXmax>0);
+	  CkAssert(keyYmax>0);
+	  CkAssert(keyXmax<1000000);
+	  CkAssert(keyYmax<1000000);
 	CkAssert(keyX>0);
 	CkAssert(keyY>0);
 	keyXmax=keyX;
