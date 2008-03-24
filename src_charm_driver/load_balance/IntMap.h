@@ -184,10 +184,12 @@ class IntMap3 {
   int keyZmax;
 
  public:
-
     IntMap3(int keyX, int keyY, int keyZ, int step) 
            :  keyXmax(keyX), keyYmax(keyY), keyZmax(keyZ)
       {
+	CkAssert(keyX>0);
+	CkAssert(keyY>0);
+	CkAssert(keyZ>0);
 	Map=new int**[keyXmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
@@ -221,6 +223,9 @@ class IntMap3 {
 	keyXmax=keyX;
 	keyYmax=keyY;
 	keyZmax=keyZ;
+	CkAssert(keyXmax<10000000);
+	CkAssert(keyYmax<10000000);
+	CkAssert(keyZmax<10000000);
 	Map=new int**[keyXmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
@@ -237,6 +242,12 @@ class IntMap3 {
 	  p|keyXmax;
 	  p|keyYmax;
 	  p|keyZmax;
+	  CkAssert(keyXmax<10000000);
+	  CkAssert(keyYmax<10000000);
+	  CkAssert(keyZmax<10000000);
+	  CkAssert(keyXmax>=0);
+	  CkAssert(keyYmax>=0);
+	  CkAssert(keyZmax>=0);
 	  if(keyXmax>0)
 	    {
 	      if(p.isUnpacking())
@@ -302,10 +313,10 @@ class IntMap2on2 {
     }
     IntMap2on2(int keyX, int keyY): keyXmax(keyX), keyYmax(keyY) 
       {
-	  CkAssert(keyXmax>=0);
-	  CkAssert(keyYmax>=0);
-	  CkAssert(keyXmax<1000000);
-	  CkAssert(keyYmax<1000000);
+	CkAssert(keyXmax>=0);
+	CkAssert(keyYmax>=0);
+	CkAssert(keyXmax<10000000);
+	CkAssert(keyYmax<10000000);
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
@@ -323,8 +334,8 @@ class IntMap2on2 {
 	keyYmax=keyY;
 	CkAssert(keyXmax>0);
 	CkAssert(keyYmax>0);
-	CkAssert(keyXmax<1000000);
-	CkAssert(keyYmax<1000000);
+	CkAssert(keyXmax<10000000);
+	CkAssert(keyYmax<10000000);
 	Map= new int*[keyXmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
@@ -339,8 +350,8 @@ class IntMap2on2 {
 	  p|keyYmax;
 	  CkAssert(keyXmax>=0);
 	  CkAssert(keyYmax>=0);
-	  CkAssert(keyXmax<1000000);
-	  CkAssert(keyYmax<1000000);
+	  CkAssert(keyXmax<10000000);
+	  CkAssert(keyYmax<10000000);
 	  if(keyXmax>0)
 	    {
 	      if(p.isUnpacking())
