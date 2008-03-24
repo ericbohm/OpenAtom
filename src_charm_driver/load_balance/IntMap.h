@@ -106,28 +106,37 @@ class IntMap4 {
 	  p|keyYmax;
 	  p|keyZmax;
 	  p|keyStep;
-	  if(p.isUnpacking())
-	    Map=new int***[keyWmax];
-	  for(int w=0;w<keyWmax;w++)
+	  if(keyWmax>0)
 	    {
 	      if(p.isUnpacking())
-		Map[w]= new int**[keyXmax];
-	      for(int x=0;x<keyXmax;x++)
+		Map=new int***[keyWmax];
+	      for(int w=0;w<keyWmax;w++)
 		{
-		  if(p.isUnpacking())
-		    Map[w][x]= new int*[keyYmax];
-		  for(int y=0;y<keyYmax;y++)
-		    {
-		      if(p.isUnpacking())
-			Map[w][x][y]= new int[keyZmax];
-		      PUParray(p,Map[w][x][y],keyZmax);
-		    }
+		  if(keyXmax>0){
+		    if(p.isUnpacking())
+		      Map[w]= new int**[keyXmax];
+		    for(int x=0;x<keyXmax;x++)
+		      {
+			if(keyYmax>0)
+			  {
+			    if(p.isUnpacking())
+			      Map[w][x]= new int*[keyYmax];
+			    for(int y=0;y<keyYmax;y++)
+			      {
+				if(keyZmax>0){
+				  if(p.isUnpacking())
+				    Map[w][x][y]= new int[keyZmax];
+				  PUParray(p,Map[w][x][y],keyZmax);
+				}
+			      }
+			  }
+		      }
+		    if(p.isUnpacking())
+		      stepTable= new int[keyXmax*keyStep];
+		    PUParray(p,stepTable,keyXmax*keyStep);
+		  }
 		}
 	    }
-	  if(p.isUnpacking())
-	    stepTable= new int[keyXmax*keyStep];
-	  PUParray(p,stepTable,keyXmax*keyStep);
-
       }
     inline int getWmax(){return(keyWmax);}
     inline int getXmax(){return(keyXmax);}
@@ -228,17 +237,25 @@ class IntMap3 {
 	  p|keyXmax;
 	  p|keyYmax;
 	  p|keyZmax;
-	  if(p.isUnpacking())
-	    Map=new int**[keyXmax];
-	  for(int x=0;x<keyXmax;x++)
+	  if(keyXmax>0)
 	    {
 	      if(p.isUnpacking())
-		Map[x]= new int*[keyYmax];
-	      for(int y=0;y<keyYmax;y++)
+		Map=new int**[keyXmax];
+	      for(int x=0;x<keyXmax;x++)
 		{
-		  if(p.isUnpacking())
-		    Map[x][y]= new int[keyZmax];
-		  PUParray(p,Map[x][y],keyZmax);
+		  if(keyYmax>0)
+		    {
+		      if(p.isUnpacking())
+			Map[x]= new int*[keyYmax];
+		      for(int y=0;y<keyYmax;y++)
+			{
+			  if(keyZmax>0){
+			    if(p.isUnpacking())
+			      Map[x][y]= new int[keyZmax];
+			    PUParray(p,Map[x][y],keyZmax);
+			  }
+			}
+		    }
 		}
 	    }
       }
@@ -324,13 +341,16 @@ class IntMap2on2 {
 	  CkAssert(keyYmax>=0);
 	  CkAssert(keyXmax<1000000);
 	  CkAssert(keyYmax<1000000);
-	  if(p.isUnpacking())
-	    Map=new int*[keyXmax];
-	  for(int x=0;x<keyXmax;x++)
+	  if(keyXmax>0)
 	    {
 	      if(p.isUnpacking())
-		Map[x]= new int[keyYmax];
-	      PUParray(p,Map[x], keyYmax);
+		Map=new int*[keyXmax];
+	      for(int x=0;x<keyXmax;x++)
+		{
+		  if(p.isUnpacking())
+		    Map[x]= new int[keyYmax];
+		  PUParray(p,Map[x], keyYmax);
+		}
 	    }
       }
     inline int getXmax(){return(keyXmax);}
