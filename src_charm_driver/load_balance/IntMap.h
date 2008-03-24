@@ -346,11 +346,14 @@ class IntMap2on2 {
 	      if(p.isUnpacking())
 		Map=new int*[keyXmax];
 	      for(int x=0;x<keyXmax;x++)
-		{
-		  if(p.isUnpacking())
-		    Map[x]= new int[keyYmax];
-		  PUParray(p,Map[x], keyYmax);
-		}
+	      {
+		  if(keyYmax>0)
+		  {
+		      if(p.isUnpacking())
+			  Map[x]= new int[keyYmax];
+		      PUParray(p,Map[x], keyYmax);
+		  }
+	      }
 	    }
       }
     inline int getXmax(){return(keyXmax);}
