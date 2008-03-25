@@ -39,14 +39,17 @@ class IntMap4 {
            : keyWmax(keyW), keyXmax(keyX), keyYmax(keyY), keyZmax(keyZ), keyStep(step)
       {
 	Map=new int***[keyWmax];
+	int ***mappointpointbuf = new int**[keyWmax*keyXmax];
+	int **mappointbuf = new int*[keyXmax*keyYmax];
+	int *mapbuf= new int[keyYmax*keyZmax];
 	for(int w=0;w<keyWmax;w++)
 	  {
-	    Map[w]= new int**[keyXmax];
+	    Map[w]= mappointpointbuf + w*keyXmax;
 	    for(int x=0;x<keyXmax;x++)
 	      {
-		Map[w][x]= new int*[keyYmax];
+		Map[w][x]= mappointbuf + x * keyYmax;
 		for(int y=0;y<keyYmax;y++)
-		  Map[w][x][y]= new int[keyZmax];
+		  Map[w][x][y]= mapbuf + y * keyZmax;
 	      }
 	
 	  }
@@ -57,20 +60,12 @@ class IntMap4 {
     ~IntMap4(){
       if(Map!=NULL)
 	{
-	  for(int w=0;w<keyWmax;w++)
-	    {
-	      for(int x=0;x<keyXmax;x++)
-		{
-		  for(int y=0;y<keyYmax;y++)
-		    delete [] Map[w][x][y];
-		  delete [] Map[w][x];
-		}
-	      delete [] Map[w];
-	    }
-	  delete [] Map;
+	  delete [] Map[0][0][0];
+	  delete [] Map[0][0];
+	  delete [] Map[0];
+	  delete [] Map; 
 	  Map=NULL;
 	}
-      
     }
 
     void buildMap(int keyW=1, int keyX=1, int keyY=1, int keyZ=1, int step=1)
@@ -85,14 +80,17 @@ class IntMap4 {
 	keyZmax=keyZ;
 	keyStep=step;
 	Map=new int***[keyWmax];
+	int ***mappointpointbuf = new int**[keyWmax*keyXmax];
+	int **mappointbuf = new int*[keyXmax*keyYmax];
+	int *mapbuf= new int[keyYmax*keyZmax];
 	for(int w=0;w<keyWmax;w++)
 	  {
-	    Map[w]= new int**[keyXmax];
+	    Map[w]= mappointpointbuf + w * keyXmax;
 	    for(int x=0;x<keyXmax;x++)
 	      {
-		Map[w][x]= new int*[keyYmax];
+		Map[w][x]= mappointbuf + x * keyYmax;
 		for(int y=0;y<keyYmax;y++)
-		  Map[w][x][y]= new int[keyZmax];
+		  Map[w][x][y]= mapbuf + y * keyZmax;
 	      }
 	  }
 	stepTable= new int [keyXmax*keyStep];
@@ -106,26 +104,37 @@ class IntMap4 {
 	  p|keyYmax;
 	  p|keyZmax;
 	  p|keyStep;
+	  int ***mappointpointbuf = NULL;
+	  int **mappointbuf = NULL;
+	  int *mapbuf= NULL;
 	  if(keyWmax>0)
 	    {
+	      CkAssert(keyXmax>0);
+	      CkAssert(keyYmax>0);
+	      CkAssert(keyZmax>0);
 	      if(p.isUnpacking())
-		Map=new int***[keyWmax];
+		{
+		  Map=new int***[keyWmax];
+		  mappointpointbuf = new int**[keyWmax*keyXmax];
+		  mappointbuf = new int*[keyXmax*keyYmax];
+		  mapbuf= new int[keyYmax*keyZmax];
+		}
 	      for(int w=0;w<keyWmax;w++)
 		{
 		  if(keyXmax>0){
 		    if(p.isUnpacking())
-		      Map[w]= new int**[keyXmax];
+		      Map[w]= mappointpointbuf + w * keyXmax;
 		    for(int x=0;x<keyXmax;x++)
 		      {
 			if(keyYmax>0)
 			  {
 			    if(p.isUnpacking())
-			      Map[w][x]= new int*[keyYmax];
+			      Map[w][x]= mappointbuf + x * keyYmax;
 			    for(int y=0;y<keyYmax;y++)
 			      {
 				if(keyZmax>0){
 				  if(p.isUnpacking())
-				    Map[w][x][y]= new int[keyZmax];
+				    Map[w][x][y]= mapbuf + y * keyZmax;
 				  PUParray(p,Map[w][x][y],keyZmax);
 				}
 			      }
@@ -191,12 +200,14 @@ class IntMap3 {
 	CkAssert(keyY>0);
 	CkAssert(keyZ>0);
 	Map=new int**[keyXmax];
+	int **mappointbuf = new int*[keyXmax*keyYmax];
+	int *mapbuf= new int[keyYmax*keyZmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
-	    Map[x]= new int*[keyYmax];
+	    Map[x]= mappointbuf + keyYmax*x;
 	    for(int y=0;y<keyYmax;y++)
 	      {
-		Map[x][y]= new int[keyZmax];
+		Map[x][y]= mapbuf + keyZmax*y;
 		memset(Map[x][y],-1,keyZmax*sizeof(int));
 	      }
 	  }
@@ -204,12 +215,9 @@ class IntMap3 {
     ~IntMap3(){
       if(Map!=NULL)
 	{
-	  for(int x=0;x<keyXmax;x++)
-	    {
-	      for(int y=0;y<keyYmax;y++)
-		delete [] Map[x][y];
-	      delete [] Map[x];
-	    }
+	  delete [] Map[0][0];
+	  delete [] Map[0];
+	  delete [] Map;
 	  Map=NULL;
 	}
       
@@ -227,12 +235,14 @@ class IntMap3 {
 	CkAssert(keyYmax<10000000);
 	CkAssert(keyZmax<10000000);
 	Map=new int**[keyXmax];
+	int **mappointbuf = new int*[keyXmax*keyYmax];
+	int *mapbuf= new int[keyYmax*keyZmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
-	    Map[x]= new int*[keyYmax];
+	    Map[x]= mappointbuf + keyYmax*x;
 	    for(int y=0;y<keyYmax;y++)
 	      {
-		Map[x][y]= new int[keyZmax];
+		Map[x][y]= mapbuf + keyZmax*y;
 		memset(Map[x][y],-1,keyZmax*sizeof(int));
 	      }
 	  }
@@ -248,21 +258,29 @@ class IntMap3 {
 	  CkAssert(keyXmax>=0);
 	  CkAssert(keyYmax>=0);
 	  CkAssert(keyZmax>=0);
+	  int **mappointbuf = NULL;
+	  int *mapbuf= NULL;
 	  if(keyXmax>0)
 	    {
+	      CkAssert(keyYmax>0);
+	      CkAssert(keyZmax>0);
 	      if(p.isUnpacking())
-		Map=new int**[keyXmax];
+		{
+		  Map=new int**[keyXmax];
+		  mappointbuf = new int*[keyXmax*keyYmax];
+		  mapbuf= new int[keyYmax*keyZmax];
+		}
 	      for(int x=0;x<keyXmax;x++)
 		{
 		  if(keyYmax>0)
 		    {
 		      if(p.isUnpacking())
-			Map[x]= new int*[keyYmax];
+			Map[x]= mappointbuf + keyYmax*x;
 		      for(int y=0;y<keyYmax;y++)
 			{
 			  if(keyZmax>0){
 			    if(p.isUnpacking())
-			      Map[x][y]= new int[keyZmax];
+			      Map[x][y]= mapbuf + keyZmax*y;
 			    PUParray(p,Map[x][y],keyZmax);
 			  }
 			}
@@ -305,8 +323,7 @@ class IntMap2on2 {
     ~IntMap2on2(){
       if(Map!=NULL)
 	{
-	  for(int x=0;x<keyXmax;x++)
-	    delete [] Map[x];
+	  delete [] Map[0];
 	  delete [] Map;
 	  Map=NULL;
 	}
@@ -318,9 +335,10 @@ class IntMap2on2 {
 	CkAssert(keyXmax<10000000);
 	CkAssert(keyYmax<10000000);
 	Map= new int*[keyXmax];
+	int *mapbuf=new int[keyXmax*keyYmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
-	    Map[x]= new int[keyYmax];
+	    Map[x]  =  mapbuf +  keyYmax * x;
 	    memset(Map[x],-1,keyYmax*sizeof(int));
 	  }
 	
@@ -336,10 +354,12 @@ class IntMap2on2 {
 	CkAssert(keyYmax>0);
 	CkAssert(keyXmax<10000000);
 	CkAssert(keyYmax<10000000);
+
 	Map= new int*[keyXmax];
+	int *mapbuf=new int[keyXmax*keyYmax];
 	for(int x=0;x<keyXmax;x++)
 	  {
-	    Map[x]= new int[keyYmax];
+	    Map[x]  =  mapbuf +  keyYmax * x;
 	    memset(Map[x],-1,keyYmax*sizeof(int));
 	  }
 	
@@ -352,16 +372,22 @@ class IntMap2on2 {
 	  CkAssert(keyYmax>=0);
 	  CkAssert(keyXmax<10000000);
 	  CkAssert(keyYmax<10000000);
+	  int *mapbuf=NULL;
 	  if(keyXmax>0)
 	    {
+	      CkAssert(keyYmax>0);
 	      if(p.isUnpacking())
-		Map=new int*[keyXmax];
+		{
+		  Map=new int*[keyXmax];
+	
+		  mapbuf=new int[keyXmax*keyYmax];
+		}
 	      for(int x=0;x<keyXmax;x++)
 	      {
 		  if(keyYmax>0)
 		  {
 		      if(p.isUnpacking())
-			  Map[x]= new int[keyYmax];
+			Map[x] = mapbuf + keyYmax * x;
 		      PUParray(p,Map[x], keyYmax);
 		  }
 	      }
