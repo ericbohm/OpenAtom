@@ -512,12 +512,14 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(cp_min_opt==1 && fmagPsi_total<=tol_cp_min){
+#ifndef _CP_DEBUG_SCALC_ONLY_ 
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("----------------------------------------------\n");
       CkPrintf("   CP wavefunction force tolerence reached!   \n");
       CkPrintf("----------------------------------------------\n");
     }//endif
+#endif
   }//endif
 #endif
 
@@ -606,6 +608,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   myenergy_reduc_flag  = 0;
   isuspend_energy      = 0;
   isuspend_atms        = 0;
+  gotHandles =0;
   forwardTimeKeep = _gforward;
   backwardTimeKeep = _gbackward;
   total_energy      = 0.0;
@@ -1303,12 +1306,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
    }//endfor
   }//endif
 
-//============================================================================
-// This reduction is done to signal the end of initialization to main
-
-  int i=1;
-  contribute(sizeof(int), &i, CkReduction::sum_int, 
-	     CkCallback(CkIndex_main::doneInit(0),mainProxy));
 
 //============================================================================
 //Some PC initialization that needs to happen here to avoid
@@ -1317,6 +1314,21 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gpairCalcID1=pairCalcID1;
   gpairCalcID2=pairCalcID2;
   makePCproxies();
+#ifdef PC_USE_RDMA
+  // now that we have paircalcids, proxies, and allocated data 
+  // tell PC to handshake our RDMA
+  initPairCalcRDMA(&gpairCalcID2, thisIndex.x, gs.numPoints, thisIndex.y);
+  initPairCalcRDMA(&gpairCalcID1, thisIndex.x, gs.numPoints, thisIndex.y);
+#else
+//============================================================================
+// This reduction is done to signal the end of initialization to main
+
+  int i=1;
+  contribute(sizeof(int), &i, CkReduction::sum_int, 
+	     CkCallback(CkIndex_main::doneInit(0),mainProxy));
+
+#endif
+
 
 //---------------------------------------------------------------------------
    
@@ -2771,7 +2783,9 @@ void CP_State_GSpacePlane::integrateModForce() {
 
 #ifdef _CP_DEBUG_SCALC_ONLY_ 
   bzero(forces,ncoef*sizeof(complex));
-  psi_g = gs.packedPlaneDataTemp2;
+  if(cp_min_opt==0){
+    psi_g = gs.packedPlaneDataTemp2;
+  }
 #endif
 
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
@@ -3063,7 +3077,7 @@ void CP_State_GSpacePlane::sendPsi() {
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   for(int i=0;i<config.numChunksSym;i++){CkAssert(countPsiO[i]==0);}
 #endif
-
+  
 #ifdef _CP_GS_DUMP_PSI_
     dumpMatrixDouble("psiBfp",(double *)psi, 1, gs.numPoints*2,
                      thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
@@ -3090,6 +3104,7 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
+
   startPairCalcLeft(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
@@ -4419,3 +4434,94 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 //-----------------------------------------------------------------------------
    }// end routine : testeke
 //==============================================================================
+
+
+
+//==============================================================================
+// RDMA routines for ibverbs CmiDirect optimization
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+
+void CP_State_GSpacePlane::receiveRDMAHandle(RDMAHandleMsg *msg)
+{
+#ifdef PC_USE_RDMA
+  // we will receive an RMDA handle from the paircalculators which
+  // which share our plane and state.  We will receive at least one
+  // for each paircalculator array (psi and lambda) distinguished by
+  // symmetric vs asymmetric respectively.
+
+  // Record the handle and proc in our array.
+  //  complex *data=gs.packedPlaneData;
+  int offset=0;
+  int outsize;
+  int numChunks=0;
+  // add which grain the receiver is in to msg 
+#ifdef _PAIRCALC_DEBUG_RDMA_
+  CkPrintf("GSP [%d,%d]receive handle %d index %d grain %d symmetric %d\n",thisIndex.x, 
+	   thisIndex.y,msg->rhandle.handle, msg->index,msg->grain, msg->symmetric);
+#endif
+  PairCalcID *gpairCalcID=NULL;
+  if(msg->symmetric)
+    {
+      gpairCalcID=&gpairCalcID1;
+      numChunks=gpairCalcID1.numChunks;
+    }
+  else
+    {
+      gpairCalcID=&gpairCalcID2;
+      numChunks=gpairCalcID2.numChunks;
+    }
+  if(msg->left)
+    {
+      gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle=msg->rhandle;
+      }
+  else
+    { 
+      gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle=msg->rhandle;
+    }
+
+  int chunksize=gs.numPoints/numChunks;
+  outsize=chunksize;
+  if((numChunks > 1) && (msg->index == (numChunks - 1)))
+    {// last chunk gets remainder
+      outsize= chunksize + (gs.numPoints % numChunks);
+    }
+  offset=msg->index*chunksize;
+  // associate the handle with our send buffer for this chunk
+#ifdef _PAIRCALC_DEBUG_RDMA_
+  #define _RDMA_DEBUG_ 1
+#endif
+#ifdef _RDMA_DEBUG_
+  CkPrintf("GSP [%d,%d] got rdma index %d handle %d proc %d left %d symmetric%d offset %d size %d\n",thisIndex.x, thisIndex.y,msg->index, msg->rhandle.handle, msg->rhandle.senderNode,msg->left,msg->symmetric,offset,outsize);
+
+  CkPrintf("GSP [%d,%d] addr %p first 2 packedPlaneData %.10g %.10g\n",thisIndex.x,thisIndex.y, &(gs.packedPlaneData[offset]),gs.packedPlaneData[0].re,  gs.packedPlaneData[0].im); 
+#endif
+  if(!msg->symmetric && !msg->left)
+    CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedForceData[offset]),outsize*sizeof(complex));
+  else
+    CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedPlaneData[offset]),outsize*sizeof(complex));
+  gotHandles++;
+  if(gotHandles==AllPsiExpected+AllLambdaExpected*2)
+    {
+      //============================================================================
+      // This reduction is done to signal the end of initialization to main
+      
+      int i=1;
+      contribute(sizeof(int), &i, CkReduction::sum_int, 
+		 CkCallback(CkIndex_main::doneInit(0),mainProxy));
+#ifdef _RDMA_DEBUG_
+      CkPrintf("GSP [%d,%d] done init RDMA\n",thisIndex.x,thisIndex.y);
+#endif
+    }
+  else
+    {
+#ifdef _RDMA_DEBUG_
+      CkPrintf("GSP [%d,%d] gotHandles %d expecting %d+%d=%d\n",thisIndex.x, thisIndex.y,gotHandles,AllPsiExpected, AllLambdaExpected*2,AllPsiExpected+ AllLambdaExpected*2 );
+#endif
+    }
+#else
+  CkAbort("receiveRDMAHandle only valid in RDMA mode\n");
+#endif
+  delete msg;
+}

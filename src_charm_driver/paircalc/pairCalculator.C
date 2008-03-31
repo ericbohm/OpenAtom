@@ -64,7 +64,7 @@ extern ComlibInstanceHandle gSymInstance;
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z, 
 			  CkCallback cb,  PairCalcID* pcid, int cb_ep, 
-			  int cb_ep_tol, 
+			  int cb_ep_tol, int rdma_ep,
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
 			  int priority, CkVec <CkGroupID> mCastGrpId,
@@ -100,7 +100,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   }
   else {
     options.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, 
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, 
 						       gemmSplitFWk, gemmSplitFWm, 
 						       gemmSplitBW,expectOrthoT,
 						       options);
@@ -137,7 +137,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 	      pairCalculatorProxy(z[numX],s1,s2,c).
-		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT );
+		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT );
 	    }
 	    else
 	      {
@@ -145,7 +145,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -164,14 +164,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT);
+		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT);
 	      }
 	      else{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
+		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, proc);
 		proc++;
 		if (proc >= CkNumPes()) proc = 0;
 	      }
@@ -362,16 +362,6 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	}
     }
   }
-  if(pcid->GrainSize==pcid->nstates)
-    {
-      CkPrintf("O [%d,%d] initGred using bcast\n",orthoX, orthoY);
-      pcid->isBcast=true;
-      pcid->cproxy=CProxy_PairCalculator(pcid->Aid);
-    }
-  else
-    {
-      pcid->isBcast=false;
-    }
   int numOrthoCol=pcid->GrainSize/orthoGrainSize;
   int maxorthostateindex=(pcid->nstates/orthoGrainSize-1)*orthoGrainSize;
   int orthoIndexX=(orthoX*orthoGrainSize);
@@ -391,7 +381,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   // now that we have the section, make the proxy
   CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
   CProxySection_PairCalculator *sectProxy=&sProxy;
-  //  delete [] elems;
+  delete [] elems;
 
   // and do delegation
   if(pcid->Symmetric)
@@ -471,6 +461,12 @@ void setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int Grai
 // Deposit data and start calculation
 
 void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV){
+#ifdef PC_USE_RDMA
+  if(psiV)// RDMA doesn't support PSIV shenanighans
+    CkAbort("You must #undef PC_USE_RDMA in ckPairCalculator.h for dynamics. PSIV is broken by RDMA.\n It can be fixed, but won't be done until someone needs production support.");
+  else
+    startPairCalcLeftRDMA(pcid, n, ptr, myS, myPlane,psiV);
+#else
 #ifdef _PAIRCALC_NO_MULTI_
   startPairCalcLeftSlow(pcid, n, ptr, myS, myPlane);
 #else
@@ -602,7 +598,55 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	}
     }
 #endif
+#endif
 
+}
+
+void startPairCalcLeftRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV)
+
+{
+#ifdef PC_USE_RDMA
+  int NumGrains=pcid->nstates/pcid->GrainSize;
+  for(int chunk=0;chunk<pcid->numChunks;chunk++)
+    {
+      for(int grain=0;grain<NumGrains;grain++){
+#ifdef _PAIRCALC_DEBUG_RDMA_
+	CkPrintf("GSP [%d,%d] addr %p RDMA put left handle %d recverNode %d\n",myS, myPlane, ptr,pcid->RDMAHandlesLeft[chunk][grain].handle.handle,pcid->RDMAHandlesLeft[chunk][grain].handle.recverNode);
+#endif
+	if(pcid->RDMAHandlesLeft[chunk][grain].handle.handle>=0)
+	  CmiDirect_put(&(pcid->RDMAHandlesLeft[chunk][grain].handle));
+      }
+    }
+  if(pcid->Symmetric && pcid->existsLNotFromproxy)
+    {
+#ifdef _PAIRCALC_DEBUG_RDMA_
+      CkPrintf("GSP [%d,%d] RDMA put left other\n",myS, myPlane);
+#endif
+      for(int chunk=0;chunk<pcid->numChunks;chunk++)
+	for(int grain=0;grain<NumGrains;grain++)
+	  if(pcid->RDMAHandlesRight[chunk][grain].handle.handle>=0)
+	    CmiDirect_put(&(pcid->RDMAHandlesRight[chunk][grain].handle));
+    }
+#endif
+}
+
+void startPairCalcRightRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane)
+{
+#ifdef PC_USE_RDMA
+
+  //foreach chunk, look it up to get handle and recverproc
+  int NumGrains=pcid->nstates/pcid->GrainSize;
+  for(int chunk=0;chunk<pcid->numChunks;chunk++)
+    for(int grain=0;grain<NumGrains;grain++)
+    {
+      
+#ifdef _PAIRCALC_DEBUG_RDMA_
+      CkPrintf("GSP [%d,%d] addr %p RDMA put right handle %d recverNode %d\n",myS, myPlane, ptr,pcid->RDMAHandlesRight[chunk][grain].handle.handle,pcid->RDMAHandlesRight[chunk][grain].handle.recverNode);
+#endif
+      if(pcid->RDMAHandlesRight[chunk][grain].handle.handle>=0)
+	CmiDirect_put(&(pcid->RDMAHandlesRight[chunk][grain].handle));
+    }
+#endif
 }
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric)
@@ -856,6 +900,9 @@ void isAtSyncPairCalc(PairCalcID* pcid){
 }
 
 void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane){
+#ifdef PC_USE_RDMA
+  startPairCalcRightRDMA(pcid,n,ptr,myS,myPlane);
+#else
 #ifdef _PAIRCALC_NO_MULTI_
   startPairCalcRightSlow(pcid, n, ptr, myS, myPlane);
 #else
@@ -934,6 +981,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 #endif
     }
 #endif //_NO_MULTI
+#endif
 }
 
 void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
@@ -1009,7 +1057,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
   else
     ComlibAssociateProxy(&mcastInstanceACP,pcid->proxyAsym);
   */
-    multiplyResultMsg *omsg;
+
   if(ptr2==NULL){
 #ifdef _NAN_CHECK_
     for(int i=0;i<n ;i++)
@@ -1020,6 +1068,9 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	  CkAssert(finite(ptr1[i]));
       }
 #endif
+
+    multiplyResultMsg *omsg;
+
     if(priority>0)
       {
 	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
@@ -1037,8 +1088,13 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	CkAssert(finite(omsg->matrix1[i]));
       }
 #endif
+    if(pcid->Symmetric)
+      pcid->proxySym.multiplyResult(omsg);
+    else
+      pcid->proxyAsym.multiplyResult(omsg);
   }
   else {
+    multiplyResultMsg *omsg;
     if(priority>0)
       {
 	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
@@ -1050,18 +1106,11 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 	omsg=new ( n,n ) multiplyResultMsg;
       }
     omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
-  }
-  if(!pcid->isBcast)
-    {
-      if(pcid->Symmetric)
-	pcid->proxySym.multiplyResult(omsg);
-      else
-	pcid->proxyAsym.multiplyResult(omsg);
-    }
+  if(pcid->Symmetric)
+    pcid->proxySym.multiplyResult(omsg);
   else
-    {
-      pcid->cproxy.multiplyResult(omsg);
-    }
+    pcid->proxyAsym.multiplyResult(omsg);
+  }
 }
 
 
@@ -1095,6 +1144,102 @@ void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, in
 }
 
 
+void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
+{
+  //for each pid, send the notify for left and right
+  int senderProc=CkMyPe();
+  int chunksize =  totalsize / pid->numChunks;
+  int outsize = chunksize;
+  if(!(pid->existsLproxy||pid->existsLNotFromproxy)){
+    makeLeftTree(pid,sender,myPlane);
+    CkArrayID pairCalculatorID = (CkArrayID)pid->Aid; 
+    pid->cproxy= CProxy_PairCalculator(pairCalculatorID);
+  }
+  if(!pid->Symmetric && !pid->existsRproxy)
+    {
+      makeRightTree(pid,sender,myPlane);
+      
+    }
+  int numGrains=pid->nstates/pid->GrainSize;
+  int numChunks=pid->numChunks;
+  pid->RDMAHandlesLeft=new RDMAHandle*[numChunks];
+  pid->RDMAHandlesRight=new RDMAHandle*[numChunks];
+  for(int chunk=0;chunk<numChunks;chunk++){
+    pid->RDMAHandlesLeft[chunk]=new RDMAHandle[numGrains];
+    pid->RDMAHandlesRight[chunk]=new RDMAHandle[numGrains];
+  }
+#ifdef _PAIRCALC_DEBUG_RDMA_
+  CkPrintf("init pair RDMA sender %d size %d chunks %d\n",sender,totalsize,pid->numChunks);
+#endif
+  for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for
+					   // each chunk
+    {
+      //use proxy to send
+      
+      if((numChunks > 1) && (chunk == (numChunks - 1)))
+	{// last chunk gets remainder
+	  outsize= chunksize + (totalsize % numChunks);
+	}
+      // send to left regardless
+      if(pid->existsLproxy)
+	{
+	  if( pid->useDirectSend)
+	    { // use the ckvec to send
+	      CkArrayIndex4D idx;
+	      for(int elem=0; elem < pid->listLFrom.size() ; elem++)
+		{
+		  idx=pid->listLFrom[elem];
+		  idx.index[3]=chunk;
+		  pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
+		}
+	    }
+	  else{
+	    pid->proxyLFrom[chunk].receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
+	  }
+	}
+      if(pid->Symmetric)
+	{
+	  if(pid->existsLNotFromproxy)
+	    {
+	      if( pid->useDirectSend)
+		{ // use the ckvec to send
+		  CkArrayIndex4D idx;
+		  for(int elem=0; elem < pid->listLNotFrom.size() ; elem++)
+		    {
+		      idx=pid->listLNotFrom[elem];
+		      idx.index[3]=chunk;
+		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+		    }
+		}
+	      else
+		{
+
+		  pid->proxyLNotFrom[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+		}
+	    }
+	}
+      else
+	{
+	  if(pid->existsRproxy)
+	    {
+	      if( pid->useDirectSend)
+		{ // use the ckvec to send
+		  CkArrayIndex4D idx;
+		  for(int elem=0; elem < pid->listRNotFrom.size() ; elem++)
+		    {
+		      idx=pid->listRNotFrom[elem];
+		      idx.index[3]=chunk;
+		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+		    }
+		}
+	      else{
+		
+		pid->proxyRNotFrom[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize, totalsize);
+	      }
+	    }
+	}
+    }
+}
 #ifdef ROTATE_LIST
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
 {

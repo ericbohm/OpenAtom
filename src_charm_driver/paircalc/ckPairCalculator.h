@@ -23,6 +23,14 @@
 // #define _PAIRCALC_DEBUG_
 // #define TEST_ALIGN
 
+#ifdef CMK_USE_IBVERBS      
+#define PC_USE_RDMA 1
+#ifdef PC_USE_RDMA
+#include "cmidirect.h"
+#endif
+#endif
+
+
 #ifdef CMK_VERSION_BLUEGENE
 
 #define ALIGN16(x)        (int)((~15)&((x)+15))
@@ -83,6 +91,64 @@ typedef void (*FuncType) (complex a, complex b);
 PUPmarshallBytes(FuncType);
 
 #include "ckPairCalculator.decl.h"
+#ifdef CMK_USE_IBVERBS 
+
+/*struct infiDirectUserHandle{
+	int handle;
+	int senderNode;
+	int recverNode;
+	void *recverBuf;
+	int recverBufSize;
+	char recverKey[32];
+	double initialValue;
+};
+*/
+#endif
+
+class RDMAHandle{
+ public:
+#ifdef PC_USE_RDMA
+  struct infiDirectUserHandle handle;
+#endif
+
+  ~RDMAHandle(){}
+#ifdef PC_USE_RDMA
+  RDMAHandle(struct infiDirectUserHandle _handle): handle(_handle){}
+  RDMAHandle(){handle.handle=-1;}
+#else
+  // just to keep the compiler happy
+  RDMAHandle(){}
+#endif
+};
+
+#ifdef PC_USE_RDMA
+PUPmarshallBytes(struct infiDirectUserHandle);
+#endif
+
+class RDMAHandleMsg : public CMessage_RDMAHandleMsg
+{
+ public:
+#ifdef PC_USE_RDMA
+  struct infiDirectUserHandle rhandle;
+#endif
+  int index;
+  int grain;
+  bool left;
+  bool symmetric;
+#ifdef PC_USE_RDMA
+  void init(struct infiDirectUserHandle _rhandle, int _index, int _grain,bool _left, bool _symmetric)
+    {
+      rhandle=_rhandle;
+      index=_index;
+      grain=_grain;
+      left=_left;
+      symmetric=_symmetric;
+    }
+#else
+  // who cares?
+#endif
+  friend class CMessage_RDMAHandleMsg;
+};  
 
 class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
@@ -289,10 +355,11 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
+
   void lbsync() {
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
@@ -339,7 +406,8 @@ class PairCalculator: public CBase_PairCalculator {
   void multiplyForwardStream(bool flag_dp);
   void sendTiles(bool flag_dp);
   void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
-  void multiplyForward(bool);
+  void multiplyForward(bool flag_dp);
+  void multiplyForwardRDMA(bool flag_dp){multiplyForward(flag_dp);}
   void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
@@ -349,6 +417,7 @@ class PairCalculator: public CBase_PairCalculator {
   void multiplyResult(multiplyResultMsg *msg);
   void multiplyPsiV();
   void bwMultiplyDynOrthoT();
+  void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
   void multiplyResultI(multiplyResultMsg *msg);
   void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
   void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
@@ -364,9 +433,81 @@ class PairCalculator: public CBase_PairCalculator {
   void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
   void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
   void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
+  static void Wrapper_To_CallBack(void* pt2Object){
+    // explicitly cast to a pointer to CLA_Matrix
+    PairCalculator* mySelf = (PairCalculator*) pt2Object;
+    mySelf->checkRDMADone();
+
+  }
+  void checkRDMADone()
+  {
+#ifdef _PAIRCALC_DEBUG_RDMA_
+    CkPrintf("pairCalc[%d %d %d %d %d] got rdma, count=%d numExpected=%d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected);
+#endif
+    bool streamready=false;
+    numRecd++;
+    bool flag_dp=symmetric;
+    bool doPsiV=false;
+    if(symmetricOnDiagonal) //only left
+      streamready=((streamCaughtL>=streamFW) && (streamFW>0));
+    else 
+      {
+	streamready=
+	  // left or right has streamFW 
+	  ((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) 
+	  // total left and total right have at least stream FW
+	  && ((numRecLeft>=streamFW) && (numRecRight>=streamFW) 
+	      && (streamFW>0));
+	//      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
+
+      }
+
+    // call member funcs to determine if we're ready to multiply
+    if(streamready || ((streamFW>0) && (numRecd == numExpected) && (!doPsiV) ))
+      {
+	multiplyForwardStream(flag_dp);	
+	// not yet supported for dynamic psiV
+      }
+    else if (numRecd == numExpected)
+      {
+	if(!doPsiV)
+	  {  //normal behavior
+	    actionType=0;
+	    if(!expectOrthoT || numRecdBWOT==numOrtho)
+	      {
+		//		multiplyForward(flag_dp);	
+		// needs to become a regular charm message
+		thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(flag_dp);	
+	      }
+	    else
+	      {
+		if(expectOrthoT)
+		  CkPrintf("GAMMA BEAT ORTHOT, holding\n");
+	      }
+	    if(expectOrthoT && numRecdBWOT==numOrtho)
+	      { // we must also multiply orthoT by Fpsi
+		bwMultiplyDynOrthoT();
+		//	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
+		numRecdBWOT=0;
+	      }
+	  }
+	else
+	  {
+	    // tolerance correction psiV
+	    multiplyPsiV();
+	  }
+      }
+    else
+      {
+	//      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);
+      }
+  }
+    
+
 
  private:
-
+  RDMAHandle *RDMAHandlesRight;
+  RDMAHandle *RDMAHandlesLeft;
   int numRecd;               //! number of messages received
   int numRecdBW;               //! number of messages received BW
   int numRecdBWOT;               //! number of messages received BW orthoT
@@ -430,6 +571,7 @@ class PairCalculator: public CBase_PairCalculator {
   redtypes cpreduce;         //! which reducer we're using (defunct)
   CkArrayID cb_aid;          //! bw path callback array ID 
   int cb_ep;                 //! bw path callback entry point 
+  int rdma_ep;               //! rdma setup callback entry point 
   int cb_ep_tol;             //! bw path callback entry point for psiV tolerance
   bool existsLeft;           //! inDataLeft allocated 
   bool existsRight;          //! inDataRight allocated 

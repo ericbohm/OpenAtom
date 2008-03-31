@@ -13,6 +13,10 @@
 #define _PAIRCALC_DO_NOT_DELEGATE_ 1
 #endif
 
+//============================================================================
+
+
+
 /* a place to keep the section proxies for the reduction */
 
 class PairCalcID {
@@ -31,7 +35,6 @@ class PairCalcID {
   bool existsLproxy;
   bool existsLNotFromproxy;
   bool existsRproxy;
-  bool isBcast;
   CkVec <CkGroupID> mCastGrpId;
   CkGroupID orthomCastGrpId;
   CkGroupID orthoRedGrpId;
@@ -42,6 +45,8 @@ class PairCalcID {
   CProxySection_PairCalculator *proxyLNotFrom;
   CProxySection_PairCalculator *proxyRNotFrom;
   CProxy_PairCalculator cproxy;
+  RDMAHandle **RDMAHandlesLeft;
+  RDMAHandle **RDMAHandlesRight;
   CkVec <CkArrayIndex4D> listLFrom;
   CkVec <CkArrayIndex4D> listLNotFrom;
   CkVec <CkArrayIndex4D> listRNotFrom;
@@ -76,7 +81,6 @@ class PairCalcID {
     isDoublePacked = _dp;
     lbpaircalc=_lbpaircalc;
     priority=_priority;
-    
   }
   void resetProxy()
     {
@@ -131,7 +135,6 @@ class PairCalcID {
     orthomCastGrpId=pid.orthomCastGrpId;
     orthoRedGrpId=pid.orthoRedGrpId;
     cproxy=pid.cproxy;
-    isBcast=pid.isBcast;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
     backwardTimerID=pid.backwardTimerID;
@@ -157,7 +160,6 @@ class PairCalcID {
     p|existsLproxy;
     p|existsLNotFromproxy;
     p|existsRproxy;
-    p|isBcast;
     p|mCastGrpId;
     p|orthomCastGrpId;
     p|orthoRedGrpId;
@@ -183,9 +185,10 @@ class PairCalcID {
 	    proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
 	  }
       }
-    p|cproxy;
     if(existsLproxy)
       {
+	if(useDirectSend)
+	  p|cproxy;
 	PUParray(p,proxyLFrom,numChunks);
 	if(useDirectSend)
 	  p|listLFrom;
@@ -206,15 +209,19 @@ class PairCalcID {
 
 };
 
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, int ep3, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT);
 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
 void startPairCalcRight(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+void startPairCalcLeftRDMA(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
+
+void startPairCalcRightRDMA(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
+void initPairCalcRDMA(PairCalcID *pid, int,int,int);
 extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);

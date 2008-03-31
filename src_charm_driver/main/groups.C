@@ -1,3 +1,4 @@
+
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
@@ -881,3 +882,4 @@ EnergyStruct GetEnergyStruct() {
     return egroupProxy.ckLocalBranch()->getEnergyStruct();
 }
 //==========================================================================
+

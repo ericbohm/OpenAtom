@@ -193,7 +193,7 @@ mainmodule cpaimd {
 		entry void doIFFT(GSIFFTMsg *);
 		entry void doFFT();
 		entry void syncpsi();
-
+		entry void receiveRDMAHandle(RDMAHandleMsg *msg);
                 entry [nokeep] void acceptAtoms(GSAtmMsg *msg);
                 entry [nokeep] void acceptEnergy(GSAtmMsg *msg);
                 entry void collectFileOutput(GStateOutMsg *msg);

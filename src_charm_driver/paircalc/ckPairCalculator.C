@@ -188,11 +188,12 @@
 
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
-
+ 
 extern PairCalcID pairCalcID1;
 extern PairCalcID pairCalcID2;
 
 CkReduction::reducerType sumMatrixDoubleType;
+
 
 void registersumMatrixDouble(void)
 { 
@@ -257,7 +258,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT)
+PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _rdma_ep, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
@@ -270,12 +271,15 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
   int remainder=numStates%grainSize;
   grainSizeX=(numStates- thisIndex.x == grainSize+remainder) ? grainSize+remainder: grainSize;
   grainSizeY=(numStates- thisIndex.y == grainSize+remainder) ? grainSize+remainder: grainSize;
-
+  
   this->numChunks = _numChunks;
   this->numPoints = -1;
   this->cb_aid = _cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
+  this->rdma_ep = _rdma_ep;
+  RDMAHandlesLeft=NULL;
+  RDMAHandlesRight=NULL;
   useBWBarrier=_useBWBarrier;
   PCstreamBWout=_PCstreamBWout;
   PCdelayBWSend=_PCdelayBWSend;
@@ -402,6 +406,7 @@ PairCalculator::pup(PUP::er &p)
   p|cb_aid;
   p|cb_ep;
   p|cb_ep_tol;
+  p|rdma_ep;
   p|existsLeft;
   p|existsRight;
   p|existsOut;
@@ -2001,6 +2006,8 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
       if(conserveMemory>0)
 	{
 	  // clear the right and left they'll get reallocated on the next pass
+#ifndef PC_USE_RDMA
+	  // we really don't want to reregister this every phase
 	  delete [] inDataLeft;
 	  inDataLeft=NULL;
 	  if(!symmetric || (symmetric && notOnDiagonal)) {
@@ -2009,6 +2016,7 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  }
 	  existsLeft=false;
 	  existsRight=false;
+#endif
 	  if(outData!=NULL && actionType!=KEEPORTHO)
 	    {
 	      delete [] outData;
@@ -2656,6 +2664,21 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 		bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
 	    }
 	}
+#ifdef PC_USE_RDMA
+      // mark our buffers as ready for new input
+      if(RDMAHandlesLeft!=NULL)
+	for(int offset=0;offset<numExpectedX;offset++)
+	  {
+	    if(RDMAHandlesLeft[offset].handle.handle>=0)
+	      CmiDirect_ready(&(RDMAHandlesLeft[offset].handle));
+	  }
+      if(RDMAHandlesRight!=NULL)
+	for(int offset=0;offset<numExpectedY;offset++)
+	  {
+	    if(RDMAHandlesRight[offset].handle.handle>=0)
+	      CmiDirect_ready(&(RDMAHandlesRight[offset].handle));
+	  }
+#endif      
 
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
@@ -3380,6 +3403,84 @@ void manmult(int numRowsA, int numRowsB, int rowLength, double *A, double *B, do
     }
 }
 
+
+#include <limits>
+
+void PairCalculator::receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int chunksize, int size)
+{
+#ifdef PC_USE_RDMA
+#ifdef _PAIRCALC_DEBUG_RDMA_
+  CkPrintf("[PAIRCALC] [%d %d %d %d %d]  receiveRDMASenderNotify from proc %d state %d fromRow %d chunksize %d size %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, senderProc, sender, fromRow, chunksize, size);
+#endif
+   //make CmiDirect handles for this offset and send them over
+   double *rbuff=NULL;
+   bool left=true;
+   int offset;
+   if (fromRow) 
+     {   // This could be the symmetric diagonal case
+       if(RDMAHandlesLeft==NULL)
+	 RDMAHandlesLeft=new RDMAHandle[numExpectedX];
+       offset = sender - thisIndex.x;
+       left=true;
+       if (!existsLeft)
+	 { // now that we know N we can allocate contiguous space
+	   CkAssert(inDataLeft==NULL);
+	   existsLeft=true;
+	   numPoints = chunksize; // numPoints is init here with the size of the data chunk.
+	   inDataLeft = new double[numExpectedX*numPoints*2];
+	   bzero(inDataLeft,numExpectedX*numPoints*2*sizeof(double));
+#ifdef _PAIRCALC_DEBUG_
+	   CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpectedX,numPoints);
+#endif
+	 }
+       rbuff=&(inDataLeft[offset*numPoints*2]);
+     }
+   else
+     {
+       if(RDMAHandlesRight==NULL)
+	 RDMAHandlesRight=new RDMAHandle[numExpectedY];
+
+       left=false;
+       offset = sender - thisIndex.y;
+       if (!existsRight)
+	 { // now that we know numPoints we can allocate contiguous space
+	   CkAssert(inDataRight==NULL);
+	   existsRight=true;
+	   numPoints = chunksize; // numPoints is init here with the size of the data chunk.
+	   inDataRight = new double[numExpectedY*numPoints*2];
+	   bzero(inDataRight,numExpectedY*numPoints*2*sizeof(double));
+#ifdef _PAIRCALC_DEBUG_
+	   CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpectedY,numPoints);
+#endif
+	 }
+       rbuff=&(inDataRight[offset*numPoints*2]);
+     }
+   // offset will either be in left or right
+   //   double const actualQNaN = std::numeric_limits<double>::quiet_NaN();
+   double const actualQNaN = 999999999999999999999999999999999999999999999999.9999999999;
+   struct infiDirectUserHandle rhandle=CmiDirect_createHandle(senderProc,rbuff,chunksize*sizeof(double)*2,
+					PairCalculator::Wrapper_To_CallBack,(void *) this,actualQNaN);
+   // now return the handle
+  int indexX=sender;
+  int indexY=thisIndex.w;
+  if(left)
+    RDMAHandlesLeft[offset]=rhandle;
+  else
+    RDMAHandlesRight[offset]=rhandle;
+  CkCallback mycb(rdma_ep, CkArrayIndex2D(indexX, indexY),cb_aid);
+  RDMAHandleMsg *msg= new RDMAHandleMsg;
+  //int grain=(fromRow)? thisIndex.x/grainSize:thisIndex.y/grainSize;
+  int grain=(fromRow)? thisIndex.y/grainSize:thisIndex.x/grainSize;
+  //int grain=sender/grainSize;
+#ifdef _PAIRCALC_DEBUG_RDMA_
+  CkPrintf("[%d,%d,%d,%d,%d] RDMA using OOB %.10g %llx grain %d, left %d, symmetric %d sender %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,actualQNaN, (long long int) actualQNaN, grain, left, symmetric, sender, offset);
+#endif
+  msg->init(rhandle,thisIndex.z, grain,left, symmetric);
+  mycb.send(msg);
+#else
+   CkAbort("receiveRDMASenderNotify not valid without RDMA");
+#endif
+}
 
 #include "ckPairCalculator.def.h"
 

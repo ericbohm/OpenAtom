@@ -17,9 +17,10 @@
 #include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
+//#include "ckPairCalculator.h"
 void getSplitDecomp(int *,int *,int *,int , int ,int );
 
-//============================================================================
+
 
 
 //============================================================================
@@ -276,6 +277,7 @@ public:
 //============================================================================
 class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
  public:
+
         int halfStepEvolve;
         int redPlane;
         int registrationFlag;
@@ -310,6 +312,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CP_State_GSpacePlane(int, size2d, int, int, int, int,int,int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
+	void receiveRDMAHandle(RDMAHandleMsg *msg);
 	void pup(PUP::er &);
 	void initGSpace(int, complex *,int ,complex *,
                         int,int,int,int,int,int,int);
@@ -371,6 +374,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void acceptRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
  private:
+	int gotHandles;
 	int forwardTimeKeep;
 	int backwardTimeKeep;
 	int ireset_cg;
