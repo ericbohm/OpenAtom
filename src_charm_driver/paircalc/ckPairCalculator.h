@@ -23,7 +23,7 @@
 // #define _PAIRCALC_DEBUG_
 // #define TEST_ALIGN
 
-#ifdef CMK_USE_IBVERBS      
+#ifdef CMK_DIRECT
 #define PC_USE_RDMA 1
 #ifdef PC_USE_RDMA
 #include "cmidirect.h"
@@ -91,19 +91,6 @@ typedef void (*FuncType) (complex a, complex b);
 PUPmarshallBytes(FuncType);
 
 #include "ckPairCalculator.decl.h"
-#ifdef CMK_USE_IBVERBS 
-
-/*struct infiDirectUserHandle{
-	int handle;
-	int senderNode;
-	int recverNode;
-	void *recverBuf;
-	int recverBufSize;
-	char recverKey[32];
-	double initialValue;
-};
-*/
-#endif
 
 class RDMAHandle{
  public:

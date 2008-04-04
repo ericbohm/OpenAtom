@@ -4472,15 +4472,7 @@ void CP_State_GSpacePlane::receiveRDMAHandle(RDMAHandleMsg *msg)
       gpairCalcID=&gpairCalcID2;
       numChunks=gpairCalcID2.numChunks;
     }
-  if(msg->left)
-    {
-      gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle=msg->rhandle;
-      }
-  else
-    { 
-      gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle=msg->rhandle;
-    }
-
+  CkAssert(gpairCalcID->RDMAHandlesLeft!=NULL);
   int chunksize=gs.numPoints/numChunks;
   outsize=chunksize;
   if((numChunks > 1) && (msg->index == (numChunks - 1)))
@@ -4495,12 +4487,24 @@ void CP_State_GSpacePlane::receiveRDMAHandle(RDMAHandleMsg *msg)
 #ifdef _RDMA_DEBUG_
   CkPrintf("GSP [%d,%d] got rdma index %d handle %d proc %d left %d symmetric%d offset %d size %d\n",thisIndex.x, thisIndex.y,msg->index, msg->rhandle.handle, msg->rhandle.senderNode,msg->left,msg->symmetric,offset,outsize);
 
-  CkPrintf("GSP [%d,%d] addr %p first 2 packedPlaneData %.10g %.10g\n",thisIndex.x,thisIndex.y, &(gs.packedPlaneData[offset]),gs.packedPlaneData[0].re,  gs.packedPlaneData[0].im); 
+  CkPrintf("GSP [%d,%d] addr %p \n",thisIndex.x,thisIndex.y, (!msg->symmetric && !msg->left) ? &(gs.packedForceData[offset]) : &(gs.packedPlaneData[offset])); 
 #endif
   if(!msg->symmetric && !msg->left)
     CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedForceData[offset]),outsize*sizeof(complex));
   else
     CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedPlaneData[offset]),outsize*sizeof(complex));
+
+  if(msg->left)
+    {
+//	CmiMemcpy(&(gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle),&(msg->rhandle),sizeof(struct infiDirectUserHandle));
+	gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle=msg->rhandle;
+      }
+  else
+    { 
+	//CmiMemcpy(&(gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle), &(msg->rhandle),sizeof(struct infiDirectUserHandle));
+	gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle=msg->rhandle;
+    }
+
   gotHandles++;
   if(gotHandles==AllPsiExpected+AllLambdaExpected*2)
     {

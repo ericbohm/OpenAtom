@@ -611,7 +611,7 @@ void startPairCalcLeftRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int m
     {
       for(int grain=0;grain<NumGrains;grain++){
 #ifdef _PAIRCALC_DEBUG_RDMA_
-	CkPrintf("GSP [%d,%d] addr %p RDMA put left handle %d recverNode %d\n",myS, myPlane, ptr,pcid->RDMAHandlesLeft[chunk][grain].handle.handle,pcid->RDMAHandlesLeft[chunk][grain].handle.recverNode);
+	CkPrintf("GSP [%d,%d] addr %p RDMA put left handle %d recverNode %d senderbuf %p\n",myS, myPlane, ptr,pcid->RDMAHandlesLeft[chunk][grain].handle.handle,pcid->RDMAHandlesLeft[chunk][grain].handle.recverNode,pcid->RDMAHandlesLeft[chunk][grain].handle.senderBuf);
 #endif
 	if(pcid->RDMAHandlesLeft[chunk][grain].handle.handle>=0)
 	  CmiDirect_put(&(pcid->RDMAHandlesLeft[chunk][grain].handle));
@@ -636,12 +636,13 @@ void startPairCalcRightRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int 
 
   //foreach chunk, look it up to get handle and recverproc
   int NumGrains=pcid->nstates/pcid->GrainSize;
+  CkAssert(!pcid->Symmetric);
   for(int chunk=0;chunk<pcid->numChunks;chunk++)
     for(int grain=0;grain<NumGrains;grain++)
     {
       
 #ifdef _PAIRCALC_DEBUG_RDMA_
-      CkPrintf("GSP [%d,%d] addr %p RDMA put right handle %d recverNode %d\n",myS, myPlane, ptr,pcid->RDMAHandlesRight[chunk][grain].handle.handle,pcid->RDMAHandlesRight[chunk][grain].handle.recverNode);
+	CkPrintf("GSP [%d,%d] addr %p RDMA put right handle %d recverNode %d senderbuf %p\n",myS, myPlane, ptr,pcid->RDMAHandlesRight[chunk][grain].handle.handle,pcid->RDMAHandlesRight[chunk][grain].handle.recverNode,pcid->RDMAHandlesRight[chunk][grain].handle.senderBuf);
 #endif
       if(pcid->RDMAHandlesRight[chunk][grain].handle.handle>=0)
 	CmiDirect_put(&(pcid->RDMAHandlesRight[chunk][grain].handle));
@@ -1162,6 +1163,8 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
     }
   int numGrains=pid->nstates/pid->GrainSize;
   int numChunks=pid->numChunks;
+  CkAssert(numChunks>0);
+  CkAssert(numGrains>0);
   pid->RDMAHandlesLeft=new RDMAHandle*[numChunks];
   pid->RDMAHandlesRight=new RDMAHandle*[numChunks];
   for(int chunk=0;chunk<numChunks;chunk++){

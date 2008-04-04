@@ -56,7 +56,13 @@ class PairCalcID {
   int forwardTimerID;
   int backwardTimerID;
 #endif
-  PairCalcID() {}
+  PairCalcID() {
+      proxyLFrom=NULL;
+      proxyLNotFrom=NULL;
+      proxyRNotFrom=NULL;
+      RDMAHandlesLeft=NULL;
+      RDMAHandlesRight=NULL;
+  }
   ~PairCalcID() {
     if(existsLproxy)
       delete [] proxyLFrom;
