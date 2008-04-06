@@ -163,6 +163,11 @@ class sendBWsignalMsg : public CMessage_sendBWsignalMsg{
   bool otherdata;
 };
 
+class sendFWRDMAsignalMsg : public CMessage_sendBWsignalMsg{
+ public:
+  bool flag_dp;
+};
+
 class mySendMsg : public CMessage_mySendMsg {
  public:
   int N;
@@ -394,7 +399,7 @@ class PairCalculator: public CBase_PairCalculator {
   void sendTiles(bool flag_dp);
   void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
   void multiplyForward(bool flag_dp);
-  void multiplyForwardRDMA(bool flag_dp){multiplyForward(flag_dp);}
+  void multiplyForwardRDMA( sendFWRDMAsignalMsg *msg){multiplyForward(msg->flag_dp);}
   void contributeSubTiles(double *fullOutput);
   void ResumeFromSync();
   void initGRed(initGRedMsg *msg);
@@ -464,7 +469,12 @@ class PairCalculator: public CBase_PairCalculator {
 	      {
 		//		multiplyForward(flag_dp);	
 		// needs to become a regular charm message
-		thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(flag_dp);	
+		  sendFWRDMAsignalMsg *sigmsg=new (8*sizeof(int)) sendFWRDMAsignalMsg;
+		  // needs to be prioritized and go through the usual scheduler
+		  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+		  *(int*)CkPriorityPtr(sigmsg) = 300000000; // lambda prio
+		  sigmsg->flag_dp=flag_dp;
+		  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(sigmsg);	
 	      }
 	    else
 	      {
