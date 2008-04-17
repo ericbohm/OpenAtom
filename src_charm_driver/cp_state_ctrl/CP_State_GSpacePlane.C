@@ -1376,7 +1376,9 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
 #endif
-
+#ifndef CMK_OPTIMIZE
+    traceUserSuppliedData(iteration);
+#endif 
   if(iteration>0){
    if(egroupProxy.ckLocalBranch()->iteration_gsp != iteration || 
      atomsGrpProxy.ckLocalBranch()->iteration  != iteration){
