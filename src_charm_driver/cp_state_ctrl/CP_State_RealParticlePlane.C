@@ -54,8 +54,8 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
 
   //unpack
   double d = ((double *)m->getData())[0];
-  delete m;
   itimeRed = m->getUserFlag();
+  delete m;
   //output and save the data
   CkPrintf("ENL(EES)    = %5.8lf\n", d);
   gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  
