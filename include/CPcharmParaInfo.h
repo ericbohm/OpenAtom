@@ -492,7 +492,8 @@ class CPcharmParaInfo {
       delete [] RCommPkg;             RCommPkg= NULL;
       delete [] ioff_zmat;
       delete [] nmem_zmat;
-
+      delete [] sortedRunDescriptors;
+      delete [] RhosortedRunDescriptors;
       cfree_int_mat(index_tran_upack,0,nchareG,0,nlines_max);
       cfree_int_mat(index_tran_upackNL,0,nchareG,0,nlines_max);
       cfree_int_mat(index_tran_upack_rho,0,nchareRhoG,0,nlines_max_rho);
