@@ -50,11 +50,11 @@ class MDTHERM_INFO{
     isokin_opt   = 0;
     num_nhc_iso  = 0;
 
-    wdti   = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
-    wdti2  = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
-    wdti4  = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
-    wdti8  = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr")-1;
-    wdti16 = (double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constrr")-1;
+    wdti   = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
+    wdti2  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
+    wdti4  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
+    wdti8  = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constr"))-1;
+    wdti16 = ((double *)cmalloc(25*sizeof(double),"MDTHERM_INFO constrr"))-1;
    }
   ~MDTHERM_INFO(){
     cfree(&wdti[1],"MDTHERM_INFO destruct");

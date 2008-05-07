@@ -26,7 +26,7 @@
   void pup1d_dbl(PUP::er &p,double **vec, int nlen){
    if(nlen > 0){
     if (p.isUnpacking()) {
-      *vec = (double *)cmalloc(nlen*sizeof(double),"piny_pup")-1;
+      *vec = ((double *)cmalloc(nlen*sizeof(double),"piny_pup"))-1;
     }/*endif*/
     p(&(*vec)[1],nlen);
    }/* endif nlen */
@@ -42,7 +42,7 @@
   void pup1d_cpl(PUP::er &p,complex **vec, int nlen){
    if(nlen > 0){
     if (p.isUnpacking()) {
-      *vec = (complex *)cmalloc(nlen*sizeof(complex),"piny_pup")-1;
+      *vec = ((complex *)cmalloc(nlen*sizeof(complex),"piny_pup"))-1;
     }/*endif*/
     complex *temp = &(*vec)[1];
     p((char *)temp,nlen*sizeof(complex));

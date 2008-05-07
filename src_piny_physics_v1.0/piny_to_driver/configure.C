@@ -2131,13 +2131,13 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       if(numPes <numRS*3){
 	useReductionExclusionMap=0;
 	
-	strcpy(dict_map[19].keyarg,"off");
+	strcpy(dict_map[17].keyarg,"off");
 	CkPrintf("Disabling reduction exclusion map, too few processors to matter\n");
       }
       else
 	{
 	  useReductionExclusionMap=1;
-	  strcpy(dict_map[19].keyarg,"on");
+	  strcpy(dict_map[17].keyarg,"on");
 	  CkPrintf("Enabling reduction exclusion map\n");
 	}
 
@@ -2300,7 +2300,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       //      useCentroidMapRho = 0; works ok on nontorus
       //      sprintf(dict_map[5].keyarg, "%d", useCentroidMapRho);
       useStrictCuboid = 0;
-      sprintf(dict_map[18].keyarg, "%d", useStrictCuboid);
+      sprintf(dict_map[16].keyarg, "%d", useStrictCuboid);
     }
 
 //============================================================================
