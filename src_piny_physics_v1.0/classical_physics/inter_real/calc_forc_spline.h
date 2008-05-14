@@ -226,8 +226,8 @@ inline double InterRoutines::spl_value
 //=======================================================================
 //            Local variable declarations                                
 
-   static double oneth = (1.0/3.0);
-   static double onesi = (1.0/6.0);
+   static const double oneth = (1.0/3.0);
+   static const double onesi = (1.0/6.0);
 
 //========================================================================
 // I) Fit a cubic on the fly and evaluate it 

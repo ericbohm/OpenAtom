@@ -378,7 +378,7 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
     // we don't actually use these in the asymmetric minimization case
     // but we make them anyway
     otherResultCookies=new CkSectionInfo[numExpectedY];
-
+  CmiBarrier();
 }
 
 void

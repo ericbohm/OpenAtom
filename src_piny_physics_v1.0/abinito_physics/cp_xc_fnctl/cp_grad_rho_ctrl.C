@@ -36,7 +36,7 @@ void CPXCFNCTS::CP_getGGAFunctional(
 
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
-    static double rho_heali;      /* Inverse of healing length on switching fn */
+
     double srho,dsrho;            /* Switching function and its derivative */
     double rho,rho_cut,g_rho2,g_rhoi,rsw;
     int m;
@@ -46,7 +46,7 @@ void CPXCFNCTS::CP_getGGAFunctional(
     double ex,ec,dfx_drho,fx,fc,dfx_dgrho,dfc_drho,dfc_dgrho,dfxc_dgrho;
     double unit_gx,unit_gy,unit_gz;
 
-    static double beta = 0.0042;
+    static const double beta = 0.0042;
 
     double gc_cut = cppseudo->gga_cut;
     double vol    = gencell->vol;
@@ -56,7 +56,8 @@ void CPXCFNCTS::CP_getGGAFunctional(
 // Initialization and useful costants
 
     ex = ec = 0.0;
-    rho_heali = 1.0/(3.9*gc_cut);
+/* Inverse of healing length on switching fn */
+    static const double rho_heali = 1.0/(3.9*gc_cut);
     rho_cut   = 0.1*gc_cut;
 
 #ifdef _CPDEBUG_XC_FUNCTIONALS_

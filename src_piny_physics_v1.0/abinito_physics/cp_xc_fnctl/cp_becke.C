@@ -22,15 +22,15 @@ void CPXCFNCTS::becke_gcx_lda(double rho,double g_rho2,
    double bterm,bx;
    double bpterm,bpx,bx_by_x;
 
-/*   static double beta; */
-   static double sixb;
-   static double twelveb;
-   static double fth;
+/*   static double beta; NONSENSE!
+     EJB says: values dependent on the func param should not be static
+     or const */
+
 
 /*   beta = 0.0042; */
-   sixb = 6.0*beta;
-   twelveb = 12.0*beta;
-   fth = 4.0/3.0;
+   double sixb = 6.0*beta;
+   double twelveb = 12.0*beta;
+   double fth = 4.0/3.0;
 
 
 /*=======================================================================*/
@@ -89,28 +89,22 @@ void CPXCFNCTS::lyp_gcc(double rho,double g_rho2,double *fn,
    double term1,brack1,brack2,brack3,term2;
    double dterm1,dterm2;
 
-/* static variables */
-   static double a = 0.049180;
-   static double b = 0.1320;
-   static double c = 0.25330;
-   static double d = 0.3490;
-   static double pi = M_PI;
-   static double pow13;
-   static double pow113;
-   static double pow43;
-   static double pow53;
-   static double pow83;
-   static double cf;
+/* static const variables */
+   static const double a = 0.049180;
+   static const double b = 0.1320;
+   static const double c = 0.25330;
+   static const double d = 0.3490;
+   static const double pi = M_PI;
 
 /*=======================================================================*/
 /* I) Get square root density coefficient                                */
 
-   pow13 = -1.0/3.0;
-   pow113 = 11.0*pow13;
-   pow43 = 4.0*pow13;
-   pow53 = -5.0*pow13;
-   pow83 = -8.0*pow13;
-   cf = 0.30*pow((3.0*pi*pi),(2.0/3.0));
+   static const double pow13 = -1.0/3.0;
+   static const double pow113 = 11.0*pow13;
+   static const double pow43 = 4.0*pow13;
+   static const double pow53 = -5.0*pow13;
+   static const double pow83 = -8.0*pow13;
+   static const double cf = 0.30*pow((3.0*pi*pi),(2.0/3.0));
    drho = sqrt(g_rho2);
 
 /*=======================================================================*/

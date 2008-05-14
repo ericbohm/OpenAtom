@@ -3,7 +3,7 @@
  */
 
 mainmodule cpaimd {	
-
+	readonly double Timer;
 	readonly int nstates;
 	readonly int sizeX;
 	readonly int nchareG;
@@ -11,8 +11,10 @@ mainmodule cpaimd {
 	readonly int Ortho_UE_step3;
 	readonly int Ortho_UE_error;
 	readonly bool Ortho_use_local_cb;
+	readonly int done_init;
 	readonly int TimeKeeperID;
 	readonly int numPes;
+	readonly int planes_per_pe;
 	readonly bool fakeTorus;
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
 	readonly CkVec <CkGroupID> mCastGrpIds;

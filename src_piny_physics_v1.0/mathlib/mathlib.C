@@ -135,11 +135,11 @@ void cputime(double *time)
 
 /*==========================================================================*/
 {
-  int itime;
-  static double to=0.,tn=0.;
 
-  itime = clock();
-  tn = (double)((double)itime/(double)CLOCKS_PER_SEC_C);
+  static double to=0.;
+
+  int itime = clock();
+  double tn = (double)((double)itime/(double)CLOCKS_PER_SEC_C);
   *time = tn;
   if(tn >= 0 && to >= 0){*time=tn;}
   if(tn < 0  && to >= 0){*time=MAXTIME*2.0+tn;}

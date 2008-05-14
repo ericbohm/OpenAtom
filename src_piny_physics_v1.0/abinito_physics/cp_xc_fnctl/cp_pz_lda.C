@@ -35,13 +35,13 @@ void CPXCFNCTS::CP_exc_calc(
 
   int cp_lyp   = cpopts->cp_lyp;
 
-  static double gamma = -0.14230;
-  static double beta1 = 1.05290;
-  static double beta2 = 0.33340;
-  static double au    = 0.03110;
-  static double bu    = -0.0480;
-  static double cu    = 0.00200;
-  static double du    = -0.01160;
+  static const double gamma = -0.14230;
+  static const double beta1 = 1.05290;
+  static const double beta2 = 0.33340;
+  static const double au    = 0.03110;
+  static const double bu    = -0.0480;
+  static const double cu    = 0.00200;
+  static const double du    = -0.01160;
 
 //--------------------------------------------------------------------------
 // Local variables 

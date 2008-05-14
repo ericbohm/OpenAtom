@@ -223,9 +223,9 @@ void bend_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   double c0,c1,c2,c3,c4,c5,c6;              /* Power series            */
   double c2th0,c4th0,c6th0;                 /* Cos(n*theta_0)          */
   double s2th0,s4th0,s6th0;                 /* Sin(n*theta_0)          */
-  static double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
-  static double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
-  static double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
+  static const double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
+  static const double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
+  static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
                                                  /* Useful constants        */
 
 /*==========================================================================*/
@@ -408,10 +408,10 @@ void tors_coef(DICT_WORD *dict,char file_name[],char fun_key[],
   double c2th0,c4th0,c6th0;                 /* Cos(n*theta_0)          */
   double s2th0,s4th0,s6th0;                 /* Sin(n*theta_0)          */
   /* Useful constants        */
-  static double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
-  static double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
-  static double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
-  static double small=1.0e-8;
+  static const double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
+  static const double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
+  static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
+  static const double small=1.0e-8;
 
 /*==========================================================================*/
 /* 0) Fill atom types and label part of the data base     */
@@ -868,9 +868,9 @@ void bend_bnd_coef(DICT_WORD *dict,char file_name[],char fun_key[],
        double fk_bend,theta_0;
   double c2th0,c4th0,c6th0;                 /* Cos(n*theta_0)          */
   double s2th0,s4th0,s6th0;                 /* Sin(n*theta_0)          */
-  static double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
-  static double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
-  static double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
+  static const double cn1=49.0/72.0,cn2=3.0/4.0,cn3=3.0/40.0,cn4=1.0/180.0;
+  static const double cn5=3.0/2.0,cn6=3.0/5.0,cn7=1.0/10.0,cn8=4.0/15.0;
+  static const double cn9=8.0/45.0,cn10=3.0/10.0,cn11=1.0/30.0;
        int index;
 /*==========================================================================*/
 /*==========================================================================*/

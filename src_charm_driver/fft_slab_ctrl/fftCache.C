@@ -190,7 +190,8 @@ FFTcache::FFTcache(size2d planeSIZE,
 	  CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
 	}
       else{
-	if(fftw_import_wisdom_from_file(wisdomFile)==FFTW_SUCCESS)
+	
+	if(wisdomFile != NULL && fftw_import_wisdom_from_file(wisdomFile)==FFTW_SUCCESS)
 	  {
 	    // only print this once
 	    if(CkMyPe()==0)  CkPrintf("[%d] FFTCache loaded FFTW Wisdom %s\n",CkMyPe(),wisstring);
@@ -198,7 +199,7 @@ FFTcache::FFTcache(size2d planeSIZE,
 	else
 	  {
 	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	    CkPrintf("Wisdom load failed!\n");
+	    CkPrintf("Wisdom load failed on CkMyPe() %d !\n",CkMyPe());
 	    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
 	  }
 
