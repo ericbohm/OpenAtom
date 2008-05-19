@@ -2305,9 +2305,9 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 #else
       if(config.useCommlibMulticast){mcastInstance.beginIteration();}
       if(config.useCommlibMulticast){
-        realSpaceSectionCProxy.doProduct(msg);
+        realSpaceSectionCProxy.acceptProduct(msg);
       }else{
-        realSpaceSectionProxy.doProduct(msg);
+        realSpaceSectionProxy.acceptProduct(msg);
       }//enddif
      if(config.useCommlibMulticast){mcastInstance.endIteration();}
 #ifdef _CP_SUBSTEP_TIMING_

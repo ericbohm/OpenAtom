@@ -428,7 +428,7 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 #endif
       fftDataDone=true;
       if(launchFFT){
-	FFTNLEesFwdR();
+	thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
         if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1\n");CkExit();}
       }else{
         if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
@@ -980,7 +980,7 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
   if(fftDataDone){
     if(iterNL!=1){CkPrintf("Badddd launchFFT.3\n");CkExit();}
     if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.4\n");CkExit();}
-    FFTNLEesFwdR();
+    thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
   }//endif
 //----------------------------------------------------------------------------
 }

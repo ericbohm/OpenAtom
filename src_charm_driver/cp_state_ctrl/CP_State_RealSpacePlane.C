@@ -76,7 +76,7 @@ RTH_Routine_code(CP_State_RealSpacePlane,run) {
       RTH_Suspend(); // wait for broadcast that all vks is done  
     }//endif
 #endif               //end pause
-    c->doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
+    c->thisProxy(c->thisIndex.x,c->thisIndex.y).doVksFFT(); // vks(r) arrives in doproduct(msg) which resumes
     c->sendFPsiToGSP();
   } //end while not done
 
@@ -170,7 +170,7 @@ void CP_State_RealSpacePlane::setNumPlanesToExpect(int num){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_RealSpacePlane::doFFT(RSFFTMsg *msg) {
+void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
 //============================================================================
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0)
@@ -439,7 +439,7 @@ void CP_State_RealSpacePlane::doReduction(){
  *   chare until we have finished the working doproduct
  */
 //============================================================================
-void CP_State_RealSpacePlane::doProduct(ProductMsg *msg) {
+void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
 //============================================================================
 //============================================================================
 // Do not delete msg. Its a nokeep.
@@ -600,7 +600,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
       }//endif
 
       for(int i=0;i<sendFFTDataSize;i++){data[i] = vks_on_state[tranpack[ic][i]];}
-      gproxy(thisIndex.x, ic).doIFFT(msg); // send the message
+      gproxy(thisIndex.x, ic).acceptIFFT(msg); // send the message
       CmiNetworkProgress();
 
     }//end for : chare sending

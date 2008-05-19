@@ -192,7 +192,8 @@ mainmodule cpaimd {
 			complex pts[m],int mv, complex vpts[mv], 
                         int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
                         int istart_cp);
-		entry void doIFFT(GSIFFTMsg *);
+		entry void acceptIFFT(GSIFFTMsg *);
+		entry [local] void doIFFT();
 		entry void doFFT();
 		entry void syncpsi();
 		entry void receiveRDMAHandle(RDMAHandleMsg *msg);
@@ -202,7 +203,9 @@ mainmodule cpaimd {
 		entry void acceptNewPsi(CkReductionMsg *msg);	
 		entry void acceptNewPsi(partialResultMsg *msg);	
 		entry void acceptRedPsi(GSRedPsiMsg *msg);	
-
+		entry [local] void doNewPsi();
+		entry [local] void doNewPsiV();
+		entry [local] void doLambda();
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptLambda(partialResultMsg *msg);
 		entry void acceptAllLambda(CkReductionMsg *msg);
@@ -258,13 +261,16 @@ mainmodule cpaimd {
 		entry void printEnlRSimp(double ,int,int);
                 entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
                                            int index, int iterNL_in);
+		entry [local] void FFTNLEesFwdR();
 	        entry void launchFFTControl(int );
 	};
 
 	array [2D] CP_State_RealSpacePlane {
 		entry CP_State_RealSpacePlane(size2d , int , int ,int, int, int,int, int);
-		entry void doFFT(RSFFTMsg *);
-		entry [nokeep] void doProduct(ProductMsg *m);
+		entry void acceptFFT(RSFFTMsg *);
+		entry [local] void doFFT();
+		entry [nokeep] void acceptProduct(ProductMsg *m);
+		entry [local] void doVksFFT();
 		entry void setNumPlanesToExpect(int num);
 		entry void printData();
 		entry void rdoneVks(CkReductionMsg *m);

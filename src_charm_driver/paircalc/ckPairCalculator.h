@@ -483,7 +483,7 @@ class PairCalculator: public CBase_PairCalculator {
 	      }
 	    if(expectOrthoT && numRecdBWOT==numOrtho)
 	      { // we must also multiply orthoT by Fpsi
-		bwMultiplyDynOrthoT();
+		thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
 		//	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
 		numRecdBWOT=0;
 	      }
@@ -491,7 +491,7 @@ class PairCalculator: public CBase_PairCalculator {
 	else
 	  {
 	    // tolerance correction psiV
-	    multiplyPsiV();
+	    thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
 	  }
       }
     else

@@ -378,7 +378,7 @@ PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks
     // we don't actually use these in the asymmetric minimization case
     // but we make them anyway
     otherResultCookies=new CkSectionInfo[numExpectedY];
-  CmiBarrier();
+
 }
 
 void
@@ -451,8 +451,8 @@ PairCalculator::pup(PUP::er &p)
 	  inDataRight = new double[2*numExpectedY*numPoints];
       else
 	  inDataRight=NULL;
-      orthoCookies= new CkSectionInfo[numOrtho];
-      orthoCB= new CkCallback[numOrtho];
+      orthoCookies= new CkSectionInfo[numOrtho*2];
+      orthoCB= new CkCallback[numOrtho*2];
       if(PCstreamBWout && !collectAllTiles) 
 	{
 	  columnCount= new int[numOrthoCol];
@@ -473,8 +473,8 @@ PairCalculator::pup(PUP::er &p)
     p(inDataLeft, numExpectedX * numPoints * 2);
   if(existsRight)
     p(inDataRight, numExpectedY* numPoints * 2);
-  PUParray(p,orthoCookies,numOrtho);
-  PUParray(p,orthoCB,numOrtho);
+  PUParray(p,orthoCookies,numOrtho*2);
+  PUParray(p,orthoCB,numOrtho*2);
   if(PCstreamBWout && !collectAllTiles) 
     {
       PUParray(p,columnCount,numOrthoCol);
@@ -565,13 +565,14 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   }
   
   */
-  if(!symmetric && ++numRecd==numOrtho)
+  ++numRecd;
+  if((!symmetric && numRecd==numOrtho) || (symmetric && numRecd==numOrtho))
     {
       //      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
       numRecd=0;
     }
-  
+
   //  do not delete nokeep msg
 }
 
@@ -781,7 +782,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 	  actionType=0;
 	  if(!expectOrthoT || numRecdBWOT==numOrtho)
 	    {
-	      multiplyForward(msg->flag_dp);	
+	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(msg->flag_dp);	
 	    }
 	  else
 	    {
@@ -790,7 +791,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
 	    }
 	  if(expectOrthoT && numRecdBWOT==numOrtho)
 	    { // we must also multiply orthoT by Fpsi
-	      bwMultiplyDynOrthoT();
+	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
 	      //	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
 	      numRecdBWOT=0;
 	    }
@@ -798,7 +799,7 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
       else
 	{
 	  // tolerance correction psiV
-	  multiplyPsiV();
+	  thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
 	}
     }
   else
@@ -1577,8 +1578,8 @@ PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
     { // forward path beat orthoT
       CkPrintf("GAMMA beat orthoT, multiplying\n");
       actionType=0;
-      multiplyForward(false);	
-      bwMultiplyDynOrthoT();
+      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(false);	
+      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
       numRecdBWOT=0;
     }
 

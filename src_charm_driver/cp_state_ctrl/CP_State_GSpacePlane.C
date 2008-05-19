@@ -161,7 +161,7 @@ RTH_Routine_locals(CP_State_GSpacePlane,run)
     // (F) When Psi forces come back to us, do back FFT
 #ifndef _CP_DEBUG_VKS_OFF_ // if vks forces are allowed
        RTH_Suspend();  // wait for (psi*vks)=F[gx,gy,z] to arive from RealSpace
-       c->doIFFT();    // Message from realspace arrives : doifft(msg) resumes
+       c->thisProxy(c->thisIndex.x,c->thisIndex.y).doIFFT();    // Message from realspace arrives : doifft(msg) resumes
 #else
        c->doneDoingIFFT = true;
 #endif
@@ -1604,7 +1604,7 @@ void CP_State_GSpacePlane::sendFFTData () {
    // beam out all points with same z to chare array index z
     complex *data    = msg->data;
     for (int i=0,j=z; i<numLines; i++,j+=sizeZ){data[i] = data_out[j];}
-    real_proxy(thisIndex.x, z).doFFT(msg);  // same state, realspace char[z]
+    real_proxy(thisIndex.x, z).acceptFFT(msg);  // same state, realspace char[z]
 
    // progress engine baby
     CmiNetworkProgress();
@@ -1645,7 +1645,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
+void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg) {
 //============================================================================
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0)
@@ -1711,7 +1711,7 @@ void CP_State_GSpacePlane::doIFFT(GSIFFTMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::doIFFT () {
+void CP_State_GSpacePlane::doIFFT() {
 //============================================================================
 // Now do the IFFT in place 
 
@@ -2191,7 +2191,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
-    doLambda();
+    thisProxy(thisIndex.x,thisIndex.y).doLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -2292,7 +2292,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
   countLambdaO[offset]++;
   if(countLambda==AllLambdaExpected){ 
-    doLambda();
+    thisProxy(thisIndex.x,thisIndex.y).doLambda();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3189,7 +3189,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   countPsi++;//psi arrives in as many as 2 *numblock reductions
   countPsiO[offset]++;//psi arrives in as many as 2 
   if(countPsi==AllPsiExpected){ 
-    doNewPsi();
+    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
@@ -3274,7 +3274,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   countPsiO[offset]++;//psi arrives in as many as 2 * numgrain
   //
   if(countPsi==AllPsiExpected){ 
-    doNewPsi();
+    thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
     if(thisIndex.x==0){CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
@@ -3724,7 +3724,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
-    doNewPsiV();
+    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
 //----------------------------------------------------------------------------
@@ -3777,7 +3777,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
-    doNewPsiV();
+    thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
 //----------------------------------------------------------------------------

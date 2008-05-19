@@ -340,7 +340,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void acceptNLForcesEes();
         bool doneNLForces();
 	bool allDoneIFFT() {return allgdoneifft;}
-	void doIFFT(GSIFFTMsg *);
+	void acceptIFFT(GSIFFTMsg *);
+        void doIFFT();
         void acceptAtoms(GSAtmMsg *msg);
         void acceptEnergy(GSAtmMsg *msg);
 	void gdoneIFFT(CkReductionMsg *msg);
@@ -366,7 +367,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void computeCgOverlap();
         void run ();
         void sendFFTData ();
-        void doIFFT ();
+
 	void readFile();
 	void computeEnergies(int p, double d);
 	void startFFT(CkReductionMsg *msg);
@@ -458,10 +459,10 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	CP_State_RealSpacePlane(size2d, int, int,int,int,int,int,int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
-	void doFFT(RSFFTMsg *);
+	void acceptFFT(RSFFTMsg *);
 	void doFFT();
         void doVksFFT();
-	void doProduct(ProductMsg *);
+	void acceptProduct(ProductMsg *);
 	void doProductThenFFT();
         void sendFPsiToGSP();
 	void run();

@@ -1458,7 +1458,7 @@ void main::doneInit(CkReductionMsg *msg){
   delete msg;
     double newtime=CmiWallTimer();
 
-    if(done_init<4){
+    if(done_init<5){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
       Timer=newtime;
     }else{
@@ -1479,7 +1479,7 @@ void main::doneInit(CkReductionMsg *msg){
 
 
       }
-    if (done_init == 3){
+    if (done_init == 4){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
 	{realParticlePlaneProxy.init();}
@@ -1496,8 +1496,8 @@ void main::doneInit(CkReductionMsg *msg){
       }//endfor */
 
     }//endif
-    if (done_init >= 4) {
-      if (done_init == 4){ 
+    if (done_init >= 5) {
+      if (done_init == 5){ 
           PRINT_LINE_STAR;
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
