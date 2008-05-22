@@ -309,6 +309,7 @@ mainmodule cpaimd {
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
                 entry void acceptWhiteByrdAll(RhoGSFFTMsg *msg);
 		entry void isAtSync(int);
+		entry [local] void doRhoFFT();
                 entry void exitForDebugging();
 	};
 
@@ -318,6 +319,7 @@ mainmodule cpaimd {
 		entry void init();
 		entry void isAtSync(int);
 		entry void recvAtmSFFromRhoRHart(RhoGHartMsg *msg);
+		entry [local] void FFTEesBck();
                 entry void registrationDone(CkReductionMsg *msg);
                 entry void exitForDebugging();
                 entry void acceptVks(int size, complex inVks[size]);

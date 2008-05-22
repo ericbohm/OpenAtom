@@ -405,7 +405,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
     }//endif
     count=0;
 #ifndef _DEBUG_INT_TRANS_FWD
-    acceptRhoData();
+    thisProxy(thisIndex.x,thisIndex.y).doRhoFFT();
 #else   
     char name[100];
     sprintf(name,"partFFTGxGyZT%d.out.%d",rhoRsubplanes,thisIndex.x);
@@ -432,7 +432,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_Rho_GSpacePlane::acceptRhoData() { 
+void CP_Rho_GSpacePlane::doRhoFFT() { 
 //============================================================================
 
 #ifdef _CP_DEBUG_RHOG_VERBOSE_

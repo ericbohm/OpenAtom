@@ -600,7 +600,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	void run();
 	void init();
 	void acceptRhoData(RhoGSFFTMsg *msg);
-	void acceptRhoData(); // refine the name
+	void doRhoFFT(); // refine the name
 	void ResumeFromSync();
         void divRhoVksGspace();
         void RhoGSendRhoR(int );

@@ -719,7 +719,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
     countEextFFT = 0;
 #ifndef _DEBUG_INT_TRANS_FWD_
     launchFlag   = 1;
-    if(registrationFlag==1){launchFlag=0; FFTEesBck();} 
+    if(registrationFlag==1){launchFlag=0; thisProxy(thisIndex.x, thisIndex.y).FFTEesBck();} 
 #else   
     char name[100];
     sprintf(name,"partFFTGxGyZT%d.out.%d",rhoRsubplanes,thisIndex.x);
