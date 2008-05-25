@@ -565,13 +565,13 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   }
   
   */
-  ++numRecd;
-  if((!symmetric && numRecd==numOrtho) || (symmetric && numRecd==numOrtho))
-    {
+
+  if(!symmetric && ++numRecd==numOrtho)
+  {
       //      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
       numRecd=0;
-    }
+  }
 
   //  do not delete nokeep msg
 }
