@@ -1458,7 +1458,7 @@ void main::doneInit(CkReductionMsg *msg){
   delete msg;
     double newtime=CmiWallTimer();
 
-    if(done_init<5){
+    if(done_init<4){
       CkPrintf("Completed chare instantiation phase %d in %g\n",done_init+1,newtime-Timer);
       Timer=newtime;
     }else{
@@ -1479,7 +1479,7 @@ void main::doneInit(CkReductionMsg *msg){
 
 
       }
-    if (done_init == 4){
+    if (done_init == 3){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
 	{realParticlePlaneProxy.init();}
@@ -1496,8 +1496,8 @@ void main::doneInit(CkReductionMsg *msg){
       }//endfor */
 
     }//endif
-    if (done_init >= 5) {
-      if (done_init == 5){ 
+    if (done_init >= 4) {
+      if (done_init == 4){ 
           PRINT_LINE_STAR;
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("Running Open Atom CP Minimization: \n");
@@ -1949,7 +1949,8 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
     nlexcludePes= new PeList(peUsedByNLZ);   
   else
     nlexcludePes= new PeList(0);
-
+  if(config.excludePE0)
+      nlexcludePes->appendOne(0);
   int Rstates_per_pe  = config.Rstates_per_pe;
   availGlobG->reset();
   double newtime=CmiWallTimer();
@@ -1986,26 +1987,6 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew();
   newtime=CmiWallTimer();
   CkPrintf("RPPMap created in %g\n",newtime-Timer);
-  if(config.useRhoExclusionMap)
-    {
-      nlexcludePes=NULL;
-    }
-    else
-    {
-      delete nlexcludePes;
-    }
-  Timer=newtime;
-  CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
-  pRealSpaceOpts.setMap(rspMap);
-  realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
-                                ngridaNl,ngridbNl,ngridcNl,
-                                numIterNL,zmatSizeMax,Rstates_per_pe,
-		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
-  realParticlePlaneProxy.doneInserting();
-  printf("\n");
-  PRINT_LINE_DASH;
-  PRINTF("Completed RealParticle chare array build\n");
-  PRINT_LINE_STAR;printf("\n");
 
   if(config.dumpMapFiles) {
     int size[2];
@@ -2018,6 +1999,34 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 #endif
     delete mf;
   }
+
+  if(config.useRhoExclusionMap)
+    {
+      nlexcludePes=NULL;
+    }
+    else
+    {
+	if(nlexcludePes!=NULL)
+	    delete nlexcludePes;
+    }
+  if(config.excludePE0)
+  {
+      if(nlexcludePes==NULL)
+	  nlexcludePes=new PeList(0);
+      nlexcludePes->appendOne(0);
+  }
+  Timer=newtime;
+  CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
+  pRealSpaceOpts.setMap(rspMap);
+  realParticlePlaneProxy = CProxy_CP_State_RealParticlePlane::ckNew(
+                                ngridaNl,ngridbNl,ngridcNl,
+                                numIterNL,zmatSizeMax,Rstates_per_pe,
+		                nchareG,ees_nonlocal_on,pRealSpaceOpts);
+  realParticlePlaneProxy.doneInserting();
+  printf("\n");
+  PRINT_LINE_DASH;
+  PRINTF("Completed RealParticle chare array build\n");
+  PRINT_LINE_STAR;printf("\n");
 
 }
 
@@ -2068,6 +2077,8 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
   excludePes= new PeList(0);   
+  if(config.excludePE0)
+      excludePes->appendOne(0);
 
   if(config.useReductionExclusionMap)
     {
