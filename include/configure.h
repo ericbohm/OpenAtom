@@ -173,6 +173,7 @@ class Config {
    int loadMapFiles;
    int dumpMapFiles;
    int useRhoExclusionMap;
+   int excludePE0;
    int useReductionExclusionMap;
    int fakeTorus;
    int torusDimNX;	// use these to do torus logic testing

@@ -1656,7 +1656,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 17;
+  num_dict[0] = 18;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1771,6 +1771,12 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"useReductionExclusionMap");
     strcpy((*dict)[ind].keyarg,"on");
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 18)\excludePE0{}
+    ind = 18;
+    strcpy((*dict)[ind].keyword,"excludePE0");
+    strcpy((*dict)[ind].keyarg,"off");
+    strcpy((*dict)[ind].error_mes,"on/off");
 
   }//end routine
 //===================================================================================
@@ -1869,13 +1875,19 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     parse_on_off(dict[ind].keyarg,&useStrictCuboid,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
-  //-----------------------------------------------------------------------------
+
   //  17)\useReductionExclusionMap{}
     ind = 17;
     parse_on_off(dict[ind].keyarg,&useReductionExclusionMap,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(dict[ind].iuset==0){useReductionExclusionMap=1;}
-
+  //-----------------------------------------------------------------------------
+  //  18)\excludePE0{}
+    ind = 18;
+    parse_on_off(dict[ind].keyarg,&excludePE0,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(dict[ind].iuset==0){excludePE0=0;}
+  //-----------------------------------------------------------------------------
 
   }//end routine
 //===================================================================================
@@ -2717,7 +2729,7 @@ void Config::rangeExit(int param, char *name, int iopt){
 //===================================================================================
 // Mapping checks
 
-#ifndef CMK_VERSION_BLUEGENE
+/*#ifndef CMK_VERSION_BLUEGENE
     if(!fakeTorus && (useCuboidMap || useCuboidMapRS)){
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("   useCuboidMap requires CMK_VERSION_BLUEGENE\n");
@@ -2725,7 +2737,7 @@ void Config::rangeExit(int param, char *name, int iopt){
        EXIT(1);
     }//endif
 #endif
-
+*/
     if(Gstates_per_pe<1 || Gstates_per_pe>nstates){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("   The number of Gstates per pe must be >=1 < num states\n");
