@@ -96,8 +96,8 @@ class CLA_Matrix_interface {
     inline void setProxy(CProxy_CLA_Matrix pp){ p = pp; }
 
   friend int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
-   CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
-   CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+   CLA_Matrix_interface *C, CProxy_CkArrayMap bindA,
+   CProxy_CkArrayMap bindB, CProxy_CkArrayMap bindC,
    int M, int K, int N, int m, int k, int n, int strideM, int strideK,
    int strideN, CkCallback cbA, CkCallback cbB,
    CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
@@ -198,8 +198,8 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
 #define MM_ALG_MAX	2
 
 int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
- CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+ CLA_Matrix_interface *C, CProxy_CkArrayMap bindA,
+ CProxy_CkArrayMap bindB, CProxy_CkArrayMap bindC,
  int M, int K, int N, int m, int k, int n, int strideM, int strideK,
  int strideZ, CkCallback cbA, CkCallback cbB,
  CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);

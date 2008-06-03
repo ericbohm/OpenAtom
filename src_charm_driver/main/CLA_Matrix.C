@@ -32,14 +32,18 @@ extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 #define MULTARG_B	1
 #define MULTARG_C	2
 extern CkReduction::reducerType sumFastDoubleType;
+#include "cpaimd.h"
+#include "MapTable.h"
+#include "ortho.h"
+extern CProxy_OrthoMap orthoMap;
+
 /******************************************************************************/
 /* helper functions */
 
 /* Should be called by user to create matrices. Documented in header file. */
 int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
- CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
-		    int M, //nstates
+ CLA_Matrix_interface *C, CProxy_CkArrayMap bindA,
+ CProxy_CkArrayMap bindB, CProxy_CkArrayMap bindC, 		    int M, //nstates
 		    int K, //nstates
 		    int N, //nstates
 		    int m, //orthograinsize
@@ -57,13 +61,18 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
   if(m > M || k > K || n > N)
     return ERR_INVALID_DIM;
   /* create arrays */
-  CkArrayOptions optsA(0);
-  CkArrayOptions optsB(0);
-  CkArrayOptions optsC(0);
+  CkArrayOptions optsA;
+  CkArrayOptions optsB;
+  CkArrayOptions optsC;
   
-  optsA.bindTo(bindA);
-  optsB.bindTo(bindB);
-  optsC.bindTo(bindC);
+//  optsA.bindTo(bindA);
+//  optsB.bindTo(bindB);
+//  optsC.bindTo(bindC);
+  // alternate comap scheme broken for orthohelpers
+  optsA.setMap(bindA);
+  optsB.setMap(bindB);
+  optsC.setMap(bindC);
+
   CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
   CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
   CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
@@ -182,27 +191,28 @@ void transpose(double *data, int m, int n){
 /* CLA_Matrix */
 
 /* constructor for 2D algorithm */
-CLA_Matrix::CLA_Matrix(int M, int K, int N, int m, int k, int n,
- int strideM, int strideK, int strideN, int part,
- CProxy_CLA_Matrix other1, CProxy_CLA_Matrix other2, CkCallback ready, int _gemmSplitOrtho){
+CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
+ int strideM, int strideK, int strideN, int _part,
+ CProxy_CLA_Matrix _other1, CProxy_CLA_Matrix _other2, CkCallback ready, int _gemmSplitOrtho){
   /* initialize simple members */
-  this->M = M; this->K = K; this->N = N;
-  this->um = m; this->uk = k; this->un = n;
-  this->part = part;
+  this->M = _M; this->K = _K; this->N = _N;
+  this->um = _m; this->uk = _k; this->un = _n;
+  this->m = _m; this->k = _k; this->n = _n;
+  this->part = _part;
   this->algorithm = MM_ALG_2D;
-  this->other1 = other1; this->other2 = other2;
+  this->other1 = _other1; this->other2 = _other2;
   this->M_stride = strideM;
   this->K_stride = strideK;
   this->N_stride = strideN;
   gemmSplitOrtho=_gemmSplitOrtho;
-  M_chunks = (M + m - 1) / m;
-  K_chunks = (K + k - 1) / k;
-  N_chunks = (N + n - 1) / n;
-  if(M%m!=0)
+  M_chunks = (_M + _m - 1) / _m;
+  K_chunks = (_K + _k - 1) / _k;
+  N_chunks = (_N + _n - 1) / _n;
+  if(M % m != 0)
     M_chunks--;
-  if(K%k!=0)
+  if(K % k != 0)
     K_chunks--;
-  if(N%n!=0)
+  if(N % n != 0)
     N_chunks--;
   //  correct for number of chunks
 
@@ -212,40 +222,40 @@ CLA_Matrix::CLA_Matrix(int M, int K, int N, int m, int k, int n,
   /* figure out size of our sections */
   if(part == MULTARG_A){
     if(thisIndex.x == (M_chunks - 1) * strideM){
-      this->m = m + M % m;
-      if(this->m == 0) this->m = m;
+      this->m = _m + _M % _m;
+      if(this->m == 0) this->m = _m;
     }
-    else this->m = m;
+    else this->m = _m;
     if(thisIndex.y == (K_chunks - 1) * strideK){
-      this->k = k + K % k;
-      if(this->k == 0) this->k = k;
+      this->k = _k + _K % _k;
+      if(this->k == 0) this->k = _k;
     }
-    else this->k = k;
-    this->n = n;
+    else this->k = _k;
+    this->n = _n;
   } else if(part == MULTARG_B) {
     if(thisIndex.x == (K_chunks - 1) * strideK){
-      this->k = k + K % k;
-      if(this->k == 0) this->k = k;
+      this->k = _k + _K % _k;
+      if(this->k == 0) this->k = _k;
     }
-    else this->k = k;
+    else this->k = _k;
     if(thisIndex.y == (N_chunks - 1) * strideN){
-      this->n = n + N % n;
-      if(this->n == 0) this->n = n;
+      this->n = _n + _N % _n;
+      if(this->n == 0) this->n = _n;
     }
-    else this->n = n;
-    this->m = m;
+    else this->n = _n;
+    this->m = _m;
   } else if(part == MULTARG_C) {
     if(thisIndex.x == (M_chunks - 1) * strideM){
-      this->m = m + M % m;
-      if(this->m == 0) this->m = m;
+      this->m = _m + _M % _m;
+      if(this->m == 0) this->m = _m;
     }
-    else this->m = m;
+    else this->m = _m;
     if(thisIndex.y == (N_chunks - 1) * strideN){
-      this->n = n + N % n;
-      if(this->n == 0) this->n = n;
+      this->n = _n + _N % _n;
+      if(this->n == 0) this->n = _n;
     }
-    else this->n = n;
-    this->k = k;
+    else this->n = _n;
+    this->k = _k;
     got_start = false;
     row_count = col_count = 0;
   }
@@ -545,7 +555,7 @@ void CLA_Matrix::multiply(){
     transpose(dest, m, n);
   /* multiply */
   char trans = 'T';
-#define ORTHO_DGEMM_SPLIT 
+//#define ORTHO_DGEMM_SPLIT 
 
 #define BUNDLE_USER_EVENTS
 #ifdef ORTHO_DGEMM_SPLIT 

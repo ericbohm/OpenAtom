@@ -132,6 +132,7 @@ PairCalcID pairCalcID1;
 PairCalcID pairCalcID2;
 
 
+CProxy_OrthoMap                   orthoMap;
 CProxy_main                       mainProxy;
 CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
 CProxy_CP_State_ParticlePlane     particlePlaneProxy;
@@ -1285,7 +1286,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   CkPrintf("OrthoMap created in %g\n", newtime-Timer);
 
   //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
-  CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew();
+  orthoMap = CProxy_OrthoMap::ckNew();
   CkArrayOptions orthoOpts;
   orthoOpts.setMap(orthoMap);
 
@@ -1329,7 +1330,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
   CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
    orthoProxy(0, 0));
 
-  make_multiplier(&matA1, &matB1, &matC1, orthoProxy, orthoProxy, orthoProxy,
+  make_multiplier(&matA1, &matB1, &matC1, orthoMap, orthoMap, orthoMap,
    nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
    config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
@@ -1379,20 +1380,20 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 	delete mf;
       }
       orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
-      make_multiplier(&matA2, &matB2, &matC2, orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
+      make_multiplier(&matA2, &matB2, &matC2, orthoHMap, orthoHMap, orthoHMap,
 		      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
 		      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
 		      ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
     }
   else  //no helpers
   {
-    make_multiplier(&matA2, &matB2, &matC2, orthoProxy, orthoProxy, orthoProxy,
+    make_multiplier(&matA2, &matB2, &matC2, orthoMap, orthoMap, orthoMap,
 	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
 	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
 	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
   }
 
-  make_multiplier(&matA3, &matB3, &matC3, orthoProxy, orthoProxy, orthoProxy,
+  make_multiplier(&matA3, &matB3, &matC3, orthoMap, orthoMap, orthoMap,
    nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
    config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);

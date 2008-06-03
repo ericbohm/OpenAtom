@@ -19,7 +19,7 @@ mainmodule cpaimd {
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
 	readonly CkVec <CkGroupID> mCastGrpIds;
 	initproc registersumFastDouble(void);	
-
+	readonly  CProxy_OrthoMap orthoMap;
         extern module ckPairCalculator;
 	extern module CLA_Matrix; 
 
