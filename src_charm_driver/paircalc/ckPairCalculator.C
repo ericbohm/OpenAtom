@@ -1578,7 +1578,8 @@ PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
     { // forward path beat orthoT
       CkPrintf("GAMMA beat orthoT, multiplying\n");
       actionType=0;
-      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(false);	
+      bool myfalse=false;
+      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(myfalse);	
       thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
       numRecdBWOT=0;
     }
