@@ -98,7 +98,7 @@ void CP_State_RealSpacePlane::run () {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_State_RealSpacePlane::CP_State_RealSpacePlane(size2d size, int gSpaceUnits, 
+CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
                   int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc, int _rfortime, int _rbacktime) {
 //============================================================================
 //  ckout << "State R Space Constructor : "

@@ -27,13 +27,13 @@ public:
 
    void pup(PUP::er &);
    int cp_min_opt;
+   size2d planeSize;
    int numNonZeroPlanes;
    int numRuns, numLines;      // numLines=numRun/2=number of lines in collection
    int numPoints;              // number of non-zero pts in the collection
    int numFull;                // expanded data : nfftz*numLines
    int numFullNL;              // expanded data : nfftz*numLines
    int ees_nonlocal;
-   size2d planeSize;           // size of the ffT in Y*Z dimension
    bool fftReqd;               // flags to indicate whether this data set of pencils
    int mysizeX;                // size of the ffT in X dimension 
    int S_grainSize;            // PC decomposition
@@ -427,8 +427,7 @@ class FFTcache: public Group {
 
     //-----------------------------------------------------------
     // The constructor 
-     FFTcache(size2d planeSIZE, 
-                   int _ngrida, int _ngridb, int _ngridc, 
+     FFTcache(     int _ngrida, int _ngridb, int _ngridc, 
                    int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 
                    int _ees_NL_on, int _nlines_max, int _nlines_max_rho,
@@ -545,7 +544,7 @@ class GSlabInfo {
 //==============================================================================
 // slab initialization helpers
 
-void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits, 
+void initGStateSlab(GStateSlab *gs, int sizeX, int sizeY, int sizeZ, int gSpaceUnits, 
                     int realSpaceUnits, int s_grain,int iplane_ind,int istate_ind,
                     int len_nhc_cp, int num_nhc_cp,int nck_nhc_cp);
 void initRealStateSlab(RealStateSlab *rs, int ngrid_a, int ngrid_b, int ngrid_c,

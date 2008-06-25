@@ -63,7 +63,7 @@ extern CProxy_FFTcache           fftCacheProxy;
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ, 
+CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, 
 	       int numRealSpace, int numRealSpaceDensity, bool _useCommlib)
 //============================================================================
     {//begin routine
@@ -87,7 +87,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     doneWhiteByrd = 0;
     for(int i=1;i<=3;i++){countWhiteByrd[i]=0;}
 
-    int sizeZ=sizeYZ[1];
+    int sizeZ=sim->sizeZ;
     if(rhoRsubplanes>1){
       recvCountFromRRho = 0;
       for(int i=0;i<rhoRsubplanes;i++){
@@ -107,8 +107,8 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, size2d sizeYZ,
     CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
 
     rho_gs.sizeX    = sizeX;
-    rho_gs.sizeY    = sizeYZ[0];
-    rho_gs.sizeZ    = sizeYZ[1];
+    rho_gs.sizeY    = sim->sizeY;
+    rho_gs.sizeZ    = sim->sizeZ;
 
     int x = thisIndex.x;
 

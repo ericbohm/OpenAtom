@@ -34,7 +34,7 @@ extern CProxy_CPcharmParaInfoGrp scProxy;
 //==============================================================================
 //FFTcache - sets up a fftcache on each processor
 //==============================================================================
-FFTcache::FFTcache(size2d planeSIZE, 
+FFTcache::FFTcache( 
    		   int _ngrida, int _ngridb,int _ngridc,
                    int _ngridaEext, int _ngridbEext, int _ngridcEext, 
                    int _ees_eext_on, int _ngridaNL, int _ngridbNL, int _ngridcNL, 

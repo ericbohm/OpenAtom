@@ -186,7 +186,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D]  CP_State_GSpacePlane {
-		entry CP_State_GSpacePlane(int sizeX, size2d planeSize, 
+		entry CP_State_GSpacePlane(int sizeX, 
                         int numG, int numR, int s_grain, int numChunks, int timekeepf, int timekeepb);
 		entry void initGSpace(int m, 
 			complex pts[m],int mv, complex vpts[mv], 
@@ -266,7 +266,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_State_RealSpacePlane {
-		entry CP_State_RealSpacePlane(size2d , int , int ,int, int, int,int, int);
+		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int);
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();
 		entry [nokeep] void acceptProduct(ProductMsg *m);
@@ -278,7 +278,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, size2d, bool,int,int, int);
+		entry CP_Rho_RealSpacePlane(int, bool,int,int, int);
 		entry void init();
                 entry void exitForDebugging();
 		entry void acceptDensity(CkReductionMsg *m);
@@ -303,7 +303,7 @@ mainmodule cpaimd {
         }
 
 	array [2D] CP_Rho_GSpacePlane {
-		entry CP_Rho_GSpacePlane(int, size2d, int, int, bool);
+		entry CP_Rho_GSpacePlane(int, int, int, bool);
 		entry void init();
 		entry void acceptRhoData(RhoGSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
@@ -314,7 +314,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_GHartExt {
-		entry CP_Rho_GHartExt(size2d,int,int,int,int,int);
+		entry CP_Rho_GHartExt(int,int,int,int,int);
 		entry void acceptData(RhoGHartMsg *msg);
 		entry void init();
 		entry void isAtSync(int);
@@ -430,7 +430,7 @@ mainmodule cpaimd {
 	  *  across entry method calls.  Does no messaging.
 	  */	
 	group FFTcache {
-		entry FFTcache(size2d , int , int , int , int , int , int , 
+		entry FFTcache( int , int , int , int , int , int , 
                    int , int , int , int , int , int , int ,
                    int nchareGState, int nchareRState,
                    int nchareGNL,    int nchareRNL, 

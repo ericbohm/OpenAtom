@@ -390,7 +390,6 @@ main::main(CkArgMsg *msg) {
       numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
-    size2d sizeYZ    = size2d(sim->sizeY,sim->sizeZ);
     nchareG          = config.nchareG;
     sim->nchareG     = nchareG; 
 
@@ -568,7 +567,7 @@ main::main(CkArgMsg *msg) {
     //    availGlobG->dump();
     Timer=newtime;
     TimeKeeperProxy= CProxy_TimeKeeper::ckNew(0);    
-    init_state_chares(sizeYZ,natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
+    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 
     int *usedProc= new int[CkNumPes()];
@@ -630,16 +629,16 @@ main::main(CkArgMsg *msg) {
 //============================================================================ 
 // Initialize the density chare arrays
 
-    init_rho_chares(sizeYZ,sim);
+    init_rho_chares(sim);
 
 //============================================================================ 
 // Initialize commlib strategies for later association and delegation
     if(sim->ees_nloc_on)
-      init_eesNL_chares(sizeYZ, natm_nl, natm_nl_grp_max, doublePack, excludePes, sim);
+      init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim);
 
 
 
-    init_commlib_strategies(sim->nchareRhoG, sizeYZ[1],nchareRhoRHart);
+    init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart);
 
     TimeKeeperProxy.init();
 
@@ -1520,7 +1519,7 @@ void main::doneInit(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfGrps,
+void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
                        int doublePack, CPcharmParaInfo *sim)
 //============================================================================
    { //begin routine 
@@ -1608,13 +1607,12 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int *numRXEext     = new int [nchareRHartTot];
   int *numRYEext     = new int [nchareRHartTot];
   int *numSubGx      = sim->numSubGx;
-  size2d sizeRealPlane(sizeYZ[0], sizeX);
 
   create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
                          sim->nplane_rho_x,sim->sizeY,ngridbEext,
                          numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
 
-  fftCacheProxy = CProxy_FFTcache::ckNew(sizeRealPlane,
+  fftCacheProxy = CProxy_FFTcache::ckNew(
    		     sim->sizeX,sim->sizeY,sim->sizeZ,
                      ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
                      ngridaNl,  ngridbNl,  ngridcNl,  ees_nonlocal_on, 
@@ -1689,7 +1687,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int gbackward=keeperRegister(string("GSpaceBackward"));
   gSpaceOpts.setMap(gsMap);
   gSpacePlaneProxy = CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX, sizeYZ, 1, 1, sGrainSize, numChunks,  gforward, 
+                     sizeX,  1, 1, sGrainSize, numChunks,  gforward, 
 		     gbackward, gSpaceOpts);
   gSpacePlaneProxy.doneInserting();
  //--------------------------------------------------------------------------------
@@ -1700,7 +1698,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
   particleOpts.bindTo(gSpacePlaneProxy);
   particlePlaneProxy = CProxy_CP_State_ParticlePlane::ckNew(
-                       nchareG, sizeYZ[0], sizeYZ[1],ngridaNl,ngridbNl,ngridcNl,
+                       nchareG, sim->sizeY, sim->sizeZ,ngridaNl,ngridbNl,ngridcNl,
                        1, numSfGrps, natm_nl, natm_nl_grp_max, nstates, 
                        nchareG, Gstates_per_pe, numIterNL, ees_nonlocal_on, 
                        particleOpts);
@@ -1761,8 +1759,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
   int rforward=keeperRegister(string("RealSpaceForward"));
   int rbackward=keeperRegister(string("RealSpaceBackward"));
 
-  realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(sizeRealPlane, 
-	1, 1, ngrida, ngridb, ngridc, rforward, rbackward,realSpaceOpts);
+  realSpacePlaneProxy = CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward,realSpaceOpts);
     realSpacePlaneProxy.doneInserting();  
   if(config.dumpMapFiles) {
     int size[2];
@@ -1918,7 +1915,7 @@ void init_state_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,int numSfG
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
+void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim)
 //============================================================================
    { //begin routine 
@@ -2038,7 +2035,7 @@ void init_eesNL_chares(size2d sizeYZ, int natm_nl,int natm_nl_grp_max,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
+void init_rho_chares(CPcharmParaInfo *sim)
 //============================================================================
 {//begin routine
   //============================================================================
@@ -2328,12 +2325,12 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
     
   // insert rhoreal
   int rhokeeper= keeperRegister(string("Density"));
-  rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,sizeYZ,dummy, 
+  rhoRealProxy = CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,dummy, 
 						     ees_eext_on, ngrid_eext_c, rhokeeper,
 						     rhorsOpts);
   /*    for (int i = 0; i < nchareRhoR; i++){
       for (int j = 0; j < config.rhoRsubplanes; j++){
-	rhoRealProxy(i,j).insert(sizeX,sizeYZ,dummy, ees_eext_on, ngrid_eext_c, rhokeeper);
+	rhoRealProxy(i,j).insert(sizeX,dummy, ees_eext_on, ngrid_eext_c, rhokeeper);
       } //endfor
     } //endfor
     */
@@ -2341,22 +2338,22 @@ void init_rho_chares(size2d sizeYZ, CPcharmParaInfo *sim)
   rhoRealProxy.setReductionClient(printEnergyEexc, 0);
   //--------------------------------------------------------------------------
   // insert rhog
-  rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, sizeYZ, 1, 
+  rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, 1, 
 					       1, dummy, 
 					       rhogsOpts);
-  /*  for (int i = 0; i < nchareRhoG; i++){
-    rhoGProxy(i,0).insert(sizeX, sizeYZ,1,1,dummy );
+/*  for (int i = 0; i < nchareRhoG; i++){
+    rhoGProxy(i,0).insert(sizeX, 1,1,dummy );
   }//endfor
-  */
+*/
   rhoGProxy.doneInserting();
   //--------------------------------------------------------------------------
   // insert rhoghart
-  rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+  rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
 						   ngrid_eext_c,ees_eext_on,natmTyp,rhoghartOpts);
   /*
   for (int k = 0; k < nchareHartAtmT; k++){
     for (int i = 0; i < nchareRhoGHart; i++){
-      rhoGHartExtProxy(i,k).insert(sizeYZ,ngrid_eext_a,ngrid_eext_b,
+      rhoGHartExtProxy(i,k).insert(ngrid_eext_a,ngrid_eext_b,
 				   ngrid_eext_c,ees_eext_on,natmTyp);
     }//endfor
   }//endfor
@@ -2589,8 +2586,20 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
       CkPrintf("Using long prisms for useCuboidMapRS\n");
     }
   order=0;
-  // We are reducing the volume by half and then finding the dimensions of the
+  // We were reducing the volume by maxT and then finding the dimensions of the
   // box in terms of the no. of nodes and not processors
+
+  // That worked ok on BG/L, but BG/P maxT of 4 distorts the long axis logic.
+  // in TXYZ you have a 32x8x16 for 1 Rack or 32x8x32 for 2 Rack
+  // in XYZT you have 8x8x64 for 1 Rack or 8x8x128 for 2 Rack
+
+  // The latter case makes clear the bizarre and unreal distortion created by
+  // pretending that maxT is just a multiplier along one dimension when
+  // considering actual box size.  What was merely odd on BG/L is now
+  // seriously peculiar.  Also default TXYZ mappings and default Order 0
+  // mappings to use the X as long axis for prisms fail to work right because
+  // we aren't really spanning the X*maxT dimension with these long prisms.
+  
   int redVol = volume / maxT;
   double cubert= cbrt((double) redVol);
   int cubetrunc= (int) cubert;

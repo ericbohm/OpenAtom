@@ -75,7 +75,7 @@ bool is_pow2(int );
 // Performs lots of operations to get exc, eext energies and vks
 //
 //============================================================================
-CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, size2d yzdim,bool _useCommlib, 
+CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib, 
                                              int _ees_eext_on,int _ngridcEext,
 					     int _rhokeeperid)
 //============================================================================

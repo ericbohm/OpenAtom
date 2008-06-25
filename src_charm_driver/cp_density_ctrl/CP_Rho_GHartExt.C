@@ -75,7 +75,7 @@ extern ComlibInstanceHandle         commGHartRHartIns1;
  *  vks.  
  */
 //============================================================================
-CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
+CP_Rho_GHartExt::CP_Rho_GHartExt(
           int _ngridaEext, int _ngridbEext, int _ngridcEext, int _ees_eext_on,
           int _natmTyp)
 //============================================================================
@@ -158,8 +158,8 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(size2d sizeYZ,
 // Set up rho_gs : Carve out your rundescriptor : Make the k-vectors  (donuts)
 
   rho_gs.sizeX     = sizeX;
-  rho_gs.sizeY     = sizeYZ[0];
-  rho_gs.sizeZ     = sizeYZ[1];
+  rho_gs.sizeY     = sim->sizeY;
+  rho_gs.sizeZ     = sim->sizeZ;
   rho_gs.xdim      = rho_gs.sizeX;
   rho_gs.ydim      = rho_gs.sizeY;
   rho_gs.zdim      = 1;

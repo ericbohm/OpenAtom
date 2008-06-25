@@ -574,7 +574,6 @@ void printForce(void *param, void *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX, 
-                                           size2d size, 
                                            int    gSpaceUnits, 
                                            int    realSpaceUnits, 
                                            int    s_grain,
@@ -738,7 +737,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   int num_nhc_cp;
   int nck_nhc_cp;
   CPINTEGRATE::fetchNHCsize(&len_nhc_cp,&num_nhc_cp,&nck_nhc_cp);
-  initGStateSlab(&gs,sizeX,size,gSpaceUnits,realSpaceUnits,s_grain,
+  initGStateSlab(&gs,sizeX,sim->sizeY,sim->sizeZ,gSpaceUnits,realSpaceUnits,s_grain,
                  thisIndex.y,thisIndex.x,len_nhc_cp,num_nhc_cp,nck_nhc_cp);
 
 //============================================================================

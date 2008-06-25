@@ -309,7 +309,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool triggerNL;
 	bool NLready;
 	friend class CP_State_ParticlePlane;
-	CP_State_GSpacePlane(int, size2d, int, int, int, int,int,int);
+	CP_State_GSpacePlane( int, int, int, int, int,int,int);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void receiveRDMAHandle(RDMAHandleMsg *msg);
@@ -456,7 +456,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 //============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
-	CP_State_RealSpacePlane(size2d, int, int,int,int,int,int,int);
+	CP_State_RealSpacePlane(int, int,int,int,int,int,int);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void acceptFFT(RSFFTMsg *);
@@ -531,7 +531,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int recvCountFromGRho;
 	int recvCountFromGHartExt;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-	CP_Rho_RealSpacePlane(int, size2d, bool,int,int,int);
+	CP_Rho_RealSpacePlane(int, bool,int,int,int);
 	void init();
        ~CP_Rho_RealSpacePlane();
 	void pup(PUP::er &);
@@ -595,7 +595,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
  public:
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
-	CP_Rho_GSpacePlane(int, size2d, int, int, bool);
+	CP_Rho_GSpacePlane(int, int, int, bool);
 	~CP_Rho_GSpacePlane();
 	void run();
 	void init();
@@ -727,7 +727,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
 class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
  public:
 	CP_Rho_GHartExt(CkMigrateMessage *m) {}
-	CP_Rho_GHartExt(size2d,int , int , int , int ,int );
+	CP_Rho_GHartExt(int , int , int , int ,int );
 	void init();
 	~CP_Rho_GHartExt();
 	void pup(PUP::er &);

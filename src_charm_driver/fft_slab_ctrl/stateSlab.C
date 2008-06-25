@@ -35,7 +35,7 @@ extern int sizeX;
 //==============================================================================
 /* This gets called at the end of the GStatePlane constructor */
 //==============================================================================
-void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits, 
+void initGStateSlab(GStateSlab *gs, int sizeX, int sizeY, int sizeZ, int gSpaceUnits, 
           int realSpaceUnits, int s_grain, int iplane_ind,int istate_ind,
           int len_nhc_cp, int num_nhc_cp, int nck_nhc_cp) 
 //==============================================================================
@@ -65,7 +65,7 @@ void initGStateSlab(GStateSlab *gs, int sizeX, size2d size, int gSpaceUnits,
    }//endif
    gs->numNonZeroPlanes=1;
    gs->mysizeX   = sizeX;
-   gs->planeSize = size;  // fftsizes (sizeY,sizeZ)  sizeX is a global
+   gs->planeSize = size2d(sizeY,sizeZ);  // fftsizes (sizeY,sizeZ)  sizeX is a global
    gs->numPoints = 0;     // number of packed points (data size before fft)
    gs->numRuns   = 0;     // 2*(number of lines) in the collection
    gs->numLines  = 0;     // (number of lines) in the collection
