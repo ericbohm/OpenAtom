@@ -1947,7 +1947,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
     nlexcludePes= new PeList(peUsedByNLZ);   
   else
     nlexcludePes= new PeList(0);
-  if(config.excludePE0)
+  if(config.excludePE0 && ! config.loadMapFiles)
       nlexcludePes->appendOne(0);
   int Rstates_per_pe  = config.Rstates_per_pe;
   availGlobG->reset();
@@ -2007,7 +2007,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 	if(nlexcludePes!=NULL)
 	    delete nlexcludePes;
     }
-  if(config.excludePE0)
+  if(config.excludePE0 &&  !config.loadMapFiles)
   {
       if(nlexcludePes==NULL)
 	  nlexcludePes=new PeList(0);
@@ -2070,15 +2070,20 @@ void init_rho_chares(CPcharmParaInfo *sim)
   //============================================================================
   // Nuke some procs from the list : reset, nuke, reset if you run out
 
-  availGlobR->reset();
-  PeList *RhoAvail= new PeList(*availGlobR);
+  
+  PeList *RhoAvail=NULL;
+  if(!config.loadMapFiles)
+  {
+      availGlobR->reset();
+      RhoAvail=new PeList(*availGlobR);
+  }
   //------------------------------------------------------------------------
   // subtract processors used by other nonscaling chares (non local reduceZ)
   excludePes= new PeList(0);   
-  if(config.excludePE0)
+  if(config.excludePE0 && !config.loadMapFiles)
       excludePes->appendOne(0);
 
-  if(config.useReductionExclusionMap)
+  if(config.useReductionExclusionMap && !config.loadMapFiles)
     {
       if( nchareRhoR*config.rhoRsubplanes+peUsedByNLZ.size() <
 	  RhoAvail->count()){
@@ -2104,7 +2109,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 	}//endif
       }//endif
     }
-  if(RhoAvail->count()>2) { RhoAvail->reindex(); }
+  if(RhoAvail->count()>2 && !config.loadMapFiles) { RhoAvail->reindex(); }
 
   //============================================================================
   // Maps and options
@@ -2117,7 +2122,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
 
   int success = 0;
-  if(false && config.loadMapFiles) {
+  if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
     MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
@@ -2158,7 +2163,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   //---------------------------------------------------------------------------
   // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
-  if(nchareRhoG>RhoAvail->count())
+  if(nchareRhoG>RhoAvail->count() && !config.loadMapFiles)
     {
       CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
       RhoAvail->reset();
@@ -2168,7 +2173,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
 
   success = 0;
-  if(false && config.loadMapFiles) {
+  if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoG; size[1] = 1;
     MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
@@ -2209,7 +2214,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   //---------------------------------------------------------------------------
   // rho RHart 
   // if there aren't enough free procs refresh the avail list;
-  if(nchareRhoRHart*nchareHartAtmT > RhoAvail->count())
+  if(!config.loadMapFiles && nchareRhoRHart*nchareHartAtmT > RhoAvail->count())
     RhoAvail->reset();
   CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
   //CkArrayOptions rhorhartOpts;
@@ -2220,7 +2225,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
 
     success = 0;
-    if(false && config.loadMapFiles) {
+    if(config.loadMapFiles) {
       int size[3];
       size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
       size[2] = nchareHartAtmT;
@@ -2271,7 +2276,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
 
   success = 0;
-  if(false && config.loadMapFiles) {
+  if(config.loadMapFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
     MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
