@@ -2109,7 +2109,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 	}//endif
       }//endif
     }
-  if(RhoAvail->count()>2 && !config.loadMapFiles) { RhoAvail->reindex(); }
+  if(!config.loadMapFiles && RhoAvail->count()>2 ) { RhoAvail->reindex(); }
 
   //============================================================================
   // Maps and options
@@ -2163,7 +2163,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   //---------------------------------------------------------------------------
   // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
-  if(nchareRhoG>RhoAvail->count() && !config.loadMapFiles)
+  if(!config.loadMapFiles && nchareRhoG>RhoAvail->count()) 
     {
       CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
       RhoAvail->reset();
@@ -2269,7 +2269,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   //---------------------------------------------------------------------------
   // rho GHart 
   // if there aren't enough free procs refresh the avail list;
-  if(nchareRhoGHart>RhoAvail->count())
+  if(!config.loadMapFiles && nchareRhoGHart>RhoAvail->count())
     RhoAvail->reset();
 #ifdef USE_INT_MAP
   RhoGHartImaptable.buildMap(nchareRhoGHart, nchareHartAtmT);
@@ -2390,7 +2390,8 @@ void init_rho_chares(CPcharmParaInfo *sim)
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");
   PRINT_LINE_STAR;printf("\n");
-  delete RhoAvail;
+  if(RhoAvail!=NULL)
+    delete RhoAvail;
 
   //===========================================================================
 }//end routine

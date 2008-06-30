@@ -144,7 +144,7 @@ int MapFile::loadMap(char *filename, MapType3 *map)
   FILE *fp = fopen(filename, "r");
   if(fp==NULL)
     return 0;
-  fscanf(fp, "%s%d%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
+  fscanf(fp, "%s%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)

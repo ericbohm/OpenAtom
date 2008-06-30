@@ -4,6 +4,8 @@
 
 #ifndef _ckPairCalculator_h_
 #define _ckPairCalculator_h_
+#undef  OLD_COMMLIB
+#define OLD_COMMLIB 1
 #define _PC_COMMLIB_MULTI_ 0
 #include "pairutil.h"
 #include "ckmulticast.h"
