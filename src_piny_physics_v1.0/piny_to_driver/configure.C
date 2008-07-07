@@ -1656,7 +1656,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 18;
+  num_dict[0] = 19;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1777,6 +1777,12 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"excludePE0");
     strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 19)\dumpMapCoordFiles{}
+    ind=19;
+    strcpy((*dict)[ind].keyword,"dumpMapCoordFiles");
+    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].error_mes,"on/off");
 
   }//end routine
 //===================================================================================
@@ -1888,6 +1894,11 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(dict[ind].iuset==0){excludePE0=0;}
   //-----------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------
+  // 19)\dumpMapCoordFiles{}
+    ind = 19;
+    parse_on_off(dict[ind].keyarg,&dumpMapCoordFiles,&ierr);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
 
   }//end routine
 //===================================================================================
@@ -2663,6 +2674,7 @@ void Config::simpleRangeCheck(){
   rangeExit(useCentroidMap,"useCentroidMap;",1);
   rangeExit(loadMapFiles,"loadMapFiles:",1);
   rangeExit(dumpMapFiles,"dumpMapFiles:",1);
+  rangeExit(dumpMapCoordFiles,"dumpMapCoordFiles:",1);
   rangeExit(useCentroidMapRho,"useCentroidMapRho;",1);
   rangeExit(numChunksAsym,"numChunksAsym;",0);
   rangeExit(numChunksSym,"numChunksSym;",0);

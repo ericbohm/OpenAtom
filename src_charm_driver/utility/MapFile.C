@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "MapFile.h"
+extern TopoManager *topoMgr;
 
 MapFile::~MapFile()
 {
@@ -71,6 +72,68 @@ void MapFile::setAttributes(int num, int* size, char *order, int x, int y, int z
 }
 
 
+void MapFile::dumpMapCoords(MapType2 *map)
+{
+  FILE *fp = fopen(mapName, "w");
+  fprintf(fp, "%s %d ", mapName, numDim);
+  for(int i=0; i<numDim; i++)
+    fprintf(fp, "%d ", sizeDim[i]);
+  fprintf(fp, "\n%d \n", numProcs);
+  for(int i=0; i<sizeDim[0]; i++)
+    for(int j=0; j<sizeDim[1]; j++)
+      {
+	int proc=map->get(i, j);
+	int X, Y, Z, T;
+	topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+	fprintf(fp, "%d %d %d %d %d %d %d\n", i, j, proc,X,Y,Z,T);
+      }
+  fclose(fp);
+}
+
+
+void MapFile::dumpMapCoords(MapType4 *map)
+{
+  FILE *fp = fopen(mapName, "w");
+  fprintf(fp, "%s %d ", mapName, numDim);
+  for(int i=0; i<numDim; i++)
+    fprintf(fp, "%d ", sizeDim[i]);
+  fprintf(fp, "\n%d \n", numProcs);
+  for(int i=0; i<sizeDim[0]; i++)
+    for(int j=0; j<sizeDim[1]*stride; j+=stride)
+      for(int k=0; k<sizeDim[2]*stride; k+=stride)
+	for(int l=0; l<sizeDim[3]; l++)
+	  {
+	    int proc=map->get(i, j, k, l);
+	    int X, Y, Z, T;
+	    topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+
+	    fprintf(fp, "%d %d %d %d %d %d %d %d %d\n", i, j, k, l, proc, X, Y, Z, T);
+	  }
+  fclose(fp);
+}
+
+
+void MapFile::dumpMapCoords(MapType3 *map)
+{
+  FILE *fp = fopen(mapName, "w");
+  fprintf(fp, "%s %d ", mapName, numDim);
+  for(int i=0; i<numDim; i++)
+    fprintf(fp, "%d ", sizeDim[i]);
+  fprintf(fp, "\n%d \n", numProcs);
+  for(int i=0; i<sizeDim[0]; i++)
+    for(int j=0; j<sizeDim[1]; j++)
+      for(int k=0; k<sizeDim[2]; k++)
+	{
+	  int proc=map->get(i, j, k);
+	  int X, Y, Z, T;
+	  topoMgr->rankToCoordinates(proc, X, Y, Z, T);
+	  
+	  fprintf(fp, "%d %d %d %d %d %d %d %d\n", i, j, k,  proc, X, Y ,Z, T);
+	}
+  fclose(fp);
+}
+
+
 void MapFile::dumpMap(MapType2 *map)
 {
   FILE *fp = fopen(mapName, "w");
@@ -80,7 +143,7 @@ void MapFile::dumpMap(MapType2 *map)
   fprintf(fp, "\n%d \n", numProcs);
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
-      fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
+	fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
   fclose(fp);
 }
 
@@ -96,7 +159,7 @@ void MapFile::dumpMap(MapType4 *map)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
 	for(int l=0; l<sizeDim[3]; l++)
-	  fprintf(fp, "%d %d %d %d %d\n", i, j, k, l, map->get(i, j, k, l));
+	    fprintf(fp, "%d %d %d %d %d\n", i, j, k, l, map->get(i, j, k, l));
   fclose(fp);
 }
 
@@ -126,7 +189,7 @@ int MapFile::loadMap(char *filename, MapType2 *map)
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
     {
-      fscanf(fp, "%d%d%d", &x, &y, &pe);
+      fscanf(fp, "%d%d%d\n", &x, &y, &pe);
 #ifdef USE_INT_MAP
       map->set(x, y, pe);
 #else

@@ -763,6 +763,18 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #endif
     delete mf;
   }
+  if(config.dumpMapCoordFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
+    MapFile *mf = new MapFile("SymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&SymScalcImaptable);
+#else
+    mf->dumpMapCoords(&SymScalcmaptable);
+#endif
+    delete mf;
+  }
 
   //-------------------------------------------------------------
   // Populate maptable for Asymmetric Paircalculators
@@ -812,6 +824,18 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     mf->dumpMap(&AsymScalcImaptable);
 #else
     mf->dumpMap(&AsymScalcmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[4];
+    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
+    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
+    MapFile *mf = new MapFile("AsymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&AsymScalcImaptable);
+#else
+    mf->dumpMapCoords(&AsymScalcmaptable);
 #endif
     delete mf;
   }
@@ -1307,6 +1331,17 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 #endif
     delete mf;
   }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = size[1] = nstates/config.orthoGrainSize;
+    MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&OrthoImaptable);
+#else
+    mf->dumpMapCoords(&Orthomaptable);
+#endif
+    delete mf;
+  }
 
   // extra triangle ortho elements are really a waste of our time
   // and resources, but we don't have a triangular solver for
@@ -1375,6 +1410,17 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ) {
 	mf->dumpMap(&OrthoHelperImaptable);
 #else
 	mf->dumpMap(&OrthoHelpermaptable);
+#endif
+	delete mf;
+      }
+      if(config.dumpMapCoordFiles) {
+	int size[2];
+	size[0] = size[1] = nstates/config.orthoGrainSize;
+	MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+	mf->dumpMapCoords(&OrthoHelperImaptable);
+#else
+	mf->dumpMapCoords(&OrthoHelpermaptable);
 #endif
 	delete mf;
       }
@@ -1717,6 +1763,18 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     delete mf;
   }
 
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareG;
+    MapFile *mf = new MapFile("GSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&GSImaptable);
+#else
+    mf->dumpMapCoords(&GSmaptable);
+#endif
+    delete mf;
+  }
+
  //---------------------------------------------------------------------------
  // state r-space
 
@@ -1769,6 +1827,17 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     mf->dumpMap(&RSImaptable);
 #else
     mf->dumpMap(&RSmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareR;
+    MapFile *mf = new MapFile("RSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&RSImaptable);
+#else
+    mf->dumpMapCoords(&RSmaptable);
 #endif
     delete mf;
   }
@@ -1997,6 +2066,17 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #endif
     delete mf;
   }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nstates; size[1] = nchareRPP;
+    MapFile *mf = new MapFile("RPPMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&RPPImaptable);
+#else
+    mf->dumpMapCoords(&RPPmaptable);
+#endif
+    delete mf;
+  }
 
   if(config.useRhoExclusionMap)
     {
@@ -2159,6 +2239,17 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
     delete mf;
   }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
+    MapFile *mf = new MapFile("RhoRSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&RhoRSImaptable);
+#else
+    mf->dumpMapCoords(&RhoRSmaptable);
+#endif
+    delete mf;
+  }
 
   //---------------------------------------------------------------------------
   // rho GS 
@@ -2206,6 +2297,17 @@ void init_rho_chares(CPcharmParaInfo *sim)
     mf->dumpMap(&RhoGSImaptable);
 #else
     mf->dumpMap(&RhoGSmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = 1;
+    MapFile *mf = new MapFile("RhoGSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&RhoGSImaptable);
+#else
+    mf->dumpMapCoords(&RhoGSmaptable);
 #endif
     delete mf;
   }
@@ -2264,6 +2366,18 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
       delete mf;
     }
+    if(config.dumpMapCoordFiles) {
+      int size[3];
+      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes,
+      size[2] = nchareHartAtmT;				  
+      MapFile *mf = new MapFile("RhoRHartMap_coords", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+      mf->dumpMapCoords(&RhoRHartImaptable);
+#else
+      mf->dumpMapCoords(&RhoRHartmaptable);
+#endif
+      delete mf;
+    }
   } //endif : ees_ext_on
   CkPrintf("RhoRHartMap built %d x %d x %d\n",nchareRhoRHart, config.rhoRsubplanes, config.nchareHartAtmT);
   //---------------------------------------------------------------------------
@@ -2317,6 +2431,17 @@ void init_rho_chares(CPcharmParaInfo *sim)
     mf->dumpMap(&RhoGHartImaptable);
 #else
     mf->dumpMap(&RhoGHartmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nchareRhoGHart; size[1] =  nchareHartAtmT;
+    MapFile *mf = new MapFile("RhoGHartMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&RhoGHartImaptable);
+#else
+    mf->dumpMapCoords(&RhoGHartmaptable);
 #endif
     delete mf;
   }
@@ -2678,6 +2803,8 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=8; y=2; z=2; switchSet=true; break;}
 	  if(minD>=16)
 	    { x=16; y=2; z=1; switchSet=true; break;}
+	  if(minD>=32)
+	    { x=32; y=1; z=1; switchSet=true; break;}
 
 	}
       x=4; y=2; z=4; switchSet=true; break;
@@ -2710,6 +2837,10 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=8; y=4; z=2; switchSet=true; break;}
 	  if(minD>=16)
 	    { x=16; y=2; z=2; switchSet=true; break;}
+	  if(minD>=32)
+	    { x=32; y=2; z=1; switchSet=true; break;}
+	  if(minD>=64)
+	    { x=64; y=1; z=1; switchSet=true; break;}
 	}
       x=4; y=4; z=4; switchSet=true; break;
     case 128:
@@ -2721,6 +2852,10 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    {x=16; y=4; z=2; switchSet=true; break;}
 	  if(minD>=32)
 	    {  x=32; y=2; z=2; switchSet=true; break;	}
+	  if(minD>=64)
+	    {  x=64; y=2; z=1; switchSet=true; break;	}
+	  if(minD>=128)
+	    {  x=128; y=1; z=1; switchSet=true; break;	}
 	}
       x=8; y=4; z=4; switchSet=true; break;
     case 256:
@@ -2732,6 +2867,10 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=16; y=4; z=4; switchSet=true; break;}
 	  if(minD>=32)
 	    { x=32; y=4; z=2; switchSet=true; break;}
+	  if(minD>=64)
+	    { x=64; y=2; z=2; switchSet=true; break;}
+	  if(minD>=128)
+	    { x=64; y=2; z=1; switchSet=true; break;}
 	}
       x=8; y=8; z=4; switchSet=true; break;
     case 512:
@@ -2743,6 +2882,12 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=16; y=4; z=8; switchSet=true; break;}
 	  if(minD>=32)
 	    { x=32; y=4; z=4; switchSet=true; break;}
+	  if(minD>=64)
+	    { x=64; y=4; z=2; switchSet=true; break;}
+	  if(minD>=128)
+	    { x=128; y=2; z=2; switchSet=true; break;}
+	  if(minD>=256)
+	    { x=256; y=2; z=1; switchSet=true; break;}
 	}
       x=8; y=8; z=8; switchSet=true; break;
 

@@ -43,6 +43,10 @@ class MapFile
     void dumpMap(MapType2 *map);
     void dumpMap(MapType3 *map);
     void dumpMap(MapType4 *map);
+    void dumpMapCoords(MapType2 *map);
+    void dumpMapCoords(MapType3 *map);
+    void dumpMapCoords(MapType4 *map);
+
     int loadMap(char *filename, MapType2 *map);
     int loadMap(char *filename, MapType3 *map);
     int loadMap(char *filename, MapType4 *map);

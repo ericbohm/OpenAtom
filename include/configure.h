@@ -172,6 +172,7 @@ class Config {
    int Rstates_per_pe;
    int loadMapFiles;
    int dumpMapFiles;
+   int dumpMapCoordFiles;
    int useRhoExclusionMap;
    int excludePE0;
    int useReductionExclusionMap;
