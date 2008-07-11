@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
   numNodes = numPes/dimT;
   int objsPerPe[numNodes];
 
-  for(int i=0; i<numPes; i++)
+  for(int i=0; i<numNodes; i++)
     objsPerPe[i] = 0;
 
   ofstream wr;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   if(opt == 1)
     wr.open("GSMap.vtk", ios::out);
   else
-    wr.open("RSMap1.vtk", ios::out);
+    wr.open("RSMap.vtk", ios::out);
 
   // write the header
   wr << "# vtk DataFile Version 2.0\n";
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 
   for(int i=0; i<numStates; i++) {
     for(int j=0; j<numPlanes; j++) {
-      wr << j << " ";
+      wr << i << " ";
     }
     wr << "\n";
   }
