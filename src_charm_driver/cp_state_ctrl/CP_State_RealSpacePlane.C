@@ -176,7 +176,7 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
   if(forwardTimeKeep>0)
     {
       double rstart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&rstart,CkReduction::min_double, cb , forwardTimeKeep);
     }
 #endif
@@ -418,7 +418,7 @@ void CP_State_RealSpacePlane::doReduction(){
   if(forwardTimeKeep>0)
     {
       double rend=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&rend,CkReduction::max_double, cb , forwardTimeKeep);
     }
 #endif
@@ -452,7 +452,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
   if(backwardTimeKeep>0)
     {
       double rstart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&rstart,CkReduction::min_double, cb , backwardTimeKeep);
     }
 #endif
@@ -618,7 +618,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
   if(backwardTimeKeep>0)
     {
       double rend=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&rend,CkReduction::max_double, cb , backwardTimeKeep);
     }
 #endif

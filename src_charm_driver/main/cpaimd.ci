@@ -546,7 +546,7 @@ mainmodule cpaimd {
 		entry eesCache(int,int,int,int,int,int);
 	};
 	
-	chare TimeKeeper {
+	group TimeKeeper {
 		entry TimeKeeper();
 		entry void init();
 	        entry void collectStart(CkReductionMsg *m);	  

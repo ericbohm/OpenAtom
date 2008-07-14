@@ -60,7 +60,10 @@ class MapType2 : public IntMap2on2 {
 #define TRACE_ON_STEP 4
 #define TRACE_OFF_STEP 7
 #endif
-
+#ifdef CMK_BLUEGENEP
+#define HPM_ON_STEP 4
+#define HPM_OFF_STEP 5
+#endif
 #ifndef CmiMemcpy
 #define CmiMemcpy(dest, src, size) CmiMemcpy((dest), (src), (size))
 #endif

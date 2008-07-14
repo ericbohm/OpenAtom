@@ -566,7 +566,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Pelist initialized in %g\n",newtime-Timer);
     //    availGlobG->dump();
     Timer=newtime;
-    TimeKeeperProxy= CProxy_TimeKeeper::ckNew(0);    
+    TimeKeeperProxy= CProxy_TimeKeeper::ckNew();    
     init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
 
 
@@ -869,8 +869,8 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #ifdef _CP_SUBSTEP_TIMING_
     pairCalcID1.forwardTimerID=keeperRegister("Sym Forward");
     pairCalcID1.backwardTimerID=keeperRegister("Sym Backward");
-    pairCalcID1.beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-    pairCalcID1.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+    pairCalcID1.beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    pairCalcID1.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), orthoProxy), &pairCalcID1, gsp_ep, gsp_ep_tol, gsp_ep_rdma, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false);
 
@@ -887,8 +887,8 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 #ifdef _CP_SUBSTEP_TIMING_
     pairCalcID2.forwardTimerID=keeperRegister("Asym Forward");
     pairCalcID2.backwardTimerID=keeperRegister("Asym Backward");
-    pairCalcID2.beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
-    pairCalcID2.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+    pairCalcID2.beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    pairCalcID2.endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
     createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, gSpacePlaneProxy.ckGetArrayID()), &pairCalcID2, gsp_ep, 0, gsp_ep_rdma, gSpacePlaneProxy.ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, orthomCastGrpId, orthoRedGrpId,config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW, cp_need_orthoT);

@@ -56,6 +56,7 @@
 #include "fftCacheSlab.h"
 #include "CP_State_Plane.h"
 #include "StructFactorCache.h"
+#include "TimeKeeper.h"
 //---------------------------------------------------------------------------
 #define CHARM_ON
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
@@ -1443,8 +1444,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
     }
 */
 #ifndef CMK_OPTIMIZE
-  if(iteration==TRACE_ON_STEP ){traceBegin();}
-  if(iteration==TRACE_OFF_STEP){traceEnd();}
+  if(iteration==TRACE_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startTrace();}
+  if(iteration==TRACE_OFF_STEP){(TimeKeeperProxy.ckLocalBranch())->stopTrace();}
 #endif
 
     if(config.lbgspace || config.lbpaircalc ||config.lbdensity){
@@ -1461,11 +1462,18 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0){
       double gstart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
   }//endif
-#endif
-
+#ifdef CMK_BLUEGENEP
+  // make a local branch and use it
+#ifdef USE_HPM
+  TimeKeeper *keeper = TimeKeeperProxy.ckLocalBranch ();
+  if(iteration==HPM_ON_STEP ){keeper->startHPM("OneStep");}
+  if(iteration==HPM_OFF_STEP ){keeper->stopHPM("OneStep");}
+#endif // HPM
+#endif // BGP
+#endif // TIMING
 
 //---------------------------------------------------------------------------
 }//end routine
@@ -1618,7 +1626,7 @@ void CP_State_GSpacePlane::sendFFTData () {
   if(forwardTimeKeep>0)
     {
       double gend=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gend,CkReduction::max_double, cb , forwardTimeKeep);
     }
 #endif
@@ -1650,7 +1658,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg) {
   if(backwardTimeKeep>0)
     {
       double gstart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gstart,CkReduction::min_double, cb , backwardTimeKeep);
     }
 #endif
@@ -2079,7 +2087,7 @@ void  CP_State_GSpacePlane::sendLambda() {
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0){
       double gend=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
   }//endif
 #endif
@@ -2627,6 +2635,15 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      int i=0;
      if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
        if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef CMK_BLUEGENEP
+#ifdef USE_HPM
+	 TimeKeeper *keeper = TimeKeeperProxy.ckLocalBranch ();
+	 keeper->printHPM("OneStep");
+#endif	
+#endif
+#endif
+
          contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
          cleanExitCalled = 1;
        }//endif

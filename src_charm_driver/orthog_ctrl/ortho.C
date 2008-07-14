@@ -125,7 +125,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   if(timeKeep>0)
     {
       double ostart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&ostart,CkReduction::min_double, cb , timeKeep);
     }
 #endif
@@ -421,7 +421,7 @@ void Ortho::resume(){
     if(timeKeep>0)
       {
 	double oend=CmiWallTimer();
-	CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy);
+	CkCallback cb(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 	contribute(sizeof(double),&oend,CkReduction::max_double, cb , timeKeep);
       }
 #endif

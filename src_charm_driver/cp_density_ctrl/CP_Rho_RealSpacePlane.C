@@ -358,7 +358,7 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 #ifdef _CP_SUBSTEP_TIMING_
   if(rhoKeeperId>0){
       double rhostart=CmiWallTimer();
-      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),TimeKeeperProxy);
+      CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&rhostart,CkReduction::min_double, cb ,rhoKeeperId);
   }//endif
 #endif
@@ -2314,7 +2314,7 @@ void CP_Rho_RealSpacePlane::doMulticast(){
      if(rhoKeeperId>0)
        {
 	 double rhoend=CmiWallTimer();
-	 contribute(sizeof(double), &rhoend, CkReduction::max_double,  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),TimeKeeperProxy),rhoKeeperId);
+	 contribute(sizeof(double), &rhoend, CkReduction::max_double,  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy),rhoKeeperId);
        }
 #endif
 
