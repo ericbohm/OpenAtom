@@ -6,12 +6,23 @@
  *****************************************************************************/
 #ifndef TimeKeeper_h
 #define TimeKeeper_h
-#ifdef CMK_BLUEGENEP
-void HPM_Init(void);
-void HPM_Start(char *);
-void HPM_Stop(char *);
-void HPM_Print(void);
+
+//#define USE_HPM
+/*
+ * HPM will instrument one step using BG/P UPC performance counters.
+ * To use it, build libhpm.a in src_charm_driver/utilities/
+ * copy it someplace in your lib search path and add -lhpm to link line
+ * Also add -L/bgsys/drivers/ppcfloor/runtime -lSPI.cna to link line.
+ * DO NOT use /soft/apps/UPC/lib/libhpm.a it uses MPI and will 
+ * cause you a lot of grief.
+ */
+#ifdef USE_HPM
+extern "C" void HPM_Init(int);        
+extern "C" void HPM_Start(char *label,int);
+extern "C" void HPM_Stop(char *label,int);
+extern "C" void HPM_Print(int,int);       
 #endif
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -60,10 +71,15 @@ class TimeKeeper : public Group
   int HPMCounter;
   int HPMEndCounter;
   int PRJCounter;
+  int local_rank;
   TimeKeeper(){
-    HPMCounter=0;
+      HPMCounter=-1;
     HPMEndCounter=0;
     PRJCounter=0;
+    TopoManager *topoMgr = new TopoManager();
+    int x,y,z;
+    topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
+    delete topoMgr;
   }
 
   void startTrace()
@@ -88,25 +104,32 @@ class TimeKeeper : public Group
 #endif
     }
 
-#ifdef CMK_BLUEGENEP
+#ifdef USE_HPM
   void initHPM(){
-    if(HPMCounter==0)
+    if(HPMCounter==-1)
       {
-	HPM_Init();
+	  if(CkMyPe()==0)
+	      CkPrintf("[%d] HPM_Init\n",CkMyPe());
+	  HPM_Init(local_rank);
+	  HPMCounter=0;
       }
   }
-  void startHPM(const char *string){
-    if(HPMCounter++==0)
+  void startHPM(char *string){
+      if(HPMCounter++==0)
       {
-	HPM_Start(string);
+	  if(CkMyPe()==0)
+	      CkPrintf("[%d] HPM_Start\n",CkMyPe());
+	  HPM_Start(string, local_rank);
       }
     }
-  void stopHPM(const char *string)
+  void stopHPM(char *string)
     {
     if(--HPMCounter==0)
       {
-	HPM_Stop(string);
-	HPMEndCounter=HPMCounter+1;
+	  if(CkMyPe()==0)
+	      CkPrintf("[%d] HPM_Stop\n", CkMyPe());
+	  HPM_Stop(string, local_rank);
+	  HPMEndCounter=HPMCounter+1;
       }
 
     }
@@ -115,7 +138,9 @@ class TimeKeeper : public Group
     {
     if(--HPMEndCounter==0)
       {
-	HPM_Print();
+	  if(CkMyPe()==0)
+	      CkPrintf("[%d] HPM_Print\n",CkMyPe());
+	  HPM_Print(CkMyPe(), local_rank);
       }
 
     }

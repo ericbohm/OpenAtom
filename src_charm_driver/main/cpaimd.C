@@ -69,7 +69,7 @@ vector <string> TimeKeeperNames;
 int numPes;
 bool fakeTorus;
 //============================================================================
-
+//extern "C" {int get_memory_allocated_user_total();}
 //============================================================================
 /** 
  * \defgroup  piny_vars Defining all Charm++ readonly variables for PINY physics 
@@ -77,6 +77,7 @@ bool fakeTorus;
  */
 //============================================================================
 /* @{ */
+
 extern MDINTEGRATE  readonly_mdintegrate;
 extern MDATOMS      readonly_mdatoms;
 extern MDINTER      readonly_mdinter;
@@ -568,7 +569,7 @@ main::main(CkArgMsg *msg) {
     Timer=newtime;
     TimeKeeperProxy= CProxy_TimeKeeper::ckNew();    
     init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 
     int *usedProc= new int[CkNumPes()];
     memset(usedProc,0,sizeof(int)*CkNumPes());
@@ -602,7 +603,7 @@ main::main(CkArgMsg *msg) {
 //    read in atoms : create atoms group 
     
     control_physics_to_driver();
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 //============================================================================ 
 // Create mapping classes for Paircalcular
 
@@ -620,26 +621,26 @@ main::main(CkArgMsg *msg) {
 // Initialize paircalculators for Psi and Lambda
 
     init_pair_calculators( nstates,indexSize,indexZ,doublePack,sim, boxSize);
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 //============================================================================ 
 // initialize Ortho
 
     init_ortho_chares(nstates, indexSize, indexZ);
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 //============================================================================ 
 // Initialize the density chare arrays
 
     init_rho_chares(sim);
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 //============================================================================ 
 // Initialize commlib strategies for later association and delegation
     if(sim->ees_nloc_on)
       init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim);
 
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
 
     init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart);
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
     TimeKeeperProxy.init();
 
 //============================================================================
@@ -662,8 +663,9 @@ main::main(CkArgMsg *msg) {
     PRINT_LINE_STAR; CkPrintf("\n");
     PRINT_LINE_STAR; 
     PRINT_LINE_DASH;CkPrintf("\n");
-
+    CkPrintf("user mem %d\n",CmiMemoryUsage());
     Timer=newtime;
+
 //============================================================================
    }// end Main
 //============================================================================

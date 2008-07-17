@@ -255,7 +255,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	       CkCallback(CkIndex_Ortho::maxCheck(NULL),CkArrayIndex2D(0,0),
 			  thisProxy.ckGetArrayID()));
   }else{
-    if(num_ready == 1){do_iteration();}
+    if(num_ready == 10){do_iteration();}
   }//endif
   delete msg;
 
@@ -756,11 +756,11 @@ void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
- CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
- CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
- CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
- CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, int timekeep){
+Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
+ CLA_Matrix_interface _matB1, CLA_Matrix_interface _matC1,
+ CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
+ CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
+ CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3, int timekeep){
 //============================================================================
 /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
@@ -771,20 +771,20 @@ Ortho::Ortho(int m, int n, CLA_Matrix_interface matA1,
     invsqr_tolerance=INVSQR_TOLERANCE;
   if(invsqr_max_iter==0)
     invsqr_tolerance=INVSQR_MAX_ITER;
-  this->matA1 = matA1; this->matB1 = matB1; this->matC1 = matC1;
-  this->matA2 = matA2; this->matB2 = matB2; this->matC2 = matC2;
-  this->matA3 = matA3; this->matB3 = matB3; this->matC3 = matC3;
+  this->matA1 = _matA1; this->matB1 = _matB1; this->matC1 = _matC1;
+  this->matA2 = _matA2; this->matB2 = _matB2; this->matC2 = _matC2;
+  this->matA3 = _matA3; this->matB3 = _matB3; this->matC3 = _matC3;
   timeKeep=timekeep;
   int borderOrtho= config.nstates / config.orthoGrainSize-1;
   int remOrtho = config.nstates%config.orthoGrainSize;
   if(thisIndex.x==borderOrtho)
-    this->m = m + remOrtho;
+    this->m = _m + remOrtho;
   else
-    this->m = m;
+    this->m = _m;
   if(thisIndex.y==borderOrtho)
-    this->n = n + remOrtho;
+    this->n = _n + remOrtho;
   else
-    this->n = n;
+    this->n = _n;
   A = new double[this->m * this->n];
   B = new double[this->m * this->n];
   C = new double[this->m * this->n];

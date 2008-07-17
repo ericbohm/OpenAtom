@@ -220,9 +220,13 @@ class Ortho : public CBase_Ortho{
   }
 
   void ready(){ // startup initialization synchronization
-    num_ready = 1;
-    if(got_start)
-      do_iteration();
+      // got_start comes from upstream PC reduction the last of got_start and
+      // CLA_Matrix readies triggers computation for first iteration
+      num_ready = 10;
+      if(got_start)
+      {
+	  do_iteration();
+      }
   }
 
 /**

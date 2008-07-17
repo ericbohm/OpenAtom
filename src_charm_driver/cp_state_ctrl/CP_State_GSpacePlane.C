@@ -2,7 +2,6 @@
 // Things to do : 
 //    move resetiterstate
 //======================================================
-
 //#define _CP_DEBUG_WARN_SUSPEND_
 //#define _CP_DEBUG_NONLOC_BARRIER_
 //#define _CP_DEBUG_ORTHO_OFF_
@@ -1328,6 +1327,11 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 	     CkCallback(CkIndex_main::doneInit(0),mainProxy));
 
 #endif
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+  (TimeKeeperProxy.ckLocalBranch())->initHPM();
+#endif // HPM
+#endif // _CP_SUBSTEP_TIMING_
 
 
 //---------------------------------------------------------------------------
@@ -1465,14 +1469,10 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
   }//endif
-#ifdef CMK_BLUEGENEP
-  // make a local branch and use it
 #ifdef USE_HPM
-  TimeKeeper *keeper = TimeKeeperProxy.ckLocalBranch ();
-  if(iteration==HPM_ON_STEP ){keeper->startHPM("OneStep");}
-  if(iteration==HPM_OFF_STEP ){keeper->stopHPM("OneStep");}
+  if(iteration==HPM_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startHPM("OneStep");}
+  if(iteration==HPM_OFF_STEP ){(TimeKeeperProxy.ckLocalBranch())->stopHPM("OneStep");}
 #endif // HPM
-#endif // BGP
 #endif // TIMING
 
 //---------------------------------------------------------------------------
@@ -1981,6 +1981,12 @@ void CP_State_GSpacePlane::launchAtoms() {
   iteration++;
   if(iteration==config.maxIter+1){
     int i=0;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
+
     contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
     cleanExitCalled = 1;
   }else{
@@ -2548,6 +2554,12 @@ void CP_State_GSpacePlane::writeStateDumpFile() {
         int i = 0;
         if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
           if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
+
             contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
 	  }//endif
           cleanExitCalled = 1;
@@ -2636,12 +2648,9 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1){
        if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
 #ifdef _CP_SUBSTEP_TIMING_
-#ifdef CMK_BLUEGENEP
 #ifdef USE_HPM
-	 TimeKeeper *keeper = TimeKeeperProxy.ckLocalBranch ();
-	 keeper->printHPM("OneStep");
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
 #endif	
-#endif
 #endif
 
          contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
@@ -3130,6 +3139,11 @@ void CP_State_GSpacePlane::sendPsi() {
       config.stateOutput==0){
       if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
         int i;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
         contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
       }//endif
       cleanExitCalled = 1;
@@ -3208,7 +3222,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
     thisProxy(thisIndex.x,thisIndex.y).doNewPsi();
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
    if(thisIndex.x==0)
-    CkPrintf("aceeptpsi %d %d\n",thisIndex.y,cleanExitCalled);
+    CkPrintf("acceptpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
   }//endif
 
@@ -3371,6 +3385,11 @@ void CP_State_GSpacePlane::doNewPsi(){
   if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
       int i;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
       contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
      }//endif
      cleanExitCalled = 1;
@@ -3380,6 +3399,11 @@ void CP_State_GSpacePlane::doNewPsi(){
      config.stateOutput==0){
      if(myatom_integrate_flag==1 && myenergy_reduc_flag==1){
        int i;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
        contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
      }//endif
      cleanExitCalled = 1;
@@ -4004,6 +4028,12 @@ void CP_State_GSpacePlane::acceptAtoms(GSAtmMsg *msg) {
 
    if(myenergy_reduc_flag==1 && cleanExitCalled==1){
      int i;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
+
      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
    }//endif
 
@@ -4046,6 +4076,12 @@ void CP_State_GSpacePlane::acceptEnergy(GSAtmMsg *msg) {
 
    if(myatom_integrate_flag==1 && cleanExitCalled==1){
      int i;
+#ifdef _CP_SUBSTEP_TIMING_
+#ifdef USE_HPM
+	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
+#endif	
+#endif
+
      contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
    }//endif
 

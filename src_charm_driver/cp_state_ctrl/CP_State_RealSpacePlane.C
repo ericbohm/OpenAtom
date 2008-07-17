@@ -432,11 +432,9 @@ void CP_State_RealSpacePlane::doReduction(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /**
- *   In this method, we receive vks from the density. We copy it out 
- *   because you don't want to work with charms squirely memory 
- *   and call the working doproduct. The copy is into cache scratch
- *   which is OK because we should not relinquish the proc to another
- *   chare until we have finished the working doproduct
+ *   In this method, we receive vks from the density. We apply this to psi to
+ *   create psiVks, when all are here we call the working doProduct for
+ *   FFTing.  This is a stream processing scheme.
  */
 //============================================================================
 void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
