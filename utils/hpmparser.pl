@@ -14,6 +14,7 @@ use strict;
 #first cut a this script assumes latter for simplicity
 my @pernode;
 my %sumpernode;
+my %countpernode;  # for avg
 
 #HPM author suggests FDIV is 13 ops, based on the compiler doing fancy tricks
 #but UPC is what the chip was actually asked to do so that seems irrelevant
@@ -21,7 +22,8 @@ my %sumpernode;
 
 # UPC authors state FMA_2 is 2 flops
 # UPC authors state FMA_4 is 4 flops
-my %FP_KEYS=( 'BGP_PU0_FPU_ADD_SUB_1' => 1,
+my %FP_KEYS=(
+	     'BGP_PU0_FPU_ADD_SUB_1' => 1,
 		'BGP_PU0_FPU_MULT_1' => 1,
 		'BGP_PU0_FPU_FMA_2' => 2,
 		'BGP_PU0_FPU_DIV_1' => 1,
@@ -38,11 +40,55 @@ my %FP_KEYS=( 'BGP_PU0_FPU_ADD_SUB_1' => 1,
 		'BGP_PU1_FPU_ADD_SUB_2' => 1,
 		'BGP_PU1_FPU_MULT_2' => 1,
 		'BGP_PU1_FPU_FMA_4' => 4,
-		'BGP_PU1_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1
+		'BGP_PU1_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
+	     'BGP_PU2_FPU_ADD_SUB_1' => 1,
+		'BGP_PU2_FPU_MULT_1' => 1,
+		'BGP_PU2_FPU_FMA_2' => 2,
+		'BGP_PU2_FPU_DIV_1' => 1,
+		'BGP_PU2_FPU_OTHER_NON_STORAGE_OPS' => 1,
+		'BGP_PU2_FPU_ADD_SUB_2' => 1,
+		'BGP_PU2_FPU_MULT_2' => 1,
+		'BGP_PU2_FPU_FMA_4' => 4,
+		'BGP_PU2_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1,
+		'BGP_PU3_FPU_ADD_SUB_1' => 1,
+		'BGP_PU3_FPU_MULT_1' => 1, 
+		'BGP_PU3_FPU_FMA_2' => 2,
+		'BGP_PU3_FPU_DIV_1' => 1,
+		'BGP_PU3_FPU_OTHER_NON_STORAGE_OPS' => 1,
+		'BGP_PU3_FPU_ADD_SUB_2' => 1,
+		'BGP_PU3_FPU_MULT_2' => 1,
+		'BGP_PU3_FPU_FMA_4' => 4,
+		'BGP_PU3_FPU_DUAL_PIPE_OTHER_NON_STORAGE_OPS' => 1
+
 		);
 
+my @TORUS_KEYS=qw(
+  BGP_TORUS_XP_PACKETS
+  BGP_TORUS_XP_32BCHUNKS
+  BGP_TORUS_XM_PACKETS
+  BGP_TORUS_XM_32BCHUNKS
+  BGP_TORUS_YP_PACKETS
+  BGP_TORUS_YP_32BCHUNKS
+  BGP_TORUS_YM_PACKETS
+  BGP_TORUS_YM_32BCHUNKS
+  BGP_TORUS_ZP_PACKETS
+  BGP_TORUS_ZP_32BCHUNKS
+  BGP_TORUS_ZM_PACKETS
+  BGP_TORUS_ZM_32BCHUNKS
+		);
+
+my @TORUSBW_KEYS=qw(
+  BGP_TORUS_XP_32BCHUNKS
+  BGP_TORUS_XM_32BCHUNKS
+  BGP_TORUS_YP_32BCHUNKS
+  BGP_TORUS_YM_32BCHUNKS
+  BGP_TORUS_ZP_32BCHUNKS
+  BGP_TORUS_ZM_32BCHUNKS
+		);
+my $nodecount=0;
 foreach my $infile (@ARGV)
 {
+    $nodecount++;
     my $file= open(FILE,"<$infile") || die "cannot open $infile";
     my $node=0;
     if($infile =~ /.*\.(\d+)/)
@@ -59,6 +105,7 @@ foreach my $infile (@ARGV)
 	next if $column[0] !~ /\d+/;
 	$thisnode{$column[2]}=$column[1];
 	$sumpernode{$column[2]}+=$column[1];
+	$countpernode{$column[2]}++;
     }
     $pernode[$node]=\%thisnode;
     # keep running totals
@@ -73,7 +120,17 @@ foreach my $fpreg (keys %FP_KEYS)
     $rawflops+= $sumpernode{$fpreg};
     $scaledflops+= $scaled;
 }
+my $bw=0;
+my $count=0;
+foreach my $bwreg (@TORUSBW_KEYS)
+{
+    print "$bwreg\n";
+    $bw+= $sumpernode{$bwreg};
+}
+my $bw = $bw *32;
 my $allchipsrflops=$rawflops*2;
 my $allchipssflops=$scaledflops*2;
-print "raw flops $rawflops scaled $scaledflops\n";
-print "raw flops by 2 $allchipsrflops scaled $allchipssflops\n";
+print "raw count $rawflops scaled flops $scaledflops\n";
+print "raw count by 2 $allchipsrflops scaled flops $allchipssflops\n";
+print "aggregate bandwidth $bw bytes avg ".$bw/$nodecount."\n";
+
