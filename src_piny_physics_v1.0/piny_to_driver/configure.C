@@ -1656,7 +1656,7 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 19;
+  num_dict[0] = 20;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_atm")-1;
 
 //=================================================================================
@@ -1783,6 +1783,13 @@ void Config::set_config_dict_map (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"dumpMapCoordFiles");
     strcpy((*dict)[ind].keyarg,"off");    
     strcpy((*dict)[ind].error_mes,"on/off");
+  //-----------------------------------------------------------------------------
+  // 20)\forceMappingAxis{}
+    ind = 20;
+    strcpy((*dict)[ind].keyword,"forceMappingAxis");
+    sprintf((*dict)[ind].keyarg,"%d",-1);  
+    strcpy((*dict)[ind].error_mes,"-1  for no force, 0=X 1=Y 2=Z");
+  //-----------------------------------------------------------------------------
 
   }//end routine
 //===================================================================================
@@ -1899,6 +1906,11 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
     ind = 19;
     parse_on_off(dict[ind].keyarg,&dumpMapCoordFiles,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  //  20)\forceMappingAxis{}
+    ind = 20;
+    sscanf(dict[ind].keyarg,"%d",&forceMappingAxis);
+    if(forceMappingAxis>2){keyarg_barf(dict,input_name,fun_key,ind);}
 
   }//end routine
 //===================================================================================

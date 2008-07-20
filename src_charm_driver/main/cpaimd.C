@@ -2696,29 +2696,48 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 //============================================================================
   int maxD=maxX;
   int minD=maxX;
+  int minX=maxX;
+  int minY=maxY;
+  int minZ=maxZ;
   //  vn=0;
-  if(vn)
-    {  // using Y as the prism axis seems to suck
-      //        maxD = (maxY>maxD) ? maxY : maxD;
-	maxD = (maxZ>maxD) ? maxZ : maxD;
-	//	minD = (maxY<minD) ? maxY : minD;
-	minD = (maxZ<maxD) ? maxZ : minD;
-
+  if(config.forceMappingAxis>-1)
+    {
+      order=config.forceMappingAxis;
+      if (config.forceMappingAxis==0) 
+	minD=minX;
+      if (config.forceMappingAxis==1) 
+	minD=maxY;
+      if (config.forceMappingAxis==2) 
+	minD=maxZ;
     }
   else
-    {
+    { 
+      order=0;
       maxD = (maxY>maxD) ? maxY : maxD;
       maxD = (maxZ>maxD) ? maxZ : maxD;
-      minD = (maxY<minD) ? maxY : minD;
-      minD = (maxZ<minD) ? maxZ : minD;
+      if(vn)
+	{  // using Y as the prism axis seems to suck
+	  maxD = (maxY>maxD) ? maxY : maxD;
+	  maxD = (maxZ>maxD) ? maxZ : maxD;
+	  minD = (maxY<minD) ? maxY : minD;
+	  minD = (maxZ<maxD) ? maxZ : minD;
 
+	}
+      else
+	{
+	  maxD = (maxY>maxD) ? maxY : maxD;
+	  maxD = (maxZ>maxD) ? maxZ : maxD;
+	  minD = (maxY<minD) ? maxY : minD;
+	  minD = (maxZ<minD) ? maxZ : minD;
+
+	}
     }
   CkPrintf("minD %d maxD %d\n",minD, maxD);
   if(config.useCuboidMapRS)
     {
       CkPrintf("Using long prisms for useCuboidMapRS\n");
     }
-  order=0;
+
   // We were reducing the volume by maxT and then finding the dimensions of the
   // box in terms of the no. of nodes and not processors
 
@@ -2803,7 +2822,7 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	{
 	  if(minD==8)
 	    { x=8; y=2; z=2; switchSet=true; break;}
-	  if(minD>=16)
+	  if(minD==16)
 	    { x=16; y=2; z=1; switchSet=true; break;}
 	  if(minD>=32)
 	    { x=32; y=1; z=1; switchSet=true; break;}
@@ -2837,9 +2856,9 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	{
 	  if(minD==8)
 	    { x=8; y=4; z=2; switchSet=true; break;}
-	  if(minD>=16)
+	  if(minD==16)
 	    { x=16; y=2; z=2; switchSet=true; break;}
-	  if(minD>=32)
+	  if(minD==32)
 	    { x=32; y=2; z=1; switchSet=true; break;}
 	  if(minD>=64)
 	    { x=64; y=1; z=1; switchSet=true; break;}
@@ -2852,9 +2871,9 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=8; y=4; z=4; switchSet=true; break;}
 	  if(minD==16)
 	    {x=16; y=4; z=2; switchSet=true; break;}
-	  if(minD>=32)
+	  if(minD==32)
 	    {  x=32; y=2; z=2; switchSet=true; break;	}
-	  if(minD>=64)
+	  if(minD==64)
 	    {  x=64; y=2; z=1; switchSet=true; break;	}
 	  if(minD>=128)
 	    {  x=128; y=1; z=1; switchSet=true; break;	}
@@ -2867,9 +2886,9 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=8; y=8; z=4; switchSet=true; break;}
 	  if(minD==16)
 	    { x=16; y=4; z=4; switchSet=true; break;}
-	  if(minD>=32)
+	  if(minD==32)
 	    { x=32; y=4; z=2; switchSet=true; break;}
-	  if(minD>=64)
+	  if(minD==64)
 	    { x=64; y=2; z=2; switchSet=true; break;}
 	  if(minD>=128)
 	    { x=64; y=2; z=1; switchSet=true; break;}
@@ -2882,11 +2901,11 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
 	    { x=8; y=8; z=8; switchSet=true; break;}
 	  if(minD==16)
 	    { x=16; y=4; z=8; switchSet=true; break;}
-	  if(minD>=32)
+	  if(minD==32)
 	    { x=32; y=4; z=4; switchSet=true; break;}
-	  if(minD>=64)
+	  if(minD==64)
 	    { x=64; y=4; z=2; switchSet=true; break;}
-	  if(minD>=128)
+	  if(minD==128)
 	    { x=128; y=2; z=2; switchSet=true; break;}
 	  if(minD>=256)
 	    { x=256; y=2; z=1; switchSet=true; break;}
@@ -2896,8 +2915,32 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
     default:
       break;
     }
-
-  if(switchSet)
+  if(switchSet && config.forceMappingAxis>-1)
+    {
+      
+      switch(config.forceMappingAxis)
+	{
+	case 0:
+	  return true; 	  //no change
+	case 1:
+	  {
+	  order=1; //YXZ
+	  int swap=x;
+	  x=y;
+	  y=swap;
+	  return true;
+	  }
+	case 2:
+	  {
+	  order=2; //ZXY
+	  int swap=x;
+	  x=z;
+	  z=swap;
+	  return true;
+	  }
+	}
+    }
+  else if (switchSet)
     {
       // now correct the x,y,z to put long prism axis along the
       // smallest torus dimension which will fit.

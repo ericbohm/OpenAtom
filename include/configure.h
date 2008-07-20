@@ -24,6 +24,7 @@ class Config {
   //==================================
   // input or derived parameters
   //----------------------------------
+
     int numPes;           // num of procs             (driver)
     int nstates;          // num of states            (piny)
     int maxIter;          // num of iterations        (piny)
@@ -163,6 +164,7 @@ class Config {
   // Mapping control flags and values
   //----------------------------------
    int torusMap;
+   int forceMappingAxis;
    int useCuboidMap;
    int useCuboidMapRS;
    int useStrictCuboid;
