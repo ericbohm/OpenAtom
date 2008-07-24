@@ -480,7 +480,7 @@ main::main(CkArgMsg *msg) {
     make_rho_runs(sim);
 
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
-
+    mainProxy=thishandle;
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
@@ -524,10 +524,10 @@ main::main(CkArgMsg *msg) {
     }
     CkPrintf("Initializing PeList\n");
     
-    PeList *gfoo;
-    PeList *rfoo;
+    PeList *gfoo=NULL;
+    PeList *rfoo=NULL;
 
-    if(config.useCuboidMap)
+    if(!config.loadMapFiles && config.useCuboidMap)
       {
 	if(config.numPes%config.nchareG!=0)
 	  {
@@ -556,7 +556,7 @@ main::main(CkArgMsg *msg) {
       }
     else
       gfoo= new PeList;  // heap it
-    if(config.useCuboidMapRS)
+    if(!config.loadMapFiles && config.useCuboidMapRS)
       rfoo=new PeList(*gfoo);
     else
       rfoo= new PeList;  // heap it
@@ -569,6 +569,7 @@ main::main(CkArgMsg *msg) {
     Timer=newtime;
     TimeKeeperProxy= CProxy_TimeKeeper::ckNew();    
     init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim);
+    CmiNetworkProgressAfter(1);
     CkPrintf("user mem %d\n",CmiMemoryUsage());
 
     int *usedProc= new int[CkNumPes()];
@@ -607,7 +608,7 @@ main::main(CkArgMsg *msg) {
 //============================================================================ 
 // Create mapping classes for Paircalcular
 
-    mainProxy=thishandle;
+
   //-------------------------------------------------------------
     int indexSize = nchareG;
 
@@ -622,16 +623,19 @@ main::main(CkArgMsg *msg) {
 
     init_pair_calculators( nstates,indexSize,indexZ,doublePack,sim, boxSize);
     CkPrintf("user mem %d\n",CmiMemoryUsage());
+    CmiNetworkProgressAfter(1);
 //============================================================================ 
 // initialize Ortho
 
     init_ortho_chares(nstates, indexSize, indexZ);
     CkPrintf("user mem %d\n",CmiMemoryUsage());
+    CmiNetworkProgressAfter(1);
 //============================================================================ 
 // Initialize the density chare arrays
 
     init_rho_chares(sim);
     CkPrintf("user mem %d\n",CmiMemoryUsage());
+    CmiNetworkProgressAfter(1);
 //============================================================================ 
 // Initialize commlib strategies for later association and delegation
     if(sim->ees_nloc_on)
@@ -640,6 +644,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("user mem %d\n",CmiMemoryUsage());
 
     init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart);
+    CmiNetworkProgressAfter(1);
     CkPrintf("user mem %d\n",CmiMemoryUsage());
     TimeKeeperProxy.init();
 
@@ -1768,7 +1773,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareG;
-    MapFile *mf = new MapFile("GSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("GSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&GSImaptable);
 #else
@@ -1835,7 +1840,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareR;
-    MapFile *mf = new MapFile("RSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&RSImaptable);
 #else
@@ -2055,6 +2060,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew();
   newtime=CmiWallTimer();
+  CmiNetworkProgressAfter(0);
   CkPrintf("RPPMap created in %g\n",newtime-Timer);
 
   if(config.dumpMapFiles) {
@@ -2071,7 +2077,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nstates; size[1] = nchareRPP;
-    MapFile *mf = new MapFile("RPPMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RPPMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&RPPImaptable);
 #else
@@ -2244,7 +2250,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
-    MapFile *mf = new MapFile("RhoRSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoRSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&RhoRSImaptable);
 #else
@@ -2252,7 +2258,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
 #endif
     delete mf;
   }
-
+  CmiNetworkProgressAfter(0);
   //---------------------------------------------------------------------------
   // rho GS 
   // if there aren't enough free procs refresh the RhoAvail list;
@@ -2305,7 +2311,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nchareRhoG; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGSMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&RhoGSImaptable);
 #else
@@ -2372,7 +2378,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
       int size[3];
       size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes,
       size[2] = nchareHartAtmT;				  
-      MapFile *mf = new MapFile("RhoRHartMap_coords", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+      MapFile *mf = new MapFile("RhoRHartMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
       mf->dumpMapCoords(&RhoRHartImaptable);
 #else
@@ -2424,7 +2430,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
   //  CkArrayOptions rhoghartOpts;
   rhoghartOpts.setMap(rhogHartMap);
-
+  CmiNetworkProgressAfter(0);
   if(config.dumpMapFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] =  nchareHartAtmT;
@@ -2439,7 +2445,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   if(config.dumpMapCoordFiles) {
     int size[2];
     size[0] = nchareRhoGHart; size[1] =  nchareHartAtmT;
-    MapFile *mf = new MapFile("RhoGHartMap_coords", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    MapFile *mf = new MapFile("RhoGHartMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&RhoGHartImaptable);
 #else
@@ -2468,6 +2474,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
     */
   rhoRealProxy.doneInserting();
   rhoRealProxy.setReductionClient(printEnergyEexc, 0);
+  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhog
   rhoGProxy = CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, 1, 
@@ -2478,6 +2485,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   }//endfor
 */
   rhoGProxy.doneInserting();
+  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhoghart
   rhoGHartExtProxy = CProxy_CP_Rho_GHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
@@ -2492,6 +2500,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
   */
   rhoGHartExtProxy.setReductionClient(printEnergyHart, NULL);
   rhoGHartExtProxy.doneInserting();
+  CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
   // insert rhoRhart
   if(ees_eext_on){
@@ -2509,7 +2518,7 @@ void init_rho_chares(CPcharmParaInfo *sim)
     */
     rhoRHartExtProxy.doneInserting();
   }//endif
-
+  CmiNetworkProgressAfter(0);
   //===========================================================================
   // Output to the screen
 
