@@ -673,6 +673,8 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
   bzero(Pecount, config.numPes *sizeof(int));
 
   rsobjs_per_pe = nstates*sizeZ/config.numPes;
+  if(config.useStrictCuboid) 
+      rsobjs_per_pe++; // you'll need the wiggle room
   l=Rstates_per_pe;		// no of states in one chunk
   pl = nstates / l;
   if(nstates % l == 0)

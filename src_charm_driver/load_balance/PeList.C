@@ -47,8 +47,8 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 
 
 		  for(int bx=0;bx<boxX;bx++)
-		    for(int bz=0;bz<boxZ;bz++)
 		      for(int by=0;by<boxY;by++) // make inner planes along X
+			  for(int bz=0;bz<boxZ;bz++)
 			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
