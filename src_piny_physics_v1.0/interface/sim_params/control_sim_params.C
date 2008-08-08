@@ -70,7 +70,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   double now_memory;         /* Num: Memory now                  */
 
 /*          Local pointer declarations */
-  char *input_name = filename_parse->input_name; 
+  char *input_name =  filename_parse->input_name; 
 
 /*========================================================================*/
 /*    I) Write to the screen                                              */
@@ -155,7 +155,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 /*=======================================================================*/
 /* IV) Open the data file and read in the information                    */
 
-  fp = cfopen(input_name,"r");
+  fp = cfopen((const char *)input_name,"r");
 
   nline = 1;
   nfun_key=0;
@@ -239,7 +239,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 /*=========================================================================*/
 /*   V) Write out the simulation parameters to the simulation file        */
 
-  fp = cfopen(filename_parse->simname,"w");
+  fp = cfopen((const char *) filename_parse->simname,"w");
 
    write_simfile(fp,dict_list,num_dict_list,dict_fun[1].keyword);
    write_simfile(fp,dict_cp,num_dict_cp,dict_fun[2].keyword);

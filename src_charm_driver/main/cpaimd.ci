@@ -22,7 +22,7 @@ mainmodule cpaimd {
 	readonly  CProxy_OrthoMap orthoMap;
         extern module ckPairCalculator;
 	extern module CLA_Matrix; 
-
+	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
 	readonly CkHashtableT<intdual, int> RPPmaptable;
@@ -49,28 +49,35 @@ mainmodule cpaimd {
 
 
 	readonly Config config;
-	readonly PairCalcID pairCalcID1;
-	readonly PairCalcID pairCalcID2;
+	readonly CkVec <PairCalcID> UpairCalcID1;
+	readonly CkVec <PairCalcID> UpairCalcID2;
 
 
-	readonly CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-	readonly CProxy_CP_State_ParticlePlane particlePlaneProxy;
-	readonly CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
-	readonly CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
-	readonly CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-	readonly CProxy_CP_Rho_GSpacePlane rhoGProxy;
-	readonly CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
-	readonly CProxy_CP_Rho_RHartExt rhoRHartExtProxy;
-	readonly CProxy_Ortho orthoProxy;
-	readonly CProxy_OrthoHelper orthoHelperProxy;
-	readonly CProxy_Lambda lambdaProxy;
-	readonly CProxy_AtomsGrp atomsGrpProxy;
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
-	readonly CProxy_EnergyGroup egroupProxy;
-	readonly CProxy_FFTcache fftCacheProxy;
-	readonly CProxy_StructFactCache sfCacheProxy;
-	readonly CProxy_StructureFactor sfCompProxy;
-	readonly CProxy_eesCache  eesCacheProxy;
+	readonly CProxy_InstanceController instControllerProxy;
+
+	readonly int UberImax;
+	readonly int UberJmax;
+	readonly int UberKmax;
+	readonly int numInstances;
+	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+	readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
+	readonly CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
+	readonly CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+	readonly CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
+	readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
+	readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
+	readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
+	readonly CkVec <CProxy_Ortho> UorthoProxy;
+	readonly CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
+	readonly CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
+	readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
+	readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
+	readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;
+	readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
+	readonly CkVec <CProxy_eesCache>  UeesCacheProxy;
+
+	readonly CkVec <UberCollection> UberAlles;
 	
 	readonly CkGroupID mCastGrpId;
 
@@ -182,12 +189,20 @@ mainmodule cpaimd {
 
 	mainchare main {
 		entry main();
-	        entry void doneInit(CkReductionMsg *msg);
 	};
+	array [1D] InstanceController {
+		entry InstanceController();
+		entry void printEnergyEexc(CkReductionMsg *msg);
+		entry void printEnergyHart(CkReductionMsg *msg);
+	  	entry void printFictEke(CkReductionMsg *msg);
+  		entry void allDoneCPForces(CkReductionMsg *m);
+  		entry void printEnergyEke(CkReductionMsg *m);
+		entry void doneInit(CkReductionMsg *msg);
+	}	
 
 	array [2D]  CP_State_GSpacePlane {
 		entry CP_State_GSpacePlane(int sizeX, 
-                        int numG, int numR, int s_grain, int numChunks, int timekeepf, int timekeepb);
+                        int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
 		entry void initGSpace(int m, 
 			complex pts[m],int mv, complex vpts[mv], 
                         int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
@@ -234,7 +249,7 @@ mainmodule cpaimd {
 	
 	array [2D] CP_State_ParticlePlane {
 		entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,
-                                             int ,int ,int ,int ,int ,int ,int ,int);
+                                             int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
 		entry void computeZ(PPDummyMsg *dmsg);
 		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],
 			complex zmatrix_fx[size], complex zmatrix_fy[size],
@@ -248,7 +263,7 @@ mainmodule cpaimd {
 
 	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
-		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+		entry CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int, UberCollection);
 	        entry void init();
                 entry void recvFromEesGPP(NLFFTMsg *);
                 entry void recvZMatEes(CkReductionMsg *);
@@ -266,7 +281,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_State_RealSpacePlane {
-		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int);
+		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
 		entry void acceptFFT(RSFFTMsg *);
 		entry [local] void doFFT();
 		entry [nokeep] void acceptProduct(ProductMsg *m);
@@ -278,7 +293,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_RealSpacePlane {	
-		entry CP_Rho_RealSpacePlane(int, bool,int,int, int);
+		entry CP_Rho_RealSpacePlane(int, bool,int,int, int, UberCollection);
 		entry void init();
                 entry void exitForDebugging();
 		entry void acceptDensity(CkReductionMsg *m);
@@ -292,7 +307,7 @@ mainmodule cpaimd {
                 entry void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
 	};
        array [3D] CP_Rho_RHartExt {
-                entry CP_Rho_RHartExt(int, int, int,int,int);
+                entry CP_Rho_RHartExt(int, int, int,int,int, UberCollection);
 		entry void init();
                 entry void startEextIter();
                 entry void recvAtmForcFromRhoGHart(RhoRHartMsg *msg);
@@ -303,7 +318,7 @@ mainmodule cpaimd {
         }
 
 	array [2D] CP_Rho_GSpacePlane {
-		entry CP_Rho_GSpacePlane(int, int, int, bool);
+		entry CP_Rho_GSpacePlane(int, int, int, bool, UberCollection);
 		entry void init();
 		entry void acceptRhoData(RhoGSFFTMsg *msg);
 		entry void acceptWhiteByrd(RhoGSFFTMsg *msg);
@@ -314,7 +329,7 @@ mainmodule cpaimd {
 	};
 
 	array [2D] CP_Rho_GHartExt {
-		entry CP_Rho_GHartExt(int,int,int,int,int);
+		entry CP_Rho_GHartExt(int,int,int,int,int, UberCollection);
 		entry void acceptData(RhoGHartMsg *msg);
 		entry void init();
 		entry void isAtSync(int);
@@ -335,7 +350,7 @@ mainmodule cpaimd {
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
 		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
-	         int timekeep
+	         int timekeep, UberCollection
          	);
 		entry Ortho();
 		entry void acceptAllLambda(CkReductionMsg *msg);
@@ -363,65 +378,53 @@ mainmodule cpaimd {
       };
 
 	group OrthoMap : CkArrayMap {
-		entry OrthoMap();
+		entry OrthoMap(UberCollection);
 	};
 
 	array [2D] OrthoHelper {
 		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,
-		 CLA_Matrix_interface matB2, CLA_Matrix_interface matC2);
+		 CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, UberCollection);
 		entry OrthoHelper();
 	        entry void recvAB(OrthoHelperMsg *msg);
 
 	}
 	
 	group OrthoHelperMap : CkArrayMap {
-		entry OrthoHelperMap();
-	};
-
-	array [2D] Lambda{
-		entry void Lambda(int lgrain, int ograin, int sgrain);
-		entry Lambda();
-		entry void acceptAllLambda(CkReductionMsg *msg);
-		entry void acceptSectionLambda(CkReductionMsg *msg);
-		entry void makeSections(int indexSize, int indexZ[indexSize]);
-	      };
-
-	group LambdaMap : CkArrayMap {
-		entry LambdaMap(int M,int nLambda, int stride);
+		entry OrthoHelperMap(UberCollection);
 	};
 
 
 	group RhoGSMap : CkArrayMap {
-		entry RhoGSMap();
+		entry RhoGSMap(UberCollection);
 	};
 
 	group RhoRSMap : CkArrayMap {
-		entry RhoRSMap();
+		entry RhoRSMap(UberCollection);
 	};
 
 	group RhoGHartMap : CkArrayMap {
-		entry RhoGHartMap();
+		entry RhoGHartMap(UberCollection);
 	};
 
 	group RhoRHartMap : CkArrayMap {
-		entry RhoRHartMap();
+		entry RhoRHartMap(UberCollection);
 	};
         
 	group GSMap : CkArrayMap {
-		entry GSMap();
+		entry GSMap(UberCollection);
 	};
 	
 	group RPPMap : CkArrayMap {
-		entry RPPMap();
+		entry RPPMap(UberCollection);
 	};
 
 
 	group RSMap : CkArrayMap {
-		entry RSMap();
+		entry RSMap(UberCollection);
 	};
 	
 	group SCalcMap: CkArrayMap {
-		entry SCalcMap(bool);
+		entry SCalcMap(bool, UberCollection);
 	};
 
 	/** 
@@ -448,7 +451,7 @@ mainmodule cpaimd {
                    int numGEext[nchareGEext],    
                    int numRXEext[nchareREextTot],  
                    int numRYEext[nchareREextTot],
-                   int ,  int ,  int , int );
+                   int ,  int ,  int , int, UberCollection );
 	};
 
 	/** Place to hold the computed structure factor.
@@ -457,12 +460,12 @@ mainmodule cpaimd {
 	group StructFactCache {
 		entry void acceptStructFact(StructFactorMsg *msg);
 
-		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max);
+		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max, UberCollection);
 	};
 
 	// This is what is used if NOT using ees for nonlocal structure factor comp
         array [3D] StructureFactor { 
-	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend]);
+	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend], UberCollection);
 	        entry void acceptDestination(int nsend, int destinations[nsend]);
          	entry void computeSF(SFDummyMsg *msg);
 		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
@@ -476,7 +479,7 @@ mainmodule cpaimd {
 		entry AtomsGrp(int natm, int natm_nl,int len_nhc,
                                int iextended_on,int cp_min_opt,int cp_wave_opt,
                                int isokin_opt,
-                               double kT,Atom atoms[natm],AtomNHC atomsNHC[natm]);
+                               double kT,Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
 
 
 	     /** trigger force computation 	
@@ -524,7 +527,7 @@ mainmodule cpaimd {
 
 	// The global energies are stored here.
 	group EnergyGroup {
-		entry EnergyGroup();
+		entry EnergyGroup(UberCollection);
 		/***
 		   * CP_StateGspacePlane(0,0) calls this to replicate the 
 		   * energies everywhere for consistency and tolerance
@@ -543,7 +546,7 @@ mainmodule cpaimd {
 	  *  A place to hold the computed ees planewise data on each proc
 	  */	
 	group eesCache {
-		entry eesCache(int,int,int,int,int,int);
+		entry eesCache(int,int,int,int,int,int, UberCollection);
 	};
 	
 	group TimeKeeper {

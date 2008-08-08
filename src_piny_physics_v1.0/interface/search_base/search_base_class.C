@@ -562,7 +562,7 @@ void search_base_explicit_lj(char filename[],CLJ *clj_typ,
 
 /*========================================================================*/
 
-  fp       = cfopen(filename,"r");
+  fp       = cfopen((const char *)filename,"r");
   *ifound  = 0;
   ifirst   = 0;
   nline    = 0;

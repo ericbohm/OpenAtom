@@ -98,7 +98,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Read the input file and fill the dictionaries with user input
 
-  fp = cfopen(input_name,"r");
+  fp = cfopen((const char *) input_name,"r");
 
   nline = 1;  nfun_key=0;
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,input_name)){
@@ -210,7 +210,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 // Output your parameter choices to the screen
 
   sprintf(fname,"%s.out",input_name);
-  fp = cfopen(fname,"w");
+  fp = cfopen((const char*) fname,"w");
    write_cpaimd_config(fp,dict_rho,  num_dict_rho,  dict_fun[1].keyword);
    write_cpaimd_config(fp,dict_state,num_dict_state,dict_fun[2].keyword);
    write_cpaimd_config(fp,dict_pc,   num_dict_pc,   dict_fun[3].keyword);
@@ -2698,7 +2698,7 @@ void Config::simpleRangeCheck(){
 //============================================================================
 // ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Config::rangeExit(int param, char *name, int iopt){
+void Config::rangeExit(int param, const char *name, int iopt){
 //============================================================================
 
   switch(iopt){

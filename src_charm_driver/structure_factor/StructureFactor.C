@@ -17,10 +17,10 @@
 
 //==============================================================================
 
-extern CProxy_StructureFactor sfCompProxy;
-extern CProxy_StructFactCache sfCacheProxy;
-extern CProxy_AtomsGrp atomsGrpProxy;
-extern CProxy_EnergyGroup egroupProxy; //energy group proxy
+extern CkVec <CProxy_StructureFactor> UsfCompProxy;
+extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
+extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
+extern CkVec <CProxy_EnergyGroup> UegroupProxy;
 extern CProxy_CPcharmParaInfoGrp      scProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
@@ -49,15 +49,15 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
    // of the energy dude and the atoms because it flipped its iteration counter
    // at the top of the loop.
    if(numdest){
-     if(atomsGrpProxy.ckLocalBranch()->iteration != 
-        egroupProxy.ckLocalBranch()->iteration_gsp || 
-        atomsGrpProxy.ckLocalBranch()->iteration != (iteration_src-1)){
+     if(UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != 
+        UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp || 
+        UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != (iteration_src-1)){
        CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
        SFDummyMsg *newMsg = new(8*sizeof(int)) SFDummyMsg;
        CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
        *(int*)CkPriorityPtr(newMsg) = config.sfpriority;
        newMsg->iteration_src = iteration_src;
-       sfCompProxy(thisIndex.x,thisIndex.y,thisIndex.z).computeSF(newMsg);
+       UsfCompProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y,thisIndex.z).computeSF(newMsg);
      }//endif
    }//endif
 
@@ -78,7 +78,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 	structFactor_fy    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
 	structFactor_fz    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
       }//endif
-      AtomsGrp *ag = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+      AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
       FastAtoms *fastAtoms = &(ag->fastAtoms);
       CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
 				      structFactor,structFactor_fx,structFactor_fy,
@@ -104,7 +104,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
 	  CmiMemcpy(msg->structFactor_fy,structFactor_fy,totalsize*sizeof(complex));
 	  CmiMemcpy(msg->structFactor_fz,structFactor_fz,totalsize*sizeof(complex));
 	  // send message
-	  sfCacheProxy[destinations[i]].acceptStructFact(msg);      
+	  UsfCacheProxy[thisInstance.proxyOffset][destinations[i]].acceptStructFact(msg);      
       }//endfor
 //==============================================================================
 // no work to do

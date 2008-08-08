@@ -133,7 +133,7 @@ void control_mol_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   rbar_sig_free_iopt  = 0;
   nsurf               = 0;
 
-  fp = cfopen(molsetname,"r");
+  fp = cfopen((const char *) molsetname,"r");
   while(get_fun_key_cnt(fp,fun_key,&nline,&nfun_key,molsetname)){
     if(!strcasecmp(fun_key,"molecule_def")) {nmol_typ+=1;}
     if(!strcasecmp(fun_key,"bond_free_def")){bond_free_num+=1;}

@@ -92,7 +92,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 /*========================================================================*/
 /*  I)Open particle dump file and malloc temps:                           */
 
-  fp_dnamei = cfopen(dnamei,"r");
+  fp_dnamei = cfopen((const char *) dnamei,"r");
  
   line              = (char *)cmalloc(MAXLINE*sizeof(char),"read_hmat");
   restart_type_now  = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");

@@ -424,6 +424,7 @@ class FFTcache: public Group {
      FFTplanHolder  fwdYPlanEext,  bwdYPlanEext;
      FFTplanHolder  fwdYPlanEextS, bwdYPlanEextS;   // special subplane plan
      FFTplanHolder  fwdZPlanEext,  bwdZPlanEext; 
+     const UberCollection thisInstance;
 
     //-----------------------------------------------------------
     // The constructor 
@@ -440,10 +441,10 @@ class FFTcache: public Group {
                    int  *numGRho,     int  *numRXRho,   int *numRYRho ,
                    int  *numGEext,    int  *numRXEext,  int *numRYEext ,
       	           int _fftopt,       int _nsplitR,     int _nsplitG,
-                   int _rhoRsubPlanes);
+                   int _rhoRsubPlanes, UberCollection _thisInstance);
     //-----------------------------------------------------------
     // cache control 
-     void getCacheMem(char *name){
+     void getCacheMem(const char *name){
        if(cacheMemFlag==1){
 	 CkPrintf("%s stealing from %s\n",cacheMemName,name);
          CkExit();
@@ -451,7 +452,7 @@ class FFTcache: public Group {
        cacheMemFlag = 1;
        strcpy(cacheMemName,name);
      }//end routine
-     void freeCacheMem(char *name){
+     void freeCacheMem(const char *name){
        if(cacheMemFlag==0){
 	 CkPrintf("Bad cache memory free from %s\n",name);
          CkExit();

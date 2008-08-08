@@ -90,7 +90,7 @@ void control_set_mol_params(MDATOM_MAPS *mdatom_maps,CPOPTS *cpopts,
 /*=======================================================================*/
 /* I) Fetch a valid functional key word from molset file                 */
 
-  fp = cfopen(molsetname,"r");
+  fp = cfopen((const char *) molsetname,"r");
 
   nline          = 1;
   *nfun_key      = 0;

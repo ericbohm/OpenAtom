@@ -5,8 +5,8 @@
  * Life-cycle of a CP_State_ParticlePlane:
  *
  * The particle-plane array is a shadow of the g-space planes. This means
- * that particlePlaneProxy(s, p) exists on the same processor as
- * gSpacePlaneProxy(s, p). Also,  both chare arrays have the same number of
+ * that UparticlePlaneProxy[thisInstance.proxyOffset](s, p) exists on the same processor as
+ * UgSpacePlaneProxy[thisInstance.proxyOffset](s, p). Also,  both chare arrays have the same number of
  * objects.
  *
  * The life-cycle of this object involves computation of a portion of
@@ -48,15 +48,16 @@
 
 //=========================================================================
 extern CProxy_main                       mainProxy;
-extern CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
-extern CProxy_AtomsGrp                   atomsGrpProxy;
+extern CProxy_InstanceController      instControllerProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
-extern CProxy_CP_State_ParticlePlane     particlePlaneProxy;
-extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
-extern CProxy_StructFactCache            sfCacheProxy;
-extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
-extern CProxy_eesCache                   eesCacheProxy;
-extern CProxy_FFTcache                   fftCacheProxy;
+extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
+extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
+extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
+extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
+extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle gssPInstance;
@@ -83,8 +84,8 @@ void printEnl(void *param, void *msg){
   delete m;
 
   CkPrintf("ENL         = %5.8lf\n", d);   // tell the world
-
-  gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  //store it
+  CkAbort("fix CP_StateParticlePlane printEnl to be instance aware");
+  //  UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  //store it
 }
 //============================================================================
 
@@ -99,25 +100,16 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
        int x, int y, int z, int xNL, int yNL, int zNL, 
        int _gSpacePPC, int numSfGrps_in,int natm_nl_in, int natm_nl_grp_max_in,
        int _nstates, int _nchareG, int _Gstates_per_pe, int _numNLiter,
-       int _ees_nonlocal)
+       int _ees_nonlocal, UberCollection _instance) :
+  sizeX(x), sizeY(y), sizeZ(z), ngridaNL(xNL), ngridbNL(yNL), ngridcNL(zNL),
+  ees_nonlocal(_ees_nonlocal), nstates(_nstates), nchareG(_nchareG),
+  Gstates_per_pe(_Gstates_per_pe), numNLiter(_numNLiter), 
+  gSpacePlanesPerChare(_gSpacePPC), thisInstance(_instance)
 //============================================================================
   {//begin routine
 //============================================================================
 
-  sizeX                = x;
-  sizeY                = y;
-  sizeZ                = z;
-  ngridaNL             = xNL; 
-  ngridbNL             = yNL; 
-  ngridcNL             = zNL; 
-  ees_nonlocal         = _ees_nonlocal;
-  nstates	       = _nstates;
-  nchareG	       = _nchareG;
-  Gstates_per_pe       = _Gstates_per_pe;
-  numNLiter            = _numNLiter;
   myChareG             = thisIndex.y;
-  gSpacePlanesPerChare = _gSpacePPC;
-
   iteration            = 0;
   iterNL               = 0;
   countNLIFFT          = 0;
@@ -157,7 +149,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 
   int constructed=1;
   contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-	     CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
+	     	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   savedprojpsiBf=NULL;
   savedprojpsiBfsend=NULL;
@@ -185,7 +177,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 //============================================================================
 // Comlib to talk to realPP : used when ees_enl_on==1
 
-  realPP_proxy = realParticlePlaneProxy;
+  realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
   if (config.useGssInsRealPP){
       ComlibAssociateProxy(&gssPInstance,realPP_proxy);
   }//endif
@@ -196,7 +188,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 #ifdef _CP_DEBUG_SF_CACHE_
   CkPrintf("PP [%d,%d] has %d numSfGrps\n",thisIndex.x, thisIndex.y, numSfGrps);
 #endif
-    StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+    StructFactCache *sfcache = UsfCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     for(int i=0;i<numSfGrps;i++){
 #ifdef _CP_DEBUG_SF_CACHE_
       CkPrintf("PP [%d,%d] registers grp %i with SFC[%d]\n",
@@ -279,7 +271,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
       }//endfor
 
       particlePlaneENLProxy = 
-	CProxySection_CP_State_ParticlePlane::ckNew(particlePlaneProxy.ckGetArrayID(),
+	CProxySection_CP_State_ParticlePlane::ckNew(UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
 						    elems, nstates);
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
       particlePlaneENLProxy.ckDelegate(mcastGrp);
@@ -309,7 +301,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
     // This occurs AFTER GSP has registered
     registrationFlag = 0;
     if(ees_nonlocal==1){
-       eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+       eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
        int ncoef = gSpaceNumPoints;
        int *k_x  = eesData->GspData[myChareG].ka;
        int *k_y  = eesData->GspData[myChareG].kb;
@@ -322,7 +314,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
        eesData->registerCacheGPP(thisIndex.y,ncoef,k_x,k_y,k_z);
        int i=1;
        CkCallback cb(CkIndex_CP_State_ParticlePlane::registrationDone(NULL),
- 		   particlePlaneProxy);
+ 		   UparticlePlaneProxy[thisInstance.proxyOffset]);
        contribute(sizeof(int),&i,CkReduction::sum_int,cb);
     }//endif
 
@@ -467,7 +459,7 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
                                   //which is when the results of the previous
                                   //iteration are no longer needed.
 
-    CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+    CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
     GStateSlab *gss           = &(gsp->gs);
     int atmIndex    = m->atmGrp;
     int sfindex     = m->sfindex;
@@ -480,13 +472,13 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 
     if(gsp->acceptedPsi && gsp->doneNewIter){
       // get ks
-      eesCache *eesData        = eesCacheProxy.ckLocalBranch();
+      eesCache *eesData        = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
       int *k_x = eesData->GspData[myChareG].ka;
       int *k_y = eesData->GspData[myChareG].kb;
       int *k_z = eesData->GspData[myChareG].kc;
 
       // get sf
-      StructFactCache *sfcache = sfCacheProxy.ckLocalBranch();
+      StructFactCache *sfcache = UsfCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
       complex *structureFactor,*structureFactor_fx,*structureFactor_fy,*structureFactor_fz;
       sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, 
 			     &structureFactor_fx, &structureFactor_fy, &structureFactor_fz);
@@ -606,7 +598,7 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
    //-----------------------------------------------------------------------
    // energy and atom forces
-    AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
+    AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
     int mydoublePack = config.doublePack;
     double myenl     = 0.0;
@@ -688,10 +680,10 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 //============================================================================
 // Compute the non-local forces on the coefficients using PINY physics
 
-  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
-  eesCache *eesData         = eesCacheProxy.ckLocalBranch();
-  StructFactCache *sfcache  = sfCacheProxy.ckLocalBranch();
+  eesCache *eesData         = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  StructFactCache *sfcache  = UsfCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 
   int mydoublePack = config.doublePack;
   int state_ind    = gss->istate_ind;                
@@ -861,7 +853,7 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
   //   Spin my wheels while atoms integrate, cleanExit and Energy reducts
   //   and ortho does who knows what.
   if(iteration>config.maxIter){
-     CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x,thisIndex.y).ckLocal();
+     CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal();
      iterNL = 0;
      doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
      gsp->acceptNLForcesEes(); // Let the lads know you are done
@@ -888,10 +880,10 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
     CkExit();
   }//endif
 
-   CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+   CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
    GStateSlab *gss           = &(gsp->gs);
-   eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
-   FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
+   eesCache *eesData         = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+   FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 
 //============================================================================
 // Setup the projector and then launch the fft
@@ -950,10 +942,10 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
   }//endif
 
   // local pointers
-  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
-  FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
-  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
+  FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  eesCache *eesData         = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
 
 //============================================================================
 // Do the FFT and then send it to r-space to complete the fft
@@ -1026,8 +1018,11 @@ void CP_State_ParticlePlane::sendToEesRPP(){
    CkPrintf("HI, I am gPP %d %d in sendtoEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
+#ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.beginIteration();}
-
+#else
+  //  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy);}
+#endif
 //============================================================================
 // Send your (x,y,z) to processors z.
 
@@ -1055,8 +1050,11 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 
 //============================================================================
 // Turn off commlib
-    
+#ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.endIteration();}
+#else
+  //  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy);}
+#endif    
   sendDone = 1;
 
 //============================================================================
@@ -1146,10 +1144,10 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   }//endif
 
   // local pointers
-  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
-  FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
-  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
+  FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+  eesCache *eesData         = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
 
 //============================================================================
 // Do the FFT and then compute Psi forces
@@ -1209,10 +1207,10 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 void CP_State_ParticlePlane::computeNLEesForces(){
 //============================================================================
 
-  CP_State_GSpacePlane *gsp = gSpacePlaneProxy(thisIndex.x, thisIndex.y).ckLocal();
+  CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
   GStateSlab *gss           = &(gsp->gs);
-  eesCache *eesData         = eesCacheProxy.ckLocalBranch ();
-  FFTcache *fftcache        = fftCacheProxy.ckLocalBranch();
+  eesCache *eesData         = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+  FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 
   int ncoef       = gSpaceNumPoints;
   int *k_x        = eesData->GspData[myChareG].ka;

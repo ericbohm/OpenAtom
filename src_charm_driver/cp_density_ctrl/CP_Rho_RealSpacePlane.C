@@ -43,14 +43,14 @@
 
 //============================================================================
 extern CProxy_TimeKeeper                 TimeKeeperProxy;
-extern CProxy_CP_State_RealSpacePlane    realSpacePlaneProxy;
-extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
-extern CProxy_CP_Rho_RealSpacePlane      rhoRealProxy;
-extern CProxy_CP_Rho_GSpacePlane         rhoGProxy;
+extern CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
+extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
+extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
-extern CProxy_FFTcache                   fftCacheProxy;
-extern CProxy_CP_Rho_RHartExt            rhoRHartExtProxy;
-extern CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
+extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
+extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 
 extern ComlibInstanceHandle commRealInstance;
 extern ComlibInstanceHandle commRealIGXInstance;
@@ -77,7 +77,9 @@ bool is_pow2(int );
 //============================================================================
 CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib, 
                                              int _ees_eext_on,int _ngridcEext,
-					     int _rhokeeperid)
+					     int _rhokeeperid, 
+					     UberCollection _instance) :
+  thisInstance(_instance)
 //============================================================================
    {//begin routine
 //============================================================================
@@ -226,10 +228,10 @@ void CP_Rho_RealSpacePlane::init(){
     }//endif
 
     realSpaceSectionProxy = CProxySection_CP_State_RealSpacePlane::
-        ckNew(realSpacePlaneProxy.ckGetArrayID(), elems, nstates);
+        ckNew(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), elems, nstates);
 
     realSpaceSectionCProxy = CProxySection_CP_State_RealSpacePlane::
-        ckNew(realSpacePlaneProxy.ckGetArrayID(), elems, nstates);
+        ckNew(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), elems, nstates);
 
     realSpaceSectionProxy.ckDelegate
         (CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
@@ -238,17 +240,17 @@ void CP_Rho_RealSpacePlane::init(){
 
     ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxy);
 
-    delete [] elems;    
+    //    delete [] elems;    
 
     ProductMsg *dummyProductMessage = new (0) ProductMsg;    
     // inform realspace element of this section proxy.
     dummyProductMessage->subplane=thisIndex.y;
     realSpaceSectionProxy.init(dummyProductMessage);
 
-    rhoGProxy_com    = rhoGProxy;
-    rhoGProxyIGX_com = rhoGProxy;
-    rhoGProxyIGY_com = rhoGProxy;
-    rhoGProxyIGZ_com = rhoGProxy;
+    rhoGProxy_com    = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
     if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
@@ -311,10 +313,10 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   p|realSpaceSectionProxy;
   p|realSpaceSectionCProxy;
   if(p.isUnpacking()){
-    rhoGProxy_com = rhoGProxy;
-    rhoGProxyIGX_com = rhoGProxy;
-    rhoGProxyIGY_com = rhoGProxy;
-    rhoGProxyIGZ_com = rhoGProxy;
+    rhoGProxy_com = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
+    rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
     if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
@@ -448,12 +450,12 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
              thisIndex.x,thisIndex.x,ngridcEext,ngridc,rem);
 #endif
     for(int j=0;j<config.nchareHartAtmT;j++){
-      rhoRHartExtProxy(thisIndex.x,thisIndex.y,j).startEextIter();
+      UrhoRHartExtProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y,j).startEextIter();
       if(thisIndex.x<rem){
 #ifdef _CP_RHO_RSP_VERBOSE_
 	CkPrintf("HI, I am r-rho chare %d also lauchning %d\n",thisIndex.x,ind);
 #endif
-	rhoRHartExtProxy(ind,thisIndex.y,j).startEextIter();
+	UrhoRHartExtProxy[thisInstance.proxyOffset](ind,thisIndex.y,j).startEextIter();
       }//endif : the launch
     }//endfor : atmTyp parallism
   }//endif : Launch is needed
@@ -480,7 +482,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
            //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
            CkAssert(ns<config.nstates);
            //           CkAssert(thisIndex.x<32);
-           gSpacePlaneProxy(ns,thisIndex.x).startNLEes(false,myTime);
+           UgSpacePlaneProxy[thisInstance.proxyOffset](ns,thisIndex.x).startNLEes(false,myTime);
          }//endfor
        }//endif
   }//endif
@@ -566,7 +568,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
 //============================================================================
 // FFT myself back to G-space part way
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   double  *density   = rho_rs.density;  // we need to save the density and vks.
   double  *dataR     = rho_rs.rhoIRX;   // rhoirx is around doing nothing now
   complex *dataC     = rho_rs.rhoIRXC;  // so we can use it to store the FFT
@@ -613,7 +615,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
       }//endfor
     }//endof
     fclose(fp);
-    rhoRealProxy(0,0).exitForDebugging();
+    UrhoRealProxy[thisInstance.proxyOffset](0,0).exitForDebugging();
 #endif
   }//endif
 
@@ -655,7 +657,7 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         int iend    = ist + div + add;
         for(int ns=ist;ns<iend;ns++){
           CkAssert(ns<config.nstates);
-          realParticlePlaneProxy(ns,thisIndex.x).launchFFTControl(myTime);
+          UrealParticlePlaneProxy[thisInstance.proxyOffset](ns,thisIndex.x).launchFFTControl(myTime);
 	  if(ns%4)
 	    CmiNetworkProgress();
         }//endfor
@@ -752,16 +754,16 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
       }//endif
 
       switch(iopt){
-        case 0 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
-        case 1 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
-        case 2 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
-        case 3 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
+        case 0 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksRyToGy(msg);      break;
+        case 1 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksRyToGy(msg);      break;
+        case 2 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksRyToGy(msg);      break;
+        case 3 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksRyToGy(msg);      break;
         default: CkAbort("impossible iopt");break;
       }//end switch
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
       switch(iopt){
-        case 0 : rhoRealProxy(ix,ic).acceptRhoGradVksRyToGy(msg);      break;
+        case 0 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksRyToGy(msg);      break;
         default: CkAbort("impossible iopt");break;
       }//end switch
 #endif
@@ -867,7 +869,7 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
     default: CkAbort("Impossible option\n"); break;
   }//endif
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
@@ -903,7 +905,7 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
    }//endfor
   }//endof
   fclose(fp);
-  rhoRealProxy(0,0).exitForDebugging();
+  UrhoRealProxy[thisInstance.proxyOffset](0,0).exitForDebugging();
 #endif
 
 //============================================================================
@@ -966,11 +968,18 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 // Commlib launch
 
     if(rhoRsubplanes==1){
-     switch(iopt){
-       case 0 : if(config.useRInsRhoGP)    commRealInstance.beginIteration();    break;
-       case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.beginIteration(); break;
-       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
-       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
+      switch(iopt){
+#ifdef OLD_COMMLIB
+      case 0 : if(config.useRInsRhoGP)    commRealInstance.beginIteration();    break;
+      case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.beginIteration(); break;
+      case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
+      case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
+#else
+      case 0 : if(config.useRInsRhoGP)    ComlibBegin(rhoGProxy_com);    break;
+      case 1 : if(config.useRInsIGXRhoGP) ComlibBegin(rhoGProxyIGX_com); break;
+      case 2 : if(config.useRInsIGYRhoGP) ComlibBegin(rhoGProxyIGY_com); break;
+      case 3 : if(config.useRInsIGZRhoGP) ComlibBegin(rhoGProxyIGZ_com); break;
+#endif
        default: CkAbort("impossible iopt");break;
      }//end switch
     }//endif
@@ -1023,10 +1032,10 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 	    }//end switch
 	  }else{
 	    switch(iopt){
-	    case 0 : rhoGProxy(ic,0).acceptRhoData(msg);   break;
-	    case 1 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-	    case 2 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
-	    case 3 : rhoGProxy(ic,0).acceptWhiteByrd(msg); break;
+	    case 0 : UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptRhoData(msg);   break;
+	    case 1 : UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrd(msg); break;
+	    case 2 : UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrd(msg); break;
+	    case 3 : UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrd(msg); break;
 	    default: CkAbort("impossible iopt");break;
 	    }//end switch
 	  }//endif
@@ -1042,13 +1051,20 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 // Commlib stop
 
     if(rhoRsubplanes==1){
-     switch(iopt){
-       case 0 : if(config.useRInsRhoGP)    commRealInstance.endIteration(); break;
-       case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.endIteration(); break;
-       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
-       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
-       default: CkAbort("impossible iopt");break;
-     }//end switch
+      switch(iopt){
+#ifdef OLD_COMMLIB
+      case 0 : if(config.useRInsRhoGP)    commRealInstance.endIteration(); break;
+      case 1 : if(config.useRInsIGXRhoGP) commRealIGXInstance.endIteration(); break;
+      case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
+      case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
+#else
+      case 0 : if(config.useRInsRhoGP)    ComlibEnd(rhoGProxy_com);    break;
+      case 1 : if(config.useRInsIGXRhoGP) ComlibEnd(rhoGProxyIGX_com); break;
+      case 2 : if(config.useRInsIGYRhoGP) ComlibEnd(rhoGProxyIGY_com); break;
+      case 3 : if(config.useRInsIGZRhoGP) ComlibEnd(rhoGProxyIGZ_com); break;
+#endif
+      default: CkAbort("impossible iopt");break;
+      }//end switch
     }//endif
 
 //---------------------------------------------------------------------------
@@ -1125,7 +1141,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
 	  }//endif
 	 //---------------------------
 	 // Send the message
-          rhoGProxy(ic,0).acceptWhiteByrdAll(msg);
+          UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrdAll(msg);
       }//end if : nonzero msg
 #ifdef CMK_VERSION_BLUEGENE
       if(ic%4==0){CmiNetworkProgress();}
@@ -1265,7 +1281,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
     double StartTime=CmiWallTimer();
 #endif
 
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
     }else{
@@ -1427,7 +1443,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
     double StartTime=CmiWallTimer();
 #endif
 
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataCX,dataRX,nplane_rho_x,ngrida,ngridb,iplane_ind);
       fftcache->doRhoFFTGtoR_Rchare(dataCY,dataRY,nplane_rho_x,ngrida,ngridb,iplane_ind);
@@ -1538,20 +1554,20 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       }//endfor
 
       switch(iopt){
-        case 0 : rhoRealProxy(ix,ic).acceptRhoGradVksGxToRx(msg);break;
-        case 1 : rhoRealProxy(ix,ic).acceptRhoGradVksGxToRx(msg); break;
-        case 2 : rhoRealProxy(ix,ic).acceptRhoGradVksGxToRx(msg); break;
-        case 3 : rhoRealProxy(ix,ic).acceptRhoGradVksGxToRx(msg); break;
-        case 4 : rhoRealProxy(ix,ic).acceptRhoGradVksGxToRx(msg); break;
+        case 0 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksGxToRx(msg);break;
+        case 1 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksGxToRx(msg); break;
+        case 2 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksGxToRx(msg); break;
+        case 3 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksGxToRx(msg); break;
+        case 4 : UrhoRealProxy[thisInstance.proxyOffset](ix,ic).acceptRhoGradVksGxToRx(msg); break;
         default: CkAbort("impossible iopt");break;
       }//end switch
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
       switch(iopt){
-        case 0 : rhoGProxy_com(ic,0).acceptRhoGradVksGxToRx(msg);break;
-        case 1 : rhoGProxyIGX_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
-        case 2 : rhoGProxyIGY_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
-        case 3 : rhoGProxyIGZ_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
+        case 0 : UrhoGProxy[thisInstance.proxyOffset]_com(ic,0).acceptRhoGradVksGxToRx(msg);break;
+        case 1 : UrhoGProxy[thisInstance.proxyOffset]IGX_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
+        case 2 : UrhoGProxy[thisInstance.proxyOffset]IGY_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
+        case 3 : UrhoGProxy[thisInstance.proxyOffset]IGZ_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
         default: CkAbort("impossible iopt");break;
       }//end switch
 #endif
@@ -1654,7 +1670,7 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
   if(countIntGtoR[iopt]==rhoRsubplanes){
     done = 1;
     countIntGtoR[iopt]=0;
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
@@ -1817,7 +1833,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 // Constants and pointers
 
-   FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+   FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
    double  *rhoIRX    = rho_rs.rhoIRX;
    double  *rhoIRY    = rho_rs.rhoIRY;
    double  *rhoIRZ    = rho_rs.rhoIRZ;
@@ -2019,7 +2035,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     if(rhoRsubplanes==1){
       fftcache->doRhoFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
       addWhiteByrdVks();
@@ -2160,7 +2176,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
   if (countGradVks[iopt] == recvCountFromGHartExt){
       countGradVks[iopt]=0;
 
-      FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+      FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
@@ -2301,15 +2317,27 @@ void CP_Rho_RealSpacePlane::doMulticast(){
          fprintf(fp,"%d %d %g\n",i,j+myBoff,dataR[iii]);
        }}//endfor
        fclose(fp);
-       rhoRealProxy(0,0).exitForDebugging();
+       UrhoRealProxy[thisInstance.proxyOffset](0,0).exitForDebugging();
 #else
+       /*
+#ifdef OLD_COMMLIB
       if(config.useCommlibMulticast){mcastInstance.beginIteration();}
+#else
+      if(config.useCommlibMulticast){ComlibBegin(realSpaceSectionCProxy);}
+#endif
+       */
       if(config.useCommlibMulticast){
         realSpaceSectionCProxy.acceptProduct(msg);
       }else{
         realSpaceSectionProxy.acceptProduct(msg);
       }//enddif
+      /*
+#ifdef OLD_COMMLIB
      if(config.useCommlibMulticast){mcastInstance.endIteration();}
+#else
+     if(config.useCommlibMulticast){ComlibEnd(realSpaceSectionCProxy);}
+#endif
+      */
 #ifdef _CP_SUBSTEP_TIMING_
      if(rhoKeeperId>0)
        {
@@ -2347,11 +2375,12 @@ void CP_Rho_RealSpacePlane::exitForDebugging(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_Rho_RealSpacePlane::ResumeFromSync(){
-
+  /*
     if(config.useCommlibMulticast)
         ComlibResetSectionProxy(&realSpaceSectionCProxy);
     if(config.useRInsRhoGP)
-        ComlibResetProxy(&rhoGProxy_com);
+        ComlibResetProxy(&UrhoGProxy[thisInstance.proxyOffset]_com);
+  */
 }
 //============================================================================
 

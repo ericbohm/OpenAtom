@@ -37,15 +37,15 @@
 
 //============================================================================
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_AtomsGrp                atomsGrpProxy;
-extern CProxy_CP_State_GSpacePlane    gSpacePlaneProxy;
-extern CProxy_CP_Rho_RealSpacePlane   rhoRealProxy;
-extern CProxy_CP_State_RealSpacePlane realSpacePlaneProxy;
+extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;
+extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
 extern CProxy_CPcharmParaInfoGrp      scProxy;
 extern CProxy_main                    mainProxy;
-extern CProxy_CP_State_ParticlePlane  particlePlaneProxy;
-extern CProxy_FFTcache                fftCacheProxy;
-
+extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
+extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
+extern CProxy_InstanceController      instControllerProxy;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssInstance;
 
@@ -99,7 +99,10 @@ void CP_State_RealSpacePlane::run () {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits, 
-                  int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc, int _rfortime, int _rbacktime) {
+                  int realSpaceUnits, int _ngrida, int _ngridb, int _ngridc,
+		  int _rfortime, int _rbacktime, UberCollection _instance)
+  : thisInstance(_instance)
+{
 //============================================================================
 //  ckout << "State R Space Constructor : "
 //	<< thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
@@ -121,10 +124,6 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
                        realSpaceUnits, thisIndex.x, thisIndex.y);
 
-    gproxy = gSpacePlaneProxy;
-    if (config.useMssInsGP){
-      ComlibAssociateProxy(&mssInstance,gproxy);
-    }//endif
 
     setMigratable(false);
     cookie= new CkSectionInfo[rhoRsubplanes];
@@ -273,7 +272,7 @@ void CP_State_RealSpacePlane::doFFT(){
 // Perform the FFT and get psi^2 which we can store in cache tmpData because
 // we will blast it right off before losing control
 
-    FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+    FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
     complex *planeArr   = rs.planeArr;
     double  *planeArrR  = rs.planeArrR;
@@ -319,11 +318,11 @@ void CP_State_RealSpacePlane::doFFT(){
     }//endif
 
     if(thisIndex.y<config.nchareG){
-      gSpacePlaneProxy(thisIndex.x,thisIndex.y).startNLEes(false,iteration);
+      UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNLEes(false,iteration);
     }//endif
     if((div==1) && (thisIndex.y<rem))
       {
-	gSpacePlaneProxy(thisIndex.x,ind).startNLEes(false,iteration);
+	UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,ind).startNLEes(false,iteration);
       }
   }//endif
 #endif
@@ -363,7 +362,7 @@ void CP_State_RealSpacePlane::doReduction(){
 // Grab some local pointer and do some checking.
 
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
-   FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+   FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
    double *data        = fftcache->tmpDataR;
 
 #ifdef _CP_DEBUG_STATER_VERBOSE_
@@ -400,7 +399,7 @@ void CP_State_RealSpacePlane::doReduction(){
     int dataSize = subSize*ngrida;
     if(subplane < subRem){dataSize += ngrida;}
     CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                  CkArrayIndex2D(thisIndex.y,subplane),rhoRealProxy.ckGetArrayID());
+                  CkArrayIndex2D(thisIndex.y,subplane),UrhoRealProxy[thisInstance.proxyOffset].ckGetArrayID());
     mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
                          sumFastDoubleType,cookie[subplane],cb);
     off += dataSize;
@@ -501,7 +500,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
 #ifdef RSVKS_BARRIER
     int wehaveours=1;
     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-	       CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),realSpacePlaneProxy));
+	       CkCallback(CkIndex_CP_State_RealSpacePlane::rdoneVks(NULL),UrealSpacePlaneProxy[thisInstance.proxyOffset]));
 #endif
 
     RTH_Runtime_resume(run_thread); // this is scalar, we continue right on
@@ -552,7 +551,7 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
  //------------------------------------------------------------------
  // The FFT
-  FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();
+  FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
   int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
   complex *planeArr   = rs.planeArr;
   double *planeArrR   = rs.planeArrR;
@@ -582,8 +581,11 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
   complex *vks_on_state  = rs.planeArr;
 
  //------------------------------------------------------------------
+#ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.beginIteration();}
-
+#else
+  //  if (config.useMssInsGP){ComlibBegin(gproxy);}
+#endif
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
 
       int sendFFTDataSize = nlines_per_chareG[ic];
@@ -603,7 +605,12 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
     }//end for : chare sending
 
+#ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.endIteration();}
+#else
+  //  if (config.useMssInsGP){ComlibEnd(gproxy);}
+#endif
+
  //------------------------------------------------------------------
 
 //===================================================================
@@ -637,13 +644,18 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //============================================================================
 // Do not delete msg. Its a nokeep.
 //============================================================================
+    gproxy = UgSpacePlaneProxy[thisInstance.proxyOffset];
     numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);
     if(numCookies == config.rhoRsubplanes)
       contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
-	       CkCallback(CkIndex_main::doneInit(NULL),mainProxy));
+	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
     // do not delete nokeep message
+    if (config.useMssInsGP){
+      ComlibAssociateProxy(&mssInstance,gproxy);
+    }//endif
+
 }
 //============================================================================
 

@@ -109,9 +109,10 @@ int MapType3::getCentroid(int torusMap) {
 
 GSMapTable::GSMapTable(MapType2  *_map, PeList *_availprocs, 
 		       int _nchareG, int _nstates,  
-		       int _Gstates_per_pe, bool useCuboidMap)    : 
+		       int _Gstates_per_pe, bool useCuboidMap):
+
       nchareG(_nchareG), 
-    nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
+      nstates(_nstates), Gstates_per_pe(_Gstates_per_pe)
 { 
   reverseMap=NULL;
   maptable=_map;
@@ -307,7 +308,9 @@ SCalcMapTable::SCalcMapTable(MapType4  *_map, PeList *_availprocs,
 			     int _planes_per_pe, 
 			     int _numChunksA, 
 			     int _numChunksS, 
-			     MapType2  *gsmap, bool useCuboidMap, bool useCentroid, int boxSize) : 
+			     MapType2  *gsmap, bool useCuboidMap, 
+			     bool useCentroid, int boxSize):
+
   max_states(_nstates), nchareG(_nchareG),  
   grainsize(_grainsize), symmetric(_flag), 
   scalc_per_plane(_scalc_per_plane), planes_per_pe(_planes_per_pe), 
@@ -661,7 +664,7 @@ RSMapTable::RSMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboidMap,
 	MapType2 *gsmap, int nchareG) :
    nstates(_nstates), sizeZ(_sizeZ),
-  Rstates_per_pe(_Rstates_per_pe)
+   Rstates_per_pe(_Rstates_per_pe)
 {
   int l, m, pl, pm, srem, rem, i=0, rsobjs_per_pe;
   reverseMap=NULL;
@@ -1293,7 +1296,7 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
 }
 
 
-OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize)
+OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, int _orthograinsize, MapType4 *scalcmap, int nplanes, int numChunks, int sGrainSize, PeList *exclusionList): nstates(_nstates), orthoGrainSize(_orthograinsize) 
 {
   maptable = _map;
   availprocs = _availprocs;
@@ -1386,7 +1389,7 @@ OrthoMapTable::OrthoMapTable(MapType2 *_map, PeList *_availprocs, int _nstates, 
   delete [] Pecount;
 }
 
-OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap, PeList *_avail, PeList *exclude): nstates(_nstates), orthoGrainSize(_orthograinsize)
+OrthoHelperMapTable::OrthoHelperMapTable(MapType2 *_map, int _nstates, int _orthograinsize, MapType2 *omap, PeList *_avail, PeList *exclude): nstates(_nstates), orthoGrainSize(_orthograinsize) 
 {
   maptable = _map;
   int destpe = 0;

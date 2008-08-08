@@ -189,8 +189,8 @@
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
  
-extern PairCalcID pairCalcID1;
-extern PairCalcID pairCalcID2;
+extern CkVec <PairCalcID> UpairCalcID1;
+extern CkVec <PairCalcID> UpairCalcID2;
 
 CkReduction::reducerType sumMatrixDoubleType;
 
@@ -258,16 +258,19 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _rdma_ep, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT)
+PairCalculator::PairCalculator(bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _rdma_ep, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, int _streamFW, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
 {
+
 #ifdef _PAIRCALC_DEBUG_PLACE_
-  CkPrintf("[PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,sym, CkMyPe());
+  CkPrintf("{%d} [PAIRCALC] [%d %d %d %d %d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
 #endif
+
+
   this->conserveMemory=_conserveMemory;
   this->symmetric = _sym;
   this->grainSize = _grainSize;
   this->numStates = _s;
-
+  instance=_instance;
   int remainder=numStates%grainSize;
   grainSizeX=(numStates- thisIndex.x == grainSize+remainder) ? grainSize+remainder: grainSize;
   grainSizeY=(numStates- thisIndex.y == grainSize+remainder) ? grainSize+remainder: grainSize;
@@ -568,8 +571,24 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 
   if(!symmetric && ++numRecd==numOrtho)
   {
-      //      CkPrintf("[%d,%d,%d,%d,%d] contributes to doneInit with %d numRecd \n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric,numRecd);
-      contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb);
+    struct s_array { //(sendArray, bcastArray)
+      int ep; //Entry point to call
+      CkGroupID id; //Array ID to call it on
+      CkArrayIndexStruct idx; //Index to send to (if any)
+    } array, *ap;
+
+    CkPrintf("{%d} [%d,%d,%d,%d,%d] contributes to doneInit cb type %d aid %d nInts %d index [%d %d %d] with %d numRecd \n",instance,thisIndex.w,thisIndex.x,thisIndex.y,
+            thisIndex.z, symmetric,
+	     msg->synccb.type,
+	     CkGroupID(msg->synccb.d.array.id).idx, 
+	     msg->synccb.d.array.idx.nInts, 
+	     msg->synccb.d.array.idx.index[0], 
+	     msg->synccb.d.array.idx.index[1],
+ 	     msg->synccb.d.array.idx.index[2], 
+	     numRecd);
+
+ 
+      contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb, instance);
       numRecd=0;
   }
 
@@ -639,15 +658,15 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
   CkPrintf(" symm=%d    pairCalc[%d %d %d %d] got from [%d %d] with size {%d}, from=%d, count=%d, resumed=%d\n", symmetric, thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,  thisIndex.w, msg->sender, msg->size, msg->fromRow, numRecd,resumed);
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  if((pairCalcID1.forwardTimerID>0)||(pairCalcID2.forwardTimerID>0))
+  if((UpairCalcID1[instance].forwardTimerID>0)||(UpairCalcID2[instance].forwardTimerID>0))
     {
       if(numRecd==0)
 	{
 	  double pstart=CmiWallTimer();
 	  if(symmetric)
-	    contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.forwardTimerID);
+	    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].forwardTimerID);
 	  else
-	    contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID2.beginTimerCB , pairCalcID2.forwardTimerID);
+	    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].forwardTimerID);
 
 
 	}
@@ -1362,14 +1381,14 @@ PairCalculator::multiplyForward(bool flag_dp)
   // do the slicing and dicing to send bits to Ortho
   contributeSubTiles(outData);
 #ifdef _CP_SUBSTEP_TIMING_
-  if((pairCalcID1.forwardTimerID>0)||(pairCalcID2.forwardTimerID>0))
+  if((UpairCalcID1[instance].forwardTimerID>0)||(UpairCalcID2[instance].forwardTimerID>0))
     {
       double pstart=CmiWallTimer();
       if(symmetric)
-	contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.forwardTimerID);
+	contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].forwardTimerID);
 
       else
-	contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID2.endTimerCB , pairCalcID2.forwardTimerID);
+	contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[instance].endTimerCB , UpairCalcID2[instance].forwardTimerID);
 
     }
 #endif
@@ -1504,12 +1523,12 @@ PairCalculator::acceptPhantomData(phantomMsg *msg)
 
 #ifdef _CP_SUBSTEP_TIMING_
   //satisfy fw path reduction for this triangle
-  if(pairCalcID1.forwardTimerID>0)
+  if(UpairCalcID1[instance].forwardTimerID>0)
     {
       double pstart=CmiWallTimer();
-      contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.forwardTimerID);
+      contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].forwardTimerID);
       pstart=CmiWallTimer();
-      contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.forwardTimerID);
+      contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].forwardTimerID);
     }
 #endif
 
@@ -1699,15 +1718,15 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
   CkPrintf("[%d %d %d %d %d]: MultiplyResult from orthoX %d orthoY %d size %d numRecd %d actionType %d amPhantom %d notOnDiagonal %d phantomSym %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, phantomSym, symmetricOnDiagonal);
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-  if((pairCalcID1.backwardTimerID>0)||(pairCalcID1.backwardTimerID>0))
+  if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID1[instance].backwardTimerID>0))
   if(numRecdBW==0)
     {
       double pstart=CmiWallTimer();
       if(symmetric)
-	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID1.beginTimerCB , pairCalcID1.backwardTimerID);
+	contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].backwardTimerID);
 
       else
-	contribute(sizeof(double),&pstart,CkReduction::min_double, pairCalcID2.beginTimerCB , pairCalcID2.backwardTimerID);
+	contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].backwardTimerID);
     }
 #endif
   numRecdBW++; 
@@ -2686,13 +2705,13 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
       numRecdBW=0;
 #ifdef _CP_SUBSTEP_TIMING_
-      if((pairCalcID1.backwardTimerID>0)||(pairCalcID2.backwardTimerID>0))
+      if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID2[instance].backwardTimerID>0))
 	{
 	  double pstart=CmiWallTimer();
 	  if(symmetric)
-	    contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID1.endTimerCB , pairCalcID1.backwardTimerID);
+	    contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].backwardTimerID);
 	  else
-	    contribute(sizeof(double),&pstart,CkReduction::max_double, pairCalcID2.endTimerCB , pairCalcID2.backwardTimerID);
+	    contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[instance].endTimerCB , UpairCalcID2[instance].backwardTimerID);
 	}
 #endif
 

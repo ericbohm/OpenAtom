@@ -30,13 +30,13 @@
 
 //----------------------------------------------------------------------------
 
-extern CProxy_EnergyGroup          egroupProxy;
+extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern Config                      config;
-extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern CProxy_AtomsGrp             atomsGrpProxy;
-extern CProxy_EnergyGroup          egroupProxy;
-extern CProxy_StructFactCache      sfCacheProxy;
-extern CProxy_eesCache             eesCacheProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+extern CkVec <CProxy_AtomsGrp>             UatomsGrpProxy;
+extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
+extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
+extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_CPcharmParaInfoGrp   scProxy;
 
 //----------------------------------------------------------------------------
@@ -62,7 +62,7 @@ void IntegrationComplete(void *, void *);
  */
 //==============================================================================
 AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC){
+                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, UberCollection _thisInstance) : thisInstance(_thisInstance) {
 //==============================================================================
 // parameters, options and energies
 
@@ -235,7 +235,7 @@ void AtomsGrp::contributeforces(){
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
 #endif
-  CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), atomsGrpProxy);
+  CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), UatomsGrpProxy[thisInstance.proxyOffset]);
   contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
 
 
@@ -254,7 +254,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   int i,j;
   double *ftot      = (double *) msg->getData();
 
-  EnergyGroup *eg   = egroupProxy.ckLocalBranch();
+  EnergyGroup *eg   = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
 
   int nproc         = CkNumPes();
   int myid          = CkMyPe();
@@ -454,7 +454,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
     outputAtmEnergy();
 
     i=0;
-    CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+    CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
@@ -471,7 +471,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
-  EnergyGroup *eg       = egroupProxy.ckLocalBranch();
+  EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
@@ -484,19 +484,19 @@ void AtomsGrp::outputAtmEnergy() {
 
   if(myid==0){
      if(iperd!=0){
-       CkPrintf("EWALD_REAL  = %5.8lf\n",pot_ewd_rs_now);
-       CkPrintf("EWALD_SELF  = %5.8lf\n",vself);
-       CkPrintf("EWALD_BGR   = %5.8lf\n",vbgr);
+       CkPrintf("{%d} EWALD_REAL  = %5.8lf\n",thisInstance.proxyOffset, pot_ewd_rs_now);
+       CkPrintf("{%d} EWALD_SELF  = %5.8lf\n",thisInstance.proxyOffset,vself);
+       CkPrintf("{%d} EWALD_BGR   = %5.8lf\n",thisInstance.proxyOffset,vbgr);
        if(iperd!=3){
-         CkPrintf("EWALD_Perd  = %5.8lf\n",potPerdCorr);
+         CkPrintf("{%d} EWALD_Perd  = %5.8lf\n",thisInstance.proxyOffset,potPerdCorr);
        }//endif
      }else{
-       CkPrintf("ATM_COUL    = %5.8lf\n",pot_ewd_rs_now);
+       CkPrintf("{%d} ATM_COUL    = %5.8lf\n",thisInstance.proxyOffset,pot_ewd_rs_now);
      }//endif
      if(cp_min_opt==0){
-        CkPrintf("atm eKin    = %5.8lf\n",eKinetic);
-        CkPrintf("atm Temp    = %5.8lf\n",(2.0*eKinetic*BOLTZ/free_atm));
-        CkPrintf("atm fmag    = %5.8lf\n",fmag);
+        CkPrintf("{%d} atm eKin    = %5.8lf\n",thisInstance.proxyOffset,eKinetic);
+        CkPrintf("{%d} atm Temp    = %5.8lf\n",thisInstance.proxyOffset,(2.0*eKinetic*BOLTZ/free_atm));
+        CkPrintf("{%d} atm fmag    = %5.8lf\n",thisInstance.proxyOffset,fmag);
         if(iextended_on==1){
           double free_Nhc;
           if(isokin_opt==0){
@@ -504,12 +504,12 @@ void AtomsGrp::outputAtmEnergy() {
           }else{
             free_Nhc    = free_atm*((double)(len_nhc-1));
 	  }//endif
-          CkPrintf("atm eKinNhc = %5.8lf\n",eKineticNhc);
-          CkPrintf("atm TempNHC = %5.8lf\n",(2.0*eKineticNhc*BOLTZ/free_Nhc));
-          CkPrintf("atm potNHC  = %5.8lf\n",potNhc);
+          CkPrintf("{%d} atm eKinNhc = %5.8lf\n",thisInstance.proxyOffset,eKineticNhc);
+          CkPrintf("{%d} atm TempNHC = %5.8lf\n",thisInstance.proxyOffset,(2.0*eKineticNhc*BOLTZ/free_Nhc));
+          CkPrintf("{%d} atm potNHC  = %5.8lf\n",thisInstance.proxyOffset,potNhc);
 	}//endif
      }else{
-        CkPrintf("atm fmag    = %5.8lf\n",fmag);
+        CkPrintf("{%d} atm fmag    = %5.8lf\n",thisInstance.proxyOffset,fmag);
      }//endif
   }//endif
 
@@ -542,7 +542,7 @@ void AtomsGrp::atomsDone() {
 
  int myid = CkMyPe();
 
- EnergyGroup *eg             = egroupProxy.ckLocalBranch();
+ EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
  iteration++;
  eg->estruct.iteration_atm   = iteration;
  eg->iteration_atm           = iteration;
@@ -562,14 +562,14 @@ void AtomsGrp::atomsDone() {
 
  if(1) { // localAtomBarrier
 
-   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
    int *indState     = eesData->gspStateInd;
    int *indPlane     = eesData->gspPlaneInd;
    int ngo           = eesData->nchareGSPProcT;
 
    GSAtmMsg *msg = new  GSAtmMsg;
    for(int i=0; i<ngo; i++){
-     int iadd = gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     int iadd = UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
      if(iadd!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
@@ -577,7 +577,7 @@ void AtomsGrp::atomsDone() {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
      }//endif
-     gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptAtoms(msg); 
+     UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->acceptAtoms(msg); 
    }//endfor
    
 
@@ -587,7 +587,7 @@ void AtomsGrp::atomsDone() {
       GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      gSpacePlaneProxy.acceptAtoms(msg);
+      UgSpacePlaneProxy[thisInstance.proxyOffset].acceptAtoms(msg);
    }//endif
  
  }//endif
@@ -640,7 +640,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // Send the message to everyone in the group
 
-  atomsGrpProxy.acceptAtoms(msg);
+  UatomsGrpProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
 //-------------------------------------------------------------------------
   }//end routine
@@ -653,7 +653,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
   void AtomsGrp::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
 
-  AtomsGrp *ag      = atomsGrpProxy.ckLocalBranch();
+  AtomsGrp *ag      = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
   double *atmData   = msg->data;
   int    nsize      = msg->nsize;
   int    natmStr    = msg->natmStr;
@@ -700,7 +700,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
   if(countAtm==nAtmMsgRecv){
      countAtm = 0;
 
-     EnergyGroup *eg             = egroupProxy.ckLocalBranch();
+     EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
      eg->estruct.eKinetic_atm    = eKinetic;
      eg->estruct.eKineticNhc_atm = eKineticNhc;
      eg->estruct.potNhc_atm      = potNhc;
@@ -726,7 +726,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
      //everybody has to have received all the atoms before continuing : not just me
      int i=0;
-     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),atomsGrpProxy);
+     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
@@ -740,7 +740,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-EnergyGroup::EnergyGroup () {
+EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInstance) {
     iteration_gsp = 0;
     iteration_atm = 0;
 
@@ -808,7 +808,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
                  estruct.fictEke,estruct.totalEnergy);
 #endif
     int i=0;
-    CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),egroupProxy);
+    CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),UegroupProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 
 //-------------------------------------------------------------------------
@@ -841,14 +841,14 @@ void EnergyGroup::energyDone(){
  int myid          = CkMyPe();
  if(1) { // localAtomBarrier
 
-   eesCache *eesData = eesCacheProxy.ckLocalBranch ();
+   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
    int *indState     = eesData->gspStateInd;
    int *indPlane     = eesData->gspPlaneInd;
    int ngo           = eesData->nchareGSPProcT;
 
    GSAtmMsg *msg = new  GSAtmMsg;
    for(int i=0; i<ngo; i++){
-     int iadd = gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->registrationFlag;
+     int iadd = UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
      if(iadd!=1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
@@ -856,7 +856,7 @@ void EnergyGroup::energyDone(){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
      }//endif
-     gSpacePlaneProxy(indState[i],indPlane[i]).ckLocal()->acceptEnergy(msg); 
+     UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->acceptEnergy(msg); 
    }//endfor
 
  }else{
@@ -865,7 +865,7 @@ void EnergyGroup::energyDone(){
       GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      gSpacePlaneProxy.acceptEnergy(msg);
+      UgSpacePlaneProxy[thisInstance.proxyOffset].acceptEnergy(msg);
    }//endif
  
  }//endif
@@ -875,11 +875,11 @@ void EnergyGroup::energyDone(){
 //==========================================================================
 
 
-//==========================================================================
+/*//==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 EnergyStruct GetEnergyStruct() {
-    return egroupProxy.ckLocalBranch()->getEnergyStruct();
+    return UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->getEnergyStruct();
 }
 //==========================================================================
-
+*/

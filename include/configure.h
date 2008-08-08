@@ -58,6 +58,12 @@ class Config {
     int lbdensity;
     int rhoGHelpers;
     int rhoRsubplanes;
+    int rhoSubPlaneBalance;
+    int rhoGToRhoRMsgComb;
+    int prioEextFFTMsg;
+    //==================================
+    // density commlib flags
+    //----------------------------------
     int useGIns0RhoRP;
     int useGIns1RhoRP;
     int useGIns2RhoRP;
@@ -67,9 +73,6 @@ class Config {
     int useRInsIGXRhoGP;
     int useRInsIGYRhoGP;
     int useRInsIGZRhoGP;
-    int prioEextFFTMsg;
-    int rhoSubPlaneBalance;
-    int rhoGToRhoRMsgComb;
   //==================================
 
   //==================================
@@ -195,7 +198,7 @@ class Config {
    void readStateInfo(int &, int &, int &, int &, int &, int &,
                       const char *, int,int,int,int,int);
    void simpleRangeCheck();
-   void rangeExit(int, char *, int);
+   void rangeExit(int, const char *, int);
    void Finale(int, int, int, int, int, int);
 
    void set_config_dict_fun    (int *, DICT_WORD **);

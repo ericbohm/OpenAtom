@@ -9,6 +9,7 @@ ECHO		= /bin/echo "making"
 HEAD		= ..
 MAIN		= ../main
 TOPINC		= ../../include
+UBER		= ../uber
 STATE		= ../cp_state_ctrl
 RHO		= ../cp_density_ctrl
 STRUCTFACT	= ../structure_factor
@@ -27,11 +28,11 @@ SRC_COMPILE	= ../compile
 FLAGS	= \
 	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) \
 	-I$(MAIN) -I$(STATE) -I$(RHO) -I$(ORTHO) -I$(UTIL) -I$(MATH) \
-	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I../paircalc \
-	-I$(SRC_COMPILE) -I../$(STANDARD_INC) #-DGROUP_REDUCTION 
+	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I$(UBER) \
+        -I../paircalc -I$(SRC_COMPILE) -I../$(STANDARD_INC) 
 
 LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
-	-lm $(LOCAL_LIB) #-memory paranoid
+	-lm $(LOCAL_LIB) 
 #===========================================================================
 
 
@@ -51,8 +52,9 @@ OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
 	CP_State_ParticlePlane.o CP_State_RealParticlePlane.o \
 	CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o util.o \
-	ortho.o lambda.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
-	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o 
+	ortho.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
+	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o \
+	InstanceController.o
 
 OBJS_DECL	= ../main/cpaimd.decl.h
 OBJS_DEF 	= ../main/cpaimd.decl.h
@@ -143,7 +145,7 @@ cpaimd: $(OBJS_DECL) $(OBJS)
 cpaimd.o: $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/ReductionClients.h $(MAIN)/TimeKeeper.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
-	$(ORTHO)/ortho.h $(ORTHO)/lambda.h $(FFTSLAB)/fftCacheSlab.h \
+	$(ORTHO)/ortho.h $(FFTSLAB)/fftCacheSlab.h \
 	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
 	$(LOADB)/PeList.h $(LOADB)/MapTable.h $(LOADB)/IntMap.h \
@@ -275,12 +277,6 @@ ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
 	$(ECHO) $@
 	$(CHARMC) -c $(ORTHO)/ortho.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-lambda.o: $(ORTHO)/lambda.C $(ORTHO)/lambda.h $(MAIN)/cpaimd.decl.h \
-	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-        $(TOPINC)/CPcharmParaInfo.h 
-	$(ECHO) $@
-	$(CHARMC) -c $(ORTHO)/lambda.C $(OPTS) $(FLAGS)
-#---------------------------------------------------------------------------
 StructureFactor.o: $(STRUCTFACT)/StructureFactor.h \
 	$(STRUCTFACT)/StructureFactor.C $(STRUCTFACT)/StructFactorCache.h \
 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
@@ -335,6 +331,12 @@ groups.o: $(MAIN)/groups.C $(MAIN)/groups.h \
         $(TOPINC)/CPcharmParaInfo.h
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/groups.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+InstanceController.o: $(MAIN)/InstanceController.h  $(MAIN)/InstanceController.C \
+	$(MAIN)/cpaimd.decl.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(MAIN)/InstanceController.C $(OPTS) $(FLAGS)
+
 #===========================================================================
 
 

@@ -16,9 +16,12 @@
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
+#include "Uber.h"
 #include "pairCalculator.h"
 #include "ckhashtable.h"
 #include "PeList.h"
+
+#define OLD_COMMLIB 1
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
 class IntMap2
@@ -105,7 +108,6 @@ class main : public Chare {
  public:
     main(CkMigrateMessage *m) { }
     main(CkArgMsg *);
-    void doneInit(CkReductionMsg *msg);
     ~main();
     
 
@@ -130,7 +132,7 @@ class CkArrayMapTable2 : public CkArrayMap
 {
  public:
   MapType2 *maptable;
-
+  UberCollection thisInstance;
 
   CkArrayMapTable2() {}
   inline int procNum(int, const CkArrayIndex &iIndex){
@@ -152,6 +154,7 @@ class CkArrayMapTable2 : public CkArrayMap
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
+      p|thisInstance;
     }
   ~CkArrayMapTable2(){}
   
@@ -161,7 +164,7 @@ class CkArrayMapTable3 : public CkArrayMap
 {
  public:
   MapType3 *maptable;
-
+  UberCollection thisInstance;
 
   CkArrayMapTable3() {}
   inline int procNum(int, const CkArrayIndex &iIndex){
@@ -184,6 +187,7 @@ class CkArrayMapTable3 : public CkArrayMap
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
+      p|thisInstance;
     }
   ~CkArrayMapTable3(){}
   
@@ -193,7 +197,7 @@ class CkArrayMapTable4 : public CkArrayMap
 {
  public:
   MapType4 *maptable;
-
+  UberCollection thisInstance;
 
   CkArrayMapTable4() {}
   inline int procNum(int, const CkArrayIndex &iIndex){
@@ -216,6 +220,7 @@ class CkArrayMapTable4 : public CkArrayMap
   void pup(PUP::er &p)
     {
       CkArrayMap::pup(p);
+      p|thisInstance;
     }
   ~CkArrayMapTable4(){}
   
@@ -235,8 +240,9 @@ class CkArrayMapTable4 : public CkArrayMap
 class GSMap: public CkArrayMapTable2 {
 
  public:
-  GSMap()
+  GSMap(UberCollection _instance) 
       { 
+	thisInstance=_instance;
 #ifdef USE_INT_MAP	
 	maptable= &GSImaptable;
 #else
@@ -285,8 +291,9 @@ class GSMap: public CkArrayMapTable2 {
 class RSMap: public CkArrayMapTable2 {
 
  public:
-  RSMap()
+  RSMap(UberCollection _instance)
       { 
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
 	maptable= &RSImaptable;
 #else
@@ -328,8 +335,9 @@ class RSMap: public CkArrayMapTable2 {
 class RPPMap: public CkArrayMapTable2 {
 
  public:
-  RPPMap()
+  RPPMap(UberCollection _instance)
       { 
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
 	maptable= &RPPImaptable;
 #else
@@ -385,7 +393,9 @@ class RPPMap: public CkArrayMapTable2 {
 class SCalcMap : public CkArrayMapTable4 {
   bool symmetric;
  public:
-    SCalcMap(bool _symmetric): symmetric(_symmetric){
+    SCalcMap(bool _symmetric, UberCollection _instance): symmetric(_symmetric)
+      {
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
 	if(symmetric)
 	  maptable= &SymScalcImaptable;
@@ -440,8 +450,9 @@ class SCalcMap : public CkArrayMapTable4 {
 class RhoRSMap : public CkArrayMapTable2 {
   public:
     int nchareRhoR;
-    RhoRSMap()
+    RhoRSMap(UberCollection _instance)
     {
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
       maptable= &RhoRSImaptable;
 #else
@@ -487,8 +498,9 @@ class RhoRSMap : public CkArrayMapTable2 {
  */
 class RhoGSMap : public CkArrayMapTable2 {
   public:
-    RhoGSMap()
+  RhoGSMap(UberCollection _instance)
     {
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
       maptable= &RhoGSImaptable;
 #else
@@ -526,8 +538,9 @@ class RhoGSMap : public CkArrayMapTable2 {
 
 class RhoGHartMap : public CkArrayMapTable2 {
   public:
-  RhoGHartMap()
+  RhoGHartMap(UberCollection _instance)
   {
+	thisInstance=_instance;
 #ifdef USE_INT_MAP
     maptable= &RhoGHartImaptable;
 #else
@@ -571,8 +584,9 @@ class RhoGHartMap : public CkArrayMapTable2 {
 
 class RhoRHartMap : public CkArrayMapTable3 {
   public:
-  RhoRHartMap()
+  RhoRHartMap(UberCollection _instance)
   {
+    thisInstance=_instance;
 #ifdef USE_INT_MAP
     maptable= &RhoRHartImaptable;
 #else
@@ -704,16 +718,16 @@ class CPcharmParaInfoGrp: public Group {
 //============================================================================
 class size2d; //forward decl to shup the compiler
 void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, 
-                           CPcharmParaInfo *sim, int boxSize);
-void init_ortho_chares(int, int, int *);
+                           CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance);
+void init_ortho_chares(int, int, int *, UberCollection thisInstance);
 
-void init_commlib_strategies(int, int,int);
+void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
-void init_state_chares(int,int,int,int,CPcharmParaInfo *);
+void init_state_chares(int,int,int,int,CPcharmParaInfo *, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
-                       int doublePack, PeList *exclusion, CPcharmParaInfo *sim);
-void init_rho_chares(CPcharmParaInfo*);
-void control_physics_to_driver();
+                       int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
+void init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
+void control_physics_to_driver(UberCollection thisInstance);
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret);
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 

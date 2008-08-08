@@ -17,18 +17,18 @@ MapFile::~MapFile()
   if(mapOrder!=NULL)
     free(mapOrder);
 }
-MapFile::MapFile(char* name, int numpes)
+MapFile::MapFile(const char* name, int numpes)
 {
   mapName = (char *)malloc(sizeof(char)*15);
-  strcpy(mapName, (const char*)name);
+  strcpy(mapName, name);
   numProcs = numpes;
 }
 
 
-MapFile::MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t, int _stride)
+MapFile::MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int _stride)
 {
   mapName = (char *)malloc(sizeof(char)*15);
-  strcpy(mapName, (const char*)name);
+  strcpy(mapName, name);
   numDim = num;
   sizeDim = (int *)malloc(sizeof(int)*numDim);
   for(int i=0; i<numDim; i++)
@@ -179,7 +179,7 @@ void MapFile::dumpMap(MapType3 *map)
 }
 
 
-int MapFile::loadMap(char *filename, MapType2 *map)
+int MapFile::loadMap(const char *filename, MapType2 *map)
 {
   int x, y, pe;
   FILE *fp = fopen(filename, "r");
@@ -201,7 +201,7 @@ int MapFile::loadMap(char *filename, MapType2 *map)
   return 1;
 }
 
-int MapFile::loadMap(char *filename, MapType3 *map)
+int MapFile::loadMap(const char *filename, MapType3 *map)
 {
   int x, y, z, w, pe;
   FILE *fp = fopen(filename, "r");
@@ -227,7 +227,7 @@ int MapFile::loadMap(char *filename, MapType3 *map)
 }
 
 
-int MapFile::loadMap(char *filename, MapType4 *map)
+int MapFile::loadMap(const char *filename, MapType4 *map)
 {
   int x, y, z, w, pe;
   FILE *fp = fopen(filename, "r");

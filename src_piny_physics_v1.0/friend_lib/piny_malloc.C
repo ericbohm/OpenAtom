@@ -15,7 +15,7 @@
 /*==========================================================================*/
 /* cmalloc: Careful malloc                                                  */
 /*==========================================================================*/
-void *cmalloc(size_t len,char *func_name)
+void *cmalloc(size_t len,const char *func_name)
 { /* begin routine */
   void *mem_ptr;
   double request;
@@ -45,7 +45,7 @@ void *cmalloc(size_t len,char *func_name)
 /* cfree: Careful free                                                      */
 /*==========================================================================*/
 
-void cfree(void *p,char *func_name)
+void cfree(void *p,const char *func_name)
 {/* begin routine */
   if(p==NULL) PRINTF("Freeing unallocated pointer in function %s\n",func_name);
   fftw_free(p);
@@ -57,7 +57,7 @@ void cfree(void *p,char *func_name)
 /*==========================================================================*/
 /* crealloc: Careful realloc                                                */
 /*==========================================================================*/
-void *crealloc(void *ptr,size_t len,char *func_name)
+void *crealloc(void *ptr,size_t len,const char *func_name)
 { /* begin routine */
   void *mem_ptr;
   double request;
@@ -89,7 +89,7 @@ void *crealloc(void *ptr,size_t len,char *func_name)
 /*==========================================================================*/
 /* cmall_int_mat: Careful malloc a matrix of type int                       */
 /*==========================================================================*/
-int **cmall_int_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
+int **cmall_int_mat(long nrl, long nrh, long ncl, long nch,const char *func_name)
 /* allocate an integer matrix with subscript range m[nrl...nrh][ncl...nch] */
 {
   long i, nrow=nrh-nrl+1,ncol=nch-ncl+1;
@@ -137,7 +137,7 @@ int **cmall_int_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
 /*==========================================================================*/
 /* cmall_mat: Careful malloc a matrix of type double                        */
 /*==========================================================================*/
-double **cmall_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
+double **cmall_mat(long nrl, long nrh, long ncl, long nch,const char *func_name)
 /* allocate a double matrix with subscript range m[nrl...nrh][ncl...nch] */
 {
   long i, nrow=nrh-nrl+1,ncol=nch-ncl+1;
@@ -186,7 +186,7 @@ double **cmall_mat(long nrl, long nrh, long ncl, long nch,char *func_name)
 /*==========================================================================*/
 /* cmall_tens3: Careful malloc a rank 3 tensor of type double               */
 /*==========================================================================*/
-double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char *func_name)
+double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, const char *func_name)
 
 /* allocate a double rank3 tensor with subscript range                       */
 /* m[nrl...nrh][ncl...nch][ndl...ndh] */
@@ -262,7 +262,7 @@ double ***cmall_tens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, cha
 /*==========================================================================*/
 /* cmall_itens3: Careful malloc a rank 3 tensor of type int               */
 /*==========================================================================*/
-int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char *func_name)
+int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, const char *func_name)
 
 /* allocate a int rank3 tensor with subscript range                       */
 /* m[nrl...nrh][ncl...nch][ndl...ndh] */
@@ -338,7 +338,7 @@ int ***cmall_itens3(long nrl,long nrh,long ncl,long nch,long ndl,long ndh, char 
 /* cmall_tens4: Careful malloc a rank 4 tensor of type double               */
 /*==========================================================================*/
 double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
-		       long ndl,long ndh,long ntl,long nth,char *func_name)
+		       long ndl,long ndh,long ntl,long nth,const char *func_name)
 
 /* allocate a double rank4 tensor with subscript range                       */
 /* m[nrl...nrh][ncl...nch][ndl...ndh][ntl...nth] */
@@ -452,7 +452,7 @@ double ****cmall_tens4(long nrl,long nrh,long ncl,long nch,
 /* cmall_tens4: Careful malloc a rank 4 tensor of type int                  */
 /*==========================================================================*/
 int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
-		     long ndl,long ndh,long ntl,long nth,char *func_name)
+		     long ndl,long ndh,long ntl,long nth,const char *func_name)
 
 /* allocate a int rank4 tensor with subscript range                       */
 /* m[nrl...nrh][ncl...nch][ndl...ndh][ntl...nth] */
@@ -568,7 +568,7 @@ int ****cmall_itens4(long nrl,long nrh,long ncl,long nch,
 double **creall_mat(double **m_old,long nrl_old,long nrh_old,
                                    long ncl_old,long nch_old,
 		                   long nrl_new,long nrh_new,
-                                   long ncl_new,long nch_new,char *func_name)
+                                   long ncl_new,long nch_new,const char *func_name)
 {
   long i,j, nrow=nrh_new-nrl_new+1,ncol=nch_new-ncl_new+1;
   long nrl_t,nrh_t,ncl_t,nch_t;
@@ -638,7 +638,7 @@ double **creall_mat(double **m_old,long nrl_old,long nrh_old,
 int **creall_int_mat(int **m_old,long nrl_old,long nrh_old,
                                  long ncl_old,long nch_old,
 		                 long nrl_new,long nrh_new,
-                                 long ncl_new,long nch_new,char *func_name)
+                                 long ncl_new,long nch_new,const char *func_name)
 {
   long i,j, nrow=nrh_new-nrl_new+1,ncol=nch_new-ncl_new+1;
   long nrl_t,nrh_t,ncl_t,nch_t;

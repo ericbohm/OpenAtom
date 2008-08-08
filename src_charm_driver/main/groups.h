@@ -36,6 +36,7 @@ class AtomMsg: public CMessage_AtomMsg {
 
 class AtomsGrp: public Group {
  public:
+  const UberCollection thisInstance;
   int natm;
   int natm_nl;
   int len_nhc;
@@ -60,7 +61,7 @@ class AtomsGrp: public Group {
   FastAtoms fastAtoms;
 
   AtomsGrp(CkMigrateMessage *m) {}
-  AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *);
+  AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);
   ~AtomsGrp();
   void contributeforces();
   void recvContribute(CkReductionMsg *);
@@ -136,8 +137,9 @@ class AtomsGrp: public Group {
 class EnergyGroup : public Group {
     
  public:
+  const UberCollection thisInstance;
     EnergyStruct estruct;
-    EnergyGroup();
+    EnergyGroup(UberCollection thisInstance);
     int iteration_gsp;
     int iteration_atm;
     void updateEnergiesFromGS(EnergyStruct &);
@@ -145,7 +147,7 @@ class EnergyGroup : public Group {
     void energyDone();
     inline EnergyStruct getEnergyStruct(){return estruct;}
 };
-EnergyStruct GetEnergyStruct();
+/*EnergyStruct GetEnergyStruct();*/
 //============================================================================
 
 

@@ -164,7 +164,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 
 
 
-  fp_dnamei = cfopen(dnamei,"r");
+  fp_dnamei = cfopen((const char *)dnamei,"r");
 
 
   line      = (char *)cmalloc(MAXLINE*sizeof(char),"read_coord");

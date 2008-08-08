@@ -297,7 +297,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         int finishedCpIntegrate;
         int isuspend_energy;
         int isuspend_atms;
-	int numChunks;
         int ees_nonlocal;
         int cleanExitCalled;
         int isuspendNLForces;
@@ -309,7 +308,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	bool triggerNL;
 	bool NLready;
 	friend class CP_State_ParticlePlane;
-	CP_State_GSpacePlane( int, int, int, int, int,int,int);
+	CP_State_GSpacePlane( int, int, int, int,int,int, UberCollection);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
 	void receiveRDMAHandle(RDMAHandleMsg *msg);
@@ -375,6 +374,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
         void acceptRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
  private:
+	const UberCollection thisInstance;
 	int gotHandles;
 	int forwardTimeKeep;
 	int backwardTimeKeep;
@@ -456,7 +456,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 //============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
-	CP_State_RealSpacePlane(int, int,int,int,int,int,int);
+	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
 	CP_State_RealSpacePlane(CkMigrateMessage *m) {};
 	~CP_State_RealSpacePlane() { if(cookie!=NULL) delete [] cookie; };
 	void acceptFFT(RSFFTMsg *);
@@ -478,6 +478,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	    return vksDone;
 	  }
  private:
+	const UberCollection thisInstance;
 	int forwardTimeKeep;
 	int backwardTimeKeep;
         int iplane_ind;
@@ -531,7 +532,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	int recvCountFromGRho;
 	int recvCountFromGHartExt;
 	CP_Rho_RealSpacePlane(CkMigrateMessage *m){}
-	CP_Rho_RealSpacePlane(int, bool,int,int,int);
+	CP_Rho_RealSpacePlane(int, bool,int,int,int, UberCollection);
 	void init();
        ~CP_Rho_RealSpacePlane();
 	void pup(PUP::er &);
@@ -562,6 +563,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
  	void sendPartlyFFTtoRhoGall();
         void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
  private:
+	const UberCollection thisInstance;
 	int rhoKeeperId;
         int rhoGHelpers;
         int countGradVks[5]; // number of collections that have arrived
@@ -595,7 +597,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
  public:
 	CP_Rho_GSpacePlane(CkMigrateMessage *m) {}
-	CP_Rho_GSpacePlane(int, int, int, bool);
+	CP_Rho_GSpacePlane(int, int, int, bool, UberCollection);
 	~CP_Rho_GSpacePlane();
 	void run();
 	void init();
@@ -618,6 +620,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
         void RhoGSendRhoRall(); 
 	void launchNlG();
  private:
+	const UberCollection thisInstance;
 	CProxySection_CP_State_GSpacePlane nlsectproxy;
 	int myTime;
 	int recvCountFromRRho;
@@ -646,6 +649,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 //============================================================================
 class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
  public:
+	const UberCollection thisInstance;
         int listSubFlag;
         int nplane_rho_x;
         int rhoRsubplanes;
@@ -701,7 +705,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
 
         CProxy_CP_Rho_GHartExt rhoGHartProxy_com;
 	CP_Rho_RHartExt(CkMigrateMessage *m) {}
-	CP_Rho_RHartExt(int , int , int , int , int );
+	CP_Rho_RHartExt(int , int , int , int , int, UberCollection );
 	~CP_Rho_RHartExt();
 	void init();
 	void pup(PUP::er &p);
@@ -727,7 +731,7 @@ class CP_Rho_RHartExt:  public CBase_CP_Rho_RHartExt {
 class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
  public:
 	CP_Rho_GHartExt(CkMigrateMessage *m) {}
-	CP_Rho_GHartExt(int , int , int , int ,int );
+	CP_Rho_GHartExt(int , int , int , int ,int, UberCollection );
 	void init();
 	~CP_Rho_GHartExt();
 	void pup(PUP::er &);
@@ -764,6 +768,7 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
         void registrationDone(CkReductionMsg *msg);
         void exitForDebugging();
  private:
+	const UberCollection thisInstance;
 	complex *atmSFtotRecv;
 	complex *VksRecv;
 	int countAtmSFtot;
@@ -800,7 +805,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
  public:
 	CP_State_ParticlePlane(CkMigrateMessage *m) {}
 	CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,
-                               int ,int ,int ,int ,int );
+                               int ,int ,int ,int ,int, UberCollection );
 	~CP_State_ParticlePlane();
 	void pup(PUP::er &);
 	void startNLEes(int);
@@ -841,6 +846,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
         int sendDone;
         int registrationFlag;
  private:
+	const UberCollection thisInstance;
 	int calcReductionPlaneNum(int);
 	void initKVectors(GStateSlab *);
 	bool doneGettingForces;
@@ -879,6 +885,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
 class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
  public:
   // Variables
+  const UberCollection thisInstance;
    int ees_nonlocal;
    int nChareR;           // Real Space chares=# C-planes
    int nChareG;           // G Space chares
@@ -939,7 +946,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
   //-----------
   // Functions
    CP_State_RealParticlePlane(CkMigrateMessage *m) {}
-   CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int);
+   CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int, UberCollection);
    void init();
   ~CP_State_RealParticlePlane();
    void launchFFTControl(int );

@@ -20,11 +20,11 @@
 //#define TEST_ALIGN
 //==============================================================================
 
-extern CProxy_FFTcache fftCacheProxy;
+extern CkVec <CProxy_FFTcache> UfftCacheProxy;
 extern Config config;
 extern int nstates;
 extern int sizeX;
-extern CProxy_AtomsGrp atomsGrpProxy;
+extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 
 //==============================================================================
@@ -48,7 +48,7 @@ FFTcache::FFTcache(
                    int  *numGRho,     int  *numRXRho,   int *numRYRho ,
                    int  *numGEext,    int  *numRXEext,  int *numRYEext ,
                    int _fftopt,       int _nsplitR,     int _nsplitG,
-                   int _rhoRsubPlanes){
+                   int _rhoRsubPlanes, UberCollection _thisInstance): thisInstance(_thisInstance){
 //==============================================================================
 // Local Variables
 

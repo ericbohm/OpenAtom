@@ -262,7 +262,8 @@ class Ortho : public CBase_Ortho{
    CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
    CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
    CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
-   CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, int timeKeep);
+   CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, 
+	int timeKeep, UberCollection );
 
   void tolerance_check(void);
   void step_2();
@@ -300,6 +301,7 @@ class Ortho : public CBase_Ortho{
   bool step2done;
   bool step3done;
  private:
+  const UberCollection thisInstance;
   int timeKeep;
   double *orthoT; // only used on [0,0]
   double *ortho; //only used on [0,0]
@@ -378,8 +380,9 @@ class Ortho : public CBase_Ortho{
  */
 class OrthoMap : public CkArrayMapTable2 {
   public:
-    OrthoMap()
+    OrthoMap(UberCollection _instance)
     {
+      thisInstance=_instance;
 #ifdef USE_INT_MAP
       maptable= &OrthoImaptable;
 #else

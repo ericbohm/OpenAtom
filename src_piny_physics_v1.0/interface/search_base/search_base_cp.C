@@ -44,7 +44,7 @@ void search_base_vps(char filename[],CVPS *cvps_typ,
 
 /*========================================================================*/
 
-  fp       = cfopen(filename,"r");
+  fp       = cfopen((const char *)filename,"r");
   *ifound  = 0;
   ifirst   = 0;
   nline    = 0;

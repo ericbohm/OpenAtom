@@ -18,6 +18,7 @@
 class eesCache: public Group {
  public:
   // Variables
+  const UberCollection thisInstance;
    int itimeRPP;
    int itimeRHart;
    int rpp_on;
@@ -69,7 +70,7 @@ class eesCache: public Group {
   // Functions
    eesCache(){};
   ~eesCache(){};
-   eesCache(int , int , int ,int ,int,int);
+   eesCache(int , int , int ,int ,int,int, UberCollection thisInstance);
 
    // Report into the cache
    void registerCacheGPP  (int ,int, int *,int *,int*);

@@ -286,7 +286,8 @@ class GSMapTable : public MapTable2
   int planes_per_pe;
 
   GSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareG,
-	       int _nstates, int _Gstates_per_pe, bool useCuboidMap);
+	       int _nstates, int _Gstates_per_pe, bool useCuboidMap
+	     );
 
   GSMapTable()
     {
@@ -412,7 +413,7 @@ class RhoGHartMapTable  : public MapTable2
   int nchareRhoGHart;
   RhoGHartMapTable(MapType2  *_map, PeList *_availprocs,
 	int _nchareRhoGHart, int _nchareHartAtmT, int useCentroid, 
-		   MapType3 *rhartmap,   PeList *exclude);
+		   MapType3 *rhartmap, PeList *exclude);
   RhoGHartMapTable(){}
 };
 

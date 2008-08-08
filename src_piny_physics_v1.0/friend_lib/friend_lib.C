@@ -23,7 +23,7 @@
 /* cfopen:  Function to open files and check existence (careful open)       */
 /*==========================================================================*/
 
-FILE *cfopen(char file_name[],char *mode)
+FILE *cfopen(const char file_name[],const char *mode)
 
 /*==========================================================================*/
 {  /* begin routine */

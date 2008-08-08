@@ -59,8 +59,9 @@ class StructFactCache : public Group {
  public:
     void printCountStructFact();
     int numSfGrps,natm_nl,natm_nl_grp_max, totalsize;
-
-    StructFactCache(int numSfGrps_in,int natm_nl_in,int natm_nl_grp_max_in) 
+    const UberCollection thisInstance;
+    StructFactCache(int numSfGrps_in,int natm_nl_in,int natm_nl_grp_max_in,
+		    UberCollection _thisInstance) :thisInstance(_thisInstance)
       {
 	numSfGrps       = numSfGrps_in;
 	natm_nl         = natm_nl_in;

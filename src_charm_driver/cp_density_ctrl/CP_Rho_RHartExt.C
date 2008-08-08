@@ -34,13 +34,13 @@
 
 //============================================================================
 
-extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CProxy_CPcharmParaInfoGrp    scProxy;
-extern CProxy_AtomsGrp              atomsGrpProxy;
-extern CProxy_CP_Rho_RHartExt       rhoRHartExtProxy;
-extern CProxy_CP_Rho_GHartExt       rhoGHartExtProxy;
-extern CProxy_eesCache              eesCacheProxy;
-extern CProxy_FFTcache              fftCacheProxy;
+extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
+extern CkVec <CProxy_CP_Rho_RHartExt>       UrhoRHartExtProxy;
+extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
+extern CkVec <CProxy_eesCache>              UeesCacheProxy;
+extern CkVec <CProxy_FFTcache>              UfftCacheProxy;
 
 extern ComlibInstanceHandle commRHartGHartIns;
 
@@ -60,7 +60,10 @@ extern Config config;
  */
 //============================================================================
 CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc, 
-                                 int _ees_eext_on, int _natmTyp){
+                                 int _ees_eext_on, int _natmTyp, 
+				 UberCollection _instance) 
+  : thisInstance(_instance)
+{
 //============================================================================
 // Set some pareameters
 
@@ -151,7 +154,7 @@ void CP_Rho_RHartExt::init(){
   if(ees_eext_on==1){
     csize        = (ngrida/2+1)*myNgridb;  // complex variable size
  
-    eesCache *eesData  = eesCacheProxy.ckLocalBranch();
+    eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     eesData->registerCacheRHart(thisIndex.x);
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
@@ -178,7 +181,7 @@ void CP_Rho_RHartExt::init(){
     }//endif
 
     int i=1;
-    //    CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),rhoRHartExtProxy);
+    //    CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),UrhoRHartExtProxy[thisInstance.proxyOffset]);
     CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),thisProxy);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
@@ -186,7 +189,7 @@ void CP_Rho_RHartExt::init(){
 //============================================================================
 // Set up proxies
 
-  rhoGHartProxy_com    = rhoGHartExtProxy;;
+  rhoGHartProxy_com    = UrhoGHartExtProxy[thisInstance.proxyOffset];;
   if (config.useRHartInsGHart){
     ComlibAssociateProxy(&commRHartGHartIns,rhoGHartProxy_com);          
   }//endif
@@ -295,10 +298,10 @@ void CP_Rho_RHartExt::startEextIter(){
  iteration ++;
  // the atoms haven't moved yet
  if(cp_min_opt==0){
-     if(atomsGrpProxy.ckLocalBranch()->iteration != iteration-1){
+     if(UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
-              atomsGrpProxy.ckLocalBranch()->iteration,iteration);
+              UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,iteration);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
      }//endif
@@ -385,7 +388,7 @@ void CP_Rho_RHartExt::computeAtmSF(){
   int itime          = iteration;
   int iterAtmTypFull = iterAtmTyp+atmTypoff;
 
-  eesCache *eesData= eesCacheProxy.ckLocalBranch ();
+  eesCache *eesData= UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   if(iterAtmTyp==1){eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);}
 
   int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
@@ -393,7 +396,7 @@ void CP_Rho_RHartExt::computeAtmSF(){
   int ***igrid     = eesData->RhoRHartData[myPlane].igrid;
   double ***mn     = eesData->RhoRHartData[myPlane].mn;
 
-  AtomsGrp *ag     = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+  AtomsGrp *ag     = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
 
   CPLOCAL::eesPackGridRchare(natm,iterAtmTypFull,atmSFR,myPlane,
@@ -428,7 +431,7 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
    double  StartTime=CmiWallTimer();
 #endif    
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 
   if(rhoRsubplanes>1){
     fftcache->doEextFFTRxToGx_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
@@ -457,7 +460,7 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
       }//endfor
     }//endof
     fclose(fp);
-    rhoRHartExtProxy(0,0,0).exitForDebugging();
+    UrhoRHartExtProxy[thisInstance.proxyOffset](0,0,0).exitForDebugging();
 #else
     sendAtmSfRhoGHart(); // single transpose method (z ---> gx,gy)
 #endif
@@ -532,10 +535,10 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
         }//endfor
       }//endif
 
-      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
+      UrhoRHartExtProxy[thisInstance.proxyOffset](ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
-      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
+      UrhoRHartExtProxy[thisInstance.proxyOffset](ix,ic,thisIndex.z).recvAtmSfRyToGy(msg);
 #endif
 
 #ifdef CMK_VERSION_BLUEGENE
@@ -596,7 +599,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
   if(countIntRtoG==rhoRsubplanes){
 
     countIntRtoG = 0;
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
@@ -629,7 +632,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
       }//endfor
     }//endof
     fclose(fp);
-    rhoRHartExtProxy(0,0,0).exitForDebugging();
+    UrhoRHartExtProxy[thisInstance.proxyOffset](0,0,0).exitForDebugging();
   }//endif
 #endif
 
@@ -667,7 +670,11 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
  //----------------------------------------------------------------
  // start commlib
   if(rhoRsubplanes==1){
+#ifdef OLD_COMMLIB
      if(config.useRHartInsGHart){commRHartGHartIns.beginIteration();}
+#else
+     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com);}
+#endif
   }//endif
 
  //----------------------------------------------------------------
@@ -709,7 +716,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 	  if(rhoRsubplanes==1){
 	    rhoGHartProxy_com(ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
 	  }else{
-	    rhoGHartExtProxy(ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
+	    UrhoGHartExtProxy[thisInstance.proxyOffset](ic,thisIndex.z).recvAtmSFFromRhoRHart(msg); // send the message
 	  }//endif
 	}
 #ifdef CMK_VERSION_BLUEGENE
@@ -722,7 +729,12 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
  // stop commlib
 
   if(rhoRsubplanes==1){
+#ifdef OLD_COMMLIB
     if(config.useRHartInsGHart){commRHartGHartIns.endIteration();}
+#else
+     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com);}
+#endif
+
   }//endif
 
 //============================================================================
@@ -891,7 +903,7 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
    double  StartTime=CmiWallTimer();
 #endif    
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   if(rhoRsubplanes==1){  
     fftcache->doEextFFTGtoR_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
     computeAtmForc(flagEwd);
@@ -973,12 +985,12 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
       }//endfor
 
       //HEY is thisIndex.z right here?
-      rhoRHartExtProxy(ix,ic,thisIndex.z).recvAtmForcGxToRx(msg);
+      UrhoRHartExtProxy[thisInstance.proxyOffset](ix,ic,thisIndex.z).recvAtmForcGxToRx(msg);
 
 #ifdef _ERIC_SETS_UP_COMMLIB_
       switch(iopt){
-        case 0 : rhoGProxy_com(ic,0).acceptRhoGradVksGxToRx(msg);break;
-        case 1 : rhoGProxyIGX_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
+        case 0 : UrhoGProxy[thisInstance.proxyOffset]_com(ic,0).acceptRhoGradVksGxToRx(msg);break;
+        case 1 : UrhoGProxy[thisInstance.proxyOffset]IGX_com(ic,0).acceptRhoGradVksGxToRx(msg); break;
         default: CkAbort("impossible iopt");break;
       }//end switch
 #endif
@@ -1070,7 +1082,7 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 
   if(countIntGtoR[iopt]==rhoRsubplanes){
     countIntGtoR[iopt]=0;
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
@@ -1140,8 +1152,8 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   if(flagEwd==0){data=atmSFR;}else{data=atmEwdSFR;}
 
   // you have already queried for this step:
-  eesCache *eesData  = eesCacheProxy.ckLocalBranch ();
-  AtomsGrp *ag       = atomsGrpProxy.ckLocalBranch(); // find me the local copy
+  eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+  AtomsGrp *ag       = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
   CkAssert(eesData->allowedRhoRHartChares[myPlane]!=0);
   int *plane_index   = eesData->RhoRHartData[myPlane].plane_index;
@@ -1186,7 +1198,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
 #endif
    CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
    int index = (thisIndex.x % sim->sizeZ);
-   rhoRealProxy(index,thisIndex.y).RHartReport();
+   UrhoRealProxy[thisInstance.proxyOffset](index,thisIndex.y).RHartReport();
    iterAtmTyp  = 0;
    nAtmTypRecv = 0;
  }//endif
@@ -1200,7 +1212,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    CkPrintf("HI, I am rhart chare %d in computeAtmForc w %d at %d contrib\n",
               thisIndex.x,flagEwd,iterAtmTyp);
    int i=1;
-   CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),rhoRHartExtProxy);
+   CkCallback cb(CkIndex_CP_Rho_RHartExt::registrationDone(NULL),UrhoRHartExtProxy[thisInstance.proxyOffset]);
    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
  }//endif
 #endif

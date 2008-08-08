@@ -63,7 +63,7 @@ void check_parmfile(char filename[],int *num_fun_dict,
   natom_morph_now = 0;
   nres_bond_now = 0;
 
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   ifirst=0;
   set_intra_fun_dict(fun_dict,num_fun_dict,ifirst);
   while(get_fun_key_cnt(fp,fun_key,&nline,&nfun_key,filename)){
@@ -211,7 +211,7 @@ void fetch_molname(char filename[],DICT_INTRA *dict_intra,MDATOM_MAPS *atommaps,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,
                       dict_intra->fun_dict,nline,nfun_key,
@@ -280,7 +280,7 @@ void fetch_residue_defs(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,
                       dict_intra->fun_dict,nline,nfun_key,
@@ -382,7 +382,7 @@ void fetch_residue_bonds(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,
                       dict_intra->fun_dict,nline,nfun_key,
@@ -448,7 +448,7 @@ void fetch_residue_name(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,
                       dict_intra->fun_dict,nline,nfun_key,
@@ -541,7 +541,7 @@ void fetch_residue_atm_prms(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,
                       dict_intra->fun_dict,
@@ -602,7 +602,7 @@ void fetch_residue_atm_masks(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,dict_intra->fun_dict,
                       nline,nfun_key,filename,&num);
@@ -671,7 +671,7 @@ void fetch_residue_connectivity(char filename[],DICT_INTRA *dict_intra,
   ifirst=0;
   set_intra_fun_dict(&(dict_intra->fun_dict),&(dict_intra->num_fun_dict),
                      ifirst);
-  fp = cfopen(filename,"r");
+  fp = cfopen((const char*) filename,"r");
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,filename)){
     get_fun_key_index(fun_key,dict_intra->num_fun_dict,dict_intra->fun_dict,
                       nline,nfun_key,filename,&num);

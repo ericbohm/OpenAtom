@@ -40,7 +40,7 @@ void count_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
   FILE *fp;
 
 /*=======================================================================*/
-  fp        = cfopen(filename,"r");
+  fp        = cfopen((const char *) filename,"r");
   nline     = 0;
   nfun_key  = 0;
   nbase_now = 0;
@@ -96,7 +96,7 @@ void read_data_base(char filename[],DICT_WORD fun_dict[], int num_fun_dict,
 /* II) Pack the data base into data_base and cbase.  */
 
   ifirst   = 0;
-  fp       = cfopen(filename,"r");
+  fp       = cfopen((const char *)filename,"r");
   nline    = 0;
   nkey     = 0;
   nfun_key = 0;

@@ -39,11 +39,11 @@
 //============================================================================
 
 extern Config                       config;
-extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-extern CProxy_CP_Rho_GHartExt       rhoGHartExtProxy;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
+extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp    scProxy;
-extern CProxy_AtomsGrp              atomsGrpProxy;
-extern CProxy_CP_State_GSpacePlane  gSpacePlaneProxy;
+extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>  UgSpacePlaneProxy;
 
 extern ComlibInstanceHandle commGInstance0;
 extern ComlibInstanceHandle commGInstance1;
@@ -52,8 +52,8 @@ extern ComlibInstanceHandle commGInstance3;
 extern ComlibInstanceHandle commGByrdInstance;
 extern CProxy_ComlibManager mgrProxy;
 
-extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
-extern CProxy_FFTcache           fftCacheProxy;
+extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
+extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 //extern ComlibInstanceHandle mssInstance;
 
 //#define _CP_DEBUG_RHOG_VERBOSE_
@@ -64,7 +64,11 @@ extern CProxy_FFTcache           fftCacheProxy;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX, 
-	       int numRealSpace, int numRealSpaceDensity, bool _useCommlib)
+				       int numRealSpace, 
+				       int numRealSpaceDensity, 
+				       bool _useCommlib,
+				       UberCollection _instance) :
+  thisInstance(_instance)
 //============================================================================
     {//begin routine
 //============================================================================
@@ -221,7 +225,7 @@ void CP_Rho_GSpacePlane::init()
 	      //	      for(int i=0;i<ecount;i++)
 	      //		CkPrintf("nl sect %d %d\n",elems[i].data()[0],elems[i].data()[1]);
 	      nlsectproxy =
-		CProxySection_CP_State_GSpacePlane::ckNew(gSpacePlaneProxy.
+		CProxySection_CP_State_GSpacePlane::ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].
 							  ckGetArrayID(),
 							  elems,ecount);
 	      delete [] elems;
@@ -229,7 +233,7 @@ void CP_Rho_GSpacePlane::init()
 	  else
 	    {
 	      nlsectproxy = CProxySection_CP_State_GSpacePlane::
-		ckNew(gSpacePlaneProxy.ckGetArrayID(),
+		ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
 		      0, config.nstates-1, 1,startplane, endplane, 1);
 	      //	      CkPrintf("nl sect state 0 through %d plane %d through %d\n",config.nstates-1,startplane, endplane);
 	    }
@@ -238,7 +242,7 @@ void CP_Rho_GSpacePlane::init()
 	{
 	  if(thisIndex.x<config.nchareG){
 	    nlsectproxy = CProxySection_CP_State_GSpacePlane::
-	      ckNew(gSpacePlaneProxy.ckGetArrayID(),
+	      ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
 		    0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
 	  }//endif
 	}
@@ -246,11 +250,11 @@ void CP_Rho_GSpacePlane::init()
 //============================================================================
 // Set up proxies and set migration options
 
-    rhoRealProxy0_com = rhoRealProxy;
-    rhoRealProxy1_com = rhoRealProxy;
-    rhoRealProxy2_com = rhoRealProxy;
-    rhoRealProxy3_com = rhoRealProxy;
-    rhoRealProxyByrd_com = rhoRealProxy;
+    rhoRealProxy0_com = UrhoRealProxy[thisInstance.proxyOffset];
+    rhoRealProxy1_com = UrhoRealProxy[thisInstance.proxyOffset];
+    rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
+    rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
+    rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
     if(config.useGIns0RhoRP)
        ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
     if(config.useGIns1RhoRP)
@@ -301,11 +305,11 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
   PUParray(p,iendSplit,rhoGHelpers);
   if(p.isUnpacking()){ 
       //pupping of comlib proxies unreliable
-      rhoRealProxy0_com = rhoRealProxy;
-      rhoRealProxy1_com = rhoRealProxy;
-      rhoRealProxy2_com = rhoRealProxy;
-      rhoRealProxy3_com = rhoRealProxy;
-      rhoRealProxyByrd_com = rhoRealProxy;
+      rhoRealProxy0_com = UrhoRealProxy[thisInstance.proxyOffset];
+      rhoRealProxy1_com = UrhoRealProxy[thisInstance.proxyOffset];
+      rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
+      rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
+      rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
       if(config.useGIns0RhoRP)
 	ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
       if(config.useGIns1RhoRP)
@@ -418,7 +422,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
      }//endfor
     }//endof
     fclose(fp);
-    rhoGProxy(0,0).exitForDebugging();
+    UrhoGProxy[thisInstance.proxyOffset](0,0).exitForDebugging();
 #endif
   }//endif
 
@@ -448,7 +452,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     fftcache->getCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
     complex *data_out  = fftcache->tmpData;
     complex *data_in   = rho_gs.divRhoX;
@@ -496,7 +500,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
          }//endif
 
          int index = thisIndex.x*rhoGHelpers + i;
-         rhoGHartExtProxy(index,j).acceptData(msg);
+         UrhoGHartExtProxy[thisInstance.proxyOffset](index,j).acceptData(msg);
        }//endfor : atmType parallelization
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress(); 
@@ -586,7 +590,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
 //============================================================================
 // Setup up options, get box and -i*rho(g)
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   complex *packedRho = fftcache->tmpData;
   complex *divRhoX   = rho_gs.divRhoX;
   complex *divRhoY   = rho_gs.divRhoY;
@@ -685,10 +689,17 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 
   if(rhoRsubplanes==1){
    switch(iopt){
+#ifdef OLD_COMMLIB
     case 1 : if(config.useGIns1RhoRP)     commGInstance1.beginIteration();   break;
     case 2 : if(config.useGIns2RhoRP)     commGInstance2.beginIteration();   break;
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.beginIteration();   break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.beginIteration();break;
+#else
+   case 1 :if(config.useGIns1RhoRP) ComlibBegin(rhoRealProxy1_com); break;
+   case 2 :if(config.useGIns2RhoRP) ComlibBegin(rhoRealProxy2_com); break;
+   case 3 :if(config.useGIns3RhoRP) ComlibBegin(rhoRealProxy3_com); break;
+   case 4 :if(config.useGByrdInsRhoRBP) ComlibBegin(rhoRealProxyByrd_com); break;
+#endif
     default: CkAbort("impossible iopt"); break;
    }//end switc
   }//endif
@@ -731,10 +742,10 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 	  }//end switch
 	}else{
 	  switch(iopt){
-	  case 1 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-	  case 2 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-	  case 3 : rhoRealProxy(z,s).acceptGradRhoVks(msg); break;
-	  case 4 : rhoRealProxy(z,s).acceptWhiteByrd(msg); break;
+	  case 1 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
+	  case 2 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
+	  case 3 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVks(msg); break;
+	  case 4 : UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptWhiteByrd(msg); break;
 	  default: CkAbort("impossible iopt"); break;
 	  }//end switch
 	}//endif
@@ -751,10 +762,17 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 
   if(rhoRsubplanes==1){    
    switch(iopt){
+#ifdef OLD_COMMLIB
     case 1 : if(config.useGIns1RhoRP)     commGInstance1.endIteration();break;
     case 2 : if(config.useGIns2RhoRP)     commGInstance2.endIteration();break;
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.endIteration();break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.endIteration();break;
+#else
+   case 1 :if(config.useGIns1RhoRP) ComlibEnd(rhoRealProxy1_com); break;
+   case 2 :if(config.useGIns2RhoRP) ComlibEnd(rhoRealProxy2_com); break;
+   case 3 :if(config.useGIns3RhoRP) ComlibEnd(rhoRealProxy3_com); break;
+   case 4 :if(config.useGByrdInsRhoRBP) ComlibEnd(rhoRealProxyByrd_com); break;
+#endif
     default: CkAbort("impossible iopt"); break;
    }//end switc
   }//endif
@@ -827,7 +845,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoRall() {
 	    data[i+2] = ffttempdataZ[j];
 	  }//endfor
 	}//endif
-        rhoRealProxy(z,s).acceptGradRhoVksAll(msg);
+        UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVksAll(msg);
      }//endif : the subplane recvs a message from us
   }//endfor : subplanes
 #ifdef CMK_VERSION_BLUEGENE
@@ -930,7 +948,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif    
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     fftcache->doRhoFFTRtoG_Gchare(chunk,chunk,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                   rho_gs.sizeZ,0,iplane_ind);
@@ -1051,7 +1069,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
 #ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif    
-    FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+    FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     fftcache->doRhoFFTRtoG_Gchare(chunkX,chunkX,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                   rho_gs.sizeZ,0,iplane_ind);
@@ -1110,7 +1128,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 //============================================================================
 // FFT my whitebyrd : which is stored in divRhox 
 
-  FFTcache *fftcache = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   complex *white = rho_gs.divRhoX;
   fftcache->doRhoFFTGtoR_Gchare(white,white,rho_gs.numFull,rho_gs.numPoints,
                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,

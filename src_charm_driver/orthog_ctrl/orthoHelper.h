@@ -90,9 +90,9 @@ class OrthoHelper : public CBase_OrthoHelper
  public:
   OrthoHelper(){}
   OrthoHelper(int _m, int _n, CLA_Matrix_interface matA2,
-	      CLA_Matrix_interface matB2, CLA_Matrix_interface matC2):
-    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2)
-    {
+	      CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
+	      UberCollection _instance):
+    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), thisInstance(_instance)    {
       C= new double[m*n];
       A=NULL;
       B=NULL;
@@ -139,12 +139,14 @@ class OrthoHelper : public CBase_OrthoHelper
   double *A, *B, *C;
   OrthoHelperMsg *trigger;
   CLA_Matrix_interface matA, matB, matC;
+  const UberCollection thisInstance;
 };
 
 class OrthoHelperMap : public CkArrayMapTable2 {
   public:
-    OrthoHelperMap()
+    OrthoHelperMap(UberCollection _instance)
     {
+      thisInstance=_instance;
 #ifdef USE_INT_MAP
       maptable= &OrthoHelperImaptable;
 #else

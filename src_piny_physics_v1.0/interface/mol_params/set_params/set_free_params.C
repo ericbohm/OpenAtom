@@ -814,7 +814,7 @@ void set_rbar_free_params(char *molsetname,char fun_key[],
 /*=========================================================================*/
 /* IV) Read in the indicies                                                */
 
-  fp = cfopen(rbar_free_dict[2].keyarg,"r");
+  fp = cfopen((const char *)rbar_free_dict[2].keyarg,"r");
 
   fscanf(fp,"%d",&num);readtoendofline(fp);
   if(num!=mdrbar_sig_free->nfree){

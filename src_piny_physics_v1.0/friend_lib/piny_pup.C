@@ -112,7 +112,7 @@
 /*==========================================================================*/
 /* 2d double arrays                                                        */
 /*==========================================================================*/
-  void pup2d_dbl(PUP::er &p,double ***vec, int nlen_1,int nlen_2, char*callerID){
+  void pup2d_dbl(PUP::er &p,double ***vec, int nlen_1,int nlen_2, const char*callerID){
    if(nlen_1 > 0 && nlen_2 > 0){
     int ir,ic;
     int index;

@@ -11,7 +11,7 @@
 #include "StructFactorCache.h"
 #include "../../include/debug_flags.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
-extern CProxy_CP_State_ParticlePlane particlePlaneProxy;
+extern CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
 extern Config config;
 
 //==============================================================================
@@ -226,7 +226,7 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
 	    pmsg->sfindex=sfindex;
 	    CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
 	    *(int*)CkPriorityPtr(pmsg) = config.sfpriority+atmIndex+numSfGrps; //lower than sf and sfcache
-	    particlePlaneProxy(idx2d.index[0], idx2d.index[1]).computeZ(pmsg);
+	    UparticlePlaneProxy[thisInstance.proxyOffset](idx2d.index[0], idx2d.index[1]).computeZ(pmsg);
 	    //	    CkPrintf("triggering computeZ for %d on %d %d\n", pmsg->atmGrp, idx2d.index[0], idx2d.index[1]);
 	}
     }

@@ -349,7 +349,7 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT);
+  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
     
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
@@ -507,6 +507,7 @@ class PairCalculator: public CBase_PairCalculator {
  private:
   RDMAHandle *RDMAHandlesRight;
   RDMAHandle *RDMAHandlesLeft;
+  int instance;
   int numRecd;               //! number of messages received
   int numRecdBW;               //! number of messages received BW
   int numRecdBWOT;               //! number of messages received BW orthoT

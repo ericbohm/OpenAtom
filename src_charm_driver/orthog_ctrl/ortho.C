@@ -61,18 +61,18 @@
 extern Config config;
 extern int nstates;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_main                    mainProxy;
+extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CProxy_CP_State_GSpacePlane gSpacePlaneProxy;
-extern  PairCalcID pairCalcID1;
-extern  PairCalcID pairCalcID2;
-extern CProxy_AtomsGrp atomsGrpProxy;
-extern CProxy_CP_Rho_RealSpacePlane rhoRealProxy;
-extern CProxy_CP_Rho_GSpacePlane rhoGProxy;
-extern CProxy_CP_Rho_GHartExt rhoGHartExtProxy;
-extern CProxy_OrthoHelper orthoHelperProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+extern CkVec <PairCalcID> UpairCalcID1;
+extern CkVec <PairCalcID> UpairCalcID2;
+extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
+extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
+extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
+extern CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
+extern CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 extern ComlibInstanceHandle orthoInstance;
-extern CProxy_Ortho orthoProxy;
+extern CkVec <CProxy_Ortho> UorthoProxy;
 //============================================================================
 
 //============================================================================
@@ -82,7 +82,6 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     CmiAssert(thisIndex.x == 0 && thisIndex.y == 0);
     //			end_t = CmiWallTimer();
     double error = *((double *) msg->getData());
-    delete msg;
     error = sqrt(error / (nstates * nstates));
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
     if(error > invsqr_tolerance && iterations < invsqr_max_iter){
@@ -111,6 +110,8 @@ void Ortho::collect_error(CkReductionMsg *msg) {
       else
 	thisProxy.collect_results();
     }
+    delete msg;
+    
   }
 
 //============================================================================
@@ -136,7 +137,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	PRINT_LINE_DASH;
         int iii = numGlobalIter;
         if(gen_wave==0){iii+=1;}
-	CkPrintf("Iteration %d done\n",iii);
+	CkPrintf("{%d} Iteration %d done\n",thisInstance.proxyOffset,iii);
 	PRINT_LINE_STAR; CkPrintf("\n");
 	PRINT_LINE_STAR; 
       }else{
@@ -145,9 +146,9 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	  PRINT_LINE_STAR;
 	}//endif
         if(numGlobalIter<config.maxIter){
-  	  CkPrintf("Beginning Iteration %d \n", numGlobalIter);
+  	  CkPrintf("{%d} Beginning Iteration %d \n",thisInstance.proxyOffset, numGlobalIter);
 	}else{
-  	  CkPrintf("Completing Iteration %d \n", numGlobalIter-1);
+  	  CkPrintf("{%d} Completing Iteration %d \n", thisInstance.proxyOffset,numGlobalIter-1);
 	}//endif
 	PRINT_LINE_DASH;
       }//endif
@@ -248,7 +249,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   // do tolerance check on smat, do_iteration will be called by reduction root
   if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("doing tolerance check on SMAT \n");
+      CkPrintf("{%d} doing tolerance check on SMAT \n",thisInstance.proxyOffset);
     }//endif
     double max =array_diag_max(m,n,S);
     contribute(sizeof(double),&max, CkReduction::max_double, 
@@ -296,9 +297,10 @@ void Ortho::collect_results(void){
 	    }
         }else{
 	  if(numGlobalIter>0){
-	    CkPrintf("Iteration time (ORTHO) : %g\n", 
+	    CkPrintf("{%d}Iteration time (ORTHO) : %g\n", 
+		     thisInstance.proxyOffset,
                wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("Ortho S->T iterations: %d\n",iterations); 
+	    CkPrintf("{%d} Ortho S->T iterations: %d\n",thisInstance.proxyOffset,iterations); 
 	  }//endif
         }//endif
     }//endif
@@ -319,10 +321,10 @@ void Ortho::collect_results(void){
                thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
 	   AtSync();
    	   if(thisIndex.x==0 && thisIndex.y==0){
-             gSpacePlaneProxy.isAtSync(numGlobalIter);
-	     rhoRealProxy.isAtSync(numGlobalIter);
-	     rhoGProxy.isAtSync(numGlobalIter);
-	     rhoGHartExtProxy.isAtSync(numGlobalIter);
+             UgSpacePlaneProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
+	     UrhoRealProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
+	     UrhoGProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
+	     UrhoGHartExtProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
 	   }//endif
        }else{
  	  resume();
@@ -458,7 +460,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
 
-  CkPrintf("SMAT tol    = %g\n", tolMax);
+  CkPrintf("{%d} SMAT tol    = %g\n", thisInstance.proxyOffset,tolMax);
   if(tolMax < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
@@ -466,7 +468,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       CkPrintf("recalculating PsiV due to tolerance failure \n");
-      gSpacePlaneProxy.requirePsiV();  //gspace will trigger our resume
+      UgSpacePlaneProxy[thisInstance.proxyOffset].requirePsiV();  //gspace will trigger our resume
   }//endif
 
 //============================================================================
@@ -515,7 +517,7 @@ void Ortho::lbresume(CkReductionMsg *msg) {
     if(thisIndex.x ==0 && thisIndex.y==0)
       CkPrintf("O [%d %d] caught lb %d",thisIndex.x, thisIndex.y, lbcaught);
     if(lbcaught==lambdas) //gspace is all done lambda reduction reset
-	gSpacePlaneProxy.syncpsi();
+	UgSpacePlaneProxy[thisInstance.proxyOffset].syncpsi();
     if(lbcaught==lambdas+1) //gspace is all done lambda and psi reduction resets
       {
 	CkAbort("must fix ortho proxy reset!\n");
@@ -635,6 +637,40 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ){
+  // this readonly should be ok by now
+  oPairCalcID1=UpairCalcID1[thisInstance.proxyOffset];
+  oPairCalcID2=UpairCalcID2[thisInstance.proxyOffset];
+  if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
+    {
+      int numOrtho=config.nstates/config.orthoGrainSize;
+      multiproxy = 
+      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
+				 0, numOrtho-1,1,
+				 0, numOrtho-1, 1);
+
+      if(config.useOrthoSectionRed)
+	{
+	  CProxySection_Ortho rproxy =   multiproxy;
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthoRedGrpId).ckLocalBranch();               
+	  rproxy.ckSectionDelegate(mcastGrp);
+	  initCookieMsg *redMsg=new initCookieMsg;
+	  rproxy.orthoCookieinit(redMsg);
+
+	}
+      if(config.useOrthoSection)
+	{
+	  if( config.useCommlib && config.useOrthoDirect)
+	    {
+	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+	    }
+	  else
+	    {
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
+	      multiproxy.ckSectionDelegate(mcastGrp);
+	    }
+	}
+  }
+
 
   int s1=thisIndex.x * config.orthoGrainSize;
   int s2=thisIndex.y * config.orthoGrainSize;
@@ -649,32 +685,38 @@ void Ortho::makeSections(int indexSize, int *indexZ){
     }
   
   // m and n are orthograinsize which must be <=config.sGrainSize
-  // thisIndex.x and thisIndex.y range from 0 to nstates/config.orthoGrainSize
-
+  // thisIndex.x and thisIndex.y range from 0 to
+  // nstates/config.orthoGrainSize
+  //  if(thisIndex.x==0 && thisIndex.y==0)
+  //  CkCallback
+  // doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
+  CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+  CkPrintf("{%d} O [%d,%d] will callback to controller %d\n",thisInstance.proxyOffset,thisIndex.x,thisIndex.y, thisInstance.proxyOffset);
   if(s1 <= s2)   //we get the reduction
     {  
-      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), CkCallback(CkIndex_main::doneInit(NULL),mainProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
+      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
       if(config.phantomSym)
 	{
-	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), CkCallback(CkIndex_main::doneInit(NULL),mainProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
+	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
 	}
       else
 	{
 	  if(s1!=s2)
 	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym);
-	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), CkCallback(CkIndex_main::doneInit(NULL),mainProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
+	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	       doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
 	}
     }
   else if(config.phantomSym)
     {  // we are not phantoms
-      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), CkCallback(CkIndex_main::doneInit(NULL),mainProxy),s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
+      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), doneInitCB,s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
     }
   if(config.lambdaGrainSize==config.orthoGrainSize)
     { //no point in having a different chare if you won't have more of them
+
       // in the != case this will happen in the lambda chare
-      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)), CkCallback(CkIndex_main::doneInit(NULL),mainProxy) ,s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
+      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	   doneInitCB ,s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
       //everybody sends in lambda
-      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , CkCallback(CkIndex_main::doneInit(NULL),mainProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
+      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , 	    doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
     }
 
 //----------------------------------------------------------------------------
@@ -756,11 +798,14 @@ void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
+
 Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matB1, CLA_Matrix_interface _matC1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
- CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3, int timekeep){
+	     CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
+	     int timekeep, UberCollection _instance) : thisInstance(_instance){
+
 //============================================================================
 /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
@@ -801,38 +846,6 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   ortho=NULL;
   orthoT=NULL;
   wallTimeArr=NULL;
-  oPairCalcID1=pairCalcID1;
-  oPairCalcID2=pairCalcID2;
-  if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
-    {
-      int numOrtho=config.nstates/config.orthoGrainSize;
-      multiproxy = 
-      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
-				 0, numOrtho-1,1,
-				 0, numOrtho-1, 1);
-
-      if(config.useOrthoSectionRed)
-	{
-	  CProxySection_Ortho rproxy =   multiproxy;
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthoRedGrpId).ckLocalBranch();               
-	  rproxy.ckSectionDelegate(mcastGrp);
-	  initCookieMsg *redMsg=new initCookieMsg;
-	  rproxy.orthoCookieinit(redMsg);
-
-	}
-      if(config.useOrthoSection)
-	{
-	  if( config.useCommlib && config.useOrthoDirect)
-	    {
-	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
-	    }
-	  else
-	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
-	      multiproxy.ckSectionDelegate(mcastGrp);
-	    }
-	}
-  }
   if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
     wallTimeArr = new double[config.maxIter+2];
   }else{
@@ -944,7 +957,7 @@ void Ortho::step_2_send(void){
   // copy our data to the helper
   OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
   omsg->init(m*n, B,C,0.5, 0.5, 0.5);
-  orthoHelperProxy(thisIndex.x,thisIndex.y).recvAB(omsg);
+  UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
   // will come back in recvStep2
 }
 //============================================================================
@@ -1081,7 +1094,7 @@ void OrthoHelper::sendMatrix()
 {
   if(trigger!=NULL)
     delete trigger;
-  orthoProxy(thisIndex.x, thisIndex.y).recvStep2(C, m*n);
+  UorthoProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).recvStep2(C, m*n);
 }
 
 

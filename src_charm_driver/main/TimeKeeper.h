@@ -76,10 +76,12 @@ class TimeKeeper : public Group
       HPMCounter=-1;
     HPMEndCounter=0;
     PRJCounter=0;
+#ifdef USE_HPM
     TopoManager *topoMgr = new TopoManager();
     int x,y,z;
     topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
     delete topoMgr;
+#endif
   }
 
   void startTrace()

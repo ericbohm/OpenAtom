@@ -19,11 +19,11 @@
 
 //==============================================================================
 
-extern CProxy_FFTcache           fftCacheProxy;
+extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 extern Config                    config;
-extern CProxy_AtomsGrp           atomsGrpProxy;
+extern CkVec <CProxy_AtomsGrp>           UatomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CProxy_eesCache           eesCacheProxy;
+extern CkVec <CProxy_eesCache>           UeesCacheProxy;
 extern int nstates;
 extern int sizeX;
 

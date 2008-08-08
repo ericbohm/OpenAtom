@@ -754,7 +754,7 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
 /*==========================================================================*/
 /*  II) Open the electron-atom pseudopotential file for reading             */
 
-     fp_vps_file = cfopen(vps_file,"r");
+     fp_vps_file = cfopen((const char *) vps_file,"r");
 
 /*==========================================================================*/
 /*  III) Set up g vectors                                                   */

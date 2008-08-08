@@ -33,8 +33,8 @@ class MapFile
                         // each index.
     
   public:
-    MapFile(char* name, int numpes); 
-    MapFile(char* name, int num, int* size, int numpes, char *order, int x, int y, int z, int t, int stride=1); 
+    MapFile(const char* name, int numpes); 
+    MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int stride=1); 
     MapFile();		// default constructor
     ~MapFile();		// destructor
      
@@ -47,9 +47,9 @@ class MapFile
     void dumpMapCoords(MapType3 *map);
     void dumpMapCoords(MapType4 *map);
 
-    int loadMap(char *filename, MapType2 *map);
-    int loadMap(char *filename, MapType3 *map);
-    int loadMap(char *filename, MapType4 *map);
+    int loadMap(const char *filename, MapType2 *map);
+    int loadMap(const char *filename, MapType3 *map);
+    int loadMap(const char *filename, MapType4 *map);
 
 };
 

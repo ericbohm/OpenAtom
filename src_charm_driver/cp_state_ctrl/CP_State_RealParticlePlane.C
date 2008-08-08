@@ -23,15 +23,15 @@
 //=========================================================================
 
 extern CProxy_main                       mainProxy;
-extern CProxy_CP_State_GSpacePlane       gSpacePlaneProxy;
-extern CProxy_AtomsGrp                   atomsGrpProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
-extern CProxy_CP_State_ParticlePlane     particlePlaneProxy;
-extern CProxy_StructFactCache            sfCacheProxy;
-extern CProxy_eesCache                   eesCacheProxy;
-extern CProxy_FFTcache                   fftCacheProxy;
-extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
-extern CProxy_EnergyGroup                egroupProxy; //energy group proxy
+extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
+extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
+extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
+extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
+extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 extern MapType2                          RPPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;
@@ -57,8 +57,8 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
   itimeRed = m->getUserFlag();
   delete m;
   //output and save the data
-  CkPrintf("ENL(EES)    = %5.8lf\n", d);
-  gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL, d);  
+  CkPrintf("{%d} ENL(EES)    = %5.8lf\n", thisInstance.proxyOffset,d);
+  UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  
 }
 //============================================================================
 
@@ -89,8 +89,8 @@ void CP_State_RealParticlePlane::printEnlRSimp(double cp_enl_loc,int index,int i
 
   // output and save the data
   if(countEnl==nstates){
-    CkPrintf("ENL(EES)    = %5.8lf\n", cp_enlTot);
-    gSpacePlaneProxy(0,0).computeEnergies(ENERGY_ENL,cp_enlTot);  
+    CkPrintf("{%d} ENL(EES)    = %5.8lf\n", thisInstance.proxyOffset, cp_enlTot);
+    UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL,cp_enlTot);  
     countEnl  = 0;
     cp_enlTot = 0.0;
   }//endif
@@ -109,7 +109,8 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
                              int ngridA_in, int ngridB_in, int ngridC_in,
                              int numIterNL_in, int zmatSizeMax_in,
                              int Rstates_per_pe_in,int nChareG_in,
-                             int ees_nonlocal_in)
+                             int ees_nonlocal_in, UberCollection _instance):
+  thisInstance(_instance)
 //============================================================================
   {//begin routine
 //============================================================================
@@ -187,13 +188,13 @@ void CP_State_RealParticlePlane::init(){
     zmatScr     = new double[zmatSizeMax];
    //--------
    // Register
-    eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
+    eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
     eesData->registerCacheRPP(thisIndex.y);
    //--------
    // Tell your friends your are ready to boogy
     int i=1;
     CkCallback cb(CkIndex_CP_State_RealParticlePlane::registrationDone(NULL),
-		  realParticlePlaneProxy);
+		  UrealParticlePlaneProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
@@ -292,7 +293,7 @@ void CP_State_RealParticlePlane::init(){
 //============================================================================
 // Setup the comlib to talk to GPP
 
-  gPP_proxy = particlePlaneProxy;
+  gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
   if (config.useMssInsGPP){
      ComlibAssociateProxy(&mssPInstance,gPP_proxy);
   }//endif
@@ -458,7 +459,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
    double  StartTime=CmiWallTimer();
 #endif    
 
-  fftCacheProxy.ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
+  UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB,myPlane);
 #ifndef CMK_OPTIMIZE
    traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
@@ -524,7 +525,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 //============================================================================ 
 // Check out your B-splines from the cache and then compute Zmat
 
-   eesCache *eesData  = eesCacheProxy.ckLocalBranch (); 
+   eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
    int *allowedRppChares = eesData->allowedRppChares;
    CkAssert(allowedRppChares[myPlane]==1);
 
@@ -563,7 +564,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
    CkCallback cb(CkIndex_CP_State_RealParticlePlane::recvZMatEes(NULL),
                  CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
-                 realParticlePlaneProxy.ckGetArrayID());
+                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
    mcastGrp->contribute((nZmat*sizeof(double)),zmat,sumFastDoubleType,
                          rPlaneRedCookie,cb, iterNL);
 #else
@@ -755,8 +756,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 //============================================================================
 // Check out your B-splines from the cache and then compute energy and forces
 
-   eesCache *eesData   = eesCacheProxy.ckLocalBranch (); 
-   FFTcache *fftcache  = fftCacheProxy.ckLocalBranch();  
+   eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
+   FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
 
    int *allowedRppChares = eesData->allowedRppChares;
    CkAssert(allowedRppChares[myPlane]==1);
@@ -772,7 +773,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    double *projPsiRScr = fftcache->tmpDataR;
    fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
 
-   AtomsGrp *ag         = atomsGrpProxy.ckLocalBranch();
+   AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
    FastAtoms *fastAtoms = &(ag->fastAtoms);
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
@@ -903,7 +904,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
      //     CkCallback cb=CkCallback(printEnlR, NULL);
      CkCallback cb(CkIndex_CP_State_RealParticlePlane::printEnlR(NULL),
                  CkArrayIndex2D(0,reductionPlaneNum),
-                 realParticlePlaneProxy.ckGetArrayID());
+                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
      mcastGrp->contribute(sizeof(double),(void*) &cp_enl, 
 		          CkReduction::sum_double,rEnlCookie, cb, itime);
 #else
@@ -1003,7 +1004,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
 
-  FFTcache *fftcache   = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache   = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   double  *projPsiRScr = fftcache->tmpDataR;
   complex *projPsiCScr = fftcache->tmpData;
 
@@ -1097,7 +1098,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 //============================================================================
 
   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-  FFTcache *fftcache     = fftCacheProxy.ckLocalBranch();  
+  FFTcache *fftcache     = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   int nchareG            = sim->nchareG;
   int **tranpack         = sim->index_tran_upackNL;
   int *nlines_per_chareG = sim->nlines_per_chareG;
@@ -1110,8 +1111,11 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in sendtoGPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
-
+#ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.beginIteration();}
+#else
+  //  if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset]);}
+#endif
 
     for (int ic=0;ic<nchareG;ic++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
@@ -1125,14 +1129,17 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 	  *(int*)CkPriorityPtr(msg) = config.gsNLfftpriority+thisIndex.x;
       }//endif
       for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
-      particlePlaneProxy(thisIndex.x, ic).recvFromEesRPP(msg); // send the message
+      UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, ic).recvFromEesRPP(msg); // send the message
 #ifdef CMK_VERSION_BLUEGENE
        CmiNetworkProgress();
 #endif
     }//end for : chare sending
 
+#ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.endIteration();}
-
+#else
+  //  if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset]);}
+#endif
 //============================================================================
 // If it looks like this is the end, reset my counters baby.
 // If its not the end, GParticlePlane will invoke entry methods.

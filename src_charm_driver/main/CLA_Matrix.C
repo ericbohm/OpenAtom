@@ -42,8 +42,8 @@ extern CProxy_OrthoMap orthoMap;
 
 /* Should be called by user to create matrices. Documented in header file. */
 int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_CkArrayMap bindA,
- CProxy_CkArrayMap bindB, CProxy_CkArrayMap bindC, 		    int M, //nstates
+ CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
+ CProxy_ArrayElement bindB, CProxy_ArrayElement bindC, 		    int M, //nstates
 		    int K, //nstates
 		    int N, //nstates
 		    int m, //orthograinsize
@@ -65,13 +65,10 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
   CkArrayOptions optsB;
   CkArrayOptions optsC;
   
-//  optsA.bindTo(bindA);
-//  optsB.bindTo(bindB);
-//  optsC.bindTo(bindC);
-  // alternate comap scheme broken for orthohelpers
-  optsA.setMap(bindA);
-  optsB.setMap(bindB);
-  optsC.setMap(bindC);
+  optsA.bindTo(bindA);
+  optsB.bindTo(bindB);
+  optsC.bindTo(bindC);
+
 
   CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
   CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);

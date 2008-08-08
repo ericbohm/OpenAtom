@@ -27,7 +27,7 @@ class StructureFactor : public CBase_StructureFactor
 {
  public:
   StructureFactor(CkMigrateMessage *m);
-  StructureFactor(int _numSfGrps, int _numSfDups, int _natm_nl_grp_max, int _numdest, int *_destinations) : numSfGrps(_numSfGrps), numSfDups(_numSfDups), natm_nl_grp_max(_natm_nl_grp_max), numdest(_numdest)
+  StructureFactor(int _numSfGrps, int _numSfDups, int _natm_nl_grp_max, int _numdest, int *_destinations, UberCollection _thisInstance) : numSfGrps(_numSfGrps), numSfDups(_numSfDups), natm_nl_grp_max(_natm_nl_grp_max), numdest(_numdest), thisInstance(_thisInstance)
     {
       k_x=NULL;
       k_y=NULL;
@@ -119,6 +119,7 @@ class StructureFactor : public CBase_StructureFactor
   complex *structFactor_fz;
   int numdest;
   int *destinations;
+  const UberCollection thisInstance;
 };
 
 

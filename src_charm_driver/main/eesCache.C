@@ -26,13 +26,13 @@
 
 //----------------------------------------------------------------------------
 extern Config config;
-extern CProxy_CP_State_ParticlePlane     particlePlaneProxy;
-extern CProxy_CP_State_RealParticlePlane realParticlePlaneProxy;
-extern CProxy_CP_Rho_RHartExt            rhoRHartExtProxy;
-extern CProxy_CP_Rho_GHartExt            rhoGHartExtProxy;
+extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
+extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
+extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
+extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
-extern CProxy_AtomsGrp                   atomsGrpProxy;
-extern CProxy_eesCache                   eesCacheProxy;
+extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 
 #define _EESCACHE_VERBOSE_OFF_
 
@@ -46,7 +46,7 @@ extern CProxy_eesCache                   eesCacheProxy;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
-                   int _nchareGHart, int _nstates, int _nchareRhoG)
+                   int _nchareGHart, int _nstates, int _nchareRhoG, UberCollection _thisInstance): thisInstance(_thisInstance)
 //==============================================================================
    {//begin rotuine
 //==============================================================================
@@ -399,7 +399,7 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     CkPrintf("HI, I am rPP %d in query : %d\n",index,iter);
 #endif
 
-    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
+    AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
 
 #ifndef CMK_OPTIMIZE
@@ -445,7 +445,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
     CkPrintf("Computing eesAtmBspline\n");
 #endif
 
-    AtomsGrp *ag = atomsGrpProxy.ckLocalBranch();
+    AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
 #ifndef CMK_OPTIMIZE
     double  StartTime=CmiWallTimer();

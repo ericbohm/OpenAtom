@@ -642,7 +642,7 @@ void GEN_WAVE::splin_btrans(double *g,double **gpsi0, double **gpsi1,
 //========================================================================
 // Set up the r's 
 
-  fp_name_ps = cfopen(fname_ps,"r");
+  fp_name_ps = cfopen((const char *) fname_ps,"r");
 
     fscanf(fp_name_ps,"%d %lg %d ",&nr,&rmax,&n_ang_now);
     readtoendofline(fp_name_ps);

@@ -399,7 +399,7 @@ class CPcharmParaInfo {
        index_tran_pack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
                                               0,nlines_max_eext,"util.C");
        nline_send_eext_y       = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,"util.C");
-       for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+       for(int igrp=0;igrp<nchareRhoG;igrp++){
           for(int ic=0;ic<rhoRsubplanes;ic++){
             nline_send_rho_y[igrp][ic] = s.nline_send_rho_y[igrp][ic];
             for(int jc=0;jc<nline_send_rho_y[igrp][ic];jc++){
@@ -408,7 +408,7 @@ class CPcharmParaInfo {
 	    }//endfor
 	  }//endfor
        }//endfor
-       for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+       for(int igrp=0;igrp<nchareRhoGEext;igrp++){
         for(int ic=0;ic<rhoRsubplanes;ic++){
          nline_send_eext_y[igrp][ic] = s.nline_send_eext_y[igrp][ic];
          for(int jc=0;jc<nline_send_eext_y[igrp][ic];jc++){
@@ -611,13 +611,13 @@ class CPcharmParaInfo {
         for(int igrp=0;igrp<nchareRhoGEext;igrp++){
           PUParray(p,nline_send_eext_y[igrp],rhoRsubplanes);
 	}
-        for(int igrp=0,i=0;igrp<nchareRhoG;igrp++){
+        for(int igrp=0;igrp<nchareRhoG;igrp++){
           for(int ic=0;ic<rhoRsubplanes;ic++){
             PUParray(p,index_tran_pack_rho_y[igrp][ic],nline_send_rho_y[igrp][ic]);
             PUParray(p,index_tran_upack_rho_y[igrp][ic],nline_send_rho_y[igrp][ic]);
 	  }
 	}
-        for(int igrp=0,i=0;igrp<nchareRhoGEext;igrp++){
+        for(int igrp=0;igrp<nchareRhoGEext;igrp++){
           for(int ic=0;ic<rhoRsubplanes;ic++){
             PUParray(p,index_tran_pack_eext_y[igrp][ic],nline_send_eext_y[igrp][ic]);
             PUParray(p,index_tran_pack_eext_ys[igrp][ic],nline_send_eext_y[igrp][ic]);
