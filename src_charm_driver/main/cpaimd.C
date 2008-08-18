@@ -268,6 +268,7 @@ CkReduction::reducerType complexVectorAdderType;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 main::main(CkArgMsg *msg) {
+  TopoManager *topoMgr=NULL;
 //============================================================================
 /** Check arguments : Tell people what we are doing */
 
@@ -1889,6 +1890,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     }
 
   if(config.dumpMapCoordFiles) {
+    // if someone wants to dump nontopo maps, they'll need a manager
+    if(topoMgr ==NULL)
+      topoMgr=new TopoManager();
+
     int size[2];
     size[0] = nstates; size[1] = nchareG;
     MapFile *mf = new MapFile("GSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
