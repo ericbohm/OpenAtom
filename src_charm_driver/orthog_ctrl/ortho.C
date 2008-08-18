@@ -691,7 +691,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
   //  CkCallback
   // doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
   CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-  CkPrintf("{%d} O [%d,%d] will callback to controller %d\n",thisInstance.proxyOffset,thisIndex.x,thisIndex.y, thisInstance.proxyOffset);
+  //  CkPrintf("{%d} O [%d,%d] will callback to controller %d\n",thisInstance.proxyOffset,thisIndex.x,thisIndex.y, thisInstance.proxyOffset);
   if(s1 <= s2)   //we get the reduction
     {  
       initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);

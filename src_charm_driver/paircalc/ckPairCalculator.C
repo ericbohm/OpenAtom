@@ -577,16 +577,6 @@ void PairCalculator::initGRed(initGRedMsg *msg)
       CkArrayIndexStruct idx; //Index to send to (if any)
     } array, *ap;
 
-    CkPrintf("{%d} [%d,%d,%d,%d,%d] contributes to doneInit cb type %d aid %d nInts %d index [%d %d %d] with %d numRecd \n",instance,thisIndex.w,thisIndex.x,thisIndex.y,
-            thisIndex.z, symmetric,
-	     msg->synccb.type,
-	     CkGroupID(msg->synccb.d.array.id).idx, 
-	     msg->synccb.d.array.idx.nInts, 
-	     msg->synccb.d.array.idx.index[0], 
-	     msg->synccb.d.array.idx.index[1],
- 	     msg->synccb.d.array.idx.index[2], 
-	     numRecd);
-
  
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb, instance);
       numRecd=0;
