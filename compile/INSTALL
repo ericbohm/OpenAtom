@@ -31,5 +31,10 @@ INSTALLATION
 3. OpenAtom requires double precision FFTW installed in some location.
    
    Edit the FFT_HOME variable in Makefile.config to point to the
-   FFTW installation. You might also need to 
-    
+   FFTW installation. You might also need to edit the DUAL_FFTW 
+   variable depending on how FFTW was compiled. It takes two values:
+   DUAL_FFTW_OFF and DUAL_FFTW
+
+4. Once this is done, you can type make in the compile directory
+   and then go for a cup of coffee :)
+   The binary 'OpenAtom' is placed in the binary directory 
