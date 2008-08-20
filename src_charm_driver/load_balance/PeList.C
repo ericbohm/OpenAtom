@@ -23,7 +23,8 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 {
   if(config.torusMap==1)
   {
-
+      if(topoMgr==NULL)
+	  topoMgr= new TopoManager();
       current=0;
       sorted=false;
       size=config.numPes;
@@ -52,6 +53,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
+			  //			  CkPrintf("i %d bx %d x %d by %d y bz %d z bt %d\n",i,bx,x,by,y,bz,z,bt);
 			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
 			}
 		}

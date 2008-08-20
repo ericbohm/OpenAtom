@@ -547,7 +547,7 @@ main::main(CkArgMsg *msg) {
     UorthoHelperProxy.reserve(numInstances);
     UplaneUsedByNLZ.reserve(numInstances);
 
-
+    excludePes=NULL;
     mainProxy=thishandle;
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(numInstances);
@@ -584,11 +584,11 @@ main::main(CkArgMsg *msg) {
       PRINT_LINE_STAR; CkPrintf("\n");
       CkPrintf("Initializing TopoManager\n");
       if(config.fakeTorus) {
-	topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
-				  config.torusDimNZ, config.torusDimNT);
+	  topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
+				    config.torusDimNZ, config.torusDimNT);
       }
       else {
-	topoMgr = new TopoManager();
+	  topoMgr = new TopoManager();
       }
       CkPrintf("            Torus %d x %d x %d node %d x %d x %d vn %d t %d.........\n", 
              topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
@@ -748,18 +748,16 @@ Per Instance startup BEGIN
 	    if(sim->ees_nloc_on)
 	      init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
 	    CmiNetworkProgressAfter(1);
-	    //============================================================================ 
-	    // Initialize commlib strategies for later association and delegation
-	    //	    init_commlib_strategies(sim->nchareRhoG,
-	    //sim->sizeZ,nchareRhoRHart, thisInstance);
-	    if(numInstances>0)
-	      CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
 	    delete [] indexZ;
 
 	  } 
 	}
       } // end of per instance init
-    //Initialize commlib strategies for later association and delegation
+    //============================================================================ 
+    // Initialize commlib strategies for later association and delegation
+    if(numInstances>0)
+	CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
+
     init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart, thisInstance);
 
     TimeKeeperProxy.init();
@@ -2930,7 +2928,18 @@ bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ
     case 7:
       x=7; y=1; z=1; switchSet=true; break;
     case 8:
-      x=2; y=2; z=2; switchSet=true; break;
+      if(config.useCuboidMapRS)
+      {
+	  if(minD>=2)
+
+	  { x=2; y=2; z=2; switchSet=true; break;}
+/* no evidence that these other schemes help
+	  if(minD==4)
+	  { x=4; y=2; z=1; switchSet=true; break;}
+	  if(minD>=8)
+	  { x=8; y=1; z=1; switchSet=true; break;}
+*/
+	}
     case 9:
       x=3; y=3; z=1; switchSet=true; break;
     case 10:
