@@ -1528,7 +1528,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 1)\fftprogresssplit{}
     ind=1;
     strcpy((*dict)[ind].keyword,"fftprogresssplit");
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     strcpy((*dict)[ind].keyarg,"20");    
 #else
     strcpy((*dict)[ind].keyarg,"1000");    
@@ -1538,7 +1538,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 2)\fftprogresssplitReal{}
     ind=2;
     strcpy((*dict)[ind].keyword,"fftprogresssplitReal");
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     strcpy((*dict)[ind].keyarg,"10");    
 #else
     strcpy((*dict)[ind].keyarg,"1000");    
@@ -2341,7 +2341,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 //============================================================================
 // Turn torusMap on on BG/L
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     igo = dict_map[1].iuset;
 
     if(igo==0) {
@@ -2753,10 +2753,10 @@ void Config::rangeExit(int param, const char *name, int iopt){
 //===================================================================================
 // Mapping checks
 
-/*#ifndef CMK_VERSION_BLUEGENE
+/*#ifndef CMK_BLUEGENEL
     if(!fakeTorus && (useCuboidMap || useCuboidMapRS)){
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       PRINTF("   useCuboidMap requires CMK_VERSION_BLUEGENE\n");
+       PRINTF("   useCuboidMap requires CMK_BLUEGENEL\n");
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
     }//endif

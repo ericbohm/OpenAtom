@@ -63,11 +63,11 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].re = 0.0;
        forces[i].im = 0.0;
      }//endif
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
      if(i%nfreq==0){CmiNetworkProgress();}
 #endif
    }/* endfor */
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
 
@@ -89,11 +89,11 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].re = 0.0;
        forces[i].im = 0.0;
      }//endif
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
      if(i%nfreq==0){CmiNetworkProgress();}
 #endif
    }/* endfor */
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
 

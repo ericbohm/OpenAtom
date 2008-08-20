@@ -187,7 +187,7 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
 
    for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       int nfreq_cmi_update=4; 
       if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
@@ -702,7 +702,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
      frac_b[i] = btemp - (double) (ibtemp[i]);
      frac_c[i] = ctemp - (double) (ictemp[i]);
    }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
 
@@ -728,7 +728,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
        igrid_b[j][i] = (ib - 1);
        igrid_c[j][i] = (ic - 1);  // use to assign to planes
      }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
    }//endfor
@@ -747,7 +747,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
      mn_b[2][i] = 1.0 - fabs(ub[2][i]-1.0);
      mn_c[2][i] = 1.0 - fabs(uc[2][i]-1.0);
    }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
    CmiNetworkProgress();
 #endif
    for(j=3;j<=n_interp;j++){
@@ -757,7 +757,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
        mn_c[j][i]   = 0.0;
      }//endfor
    }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
    CmiNetworkProgress();
 #endif
    for(n=3;n<=n_interp;n++){
@@ -772,7 +772,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
          mn_b[j][i] = mn_b_tmp;
          mn_c[j][i] = mn_c_tmp;
        }//end for: i
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
      }//end for: j
@@ -781,7 +781,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
        mn_b[1][i] = ub[1][i]*mn_b[1][i]*rn1[n];
        mn_c[1][i] = uc[1][i]*mn_c[1][i]*rn1[n];
      }//endfor 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
 
@@ -798,7 +798,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
            dmn_b[j][i] = mn_b[j][i] - mn_b[j1][i];
            dmn_c[j][i] = mn_c[j][i] - mn_c[j1][i];
          }//endfor: i
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
        }//endfor : j
@@ -886,7 +886,7 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
        }//endfor : s
        plane_index[i] = jc; // each jc is a different plane
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
      }//endif : allowed
@@ -959,13 +959,13 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
          sfAtmTypR[igrid[s][iatm][j3]] += mn[s][iatm][j3]; // contribute to zmatrix
          sfAtmTypR[igrid[s][iatm][j4]] += mn[s][iatm][j4]; // contribute to zmatrix
        }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
        for(int j=jstrt;j<=ngo;j++){
          sfAtmTypR[igrid[s][iatm][j]] += mn[s][iatm][j]; // contribute to zmatrix
        }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
     }//endif
@@ -1072,7 +1072,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
    for(int i = 0; i < ncoef; i++){
 
    //----------------------------------------------------------------------------
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
      int nfreq_cmi_update = 100; 
      if( ((i+1)%nfreq_cmi_update)==0 ){CmiNetworkProgress();}
 #endif
@@ -1252,7 +1252,7 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
   for(int i=0;i<ncoef;i++) {
    //---------------------------------------
    // Make Sameer Happy with some progress
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     int nfreq_cmi_update = 100; 
     if( ((i+1)%nfreq_cmi_update)==0 ){CmiNetworkProgress();}
 #endif
@@ -1389,7 +1389,7 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
                +dmn_z[s][iatm][j2]*p2 + dmn_z[s][iatm][j3]*p3
                +dmn_z[s][iatm][j4]*p4);
       }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
       for(int j=jstrt;j<=ngo;j++){
@@ -1411,7 +1411,7 @@ void CPLOCAL::eesAtmForceRchare(int natm, FastAtoms *atoms,int ityp,
         fzt[iatm] -=(dmn_z[s][iatm][j]*p);
       }//endfor
 #endif
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
            CmiNetworkProgress();
 #endif
     }//endif : plane is allowed

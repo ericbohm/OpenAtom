@@ -895,7 +895,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 1)\fftprogresssplit{}
     ind=1;
     strcpy((*dict)[ind].keyword,"fftprogresssplit");
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     strcpy((*dict)[ind].keyarg,"20");    
 #else
     strcpy((*dict)[ind].keyarg,"1000");    
@@ -905,7 +905,7 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 2)\fftprogresssplitReal{}
     ind=2;
     strcpy((*dict)[ind].keyword,"fftprogresssplitReal");
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     strcpy((*dict)[ind].keyarg,"10");    
 #else
     strcpy((*dict)[ind].keyarg,"1000");    

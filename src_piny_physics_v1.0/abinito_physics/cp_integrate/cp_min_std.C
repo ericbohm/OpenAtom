@@ -84,7 +84,7 @@ void CPINTEGRATE::CP_integrate_min_STD
  		  k_x[i],k_y[i],k_z[i],forces[i].re,forces[i].im);
      }
 #endif
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
      if(i%nfreq==0){CmiNetworkProgress();}
 #endif
    } /* endfor */

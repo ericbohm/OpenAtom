@@ -99,7 +99,7 @@ void CPXCFNCTS::CP_exc_calc(
    for(int y=0 ; y< nf2; y++){
    for(int x=0 ; x< nf1; x++){
       int i = y*(nf1+2) + x;
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif   
 //-------------------------------------------------------------------------
