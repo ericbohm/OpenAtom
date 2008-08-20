@@ -524,7 +524,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 
    CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
    CmiNetworkProgress();
 #endif
 
@@ -588,7 +588,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -768,7 +768,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
       }//end switch
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
     }//end for : chare sending
@@ -1040,7 +1040,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 	    }//end switch
 	  }//endif
 	}//end if nonzero
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       if(ic%4==0)
 	CmiNetworkProgress();
 #endif
@@ -1143,7 +1143,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoGall(){
 	 // Send the message
           UrhoGProxy[thisInstance.proxyOffset](ic,0).acceptWhiteByrdAll(msg);
       }//end if : nonzero msg
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       if(ic%4==0){CmiNetworkProgress();}
 #endif
    }//end for : send to rhog(ic)
@@ -1572,7 +1572,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTGxToRx(int iopt){
       }//end switch
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       if(ic%3==0)
        CmiNetworkProgress();
 #endif
@@ -1779,7 +1779,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
      CmiNetworkProgress();
 #endif
 
@@ -1866,7 +1866,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -1891,7 +1891,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -1915,7 +1915,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
   traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());    
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 

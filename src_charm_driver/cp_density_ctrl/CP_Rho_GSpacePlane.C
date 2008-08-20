@@ -502,7 +502,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
          int index = thisIndex.x*rhoGHelpers + i;
          UrhoGHartExtProxy[thisInstance.proxyOffset](index,j).acceptData(msg);
        }//endfor : atmType parallelization
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress(); 
 #endif
      }//endfor : helper parallelization
@@ -612,7 +612,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
                                  rho_gs.sizeZ,0,iplane_ind);
    if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(ioptx);}
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -624,7 +624,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
                                  rho_gs.sizeZ,0,iplane_ind);
    if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(iopty);}
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -636,7 +636,7 @@ void CP_Rho_GSpacePlane::divRhoVksGspace() {
                                 rho_gs.sizeZ,0,iplane_ind);
    if(config.rhoGToRhoRMsgComb==0){RhoGSendRhoR(ioptz);}
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -751,7 +751,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 	}//endif
       }// endif
   }//endfor
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
 
@@ -848,7 +848,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoRall() {
         UrhoRealProxy[thisInstance.proxyOffset](z,s).acceptGradRhoVksAll(msg);
      }//endif : the subplane recvs a message from us
   }//endfor : subplanes
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
   }//endfor : planes
@@ -963,7 +963,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
 
   if(doneWhiteByrd==3){
     doneWhiteByrd=0;
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();    
 #endif
     acceptWhiteByrd();
@@ -1089,7 +1089,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
 
   if(doneWhiteByrd==3){
     doneWhiteByrd=0;
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();    
 #endif
     acceptWhiteByrd();
@@ -1121,7 +1121,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   CPXCFNCTS::CP_fetch_hmati(&hmati,&tpi);
   rho_gs.createWhiteByrd(hmati,tpi);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();    
 #endif
 
@@ -1133,7 +1133,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
   fftcache->doRhoFFTGtoR_Gchare(white,white,rho_gs.numFull,rho_gs.numPoints,
                                 rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                 rho_gs.sizeZ,0,iplane_ind);
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();    
 #endif
 
