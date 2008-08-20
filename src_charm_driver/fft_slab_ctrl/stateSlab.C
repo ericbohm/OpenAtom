@@ -261,7 +261,7 @@ void GStateSlab::addForces(complex *points, const int *k_x){
 	packedForceData[i].re = 0.0; packedForceData[i].im = 0.0; 
 #endif
 	packedForceData[i] += points[i];
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
         if(i%nfreq==0){CmiNetworkProgress();}
 #endif
       }//endfor
@@ -272,7 +272,7 @@ void GStateSlab::addForces(complex *points, const int *k_x){
 #endif
 	packedForceData[i] *= 2.0; 
 	packedForceData[i] += points[i];
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
         if(i%nfreq==0){CmiNetworkProgress();}
 #endif
       }//endfor

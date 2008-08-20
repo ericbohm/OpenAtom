@@ -460,7 +460,7 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
     for(int j=joff3;j<joff1;j++){data[j]=0.0;}
 #endif
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     if(r % 40==0){
       CmiNetworkProgress();
     }//endif
@@ -470,7 +470,7 @@ void FFTcache::expandGSpace(complex* data, complex *packedData,
 
   CkAssert(numPoints == koff);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -517,7 +517,7 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
     }//endfor
     koff += runs[r1].length;
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     if(r % 40==0){CmiNetworkProgress();}
 #endif
 
@@ -525,7 +525,7 @@ void FFTcache::packGSpace(complex* data, complex *packedData,
 
   CkAssert(numPoints == koff);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -1527,7 +1527,7 @@ void fft_split(FFTplanHolder *fftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
   }//endfor
@@ -1620,7 +1620,7 @@ void rfftwnd_complex_to_real_split(RFFTplanHolder *rfftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
     }//endfor
@@ -1712,7 +1712,7 @@ void rfftwnd_real_to_complex_split(RFFTplanHolder *rfftplanholder, int howmany,
       inoff  += idist*(thismany);  
       outoff += odist*(thismany);
       inleft -= thismany;      
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
     }// endfor

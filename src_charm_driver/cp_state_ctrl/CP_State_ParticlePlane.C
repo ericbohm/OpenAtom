@@ -1043,7 +1043,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
      complex *data = msg->data;
      for (int i=0,j=z; i<numLines; i++,j+=ngridcNL){data[i] = projPsiG[j];}
      realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
    }//endfor

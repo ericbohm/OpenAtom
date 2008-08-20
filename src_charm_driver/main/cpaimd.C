@@ -3190,7 +3190,7 @@ inline CkReductionMsg *sumFastDouble(int nMsg, CkReductionMsg **msgs){
 
   for(int i=1; i<nMsg;i++)
     {
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       fastAdd(ret, (double *) msgs[i]->getData(), size);
 #else
       inmatrix=(double *) msgs[i]->getData();

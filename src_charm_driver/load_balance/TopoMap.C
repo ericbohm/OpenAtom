@@ -21,8 +21,8 @@
 #include "PeList.h"
 
 
-#ifdef CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
+#ifdef CMK_BLUEGENEL
+#include "BGLTorus.h"
 #endif
 
 /** 

@@ -58,7 +58,7 @@ public:
       factorC=infactorC;
     }
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   // if we use our own allocator we can get 16 byte alignment
   // to please BGL
 #define ALIGN16(x)        (int)((~15)&((x)+15))

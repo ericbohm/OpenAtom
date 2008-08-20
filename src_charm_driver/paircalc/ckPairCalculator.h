@@ -14,7 +14,7 @@
 #include "BroadcastStrategy.h"
 #include "DirectMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 //#include "RectMulticastStrategy.h"
 #endif
 #include "MultiRingMulticast.h"
@@ -33,7 +33,7 @@
 #endif
 
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 
 #define ALIGN16(x)        (int)((~15)&((x)+15))
 #define BUNDLE_USER_EVENT  
@@ -191,7 +191,7 @@ class partialResultMsg : public CMessage_partialResultMsg {
 
   friend class CMessage_partialResultMsg;
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
   int offsets[2];
   offsets[0] = ALIGN16(sz);
@@ -290,7 +290,7 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
       // this field does nothing in minimization
       matrix2=NULL;
     }
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   // if we use our own allocator we can get 16 byte alignment
   // to please BGL
  static  void *alloc(int msgnum, size_t sz, int *sizes, int pb) {

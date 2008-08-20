@@ -178,7 +178,7 @@
 
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 //#include "builtins.h"
 // void __alignx(int alignment,  const void *address);
 // void _alignx(int alignment,  const void *address);
@@ -212,7 +212,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
   double *ret=(double *)msgs[0]->getData();
 
   //  CkAssert ((unsigned int) ret % 8 == 0);
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   //      __alignx(16,ret);
 #endif
   int size0=msgs[0]->getSize();
@@ -224,7 +224,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
     {  
       int i=1;
       // idea here is to have only 1 store for 4 loads
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)  
       // how much doth XLC sucketh?  
 #endif
@@ -243,7 +243,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
     {
       
       inmatrix=(double *) msgs[i]->getData();
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
       //      __alignx(16,inmatrix);
 #pragma disjoint(*ret,*inmatrix)
 #pragma unroll(16)

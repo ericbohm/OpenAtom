@@ -300,7 +300,7 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
     }//endfor
     koff += runs[r1].length;
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     if(r % 40==0){CmiNetworkProgress();}
 #endif
 
@@ -308,7 +308,7 @@ void RhoGSlab::divRhoGdot(double *hmati, double tpi,complex *tmpRho){
 
   CkAssert(numPoints == koff);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -362,7 +362,7 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
     int joff3 = joff2+runs[r1].length;
     for(int j=joff3;j<joff1;j++){whitebyrd[j]=0.0;}
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     if(r % 40==0){CmiNetworkProgress();}
 #endif
 
@@ -370,7 +370,7 @@ void RhoGSlab::createWhiteByrd(double *hmati, double tpi){
 
   CkAssert(numPoints == koff);
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
 

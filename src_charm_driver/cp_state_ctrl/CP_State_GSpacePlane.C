@@ -2081,7 +2081,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
   //---------------------------------------------------
   // A) BGL STuff
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma disjoint(*force, *data)
   //      __alignx(16,force);
   //      __alignx(16,data);
@@ -2091,7 +2091,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   // B) Double Pack
   if(config.doublePack==1){
    if(cp_min_opt==1){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
@@ -2101,12 +2101,12 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
      }//endfor
    }else{
      if(countLambdaO[offset]<1){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      }else{
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
        for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
@@ -2118,7 +2118,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   //---------------------------------------------------
   // C) Double Pack
   if(config.doublePack==0){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest){
@@ -2180,7 +2180,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
  //----------------------------------------------------------
  //A) BlueGene nonsense
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma disjoint(*force, *data)
   //      __alignx(16,force);
   //      __alignx(16,data);
@@ -2190,7 +2190,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
   if(config.doublePack==1){
    if(cp_min_opt==1){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
@@ -2200,12 +2200,12 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
      }//endfor
    }else{
      if(countLambdaO[offset]<1){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
      }else{
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
         for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
@@ -2217,7 +2217,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
  //C) Single pack
 
   if(config.doublePack==0){
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest){

@@ -46,7 +46,7 @@ class MapType2 : public IntMap2on2 {
 
 #include "MapTable.h"
 
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
 //#include "builtins.h"
 #endif
 

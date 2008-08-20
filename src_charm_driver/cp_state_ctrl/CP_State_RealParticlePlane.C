@@ -910,7 +910,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 #else
      thisProxy(0,0).printEnlRSimp(cp_enl,thisIndex.x,itime);
 #endif
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
    }//endif
@@ -1130,7 +1130,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
       }//endif
       for(int i=0;i<sendFFTDataSize;i++){data[i] = projPsiCScr[tranpack[ic][i]];}
       UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, ic).recvFromEesRPP(msg); // send the message
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
 #endif
     }//end for : chare sending

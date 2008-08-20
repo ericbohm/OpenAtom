@@ -113,7 +113,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
-#ifdef CMK_VERSION_BLUEGENE
+#ifdef CMK_BLUEGENEL
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #else
