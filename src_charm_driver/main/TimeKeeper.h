@@ -7,7 +7,6 @@
 #ifndef TimeKeeper_h
 #define TimeKeeper_h
 
-#define USE_HPM
 /*
  * HPM will instrument one step using BG/P UPC performance counters.
  * To use it, build libhpm.a in src_charm_driver/utilities/
