@@ -365,7 +365,7 @@ class PairCalculator: public CBase_PairCalculator {
     AtSync();
   };
 
-  /// @entry
+  /// @entry a debugging tool: a barrier at the end of the backward path before anything is sent over to GSP
   void bwbarrier(CkReductionMsg *msg)
   {
       // everyone is done
