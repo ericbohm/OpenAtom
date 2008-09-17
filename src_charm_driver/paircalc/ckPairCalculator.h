@@ -355,7 +355,7 @@ class PairCalculator: public CBase_PairCalculator {
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
 
-  /// @entry
+  /// @entry Something to sync?
   void lbsync() {
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
