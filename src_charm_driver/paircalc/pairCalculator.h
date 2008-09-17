@@ -228,15 +228,17 @@ void makeLeftTree(PairCalcID* pid, int myS, int myZ);
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
 
 void initPairCalcRDMA(PairCalcID *pid, int,int,int);
+
+//@{
+/// Triggers the backward path
 extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
+//@}
 
+/// Via point for Ortho chares to send T to PCs. This calls PairCalculator::acceptOrthoT()
 extern "C" void sendMatrix( int n, double *ptr1, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
-
-
-
+/// Initializes a section of PCs that will talk to the calling Ortho chare (reductions/broadcasts)
 void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 
 
@@ -251,10 +253,14 @@ void startPairCalcLeftSlow(PairCalcID* aid, int n, complex* ptr, int myS, int my
 
 void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 
+//@{
+/// Initialize an array section that is used to transmit results from the PCs back to the GSP chares
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk);
+//@}
+
 void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY);
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 

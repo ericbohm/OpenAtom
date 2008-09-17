@@ -36,9 +36,9 @@
 #ifdef CMK_BLUEGENEL
 
 #define ALIGN16(x)        (int)((~15)&((x)+15))
-#define BUNDLE_USER_EVENT  
-#define PC_FWD_DGEMM_SPLIT 1 
-#define PC_BWD_DGEMM_SPLIT 1  
+#define BUNDLE_USER_EVENT
+#define PC_FWD_DGEMM_SPLIT 1
+#define PC_BWD_DGEMM_SPLIT 1
 // to set split values, use the config parameters: gemmSplitFWk,
 // gemmSplitFWm, etc ... 16 for happier align, factor of 6 good for BG/L?
 
@@ -58,8 +58,8 @@ enum redtypes {section=0, machine=1, sparsecontiguous=2};
 PUPbytes(redtypes);
 
 #ifdef FORTRANUNDERSCORE
-#define ZGEMM zgemm_ 
-#define DGEMM dgemm_ 
+#define ZGEMM zgemm_
+#define DGEMM dgemm_
 #define DCOPY dcopy_
 #define ZTODO ztodo_
 #else
@@ -137,7 +137,7 @@ class RDMAHandleMsg : public CMessage_RDMAHandleMsg
   // who cares?
 #endif
   friend class CMessage_RDMAHandleMsg;
-};  
+};
 
 class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
@@ -204,7 +204,7 @@ static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
   return (void *) newmsg;
 }
 
-#endif  
+#endif
 };
 
 class priorSumMsg : public CMessage_priorSumMsg {
@@ -349,11 +349,13 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
 
 class PairCalculator: public CBase_PairCalculator {
  public:
+  /// @entry (obviously)
   PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
-    
+
   PairCalculator(CkMigrateMessage *);
   ~PairCalculator();
 
+  /// @entry
   void lbsync() {
 #ifdef _PAIRCALC_DEBUG_
     CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
@@ -362,63 +364,86 @@ class PairCalculator: public CBase_PairCalculator {
     rck=0;
     AtSync();
   };
+
+  /// @entry
   void bwbarrier(CkReductionMsg *msg)
-    {
+  {
       // everyone is done
       delete msg;
       // figure out how to send the results from here sanely
       sendBWsignalMsg *sigmsg;
       if(PCdelayBWSend)
-	sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
+    	  sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
       else
-	sigmsg= new  sendBWsignalMsg;
+    	  sigmsg= new  sendBWsignalMsg;
       //collapse this into 1 flag
       bool unitcoef=true;  //cheap hack for minimzation only
       //collapse this into 1 flag
       if(amPhantom)
-	sigmsg->otherdata= true;
+    	  sigmsg->otherdata= true;
       else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
-	sigmsg->otherdata=true;       
+    	  sigmsg->otherdata=true;
       else
-	sigmsg->otherdata= false;
+    	  sigmsg->otherdata= false;
 
 
       if(PCdelayBWSend)
-	{
-	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-					    // than non prioritized
-	}
+      {
+    	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+    	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+    	  // than non prioritized
+      }
       if(gSpaceSum)
-	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-	else
-	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+      else
+    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+  }
 
-
-    }
-
+  /// Forward path multiply routine that computes on the chunks as they arrive in order to stream the computation. Not used now.
   void multiplyForwardStream(bool flag_dp);
+  /// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
   void sendTiles(bool flag_dp);
+  /// Receive data from ortho chares and copy into matrix
   void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
+  /// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
   void multiplyForward(bool flag_dp);
+  /// @entry Simply redirects call to multiplyForward()
   void multiplyForwardRDMA( sendFWRDMAsignalMsg *msg){multiplyForward(msg->flag_dp);}
+  /// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
   void contributeSubTiles(double *fullOutput);
+  ///
   void ResumeFromSync();
+  /// @entry Initializes the section cookie and the reduction client. Called on startup as the chare world is being created
   void initGRed(initGRedMsg *msg);
+  /// @entry Accumulates rows and columns of matrices from GSP chares and calls multiply when all have arrived
   void acceptPairData(calculatePairsMsg *msg);
+  /// @entry Phantom chare entry method to accept the whole forward path input data before the backward path is triggered (while the Orthos are chugging away)
   void acceptPhantomData(phantomMsg *msg);
+  /// @entry During dynamics, each Ortho sends it share of T back to avoid a race condition between Gamma and T.
   void acceptOrthoT(multiplyResultMsg *msg);
+  /// @entry Backward path multiplication
   void multiplyResult(multiplyResultMsg *msg);
+  /// Tolerance correction PsiV Backward path multiplication
   void multiplyPsiV();
+  ///
   void bwMultiplyDynOrthoT();
+  /// @entry
   void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
+  /// @entry Simply forwards the call to multiplyResult(). @ntodo Dont seem to be any instances in source which call this method. Check.
   void multiplyResultI(multiplyResultMsg *msg);
+  /// multiplyPsiV() and multiplyResult() call this to perform the matrix multiply math on the backward path. This calls DGEMM routines for the same.
   void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
+  ///
   void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
+  /// @entry Send the results via multiple reductions as triggered by a prioritized message
   void sendBWResult(sendBWsignalMsg *msg);
+  /// @entry
   void sendBWResultDirect(sendBWsignalMsg *msg);
+  ///
   void sendBWResultColumn(bool other, int startGrain, int endGrain);
+  ///
   void sendBWResultColumnDirect(bool other, int startGrain, int endGrain);
+  /// @entry Initialize the section cookie for each slice of the result
   void initResultSection(initResultMsg *msg);
   void pup(PUP::er &);
   void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
@@ -444,13 +469,13 @@ class PairCalculator: public CBase_PairCalculator {
     bool doPsiV=false;
     if(symmetricOnDiagonal) //only left
       streamready=((streamCaughtL>=streamFW) && (streamFW>0));
-    else 
+    else
       {
 	streamready=
-	  // left or right has streamFW 
-	  ((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW)) 
+	  // left or right has streamFW
+	  ((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW))
 	  // total left and total right have at least stream FW
-	  && ((numRecLeft>=streamFW) && (numRecRight>=streamFW) 
+	  && ((numRecLeft>=streamFW) && (numRecRight>=streamFW)
 	      && (streamFW>0));
 	//      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
 
@@ -459,7 +484,7 @@ class PairCalculator: public CBase_PairCalculator {
     // call member funcs to determine if we're ready to multiply
     if(streamready || ((streamFW>0) && (numRecd == numExpected) && (!doPsiV) ))
       {
-	multiplyForwardStream(flag_dp);	
+	multiplyForwardStream(flag_dp);
 	// not yet supported for dynamic psiV
       }
     else if (numRecd == numExpected)
@@ -469,14 +494,14 @@ class PairCalculator: public CBase_PairCalculator {
 	    actionType=0;
 	    if(!expectOrthoT || numRecdBWOT==numOrtho)
 	      {
-		//		multiplyForward(flag_dp);	
+		//		multiplyForward(flag_dp);
 		// needs to become a regular charm message
 		  sendFWRDMAsignalMsg *sigmsg=new (8*sizeof(int)) sendFWRDMAsignalMsg;
 		  // needs to be prioritized and go through the usual scheduler
 		  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(sigmsg) = 300000000; // lambda prio
 		  sigmsg->flag_dp=flag_dp;
-		  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(sigmsg);	
+		  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(sigmsg);
 	      }
 	    else
 	      {
@@ -501,127 +526,120 @@ class PairCalculator: public CBase_PairCalculator {
 	//      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);
       }
   }
-    
+
 
 
  private:
   RDMAHandle *RDMAHandlesRight;
   RDMAHandle *RDMAHandlesLeft;
   int instance;
-  int numRecd;               //! number of messages received
-  int numRecdBW;               //! number of messages received BW
-  int numRecdBWOT;               //! number of messages received BW orthoT
-  int numExpected;           //! number of messages expected all
-  int numExpectedX;           //! number of messages expected x-axis
-  int numExpectedY;           //! number of messages expected y-axis
-  int grainSize;             //! number of states per chare
-  int grainSizeX;             //! number of states per chare x-axis
-  int grainSizeY;             //! number of states per chare y-axis
-  int orthoGrainSize;        //! number of states per ortho tile lower-bound
-  int orthoGrainSizeRemX;    //! sgrainSizeX % orthoGrainSize
-  int orthoGrainSizeRemY;    //! sgrainSizeY % orthoGrainSize
-  int blkSize;               //! number points in gspace plane
-  int numStates;             //! total number of states
-  int numPoints;             //! number of points in this chunk
-  int numChunks;             //! number of blocks the stateplane is
-			     //divided into
+  int numRecd; 								///< number of messages received
+  int numRecdBW; 							///< number of messages received BW
+  int numRecdBWOT; 							///< number of messages received BW orthoT
+  int numExpected; 							///< number of messages expected all
+  int numExpectedX; 						///< number of messages expected x-axis
+  int numExpectedY; 						///< number of messages expected y-axis
+  int grainSize; 							///< number of states per chare
+  int grainSizeX; 							///< number of states per chare x-axis
+  int grainSizeY; 							///< number of states per chare y-axis
+  int orthoGrainSize; 						///< number of states per ortho tile lower-bound
+  int orthoGrainSizeRemX; 					///< sgrainSizeX % orthoGrainSize
+  int orthoGrainSizeRemY; 					///< sgrainSizeY % orthoGrainSize
+  int blkSize; 								///< number points in gspace plane
+  int numStates; 							///< total number of states
+  int numPoints; 							///< number of points in this chunk
+  int numChunks; 							///< number of blocks the stateplane is divided into
 
-  int streamFW;              //! number of rows to accumulate before
-			     //computing
-  
-  int streamCaughtR;          //! number of rows caught so far R stream
-  int streamCaughtL;          //! number of rows caught so far L stream
-  
-  int numRecLeft;           //! number of rows so far total left
-  int numRecRight;          //! number of rows so far total right
+  int streamFW; 							///< number of rows to accumulate before computing
 
-  int gemmSplitFWk;        //! number of rows in split FW dgemm
-  int gemmSplitFWm;        //! number of columns in split FW dgemm
-  int gemmSplitBW;        //! number of rows in split BW dgemm
+  int streamCaughtR; 						///< number of rows caught so far R stream
+  int streamCaughtL; 						///< number of rows caught so far L stream
+
+  int numRecLeft; 							///< number of rows so far total left
+  int numRecRight; 							///< number of rows so far total right
+
+  int gemmSplitFWk; 						///< number of rows in split FW dgemm
+  int gemmSplitFWm; 						///< number of columns in split FW dgemm
+  int gemmSplitBW; 							///< number of rows in split BW dgemm
 
 
-  int *LeftOffsets;           //! index numbers of caught stream elements
-  int *RightOffsets;           //! index numbers of caught stream elements
+  int *LeftOffsets; 						///< index numbers of caught stream elements
+  int *RightOffsets; 						///< index numbers of caught stream elements
 
-  int *LeftRev;           //! reverse index numbers of caught stream elements
-  int *RightRev;           //! reverse index numbers of caught stream elements
+  int *LeftRev; 							///< reverse index numbers of caught stream elements
+  int *RightRev; 							///< reverse index numbers of caught stream elements
 
-  double **outTiles;         //! in output streaming we populate the
-			     //! tiles directly
+  double **outTiles; 						///< in output streaming we populate the tiles directly
 
-  int *touchedTiles;         //! tracker to detect when tiles are full
-  
-  bool symmetric;            //! if true, one triangle is missing
-  int conserveMemory;       //! free up matrices when not in use
+  int *touchedTiles; 						///< tracker to detect when tiles are full
+
+  bool symmetric; 							///< if true, one triangle is missing
+  int conserveMemory; 						///< free up matrices when not in use
   bool lbpaircalc;
-  bool notOnDiagonal;              //! being on or off diagonal changes many things
-  bool symmetricOnDiagonal;     //! diagonal symmetric special case
+  bool notOnDiagonal; 						///< being on or off diagonal changes many things
+  bool symmetricOnDiagonal; 				///< diagonal symmetric special case
 
-  bool phantomSym;           //! phantoms exist to balance the BW path
-			     //otherdata work
+  bool phantomSym; 							///< phantoms exist to balance the BW path otherdata work
 
-  bool expectOrthoT;         //! orthoT should arrive before end of
-			     //  fwd path
-  bool amPhantom;            //! consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
-  
+  bool expectOrthoT; 						///< orthoT should arrive before end of fwd path
+  bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
+
   bool useBWBarrier;
-  
-  bool collectAllTiles;      //! If true, don't stream compute on tiles in the backward path.
-   
-  redtypes cpreduce;         //! which reducer we're using (defunct)
-  CkArrayID cb_aid;          //! bw path callback array ID 
-  int cb_ep;                 //! bw path callback entry point 
-  int rdma_ep;               //! rdma setup callback entry point 
-  int cb_ep_tol;             //! bw path callback entry point for psiV tolerance
-  bool existsLeft;           //! inDataLeft allocated 
-  bool existsRight;          //! inDataRight allocated 
-  bool existsOut;            //! outData allocated
-  bool existsNew;            //! newData allocated
-  bool resumed;              //! have resumed from load balancing
 
-  bool PCstreamBWout;        //! stream output from BW path       
-  bool PCdelayBWSend;        //! use priority to delay BW output 
+  bool collectAllTiles; 					///< If true, don't stream compute on tiles in the backward path.
 
-  bool gSpaceSum;            //! sum in gspace instead of reduction
-  int gpriority;            //! priority of msg to gspace
+  redtypes cpreduce; 						///< which reducer we're using (defunct)
+  CkArrayID cb_aid; 						///< bw path callback array ID
+  int cb_ep; 								///< bw path callback entry point
+  int rdma_ep; 								///< rdma setup callback entry point
+  int cb_ep_tol; 							///< bw path callback entry point for psiV tolerance
+  bool existsLeft; 							///< inDataLeft allocated
+  bool existsRight; 						///< inDataRight allocated
+  bool existsOut; 							///< outData allocated
+  bool existsNew; 							///< newData allocated
+  bool resumed; 							///< have resumed from load balancing
 
-  complex *mynewData;        //! results of bw multiply
-  complex *othernewData;     //! results of sym off diagonal multiply,
+  bool PCstreamBWout; 						///< stream output from BW path
+  bool PCdelayBWSend; 						///< use priority to delay BW output
+
+  bool gSpaceSum; 							///< sum in gspace instead of reduction
+  int gpriority; 							///< priority of msg to gspace
+
+  complex *mynewData; 						///< results of bw multiply
+  complex *othernewData; 					///< results of sym off diagonal multiply,
                              //! or the C=-1 *inRight* orthoT +c in dynamics
-  double *inDataLeft;        //! the input pair to be transformed
-  double *inDataRight;       //! the input pair to be transformed
-  double *outData;           //! results of fw multiply
-  int actionType;            //! matrix usage control [NORMAL, KEEPORTHO, PSIV]
+  double *inDataLeft; 						///< the input pair to be transformed
+  double *inDataRight; 						///< the input pair to be transformed
+  double *outData; 							///< results of fw multiply
+  int actionType; 							///< matrix usage control [NORMAL, KEEPORTHO, PSIV]
 
-  double *allCaughtLeft;     //! unordered rows of FW input
-  double *allCaughtRight;    //! unordered rows of FW input
-  
+  double *allCaughtLeft; 					///< unordered rows of FW input
+  double *allCaughtRight; 					///< unordered rows of FW input
 
-  double *inResult1;         //! accumulate ortho or lambda
-  double *inResult2;         //! used in gamma calc (non minization)
+
+  double *inResult1; 						///< accumulate ortho or lambda
+  double *inResult2; 						///< used in gamma calc (non minization)
 
   /* to support the simpler section reduction*/
-  int rck;                   //! count of received cookies
-  CkGroupID mCastGrpIdOrtho;  //! group id for multicast manager ortho
-  int numOrthoCol;            //! sGrainSizeX/orthoGrainSize
-  int numOrthoRow;            //! sGrainSizeY/orthoGrainSize
-  int numOrtho;               //! number of orthos in our grain = numOrthoCol*numOrthoRow
+  int rck; 									///< count of received cookies
+  CkGroupID mCastGrpIdOrtho; 				///< group id for multicast manager ortho
+  int numOrthoCol; 							///< sGrainSizeX/orthoGrainSize
+  int numOrthoRow; 							///< sGrainSizeY/orthoGrainSize
+  int numOrtho; 							///< number of orthos in our grain = numOrthoCol*numOrthoRow
 
-  CkGroupID mCastGrpId;      //! group id for multicast manager bw
+  CkGroupID mCastGrpId; 					///< group id for multicast manager bw
 
-  CkSectionInfo *resultCookies;  //! array of bw path section cookies
-  CkSectionInfo *otherResultCookies;  //! extra array of bw path
-                                      //! section cookies
-                                      //! for sym off diag, or dynamics
+  CkSectionInfo *resultCookies; 			///< array of bw path section cookies
+  CkSectionInfo *otherResultCookies; 		///< extra array of bw path section cookies for sym off diag, or dynamics
 
-  CkCallback *orthoCB;             //! forward path callbacks
-  CkSectionInfo *orthoCookies;      //! forward path reduction cookie 
-  int *columnCount;                  //! count of processed rows in BW
-				    // by column 
-  int *columnCountOther;             //! count of processed rows in BW
-				    //by column
-// copy the results from outdata1 and outdata2 into the tiles
+  CkCallback *orthoCB; 						///< forward path callbacks
+  CkSectionInfo *orthoCookies; 				///< forward path reduction cookie
+  int *columnCount; 						///< count of processed rows in BW by column
+  int *columnCountOther; 					///< count of processed rows in BW by column
+
 /**
+ * Copy the results from outdata1 and outdata2 into the tiles
+ *
  * Iterate through the source array, look up the destination row in
  * offsetsRow, destination col in offsetsCol
  *

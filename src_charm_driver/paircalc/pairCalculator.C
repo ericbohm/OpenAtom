@@ -1,40 +1,40 @@
 //**************************************************************************
- /** \file pairCalculator.C						   
- * This is a matrix multiply library with extra frills to communicate the  
- * results back to gspace or the calling ortho char as directed by the     
- * callback.                                                               
- *                                                                         
- * The pairCalculator handles initialization and creation of the           
- * ckPairCalculator chare arrays, their reduction group, their multicast   
- * manager, and their section proxies                                      
- *                                                                         
- * Expected usage begings with createPairCalculator(*,PairCalcID *,*)      
- * the PairCalcID contains meta information about the calculator.          
- * In particular, the various section proxies and array ids necessary to   
- * handle the expected communication modalities between a parent array and 
- * the ckPairCalculator array.                                             
- *                                                                         
- * After the main::main proc 0 phase the array sections used to populate    
- * and return data from the paircalculator are called.                     
- * The forward path section reduction (to and from ortho) is initialized   
- * via initOneRedSect()  the backward path is initialized via the          
- * appropriate makeOneResultSection_X() call.  In each case the call       
- * should be made by each GSP or Ortho object.  That way each one has its  
- * own proxy and the section tree will only include relevant processors.   
- *                                                                         
- * Followup usage goes through:                                            
- *  startPairCalcLeft(PairCalcID, datasize, data *, index1, index2)        
- * and in the asymmetric case                                              
- *  startPairCalcRight(PairCalcID, datasize, data *, index1, index2)       
- *                                                                         
- * The result is returned by the callback set in the create routine         
- * The backward path is triggered by:                                      
- *                                                                         
- * finishPairCalcSection(PairCalcID, datasize, data *)                     
- *                                                                         
- *  Its result is returned via the callback entry point passed in 
- *   during creation                                                       
- *                                                                         
+ /** \file pairCalculator.C
+ * This is a matrix multiply library with extra frills to communicate the
+ * results back to gspace or the calling ortho char as directed by the
+ * callback.
+ *
+ * The pairCalculator handles initialization and creation of the
+ * ckPairCalculator chare arrays, their reduction group, their multicast
+ * manager, and their section proxies
+ *
+ * Expected usage begins with createPairCalculator(*,PairCalcID *,*)
+ * the PairCalcID contains meta information about the calculator.
+ * In particular, the various section proxies and array ids necessary to
+ * handle the expected communication modalities between a parent array and
+ * the ckPairCalculator array.
+ *
+ * After the main::main proc 0 phase the array sections used to populate
+ * and return data from the paircalculator are called.
+ * The forward path section reduction (to and from ortho) is initialized
+ * via initOneRedSect()  the backward path is initialized via the
+ * appropriate makeOneResultSection_X() call.  In each case the call
+ * should be made by each GSP or Ortho object.  That way each one has its
+ * own proxy and the section tree will only include relevant processors.
+ *
+ * Followup usage goes through:
+ *  startPairCalcLeft(PairCalcID, datasize, data *, index1, index2)
+ * and in the asymmetric case
+ *  startPairCalcRight(PairCalcID, datasize, data *, index1, index2)
+ *
+ * The result is returned by the callback set in the create routine
+ * The backward path is triggered by:
+ *
+ * finishPairCalcSection(PairCalcID, datasize, data *)
+ *
+ *  Its result is returned via the callback entry point passed in
+ *   during creation
+ *
  * The results of the backward path are returned in a set of section
  * reductions.  The reduction contributes its slice of its matrix of
  * doubles with the offset=thisIndex.z.  The client then returns the
@@ -62,17 +62,17 @@ extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
 
 
-void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z, 
-			  CkCallback cb,  PairCalcID* pcid, int cb_ep, 
+void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
+			  CkCallback cb,  PairCalcID* pcid, int cb_ep,
 			  int cb_ep_tol, int rdma_ep,
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
-			  int flag_dp, bool conserveMemory, bool lbpaircalc, 
+			  int flag_dp, bool conserveMemory, bool lbpaircalc,
 			  int priority, CkVec <CkGroupID> mCastGrpId,
-			  CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId, 
+			  CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId,
 			  int numChunks, int orthoGrainSize, bool collectTiles,
-			  bool streamBWout, bool delayBWSend, int streamFW, 
-			  bool useDirectSend, bool gSpaceSum, int gpriority, 
-			  bool phantomSym, bool useBWBarrier, 
+			  bool streamBWout, bool delayBWSend, int streamFW,
+			  bool useDirectSend, bool gSpaceSum, int gpriority,
+			  bool phantomSym, bool useBWBarrier,
 			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW,
 			  bool expectOrthoT, int instance)
 			   {
@@ -86,13 +86,13 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   CkArrayOptions options;
   CProxy_PairCalculator pairCalculatorProxy;
   redtypes cpreduce=section;
-  
+
 #ifdef CONVERSE_VERSION_ELAN
   bool machreduce=(s/grainSize * numZ* numChunks>=CkNumNodes()) ? true: false;
 #else
   bool machreduce=false;
 #endif
-  
+
   if(machreduce)
     cpreduce=machine;
   if(!mapid) {
@@ -100,8 +100,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   }
   else {
     options.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, 
-						       gemmSplitFWk, gemmSplitFWm, 
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier,
+						       gemmSplitFWk, gemmSplitFWm,
 						       gemmSplitBW,expectOrthoT, instance,
 						       options);
   }
@@ -134,7 +134,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	  for (int c = 0; c < numChunks; c++) {
 	    if(mapid) {
 #ifdef _PAIRCALC_CREATE_DEBUG_
-	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
+	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
 	      pairCalculatorProxy(z[numX],s1,s2,c).
 		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
@@ -142,7 +142,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	    else
 	      {
 #ifdef _PAIRCALC_CREATE_DEBUG_
-	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
+	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
 		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
@@ -161,14 +161,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	    for (int c = 0; c < numChunks; c++) {
 	      if(mapid) {
 #ifdef _PAIRCALC_CREATE_DEBUG_
-	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
+	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
 		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
 	      }
 	      else{
 #ifdef _PAIRCALC_CREATE_DEBUG_
-	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym); 
+	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
 		pairCalculatorProxy(z[numX],s1,s2,c).
 		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
@@ -177,7 +177,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 	      }
 	    }
 	  }
-	}          
+	}
       }
     }
   pairCalculatorProxy.doneInserting();
@@ -195,7 +195,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
  * section at a time using only the relevant processors instead of making them
  * all at once. We have each gspaceplane chare initialize its own section.
  * Each section will have S/grainsize members.  Such that PC(w,*,y,*)
- * contribute to GSP(y,w).  
+ * contribute to GSP(y,w).
  *
  * Symmetric and asymm dynamics case will additionally have
  * PC(w,x,y!=x,*) contributing to GSP(x,w) to fill out the total
@@ -205,13 +205,13 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
  */
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   int s2=state/pcid->GrainSize*pcid->GrainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
   int nstates=pcid->nstates;
   int GrainSize=pcid->GrainSize;
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
 									       plane, plane, 1,
 									       0, maxpcstateindex, GrainSize,
 									       s2, s2, 1,
@@ -233,14 +233,14 @@ CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int sta
  */
 CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
   int GrainSize=pcid->GrainSize;
   int s1=state / GrainSize * GrainSize; //column
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 
   int nstates=pcid->nstates;
-  // all nondiagonal elements 
+  // all nondiagonal elements
   // so we'll have to make this the tedious explicit way
 
   CkArrayIndex4D *elems= new CkArrayIndex4D[nstates/GrainSize];
@@ -258,7 +258,7 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list_4D( elems, ecount, newListStart);
   CkAssert(order);
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId[plane], false, CkCallback(CkCallback::ignore));
@@ -272,14 +272,14 @@ CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, 
  */
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   int s2=state/pcid->GrainSize*pcid->GrainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 
   int GrainSize=pcid->GrainSize;
   int s2range= (s2==0) ? 1 : GrainSize;
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
 									       plane, plane, 1,
 									       0, s2, s2range,
 									       s2, s2, 1,
@@ -301,7 +301,7 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
  */
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();       
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
   int GrainSize=pcid->GrainSize;
   int s1=state / GrainSize * GrainSize; //column
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
@@ -312,8 +312,8 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
   s2start= (s2start>maxpcstateindex) ? maxpcstateindex : s2start;
   int s2range= (s2start==maxpcstateindex) ? 1 : GrainSize;
   CkAssert(s2start<nstates);
-  CProxySection_PairCalculator sectProxy = 
-      CProxySection_PairCalculator::ckNew(pcid->Aid,  
+  CProxySection_PairCalculator sectProxy =
+      CProxySection_PairCalculator::ckNew(pcid->Aid,
 					  plane, plane, 1,
 					  s1, s1, 1,
 					  s2start, maxpcstateindex, s2range,
@@ -336,7 +336,6 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
  * cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-
 void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
 
 {
@@ -379,7 +378,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
   bool order=reorder_elem_list_4D( elems, ecount, newListStart);
   CkAssert(order);
   // now that we have the section, make the proxy
-  CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount); 
+  CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount);
   CProxySection_PairCalculator *sectProxy=&sProxy;
   delete [] elems;
 
@@ -394,7 +393,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
     }
   if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
     {
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();       
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();
       sectProxy->ckSectionDelegate(mcastGrp);
       // send the message to initialize it with the callback and groupid
       setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, synccb, orthoX, orthoY);
@@ -406,8 +405,8 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	  CkPrintf("NOTE: Rectangular Send In USE\n");
 	  if(pcid->Symmetric)
 	    ComlibAssociateProxy(&mcastInstanceCP,*sectProxy);
-	  else 
-	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);	 
+	  else
+	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
  /*
 	  if(!pcid->Symmetric)
 	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
@@ -416,7 +415,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
       else
 	{
 	  //CkPrintf("PC: proxy without commlib\n");
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
+	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();
 	  sectProxy->ckSectionDelegate(mcastGrp);
 
 	}
@@ -473,7 +472,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
   bool flag_dp = pcid->isDoublePacked;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
     makeLeftTree(pcid,myS,myPlane);
-    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
     pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
   }
   //use proxy to send
@@ -502,9 +501,9 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    { // use the ckvec to send
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem < pcid->listLFrom.size() ; elem++)
-		{ 
+		{
 		  calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
-		  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
+		  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
 		  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
 		  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 		  idx=pcid->listLFrom[elem];
@@ -523,7 +522,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	  else
 	    {
 	      calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
-	      *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;    
+	      *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
 	      CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
 	      msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 
@@ -542,7 +541,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);
 	    }
 	}
-      
+
     }
   else
     {
@@ -566,8 +565,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 		  idx.index[3]=chunk;
 		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
-		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+		  *(int*)CkPriorityPtr(msg) = pcid->priority;
+		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
 		    {
@@ -584,8 +583,8 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    {
 	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
-	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);   
+	      *(int*)CkPriorityPtr(msg) = pcid->priority;
+	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
 #ifdef _NAN_CHECK_
 	      for(int i=0;i<outsize ;i++)
 		{
@@ -640,7 +639,7 @@ void startPairCalcRightRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int 
   for(int chunk=0;chunk<pcid->numChunks;chunk++)
     for(int grain=0;grain<NumGrains;grain++)
     {
-      
+
 #ifdef _PAIRCALC_DEBUG_RDMA_
 	CkPrintf("GSP [%d,%d] addr %p RDMA put right handle %d recverNode %d senderbuf %p\n",myS, myPlane, ptr,pcid->RDMAHandlesRight[chunk][grain].handle.handle,pcid->RDMAHandlesRight[chunk][grain].handle.recverNode,pcid->RDMAHandlesRight[chunk][grain].handle.senderBuf);
 #endif
@@ -768,7 +767,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("     Calc Left symm=%d\n", pcid->Symmetric);
 #endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
   int s1, s2;
   int grainSize = pcid->GrainSize;
@@ -779,7 +778,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
   s1 = (myS/grainSize) * grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
   if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
-    //create multicast proxy array section list 
+    //create multicast proxy array section list
     if(symmetric)
       { // we have this column send in place of a right side
 	// 1 proxy for left and 1 for right
@@ -818,9 +817,9 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	    }
 	    if(ecount)
 	      {
-	      
-		pcid->proxyLNotFrom[chunk] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount); 
-		pcid->existsLNotFromproxy=true;	  
+
+		pcid->proxyLNotFrom[chunk] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount);
+		pcid->existsLNotFromproxy=true;
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
 		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 		  {
@@ -829,15 +828,15 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		else
 		  {
 
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();       
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 		    pcid->proxyLNotFrom[chunk].ckSectionDelegate(mcastGrp);
 		  }
 #endif
 	      }
 	    if(erowcount)
 	      {
-		pcid->proxyLFrom[chunk]  = CProxySection_PairCalculator::ckNew(pairCalculatorID, elemsfromrow, erowcount); 
-		pcid->existsLproxy=true;	  
+		pcid->proxyLFrom[chunk]  = CProxySection_PairCalculator::ckNew(pairCalculatorID, elemsfromrow, erowcount);
+		pcid->existsLproxy=true;
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
 		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 		  {
@@ -845,7 +844,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		  }
 		else
 		  {
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
+		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 		    pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
 
 		  }
@@ -860,12 +859,12 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
 	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
 	  {
-	    pcid->proxyLFrom[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,  
+	    pcid->proxyLFrom[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,
 								      myPlane, myPlane, 1,
 								      s1, s1, 1,
 								      0, maxpcstateindex, grainSize,
 								      chunk, chunk, 1);
-	    pcid->existsLproxy=true;      
+	    pcid->existsLproxy=true;
 	    if(pcid->useDirectSend && chunk==0)
 	      {
 		for(s2 = 0; s2 <= maxpcstateindex; s2 += grainSize){
@@ -879,7 +878,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 	      }
 	    else
 	      {
-		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
+		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 		pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
 	      }
 #endif
@@ -895,7 +894,7 @@ void isAtSyncPairCalc(PairCalcID* pcid){
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("     lbsync symm=%d\n", pcid->Symmetric);
 #endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
   pairCalculatorProxy.lbsync();
 }
@@ -944,7 +943,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 		  idx.index[3]=chunk;
 		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
+		  *(int*)CkPriorityPtr(msg) = pcid->priority;
 		  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
@@ -961,7 +960,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	    {
 	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(msg) = pcid->priority;    
+	      *(int*)CkPriorityPtr(msg) = pcid->priority;
 	      msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
 #ifdef _NAN_CHECK_
 		  for(int i=0;i<outsize ;i++)
@@ -989,7 +988,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("     Calc Right symm=%d\n", pcid->Symmetric);
 #endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid; 
+  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
 
   int s2, c;
@@ -1001,7 +1000,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
   CkAssert(symmetric == false);
   s2 = (myS/grainSize) * grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-  //create multicast proxy list 
+  //create multicast proxy list
   if(!pcid->existsRproxy)
     {
 #ifdef _PAIRCALC_DEBUG_
@@ -1010,8 +1009,8 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
       pcid->proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
       for (c = 0; c < numChunks; c++)  // new proxy for each chunk
 	{
-	  pcid->proxyRNotFrom[c] = 
-	    CProxySection_PairCalculator::ckNew(pcid->Aid,  
+	  pcid->proxyRNotFrom[c] =
+	    CProxySection_PairCalculator::ckNew(pcid->Aid,
 						myPlane, myPlane, 1,
 						0, maxpcstateindex, grainSize,
 						s2, s2, 1,
@@ -1022,7 +1021,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 		pcid->listRNotFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,c));
 	      }
 	    }
-	  pcid->existsRproxy=true;      
+	  pcid->existsRproxy=true;
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
 	  if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 	    {
@@ -1030,7 +1029,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 	    }
 	  else
 	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 	      pcid->proxyRNotFrom[c].ckSectionDelegate(mcastGrp);
 	    }
 #endif
@@ -1075,7 +1074,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
     if(priority>0)
       {
 	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;    
+	*(int*)CkPriorityPtr(omsg) = priority;
 	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
       }
     else
@@ -1099,7 +1098,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
     if(priority>0)
       {
 	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;    
+	*(int*)CkPriorityPtr(omsg) = priority;
 	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
       }
     else
@@ -1127,7 +1126,7 @@ void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, in
     if(priority>0)
       {
 	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;    
+	*(int*)CkPriorityPtr(omsg) = priority;
 	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
       }
     else
@@ -1153,13 +1152,13 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
   int outsize = chunksize;
   if(!(pid->existsLproxy||pid->existsLNotFromproxy)){
     makeLeftTree(pid,sender,myPlane);
-    CkArrayID pairCalculatorID = (CkArrayID)pid->Aid; 
+    CkArrayID pairCalculatorID = (CkArrayID)pid->Aid;
     pid->cproxy= CProxy_PairCalculator(pairCalculatorID);
   }
   if(!pid->Symmetric && !pid->existsRproxy)
     {
       makeRightTree(pid,sender,myPlane);
-      
+
     }
   int numGrains=pid->nstates/pid->GrainSize;
   int numChunks=pid->numChunks;
@@ -1178,7 +1177,7 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 					   // each chunk
     {
       //use proxy to send
-      
+
       if((numChunks > 1) && (chunk == (numChunks - 1)))
 	{// last chunk gets remainder
 	  outsize= chunksize + (totalsize % numChunks);
@@ -1236,7 +1235,7 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 		    }
 		}
 	      else{
-		
+
 		pid->proxyRNotFrom[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize, totalsize);
 	      }
 	    }
@@ -1249,7 +1248,7 @@ bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
   if(newstart>numelems)
     return(false);
   CkArrayIndexMax  swap;
-  int where=newstart;  
+  int where=newstart;
   for(int i=0;i<newstart;i++,where++)
     {
       if(where>=numelems)
