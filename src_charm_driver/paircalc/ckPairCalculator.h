@@ -419,13 +419,13 @@ class PairCalculator: public CBase_PairCalculator {
   void acceptPairData(calculatePairsMsg *msg);
   /// @entry Phantom chare entry method to accept the whole forward path input data before the backward path is triggered (while the Orthos are chugging away)
   void acceptPhantomData(phantomMsg *msg);
-  /// @entry During dynamics, each Ortho sends it share of T back to avoid a race condition between Gamma and T.
+  /// @entry During dynamics, each Ortho calls this on the Asymm loop PC instances to send its share of T back to avoid a race condition between Gamma and T.
   void acceptOrthoT(multiplyResultMsg *msg);
   /// @entry Backward path multiplication
   void multiplyResult(multiplyResultMsg *msg);
-  /// Tolerance correction PsiV Backward path multiplication
+  /// Dynamics: Tolerance correction PsiV Backward path multiplication
   void multiplyPsiV();
-  ///
+  /// Multiplies Fpsi by T (from Ortho)
   void bwMultiplyDynOrthoT();
   /// @entry
   void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
@@ -581,7 +581,7 @@ class PairCalculator: public CBase_PairCalculator {
 
   bool phantomSym; 							///< phantoms exist to balance the BW path otherdata work
 
-  bool expectOrthoT; 						///< orthoT should arrive before end of fwd path
+  bool expectOrthoT; 						///< Is true only in asymmetric, dynamics scenario. For PC instances in the asymmetric chare array, orthoT should arrive before end of fwd path 
   bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
 
   bool useBWBarrier;

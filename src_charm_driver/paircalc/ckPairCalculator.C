@@ -781,37 +781,52 @@ PairCalculator::acceptPairData(calculatePairsMsg *msg)
     }
   ///? @note Will this get triggered ever? EB mentioned that streaming is disabled on the forward path
   if(streamready || ((streamFW>0) && (numRecd == numExpected) && (!msg->doPsiV) ))
-    {
+  {
 	multiplyForwardStream(msg->flag_dp);
 	// not yet supported for dynamic psiV
-    }
+  }
+  /// else, if you have as many messages as you expected
   else if (numRecd == numExpected)
-    {
-      if(!msg->doPsiV)
-	{  //normal behavior
+  {
+    // if this is not a PsiV loop
+    if(!msg->doPsiV)
+	{  
+	  // normal behavior
 	  actionType=0;
+	  /** expectOrthoT is false in any scenario other than asymmetric, dynamics
+	   * numRecdOT is equal to numOrtho only when it is asymm, dynamics and T has been received completely (from Ortho)
+	   * So this condition, invokes multiplyForward() on all cases except (asymm, dynamics when T has not been received) 
+	   */
 	  if(!expectOrthoT || numRecdBWOT==numOrtho)
-	    {
+	  {
 	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(msg->flag_dp);
-	    }
+	  }
+	  /** else, if this is an asymm instance in dynamics, and T has not yet been received completely, 
+	   * then dont do anything now. Later, when all of T is received, both multiplyForward() and bwMultiplyDynOrthoT() 
+	   * are called. Look for these calls in acceptOrthoT().
+	   */ 
 	  else
-	    {
+	  {
+	      ///@todo: This if condition looks redundant. You can get here only if expectOrthoT
 	      if(expectOrthoT)
 		CkPrintf("GAMMA BEAT ORTHOT, holding\n");
-	    }
+	  }
+	  // If this is an asymmetric loop, dynamics case AND Ortho has already sent T, call byMultiplyDynOrthoT() also ( apart from multiplyForward() )
 	  if(expectOrthoT && numRecdBWOT==numOrtho)
-	    { // we must also multiply orthoT by Fpsi
+	  { 
+	      // we must also multiply orthoT by Fpsi
 	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
 	      //	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
 	      numRecdBWOT=0;
-	    }
+	  }
 	}
-      else
+	// else, if this is a PsiV loop
+    else
 	{
 	  // tolerance correction psiV
 	  thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
 	}
-    }
+  }
   else
     {
       //      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);

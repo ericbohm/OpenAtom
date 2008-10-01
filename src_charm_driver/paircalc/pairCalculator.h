@@ -17,21 +17,23 @@
 
 
 
-/* a place to keep the section proxies for the reduction */
-
+/// A place to keep the section proxies for the reduction
 class PairCalcID {
  public:
   CkArrayID Aid;
   CkGroupID Gid;
   int GrainSize;
   int numChunks;
-  int nstates; 
+  int nstates;
+  //@{
+  ///@todo: (RV) These are repeated in here and in PC config data. Understand how they are necessary in the message
   bool Symmetric;
   bool useComlib;
   bool useDirectSend;
   bool isDoublePacked;
   bool conserveMemory;
   bool lbpaircalc;
+  //@}
   bool existsLproxy;
   bool existsLNotFromproxy;
   bool existsRproxy;
@@ -39,11 +41,21 @@ class PairCalcID {
   CkGroupID orthomCastGrpId;
   CkGroupID orthoRedGrpId;
   int priority;
+  /// 
   CProxySection_PairCalculator proxySym;
+  ///
   CProxySection_PairCalculator proxyAsym;
+  /** For symmetric instances: Includes the post-diagonal row of PCs in the chare array that get data from a given GSP
+   *  For asymmetric instances: Includes the whole row of PCs that correspond to GSP state
+   */ 
   CProxySection_PairCalculator *proxyLFrom;
+  /** For symmetric instances: Includes the pre-diagonal column of PC chares that receive data from GSP state
+   *  For asymmetric instances: Is not initialized
+   */ 
   CProxySection_PairCalculator *proxyLNotFrom;
+  /// Only for asymmetric instances: Includes the whole column of PC chares associated with GSP state
   CProxySection_PairCalculator *proxyRNotFrom;
+  ///
   CProxy_PairCalculator cproxy;
   RDMAHandle **RDMAHandlesLeft;
   RDMAHandle **RDMAHandlesRight;
@@ -215,46 +227,44 @@ class PairCalcID {
 
 };
 
+/// Creates the PC chare array. Called separately for the symm / asymm instances
 void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, int ep3, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
-
+/// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
-
+/// Starts the forward path work (along with startPairCalcLeft()) in the asymmetric (Lambda) case
 void startPairCalcRight(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+/// RDMA version of startPairCalcLeft()
 void startPairCalcLeftRDMA(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
-
+/// RDMA version of startPairCalcRight()
 void startPairCalcRightRDMA(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+/// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
 void makeLeftTree(PairCalcID* pid, int myS, int myZ);
-
+/// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
 void makeRightTree(PairCalcID* pid, int myS, int myZ);
-
+/// 
 void initPairCalcRDMA(PairCalcID *pid, int,int,int);
-
 //@{
 /// Triggers the backward path
 extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 //@}
-
-/// Via point for Ortho chares to send T to PCs. This calls PairCalculator::acceptOrthoT()
+/// Via point for Ortho chares to send T to Lambda path PCs. This calls PairCalculator::acceptOrthoT()
 extern "C" void sendMatrix( int n, double *ptr1, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-
-/// Initializes a section of PCs that will talk to the calling Ortho chare (reductions/broadcasts)
+/// Initializes the section of PCs that will talk to the calling Ortho chare (reductions/broadcasts)
 void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
-
-
 //void startPairCalcLeftAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
-
 //void startPairCalcRightAndFinish(PairCalcID* pcid, int n, complex* ptr, int myS, int myZ);
-
+/// 
 void isAtSyncPairCalc(PairCalcID* pcid);
 
-/* These are the classic no multicast version for comparison and debugging */
-void startPairCalcLeftSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
-
-void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
 
 //@{
-/// Initialize an array section that is used to transmit results from the PCs back to the GSP chares
+/// These are the classic no multicast version for comparison and debugging
+void startPairCalcLeftSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+void startPairCalcRightSlow(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+//@}
+//@{
+/// Initialize an array section that is used to reduce the results from the PCs back to the GSP chares
 CProxySection_PairCalculator makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk);
 CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk);
@@ -264,16 +274,21 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
 void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY);
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
+//@{
+/// Matrix read/write utils
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 void loadMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 void dumpMatrix2DDouble(const char *infilename, double **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 void loadMatrix2DDouble(const char *infilename, double **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 void dumpMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
+//@}
 
-
-
+//@{
+///
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart);
 bool reorder_elem_list_4D(CkArrayIndex4D *elems, int numelems, int newstart);
 bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart);
+//@}
+
 #endif
