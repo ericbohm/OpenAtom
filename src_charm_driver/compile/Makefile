@@ -40,7 +40,15 @@ LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
 PCHEADERS = \
 	$(PAIRCALC)/pairCalculator.h \
 	$(PAIRCALC)/pairutil.h \
+	$(PAIRCALC)/paircalcMessages.h \
+	$(PAIRCALC)/MessageDataCollator.h \
+	$(PAIRCALC)/InputDataHandler.h \
+	$(PAIRCALC)/ForwardPathPostCollationTriggers.h \
 	$(PAIRCALC)/ckPairCalculator.h \
+	$(MAIN)/paircalcMessages.decl.h \
+	$(MAIN)/paircalcMessages.def.h \
+	$(MAIN)/inputDataHandler.decl.h \
+	$(MAIN)/inputDataHandler.def.h \
 	$(MAIN)/ckPairCalculator.decl.h \
 	$(MAIN)/ckPairCalculator.def.h
 #===========================================================================
@@ -110,16 +118,20 @@ CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C \
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-ckPairCalculator.decl.h: $(PAIRCALC)/ckPairCalculator.ci
+paircalcMessages.decl.h inputDataHandler.decl.h ckPairCalculator.decl.h : $(PAIRCALC)/ckPairCalculator.ci
 	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
+	cp paircalcMessages.decl.h paircalcMessages.def.h ../main
+	cp inputDataHandler.decl.h inputDataHandler.def.h ../main
 	cp ckPairCalculator.decl.h ckPairCalculator.def.h ../main
 
 ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C \
-	$(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h 
+	$(PAIRCALC)/ckPairCalculator.h paircalcMessages.decl.h \
+	inputDataHandler.decl.h ckPairCalculator.decl.h 
 	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS)
 
-pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h\
-	$(PAIRCALC)/ckPairCalculator.h ckPairCalculator.decl.h
+pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h \
+	$(PAIRCALC)/ckPairCalculator.h paircalcMessages.decl.h \
+	inputDataHandler.decl.h ckPairCalculator.decl.h
 	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS)
 #===========================================================================
 

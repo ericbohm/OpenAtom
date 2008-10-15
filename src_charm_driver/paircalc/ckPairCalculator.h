@@ -92,7 +92,6 @@ extern "C" void DCOPY(int*,double *,int*, double *,int *);
 typedef void (*FuncType) (complex a, complex b);
 PUPmarshallBytes(FuncType);
 
-#include "ckPairCalculator.decl.h"
 
 class RDMAHandle{
  public:
@@ -114,543 +113,251 @@ class RDMAHandle{
 PUPmarshallBytes(struct infiDirectUserHandle);
 #endif
 
-class RDMAHandleMsg : public CMessage_RDMAHandleMsg
-{
- public:
-#ifdef PC_USE_RDMA
-  struct infiDirectUserHandle rhandle;
-#endif
-  int index;
-  int grain;
-  bool left;
-  bool symmetric;
-#ifdef PC_USE_RDMA
-  void init(struct infiDirectUserHandle _rhandle, int _index, int _grain,bool _left, bool _symmetric)
-    {
-      rhandle=_rhandle;
-      index=_index;
-      grain=_grain;
-      left=_left;
-      symmetric=_symmetric;
-    }
-#else
-  // who cares?
-#endif
-  friend class CMessage_RDMAHandleMsg;
-};
-
-class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
- public:
-  CkCallback cb;
-  CkGroupID mCastGrpId;
-  CkCallback synccb;
-  bool lbsync;
-  int orthoX;
-  int orthoY;
-  friend class CMessage_initGRedMsg;
-};
-
-class initResultMsg : public CkMcastBaseMsg, public CMessage_initResultMsg {
- public:
-  int offset;
-  int dest;
-  CkGroupID mCastGrpId;
-  CkCallback synccb;
-  bool lbsync;
-  friend class CMessage_initGRedMsg;
-};
-
-class sendBWsignalMsg : public CMessage_sendBWsignalMsg{
- public:
-  bool otherdata;
-};
-
-class sendFWRDMAsignalMsg : public CMessage_sendBWsignalMsg{
- public:
-  bool flag_dp;
-};
-
-class mySendMsg : public CMessage_mySendMsg {
- public:
-  int N;
-  complex *data;
-  friend class CMessage_mySendMsg;
-};
-
-class partialResultMsg : public CMessage_partialResultMsg {
- public:
-  complex *result;
-  int N;
-  int myoffset;
-  void init(int _size, int _myoffset, complex *_points)
-    {
-      N=_size;
-      myoffset=_myoffset;
-      CmiMemcpy(result,_points,N*sizeof(complex));
-    }
-
-  friend class CMessage_partialResultMsg;
-
-#ifdef CMK_BLUEGENEL
-static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
-  int offsets[2];
-  offsets[0] = ALIGN16(sz);
-  if(sizes==0)
-    offsets[1] = offsets[0];
-  else
-    offsets[1] = offsets[0] + ALIGN16(sizeof(complex)*sizes[0]);
-  partialResultMsg *newmsg = (partialResultMsg *) CkAllocMsg(msgnum, offsets[1], pb);
-  newmsg->result = (complex *) ((char *)newmsg + offsets[0]);
-  return (void *) newmsg;
+#include "MessageDataCollator.h"
+#include "paircalcMessages.h"
+///@{
+/// Forward declarations of the callback functors
+namespace cp {
+	namespace paircalc {
+		class LeftBlockReadyTrigger;
+		class RightBlockReadyTrigger;
+	}
 }
-
-#endif
-};
-
-class priorSumMsg : public CMessage_priorSumMsg {
- public:
-  complex *result;
-  int N;
-  int priority;
-  CkCallback cb;
-
-  friend class CMessage_priorSumMsg;
-
-};
-
-class calculatePairsMsg : public CkMcastBaseMsg, public CMessage_calculatePairsMsg {
- public:
-  int size;
-  int sender;
-  complex *points;
-  bool fromRow;
-  bool flag_dp;
-  bool doPsiV;
-  int blkSize;
-  void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize)
-    {
-      size=_size;
-      sender=_sender;
-      fromRow=_fromRow;
-      flag_dp=_flag_dp;
-      doPsiV=_doPsiV;
-      blkSize=_blkSize;
-
-      CmiMemcpy(points,_points,size*sizeof(complex));
-    }
-  friend class CMessage_calculatePairsMsg;
-
-};
-
-class phantomMsg : public CMessage_phantomMsg {
- public:
-  int size;
-  int numPoints;
-  double *points;
-  int blkSize;
-  int actionType;
-  void init(int _size, int _numPoints, bool _flag_dp, double *_points, int _blkSize, int _actionType)
-    {
-      size=_size;
-      numPoints=_numPoints;
-      blkSize=_blkSize;
-      CmiMemcpy(points,_points,size*sizeof(double));
-      actionType=_actionType;
-    }
-
-};
-
-class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultMsg {
- public:
-  double *matrix1;
-  double *matrix2;
-  int size;
-  int size2;
-  int orthoX;
-  int orthoY;
-  int actionType;
-  void init(int _size, int _size2, double *_points1, double *_points2, int _orthoX, int _orthoY, bool _actionType)
-    {
-      size=_size;
-      size2=_size2;
-      orthoX=_orthoX;
-      orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
-      CmiMemcpy(matrix2,_points2,size2*sizeof(double));
-      actionType=_actionType;
-    }
-  void init1(int _size, double *_points1, int _orthoX, int _orthoY,int _actionType)
-    {
-      size=_size;
-      size2=0;
-      orthoX=_orthoX;
-      orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
-      actionType=_actionType;
-      // this field does nothing in minimization
-      matrix2=NULL;
-    }
-#ifdef CMK_BLUEGENEL
-  // if we use our own allocator we can get 16 byte alignment
-  // to please BGL
- static  void *alloc(int msgnum, size_t sz, int *sizes, int pb) {
-    int offsets[3];
-    offsets[0] = ALIGN16(sz);
-    if(sizes==0)
-      offsets[1] = offsets[0];
-    else
-      offsets[1] = offsets[0] + ALIGN16(sizeof(double)*sizes[0]);
-    if(sizes==0)
-      offsets[2] = offsets[0];
-    else
-      offsets[2] = offsets[1] + ALIGN16(sizeof(double)*sizes[1]);
-    multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
-    newmsg->matrix1 = (double *) ((char *)newmsg + offsets[0]);
-    newmsg->matrix2 = (double *) ((char *)newmsg + offsets[1]);
-    return (void *) newmsg;
-  }
-
-#endif
-  friend class CMessage_multiplyResultMsg;
-};
-
-class entireResultMsg : public CMessage_entireResultMsg {
- public:
-  double *matrix;
-  int size;
-  bool symmetric;
-  void init(int _size, double *_points, bool _symmetric)
-    {
-      size=_size;
-      symmetric=_symmetric;
-      CmiMemcpy(matrix,_points,size*sizeof(double));
-    }
-  friend class CMessage_entireResultMsg;
-};
-
-class entireResultMsg2 : public CMessage_entireResultMsg2 {
- public:
-  double *matrix1;
-  double *matrix2;
-  int size;
-  bool symmetric;
-  void init(int _size, double *_points1, double *_points2, bool _symmetric)
-    {
-      size=_size;
-      symmetric=_symmetric;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
-      CmiMemcpy(matrix2,_points2,size*sizeof(double));
-    }
-  friend class CMessage_entireResultMsg2;
-};
+///@}
+/// A shorter name for the namespace
+namespace pc = cp::paircalc;
+///@{
+/// Typedefs for the collator types
+class paircalcInputMsg;
+typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::LeftBlockReadyTrigger> leftCollatorType;
+typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::RightBlockReadyTrigger> rightCollatorType;
+///@}
+class CProxy_PairCalculator;  ///< Forward declaration to satisfy the CProxy_InputDataHandler declaration which will get included via ckPC.decl.h
+#include "ckPairCalculator.decl.h"
 
 
 
 
-class PairCalculator: public CBase_PairCalculator {
- public:
-  /// @entry (obviously)
-  PairCalculator(bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+///
+class PairCalculator: public CBase_PairCalculator 
+{
+	public:
+		/// @entry (obviously)
+		PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+		/// Constructor for migration
+		PairCalculator(CkMigrateMessage *);
+		/// Destructor (nothing needs to be done?)
+		~PairCalculator();
+		/// Returns a pointer to the collator that will buffer the left matrix data (only for use by the corresponding InputDataHandler chare)
+		inline leftCollatorType* leftHandler() const { return leftCollator; }
+		/// Returns a pointer to the collator that will buffer the right matrix data (only for use by the corresponding InputDataHandler chare)
+		inline rightCollatorType* rightHandler() const { return rightCollator; }
+		/// @entry Accumulates rows and columns of matrices from GSP chares and calls multiply when all have arrived
+		void acceptPairData(paircalcInputMsg *msg);
+		/// @entry Method to send in the complete block of the left matrix
+		void acceptLeftData(const double *data,const int numRows,const int numCols); 
+		/// @entry Method to send in the complete block of the right matrix
+		void acceptRightData(const double *data,const int numRows,const int numCols);
+		/// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
+		void multiplyForward(bool flag_dp);
+		/// @entry Simply redirects call to multiplyForward()
+		void multiplyForwardRDMA( sendFWRDMAsignalMsg *msg){multiplyForward(msg->flag_dp);}
+		/// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
+		void contributeSubTiles(double *fullOutput);
+		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
+		void sendTiles(bool flag_dp);
+		/// Receive data from ortho chares and copy into matrix
+		void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
+		/// @entry Initializes the section cookie and the reduction client. Called on startup as the chare world is being created
+		void initGRed(initGRedMsg *msg);
+		/// @entry Phantom chare entry method to accept the whole forward path input data before the backward path is triggered (while the Orthos are chugging away)
+		void acceptPhantomData(phantomMsg *msg);
+		/// @entry During dynamics, each Ortho calls this on the Asymm loop PC instances to send its share of T back to avoid a race condition between Gamma and T.
+		void acceptOrthoT(multiplyResultMsg *msg);
+		/// @entry Backward path multiplication
+		void multiplyResult(multiplyResultMsg *msg);
+		/// Dynamics: PsiV Tolerance correction loop called on symmetric instances. Technically, backward path
+		void multiplyPsiV();
+		/// Multiplies Fpsi by T (from Ortho)
+		void bwMultiplyDynOrthoT();
+		/// @entry
+		void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
+		/// @entry Simply forwards the call to multiplyResult(). @ntodo Dont seem to be any instances in source which call this method. Check.
+		void multiplyResultI(multiplyResultMsg *msg);
+		/// @entry a debugging tool: a barrier at the end of the backward path before anything is sent over to GSP
+		void bwbarrier(CkReductionMsg *msg);
+		/// multiplyPsiV() and multiplyResult() call this to perform the matrix multiply math on the backward path. This calls DGEMM routines for the same.
+		void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
+		///
+		void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
+		/// @entry Send the results via multiple reductions as triggered by a prioritized message
+		void sendBWResult(sendBWsignalMsg *msg);
+		/// @entry
+		void sendBWResultDirect(sendBWsignalMsg *msg);
+		///
+		void sendBWResultColumn(bool other, int startGrain, int endGrain);
+		///
+		void sendBWResultColumnDirect(bool other, int startGrain, int endGrain);
+		/// @entry Initialize the section cookie for each slice of the result
+		void initResultSection(initResultMsg *msg);
+		/// PUP method
+		void pup(PUP::er &);
+		///
+		void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
+		///
+		void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0, int xtra1=0, int xtra2=0);
+		///
+		void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0, int iter=0);
+		///
+		void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
+		///
+		void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
+		///
+		void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
+		///
+		void ResumeFromSync();
+		///
+		void checkRDMADone();
+		/// @entry Something to sync?
+		void lbsync() 
+		{
+			#ifdef _PAIRCALC_DEBUG_
+				CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
+			#endif
+			resumed=false;
+			rck=0;
+			AtSync();
+		};
+		/// 
+		static void Wrapper_To_CallBack(void* pt2Object)
+		{
+			// explicitly cast to a pointer to CLA_Matrix
+			PairCalculator* mySelf = (PairCalculator*) pt2Object;
+			mySelf->checkRDMADone();
+		}
 
-  PairCalculator(CkMigrateMessage *);
-  ~PairCalculator();
+	private:
+		/// A handle to the co-located chare array that handles data input 
+		CProxy_InputDataHandler<leftCollatorType,rightCollatorType> myMsgHandler;
+		/// Data collator for the left matrix block
+		leftCollatorType *leftCollator;
+		/// Data collator for the right matrix block
+		rightCollatorType *rightCollator;
+		/// Flags indicating if the left and right matrix blocks have been received
+		bool isLeftReady, isRightReady;
+		///
+		RDMAHandle *RDMAHandlesRight;
+		///
+		RDMAHandle *RDMAHandlesLeft;
+		int instance; 							/// Instance number of this run in path-integral beads
+		int numRecd; 								///< number of messages received
+		int numRecdBW; 							///< number of messages received BW
+		int numRecdBWOT; 							///< number of messages received BW orthoT
+		int numExpected; 							///< number of messages expected all
+		int numExpectedX; 						///< number of messages expected x-axis
+		int numExpectedY; 						///< number of messages expected y-axis
+		int grainSize; 							///< number of states per chare
+		int grainSizeX; 							///< number of states per chare x-axis
+		int grainSizeY; 							///< number of states per chare y-axis
+		int orthoGrainSize; 						///< number of states per ortho tile lower-bound
+		int orthoGrainSizeRemX; 					///< sgrainSizeX % orthoGrainSize
+		int orthoGrainSizeRemY; 					///< sgrainSizeY % orthoGrainSize
+		int blkSize; 								///< number points in gspace plane
+		int numStates; 							///< total number of states
+		int numPoints; 							///< number of points in this chunk
+		int numChunks; 							///< number of blocks the stateplane is divided into
 
-  /// @entry Something to sync?
-  void lbsync() {
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d,%d,%d,%d] atsyncs\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
-#endif
-    resumed=false;
-    rck=0;
-    AtSync();
-  };
-
-  /// @entry a debugging tool: a barrier at the end of the backward path before anything is sent over to GSP
-  void bwbarrier(CkReductionMsg *msg)
-  {
-      // everyone is done
-      delete msg;
-      // figure out how to send the results from here sanely
-      sendBWsignalMsg *sigmsg;
-      if(PCdelayBWSend)
-    	  sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
-      else
-    	  sigmsg= new  sendBWsignalMsg;
-      //collapse this into 1 flag
-      bool unitcoef=true;  //cheap hack for minimzation only
-      //collapse this into 1 flag
-      if(amPhantom)
-    	  sigmsg->otherdata= true;
-      else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
-    	  sigmsg->otherdata=true;
-      else
-    	  sigmsg->otherdata= false;
-
-
-      if(PCdelayBWSend)
-      {
-    	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-    	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-    	  // than non prioritized
-      }
-      if(gSpaceSum)
-    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-      else
-    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-  }
-
-  /// Forward path multiply routine that computes on the chunks as they arrive in order to stream the computation. Not used now.
-  void multiplyForwardStream(bool flag_dp);
-  /// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
-  void sendTiles(bool flag_dp);
-  /// Receive data from ortho chares and copy into matrix
-  void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
-  /// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
-  void multiplyForward(bool flag_dp);
-  /// @entry Simply redirects call to multiplyForward()
-  void multiplyForwardRDMA( sendFWRDMAsignalMsg *msg){multiplyForward(msg->flag_dp);}
-  /// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
-  void contributeSubTiles(double *fullOutput);
-  ///
-  void ResumeFromSync();
-  /// @entry Initializes the section cookie and the reduction client. Called on startup as the chare world is being created
-  void initGRed(initGRedMsg *msg);
-  /// @entry Accumulates rows and columns of matrices from GSP chares and calls multiply when all have arrived
-  void acceptPairData(calculatePairsMsg *msg);
-  /// @entry Phantom chare entry method to accept the whole forward path input data before the backward path is triggered (while the Orthos are chugging away)
-  void acceptPhantomData(phantomMsg *msg);
-  /// @entry During dynamics, each Ortho calls this on the Asymm loop PC instances to send its share of T back to avoid a race condition between Gamma and T.
-  void acceptOrthoT(multiplyResultMsg *msg);
-  /// @entry Backward path multiplication
-  void multiplyResult(multiplyResultMsg *msg);
-  /// Dynamics: Tolerance correction PsiV Backward path multiplication
-  void multiplyPsiV();
-  /// Multiplies Fpsi by T (from Ortho)
-  void bwMultiplyDynOrthoT();
-  /// @entry
-  void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
-  /// @entry Simply forwards the call to multiplyResult(). @ntodo Dont seem to be any instances in source which call this method. Check.
-  void multiplyResultI(multiplyResultMsg *msg);
-  /// multiplyPsiV() and multiplyResult() call this to perform the matrix multiply math on the backward path. This calls DGEMM routines for the same.
-  void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
-  ///
-  void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
-  /// @entry Send the results via multiple reductions as triggered by a prioritized message
-  void sendBWResult(sendBWsignalMsg *msg);
-  /// @entry
-  void sendBWResultDirect(sendBWsignalMsg *msg);
-  ///
-  void sendBWResultColumn(bool other, int startGrain, int endGrain);
-  ///
-  void sendBWResultColumnDirect(bool other, int startGrain, int endGrain);
-  /// @entry Initialize the section cookie for each slice of the result
-  void initResultSection(initResultMsg *msg);
-  void pup(PUP::er &);
-  void reorder(int *offsetMap, int *revOffsetMap, double *data, double *scratch);
-  void dumpMatrixDouble(const char *, double *,int,int, int xstart=0,int ystart=0, int xtra1=0, int xtra2=0);
-  void dumpMatrixComplex(const char *, complex *,int,int, int xstart=0, int ystart=0, int iter=0);
-  void dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C);
-  void dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
-  void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
-  static void Wrapper_To_CallBack(void* pt2Object){
-    // explicitly cast to a pointer to CLA_Matrix
-    PairCalculator* mySelf = (PairCalculator*) pt2Object;
-    mySelf->checkRDMADone();
-
-  }
-  void checkRDMADone()
-  {
-#ifdef _PAIRCALC_DEBUG_RDMA_
-    CkPrintf("pairCalc[%d %d %d %d %d] got rdma, count=%d numExpected=%d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected);
-#endif
-    bool streamready=false;
-    numRecd++;
-    bool flag_dp=symmetric;
-    bool doPsiV=false;
-    if(symmetricOnDiagonal) //only left
-      streamready=((streamCaughtL>=streamFW) && (streamFW>0));
-    else
-      {
-	streamready=
-	  // left or right has streamFW
-	  ((streamCaughtL>=streamFW)||(streamCaughtR>=streamFW))
-	  // total left and total right have at least stream FW
-	  && ((numRecLeft>=streamFW) && (numRecRight>=streamFW)
-	      && (streamFW>0));
-	//      CkPrintf("[%d,%d,%d,%d,%d] streamFW %d streamReady %d streamCL %d streamCR %d RL %d RR %d TR %d NE %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, streamFW, streamready , streamCaughtL, streamCaughtR, numRecLeft, numRecRight, numRecd, numExpected);
-
-      }
-
-    // call member funcs to determine if we're ready to multiply
-    if(streamready || ((streamFW>0) && (numRecd == numExpected) && (!doPsiV) ))
-      {
-	multiplyForwardStream(flag_dp);
-	// not yet supported for dynamic psiV
-      }
-    else if (numRecd == numExpected)
-      {
-	if(!doPsiV)
-	  {  //normal behavior
-	    actionType=0;
-	    if(!expectOrthoT || numRecdBWOT==numOrtho)
-	      {
-		//		multiplyForward(flag_dp);
-		// needs to become a regular charm message
-		  sendFWRDMAsignalMsg *sigmsg=new (8*sizeof(int)) sendFWRDMAsignalMsg;
-		  // needs to be prioritized and go through the usual scheduler
-		  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(sigmsg) = 300000000; // lambda prio
-		  sigmsg->flag_dp=flag_dp;
-		  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(sigmsg);
-	      }
-	    else
-	      {
-		if(expectOrthoT)
-		  CkPrintf("GAMMA BEAT ORTHOT, holding\n");
-	      }
-	    if(expectOrthoT && numRecdBWOT==numOrtho)
-	      { // we must also multiply orthoT by Fpsi
-		thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
-		//	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
-		numRecdBWOT=0;
-	      }
-	  }
-	else
-	  {
-	    // tolerance correction psiV
-	    thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
-	  }
-      }
-    else
-      {
-	//      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);
-      }
-  }
-
-
-
- private:
-  RDMAHandle *RDMAHandlesRight;
-  RDMAHandle *RDMAHandlesLeft;
-  int instance;
-  int numRecd; 								///< number of messages received
-  int numRecdBW; 							///< number of messages received BW
-  int numRecdBWOT; 							///< number of messages received BW orthoT
-  int numExpected; 							///< number of messages expected all
-  int numExpectedX; 						///< number of messages expected x-axis
-  int numExpectedY; 						///< number of messages expected y-axis
-  int grainSize; 							///< number of states per chare
-  int grainSizeX; 							///< number of states per chare x-axis
-  int grainSizeY; 							///< number of states per chare y-axis
-  int orthoGrainSize; 						///< number of states per ortho tile lower-bound
-  int orthoGrainSizeRemX; 					///< sgrainSizeX % orthoGrainSize
-  int orthoGrainSizeRemY; 					///< sgrainSizeY % orthoGrainSize
-  int blkSize; 								///< number points in gspace plane
-  int numStates; 							///< total number of states
-  int numPoints; 							///< number of points in this chunk
-  int numChunks; 							///< number of blocks the stateplane is divided into
-
-  int streamFW; 							///< number of rows to accumulate before computing
-
-  int streamCaughtR; 						///< number of rows caught so far R stream
-  int streamCaughtL; 						///< number of rows caught so far L stream
-
-  int numRecLeft; 							///< number of rows so far total left
-  int numRecRight; 							///< number of rows so far total right
-
-  int gemmSplitFWk; 						///< number of rows in split FW dgemm
-  int gemmSplitFWm; 						///< number of columns in split FW dgemm
-  int gemmSplitBW; 							///< number of rows in split BW dgemm
-
-
-  int *LeftOffsets; 						///< index numbers of caught stream elements
-  int *RightOffsets; 						///< index numbers of caught stream elements
-
-  int *LeftRev; 							///< reverse index numbers of caught stream elements
-  int *RightRev; 							///< reverse index numbers of caught stream elements
-
-  double **outTiles; 						///< in output streaming we populate the tiles directly
-
-  int *touchedTiles; 						///< tracker to detect when tiles are full
-
-  bool symmetric; 							///< if true, one triangle is missing
-  int conserveMemory; 						///< free up matrices when not in use
-  bool lbpaircalc;
-  bool notOnDiagonal; 						///< being on or off diagonal changes many things
-  bool symmetricOnDiagonal; 				///< diagonal symmetric special case
-
-  bool phantomSym; 							///< phantoms exist to balance the BW path otherdata work
-
-  bool expectOrthoT; 						///< Is true only in asymmetric, dynamics scenario. For PC instances in the asymmetric chare array, orthoT should arrive before end of fwd path 
-  bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
-
-  bool useBWBarrier;
-
-  bool collectAllTiles; 					///< If true, don't stream compute on tiles in the backward path.
-
-  redtypes cpreduce; 						///< which reducer we're using (defunct)
-  CkArrayID cb_aid; 						///< bw path callback array ID
-  int cb_ep; 								///< bw path callback entry point
-  int rdma_ep; 								///< rdma setup callback entry point
-  int cb_ep_tol; 							///< bw path callback entry point for psiV tolerance
-  bool existsLeft; 							///< inDataLeft allocated
-  bool existsRight; 						///< inDataRight allocated
-  bool existsOut; 							///< outData allocated
-  bool existsNew; 							///< newData allocated
-  bool resumed; 							///< have resumed from load balancing
-
-  bool PCstreamBWout; 						///< stream output from BW path
-  bool PCdelayBWSend; 						///< use priority to delay BW output
-
-  bool gSpaceSum; 							///< sum in gspace instead of reduction
-  int gpriority; 							///< priority of msg to gspace
-
-  complex *mynewData; 						///< results of bw multiply
-  complex *othernewData; 					///< results of sym off diagonal multiply,
-                             //! or the C=-1 *inRight* orthoT +c in dynamics
-  double *inDataLeft; 						///< the input pair to be transformed
-  double *inDataRight; 						///< the input pair to be transformed
-  double *outData; 							///< results of fw multiply
-  int actionType; 							///< matrix usage control [NORMAL, KEEPORTHO, PSIV]
-
-  double *allCaughtLeft; 					///< unordered rows of FW input
-  double *allCaughtRight; 					///< unordered rows of FW input
-
-
-  double *inResult1; 						///< accumulate ortho or lambda
-  double *inResult2; 						///< used in gamma calc (non minization)
-
-  /* to support the simpler section reduction*/
-  int rck; 									///< count of received cookies
-  CkGroupID mCastGrpIdOrtho; 				///< group id for multicast manager ortho
-  int numOrthoCol; 							///< sGrainSizeX/orthoGrainSize
-  int numOrthoRow; 							///< sGrainSizeY/orthoGrainSize
-  int numOrtho; 							///< number of orthos in our grain = numOrthoCol*numOrthoRow
-
-  CkGroupID mCastGrpId; 					///< group id for multicast manager bw
-
-  CkSectionInfo *resultCookies; 			///< array of bw path section cookies
-  CkSectionInfo *otherResultCookies; 		///< extra array of bw path section cookies for sym off diag, or dynamics
-
-  CkCallback *orthoCB; 						///< forward path callbacks
-  CkSectionInfo *orthoCookies; 				///< forward path reduction cookie
-  int *columnCount; 						///< count of processed rows in BW by column
-  int *columnCountOther; 					///< count of processed rows in BW by column
-
-/**
- * Copy the results from outdata1 and outdata2 into the tiles
- *
- * Iterate through the source array, look up the destination row in
- * offsetsRow, destination col in offsetsCol
- *
- * This will be the destination row and column for the output if the
- * output were considered as a single matrix.
- *
- * Use tileSize to map these values into the destination tile.
- *
- */
-  void copyIntoTiles(double *source, double**dest, int sourceRows, int sourceCols, int *offsetsRow, int *offsetsCol, int *touched, int tileSize, int tilesPerRow );
-
+		int streamCaughtR; 						///< number of rows caught so far R stream
+		int streamCaughtL; 						///< number of rows caught so far L stream
+		
+		int numRecLeft; 							///< number of rows so far total left
+		int numRecRight; 							///< number of rows so far total right
+		
+		int gemmSplitFWk; 						///< number of rows in split FW dgemm
+		int gemmSplitFWm; 						///< number of columns in split FW dgemm
+		int gemmSplitBW; 							///< number of rows in split BW dgemm
+		
+		
+		int *LeftOffsets; 						///< index numbers of caught stream elements
+		int *RightOffsets; 						///< index numbers of caught stream elements
+		
+		int *LeftRev; 							///< reverse index numbers of caught stream elements
+		int *RightRev; 							///< reverse index numbers of caught stream elements
+		
+		double **outTiles; 						///< in output streaming we populate the tiles directly
+		
+		int *touchedTiles; 						///< tracker to detect when tiles are full
+		
+		bool symmetric; 							///< if true, one triangle is missing
+		int conserveMemory; 						///< Tribool:: -1: dont conserve memory at all; 0: default; +1: conserve memory aggresively and free up matrices when not in use
+		bool lbpaircalc;
+		bool notOnDiagonal; 						///< being on or off diagonal changes many things
+		bool symmetricOnDiagonal; 				///< diagonal symmetric special case
+		
+		bool phantomSym; 							///< phantoms exist to balance the BW path otherdata work
+		
+		bool expectOrthoT; 						///< Is true only in asymmetric, dynamics scenario. For PC instances in the asymmetric chare array, orthoT should arrive before end of fwd path 
+		bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
+		
+		bool useBWBarrier;
+		
+		bool collectAllTiles; 					///< If true, don't stream compute on tiles in the backward path.
+		
+		redtypes cpreduce; 						///< which reducer we're using (defunct)
+		CkArrayID cb_aid; 						///< bw path callback array ID
+		int cb_ep; 								///< bw path callback entry point
+		int rdma_ep; 								///< rdma setup callback entry point
+		int cb_ep_tol; 							///< bw path callback entry point for psiV tolerance
+		bool existsLeft; 							///< inDataLeft allocated
+		bool existsRight; 						///< inDataRight allocated
+		bool existsOut; 							///< outData allocated
+		bool existsNew; 							///< newData allocated
+		bool resumed; 							///< have resumed from load balancing
+		
+		bool PCstreamBWout; 						///< stream output from BW path
+		bool PCdelayBWSend; 						///< use priority to delay BW output
+		
+		bool gSpaceSum; 							///< sum in gspace instead of reduction
+		int gpriority; 							///< priority of msg to gspace
+		
+		complex *mynewData; 						///< results of bw multiply
+		complex *othernewData; 					///< results of sym off diagonal multiply,
+		                           //! or the C=-1 *inRight* orthoT +c in dynamics
+		double *inDataLeft; 						///< the input pair to be transformed
+		double *inDataRight; 						///< the input pair to be transformed
+		double *outData; 							///< results of fw multiply
+		int actionType; 							///< matrix usage control [NORMAL, KEEPORTHO, PSIV]
+		
+		double *allCaughtLeft; 					///< unordered rows of FW input
+		double *allCaughtRight; 					///< unordered rows of FW input
+		
+		
+		double *inResult1; 						///< accumulate ortho or lambda
+		double *inResult2; 						///< used in gamma calc (non minimization)
+		
+		/* to support the simpler section reduction*/
+		int rck; 									///< count of received cookies
+		CkGroupID mCastGrpIdOrtho; 				///< group id for multicast manager ortho
+		int numOrthoCol; 							///< sGrainSizeX/orthoGrainSize
+		int numOrthoRow; 							///< sGrainSizeY/orthoGrainSize
+		int numOrtho; 							///< number of orthos in our grain = numOrthoCol*numOrthoRow
+		
+		CkGroupID mCastGrpId; 					///< group id for multicast manager bw
+		
+		CkSectionInfo *resultCookies; 			///< array of bw path section cookies
+		CkSectionInfo *otherResultCookies; 		///< extra array of bw path section cookies for sym off diag, or dynamics
+		
+		CkCallback *orthoCB; 						///< forward path callbacks
+		CkSectionInfo *orthoCookies; 				///< forward path reduction cookie
+		int *columnCount; 						///< count of processed rows in BW by column
+		int *columnCountOther; 					///< count of processed rows in BW by column
+		
+		/** Copy the results from outdata1 and outdata2 into the tiles.
+		 * Iterate through the source array, look up the destination row in offsetsRow, destination 
+		 * col in offsetsCol. This will be the destination row and column for the output if the
+		 * output were considered as a single matrix. Use tileSize to map these values into the destination tile.
+		 */
+		void copyIntoTiles(double *source, double**dest, int sourceRows, int sourceCols, int *offsetsRow, int *offsetsCol, int *touched, int tileSize, int tilesPerRow );
 };
 
 //forward declaration

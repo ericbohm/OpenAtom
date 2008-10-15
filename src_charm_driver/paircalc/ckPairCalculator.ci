@@ -2,7 +2,7 @@
  *
  */
 
-module ckPairCalculator {
+module paircalcMessages {
 	readonly ComlibInstanceHandle mcastInstanceCP;
 	readonly ComlibInstanceHandle mcastInstanceACP;
 
@@ -27,9 +27,9 @@ module ckPairCalculator {
 	message mySendMsg  {
 	  complex data[];
 	};
-
-	message calculatePairsMsg  {
-	  complex points[];
+	
+	message paircalcInputMsg {
+		complex points[];
 	};
 
 	message phantomMsg  {
@@ -52,16 +52,37 @@ module ckPairCalculator {
 	
 	message RDMAHandleMsg;
 
-	array [4D] PairCalculator {
+};
 
- 		entry PairCalculator(bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int rdma_ep, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, int streamFW, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
+
+
+module inputDataHandler {
+	template <class leftHandlerType, class rightHandlerType> array [4D] InputDataHandler
+	{
+		entry InputDataHandler(CProxy_PairCalculator pcProxy);
+		entry [nokeep] void acceptLeftData(paircalcInputMsg *msg);
+		entry [nokeep] void acceptRightData(paircalcInputMsg *msg);
+	};
+};
+
+
+
+module ckPairCalculator {
+
+	extern module paircalcMessages;
+	
+	extern module inputDataHandler;
+	array [4D] InputDataHandler <leftCollatorType,rightCollatorType>;
+	
+	array [4D] PairCalculator {
+ 		entry PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType>, bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int rdma_ep, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);
 		entry void sendBWResultDirect(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
-   		entry [nokeep] void acceptPairData(calculatePairsMsg *msg);
+   		entry [nokeep] void acceptPairData(paircalcInputMsg *msg);
    		entry void acceptPhantomData(phantomMsg *msg);
 		entry [nokeep] void multiplyForwardRDMA(sendFWRDMAsignalMsg *msg);
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
@@ -69,9 +90,10 @@ module ckPairCalculator {
 		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
 		entry void receiveRDMASenderNotify(int senderProc, int indexX, 
 		      int indexY, int size, int totalsize);
+		entry [local] void acceptLeftData(const double *data, const int numRows, const int numCols);
+		entry [local] void acceptRightData(const double *data, const int numRows, const int numCols);
 		entry [local] void multiplyForward(bool);
 		entry [local] void bwMultiplyDynOrthoT();
 		entry [local] void multiplyPsiV();
-     
 	};
 }

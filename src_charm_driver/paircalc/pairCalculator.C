@@ -55,11 +55,14 @@
 //*************************************************************************
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
+#include "InputDataHandler.h"
+
 #include <algorithm>
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle mcastInstanceACP;
 extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
+
 
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
@@ -75,7 +78,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  bool phantomSym, bool useBWBarrier,
 			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW,
 			  bool expectOrthoT, int instance)
-			   {
+{
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
   traceRegisterUserEvent("calcpairContrib", 220);
@@ -83,8 +86,9 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   traceRegisterUserEvent("multiplyResultDGEMM2", 240);
   traceRegisterUserEvent("multiplyResultDGEMM1R", 250);
 
-  CkArrayOptions options;
+  CkArrayOptions paircalcOpts,handlerOpts;
   CProxy_PairCalculator pairCalculatorProxy;
+  CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inputHandlerProxy;
   redtypes cpreduce=section;
 
 #ifdef CONVERSE_VERSION_ELAN
@@ -95,91 +99,122 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   if(machreduce)
     cpreduce=machine;
-  if(!mapid) {
+  
+  // If a chare mapping is not available, create an empty array
+  if(!mapid) 
+  {
     pairCalculatorProxy = CProxy_PairCalculator::ckNew();
   }
-  else {
-    options.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier,
+  // else, create the array with element locations as specified by the map 
+  else 
+  {
+    paircalcOpts.setMap(*mapid);
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier,
 						       gemmSplitFWk, gemmSplitFWm,
 						       gemmSplitBW,expectOrthoT, instance,
-						       options);
+						       paircalcOpts);
   }
 
-  int proc = 0;
+#ifdef _PAIRCALC_CREATE_DEBUG_
+	CkPrintf("createPairCalculator: Creating empty inputHandler chare array for asymm(0)/symm(1) loop PCs:%d \n",sym);
+#endif 
+  /// Create an empty input handler chare array that will accept all incoming messages from GSpace
+  handlerOpts.bindTo(pairCalculatorProxy);
+  inputHandlerProxy = CProxy_InputDataHandler<leftCollatorType,rightCollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
 
+  int proc = 0;
+  // Initialize the PairCalcID instance
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useDirectSend);
   pcid->orthomCastGrpId=orthomCastGrpId;
   pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
+  
+  // Setup the appropriate multicast strategy
 #ifdef CMK_BLUEGENEL
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #else
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #endif
-
+  
+  // 
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  // 
   if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
   CkAssert(mapid);
+  // If the symmetric loop PC instances are being created
   if(sym)
-    for(int numX = 0; numX < numZ; numX ++){
-      for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) {
-	int s2start=(phantomSym) ? 0 : s1;
-	for (int s2 = s2start; s2 <= maxpcstateindex; s2 += grainSize) {
-	  for (int c = 0; c < numChunks; c++) {
-	    if(mapid) {
+	for(int numX = 0; numX < numZ; numX ++)
+	{
+	  for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) 
+      {
+      	// If phantomSym is turned on
+		int s2start=(phantomSym) ? 0 : s1;
+		for (int s2 = s2start; s2 <= maxpcstateindex; s2 += grainSize) 
+		{
+			for (int c = 0; c < numChunks; c++) 
+			{
+				if(mapid) 
+				{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
-	      pairCalculatorProxy(z[numX],s1,s2,c).
-		insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
-	    }
-	    else
-	      {
+					pairCalculatorProxy(z[numX],s1,s2,c).
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
+				}
+				else
+				{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
-		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
-		proc++;
-		if (proc >= CkNumPes()) proc = 0;
-	      }
+					pairCalculatorProxy(z[numX],s1,s2,c).
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
+					proc++;
+					if (proc >= CkNumPes()) proc = 0;
+				}
+			}
+		}
 	  }
 	}
-      }
-    }
+  // else, if the asymmetric loop PC instances are being created
   else
-    {
-      for(int numX = 0; numX < numZ; numX ++){
-	for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) {
-	  for (int s2 = 0; s2 <= maxpcstateindex; s2 += grainSize) {
-	    for (int c = 0; c < numChunks; c++) {
-	      if(mapid) {
+  {
+	for(int numX = 0; numX < numZ; numX ++)
+	{
+		for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize)
+		{
+			for (int s2 = 0; s2 <= maxpcstateindex; s2 += grainSize)
+			{
+				for (int c = 0; c < numChunks; c++)
+				{
+					if(mapid)
+					{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
-		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
-	      }
-	      else{
+					pairCalculatorProxy(z[numX],s1,s2,c).
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
+					}
+					else
+					{
 #ifdef _PAIRCALC_CREATE_DEBUG_
 	      CkPrintf("inserting [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
 #endif
-		pairCalculatorProxy(z[numX],s1,s2,c).
-		  insert(sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, streamFW, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
-		proc++;
-		if (proc >= CkNumPes()) proc = 0;
-	      }
-	    }
-	  }
+						pairCalculatorProxy(z[numX],s1,s2,c).
+							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, rdma_ep, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
+						proc++;
+						if (proc >= CkNumPes()) proc = 0;
+					}
+				}
+			}
+		}
 	}
-      }
-    }
+  }
+  /// Notify the runtime that we're done inserting all the PC elements
   pairCalculatorProxy.doneInserting();
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("    Finished init {grain=%d, sym=%d, blk=%d, Z=%d, S=%d}\n", grainSize, sym, numChunks, numZ, s);
@@ -457,8 +492,12 @@ void setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int Grai
 
 
 
-// Deposit data and start calculation
-
+/** For symmetric instances, this deposits the data as 
+ *  	- Left matrix block to the post-diagonal row of PCs that correspond to state myS
+ *  	- Right matrix block to the pre-diagonal column of PCs that correspond to state myS
+ * 
+ * For asymmetric instances, this deposits the data as left matrix data to the whole row of PCs that correspond to state myS
+ */
 void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV){
 #ifdef PC_USE_RDMA
   if(psiV)// RDMA doesn't support PSIV shenanighans
@@ -475,7 +514,9 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
     CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
     pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
   }
-  //use proxy to send
+  /** If the LProxy (row section proxy) exists. Always true for both symmetric and asymmetric loops.
+   * Send the data as the left matrix block.
+   */
   if(pcid->existsLproxy)
     {
       int numChunks=pcid->numChunks;
@@ -502,7 +543,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem < pcid->listLFrom.size() ; elem++)
 		{
-		  calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
+		  paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
 		  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
 		  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
 		  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
@@ -521,7 +562,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    }
 	  else
 	    {
-	      calculatePairsMsg *msgfromrow=new (outsize, 8* sizeof(int)) calculatePairsMsg;
+	      paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
 	      *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
 	      CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
 	      msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
@@ -543,10 +584,15 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	}
 
     }
+  // else, if the LProxy does not exist (which is never the case). Both symm and asymm have row section proxies
   else
     {
       CkPrintf("no L proxy for [%d,%d,%d,%d,%d] !!!\n");
     }
+  
+  /** If an LNotFromproxy (column section proxy) exists. True in symmetric loop with phantom chares
+   * Basically, here you are sending the data as the right matrix block to the corresponding chares (pre-diagonal column of chares)
+   */ 
   if(pcid->existsLNotFromproxy)
     { //symmetric
       for(int chunk=0; chunk < pcid->numChunks; chunk++)
@@ -563,7 +609,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      for(int elem=0; elem<pcid->listLNotFrom.size();elem++)
 		{ idx=pcid->listLNotFrom[elem];
 		  idx.index[3]=chunk;
-		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+		  paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(msg) = pcid->priority;
 		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
@@ -581,7 +627,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	    }
 	  else
 	    {
-	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+	      paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(msg) = pcid->priority;
 	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
@@ -899,6 +945,10 @@ void isAtSyncPairCalc(PairCalcID* pcid){
   pairCalculatorProxy.lbsync();
 }
 
+
+/** Used only to trigger the asymmetric loop. Deposits the data as right matrix block to the whole 
+ * column of PC chares associated with state myS
+ */
 void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane){
 #ifdef PC_USE_RDMA
   startPairCalcRightRDMA(pcid,n,ptr,myS,myPlane);
@@ -907,11 +957,17 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
   startPairCalcRightSlow(pcid, n, ptr, myS, myPlane);
 #else
   bool flag_dp = pcid->isDoublePacked;
+  
+   
   if(!pcid->existsRproxy)
     {
       makeRightTree(pcid,myS,myPlane);
 
     }
+    
+  /** If a RNotFromproxy (column section proxy) exists. True in asymmetric loop.
+   * Send the data as the right matrix block.
+   */
   if(pcid->existsRproxy)
     {
 #ifdef _DEBUG_PAIRCALC_PARANOID_
@@ -941,7 +997,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	      for(int elem=0; elem<pcid->listRNotFrom.size();elem++)
 		{ idx=pcid->listRNotFrom[elem];
 		  idx.index[3]=chunk;
-		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+		  paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(msg) = pcid->priority;
 		  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
@@ -958,7 +1014,7 @@ void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPl
 	    }
 	  else
 	    {
-	      calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
+	      paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
 	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	      *(int*)CkPriorityPtr(msg) = pcid->priority;
 	      msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
@@ -1283,3 +1339,4 @@ bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart)
   return(true);
 }
 #endif
+
