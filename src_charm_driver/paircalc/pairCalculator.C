@@ -492,160 +492,301 @@ void setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int Grai
 
 
 
+// create multicast proxies
+void makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
+{
+	#ifdef _PAIRCALC_DEBUG_
+		CkPrintf("GSpace [%d,%d] Making symm(%d) PC array section to receive left data \n", myS, myPlane, pcid->Symmetric);
+	#endif
+	CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
+	CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
+	int s1, s2,sColMin;
+	int grainSize = pcid->GrainSize;
+	int numChunks =  pcid->numChunks;
+	int nstates = pcid->nstates;
+	int symmetric = pcid->Symmetric;
+	int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+	/// Find the row index of the PC chare that handles this state
+	s1 = (myS/grainSize) * grainSize;
+	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
+	/// If the PC is a symmetric instance, then include only the post-diagonal chares on the row s1  
+	/// else, include all the PC chares on row s1
+	symmetric ? sColMin = s1 : sColMin = 0;
+
+    /// Allocate one section proxy for each chunk
+	pcid->sectionGettingLeft=new CProxySection_PairCalculator[numChunks];
+	/// Build an array section for each chunk 
+	for (int chunk = 0; chunk < numChunks; chunk++)
+	{
+		pcid->sectionGettingLeft[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,
+								      myPlane, myPlane, 1,
+								      s1, s1, 1,
+								      sColMin, maxpcstateindex, grainSize,
+								      chunk, chunk, 1);
+		pcid->existsLproxy=true;
+		if(pcid->useDirectSend && chunk==0)
+			for(s2 = sColMin; s2 <= maxpcstateindex; s2 += grainSize)
+				pcid->listGettingLeft.push_back(CkArrayIndex4D(myPlane,s1,s2,chunk));
+				
+		#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+			if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
+				ComlibAssociateProxy(&mcastInstanceCP,pcid->sectionGettingLeft[chunk]);
+			else
+			{
+				CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
+				pcid->sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
+			}
+		#endif
+	  }
+}
+
+
+
+void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
+#ifdef _PAIRCALC_DEBUG_
+  CkPrintf("GSpace [%d,%d] Making symm(%d) PC array section to receive right data \n", myS, myPlane, pcid->Symmetric);
+#endif
+  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
+  CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
+
+  int s2, sRowMax, c;
+  int grainSize = pcid->GrainSize;
+  int numChunks =  pcid->numChunks;
+  int nstates = pcid->nstates;
+  bool symmetric = pcid->Symmetric;
+  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  CkAssert(symmetric == false);
+  s2 = (myS/grainSize) * grainSize;
+  s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
+  /// If the PC is a symmetric instance, then include only the pre-diagonal chares on the column s2 else, include all the PC chares on column s2
+  if (symmetric)
+    sRowMax = s2-grainSize;
+  else
+    sRowMax = maxpcstateindex;
+  //create multicast proxy list
+    	#ifdef _PAIRCALC_DEBUG_
+    		CkPrintf("initializing R multicast proxy in %d %d \n",myPlane,s2);
+    	#endif
+      pcid->sectionGettingRight=new CProxySection_PairCalculator[numChunks];
+      for (c = 0; c < numChunks; c++)  // new proxy for each chunk
+	{
+		// Accomodate the boundary case:  The first PC chare on the top left [0,0] of the array shouldnt receive a right data. So leave its right data proxy empty
+		if (sRowMax >=0)
+		{
+			pcid->sectionGettingRight[c] = CProxySection_PairCalculator::ckNew(pcid->Aid,
+						myPlane, myPlane, 1,
+						0, sRowMax, grainSize,
+						s2, s2, 1,
+						c, c, 1);
+	  if(pcid->useDirectSend && c==0)
+	      for(int s1 = 0; s1 <= sRowMax; s1 += grainSize)
+                  pcid->listGettingRight.push_back(CkArrayIndex4D(myPlane,s1,s2,c));
+		}
+                  
+        pcid->existsRproxy=true;
+#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+	  if(pcid->useComlib && _PC_COMMLIB_MULTI_)
+	      ComlibAssociateProxy(&mcastInstanceCP, pcid->sectionGettingRight[c]);
+	  else
+	    {
+	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
+	      pcid->sectionGettingRight[c].ckSectionDelegate(mcastGrp);
+	    }
+#endif
+	}
+}
+
+
+
 /** For symmetric instances, this deposits the data as 
  *  	- Left matrix block to the post-diagonal row of PCs that correspond to state myS
  *  	- Right matrix block to the pre-diagonal column of PCs that correspond to state myS
  * 
  * For asymmetric instances, this deposits the data as left matrix data to the whole row of PCs that correspond to state myS
  */
-void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV){
-#ifdef PC_USE_RDMA
-  if(psiV)// RDMA doesn't support PSIV shenanighans
-    CkAbort("You must #undef PC_USE_RDMA in ckPairCalculator.h for dynamics. PSIV is broken by RDMA.\n It can be fixed, but won't be done until someone needs production support.");
-  else
-    startPairCalcLeftRDMA(pcid, n, ptr, myS, myPlane,psiV);
-#else
-#ifdef _PAIRCALC_NO_MULTI_
-  startPairCalcLeftSlow(pcid, n, ptr, myS, myPlane);
-#else
-  bool flag_dp = pcid->isDoublePacked;
-  if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
-    makeLeftTree(pcid,myS,myPlane);
-    CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
-    pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
-  }
-  /** If the LProxy (row section proxy) exists. Always true for both symmetric and asymmetric loops.
-   * Send the data as the left matrix block.
-   */
-  if(pcid->existsLproxy)
-    {
-      int numChunks=pcid->numChunks;
-      int chunksize =  n / numChunks;
-      int outsize = chunksize;
+void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV)
+{
+    #ifdef PC_USE_RDMA
+        // RDMA doesn't support PSIV shenanighans
+        if(psiV)
+            CkAbort("You must #undef PC_USE_RDMA in ckPairCalculator.h for dynamics. PSIV is broken by RDMA.\n It can be fixed, but won't be done until someone needs production support.");
+        else
+            startPairCalcLeftRDMA(pcid, n, ptr, myS, myPlane,psiV);
+    #else
+        /// If multicasting is disabled, use a slow point-to-point send version
+        #ifdef _PAIRCALC_NO_MULTI_
+            startPairCalcLeftSlow(pcid, n, ptr, myS, myPlane);
+        #else
+            bool flag_dp = pcid->isDoublePacked;
+            /// If a destination array section doesnt exist, build one
+            if(!pcid->existsLproxy)
+            {
+                makeLeftTree(pcid,myS,myPlane);
+                CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
+                pcid->cproxy= CProxy_PairCalculator(pairCalculatorID);
+            }
+            /// If a left matrix destination section exists, send the data as the left matrix block
+            if(pcid->existsLproxy)
+            {
+                int numChunks=pcid->numChunks;
+                int chunksize =  n / numChunks;
+                int outsize = chunksize;
 
-      for(int chunk=0; chunk < numChunks ; chunk++)
-	{
-	  if((numChunks > 1) && (chunk == (numChunks - 1)))
-	    {// last chunk gets remainder
-	      outsize= chunksize + (n % numChunks);
-	    }
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  if(pcid->Symmetric && myPlane==0)
-	    dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcid->Symmetric);
-#endif
+                for(int chunk=0; chunk < numChunks ; chunk++)
+                {
+                    // last chunk gets remainder
+                    if((numChunks > 1) && (chunk == (numChunks - 1)))
+                        outsize= chunksize + (n % numChunks);
+                    #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+                    if(pcid->Symmetric && myPlane==0)
+                        dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcid->Symmetric);
+                    CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcid->Symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
+                    #endif
+                    // If sending directly, use the vector of target PC chares
+                    if( pcid->useDirectSend)
+                    {
+                        CkArrayIndex4D idx;
+                        for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
+                        {
+                            paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+                            *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
+                            CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
+                            msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                            idx=pcid->listGettingLeft[elem];
+                            idx.index[3]=chunk;
+                            #ifdef _NAN_CHECK_
+                            for(int i=0;i<outsize ;i++)
+                            {
+                                CkAssert(finite(msgfromrow->points[i].re));
+                                CkAssert(finite(msgfromrow->points[i].im));
+                            }
+                            #endif
+                            pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msgfromrow);
+                        }
+                    }
+                    // else, use a typical multicast to the destination section
+                    else
+                    {
+                        paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+                        *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
+                        CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
+                        msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                        #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+                        if(pcid->Symmetric && myPlane==0)  
+                            dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
+                        #endif
+                        #ifdef _NAN_CHECK_
+                        for(int i=0;i<outsize ;i++)
+                        {
+                            CkAssert(finite(msgfromrow->points[i].re));
+                            CkAssert(finite(msgfromrow->points[i].im));
+                        }
+                        #endif
+                        pcid->sectionGettingLeft[chunk].acceptPairData(msgfromrow);
+                    }
+                }
+            }
+            /// else, if the destination section doesnt exist even after attempting to create one
+            else
+                CkPrintf("GSpace [%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcid->Symmetric);
 
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcid->Symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
-#endif
-
-	  if( pcid->useDirectSend)
-	    { // use the ckvec to send
-	      CkArrayIndex4D idx;
-	      for(int elem=0; elem < pcid->listLFrom.size() ; elem++)
-		{
-		  paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
-		  *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
-		  CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
-		  msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
-		  idx=pcid->listLFrom[elem];
-		  idx.index[3]=chunk;
-#ifdef _NAN_CHECK_
-		  for(int i=0;i<outsize ;i++)
-		    {
-		      CkAssert(finite(msgfromrow->points[i].re));
-		      CkAssert(finite(msgfromrow->points[i].im));
-		    }
-#endif
-
-		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msgfromrow);
-		}
-	    }
-	  else
-	    {
-	      paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
-	      *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
-	      CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
-	      msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
-
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	      if(pcid->Symmetric && myPlane==0)
-		dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
-#endif
-#ifdef _NAN_CHECK_
-		  for(int i=0;i<outsize ;i++)
-		    {
-		      CkAssert(finite(msgfromrow->points[i].re));
-		      CkAssert(finite(msgfromrow->points[i].im));
-		    }
-#endif
-
-	      pcid->proxyLFrom[chunk].acceptPairData(msgfromrow);
-	    }
-	}
-
-    }
-  // else, if the LProxy does not exist (which is never the case). Both symm and asymm have row section proxies
-  else
-    {
-      CkPrintf("no L proxy for [%d,%d,%d,%d,%d] !!!\n");
-    }
-  
-  /** If an LNotFromproxy (column section proxy) exists. True in symmetric loop with phantom chares
-   * Basically, here you are sending the data as the right matrix block to the corresponding chares (pre-diagonal column of chares)
-   */ 
-  if(pcid->existsLNotFromproxy)
-    { //symmetric
-      for(int chunk=0; chunk < pcid->numChunks; chunk++)
-	{
-	  int chunksize=n/pcid->numChunks;
-	  int outsize=chunksize;
-	  if(pcid->numChunks > 1 && chunk == pcid->numChunks - 1)
-	    {// last chunk  gets remainder
-	      outsize += n % pcid->numChunks;
-	    }
-	  if( pcid->useDirectSend)
-	    { // use the ckvec to send
-	      CkArrayIndex4D idx;
-	      for(int elem=0; elem<pcid->listLNotFrom.size();elem++)
-		{ idx=pcid->listLNotFrom[elem];
-		  idx.index[3]=chunk;
-		  paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
-		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(msg) = pcid->priority;
-		  msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
-#ifdef _NAN_CHECK_
-		  for(int i=0;i<outsize ;i++)
-		    {
-		      CkAssert(finite(msg->points[i].re));
-		      CkAssert(finite(msg->points[i].im));
-		    }
-#endif
-
-
-		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
-		}
-	    }
-	  else
-	    {
-	      paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
-	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(msg) = pcid->priority;
-	      msg->init(outsize, myS, false, flag_dp, &ptr[chunk * chunksize], psiV,n);
-#ifdef _NAN_CHECK_
-	      for(int i=0;i<outsize ;i++)
-		{
-		  CkAssert(finite(msg->points[i].re));
-		  CkAssert(finite(msg->points[i].im));
-		}
-#endif
-	      pcid->proxyLNotFrom[chunk].acceptPairData(msg);
-	    }
-	}
-    }
-#endif
-#endif
-
+            /// temporary
+            if(pcid->Symmetric)
+            	startPairCalcRight(pcid, n, ptr, myS, myPlane, psiV);
+        #endif
+    #endif
 }
+
+
+
+/** Deposits the data as right matrix block to the PC chare section associated with state myS
+ */
+void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV)
+{
+    #ifdef PC_USE_RDMA
+        // RDMA doesn't support PSIV shenanighans
+        if(psiV)
+            CkAbort("You must #undef PC_USE_RDMA in ckPairCalculator.h for dynamics. PSIV is broken by RDMA.\n It can be fixed, but won't be done until someone needs production support.");
+        else
+            startPairCalcRightRDMA(pcid, n, ptr, myS, myPlane,psiV);
+    #else
+        /// If multicasting is disabled, use a slow point-to-point send version
+        #ifdef _PAIRCALC_NO_MULTI_
+            startPairCalcRightSlow(pcid, n, ptr, myS, myPlane);
+        #else
+            bool flag_dp = pcid->isDoublePacked;
+            /// If a destination array section doesnt exist, build one
+            if(!pcid->existsRproxy)
+                makeRightTree(pcid,myS,myPlane);
+            /// If a right matrix destination section exists, send the data as the left matrix block
+            if(pcid->existsRproxy)
+            {
+                #ifdef _DEBUG_PAIRCALC_PARANOID_
+                double re;
+                double im;
+                for(int i=0;i<n;i++)
+                {
+                    re=ptr[i].re;
+                    im=ptr[i].im;
+                    if(fabs(re)>0.0)
+                        CkAssert(fabs(re)>1.0e-300);
+                    if(fabs(im)>0.0)
+                        CkAssert(fabs(im)>1.0e-300);
+                }
+                #endif
+                for(int chunk=0; chunk < pcid->numChunks; chunk++)
+                {
+                    int chunksize=n/pcid->numChunks;
+                    int outsize=chunksize;
+                    /// last chunk gets remainder
+                    if(pcid->numChunks > 1 && chunk == pcid->numChunks - 1)
+                        outsize+=n % pcid->numChunks;
+                    if(pcid->useDirectSend)
+                    {
+                        CkArrayIndex4D idx;
+                        for(int elem=0; elem<pcid->listGettingRight.size();elem++)
+                        { 
+                            idx=pcid->listGettingRight[elem];
+                            idx.index[3]=chunk;
+                            paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
+                            CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+                            *(int*)CkPriorityPtr(msg) = pcid->priority;
+                            msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],psiV, n);
+                            #ifdef _NAN_CHECK_
+                            for(int i=0;i<outsize ;i++)
+                            {
+                                CkAssert(finite(msg->points[i].re));
+                                CkAssert(finite(msg->points[i].im));
+                            }
+                            #endif
+                            pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
+                        }
+                    }
+                    else
+                    {
+                        paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
+                        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+                        *(int*)CkPriorityPtr(msg) = pcid->priority;
+                        msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],psiV, n);
+                        #ifdef _NAN_CHECK_
+                        for(int i=0;i<outsize ;i++)
+                        {
+                            CkAssert(finite(msg->points[i].re));
+                            CkAssert(finite(msg->points[i].im));
+                        }
+                        #endif
+                        pcid->sectionGettingRight[chunk].acceptPairData(msg);
+                    }
+                }
+            }
+            /// else, if the destination section doesnt exist even after attempting to create one
+            else
+                CkPrintf("GSpace [%d,%d] No destination symm(%d) PC array section to send right block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcid->Symmetric);
+        #endif
+    #endif
+}
+
+
 
 void startPairCalcLeftRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, bool psiV)
 
@@ -662,7 +803,7 @@ void startPairCalcLeftRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int m
 	  CmiDirect_put(&(pcid->RDMAHandlesLeft[chunk][grain].handle));
       }
     }
-  if(pcid->Symmetric && pcid->existsLNotFromproxy)
+  if(pcid->Symmetric && pcid->existsRproxy)
     {
 #ifdef _PAIRCALC_DEBUG_RDMA_
       CkPrintf("GSP [%d,%d] RDMA put left other\n",myS, myPlane);
@@ -674,6 +815,8 @@ void startPairCalcLeftRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int m
     }
 #endif
 }
+
+
 
 void startPairCalcRightRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane)
 {
@@ -694,6 +837,8 @@ void startPairCalcRightRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int 
     }
 #endif
 }
+
+
 
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric)
 {
@@ -807,132 +952,6 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 }
 
 
-
-// create multicast proxies
-void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc Left symm=%d\n", pcid->Symmetric);
-#endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
-  CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
-  int s1, s2;
-  int grainSize = pcid->GrainSize;
-  int numChunks =  pcid->numChunks;
-  int nstates = pcid->nstates;
-  int symmetric = pcid->Symmetric;
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
-  s1 = (myS/grainSize) * grainSize;
-  s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-  if(!(pcid->existsLproxy||pcid->existsLNotFromproxy)){
-    //create multicast proxy array section list
-    if(symmetric)
-      { // we have this column send in place of a right side
-	// 1 proxy for left and 1 for right
-	pcid->proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
-	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
-	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
-	  {
-	    CkArrayIndex4D *elems= new CkArrayIndex4D[nstates/grainSize];
-	    CkArrayIndex4D *elemsfromrow= new CkArrayIndex4D[nstates/grainSize];
-	    int erowcount=0;
-	    int ecount=0;
-	    CkArrayIndex4D idx(myPlane,0,0,chunk);
-	    for(s2 = 0; s2 <= maxpcstateindex; s2 += grainSize){
-	      if(s1 <= s2)
-		{
-		  idx.index[1]=s1;
-		  idx.index[2]=s2;
-		  elemsfromrow[erowcount++]=idx;
-		  if(pcid->useDirectSend && chunk==0)
-		    {
-		      pcid->listLFrom.push_back(idx);
-		    }
-
-		}
-	      else // swap s1 : s2 and toggle fromRow
-		{
-		  idx.index[1]=s2;
-		  idx.index[2]=s1;
-		  elems[ecount++]=idx;
-		  if(pcid->useDirectSend && chunk==0)
-		    {
-		      pcid->listLNotFrom.push_back(idx);
-		    }
-
-		}
-	    }
-	    if(ecount)
-	      {
-
-		pcid->proxyLNotFrom[chunk] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount);
-		pcid->existsLNotFromproxy=true;
-#ifndef _PAIRCALC_DO_NOT_DELEGATE_
-		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
-		  {
-		    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLNotFrom[chunk]);
-		  }
-		else
-		  {
-
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
-		    pcid->proxyLNotFrom[chunk].ckSectionDelegate(mcastGrp);
-		  }
-#endif
-	      }
-	    if(erowcount)
-	      {
-		pcid->proxyLFrom[chunk]  = CProxySection_PairCalculator::ckNew(pairCalculatorID, elemsfromrow, erowcount);
-		pcid->existsLproxy=true;
-#ifndef _PAIRCALC_DO_NOT_DELEGATE_
-		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
-		  {
-		    ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyLFrom[chunk]);
-		  }
-		else
-		  {
-		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
-		    pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
-
-		  }
-#endif
-	      }
-	    delete [] elemsfromrow;
-	    delete [] elems;
-	  }
-      }
-    else
-      { //just left, no right
-	pcid->proxyLFrom=new CProxySection_PairCalculator[numChunks];
-	for (int chunk = 0; chunk < numChunks; chunk++)  // new proxy for each chunk
-	  {
-	    pcid->proxyLFrom[chunk] = CProxySection_PairCalculator::ckNew(pcid->Aid,
-								      myPlane, myPlane, 1,
-								      s1, s1, 1,
-								      0, maxpcstateindex, grainSize,
-								      chunk, chunk, 1);
-	    pcid->existsLproxy=true;
-	    if(pcid->useDirectSend && chunk==0)
-	      {
-		for(s2 = 0; s2 <= maxpcstateindex; s2 += grainSize){
-		  pcid->listLFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,chunk));
-		}
-	      }
-#ifndef _PAIRCALC_DO_NOT_DELEGATE_
-	    if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
-	      {
-		ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLFrom[chunk]);
-	      }
-	    else
-	      {
-		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
-		pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
-	      }
-#endif
-	  }
-      }
-  }
-}
-
 /**
  * synchronize for migration
  */
@@ -944,155 +963,6 @@ void isAtSyncPairCalc(PairCalcID* pcid){
   CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
   pairCalculatorProxy.lbsync();
 }
-
-
-/** Used only to trigger the asymmetric loop. Deposits the data as right matrix block to the whole 
- * column of PC chares associated with state myS
- */
-void startPairCalcRight(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane){
-#ifdef PC_USE_RDMA
-  startPairCalcRightRDMA(pcid,n,ptr,myS,myPlane);
-#else
-#ifdef _PAIRCALC_NO_MULTI_
-  startPairCalcRightSlow(pcid, n, ptr, myS, myPlane);
-#else
-  bool flag_dp = pcid->isDoublePacked;
-  
-   
-  if(!pcid->existsRproxy)
-    {
-      makeRightTree(pcid,myS,myPlane);
-
-    }
-    
-  /** If a RNotFromproxy (column section proxy) exists. True in asymmetric loop.
-   * Send the data as the right matrix block.
-   */
-  if(pcid->existsRproxy)
-    {
-#ifdef _DEBUG_PAIRCALC_PARANOID_
-      double re;
-      double im;
-      for(int i=0;i<n;i++)
-	{
-	  re=ptr[i].re;
-	  im=ptr[i].im;
-	  if(fabs(re)>0.0)
-	    CkAssert(fabs(re)>1.0e-300);
-	  if(fabs(im)>0.0)
-	    CkAssert(fabs(im)>1.0e-300);
-	}
-#endif
-      for(int chunk=0; chunk < pcid->numChunks; chunk++)
-	{
-	  int chunksize=n/pcid->numChunks;
-	  int outsize=chunksize;
-	  if(pcid->numChunks > 1 && chunk == pcid->numChunks - 1)
-	    {// last chunk gets remainder
-	      outsize+=n % pcid->numChunks;
-	    }
-	  if(pcid->useDirectSend)
-	    {
-	      CkArrayIndex4D idx;
-	      for(int elem=0; elem<pcid->listRNotFrom.size();elem++)
-		{ idx=pcid->listRNotFrom[elem];
-		  idx.index[3]=chunk;
-		  paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
-		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(msg) = pcid->priority;
-		  msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
-#ifdef _NAN_CHECK_
-		  for(int i=0;i<outsize ;i++)
-		    {
-		      CkAssert(finite(msg->points[i].re));
-		      CkAssert(finite(msg->points[i].im));
-		    }
-#endif
-
-		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
-		}
-	    }
-	  else
-	    {
-	      paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
-	      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(msg) = pcid->priority;
-	      msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],false, n);
-#ifdef _NAN_CHECK_
-		  for(int i=0;i<outsize ;i++)
-		    {
-		      CkAssert(finite(msg->points[i].re));
-		      CkAssert(finite(msg->points[i].im));
-		    }
-#endif
-
-	      pcid->proxyRNotFrom[chunk].acceptPairData(msg);
-	    }
-	}
-    }
-  else
-    {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("Warning! No Right proxy ! \n");
-#endif
-    }
-#endif //_NO_MULTI
-#endif
-}
-
-void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc Right symm=%d\n", pcid->Symmetric);
-#endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
-  CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
-
-  int s2, c;
-  int grainSize = pcid->GrainSize;
-  int numChunks =  pcid->numChunks;
-  int nstates = pcid->nstates;
-  bool symmetric = pcid->Symmetric;
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
-  CkAssert(symmetric == false);
-  s2 = (myS/grainSize) * grainSize;
-  s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-  //create multicast proxy list
-  if(!pcid->existsRproxy)
-    {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("initializing R multicast proxy in %d %d \n",myPlane,s2);
-#endif
-      pcid->proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
-      for (c = 0; c < numChunks; c++)  // new proxy for each chunk
-	{
-	  pcid->proxyRNotFrom[c] =
-	    CProxySection_PairCalculator::ckNew(pcid->Aid,
-						myPlane, myPlane, 1,
-						0, maxpcstateindex, grainSize,
-						s2, s2, 1,
-						c, c, 1);
-	  if(pcid->useDirectSend && c==0)
-	    {
-	      for(int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize){
-		pcid->listRNotFrom.push_back(CkArrayIndex4D(myPlane,s1,s2,c));
-	      }
-	    }
-	  pcid->existsRproxy=true;
-#ifndef _PAIRCALC_DO_NOT_DELEGATE_
-	  if(pcid->useComlib && _PC_COMMLIB_MULTI_)
-	    {
-	      ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyRNotFrom[c]);
-	    }
-	  else
-	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
-	      pcid->proxyRNotFrom[c].ckSectionDelegate(mcastGrp);
-	    }
-#endif
-	}
-    }
-}
-
 
 
 
@@ -1206,16 +1076,14 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
   int senderProc=CkMyPe();
   int chunksize =  totalsize / pid->numChunks;
   int outsize = chunksize;
-  if(!(pid->existsLproxy||pid->existsLNotFromproxy)){
+  if(!pid->existsLproxy){
     makeLeftTree(pid,sender,myPlane);
     CkArrayID pairCalculatorID = (CkArrayID)pid->Aid;
     pid->cproxy= CProxy_PairCalculator(pairCalculatorID);
   }
-  if(!pid->Symmetric && !pid->existsRproxy)
-    {
+  if(!pid->existsRproxy)
       makeRightTree(pid,sender,myPlane);
 
-    }
   int numGrains=pid->nstates/pid->GrainSize;
   int numChunks=pid->numChunks;
   CkAssert(numChunks>0);
@@ -1244,27 +1112,27 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 	  if( pid->useDirectSend)
 	    { // use the ckvec to send
 	      CkArrayIndex4D idx;
-	      for(int elem=0; elem < pid->listLFrom.size() ; elem++)
+	      for(int elem=0; elem < pid->listGettingLeft.size() ; elem++)
 		{
-		  idx=pid->listLFrom[elem];
+                  idx=pid->listGettingLeft[elem];
 		  idx.index[3]=chunk;
 		  pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
 		}
 	    }
 	  else{
-	    pid->proxyLFrom[chunk].receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
+	    pid->sectionGettingLeft[chunk].receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
 	  }
 	}
       if(pid->Symmetric)
 	{
-	  if(pid->existsLNotFromproxy)
+	  if(pid->existsRproxy)
 	    {
 	      if( pid->useDirectSend)
 		{ // use the ckvec to send
 		  CkArrayIndex4D idx;
-		  for(int elem=0; elem < pid->listLNotFrom.size() ; elem++)
+		  for(int elem=0; elem < pid->listGettingRight.size() ; elem++)
 		    {
-		      idx=pid->listLNotFrom[elem];
+		      idx=pid->listGettingRight[elem];
 		      idx.index[3]=chunk;
 		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
 		    }
@@ -1272,7 +1140,7 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 	      else
 		{
 
-		  pid->proxyLNotFrom[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+		  pid->sectionGettingRight[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
 		}
 	    }
 	}
@@ -1283,21 +1151,24 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 	      if( pid->useDirectSend)
 		{ // use the ckvec to send
 		  CkArrayIndex4D idx;
-		  for(int elem=0; elem < pid->listRNotFrom.size() ; elem++)
+		  for(int elem=0; elem < pid->listGettingRight.size() ; elem++)
 		    {
-		      idx=pid->listRNotFrom[elem];
+		      idx=pid->listGettingRight[elem];
 		      idx.index[3]=chunk;
 		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
 		    }
 		}
 	      else{
 
-		pid->proxyRNotFrom[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize, totalsize);
+		pid->sectionGettingRight[chunk].receiveRDMASenderNotify(senderProc, sender, false, outsize, totalsize);
 	      }
 	    }
 	}
     }
 }
+
+
+
 #ifdef ROTATE_LIST
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)
 {

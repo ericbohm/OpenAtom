@@ -44,9 +44,10 @@
 
 //============================================================================
 #include "charm++.h"
-#include <iostream.h>
-#include <fstream.h>
-#include <math.h>
+#include <iostream>
+#include <fstream>
+#include <cmath>
+	using namespace std;
 //---------------------------------------------------------------------------
 #include "util.h"
 #include "cpaimd.h"
@@ -2013,7 +2014,7 @@ void  CP_State_GSpacePlane::sendLambda() {
   int toSend = numPoints;
   startPairCalcLeft(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
   CmiNetworkProgress();
-  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y);
+  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);

@@ -18,141 +18,130 @@
 
 
 /// A place to keep the section proxies for the reduction
-class PairCalcID {
- public:
-  CkArrayID Aid;
-  CkGroupID Gid;
-  int GrainSize;
-  int numChunks;
-  int nstates;
-  //@{
-  ///@todo: (RV) These are repeated in here and in PC config data. Understand how they are necessary in the message
-  bool Symmetric;
-  bool useComlib;
-  bool useDirectSend;
-  bool isDoublePacked;
-  bool conserveMemory;
-  bool lbpaircalc;
-  //@}
-  bool existsLproxy;
-  bool existsLNotFromproxy;
-  bool existsRproxy;
-  CkVec <CkGroupID> mCastGrpId;
-  CkGroupID orthomCastGrpId;
-  CkGroupID orthoRedGrpId;
-  int priority;
-  /// 
-  CProxySection_PairCalculator proxySym;
-  ///
-  CProxySection_PairCalculator proxyAsym;
-  /** For symmetric instances: Includes the post-diagonal row of PCs in the chare array that get data from a given GSP
-   *  For asymmetric instances: Includes the whole row of PCs that correspond to GSP state
-   */ 
-  CProxySection_PairCalculator *proxyLFrom;
-  /** For symmetric instances: Includes the pre-diagonal column of PC chares that receive data from GSP state
-   *  For asymmetric instances: Is not initialized
-   */ 
-  CProxySection_PairCalculator *proxyLNotFrom;
-  /// Only for asymmetric instances: Includes the whole column of PC chares associated with GSP state
-  CProxySection_PairCalculator *proxyRNotFrom;
-  ///
-  CProxy_PairCalculator cproxy;
-  RDMAHandle **RDMAHandlesLeft;
-  RDMAHandle **RDMAHandlesRight;
-  CkVec <CkArrayIndex4D> listLFrom;
-  CkVec <CkArrayIndex4D> listLNotFrom;
-  CkVec <CkArrayIndex4D> listRNotFrom;
-#ifdef _CP_SUBSTEP_TIMING_
-  CkCallback beginTimerCB;
-  CkCallback endTimerCB;
-  int forwardTimerID;
-  int backwardTimerID;
-#endif
-  PairCalcID() {
-      proxyLFrom=NULL;
-      proxyLNotFrom=NULL;
-      proxyRNotFrom=NULL;
-      RDMAHandlesLeft=NULL;
-      RDMAHandlesRight=NULL;
-  }
-  ~PairCalcID() {
-    if(existsLproxy)
-      delete [] proxyLFrom;
-    if(existsLNotFromproxy)
-      delete [] proxyLNotFrom;
-    if(existsRproxy)
-      delete [] proxyRNotFrom;
-  }
+class PairCalcID 
+{
+	public:
+		/// The array ID of this PC chare array instance
+		CkArrayID Aid;
+		CkGroupID Gid;
+		int GrainSize;
+		int numChunks;
+		int nstates;
+		//@{
+		///@todo: (RV) These are repeated in here and in PC config data. Understand how they are necessary in the message
+		bool Symmetric;
+		bool useComlib;
+		bool useDirectSend;
+		bool isDoublePacked;
+		bool conserveMemory;
+		bool lbpaircalc;
+		//@}
+		/// True if a proxy for the destination PC array section including a (portion of a) row exists
+		bool existsLproxy;
+		/// True if a proxy for the destination PC array section including a (portion of a) column exists
+		bool existsRproxy;
+		CkVec <CkGroupID> mCastGrpId;
+		CkGroupID orthomCastGrpId;
+		CkGroupID orthoRedGrpId;
+		int priority;
+		/// Section of symmetric PC chare array used by an Ortho chare
+		CProxySection_PairCalculator proxySym;
+		/// Section of asymmetric PC chare array used by an Ortho chare
+		CProxySection_PairCalculator proxyAsym;
+		/** PC array section which receives left matrix block data from the owner of this object (a Gspace chare)
+		 * Symmetric loop : Includes the post-diagonal PC chares on row 's' that get data from this GSpace[s,p] chare
+		 * Asymmetric loop: Includes the whole row of PCs on row 's' that get data from this GSpace[s,p] chare
+		 */
+		CProxySection_PairCalculator *sectionGettingLeft;
+		/** PC array section which receives right matrix block data from the owner of this object (a Gspace chare)
+		 * Symmetric loop : Includes the pre-diagonal PC chares on column 's' that get data from this GSpace[s,p] chare
+		 * Asymmetric loop: Includes the whole column of PCs on column 's' that get data from this GSpace[s,p] chare
+		 */
+		CProxySection_PairCalculator *sectionGettingRight;
+		/// A proxy to the PC chare array. @note: (RV) To my understanding, this should suffice and we shouldnt have to store a CkArrayID also.
+		CProxy_PairCalculator cproxy;
+		RDMAHandle **RDMAHandlesLeft;
+		RDMAHandle **RDMAHandlesRight;
+		/// A list of PC array elements which expect left matrix data from owning GSpace chare
+		CkVec <CkArrayIndex4D> listGettingLeft;
+		/// A list of PC array elements which expect right matrix data from owning GSpace chare
+		CkVec <CkArrayIndex4D> listGettingRight;
+		#ifdef _CP_SUBSTEP_TIMING_
+		CkCallback beginTimerCB;
+		CkCallback endTimerCB;
+		int forwardTimerID;
+		int backwardTimerID;
+		#endif
+		PairCalcID() {
+		    sectionGettingLeft=NULL;
+		    sectionGettingRight=NULL;
+		    RDMAHandlesLeft=NULL;
+		    RDMAHandlesRight=NULL;
+		}
+		~PairCalcID() {
+		  if(existsLproxy)
+		    delete [] sectionGettingLeft;
+		  if(existsRproxy)
+		    delete [] sectionGettingRight;
+		}
+		
+		void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
+		  Aid = aid;
+		  GrainSize = grain;
+		  numChunks = _numChunks;
+		  nstates = s;
+		  Symmetric = sym;
+		  useComlib = _useComlib;
+		  useDirectSend = _useDirectSend;
+		  conserveMemory = _conserveMemory;
+		  existsRproxy=false;
+		  existsLproxy=false;
+		  isDoublePacked = _dp;
+		  lbpaircalc=_lbpaircalc;
+		  priority=_priority;
+		}
+void resetProxy()
+{
+    CkAbort("need to adjust for having plane instance of multicastmgr");
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId[0]).ckLocalBranch();       
+    for(int chunk=0;chunk<numChunks;chunk++)
+      {
 
-  void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
-    Aid = aid;
-    GrainSize = grain;
-    numChunks = _numChunks;
-    nstates = s;
-    Symmetric = sym;
-    useComlib = _useComlib;
-    useDirectSend = _useDirectSend;
-    conserveMemory = _conserveMemory;
-    existsRproxy=false;
-    existsLproxy=false;
-    existsLNotFromproxy=false;
-    isDoublePacked = _dp;
-    lbpaircalc=_lbpaircalc;
-    priority=_priority;
-  }
-  void resetProxy()
-    {
-      CkAbort("need to adjust for having plane instance of multicastmgr");
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId[0]).ckLocalBranch();       
-      for(int chunk=0;chunk<numChunks;chunk++)
-	{
-
-	  if(useComlib && _PC_COMMLIB_MULTI_)
-	    {
-	      if(existsLNotFromproxy)
-		ComlibResetSectionProxy(&proxyLNotFrom[chunk]);
-	      if(existsRproxy)
-		ComlibResetSectionProxy(&proxyRNotFrom[chunk]);
-	      if(existsLproxy)
-		ComlibResetSectionProxy(&proxyLFrom[chunk]);
-	    }
-	  else
-	    {
-	      if(existsRproxy)
-		{
-		  mcastGrp->resetSection(proxyRNotFrom[chunk]);
-		}
-	      if(existsLproxy)
-		{
-		  mcastGrp->resetSection(proxyLFrom[chunk]);
-		}
-	      if(existsLNotFromproxy)
-		{
-		  mcastGrp->resetSection(proxyLNotFrom[chunk]);
-		}
-	    }
-	}
-    }
-  PairCalcID &operator=(const PairCalcID& pid) {
-    Aid=pid.Aid;
-    Gid=pid.Gid;    
-    GrainSize=pid.GrainSize;
-    numChunks=pid.numChunks;
-    nstates=pid.nstates;
-    Symmetric=pid.Symmetric;
-    useComlib=pid.useComlib;
-    useDirectSend=pid.useDirectSend;
-    isDoublePacked=pid.isDoublePacked;
-    conserveMemory=pid.conserveMemory;
-    lbpaircalc=pid.lbpaircalc;
-    existsLproxy=pid.existsLproxy;
-    existsLNotFromproxy=pid.existsLNotFromproxy;
-    existsRproxy=pid.existsRproxy;
-    priority=pid.priority;
-    mCastGrpId=pid.mCastGrpId;
-    orthomCastGrpId=pid.orthomCastGrpId;
-    orthoRedGrpId=pid.orthoRedGrpId;
-    cproxy=pid.cproxy;
+        if(useComlib && _PC_COMMLIB_MULTI_)
+          {
+            if(existsRproxy)
+            	ComlibResetSectionProxy(&sectionGettingRight[chunk]);
+            if(existsLproxy)
+            	ComlibResetSectionProxy(&sectionGettingLeft[chunk]);
+          }
+        else
+          {
+            if(existsRproxy)
+            	mcastGrp->resetSection(sectionGettingRight[chunk]);
+            if(existsLproxy)
+            	mcastGrp->resetSection(sectionGettingLeft[chunk]);
+          }
+      }
+}
+PairCalcID &operator=(const PairCalcID& pid) {
+  Aid=pid.Aid;
+  Gid=pid.Gid;    
+  GrainSize=pid.GrainSize;
+  numChunks=pid.numChunks;
+  nstates=pid.nstates;
+  Symmetric=pid.Symmetric;
+  useComlib=pid.useComlib;
+  useDirectSend=pid.useDirectSend;
+  isDoublePacked=pid.isDoublePacked;
+  conserveMemory=pid.conserveMemory;
+  lbpaircalc=pid.lbpaircalc;
+  existsLproxy=pid.existsLproxy;
+  existsRproxy=pid.existsRproxy;
+  priority=pid.priority;
+  mCastGrpId=pid.mCastGrpId;
+  orthomCastGrpId=pid.orthomCastGrpId;
+  orthoRedGrpId=pid.orthoRedGrpId;
+  cproxy=pid.cproxy;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
     backwardTimerID=pid.backwardTimerID;
@@ -176,7 +165,6 @@ class PairCalcID {
     p|conserveMemory;
     p|lbpaircalc;
     p|existsLproxy;
-    p|existsLNotFromproxy;
     p|existsRproxy;
     p|mCastGrpId;
     p|orthomCastGrpId;
@@ -191,37 +179,23 @@ class PairCalcID {
     if(p.isUnpacking())
       {
 	if(existsLproxy)
-	  {
-	    proxyLFrom=new CProxySection_PairCalculator[numChunks];
-	  }
-	if(existsLNotFromproxy)
-	  {
-	    proxyLNotFrom=new CProxySection_PairCalculator[numChunks];
-	  }
+	    sectionGettingLeft=new CProxySection_PairCalculator[numChunks];
 	if(existsRproxy)
-	  {
-	    proxyRNotFrom=new CProxySection_PairCalculator[numChunks];
-	  }
+	    sectionGettingRight=new CProxySection_PairCalculator[numChunks];
       }
     if(existsLproxy)
       {
 	if(useDirectSend)
 	  p|cproxy;
-	PUParray(p,proxyLFrom,numChunks);
+	PUParray(p,sectionGettingLeft,numChunks);
 	if(useDirectSend)
-	  p|listLFrom;
-      }
-    if(existsLNotFromproxy)
-      {
-	PUParray(p,proxyLNotFrom,numChunks);
-	if(useDirectSend)
-	  p|listLNotFrom;
+	  p|listGettingLeft;
       }
     if(existsRproxy)
       {
-	PUParray(p,proxyRNotFrom,numChunks);
-	if(useDirectSend)
-	  p|listRNotFrom;
+	PUParray(p,sectionGettingRight,numChunks);
+	if(useDirectSend) {
+	  p|listGettingRight; }
       }
   }
 
@@ -232,7 +206,7 @@ void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkC
 /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section 
 void startPairCalcLeft(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 /// Starts the forward path work (along with startPairCalcLeft()) in the asymmetric (Lambda) case
-void startPairCalcRight(PairCalcID* aid, int n, complex* ptr, int myS, int myZ);
+void startPairCalcRight(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 /// RDMA version of startPairCalcLeft()
 void startPairCalcLeftRDMA(PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 /// RDMA version of startPairCalcRight()
