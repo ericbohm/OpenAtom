@@ -2012,9 +2012,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
   int toSend = numPoints;
-  startPairCalcLeft(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
+  startPairCalcLeft (&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
   CmiNetworkProgress();
-  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x, thisIndex.y,false);
+  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x,thisIndex.y,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);
@@ -3064,8 +3064,10 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-
-  startPairCalcLeft(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+  startPairCalcLeft (&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+  /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
+  if(thisIndex.x >= gpairCalcID1.GrainSize)
+  	startPairCalcRight(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && 
@@ -3644,7 +3646,10 @@ void  CP_State_GSpacePlane::sendPsiV() {
   }//endif
 
   int numPoints = gs.numPoints;
-  startPairCalcLeft(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+  startPairCalcLeft (&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+  /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
+  if(thisIndex.x >= gpairCalcID1.GrainSize)
+  	startPairCalcRight(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
 }// end routine

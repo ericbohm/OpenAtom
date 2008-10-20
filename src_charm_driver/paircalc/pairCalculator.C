@@ -664,51 +664,47 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
                         CkArrayIndex4D idx;
                         for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
                         {
-                            paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
-                            *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
-                            CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
-                            msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                            paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+                            *(int*)CkPriorityPtr(msg) = pcid->priority;
+                            CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+                            msg->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                             idx=pcid->listGettingLeft[elem];
                             idx.index[3]=chunk;
                             #ifdef _NAN_CHECK_
                             for(int i=0;i<outsize ;i++)
                             {
-                                CkAssert(finite(msgfromrow->points[i].re));
-                                CkAssert(finite(msgfromrow->points[i].im));
+                                CkAssert(finite(msg->points[i].re));
+                                CkAssert(finite(msg->points[i].im));
                             }
                             #endif
-                            pcid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptLeftData(msgfromrow);
+                            pcid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptLeftData(msg);
                         }
                     }
                     // else, use a typical multicast to the destination section
                     else
                     {
-                        paircalcInputMsg *msgfromrow=new (outsize, 8* sizeof(int)) paircalcInputMsg;
-                        *(int*)CkPriorityPtr(msgfromrow) = pcid->priority;
-                        CkSetQueueing(msgfromrow, CK_QUEUEING_IFIFO);
-                        msgfromrow->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                        paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+                        *(int*)CkPriorityPtr(msg) = pcid->priority;
+                        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+                        msg->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                         #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                         if(pcid->Symmetric && myPlane==0)  
-                            dumpMatrixDouble("pairmsg",(double *)msgfromrow->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
+                            dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
                         #endif
                         #ifdef _NAN_CHECK_
                         for(int i=0;i<outsize ;i++)
                         {
-                            CkAssert(finite(msgfromrow->points[i].re));
-                            CkAssert(finite(msgfromrow->points[i].im));
+                            CkAssert(finite(msg->points[i].re));
+                            CkAssert(finite(msg->points[i].im));
                         }
                         #endif
-                        pcid->sectionGettingLeft[chunk].acceptLeftData(msgfromrow);
+                        pcid->sectionGettingLeft[chunk].acceptLeftData(msg);
                     }
                 }
             }
             /// else, if the destination section doesnt exist even after attempting to create one
             else
                 CkPrintf("GSpace [%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcid->Symmetric);
-
-            /// temporary
-            if(pcid->Symmetric && myS >= pcid->GrainSize)
-            	startPairCalcRight(pcid, n, ptr, myS, myPlane, psiV);
         #endif
     #endif
 }
