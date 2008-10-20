@@ -152,8 +152,6 @@ class PairCalculator: public CBase_PairCalculator
 		inline leftCollatorType* leftHandler() const { return leftCollator; }
 		/// Returns a pointer to the collator that will buffer the right matrix data (only for use by the corresponding InputDataHandler chare)
 		inline rightCollatorType* rightHandler() const { return rightCollator; }
-		/// @entry Accumulates rows and columns of matrices from GSP chares and calls multiply when all have arrived
-		void acceptPairData(paircalcInputMsg *msg);
 		/// @entry Method to send in the complete block of the left matrix
 		void acceptLeftData(const double *data,const int numRows,const int numCols); 
 		/// @entry Method to send in the complete block of the right matrix

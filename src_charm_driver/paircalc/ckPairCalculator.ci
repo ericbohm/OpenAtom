@@ -82,7 +82,6 @@ module ckPairCalculator {
 		entry void sendBWResultDirect(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
-   		entry [nokeep] void acceptPairData(paircalcInputMsg *msg);
    		entry void acceptPhantomData(phantomMsg *msg);
 		entry [nokeep] void multiplyForwardRDMA(sendFWRDMAsignalMsg *msg);
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);

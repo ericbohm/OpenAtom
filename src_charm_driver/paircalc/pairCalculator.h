@@ -23,6 +23,9 @@ class PairCalcID
 	public:
 		/// The array ID of this PC chare array instance
 		CkArrayID Aid;
+		/// The array ID of the PC's input handler chare array
+		CkArrayID ipHandlerID;
+		///@note: This doesnt seem to be getting used. There are no references to Gid
 		CkGroupID Gid;
 		int GrainSize;
 		int numChunks;
@@ -44,28 +47,36 @@ class PairCalcID
 		CkGroupID orthomCastGrpId;
 		CkGroupID orthoRedGrpId;
 		int priority;
+
 		/// Section of symmetric PC chare array used by an Ortho chare
 		CProxySection_PairCalculator proxySym;
 		/// Section of asymmetric PC chare array used by an Ortho chare
 		CProxySection_PairCalculator proxyAsym;
+
 		/** PC array section which receives left matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the post-diagonal PC chares on row 's' that get data from this GSpace[s,p] chare
 		 * Asymmetric loop: Includes the whole row of PCs on row 's' that get data from this GSpace[s,p] chare
 		 */
-		CProxySection_PairCalculator *sectionGettingLeft;
+		CProxySection_InputDataHandler<leftCollatorType,rightCollatorType> *sectionGettingLeft;
+		CProxySection_PairCalculator *PCsectionGettingLeft; 	///< @note: This var should be temporary till we fix RDMA
 		/** PC array section which receives right matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the pre-diagonal PC chares on column 's' that get data from this GSpace[s,p] chare
 		 * Asymmetric loop: Includes the whole column of PCs on column 's' that get data from this GSpace[s,p] chare
 		 */
-		CProxySection_PairCalculator *sectionGettingRight;
-		/// A proxy to the PC chare array. @note: (RV) To my understanding, this should suffice and we shouldnt have to store a CkArrayID also.
-		CProxy_PairCalculator cproxy;
-		RDMAHandle **RDMAHandlesLeft;
-		RDMAHandle **RDMAHandlesRight;
+		CProxySection_InputDataHandler<leftCollatorType,rightCollatorType> *sectionGettingRight;
+		CProxySection_PairCalculator *PCsectionGettingRight; 	///< @note: This var should be temporary till we fix RDMA
+
+		/// A proxy to the PC input handler chare array
+		CProxy_InputDataHandler<leftCollatorType,rightCollatorType> handlerProxy;
 		/// A list of PC array elements which expect left matrix data from owning GSpace chare
 		CkVec <CkArrayIndex4D> listGettingLeft;
 		/// A list of PC array elements which expect right matrix data from owning GSpace chare
 		CkVec <CkArrayIndex4D> listGettingRight;
+		/// A proxy to the PC chare array. @note: (RV) To my understanding, this should suffice and we shouldnt have to store a CkArrayID also.
+		CProxy_PairCalculator cproxy;
+
+		RDMAHandle **RDMAHandlesLeft;
+		RDMAHandle **RDMAHandlesRight;
 		#ifdef _CP_SUBSTEP_TIMING_
 		CkCallback beginTimerCB;
 		CkCallback endTimerCB;
@@ -75,18 +86,29 @@ class PairCalcID
 		PairCalcID() {
 		    sectionGettingLeft=NULL;
 		    sectionGettingRight=NULL;
+		    PCsectionGettingLeft=NULL;
+		    PCsectionGettingRight=NULL;
 		    RDMAHandlesLeft=NULL;
 		    RDMAHandlesRight=NULL;
 		}
 		~PairCalcID() {
 		  if(existsLproxy)
-		    delete [] sectionGettingLeft;
+		  {
+		  	delete [] sectionGettingLeft;
+		    delete [] PCsectionGettingLeft;
+		  }
 		  if(existsRproxy)
-		    delete [] sectionGettingRight;
+		  {
+		  	delete [] sectionGettingRight;
+		    delete [] PCsectionGettingRight;
+		  }
 		}
 		
-		void Init(CkArrayID aid, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
+		void Init(CkArrayID aid, CkArrayID handlerID, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
 		  Aid = aid;
+		  ipHandlerID = handlerID;
+		  cproxy= CProxy_PairCalculator(Aid);
+		  handlerProxy = CProxy_InputDataHandler<leftCollatorType,rightCollatorType> (handlerID);
 		  GrainSize = grain;
 		  numChunks = _numChunks;
 		  nstates = s;
@@ -100,6 +122,7 @@ class PairCalcID
 		  lbpaircalc=_lbpaircalc;
 		  priority=_priority;
 		}
+
 void resetProxy()
 {
     CkAbort("need to adjust for having plane instance of multicastmgr");
@@ -125,6 +148,7 @@ void resetProxy()
 }
 PairCalcID &operator=(const PairCalcID& pid) {
   Aid=pid.Aid;
+  ipHandlerID = pid.ipHandlerID;
   Gid=pid.Gid;    
   GrainSize=pid.GrainSize;
   numChunks=pid.numChunks;
@@ -154,6 +178,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 
   void pup(PUP::er &p) {
     p|Aid;
+    p|ipHandlerID;
     p|Gid;
     p|GrainSize;
     p|numChunks;
@@ -179,21 +204,29 @@ PairCalcID &operator=(const PairCalcID& pid) {
     if(p.isUnpacking())
       {
 	if(existsLproxy)
-	    sectionGettingLeft=new CProxySection_PairCalculator[numChunks];
+	{
+	    sectionGettingLeft=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+	    PCsectionGettingLeft=new CProxySection_PairCalculator[numChunks];
+	}
 	if(existsRproxy)
-	    sectionGettingRight=new CProxySection_PairCalculator[numChunks];
+	{
+	    sectionGettingRight=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+	    PCsectionGettingLeft=new CProxySection_PairCalculator[numChunks];
+	}
       }
     if(existsLproxy)
       {
 	if(useDirectSend)
 	  p|cproxy;
 	PUParray(p,sectionGettingLeft,numChunks);
+	PUParray(p,PCsectionGettingLeft,numChunks);
 	if(useDirectSend)
 	  p|listGettingLeft;
       }
     if(existsRproxy)
       {
-	PUParray(p,sectionGettingRight,numChunks);
+    PUParray(p,sectionGettingRight,numChunks);
+	PUParray(p,PCsectionGettingRight,numChunks);
 	if(useDirectSend) {
 	  p|listGettingRight; }
       }

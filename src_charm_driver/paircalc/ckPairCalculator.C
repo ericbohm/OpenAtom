@@ -262,7 +262,6 @@ PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
 PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _rdma_ep, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
 {
-
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
 #endif
@@ -387,12 +386,15 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCol
 	leftCollator = new leftCollatorType  (leftTrigger, numExpectedX,(conserveMemory<=0),thisIndex.x);
 	rightCollator= new rightCollatorType (rightTrigger,numExpectedY,(conserveMemory<=0),thisIndex.y);
 	#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
-		CkPrintf("[%d,%d,%d,%d,%d] My left and righ data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,leftCollator,rightCollator);
+		CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,leftCollator,rightCollator);
 	#endif
 	/// This is the first point during execution when I can supply my InputDataHandler with pointers to the collators, hence
 	/// it is (now) safe to insert the [w,x,y,z]th element of the InputDataHandler chare array (as it will immediately clamor 
 	/// for access to these collators)
 	myMsgHandler = inProxy;
+	#ifdef DEBUG_CP_PAIRCALC_CREATION
+		CkPrintf("[%d,%d,%d,%d,%d] Inserting my InputDataHandler\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+	#endif
 	myMsgHandler(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).insert(thisProxy);
 	myMsgHandler.doneInserting();
 }
@@ -645,46 +647,6 @@ void PairCalculator::ResumeFromSync() {
       CkPrintf("[%d,%d,%d,%d,%d] resumes from sync\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, symmetric);
 #endif
   }
-}
-
-
-/**
- * Forward path multiply.  Accumulates rows and columns when all
- * arrive it calls the multiply
- */
-void
-PairCalculator::acceptPairData(paircalcInputMsg *msg)
-{
-//============================================================================
-// Do not delete msg. Its a nokeep.
-//============================================================================
-
-        #ifdef _CP_SUBSTEP_TIMING_
-                if((UpairCalcID1[instance].forwardTimerID>0)||(UpairCalcID2[instance].forwardTimerID>0))
-                {
-                   if(numRecd==0)
-                   {
-                      double pstart=CmiWallTimer();
-                      if(symmetric)
-                          contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].forwardTimerID);
-                      else
-                          contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].forwardTimerID);
-                    }
-                }
-        #endif
-        if(!resumed)
-                ResumeFromSync();
-	#ifdef _PAIRCALC_DEBUG_
-		CkPrintf("[%d,%d,%d,%d,%d] In acceptPairData from sender %d \n",
-                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,msg->sender());
-	#endif
-	paircalcInputMsg *myMsg = reinterpret_cast<paircalcInputMsg*> ( CkCopyMsg(reinterpret_cast<void**>(&msg)) );
-	/// If the message is bringing left matrix data
-	if (myMsg->fromRow)
-		myMsgHandler(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).acceptLeftData(myMsg);
-	else
-		myMsgHandler(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).acceptRightData(myMsg);
-	//delete msg;
 }
 
 
@@ -1065,7 +1027,8 @@ PairCalculator::multiplyForward(bool flag_dp)
     }
   else
     {
-      CkAbort("how did we get into multiplyfoward with mismatch numRecd?\n");
+      CkPrintf("[%d,%d,%d,%d,%d]: Going to abort. numRecd=%d numExpctd=%d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numRecd,numExpected);
+      CkAbort("How did we get into multiplyfoward with mismatch numRecd?\n");
     }
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
