@@ -260,7 +260,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _rdma_ep, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
+PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
@@ -281,9 +281,6 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCol
   this->cb_aid = _cb_aid;
   this->cb_ep = _cb_ep;
   this->cb_ep_tol = _cb_ep_tol;
-  this->rdma_ep = _rdma_ep;
-  RDMAHandlesLeft=NULL;
-  RDMAHandlesRight=NULL;
   useBWBarrier=_useBWBarrier;
   PCstreamBWout=_PCstreamBWout;
   PCdelayBWSend=_PCdelayBWSend;
@@ -426,7 +423,6 @@ PairCalculator::pup(PUP::er &p)
   p|cb_aid;
   p|cb_ep;
   p|cb_ep_tol;
-  p|rdma_ep;
   p|existsLeft;
   p|existsRight;
   p|existsOut;
@@ -680,28 +676,50 @@ inline void PairCalculator::acceptLeftData(const double *data, const int numRows
 	{
 		// Get a handle on a sample message from the collator
 		paircalcInputMsg *aMsg = leftCollator->getSampleMsg();
-		blkSize = aMsg->blkSize;
-		// if this is not a PsiV loop
-		if(!aMsg->doPsiV)
+		// Check that you have a valid handle on the sample message
+		if (aMsg == 0)
 		{
-			// normal behavior
-			actionType=0;
-			/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
-			 * numRecdOT is equal to numOrtho only when it is asymm, dynamics and T has been 
-			 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
-			 * all cases except (asymm, dynamics when T has not been received)
-			 * 
-			 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
-			 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
-			 */
-			 if(!expectOrthoT || numRecdBWOT==numOrtho)
-			 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
-			 else
-			 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			// If RDMA is enabled, there are no messages let alone a sample. Simply trigger the computation
+			#ifdef PC_USE_RDMA
+				actionType=0;
+				 if(!expectOrthoT || numRecdBWOT==numOrtho)
+				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
+				 else
+				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			// If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
+			#else
+				CkPrintf("[%d,%d,%d,%d,%d] My left collator is not able to give me a sample message.",
+							thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
+				CkAbort("PairCalc aborting...");
+			#endif
 		}
-		// else, if this is a PsiV loop
 		else
-			thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+		{ 
+			blkSize = aMsg->blkSize;
+			// if this is not a PsiV loop
+			if(!aMsg->doPsiV)
+			{
+				// normal behavior
+				actionType=0;
+				/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
+				 * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
+				 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
+				 * all cases except (asymm, dynamics when T has not been received)
+				 * 
+				 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
+				 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
+				 */
+				 if(!expectOrthoT || numRecdBWOT==numOrtho)
+				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
+				 else
+				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			}
+			// else, if this is a PsiV loop
+			else
+				thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+			// Delete the sample message
+			delete aMsg;
+		}
 	}
 }
 
@@ -736,28 +754,50 @@ inline void PairCalculator::acceptRightData(const double *data, const int numRow
 	{
 		// Get a handle on a sample message from the collator
 		paircalcInputMsg *aMsg = rightCollator->getSampleMsg();
-		blkSize = aMsg->blkSize;
-		// if this is not a PsiV loop
-		if(!aMsg->doPsiV)
+		// Check that you have a valid handle on the sample message
+		if (aMsg == 0)
 		{
-			// normal behavior
-			actionType=0;
-			/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
-			 * numRecdOT is equal to numOrtho only when it is asymm, dynamics and T has been 
-			 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
-			 * all cases except (asymm, dynamics when T has not been received)
-			 * 
-			 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
-			 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
-			 */
-			 if(!expectOrthoT || numRecdBWOT==numOrtho)
-			 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
-			 else
-			 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			// If RDMA is enabled, there are no messages let alone a sample. Simply trigger the computation
+			#ifdef PC_USE_RDMA
+				actionType=0;
+				 if(!expectOrthoT || numRecdBWOT==numOrtho)
+				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
+				 else
+				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			// If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
+			#else
+				CkPrintf("[%d,%d,%d,%d,%d] My left collator is not able to give me a sample message.",
+							thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
+				CkAbort("PairCalc aborting...");
+			#endif
 		}
-		// else, if this is a PsiV loop
 		else
-			thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+		{ 
+			blkSize = aMsg->blkSize;
+			// if this is not a PsiV loop
+			if(!aMsg->doPsiV)
+			{
+				// normal behavior
+				actionType=0;
+				/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
+				 * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
+				 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
+				 * all cases except (asymm, dynamics when T has not been received)
+				 * 
+				 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
+				 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
+				 */
+				 if(!expectOrthoT || numRecdBWOT==numOrtho)
+				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
+				 else
+				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+			}
+			// else, if this is a PsiV loop
+			else
+				thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+			// Delete the sample message
+			delete aMsg;
+		}
 	}
 }
 
@@ -1304,8 +1344,17 @@ PairCalculator::multiplyResultI(multiplyResultMsg *msg)
 void
 PairCalculator::multiplyPsiV()
 {
-  //reset for next time
-  numRecd=0;
+	#ifdef DEBUG_CP_PAIRCALC
+		CkPrintf("[%d,%d,%d,%d,%d] In multiplyPsiV\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+	#endif
+	/// If I am not a phantom chare, then my numRecd should have been updated correctly in acceptL/RData().
+	CkAssert(amPhantom || numRecd==numExpected);
+	/// Reset counters/flags for next batch of data
+	numRecd=0;
+	isLeftReady = false;
+	/// Except for chares on the symmetric chare array diagonal, everyone else should expect a right matrix again
+	if (!symmetricOnDiagonal)
+		isRightReady = false;
 
   // this is the same as the regular one matrix backward path
   // with the following exceptions
@@ -1377,6 +1426,11 @@ PairCalculator::multiplyPsiV()
   else
     thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
 
+	#ifdef PC_USE_RDMA
+		// Let the collators know that they should now expect the next batch of data via RDMA
+		leftCollator->expectNext();
+		rightCollator->expectNext();
+	#endif
 }
 
 
@@ -2239,6 +2293,9 @@ void PairCalculator::bwMultiplyDynOrthoT()
 
 }
 
+
+
+
 void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int orthoGrainSizeX, int orthoGrainSizeY)
 {
 #ifdef _PAIRCALC_DEBUG_
@@ -2402,21 +2459,14 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 		bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
 	    }
 	}
-#ifdef PC_USE_RDMA
-      // mark our buffers as ready for new input
-      if(RDMAHandlesLeft!=NULL)
-	for(int offset=0;offset<numExpectedX;offset++)
-	  {
-	    if(RDMAHandlesLeft[offset].handle.handle>=0)
-	      CmiDirect_ready(&(RDMAHandlesLeft[offset].handle));
-	  }
-      if(RDMAHandlesRight!=NULL)
-	for(int offset=0;offset<numExpectedY;offset++)
-	  {
-	    if(RDMAHandlesRight[offset].handle.handle>=0)
-	      CmiDirect_ready(&(RDMAHandlesRight[offset].handle));
-	  }
-#endif
+	#ifdef PC_USE_RDMA
+		// Unless a PsiV step is next, let the collators know that they should now expect the next batch of data via RDMA. If a PsiV step is next, then PsiV data will come in via traditional messages. expectNext() will be called later at the end of multiplyPsiV().
+		if ( !(symmetric && actionType == KEEPORTHO) )
+		{
+			leftCollator->expectNext();
+			rightCollator->expectNext();
+		}
+	#endif
 
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
@@ -2434,6 +2484,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 
     }
 }
+
+
+
 
 void
 PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int endGrain  )
@@ -3138,136 +3191,6 @@ void manmult(int numRowsA, int numRowsB, int rowLength, double *A, double *B, do
     }
 }
 
-
-void PairCalculator::checkRDMADone()
-{
-	#ifdef _PAIRCALC_DEBUG_RDMA_
-		CkPrintf("pairCalc[%d %d %d %d %d] got rdma, count=%d numExpected=%d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numRecd, numExpected);
-	#endif
-			
-    //bool streamready=false;
-    numRecd++;
-    bool flag_dp=symmetric;
-    bool doPsiV=false;
-    if (numRecd == numExpected)
-      {
-	if(!doPsiV)
-	  {  //normal behavior
-	    actionType=0;
-	    if(!expectOrthoT || numRecdBWOT==numOrtho)
-	      {
-		//		multiplyForward(flag_dp);
-		// needs to become a regular charm message
-		  sendFWRDMAsignalMsg *sigmsg=new (8*sizeof(int)) sendFWRDMAsignalMsg;
-		  // needs to be prioritized and go through the usual scheduler
-		  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-		  *(int*)CkPriorityPtr(sigmsg) = 300000000; // lambda prio
-		  sigmsg->flag_dp=flag_dp;
-		  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).multiplyForwardRDMA(sigmsg);
-	      }
-	    else
-	      {
-		if(expectOrthoT)
-		  CkPrintf("GAMMA BEAT ORTHOT, holding\n");
-	      }
-	    if(expectOrthoT && numRecdBWOT==numOrtho)
-	      { // we must also multiply orthoT by Fpsi
-		thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
-		//	      CkPrintf("[%d,%d,%d,%d,%d] cleanup numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRecdBWOT);
-		numRecdBWOT=0;
-	      }
-	  }
-	else
-	  {
-	    // tolerance correction psiV
-	    thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
-	  }
-      }
-    else
-      {
-	//      CkPrintf("[%d,%d,%d,%d,%d] no fwd yet numRecd %d numExpected %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected);
-      }
-}
-
-
-
-#include <limits>
-
-void PairCalculator::receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int chunksize, int size)
-{
-#ifdef PC_USE_RDMA
-#ifdef _PAIRCALC_DEBUG_RDMA_
-  CkPrintf("[PAIRCALC] [%d,%d,%d,%d,%d]  receiveRDMASenderNotify from proc %d state %d fromRow %d chunksize %d size %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric, senderProc, sender, fromRow, chunksize, size);
-#endif
-   //make CmiDirect handles for this offset and send them over
-   double *rbuff=NULL;
-   bool left=true;
-   int offset;
-   if (fromRow)
-     {   // This could be the symmetric diagonal case
-       if(RDMAHandlesLeft==NULL)
-	 RDMAHandlesLeft=new RDMAHandle[numExpectedX];
-       offset = sender - thisIndex.x;
-       left=true;
-       if (!existsLeft)
-	 { // now that we know N we can allocate contiguous space
-	   CkAssert(inDataLeft==NULL);
-	   existsLeft=true;
-	   numPoints = chunksize; // numPoints is init here with the size of the data chunk.
-	   inDataLeft = new double[numExpectedX*numPoints*2];
-	   bzero(inDataLeft,numExpectedX*numPoints*2*sizeof(double));
-#ifdef _PAIRCALC_DEBUG_
-	   CkPrintf("[%d,%d,%d,%d,%d] Allocated Left %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numExpectedX,numPoints);
-#endif
-	 }
-       rbuff=&(inDataLeft[offset*numPoints*2]);
-     }
-   else
-     {
-       if(RDMAHandlesRight==NULL)
-	 RDMAHandlesRight=new RDMAHandle[numExpectedY];
-
-       left=false;
-       offset = sender - thisIndex.y;
-       if (!existsRight)
-	 { // now that we know numPoints we can allocate contiguous space
-	   CkAssert(inDataRight==NULL);
-	   existsRight=true;
-	   numPoints = chunksize; // numPoints is init here with the size of the data chunk.
-	   inDataRight = new double[numExpectedY*numPoints*2];
-	   bzero(inDataRight,numExpectedY*numPoints*2*sizeof(double));
-#ifdef _PAIRCALC_DEBUG_
-	   CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpectedY,numPoints);
-#endif
-	 }
-       rbuff=&(inDataRight[offset*numPoints*2]);
-     }
-   // offset will either be in left or right
-   //   double const actualQNaN = std::numeric_limits<double>::quiet_NaN();
-   double const actualQNaN = 999999999999999999999999999999999999999999999999.9999999999;
-   struct infiDirectUserHandle rhandle=CmiDirect_createHandle(senderProc,rbuff,chunksize*sizeof(double)*2,
-					PairCalculator::Wrapper_To_CallBack,(void *) this,actualQNaN);
-   // now return the handle
-  int indexX=sender;
-  int indexY=thisIndex.w;
-  if(left)
-    RDMAHandlesLeft[offset]=rhandle;
-  else
-    RDMAHandlesRight[offset]=rhandle;
-  CkCallback mycb(rdma_ep, CkArrayIndex2D(indexX, indexY),cb_aid);
-  RDMAHandleMsg *msg= new RDMAHandleMsg;
-  //int grain=(fromRow)? thisIndex.x/grainSize:thisIndex.y/grainSize;
-  int grain=(fromRow)? thisIndex.y/grainSize:thisIndex.x/grainSize;
-  //int grain=sender/grainSize;
-#ifdef _PAIRCALC_DEBUG_RDMA_
-  CkPrintf("[%d,%d,%d,%d,%d] RDMA using OOB %.10g %llx grain %d, left %d, symmetric %d sender %d offset %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,actualQNaN, (long long int) actualQNaN, grain, left, symmetric, sender, offset);
-#endif
-  msg->init(rhandle,thisIndex.z, grain,left, symmetric);
-  mycb.send(msg);
-#else
-   CkAbort("receiveRDMASenderNotify not valid without RDMA");
-#endif
-}
 
 #include "paircalcMessages.def.h"
 #include "InputDataHandler.h"

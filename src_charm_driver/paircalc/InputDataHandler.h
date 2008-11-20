@@ -1,6 +1,8 @@
 class CProxy_PairCalculator; 	///< Forward declaration required before including the decl.h file
 #include "inputDataHandler.decl.h"
-#include "../../include/debug_flags.h"	
+#include "RDMAMessages.h"
+#include "../../include/debug_flags.h"
+
 
 #ifndef INPUT_DATA_HANDLER_H
 #define INPUT_DATA_HANDLER_H
@@ -8,15 +10,14 @@ class CProxy_PairCalculator; 	///< Forward declaration required before including
 //namespace cp {
 //namespace paircalc {
 
-/// Forward declaration of the message type
+/// Forward declaration of the message types
 class paircalcInputMsg;
 
 /** A very thin wrapper class. Instantiated as a chare array that provides GSpace chares with an API to send the input data in.
  * The intent is to permit a somewhat generic message handling behavior that doesnt require GSpace to jump through hoops.
  * 
  * Currently it is desired to collate messages and compute on them later. Requirements might change later to require streamed 
- * computing etc. Perhaps even things like RDMA on the forward path can be folded into this single interface by configuring 
- * this class with different message handlers.
+ * computing etc which can be met by configuring this class with different message handlers.
  *   
  * This is a template class only so that it does not have to pay the penalties associated with using base class pointers.
  * The left and right message handlers could simply have been pointers to a base class MessageHandler. However,
@@ -25,14 +26,15 @@ class paircalcInputMsg;
  * This should provide a relatively stable API for the GSpace chares to use, and all this template muck is only compile 
  * time overhead anyway.
  * 
- * @note: The only behavior expected of handlerType classes is that they act as functors that accept pointers to 
- * messages. i.e. they should define void operator() (paircalcInputMsg *msg). This will be used to pass in the messages 
- * for processing.   
+ * @note: Behavior expected of handlerType classes:
+ *  - void handlerType::operator() (paircalcInputMsg *msg)   : Used to pass in the messages for processing
+ *  - void handlerType::setupRDMA(RDMASetupRequestMsg<RDMApair_GSP_PC> *msg,RDMApair_GSP_PC *tkn) 	: Used to pass on a RDMA setup request from a sender
  */
 template <class leftHandlerType, class rightHandlerType>
 class InputDataHandler: public ArrayElement4D // CBaseT< ArrayElementT<CkIndex4D>,CProxy_InputDataHandler<leftHandlerType,rightHandlerType> > 
 {
-	public: 
+	public:
+		// ----------------------------------------- Cons/Des-truction -----------------------------------------
 		/// @entry An instance needs to be configured with the actual message handlers. 
 		InputDataHandler(CProxy_PairCalculator pcProxy)
 		{
@@ -58,14 +60,60 @@ class InputDataHandler: public ArrayElement4D // CBaseT< ArrayElementT<CkIndex4D
 		/// @entry migration constructor
 		InputDataHandler(CkMigrateMessage *msg) {}
 		
+		// ----------------------------------------- Entry Methods -----------------------------------------
 		/// @entry Deposit some data belonging to the left matrix block
 		inline void acceptLeftData(paircalcInputMsg *msg) 		{ (*leftHandler)(msg); }
 		/// @entry Deposit some data belonging to the right matrix block
-		inline void acceptRightData(paircalcInputMsg *msg) 		{ (*rightHandler)(msg); } 
+		inline void acceptRightData(paircalcInputMsg *msg) 		{ (*rightHandler)(msg); }
+		
+		// ----------------------------------------- RDMA Support -----------------------------------------
+		/// @entry Senders call this to setup an RDMA link to send the left matrix block
+		inline void setupRDMALeft (RDMASetupRequestMsg<RDMApair_GSP_PC> *msg) 	
+		{
+			#ifndef PC_USE_RDMA
+				CkPrintf("InputDataHandler[%d %d %d %d]. Someone called an RDMA method on me when RDMA has not been enabled.\n",
+										thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
+				CkAbort("InputDataHandler aborting because someone called an RDMA method when it has been turned off for me...\n");
+			#endif
+			#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
+				CkPrintf("InputHandler[%d,%d,%d,%d] Received an RDMA channel setup request for left data from %d. \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,msg->sender());
+			#endif
+			/// Get a copy of the transaction token sent in the message
+			RDMApair_GSP_PC replyToken = msg->token();
+			/// Verify that the setup request has come to the correct place
+			CkAssert(replyToken.shouldSendLeft);
+			/// Insert receiver identification into the handshake token
+			replyToken.pcIndex = thisIndex;
+			/// Delegate the actual RDMA setup work to the message handler
+			leftHandler->setupRDMA(msg,&replyToken);
+		}
+		
+		
+		/// @entry Senders call this to setup an RDMA link to send the right matrix block
+		inline void setupRDMARight(RDMASetupRequestMsg<RDMApair_GSP_PC> *msg)
+		{
+			#ifndef PC_USE_RDMA
+				CkPrintf("InputDataHandler[%d %d %d %d]. Someone called an RDMA method on me when RDMA has not been enabled.\n",
+										thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z);
+				CkAbort("InputDataHandler aborting because someone called an RDMA method when it has been turned off for me...\n");
+			#endif
+			#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
+				CkPrintf("InputHandler[%d,%d,%d,%d] Received an RDMA channel setup request for right data from %d. \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,msg->sender());
+			#endif
+			/// Get a copy of the transaction token sent in the message
+			RDMApair_GSP_PC replyToken = msg->token();
+			/// Verify that the setup request has come to the correct place
+			CkAssert(!replyToken.shouldSendLeft);
+			/// Insert receiver identification into the handshake token
+			replyToken.pcIndex = thisIndex;
+			/// Delegate the actual RDMA setup work to the message handler
+			rightHandler->setupRDMA(msg,&replyToken);
+		}
 		
 	private:
-		/// Messages are passed on to handler objects that actually handle the data appropriately
+		/// A message handler object that actually handles incoming msgs carrying left matrix data
 		leftHandlerType  *leftHandler;
+		/// A message handler object that actually handles incoming msgs carrying right matrix data
 		rightHandlerType *rightHandler;		
 };
 

@@ -200,6 +200,10 @@ mainmodule cpaimd {
 		entry void doneInit(CkReductionMsg *msg);
 	}	
 
+	extern module RDMAMessages;
+	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
+	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
+
 	array [2D]  CP_State_GSpacePlane {
 		entry CP_State_GSpacePlane(int sizeX, 
                         int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
@@ -211,7 +215,7 @@ mainmodule cpaimd {
 		entry [local] void doIFFT();
 		entry void doFFT();
 		entry void syncpsi();
-		entry void receiveRDMAHandle(RDMAHandleMsg *msg);
+		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
                 entry [nokeep] void acceptAtoms(GSAtmMsg *msg);
                 entry [nokeep] void acceptEnergy(GSAtmMsg *msg);
                 entry void collectFileOutput(GStateOutMsg *msg);

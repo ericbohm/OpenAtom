@@ -26,10 +26,11 @@
 // #define TEST_ALIGN
 
 #ifdef CMK_DIRECT
-#define PC_USE_RDMA 1
-#ifdef PC_USE_RDMA
-#include "cmidirect.h"
-#endif
+	#define PC_USE_RDMA 1
+	#ifdef PC_USE_RDMA
+		#include "cmidirect.h"
+		#define COLLATOR_ENABLE_RDMA
+	#endif
 #endif
 
 
@@ -93,26 +94,6 @@ typedef void (*FuncType) (complex a, complex b);
 PUPmarshallBytes(FuncType);
 
 
-class RDMAHandle{
- public:
-#ifdef PC_USE_RDMA
-  struct infiDirectUserHandle handle;
-#endif
-
-  ~RDMAHandle(){}
-#ifdef PC_USE_RDMA
-  RDMAHandle(struct infiDirectUserHandle _handle): handle(_handle){}
-  RDMAHandle(){handle.handle=-1;}
-#else
-  // just to keep the compiler happy
-  RDMAHandle(){}
-#endif
-};
-
-#ifdef PC_USE_RDMA
-PUPmarshallBytes(struct infiDirectUserHandle);
-#endif
-
 #include "MessageDataCollator.h"
 #include "paircalcMessages.h"
 ///@{
@@ -133,6 +114,7 @@ typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::LeftBlockReadyTrigge
 typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::RightBlockReadyTrigger> rightCollatorType;
 ///@}
 class CProxy_PairCalculator;  ///< Forward declaration to satisfy the CProxy_InputDataHandler declaration which will get included via ckPC.decl.h
+struct RDMApair_GSP_PC;
 #include "ckPairCalculator.decl.h"
 
 
@@ -143,7 +125,7 @@ class PairCalculator: public CBase_PairCalculator
 {
 	public:
 		/// @entry (obviously)
-		PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int callback_rdma_ep, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+		PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
 		/// Constructor for migration
 		PairCalculator(CkMigrateMessage *);
 		/// Destructor (nothing needs to be done?)
@@ -159,7 +141,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
 		void multiplyForward(bool flag_dp);
 		/// @entry Simply redirects call to multiplyForward()
-		void multiplyForwardRDMA( sendFWRDMAsignalMsg *msg){multiplyForward(msg->flag_dp);}
+		void multiplyForwardRDMA() { multiplyForward(symmetric); }
 		/// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
 		void contributeSubTiles(double *fullOutput);
 		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
@@ -178,15 +160,13 @@ class PairCalculator: public CBase_PairCalculator
 		void multiplyPsiV();
 		/// Multiplies Fpsi by T (from Ortho)
 		void bwMultiplyDynOrthoT();
-		/// @entry
-		void receiveRDMASenderNotify(int senderProc, int sender, bool fromRow, int size, int totalsize);
 		/// @entry Simply forwards the call to multiplyResult(). @ntodo Dont seem to be any instances in source which call this method. Check.
 		void multiplyResultI(multiplyResultMsg *msg);
 		/// @entry a debugging tool: a barrier at the end of the backward path before anything is sent over to GSP
 		void bwbarrier(CkReductionMsg *msg);
 		/// multiplyPsiV() and multiplyResult() call this to perform the matrix multiply math on the backward path. This calls DGEMM routines for the same.
 		void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
-		///
+		/// Called on the normal backward path (non-psiV) to set up the data sends to GSpace
 		void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
 		/// @entry Send the results via multiple reductions as triggered by a prioritized message
 		void sendBWResult(sendBWsignalMsg *msg);
@@ -214,8 +194,6 @@ class PairCalculator: public CBase_PairCalculator
 		void dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc);
 		///
 		void ResumeFromSync();
-		///
-		void checkRDMADone();
 		/// @entry Something to sync?
 		void lbsync() 
 		{
@@ -226,13 +204,6 @@ class PairCalculator: public CBase_PairCalculator
 			rck=0;
 			AtSync();
 		};
-		/// 
-		static void Wrapper_To_CallBack(void* pt2Object)
-		{
-			// explicitly cast to a pointer to CLA_Matrix
-			PairCalculator* mySelf = (PairCalculator*) pt2Object;
-			mySelf->checkRDMADone();
-		}
 
 	private:
 		/// A handle to the co-located chare array that handles data input 
@@ -243,10 +214,6 @@ class PairCalculator: public CBase_PairCalculator
 		rightCollatorType *rightCollator;
 		/// Flags indicating if the left and right matrix blocks have been received
 		bool isLeftReady, isRightReady;
-		///
-		RDMAHandle *RDMAHandlesRight;
-		///
-		RDMAHandle *RDMAHandlesLeft;
 		int instance; 							/// Instance number of this run in path-integral beads
 		int numRecd; 								///< number of messages received
 		int numRecdBW; 							///< number of messages received BW
@@ -304,7 +271,6 @@ class PairCalculator: public CBase_PairCalculator
 		redtypes cpreduce; 						///< which reducer we're using (defunct)
 		CkArrayID cb_aid; 						///< bw path callback array ID
 		int cb_ep; 								///< bw path callback entry point
-		int rdma_ep; 								///< rdma setup callback entry point
 		int cb_ep_tol; 							///< bw path callback entry point for psiV tolerance
 		bool existsLeft; 							///< inDataLeft allocated
 		bool existsRight; 						///< inDataRight allocated

@@ -271,6 +271,10 @@ public:
 };
 //============================================================================
 
+/// Forward declarations to allow definition of entry methods that take these as messages
+class RDMApair_GSP_PC;
+template <class tokenType> class RDMASetupConfirmationMsg; 
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -311,7 +315,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	CP_State_GSpacePlane( int, int, int, int,int,int, UberCollection);
 	CP_State_GSpacePlane(CkMigrateMessage *m);
 	~CP_State_GSpacePlane(); 
-	void receiveRDMAHandle(RDMAHandleMsg *msg);
+	/// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
+	void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
 	void pup(PUP::er &);
 	void initGSpace(int, complex *,int ,complex *,
                         int,int,int,int,int,int,int);
@@ -394,6 +399,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
 	int *countLambdaO;
 	int AllPsiExpected;
 	int AllLambdaExpected;
+	/// The number of symmetric and asymmetric PCs that communicate with me
+	int numRDMAlinksSymm, numRDMAlinksAsymm; 
         int itemp;
         int jtemp;
 	bool needPsiV;

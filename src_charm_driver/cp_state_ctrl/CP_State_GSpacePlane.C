@@ -57,6 +57,11 @@
 #include "CP_State_Plane.h"
 #include "StructFactorCache.h"
 #include "TimeKeeper.h"
+
+#ifdef PC_USE_RDMA
+	#define ENABLE_RDMA_HANDSHAKES
+#endif
+#include "RDMAMessages.h"
 //---------------------------------------------------------------------------
 #define CHARM_ON
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
@@ -606,6 +611,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   numRecvRedPsi   = sim->RCommPkg[thisIndex.y].num_recv_tot;
 
  //---------------------------------------------
+ //@todo: RV - try to understand the logic behind this calculation of All Psi/Lambda Expected
  // Symm PC accounting 
   int remainder=nstates%s_grain;
   int sizeoflastgrain=s_grain+remainder;
@@ -651,6 +657,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       AllLambdaExpected*=config.numChunksAsym;
 
     }
+
+	/// Compute the number of RDMA links that I'll have with the symm/asymm PC chares
+	#ifdef PC_USE_RDMA
+		numRDMAlinksSymm  = numGrains * config.numChunksSym;
+		numRDMAlinksAsymm = numGrains * config.numChunksAsym * 2;
+	#else
+		numRDMAlinksSymm  = 0;
+		numRDMAlinksAsymm = 0;
+	#endif
+	
 //============================================================================
 // Just zero everything for now
 
@@ -806,6 +822,9 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|countRedPsi;
   p|numRecvRedPsi;
   p|AllPsiExpected;
+  p|AllLambdaExpected;
+  p|numRDMAlinksSymm;
+  p|numRDMAlinksAsymm;
   p|needPsiV;
   p|triggerNL;
   p|NLready;
@@ -1238,10 +1257,35 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gpairCalcID2=UpairCalcID2[thisInstance.proxyOffset];
   makePCproxies();
 #ifdef PC_USE_RDMA
-  // now that we have paircalcids, proxies, and allocated data 
-  // tell PC to handshake our RDMA
-  initPairCalcRDMA(&gpairCalcID2, thisIndex.x, gs.numPoints, thisIndex.y);
-  initPairCalcRDMA(&gpairCalcID1, thisIndex.x, gs.numPoints, thisIndex.y);
+  /** Now that we have paircalcids, proxies, and allocated data, setup RDMA with a handshake to each PC.
+   * Give each PC a token as part of the handshake that identifies what we will be sending it.
+   * The PC will fill the token with its ID information and return it to us.
+   * This, along with the RDMA handle will allow us to complete the setup by pointing out the appropriate 
+   * data to be sent to that PC.
+   */
+  
+  /// Get the entry point index of the method that should be called to complete the RDMA handshake
+  int rdmaConfirmEP = CkIndex_CP_State_GSpacePlane::completeRDMAhandshake(0);
+  /// Create a callback object to this entry method
+  CkCallback rdmaConfirmCB( rdmaConfirmEP, CkArrayIndex2D(thisIndex.x,thisIndex.y), thisProxy.ckGetArrayID() );
+  /// Create a handshake token and fill it with my (sender) ID
+  RDMApair_GSP_PC handshakeToken;
+  handshakeToken.gspIndex = thisIndex;
+  
+  /// Send rdma requests to all asymmetric loop PCs who will get data from me
+  handshakeToken.symmetric = false;
+  handshakeToken.shouldSendLeft = true;
+  sendLeftRDMARequest (&gpairCalcID2,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  handshakeToken.shouldSendLeft = false;
+  sendRightRDMARequest(&gpairCalcID2,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  
+  /// Send rdma requests to all symmetric loop PCs who will get data from me
+  handshakeToken.symmetric = true;
+  handshakeToken.shouldSendLeft = true;
+  sendLeftRDMARequest (&gpairCalcID1,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  handshakeToken.shouldSendLeft = false;
+  sendRightRDMARequest(&gpairCalcID1,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  
 #else
 //============================================================================
 // This reduction is done to signal the end of initialization to main
@@ -3413,6 +3457,10 @@ void CP_State_GSpacePlane::launchOrthoT(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::sendRedPsiV(){
+
+#ifdef DEBUG_CP_GSPACE_ALL
+	CkPrintf("GSpace[%d,%d] sendRedPsiV\n",thisIndex.x,thisIndex.y);
+#endif
 //==============================================================================
 // I) Local Pointers
 
@@ -3675,7 +3723,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Dude, you can't accetPsiV without\n");
     CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
 	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
@@ -3728,7 +3776,7 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Dude, you can't accetPsiV without\n");
     CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
 	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
@@ -3776,7 +3824,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Dude, you can't doNewPsiV without\n");
     CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
+    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
 	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkExit();
@@ -3919,7 +3967,7 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 // II) Tell the world you are done with the output
 
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
-  CkPrintf("GSP [%d,%d] screenwrite: %d\n",thisIndex.x, thisIndex.y,iteration);
+  CkPrintf("GSpace[%d,%d] screenwrite: %d\n",thisIndex.x, thisIndex.y,iteration);
 #endif
 
 //----------------------------------------------------------------------------
@@ -4439,90 +4487,76 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 
-void CP_State_GSpacePlane::receiveRDMAHandle(RDMAHandleMsg *msg)
+void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg)
 {
-#ifdef PC_USE_RDMA
-  // we will receive an RMDA handle from the paircalculators which
-  // which share our plane and state.  We will receive at least one
-  // for each paircalculator array (psi and lambda) distinguished by
-  // symmetric vs asymmetric respectively.
+	#ifndef PC_USE_RDMA
+		CkPrintf("GSpace[%d,%d] aborting because someone called an RDMA method when it has been turned off\n",thisIndex.x,thisIndex.y);
+		CkAbort("GSpace aborting RDMA setup completion");
+	#else
+	
+	/// Retrieve the handshake token and the rdma handle from the message
+	RDMApair_GSP_PC token = msg->token();
+	rdmaHandleType ourHandle = msg->handle();
+	#ifdef DEBUG_CP_PAIRCALC_RDMA
+		CkPrintf("GSpace[%d,%d] received RDMA setup confirmation from PC[%d,%d,%d,%d,%d] for L(%d)/R(%d) data. Now have %d handles of %d (%d symm + %d asymm)\n",
+			thisIndex.x,thisIndex.y,token.pcIndex.w,token.pcIndex.x,token.pcIndex.y,token.pcIndex.z,token.symmetric,token.shouldSendLeft,!token.shouldSendLeft,
+			gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm);
+	#endif
+	/// Determine which loop (symm/Asymm) this PC that has sent setup confirmation, belongs to
+	PairCalcID *pcid = 0;
+	if (token.symmetric)
+		pcid = &gpairCalcID1;
+	else
+		pcid = &gpairCalcID2;
+		
+	/// Compute the location and amount of data to be sent
+	int chunkSize= gs.numPoints / pcid->numChunks;
+	int offset   = token.pcIndex.z * chunkSize;
+	int dataSize = chunkSize;
+	/// The last chunk of data should get whatever is remaining
+	if( (pcid->numChunks > 1) && (token.pcIndex.z == pcid->numChunks-1) )
+		dataSize += gs.numPoints % pcid->numChunks;
+		
+	/// If the PC should be sent left matrix data ...
+	if (token.shouldSendLeft)
+	{
+		/// Stuff the location of the data to be sent into the handle
+		CmiDirect_assocLocalBuffer(&ourHandle,&(gs.packedPlaneData[offset]),dataSize*sizeof(complex));
+		/// Store the rdma handle in the appropriate array
+		pcid->leftDestinationHandles.push_back(ourHandle);
+	}
+	/// ... else if the PC should be sent right matrix data
+	else
+	{
+		/// Stuff the location of the data to be sent into the handle
+		if (token.symmetric)
+			CmiDirect_assocLocalBuffer(&ourHandle,&(gs.packedPlaneData[offset]),dataSize*sizeof(complex));
+		else
+			CmiDirect_assocLocalBuffer(&ourHandle,&(gs.packedForceData[offset]),dataSize*sizeof(complex));
+		/// Store the rdma handle in the appropriate array
+		pcid->rightDestinationHandles.push_back(ourHandle);
+	}
+	
+	#ifdef DEBUG_CP_PAIRCALC_RDMA
+		CkPrintf("GSpace[%d,%d] - PC[%d,%d,%d,%d,%d]: RDMA send %d units of data at an offset of %d units from %p on proc %d to %p on proc %d\n",
+			thisIndex.x,thisIndex.y,
+			token.pcIndex.w,token.pcIndex.x,token.pcIndex.y,token.pcIndex.z,token.symmetric,
+			dataSize,offset,(!token.shouldSendLeft && !token.symmetric)? &(gs.packedForceData) : &(gs.packedPlaneData),
+			ourHandle.senderNode,ourHandle.recverBuf,ourHandle.recverNode); 
+	#endif
 
-  // Record the handle and proc in our array.
-  //  complex *data=gs.packedPlaneData;
-  int offset=0;
-  int outsize;
-  int numChunks=0;
-  // add which grain the receiver is in to msg 
-#ifdef _PAIRCALC_DEBUG_RDMA_
-  CkPrintf("GSP [%d,%d]receive handle %d index %d grain %d symmetric %d\n",thisIndex.x, 
-	   thisIndex.y,msg->rhandle.handle, msg->index,msg->grain, msg->symmetric);
-#endif
-  PairCalcID *gpairCalcID=NULL;
-  if(msg->symmetric)
-    {
-      gpairCalcID=&gpairCalcID1;
-      numChunks=gpairCalcID1.numChunks;
-    }
-  else
-    {
-      gpairCalcID=&gpairCalcID2;
-      numChunks=gpairCalcID2.numChunks;
-    }
-  CkAssert(gpairCalcID->RDMAHandlesLeft!=NULL);
-  int chunksize=gs.numPoints/numChunks;
-  outsize=chunksize;
-  if((numChunks > 1) && (msg->index == (numChunks - 1)))
-    {// last chunk gets remainder
-      outsize= chunksize + (gs.numPoints % numChunks);
-    }
-  offset=msg->index*chunksize;
-  // associate the handle with our send buffer for this chunk
-#ifdef _PAIRCALC_DEBUG_RDMA_
-  #define _RDMA_DEBUG_ 1
-#endif
-#ifdef _RDMA_DEBUG_
-  CkPrintf("GSP [%d,%d] got rdma index %d handle %d proc %d left %d symmetric%d offset %d size %d\n",thisIndex.x, thisIndex.y,msg->index, msg->rhandle.handle, msg->rhandle.senderNode,msg->left,msg->symmetric,offset,outsize);
-
-  CkPrintf("GSP [%d,%d] addr %p \n",thisIndex.x,thisIndex.y, (!msg->symmetric && !msg->left) ? &(gs.packedForceData[offset]) : &(gs.packedPlaneData[offset])); 
-#endif
-  if(!msg->symmetric && !msg->left)
-    CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedForceData[offset]),outsize*sizeof(complex));
-  else
-    CmiDirect_assocLocalBuffer(&(msg->rhandle),&(gs.packedPlaneData[offset]),outsize*sizeof(complex));
-
-  if(msg->left)
-    {
-//	CmiMemcpy(&(gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle),&(msg->rhandle),sizeof(struct infiDirectUserHandle));
-	gpairCalcID->RDMAHandlesLeft[msg->index][msg->grain].handle=msg->rhandle;
-      }
-  else
-    { 
-	//CmiMemcpy(&(gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle), &(msg->rhandle),sizeof(struct infiDirectUserHandle));
-	gpairCalcID->RDMAHandlesRight[msg->index][msg->grain].handle=msg->rhandle;
-    }
-
-  gotHandles++;
-  if(gotHandles==AllPsiExpected+AllLambdaExpected*2)
-    {
-      //============================================================================
-      // This reduction is done to signal the end of initialization to main
-      
-      int i=1;
-      contribute(sizeof(int), &i, CkReduction::sum_int, 
-		 CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
-
-#ifdef _RDMA_DEBUG_
-      CkPrintf("GSP [%d,%d] done init RDMA\n",thisIndex.x,thisIndex.y);
-#endif
-    }
-  else
-    {
-#ifdef _RDMA_DEBUG_
-      CkPrintf("GSP [%d,%d] gotHandles %d expecting %d+%d=%d\n",thisIndex.x, thisIndex.y,gotHandles,AllPsiExpected, AllLambdaExpected*2,AllPsiExpected+ AllLambdaExpected*2 );
-#endif
-    }
-#else
-  CkAbort("receiveRDMAHandle only valid in RDMA mode\n");
-#endif
-  delete msg;
+	/// Call a reduction that signals the end of the initialization phase to main
+	if(++gotHandles == numRDMAlinksSymm + numRDMAlinksAsymm)
+	{
+		#ifdef DEBUG_CP_PAIRCALC_RDMA
+			CkPrintf("GSpace[%d,%d] received RDMA setup confirmation from all %d PCs (%d symm + %d asymm) I was expecting. Triggering reduction to indicate end of init phase.\n",
+				thisIndex.x,thisIndex.y,gotHandles,numRDMAlinksSymm,numRDMAlinksAsymm);
+		#endif
+		int i=1;
+		CkCallback cbDoneInit = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
+		contribute(sizeof(int), &i, CkReduction::sum_int, cbDoneInit, thisInstance.proxyOffset);
+	}
+	delete msg;
+	#endif // PC_USE_RDMA
 }
+

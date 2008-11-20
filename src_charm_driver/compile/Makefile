@@ -47,6 +47,8 @@ PCHEADERS = \
 	$(PAIRCALC)/ckPairCalculator.h \
 	$(MAIN)/paircalcMessages.decl.h \
 	$(MAIN)/paircalcMessages.def.h \
+	$(MAIN)/RDMAMessages.decl.h \
+	$(MAIN)/RDMAMessages.def.h \
 	$(MAIN)/inputDataHandler.decl.h \
 	$(MAIN)/inputDataHandler.def.h \
 	$(MAIN)/ckPairCalculator.decl.h \
@@ -64,7 +66,9 @@ OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
 	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o \
 	InstanceController.o
 
-OBJS_DECL	= ../main/cpaimd.decl.h
+OBJS_DECL	= $(MAIN)/cpaimd.decl.h \
+		  $(MAIN)/RDMAMessages.decl.h $(MAIN)/paircalcMessages.decl.h \
+		  $(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h 
 OBJS_DEF 	= ../main/cpaimd.decl.h
 TARGET_EXE	= ../../binary/CharmDriver.x
 TARGET_LIB 	= ../../binary/libCharmDriver.a
@@ -118,20 +122,22 @@ CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C \
 	$(ECHO) $@
 	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-paircalcMessages.decl.h inputDataHandler.decl.h ckPairCalculator.decl.h : $(PAIRCALC)/ckPairCalculator.ci
+$(MAIN)/paircalcMessages.decl.h $(MAIN)/RDMAMessages.decl.h $(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h : $(PAIRCALC)/ckPairCalculator.ci
 	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
-	cp paircalcMessages.decl.h paircalcMessages.def.h ../main
-	cp inputDataHandler.decl.h inputDataHandler.def.h ../main
-	cp ckPairCalculator.decl.h ckPairCalculator.def.h ../main
+	cp paircalcMessages.decl.h paircalcMessages.def.h $(MAIN)
+	cp RDMAMessages.decl.h RDMAMessages.def.h $(MAIN)
+	cp inputDataHandler.decl.h inputDataHandler.def.h $(MAIN)
+	cp ckPairCalculator.decl.h ckPairCalculator.def.h $(MAIN)
 
 ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C \
-	$(PAIRCALC)/ckPairCalculator.h paircalcMessages.decl.h \
-	inputDataHandler.decl.h ckPairCalculator.decl.h 
+	$(PAIRCALC)/ckPairCalculator.h $(MAIN)/paircalcMessages.decl.h \
+	$(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h 
 	$(CHARMC)  -c $(PAIRCALC)/ckPairCalculator.C $(OPTS) $(FLAGS)
 
-pairCalculator.o: $(PAIRCALC)/pairCalculator.C $(PAIRCALC)/pairCalculator.h \
-	$(PAIRCALC)/ckPairCalculator.h paircalcMessages.decl.h \
-	inputDataHandler.decl.h ckPairCalculator.decl.h
+pairCalculator.o: $(PAIRCALC)/pairCalculator.C \
+	$(PAIRCALC)/pairCalculator.h $(PAIRCALC)/ckPairCalculator.h \
+	$(MAIN)/paircalcMessages.decl.h $(MAIN)/RDMAMessages.decl.h \
+	$(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h
 	$(CHARMC) -c  $(PAIRCALC)/pairCalculator.C $(OPTS) $(FLAGS)
 #===========================================================================
 
@@ -167,7 +173,7 @@ cpaimd.o: $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(CHARMC) -c $(MAIN)/cpaimd.C $(FLAGS)
 #---------------------------------------------------------------------------
 CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
-	$(STATE)/CP_State_Plane.h \
+	$(STATE)/CP_State_Plane.h $(MAIN)/RDMAMessages.decl.h \
 	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h $(MAIN)/groups.h \
 	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
