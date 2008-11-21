@@ -57,7 +57,7 @@
  * a tolerance update is needed.  We then proceed with the psi
  * calculation as normal.  On receipt of newpsi, Gspace will then
  * react by sending the PC the Psi velocities (PsiV) in the same way
- * (acceptPairData) that it sends Psi, but with the psiv flag set
+ * (acceptLeft/RightData) that it sends Psi, but with the psiv flag set
  * true.  These will be recorded in the left data array.  We will then
  * multiply with the orthoT we kept from the previous invocation (psi)
  * of the backward path.  We then ship the corrected velocities back

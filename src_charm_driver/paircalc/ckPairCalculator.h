@@ -25,8 +25,9 @@
 // #define _PAIRCALC_DEBUG_
 // #define TEST_ALIGN
 
+// If the machine is capable of RDMA, enable GSpace-PairCalc RDMA
 #ifdef CMK_DIRECT
-	#define PC_USE_RDMA 1
+	#define PC_USE_RDMA
 	#ifdef PC_USE_RDMA
 		#include "cmidirect.h"
 		#define COLLATOR_ENABLE_RDMA

@@ -17,23 +17,28 @@
  * After the main::main proc 0 phase the array sections used to populate
  * and return data from the paircalculator are called.
  * The forward path section reduction (to and from ortho) is initialized
- * via initOneRedSect()  the backward path is initialized via the
+ * via initOneRedSect() the backward path is initialized via the
  * appropriate makeOneResultSection_X() call.  In each case the call
  * should be made by each GSP or Ortho object.  That way each one has its
  * own proxy and the section tree will only include relevant processors.
  *
- * Followup usage goes through:
- *  startPairCalcLeft(PairCalcID, datasize, data *, index1, index2)
- * and in the asymmetric case
- *  startPairCalcRight(PairCalcID, datasize, data *, index1, index2)
+ * Data from GSP travels to the PairCalculators via an InputDataHandler chare 
+ * array of the same dimensions as, and bound to, the PairCalculator array. 
+ * Appropriate sections/lists of this input handler array for multicasting 
+ * the data from GSP to are built in makeLeftTree() and makeRightTree().
  *
- * The result is returned by the callback set in the create routine
+ * Each iteration of the GSP-PC-Ortho-PC-GSP loop is started by GSP calling
+ * startPairCalcLeft() and startPairCalcRight(). These are simply #defines
+ * that turn into the appropriate function: sendLeftData() and sendRightData()
+ * or their RDMA equivalents. The input handler chares then collate all the
+ * incoming data and then wake their corresponding PC chares once all the data
+ * is available. The PCs then do their thing and the result is returned via 
+ * the callback set in the create routine (which happens to be Ortho).
+ *
  * The backward path is triggered by:
- *
  * finishPairCalcSection(PairCalcID, datasize, data *)
- *
- *  Its result is returned via the callback entry point passed in
- *   during creation
+ * Its result is returned via the callback entry point passed in
+ * during creation
  *
  * The results of the backward path are returned in a set of section
  * reductions.  The reduction contributes its slice of its matrix of
