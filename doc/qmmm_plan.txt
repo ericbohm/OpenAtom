@@ -1,0 +1,146 @@
+QMMM Implementation Plan:
+
+
+Terms:
+
+QM Box :(AKA Small Box) The area of interest which will be treated
+using QM methods via OpenAtom
+
+MM Box :(AKA Large Box) The entire system which will be treated using
+classical MM methods via NAMD
+
+Large Grid : Charge grid for the whole MM box
+
+Small Grid : Charge grid for the QM box
+
+S(q)       : b(g) *S_0(g)
+
+CP_Large_RhoGSpacePlane: new chare array to manage grid and fft and
+interpolation in reciprocal space
+
+CP_Large_RhoRealSpacePlane: new chare array to manage grid and fft and
+interpolation in real space
+
+AtomGrp    : atom handler for OpenAtom
+
+
+Note: implementation will not support migration of atoms across
+the QM/MM boundary. 
+
+Summary: 
+NAMD will drive the computation. Consequently, its integrator will be the sole
+integrator and NAMD will call OpenAtom's launcher as a new startup
+phase.  
+
+Charge will be transmitted by communicating S(q) from the
+reciprical space representation of a new (variant of current PME) grid
+in NAMD to the CP_Large_RhoGSpacePlane.  This will then interpolate
+between the Large and Small grids to apply MM's charge for QM and
+produce QM's S(q) which will be returned to the MM Grid (probably the
+Z-pencils).  
+
+QM will also contribute a new QM Force to the NAMD Patch integrator
+for the patches which overlap the QM Box.  Once the forces are
+integrated these patches will then return the update atom positions to
+the AtomGrp elements which sent forces.  The relationship between
+patches and AtomGrp elements will have to be updated when atoms
+migrate across patches.  
+
+
+Tasks:
+
+New Grid in NAMD: 
+   Flow:
+   1. patch to grid
+   2. fft r to g
+   3. send MM S(q) to CP_Large_RhoGSpacePlane
+   4. receive QM S(q) from CP_Large_RhoGSpacePlane
+   5. fft g to r
+   6. grid to patch
+
+   Owner: Chris Harrison
+   Due: November 21
+
+New integration step:
+   Flow: 
+   1. integration not done until QM forces arrive in QM/MM mode for
+   patches which overlap the QM box.
+   2. return new atom coordinates to AtomGrp elements which sent you
+   forces.
+   3. probably simplest to include sender information in the qm forces
+   messages so these can use a return to sender method.
+   
+   Owner Chris Harrison
+   Due: November 27
+
+Startup modifications:
+   Shift OpenAtom main body to main_helper function.
+   Ifdef up version so as not to have a main when in QM/MM mode.
+   Add call to OpenAtom main_helper as new phase.
+   Add halt to openAtom control to delay computation start until NAMD
+   is ready.
+
+   Owner: Abhinav Bhatele
+   Due: Nov 1
+
+Load Balancer/Map modifications:  
+   1. OpenAtom chares must be counted as background load, but not
+   subject to migration.
+   2. At scaling limit either NAMD or OpenAtom will only use a subset
+   of the processors.  Probably OpenAtom due to the size of the Large
+   Box being vastly larger than the Small Box for most systems of
+   interest.  Map appropriately.
+
+   Owner: Abhinav Bhatele
+   Due: December 7th
+
+QM Grids:
+   Flow:
+   1. charge density M(r) in CP_RhoRealSpacePlane send/interpolate to
+   CP_Large_RhoRealSpacePlane. 
+   2. CP_Large_RhoRealSpacePlane FFT to CP_Large_RhoGSpacePlane
+   3. CP_Large_RhoGSpacePlane exchange S(q) with NAMD Grid
+   4. FFT to CP_Large_RhoRealSpacePlane
+   5. send/interpolate to CP_RhoRealSpacePlane
+   6. proceed with usual multicast to CP_State_RealSpacePlane
+
+   Owner: Glenn Martyna
+   Due: November 21
+
+QM Atoms:
+   Flow:
+   1. Atom integration not done in QM/MM until new positions come from
+   Patches.  New suspend/resume barrier.
+   2. Send QM Atom forces to patches to trigger receipt of new
+   positions from patch integration.
+
+   Owner: Eric Bohm
+   Due: November 27
+
+Controller:
+   Break controller out of CP_State_GSpacePlane into new Controller object
+   
+   Owner: Ramprasad Venkataraman
+   Due: November 1
+
+Test System:
+   Choose small candidate test system. 
+   NAMD psf etc. 
+   OpenAtom set, pseudo potentials etc
+
+   Owner: Chris Harrison and Glenn Martyna
+   Due: November 7
+
+
+
+
+
+
+   
+   
+
+
+
+
+
+
