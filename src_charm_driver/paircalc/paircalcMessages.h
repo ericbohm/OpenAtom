@@ -85,8 +85,10 @@ class partialResultMsg : public CMessage_partialResultMsg {
   complex *result;
   int N;
   int myoffset;
-  void init(int _size, int _myoffset, complex *_points)
+  CkIndex4D sndr;
+  void init(CkIndex4D _sndr, int _size, int _myoffset, complex *_points)
     {
+	  sndr = _sndr;
       N=_size;
       myoffset=_myoffset;
       CmiMemcpy(result,_points,N*sizeof(complex));

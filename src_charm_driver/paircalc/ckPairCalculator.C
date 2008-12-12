@@ -179,6 +179,7 @@
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
 #include "ForwardPathPostCollationTriggers.h" 		///< Including the class definitions of the callback functors
+#include <sstream> 
 
 #ifdef CMK_BLUEGENEL
 //#include "builtins.h"
@@ -379,9 +380,12 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCol
 	/// Setup the callback functors
 	pc::LeftBlockReadyTrigger leftTrigger(this);
 	pc::RightBlockReadyTrigger rightTrigger(this);
+	/// Create a string that holds the chare ID and pass it to the message handlers
+	std::ostringstream idStream;
+	idStream<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]";
 	/// Create the message handlers for the left and right input matrix blocks
-	leftCollator = new leftCollatorType  (leftTrigger, numExpectedX,(conserveMemory<=0),thisIndex.x);
-	rightCollator= new rightCollatorType (rightTrigger,numExpectedY,(conserveMemory<=0),thisIndex.y);
+	leftCollator = new leftCollatorType  (idStream.str()+" LeftHandler",leftTrigger, numExpectedX,(conserveMemory<=0),thisIndex.x);
+	rightCollator= new rightCollatorType (idStream.str()+" RightHandler",rightTrigger,numExpectedY,(conserveMemory<=0),thisIndex.y);
 	#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
 		CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,leftCollator,rightCollator);
 	#endif
@@ -1344,7 +1348,7 @@ PairCalculator::multiplyResultI(multiplyResultMsg *msg)
 void
 PairCalculator::multiplyPsiV()
 {
-	#ifdef DEBUG_CP_PAIRCALC
+	#ifdef DEBUG_CP_PAIRCALC_PSIV
 		CkPrintf("[%d,%d,%d,%d,%d] In multiplyPsiV\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 	#endif
 	/// If I am not a phantom chare, then my numRecd should have been updated correctly in acceptL/RData().
@@ -2466,6 +2470,12 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 			leftCollator->expectNext();
 			rightCollator->expectNext();
 		}
+		else
+		{
+			#ifdef DEBUG_CP_PAIRCALC_PSIV
+				CkPrintf("[%d,%d,%d,%d,%d]: Am NOT notifying the message handlers to expectNext() as a PsiV step is next (actionType=%d). Data should be arriving in messages. \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
+			#endif
+		}
 	#endif
 
       bzero(columnCount, sizeof(int) * numOrthoCol);
@@ -2525,7 +2535,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
-	msg->init(numPoints, thisIndex.z, computed);
+	msg->init(thisIndex,numPoints, thisIndex.z, computed);
 
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d]: sending partial other of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,jPermuted,index+jPermuted,thisIndex.w);
@@ -2572,7 +2582,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	    *((int*)CkPriorityPtr(msg)) = gpriority;
 	    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 	  }
-	msg->init(numPoints, thisIndex.z, computed);
+	msg->init(thisIndex,numPoints, thisIndex.z, computed);
 	/*
 	  msg->N=numPoints;
 	  msg->myoffset = thisIndex.z; // chunkth
@@ -2598,12 +2608,13 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
     }
 }
 
+
+
 /**
  * Send the result for this column
  */
 
-void
-PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain  )
+void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain  )
 {
 
 
@@ -2680,121 +2691,104 @@ PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endGrain 
     }
 }
 
-void
-PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
+
+
+void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 {
+	#ifdef _PAIRCALC_DEBUG_
+		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
+	#endif
+	// Now we have results in mynewData and if(symmetric) othernewData
+	bool otherdata=msg->otherdata;
+	delete msg;
+	/// Determine the callback to use
+	int cp_entry=cb_ep;
+	if(actionType==PSIV)
+		cp_entry= cb_ep_tol;
 
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, actionType);
-#endif
-  bool otherdata=msg->otherdata;
-  delete msg;
-  // Now we have results in mynewData and if(symmetric) othernewData
-  int cp_entry=cb_ep;
-  if(actionType==PSIV)
-    {
-      cp_entry= cb_ep_tol;
-    }
-  /*
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
-  */
-  if(otherdata){  // we have this othernewdata issue for the symmetric case
-    // and the asymmetric dynamic case
-    // for the off diagonal elements
-    CkAssert(othernewData!=NULL);
-    int size=grainSizeX;
-    int index=thisIndex.x;
-    if(amPhantom)
-      {
-	index=thisIndex.y;
-	size=grainSizeY;
-      }
-    for(int j=0;j<size;j++)
-      {
-	complex *computed=&(othernewData[j*numPoints]);
-	//this callback creation could be obviated by keeping an
-	//array of callbacks, not clearly worth doing
-	CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
-	partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	if(gpriority)
-	  {
-	    *((int*)CkPriorityPtr(omsg)) = gpriority;
-	    CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-	  }
-	omsg->init(numPoints, thisIndex.z, computed);
-	/*	omsg->N=numPoints;
-		omsg->myoffset = thisIndex.z; // chunkth
-		CmiMemcpy(omsg->result,othernewData+j*numPoints,omsg->N*sizeof(complex));
-	*/
-#ifdef _PAIRCALC_DEBUG_
-	CkPrintf("[%d,%d,%d,%d,%d]:sending other partial of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,index+j,thisIndex.w);
-#endif
-#ifdef _NAN_CHECK_
-	for(int i=0;i<omsg->N ;i++)
-	  {
-	    if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
-	      {
-		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
-	      }
-	    CkAssert(finite(omsg->result[i].re));
-	    CkAssert(finite(omsg->result[i].im));
-	  }
-#endif
-
-	mycb.send(omsg);
-
-      }
-    if(otherdata)
-      delete [] othernewData;
-    othernewData=NULL;
-    existsNew=false;
-  }
-  if(!amPhantom)
-    {
-      CkAssert(mynewData!=NULL);
-      int outsize=grainSizeY;
-      int index=thisIndex.y;
-      for(int j=0;j<outsize;j++) //mynewdata
+	/// Off-diagonal PCs in the symm (and asymm, in dynamics) instance, have to handle othernewdata
+	if(otherdata)
 	{
-	  complex *computed=&(mynewData[j*numPoints]);
-	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
-	  partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
-	  if(gpriority)
-	    {
-	      *((int*)CkPriorityPtr(omsg)) = gpriority;
-	      CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-	    }
-	  omsg->init(numPoints, thisIndex.z, computed);
-	  /*
-	    omsg->N=numPoints;
-	    omsg->myoffset = thisIndex.z; // chunkth
-	    CmiMemcpy(omsg->result, mynewData+j*numPoints, omsg->N*sizeof(complex) );
-	  */
-#ifdef _PAIRCALC_DEBUG_
-	  CkPrintf("[%d,%d,%d,%d,%d]:sending partial of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,index+j,thisIndex.w);
-#endif
-#ifdef _NAN_CHECK_
-	for(int i=0;i<omsg->N ;i++)
-	  {
-	    if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
-	      {
-		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
-	      }
-	    CkAssert(finite(omsg->result[i].re));
-	    CkAssert(finite(omsg->result[i].im));
-	  }
-#endif
-
-	  mycb.send(omsg);
+		CkAssert(othernewData!=NULL);
+		int size=grainSizeX;
+		int index=thisIndex.x;
+		if(amPhantom)
+		{
+			index=thisIndex.y;
+			size=grainSizeY;
+		}
+		for(int j=0;j<size;j++)
+		{
+			complex *computed=&(othernewData[j*numPoints]);
+			//this callback creation could be obviated by keeping an
+			//array of callbacks, not clearly worth doing
+			CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
+			partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+			if(gpriority)
+			{
+				*((int*)CkPriorityPtr(omsg)) = gpriority;
+				CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+			}
+			omsg->init(thisIndex,numPoints, thisIndex.z, computed);
+			#ifdef _PAIRCALC_DEBUG_
+				CkPrintf("[%d,%d,%d,%d,%d]:sending other partial of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, numPoints,j,index+j,thisIndex.w);
+			#endif
+			#ifdef _NAN_CHECK_
+				for(int i=0;i<omsg->N ;i++)
+				{
+					if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
+						CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+					CkAssert(finite(omsg->result[i].re));
+					CkAssert(finite(omsg->result[i].im));
+				}
+			#endif
+			mycb.send(omsg);
+		}
+		if(otherdata)delete [] othernewData;
+		othernewData=NULL;
+		existsNew=false;
 	}
-      if(mynewData!=NULL)
-	delete [] mynewData;
-      mynewData=NULL;
-      existsNew=false;
-    }
+	
+	///
+	if(!amPhantom)
+	{
+		CkAssert(mynewData!=NULL);
+		int outsize=grainSizeY;
+		int index=thisIndex.y;
+		for(int j=0;j<outsize;j++) //mynewdata
+		{
+			complex *computed=&(mynewData[j*numPoints]);
+			CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
+			partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
+			if(gpriority)
+			{
+				*((int*)CkPriorityPtr(omsg)) = gpriority;
+				CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+			}
+			omsg->init(thisIndex,numPoints, thisIndex.z, computed);
+			#ifdef _PAIRCALC_DEBUG_
+				CkPrintf("[%d,%d,%d,%d,%d]:sending partial of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numPoints,j,index+j,thisIndex.w);
+			#endif
+			#ifdef _NAN_CHECK_
+				for(int i=0;i<omsg->N ;i++)
+				{
+					if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
+						CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, i);
+					CkAssert(finite(omsg->result[i].re));
+					CkAssert(finite(omsg->result[i].im));
+				}
+			#endif
+			mycb.send(omsg);
+		}
+		if(mynewData!=NULL)
+			delete [] mynewData;
+		mynewData=NULL;
+		existsNew=false;
+	}
 }
+
+
+
 
 // entry method to allow us to delay this outbound communication
 // to minimize brain dead BG/L interference we have a signal to prioritize this

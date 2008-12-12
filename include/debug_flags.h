@@ -45,6 +45,22 @@
 //-----------------------------------------------------------------------
 //#define _CP_DEBUG_HARTEEXT_OFF_   // this leaves everything on but eext/hartree
 
+//-----------------------------------------------------------------------
+/// Debug the PairCalculator and its companion whistles
+//#define _PAIRCALC_DEBUG_
+//#define DEBUG_CP_PAIRCALC_ALL
+#ifdef DEBUG_CP_PAIRCALC_ALL
+	#define _PAIRCALC_CREATE_DEBUG_
+	#define _PAIRCALC_DEBUG_PLACE_
+	#define DEBUG_CP_PAIRCALC_CREATION
+	#define DEBUG_CP_PAIRCALC_COMM
+	#define DEBUG_CP_PAIRCALC_PSIV
+	#define DEBUG_CP_PAIRCALC_RDMA
+	#define DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
+	#define DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+#endif
+
+
 //=============================================================================
 // src_charm_driver/paircalc/ckPairCalculator.C and a dozen other places
 //#define _NAN_CHECK_
@@ -100,6 +116,8 @@
 #define _CP_DEBUG_COEF_SCREEN_
 //#define _CP_DEBUG_UPDATE_OFF_
 //#define _CP_DEBUG_NONLOC_BARRIER_
+//#define DEBUG_CP_GSPACE_PSIV
+//#define BARRIER_CP_GSPACE_PSIV
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 

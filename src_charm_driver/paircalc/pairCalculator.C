@@ -921,8 +921,7 @@ void sendLeftDataRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlan
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    CkAbort("RDMA is not yet supported in dynamics mode. Undef PC_USE_RDMA in ckPairCalculator.h\n");
-		    //sendLeftData(pcid, n, ptr, myS, myPlane, psiV);
+		    sendLeftData(pcid, n, ptr, myS, myPlane, psiV);
 	#endif // PC_USE_RDMA
 }
 
@@ -947,8 +946,7 @@ void sendRightDataRDMA(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    CkAbort("RDMA is not yet supported in dynamics mode. Undef PC_USE_RDMA in ckPairCalculator.h\n");
-		    //sendRightData(pcid, n, ptr, myS, myPlane, psiV);
+		    sendRightData(pcid, n, ptr, myS, myPlane, psiV);
 	#endif // PC_USE_RDMA
 }
 

@@ -6,8 +6,10 @@
 //#define _CP_DEBUG_NONLOC_BARRIER_
 //#define _CP_DEBUG_ORTHO_OFF_
 //#define _CP_DEBUG_PSI_OFF_
+//#define DEBUG_CP_GSPACE_PSIV
 //#define GPSI_BARRIER
 //#define GIFFT_BARRIER
+//#define BARRIER_CP_GSPACE_PSIV
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -325,12 +327,15 @@ void CP_State_GSpacePlane::gdoneIFFT(CkReductionMsg *msg){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void CP_State_GSpacePlane::gdonePsiV(CkReductionMsg *msg){
-      delete msg;
-      //let my nonlocals go!
-      needPsiV=false;
-      RTH_Runtime_resume(run_thread);
-  }
+void CP_State_GSpacePlane::gdonePsiV(CkReductionMsg *msg)
+{
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] gdonePsiV: PsiV update step complete in iteration %d. Barrier reduction reached.\n",thisIndex.x,thisIndex.y,iteration);
+	#endif
+	delete msg;
+	// Resume the control logic. Let my nonlocals go!
+	RTH_Runtime_resume(run_thread);
+}
 //============================================================================
 
 
@@ -1369,11 +1374,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
   } //endif
 
   if(!acceptedVPsi){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Flow of Control Error : Starting new iter before\n");
-      CkPrintf("finishing Vpsi on chare %d %d\n",thisIndex.x,thisIndex.y);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkPrintf("GSpace[%d,%d] Error: Flow of Control. Starting new iter (%d) before finishing Vpsi.\n",thisIndex.x,thisIndex.y,iteration+1);
+      CkAbort("Error: GSpace cannot startNewIter() before finishing the PsiV loop\n");
   }//endif
 
   doneNewIter = true;
@@ -3458,9 +3460,9 @@ void CP_State_GSpacePlane::launchOrthoT(){
 //==============================================================================
 void CP_State_GSpacePlane::sendRedPsiV(){
 
-#ifdef DEBUG_CP_GSPACE_ALL
-	CkPrintf("GSpace[%d,%d] sendRedPsiV\n",thisIndex.x,thisIndex.y);
-#endif
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] sendRedPsiV: Going to send redundant PsiV data\n",thisIndex.x,thisIndex.y);
+	#endif
 //==============================================================================
 // I) Local Pointers
 
@@ -3584,6 +3586,9 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
   int  *num_recv    = RCommPkg[irecv].num_recv;
   int **lst_recv    = RCommPkg[irecv].lst_recv;
 
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] acceptRedPsiV Received redundant PsiV values from sender %d\n",thisIndex.x,thisIndex.y,isend);
+	#endif
 //==============================================================================
 // unpack
 
@@ -3610,6 +3615,9 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 
   countRedPsiV++;
   if(countRedPsiV==numRecvRedPsi){
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] acceptRedPsiV received all %d GSRedPsi messages carrying redundant PsiV data\n",thisIndex.x,thisIndex.y,countRedPsiV);
+	#endif
     countRedPsiV = 0;
     iRecvRedPsiV  = 1;
     if(jtemp!=gs.nkx0_red){
@@ -3666,14 +3674,13 @@ void  CP_State_GSpacePlane::sendPsiV() {
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, you can't sendPsiV without\n");
-    CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("chare %d %d : finished %d %d : %d %d\n",
-	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkPrintf("GSpace[%d,%d] Error: You can't sendPsiV() without sending/receiving the redundant psiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkAbort("Error: GSpace cannot sendPsiV() without sending/receiving the redundant psi values around\n");
   }//endif
+
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] sendPsiV\n",thisIndex.x,thisIndex.y);
+	#endif
 
   acceptedVPsi = false;
 
@@ -3719,14 +3726,12 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
 
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] acceptNewPsiV(reductionMsg) PCs have sent new PsiV data\n",thisIndex.x,thisIndex.y);
+	#endif
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, you can't accetPsiV without\n");
-    CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
-	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkPrintf("GSpace[%d,%d] Error: You can't acceptNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkAbort("Error: GSpace cannot acceptNewPsiV() without sending/receiving the redundant PsiV values around\n");
   }//endif
 
 //=============================================================================
@@ -3750,6 +3755,9 @@ void CP_State_GSpacePlane::acceptNewPsiV(CkReductionMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d reductions).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
+	#endif
     thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
@@ -3772,14 +3780,13 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize;; // how far into the points this contribution lies
 
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] acceptNewPsiV(partialResultMsg) Received new PsiV data (msg %d of %d) from PC [%d,%d,%d,%d] (offset %d)\n",thisIndex.x,thisIndex.y,countVPsi+1,AllPsiExpected,
+		msg->sndr.w,msg->sndr.x,msg->sndr.y,msg->sndr.z,offset);
+	#endif
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, you can't accetPsiV without\n");
-    CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
-	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkPrintf("GSpace[%d,%d] Error: You can't acceptNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkAbort("Error: GSpace cannot acceptNewPsiV() without sending/receiving the redundant PsiV values around\n");
   }//endif
 
 //=============================================================================
@@ -3803,6 +3810,9 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   countVPsiO[offset]++;//psi arrives in as many as 2 reductions
 
   if(countVPsi==AllPsiExpected){ 
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] Received all PsiV data from PCs (%d messages).\n",thisIndex.x,thisIndex.y,AllPsiExpected);
+	#endif
     thisProxy(thisIndex.x,thisIndex.y).doNewPsiV();
   }//endif
 
@@ -3817,17 +3827,15 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // (0) Error check
 //  CkPrintf("[%d %d] GSP doNewPsiV \n",thisIndex.x, thisIndex.y);
+	#ifdef DEBUG_CP_GSPACE_PSIV
+		CkPrintf("GSpace[%d,%d] doNewPsiV\n",thisIndex.x,thisIndex.y);
+	#endif
 
   CkAssert(countVPsi==AllPsiExpected); 
 
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Dude, you can't doNewPsiV without\n");
-    CkPrintf("sending the Redundant psi values around\n");
-    CkPrintf("GSpace[%d,%d] : finished %d %d : %d %d\n",
-	     thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
+    CkPrintf("GSpace[%d,%d] Error: You can't doNewPsiV() without sending/receiving the redundant PsiV values around: finished %d %d : %d %d\n",thisIndex.x,thisIndex.y,iRecvRedPsiV,iSentRedPsiV,numRecvRedPsi,gs.nkx0_red);
+    CkAbort("Error: GSpace cannot doNewPsiV() without sending the redundant/receiving PsiV values around\n");
   }//endif
 
 //=============================================================================
@@ -3844,15 +3852,6 @@ void CP_State_GSpacePlane::doNewPsiV(){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
   }//endif
-
-//=============================================================================
-// II) A Barrier for debugging
-
-  /* debugging barrier
-     int wehaveours=1;
-     contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-     CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),UgSpacePlaneProxy[thisInstance.proxyOffset]));
-  */
 
 //=============================================================================
 // III) Replace by finite difference until update is better
@@ -3890,12 +3889,17 @@ void CP_State_GSpacePlane::doNewPsiV(){
    }//endfor
  }//endif
 
-//=============================================================================
-// III) Back to the threaded loop
+	//=============================================================================
+	/// II) A Barrier for debugging
+	#ifdef BARRIER_CP_GSPACE_PSIV
+		int wehaveours=1;
+		contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+		CkCallback(CkIndex_CP_State_GSpacePlane::gdonePsiV(NULL),UgSpacePlaneProxy[thisInstance.proxyOffset]));
+	// III) Back to the threaded loop
+	#else
+		RTH_Runtime_resume(run_thread);
+	#endif
 
-  RTH_Runtime_resume(run_thread);
-
-//----------------------------------------------------------------------------
    }//end routine
 //==============================================================================
 
