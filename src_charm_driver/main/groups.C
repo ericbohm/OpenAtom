@@ -1,25 +1,17 @@
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
 /** \file groups.C
- * 
  *           Processor group class Functions : Atoms and parainfo
- *
  */
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
 
-//==============================================================================
-#include "charm++.h"
-#include "util.h"
-#include "cpaimd.h"
 #include "groups.h"
-#include <math.h>
-#include "fftCacheSlab.h"
 #include "eesCache.h"
-#include "CP_State_Plane.h"
+#include "cp_state_ctrl/CP_State_GSpacePlane.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "utility/util.h"
+#include "CPcharmParaInfoGrp.h"
+#include "charm++.h"
+#include <cmath>
+    using namespace std;
+//#include "CP_State_Plane.h"
 
 //----------------------------------------------------------------------------
 #define CHARM_ON
@@ -33,6 +25,7 @@
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern Config                      config;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
 extern CkVec <CProxy_AtomsGrp>             UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
@@ -52,6 +45,9 @@ void IntegrationComplete(void *, void *);
 
 
 
+
+class GSAtmMsg: public CMessage_GSAtmMsg {
+};
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -149,34 +145,6 @@ AtomsGrp::~AtomsGrp(){
      fftw_free(fastAtoms.fy);
      fftw_free(fastAtoms.fz);
      fftw_free(ftot);
-}
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-/** Constructor
- *
- *
- */
-//==============================================================================
-CPcharmParaInfoGrp::CPcharmParaInfoGrp(CPcharmParaInfo &sim){
-	cpcharmParaInfo = new CPcharmParaInfo(sim);
-}
-//==============================================================================
-
-
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-/* Destructor
- *
- *
- */
-//==============================================================================
-CPcharmParaInfoGrp::~CPcharmParaInfoGrp(){
-	delete cpcharmParaInfo;
 }
 //==============================================================================
 
@@ -529,8 +497,8 @@ void AtomsGrp::outputAtmEnergy() {
 
 
 //==========================================================================
-// Needs to have each proc invoke directly acceptatoms method of the
-// gspaceplanes which are mapped to it. Without migration, we have that map
+// Needs to have each proc invoke directly doneMovingAtoms method of the
+// GSpaceDrivers which are mapped to it. Without migration, we have that map
 // at startup. With migration, one must write an enroll/dropout routine.
 // All 
 //==========================================================================
@@ -577,24 +545,25 @@ void AtomsGrp::atomsDone() {
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
      }//endif
-     UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->acceptAtoms(msg); 
+     UgSpaceDriverProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
    }//endfor
    
 
- }else{
+ }
+ /*
+  else{
 
    if(myid==0){
       GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      UgSpacePlaneProxy[thisInstance.proxyOffset].acceptAtoms(msg);
+      UgSpaceDriverProxy[thisInstance.proxyOffset].doneMovingAtoms(iteration);
    }//endif
- 
  }//endif
+ */
+}//end routine
 
-//--------------------------------------------------------------------------
-   }//end routine
-//==========================================================================
+
 
 
 //==========================================================================
@@ -828,8 +797,8 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 
 
 //==========================================================================
-// Needs to have each proc invoke directly acceptenergy method of the
-// gspaceplanes which are mapped to it. Without migration, we have that map
+// Needs to have each proc invoke directly the doneComputingEnergy method of the
+// GSpaceDrivers which are mapped to it. Without migration, we have that map
 // at startup. With migration, one must write an enroll/dropout routine.
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -856,23 +825,25 @@ void EnergyGroup::energyDone(){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
      }//endif
-     UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->acceptEnergy(msg); 
+     UgSpaceDriverProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
    }//endfor
 
- }else{
+ }
+ /*
+  else{
 
    if(myid==0){
       GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
       CkSetQueueing(msg, CK_QUEUEING_IFIFO);
       *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      UgSpacePlaneProxy[thisInstance.proxyOffset].acceptEnergy(msg);
+      UgSpaceDriverProxy[thisInstance.proxyOffset].doneComputingEnergy(iteration_atm);
    }//endif
  
  }//endif
+ */
+}//end routine
 
-//-------------------------------------------------------------------------
-  }//end routine
-//==========================================================================
+
 
 
 /*//==========================================================================
@@ -883,3 +854,6 @@ EnergyStruct GetEnergyStruct() {
 }
 //==========================================================================
 */
+
+#include "groups.def.h"
+

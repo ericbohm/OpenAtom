@@ -1,0 +1,44 @@
+module structureFactor
+{
+	// Forward declarations
+	class UberCollection;
+	
+	message SFDummyMsg;
+	message PPDummyMsg;
+
+
+
+
+	// This is what is used if NOT using ees for nonlocal structure factor comp
+    array [3D] StructureFactor 
+    { 
+	    entry StructureFactor(int, int, int,int nsend, int destinations[nsend], UberCollection);
+	    entry void acceptDestination(int nsend, int destinations[nsend]);
+      	entry void computeSF(SFDummyMsg *msg);
+		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
+	};
+};
+
+
+
+module structureFactorCache
+{
+	message StructFactorMsg 
+	{
+		complex structFactor[];
+		complex structFactor_fx[];
+		complex structFactor_fy[];
+		complex structFactor_fz[];
+	};
+
+
+
+
+	// Place to hold the computed structure factor.
+	group StructFactCache 
+	{
+		entry void acceptStructFact(StructFactorMsg *msg);
+		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max, UberCollection);
+	};
+};
+

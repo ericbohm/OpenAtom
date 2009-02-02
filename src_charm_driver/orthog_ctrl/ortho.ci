@@ -1,0 +1,69 @@
+module ortho
+{
+	class CLA_Matrix_interface;
+	class UberCollection;
+	class CProxySection_PairCalculator;
+
+	message orthoMtrigger;
+	message initCookieMsg;
+
+	array [2D] Ortho{
+		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
+		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
+		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
+		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
+		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+	         int timekeep, UberCollection
+         	);
+		entry Ortho();
+		entry void acceptAllLambda(CkReductionMsg *msg);
+		entry void acceptSectionLambda(CkReductionMsg *msg);
+		entry void resume();
+		entry void resumeV(CkReductionMsg *msg);
+		entry void maxCheck(CkReductionMsg *msg);
+		entry void lbresume(CkReductionMsg *msg);
+		entry void makeSections(int indexSize, int indexZ[indexSize]);
+		entry void setPCproxy(CProxySection_PairCalculator inproxy);
+		entry void start_calc(CkReductionMsg *msg);	
+		entry void orthoCookieinit(initCookieMsg *msg);
+		entry void do_iteration();
+		entry [nokeep] void do_iteration(orthoMtrigger *msg);
+		entry void step_2();
+		entry void step_3();	
+		entry void recvStep2(double result[size], int size);
+		entry void collect_results();
+		entry [nokeep] void collect_results(orthoMtrigger *msg);
+		entry void print_results();
+  		entry void collect_error(CkReductionMsg *msg);
+		entry void ready();
+		entry void all_ready();
+		entry void sendOrthoTtoAsymm();
+	};
+
+
+
+	message OrthoHelperMsg {
+		double A[];
+		double B[];
+	};
+
+
+
+	array [2D] OrthoHelper {
+		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, UberCollection);
+		entry OrthoHelper();
+		entry void recvAB(OrthoHelperMsg *msg);
+	};
+
+
+
+	group OrthoMap : CkArrayMap {
+		entry OrthoMap(UberCollection);
+	};
+
+
+
+	group OrthoHelperMap : CkArrayMap {
+		entry OrthoHelperMap(UberCollection);
+	};
+};

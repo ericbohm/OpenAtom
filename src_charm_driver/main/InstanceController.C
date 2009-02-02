@@ -9,6 +9,7 @@ extern int nstates;
 extern CkVec < CkVec <int> > UplaneUsedByNLZ;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
@@ -88,7 +89,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  }//endif
 	  //          PRINT_LINE_STAR; CkPrintf("\n");
 	  //          PRINT_LINE_STAR;
-	  UgSpacePlaneProxy[thisIndex].run();
+	  UgSpaceDriverProxy[thisIndex].startControl();
       }//endif
     }
     done_init++;

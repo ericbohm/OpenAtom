@@ -34,24 +34,27 @@
  */ 
 //=========================================================================
 
-#include "charm++.h"
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
-#include "eesCache.h"
-#include "CP_State_Plane.h"
-#include "StructFactorCache.h"
+#include "CP_State_ParticlePlane.h"
+#include "CP_State_GSpacePlane.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "structure_factor/StructFactorCache.h"
+#include "main/cpaimd.h"
+#include "main/groups.h"
+#include "main/eesCache.h"
+#include "utility/util.h"
+
 #include "ckmulticast.h"
+#include "charm++.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 
 //=========================================================================
-extern CProxy_main                       mainProxy;
-extern CProxy_InstanceController      instControllerProxy;
+extern CProxy_main                               mainProxy;
+extern CProxy_InstanceController                 instControllerProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
+extern CProxy_CPcharmParaInfoGrp                 scProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
@@ -120,7 +123,6 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   totalEnergy          = 0.0;
   sendDone             = 0;
 
-  doneGettingForces    = false;
   numSfGrps            = numSfGrps_in;
   natm_nl              = natm_nl_in;
   natm_nl_grp_max      = natm_nl_grp_max_in;
@@ -160,20 +162,12 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 //============================================================================
 
 
-//============================================================================
-//  InitKVectors creates local k vectors for this chare and mallocs some memory.//
-/// It is invoked from CP_State_GSpacePlane::initGSpace()
-//  It also takes care of the array section creation which needs to
-//  wait for the doneInsertion phase
-//
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
-//============================================================================
-
-
-
+/** It is invoked from CP_State_GSpacePlane::initGSpace(). It also takes care of 
+ * the array section creation which needs to wait for the doneInsertion phase
+ * @todo: Made this public to remove friendship. Check if this can go back to being private.
+ */
+void CP_State_ParticlePlane::initKVectors()
+{
 //============================================================================
 // Comlib to talk to realPP : used when ees_enl_on==1
 
@@ -283,6 +277,7 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
   }//endif
   delete [] red_pl;
 
+    GStateSlab *gss = &( UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal()->gs );
     numLines        = gss->numLines;
     numFullNL       = gss->numFullNL;
     ees_nonlocal    = gss->ees_nonlocal;
@@ -313,14 +308,10 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
        }//endif
        eesData->registerCacheGPP(thisIndex.y,ncoef,k_x,k_y,k_z);
        int i=1;
-       CkCallback cb(CkIndex_CP_State_ParticlePlane::registrationDone(NULL),
- 		   UparticlePlaneProxy[thisInstance.proxyOffset]);
+       CkCallback cb(CkIndex_CP_State_ParticlePlane::registrationDone(NULL),UparticlePlaneProxy[thisInstance.proxyOffset]);
        contribute(sizeof(int),&i,CkReduction::sum_int,cb);
     }//endif
-
-//--------------------------------------------------------------------------
-  }//end routine
-//============================================================================
+}//end routine
 
 
 //============================================================================
@@ -370,7 +361,6 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 	p|numFullNL;
 	p|numLines;          // NL has same number as states but a copy is nice
 	p|gSpaceNumPoints;   // NL has same number as states but a copy is nice
-	p|doneGettingForces;
 	p|sendDone;
 	p|numSfGrps;
         p|natm_nl;
@@ -434,6 +424,32 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 //============================================================================
 
 
+/**
+ * Pushes all relevant computeZ() calls onto the runtime's queue. Computation for each atomindex  
+ * is split into a computeZ call to increase the granularity of the computation and prevent it from 
+ * blocking chares on the critical path as it would if it were a monolithic block of work.
+ */ 
+void CP_State_ParticlePlane::launchComputeZs()
+{
+	#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
+		CkPrintf("ParticlePlane[%d,%d] launching computeZs()\n",thisIndex.x,thisIndex.y);
+	#endif
+	for(int i=0;i<config.numSfGrps;i++)
+	{
+		if(haveSFAtmGrp[i]>=0)
+		{
+			PPDummyMsg *pmsg = new (8*sizeof(int)) PPDummyMsg;
+			pmsg->atmGrp  = i;
+			pmsg->sfindex = haveSFAtmGrp[i];
+			CkSetQueueing(pmsg, CK_QUEUEING_IFIFO);
+			*(int*)CkPriorityPtr(pmsg) = config.sfpriority+i+config.numSfGrps;
+			//lower than sf and sfcache
+			thisProxy(thisIndex.x,thisIndex.y).computeZ(pmsg);
+		}
+	}
+}
+
+
 //============================================================================
 /* The N^3 routine computeZ is triggered by the arrival of the structure factor
     for each atom group in the local sfcache. */
@@ -453,11 +469,6 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
-
-    doneGettingForces = false;    //if you are here, you ain't done.
-                                  //It is also reset in sendLambda 
-                                  //which is when the results of the previous
-                                  //iteration are no longer needed.
 
     CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
     GStateSlab *gss           = &(gsp->gs);
@@ -714,9 +725,16 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 // Forces have been computed, let g-space plane know. This ends the N^3 method
 
   if(doneForces==numSfGrps){
-     doneGettingForces = true;
      doneForces        = 0;
-     gsp->acceptNLForces();
+    /// If the nonlocal force computations are barriered, contribute to the reduction
+    #ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
+        int nonLocDone = 1;
+        contribute(sizeof(int),&nonLocDone,CkReduction::sum_int,
+        CkCallback(CkIndex_GSpaceDriver::allDoneNLForces(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+    /// else, directly notify your driver
+    #else
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneNLForces(); 
+    #endif
   }//endif : doneforces
 
 //----------------------------------------------------------------------------
@@ -805,10 +823,6 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
 
   iterNL++;  if(iterNL==1){iteration++;}
 
-  doneGettingForces = false;   // If you are here, you are not done.
-                               // The flag is also flipped in sendlambda
-                               // because avoiding race conditions es muy importante
-
   if(ees_nonlocal==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Yo dawg, ees nonlocal is off. You can't call startNLEes\n");
@@ -855,8 +869,16 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
   if(iteration>config.maxIter){
      CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal();
      iterNL = 0;
-     doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
-     gsp->acceptNLForcesEes(); // Let the lads know you are done
+    /// If the nonlocal force computations are barriered, contribute to the reduction
+    #ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
+        int nonLocDone = 1;
+        contribute(sizeof(int),&nonLocDone,CkReduction::sum_int,
+        CkCallback(CkIndex_GSpaceDriver::allDoneNLForces(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+    /// else, directly notify your driver
+    #else
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneNLForces(); 
+    #endif
+
   }//endif
 
 //-----------------------------------------------------------------------------
@@ -1268,8 +1290,15 @@ void CP_State_ParticlePlane::computeNLEesForces(){
      CkPrintf("HI, I am gPP %d %d done! : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
     iterNL = 0;
-    doneGettingForces = true; // False is flipped in cp_state_gspace_plane once
-    gsp->acceptNLForcesEes(); // Let the lads in gsp know you are done
+    /// If the nonlocal force computations are barriered, contribute to the reduction
+    #ifdef BARRIER_CP_PARTICLEPLANE_NONLOCAL
+        int nonLocDone = 1;
+        contribute(sizeof(int),&nonLocDone,CkReduction::sum_int,
+        CkCallback(CkIndex_GSpaceDriver::allDoneNLForces(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+    /// else, directly notify your driver
+    #else
+        UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).doneNLForces(); 
+    #endif
                               // Gsp zeros myForces so it is ready next time
   }else{
     NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
@@ -1312,3 +1341,6 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 
 }
 //==========================================================================
+
+#include "gParticlePlane.def.h"
+

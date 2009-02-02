@@ -8,15 +8,16 @@
  */ 
 //=========================================================================
 
-#include "charm++.h"
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
-#include "eesCache.h"
+#include "utility/util.h"  ///@note: Putting this declaration further down seems to screw things. Whats the issue with fft malloc & free declarations?
+#include "CP_State_ParticlePlane.h"
 #include "CP_State_Plane.h"
-#include "StructFactorCache.h"
+#include "structure_factor/StructFactorCache.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "main/groups.h"
+#include "main/eesCache.h"
+#include "main/cpaimd.h"
 #include "ckmulticast.h"
+#include "charm++.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 

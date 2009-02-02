@@ -7,6 +7,7 @@
  *(GStateXYslab, RealStateXZslab, RealRhoSlab, GRhoSlab, etc.) 
  */
 //==============================================================================
+#include "utility/util.h"
 
 #ifndef _fftcacheslab_h_
 #define _fftcacheslab_h_

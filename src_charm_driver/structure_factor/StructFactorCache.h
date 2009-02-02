@@ -1,6 +1,6 @@
-/** \file StructFactorCache.h
- *
- */
+#include "debug_flags.h"
+#include "structureFactorCache.decl.h"
+#include "StructureFactorMessages.h"
  
 #ifndef _StructFactorCache_h_
 #define _StructFactorCache_h_
@@ -8,23 +8,6 @@
 void *fftw_malloc(size_t );
 void fftw_free(void *);
 
-
-class PPDummyMsg: public CMessage_PPDummyMsg {
- public:
-  int atmGrp;
-  int sfindex;
-};
-
-
-class StructFactorMsg: public CkMcastBaseMsg, public CMessage_StructFactorMsg {
- public:
-	int datalen;
-	int atmGrpIndex;
-	int gsSize;
-	int planeIndex; 
-	complex *structFactor; 
-	complex *structFactor_fx, *structFactor_fy, *structFactor_fz;
-};
 
 class PlaneAtom {
  public:
@@ -54,6 +37,8 @@ class PlaneCount {
     PlaneCount(int p, int c, int _state) : plane(p), count(c), state(_state) { updated = 0;}
 };
 PUPbytes(PlaneCount);
+
+#include "fft_slab_ctrl/fftCacheSlab.h"
 
 class StructFactCache : public Group {
  public:

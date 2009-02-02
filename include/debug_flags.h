@@ -115,9 +115,15 @@
 //#define _CP_DEBUG_PSI_OFF_
 #define _CP_DEBUG_COEF_SCREEN_
 //#define _CP_DEBUG_UPDATE_OFF_
-//#define _CP_DEBUG_NONLOC_BARRIER_
+//#define DEBUG_CP_GSPACE_CREATION
 //#define DEBUG_CP_GSPACE_PSIV
+/** @note: Only one of these barriers is guaranteed to work at any given time. 
+ * Turning on multiple barriers might beat the already convoluted RTH code in GSpaceDriver and crash!!
+ */
+//#define BARRIER_CP_GSPACE_PSI
 //#define BARRIER_CP_GSPACE_PSIV
+//#define BARRIER_CP_PARTICLEPLANE_NONLOCAL
+//#define BARRIER_CP_GSPACE_IFFT
 
 //=============================================================================
 // src_charm_driver/cp_state_ctrl/CP_State_RealSpacePlane.C : 

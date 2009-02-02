@@ -51,6 +51,7 @@ extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 
 extern ComlibInstanceHandle commRealInstance;
 extern ComlibInstanceHandle commRealIGXInstance;
@@ -482,7 +483,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
            //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
            CkAssert(ns<config.nstates);
            //           CkAssert(thisIndex.x<32);
-           UgSpacePlaneProxy[thisInstance.proxyOffset](ns,thisIndex.x).startNLEes(false,myTime);
+           UgSpaceDriverProxy[thisInstance.proxyOffset](ns,thisIndex.x).startNonLocalEes(myTime);
          }//endfor
        }//endif
   }//endif

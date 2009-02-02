@@ -1,6 +1,6 @@
-/** \file StructureFactor.h
- *
- */
+#include "debug_flags.h"
+#include "structureFactor.decl.h"
+#include "StructureFactorMessages.h" 
 
 #ifndef _StructureFactor_h_
 #define _StructureFactor_h_
@@ -16,12 +16,6 @@ void fftw_free(void *);
 
 
 extern Config config;
-
-class SFDummyMsg: public CMessage_SFDummyMsg {
- public:
-  int iteration_src;
-};
-
 
 class StructureFactor : public CBase_StructureFactor
 {
@@ -121,8 +115,5 @@ class StructureFactor : public CBase_StructureFactor
   int *destinations;
   const UberCollection thisInstance;
 };
-
-
-
 
 #endif //_StructureFactor_h_

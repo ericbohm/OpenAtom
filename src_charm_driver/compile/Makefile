@@ -29,7 +29,7 @@ FLAGS	= \
 	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) \
 	-I$(MAIN) -I$(STATE) -I$(RHO) -I$(ORTHO) -I$(UTIL) -I$(MATH) \
 	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I$(UBER) \
-        -I../paircalc -I$(SRC_COMPILE) -I../$(STANDARD_INC) 
+        -I$(PAIRCALC) -I$(SRC_COMPILE) -I../$(STANDARD_INC) 
 
 LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
 	-lm $(LOCAL_LIB) 
@@ -58,7 +58,7 @@ PCHEADERS = \
 
 #===========================================================================
 OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
-	StructFactorCache.o  StructureFactor.o CP_State_GSpacePlane.o \
+	StructFactorCache.o  StructureFactor.o CP_State_GSpacePlane.o GSpaceDriver.o \
 	CP_State_ParticlePlane.o CP_State_RealParticlePlane.o \
 	CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o util.o \
@@ -66,10 +66,10 @@ OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
 	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o \
 	InstanceController.o
 
-OBJS_DECL	= $(MAIN)/cpaimd.decl.h \
-		  $(MAIN)/RDMAMessages.decl.h $(MAIN)/paircalcMessages.decl.h \
+OBJS_DECL	= $(MAIN)/gSpaceDriver.decl.h $(MAIN)/ortho.decl.h $(MAIN)/structureFactor.decl.h \
+		  $(MAIN)/cpaimd.decl.h $(MAIN)/groups.decl.h $(MAIN)/RDMAMessages.decl.h $(MAIN)/paircalcMessages.decl.h \
 		  $(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h 
-OBJS_DEF 	= ../main/cpaimd.decl.h
+OBJS_DEF 	= $(MAIN)/cpaimd.decl.h
 TARGET_EXE	= ../../binary/CharmDriver.x
 TARGET_LIB 	= ../../binary/libCharmDriver.a
 #===========================================================================
@@ -111,16 +111,18 @@ exe:	$(OBJS_DECL) $(OBJS)
 
 
 #===========================================================================
-../main/CLA_Matrix.decl.h : $(MAIN)/CLA_Matrix.ci
+$(MAIN)/cpaimd.decl.h $(MAIN)/groups.decl.h $(MAIN)/CPcharmParaInfo.decl.h: $(MAIN)/cpaimd.ci
+	$(ECHO) $@
+	$(CHARMC) $(MAIN)/cpaimd.ci $(OPTS) $(FLAGS)
+	cp cpaimd.decl.h cpaimd.def.h $(MAIN)
+	cp groups.decl.h groups.def.h $(MAIN)
+	cp CPcharmParaInfo.decl.h CPcharmParaInfo.def.h $(MAIN)
+#---------------------------------------------------------------------------
+$(MAIN)/CLA_Matrix.decl.h : $(MAIN)/CLA_Matrix.ci
 	$(ECHO) $@
 	$(CHARMC) $(MAIN)/CLA_Matrix.ci $(OPTS) $(FLAGS)
 	/bin/cp -f CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.decl.h
 	/bin/cp -f CLA_Matrix.def.h $(MAIN)/CLA_Matrix.def.h
-#---------------------------------------------------------------------------
-CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C \
-	$(MAIN)/CLA_Matrix.h $(ORTHO)/ortho.h 
-	$(ECHO) $@
-	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 $(MAIN)/paircalcMessages.decl.h $(MAIN)/RDMAMessages.decl.h $(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h : $(PAIRCALC)/ckPairCalculator.ci
 	$(CHARMC) $(PAIRCALC)/ckPairCalculator.ci 
@@ -128,7 +130,30 @@ $(MAIN)/paircalcMessages.decl.h $(MAIN)/RDMAMessages.decl.h $(MAIN)/inputDataHan
 	cp RDMAMessages.decl.h RDMAMessages.def.h $(MAIN)
 	cp inputDataHandler.decl.h inputDataHandler.def.h $(MAIN)
 	cp ckPairCalculator.decl.h ckPairCalculator.def.h $(MAIN)
-
+#---------------------------------------------------------------------------
+$(MAIN)/gspace.decl.h $(MAIN)/gSpaceDriver.decl.h: $(STATE)/gspace.ci
+	$(ECHO) $@
+	$(CHARMC) $(STATE)/gspace.ci
+	cp gSpaceDriver.decl.h gSpaceDriver.def.h $(MAIN)
+	cp gStatePlane.decl.h gStatePlane.def.h $(MAIN)
+	cp gParticlePlane.decl.h gParticlePlane.def.h $(MAIN)
+#---------------------------------------------------------------------------
+$(MAIN)/ortho.decl.h: $(ORTHO)/ortho.ci
+	$(ECHO) $@
+	$(CHARMC) $^
+	cp ortho.decl.h ortho.def.h $(MAIN)
+#---------------------------------------------------------------------------
+$(MAIN)/structureFactor.decl.h: $(STRUCTFACT)/structureFactor.ci 
+	$(ECHO) $@
+	$(CHARMC) $(STRUCTFACT)/structureFactor.ci
+	cp structureFactor.decl.h structureFactor.def.h $(MAIN)
+	cp structureFactorCache.decl.h structureFactorCache.def.h $(MAIN)
+#---------------------------------------------------------------------------
+CLA_Matrix.o : $(MAIN)/CLA_Matrix.decl.h $(MAIN)/CLA_Matrix.C \
+	$(MAIN)/CLA_Matrix.h $(ORTHO)/ortho.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(MAIN)/CLA_Matrix.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
 ckPairCalculator.o: $(PAIRCALC)/ckPairCalculator.C \
 	$(PAIRCALC)/ckPairCalculator.h $(MAIN)/paircalcMessages.decl.h \
 	$(MAIN)/inputDataHandler.decl.h $(MAIN)/ckPairCalculator.decl.h 
@@ -154,13 +179,7 @@ cpaimd: $(OBJS_DECL) $(OBJS)
 
 
 #===========================================================================
-../main/cpaimd.decl.h: $(MAIN)/cpaimd.ci
-	$(ECHO) $@
-	$(CHARMC) $(MAIN)/cpaimd.ci $(OPTS) $(FLAGS)
-	/bin/cp -f cpaimd.decl.h $(MAIN)/cpaimd.decl.h
-	/bin/cp -f cpaimd.def.h $(MAIN)/cpaimd.def.h
-#---------------------------------------------------------------------------
-cpaimd.o: $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
+cpaimd.o: $(MAIN)/gSpaceDriver.decl.h $(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.C $(MAIN)/cpaimd.h \
 	$(MAIN)/ReductionClients.h $(MAIN)/TimeKeeper.h \
 	$(MAIN)/groups.h $(STATE)/CP_State_Plane.h \
 	$(ORTHO)/ortho.h $(FFTSLAB)/fftCacheSlab.h \
@@ -183,6 +202,12 @@ CP_State_GSpacePlane.o: $(STATE)/CP_State_GSpacePlane.C \
 	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpintegrate.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(STATE)/CP_State_GSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+GSpaceDriver.o: $(STATE)/GSpaceDriver.C $(STATE)/GSpaceDriver.h $(STATE)/GSpaceRTH.h \
+	$(MAIN)/gSpaceDriver.decl.h $(TOPINC)/debug_flags.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(STATE)/GSpaceDriver.C $(OPTS) $(FLAGS)
+
 #---------------------------------------------------------------------------
 CP_State_ParticlePlane.o: $(STATE)/CP_State_ParticlePlane.C \
 	$(STATE)/CP_State_Plane.h \
@@ -288,7 +313,7 @@ MapTable.o: $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h\
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/MapTable.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
+ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/ortho.decl.h \
 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
 	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cporthog.h \
 	$(TOPINC)/CPcharmParaInfo.h 
@@ -297,22 +322,14 @@ ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/cpaimd.decl.h \
 #---------------------------------------------------------------------------
 StructureFactor.o: $(STRUCTFACT)/StructureFactor.h \
 	$(STRUCTFACT)/StructureFactor.C $(STRUCTFACT)/StructFactorCache.h \
-	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
-	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
-	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
-	$(FFTSLAB)/fftCacheSlab.h \
-	$(UTIL)/util.h 
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h $(MAIN)/structureFactor.decl.h \
+	$(MAIN)/groups.h $(FFTSLAB)/fftCacheSlab.h $(UTIL)/util.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(STRUCTFACT)/StructureFactor.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-StructFactorCache.o: $(HEAD)/structure_factor/StructFactorCache.h \
-        $(STRUCTFACT)/StructFactorCache.C $(STRUCTFACT)/StructureFactor.h \
-	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
-	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
-        $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
-        $(TOPINC)/RunDescriptor.h \
-	$(FFTSLAB)/fftCacheSlab.h \
-	$(UTIL)/util.h 
+StructFactorCache.o: $(STRUCTFACT)/StructFactorCache.C $(STRUCTFACT)/StructFactorCache.h $(STRUCTFACT)/StructureFactor.h \
+	  $(MAIN)/structureFactor.decl.h $(MAIN)/groups.h $(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
+      $(TOPINC)/RunDescriptor.h $(FFTSLAB)/fftCacheSlab.h $(UTIL)/util.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(STRUCTFACT)/StructFactorCache.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------

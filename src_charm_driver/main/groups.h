@@ -1,39 +1,28 @@
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 /** \file groups.h
- *
- *
  */
-//============================================================================
+#include "Atoms.h"
+struct EnergyStruct;
+#include "groups.decl.h"
+#include "uber/Uber.h"
+#include "CPcharmParaInfo.decl.h"
 
-#ifndef _groups_h_
-#define _groups_h_
-
-#include "../../include/Atoms.h"
+#ifndef GROUPS_H
+#define GROUPS_H
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class AtomMsg: public CMessage_AtomMsg {
- public:
-  int nsize;
-  int natmStr,natmEnd;
-  double *data;  
+class AtomMsg: public CMessage_AtomMsg 
+{
+    public:
+        int nsize;
+        int natmStr,natmEnd;
+        double *data;  
 };
-//============================================================================
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/** \brief AtomsGrp class.
- *
- *
- *
+
+
+
+/** AtomsGrp class.
  */
-//============================================================================
-
 class AtomsGrp: public Group {
  public:
   const UberCollection thisInstance;
@@ -119,21 +108,14 @@ class AtomsGrp: public Group {
   }//end routine
 
 };
-//============================================================================
+
+
 
 
 #include "energy.h"
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-/** \brief EnergyGroup class.
- *
- *
- *
+/** EnergyGroup class.
  */
-//============================================================================
-
 class EnergyGroup : public Group {
     
  public:
@@ -151,4 +133,4 @@ class EnergyGroup : public Group {
 //============================================================================
 
 
-#endif // #ifndef _groups_h_
+#endif // GROUPS_H

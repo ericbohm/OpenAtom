@@ -86,10 +86,15 @@
  *  nstates.
  ******************************************************************************/
 
+#include "ortho.decl.h"
+#include "paircalc/pairCalculator.h" 
+#include "uber/Uber.h"
+#include "CLA_Matrix.h"
+#include "cpaimd.h"
+
 #ifndef _ortho_h_
 #define _ortho_h_
 
-#include "CLA_Matrix.h"
 
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10

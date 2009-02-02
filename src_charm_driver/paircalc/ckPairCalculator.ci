@@ -56,15 +56,21 @@ module paircalcMessages {
 
 
 
-module RDMAMessages {
+module RDMAMessages 
+{
 	template<class tokenType> message RDMASetupRequestMsg;
 	template<class tokenType> message RDMASetupConfirmationMsg;
 };
 
 
 
-module inputDataHandler {
+module inputDataHandler 
+{
 	extern module RDMAMessages;
+	// Forward declaration
+	class RDMApair_GSP_PC;
+	class CProxy_PairCalculator;
+	// Template Instantiation 
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
 
@@ -80,14 +86,16 @@ module inputDataHandler {
 
 
 
-module ckPairCalculator {
+module ckPairCalculator 
+{
 
 	extern module paircalcMessages;
 	
 	extern module inputDataHandler;
 	array [4D] InputDataHandler <leftCollatorType,rightCollatorType>;
 	
-	array [4D] PairCalculator {
+	array [4D] PairCalculator 
+	{
  		entry PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType>, bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);

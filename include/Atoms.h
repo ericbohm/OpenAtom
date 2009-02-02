@@ -9,6 +9,8 @@
  *
  */
 
+#include "charm++.h"
+
 #ifndef _atoms_h_
 #define _atoms_h_
 

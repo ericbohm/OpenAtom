@@ -4,12 +4,11 @@
  */
 //==============================================================================
  
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
+#include "utility/util.h"
+#include "main/groups.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructFactorCache.h"
-#include "../../include/debug_flags.h"
+#include "gParticlePlane.decl.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 extern CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
 extern Config config;
@@ -242,8 +241,10 @@ void StructFactCache::acceptStructFact(StructFactorMsg *msg)
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================// local particle planes register themselves with the cache so they
-// can be launched by the arrival of an update for the (plane, atom)
+//==============================================================================
+/** local particle planes register themselves with the cache so they can be launched by the arrival of 
+ * an update for the (plane, atom)
+ */
 int StructFactCache::registerPP(int state, int plane, int atom) {
   // check for existing entry
   PlaneAtom pa(plane,atom);
@@ -298,4 +299,6 @@ void StructFactCache::removeAll() {
     gSpaceSlabs.removeAll();
 }
 //==============================================================================
+
+#include "structureFactorCache.def.h"
 

@@ -12,11 +12,11 @@
 //============================================================================
 
 #include "charm++.h"
-#include "../../include/debug_flags.h"
+#include "debug_flags.h"
 #include "ckmulticast.h"
-#include "RTH.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
+#include "RTH.h"
 //#include "ckPairCalculator.h"
 void getSplitDecomp(int *,int *,int *,int , int ,int );
 
@@ -52,15 +52,6 @@ class CompAtmForcMsg: public CkMcastBaseMsg, public CMessage_CompAtmForcMsg {
 };
 //============================================================================
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class NLDummyMsg: public CMessage_NLDummyMsg {
- public:
-  int iteration;
-};
-//============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -73,27 +64,10 @@ class GHartDummyMsg: public CMessage_GHartDummyMsg {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class EnlCookieMsg : public CkMcastBaseMsg, public CMessage_EnlCookieMsg {
- public:
-  int foo;
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 class RSDummyResume: public CMessage_RSDummyResume {
 };
 //============================================================================
 
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class GSAtmMsg: public CMessage_GSAtmMsg {
-};
-//============================================================================
 
 
 //============================================================================
@@ -102,31 +76,6 @@ class GSAtmMsg: public CMessage_GSAtmMsg {
 class TMsg: public CMessage_TMsg {
 public:
 	int datalen;
-	complex *data;
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class GSIFFTMsg: public CMessage_GSIFFTMsg {
-public:
-	int size;
-	int offset;
-	complex *data;
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class GSPPIFFTMsg: public CMessage_GSPPIFFTMsg {
-public:
-	int size;
-	int offset;
-        int iterNL;
 	complex *data;
 };
 //============================================================================
@@ -180,21 +129,6 @@ public:
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class NLFFTMsg: public CMessage_NLFFTMsg {
-public:
-	int size;
-        int senderIndex;
-        int step;
-	complex *data;
-};
-//============================================================================
-
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 class RhoRSFFTMsg: public CMessage_RhoRSFFTMsg {
 public:
     int size; 
@@ -218,30 +152,6 @@ public:
 };
 //============================================================================
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class GSRedPsiMsg: public CMessage_GSRedPsiMsg {
-public:
-    int size; 
-    int senderIndex;
-    complex *data;
-};
-//============================================================================
-
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class RSFFTMsg: public CMessage_RSFFTMsg {
-public:
-    int size; 
-    int senderIndex;
-    int numPlanes;
-    complex *data;
-};
-//============================================================================
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -256,211 +166,6 @@ public:
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class GStateOutMsg: public CMessage_GStateOutMsg {
-public:
-    int size; 
-    int senderIndex;
-    complex *data;
-    complex *vdata;
-    int *k_x;
-    int *k_y;
-    int *k_z;
-};
-//============================================================================
-
-/// Forward declarations to allow definition of entry methods that take these as messages
-class RDMApair_GSP_PC;
-template <class tokenType> class RDMASetupConfirmationMsg; 
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane {
- public:
-
-        int halfStepEvolve;
-        int redPlane;
-        int registrationFlag;
-        int istate_ind;
-        int iplane_ind;
-        int first_step; //control flags and functions reference by thread are public
-        int iwrite_now;
-	int iteration;
-        int nrotation;
-        int myatom_integrate_flag; // 0 after I launch, 1 after return of atoms
-        int myenergy_reduc_flag;   // 0 after I launch eke, 1 after return of energy
-        int exitFlag;
-        int iRecvRedPsi;
-        int iRecvRedPsiV;
-        int iSentRedPsi;
-        int iSentRedPsiV;
-        int finishedCpIntegrate;
-        int isuspend_energy;
-        int isuspend_atms;
-        int ees_nonlocal;
-        int cleanExitCalled;
-        int isuspendNLForces;
-        int numRecvRedPsi;
-        int iterRotation;
-        double ake_old;
-	bool acceptedVPsi;
-	bool doneDoingIFFT;
-	bool triggerNL;
-	bool NLready;
-	friend class CP_State_ParticlePlane;
-	CP_State_GSpacePlane( int, int, int, int,int,int, UberCollection);
-	CP_State_GSpacePlane(CkMigrateMessage *m);
-	~CP_State_GSpacePlane(); 
-	/// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
-	void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
-	void pup(PUP::er &);
-	void initGSpace(int, complex *,int ,complex *,
-                        int,int,int,int,int,int,int);
-        void startNLEes(bool,int);
-        void launchAtoms();
-	void launchOrthoT();
-	void syncpsi();
-	void requirePsiV();
-	void doFFT();
-	void startNewIter ();
-	void sendPsi();
-	void sendPsiV();
-        void screenOutputPsi();
-	void sendLambda();
-	void makePCproxies();
-        void doneRedPsiIntegrate();
-        void sendRedPsi();
-	void combineForcesGetEke();
-	void integrateModForce();
-        void writeStateDumpFile();
-	void isAtSync(int);
-	void ResumeFromSync();
-	bool weneedPsiV();
-        void acceptNLForces ();
-        void acceptNLForcesEes();
-        bool doneNLForces();
-	bool allDoneIFFT() {return allgdoneifft;}
-	void acceptIFFT(GSIFFTMsg *);
-        void doIFFT();
-        void acceptAtoms(GSAtmMsg *msg);
-        void acceptEnergy(GSAtmMsg *msg);
-	void gdoneIFFT(CkReductionMsg *msg);
-	void gdonePsiV(CkReductionMsg *msg);
-	void gdonePsi(CkReductionMsg *msg);
-	bool allAcceptedPsiDone(){return(allAcceptedPsi);}
-        void resumePsiV (CkReductionMsg *msg);
-        void psiWriteComplete(CkReductionMsg *msg);
-	void releaseSFComputeZ();
-	void acceptNewPsi(CkReductionMsg *msg);
-	void acceptNewPsi(partialResultMsg  *msg);
-	void doNewPsi();
-        void collectFileOutput(GStateOutMsg *msg);
-	void acceptNewPsiV(CkReductionMsg *msg);
-	void acceptNewPsiV(partialResultMsg *msg);
-	void doNewPsiV();
-	void acceptAllLambda(CkReductionMsg *msg);
-        void psiCgOvlap(CkReductionMsg *msg);
-	void acceptLambda(CkReductionMsg *msg);
-	void acceptLambda(partialResultMsg *msg);
-	void doLambda();
-        void acceptRedPsi(GSRedPsiMsg *msg);  
-        void computeCgOverlap();
-        void run ();
-        void sendFFTData ();
-
-	void readFile();
-	void computeEnergies(int p, double d);
-	void startFFT(CkReductionMsg *msg);
-        void sendRedPsiV();
-        void acceptRedPsiV(GSRedPsiMsg *msg);
-        void doneRedPsiVIntegrate();
- private:
-	const UberCollection thisInstance;
-	int gotHandles;
-	int forwardTimeKeep;
-	int backwardTimeKeep;
-	int ireset_cg;
-        int numReset_cg;
-        int istart_typ_cp;
-	int countIFFT;
-        int countFileOut;
-        int countRedPsi;
-        int countRedPsiV;
-	int ecount;
-	int countPsi;
-	int countVPsi;
-	int countLambda;
-	int *countPsiO;
-	int *countVPsiO;
-	int *countLambdaO;
-	int AllPsiExpected;
-	int AllLambdaExpected;
-	/// The number of symmetric and asymmetric PCs that communicate with me
-	int numRDMAlinksSymm, numRDMAlinksAsymm; 
-        int itemp;
-        int jtemp;
-	bool needPsiV;
-	bool allgdoneifft;
-	bool initialized;
-	bool allAcceptedPsi;
-	bool acceptedPsi;
-	bool allAcceptedVPsi;
-        bool doneNewIter;
-	bool acceptedLambda;
-	double ehart_total;
-	double enl_total;
-	double eke_total;
-	double fictEke_total;
-        double fmagPsi_total;
-        double fmagPsi_total_old;
-        double fmagPsi_total0;
-        double fovlap;
-        double fovlap_old;
-	double egga_total;
-	double eexc_total;
-	double eext_total;
-	double ewd_total;
-	double total_energy;
-        double cpuTimeNow;
-	int gSpaceNumPoints;
-	GStateSlab gs; 
-	int *tk_x,*tk_y,*tk_z;  // Temp memory for output (size could be 0)
-        complex *tpsi;          // Temp memory for output (needs careful pup)
-        complex *tvpsi;         // Temp memory for output
-	CProxy_CP_State_RealSpacePlane real_proxy;
-	CProxySection_StructureFactor sfCompSectionProxy;
-	CProxySection_PairCalculator *lambdaproxy;
-	CProxySection_PairCalculator *lambdaproxyother;
-	CProxySection_PairCalculator *psiproxy;
-	CProxySection_PairCalculator *psiproxyother;
-	PairCalcID gpairCalcID1;
-	PairCalcID gpairCalcID2;
-
- 	RTH_Runtime* run_thread; // why is this private?
-#ifdef _CP_GS_DEBUG_COMPARE_VKS_
-	complex *savedvksBf;
-	complex *savedforceBf;
-#endif
-#ifdef  _CP_GS_DEBUG_COMPARE_PSI_
-	// place to keep data loaded from files for comparison
-	complex *savedpsiBfp;
-	complex *savedpsiBf;
-	complex *savedpsiAf;
-	complex *savedlambdaBf;
-	complex *savedlambdaAf;
-#endif
-	
-};
-//============================================================================
-
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
  public:
 	CP_State_RealSpacePlane(int, int,int,int,int,int,int, UberCollection);
@@ -628,7 +333,7 @@ class CP_Rho_GSpacePlane:  public CBase_CP_Rho_GSpacePlane {
 	void launchNlG();
  private:
 	const UberCollection thisInstance;
-	CProxySection_CP_State_GSpacePlane nlsectproxy;
+	CProxySection_GSpaceDriver nlsectproxy;
 	int myTime;
 	int recvCountFromRRho;
         int nPacked;
@@ -808,87 +513,11 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane {
- public:
-	CP_State_ParticlePlane(CkMigrateMessage *m) {}
-	CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,
-                               int ,int ,int ,int ,int, UberCollection );
-	~CP_State_ParticlePlane();
-	void pup(PUP::er &);
-	void startNLEes(int);
-	void lPrioStartNLEes(NLDummyMsg *m);
-	void computeZ(PPDummyMsg *m);
-	void setEnlCookie(EnlCookieMsg *m);
-	void ResumeFromSync();
-	void reduceZ(int, int, complex *,complex *,complex *,complex *);
-	void getForces(int, int, complex *);
-
-        void createNLEesFFTdata();
-        void FFTNLEesFwd();
-        void sendToEesRPP();
-        void recvFromEesRPP(GSPPIFFTMsg *msg);
-        void FFTNLEesBck();
-        void computeNLEesForces();
-        void registrationDone(CkReductionMsg *msg);
-
-	friend class CP_State_GSpacePlane;
-        int myChareG;
-	int iteration;
-        int iterNL;
-        int numNLiter;
-        int ees_nonlocal;
-        int ngridaNL;
-        int ngridbNL;
-        int ngridcNL;
-	int gSpaceNumPoints;
-        int numLines;
-        int numFullNL;
-        int natm_nl;
-        int natm_nl_grp_max;
-        int numSfGrps;
-	int nstates;
-	int nchareG;
-	int Gstates_per_pe;
-        int countNLIFFT;
-        int sendDone;
-        int registrationFlag;
- private:
-	const UberCollection thisInstance;
-	int calcReductionPlaneNum(int);
-	void initKVectors(GStateSlab *);
-	bool doneGettingForces;
-	complex *myForces, *gspace, *projPsiG;
-	complex *zmatrixSum, *zmatrix;
-        double *dyp_re,*dyp_im;
-        double enl;
-        double enl_total;
-	double totalEnergy;
-	int *haveSFAtmGrp;
-	int *count;
-	int doneEnl;
-	int doneForces;
-	int zsize, energy_count;
-	int sizeX, sizeY, sizeZ, gSpacePlanesPerChare;
-	int reductionPlaneNum;
-        complex *zmatrix_fx,*zmatrix_fy,*zmatrix_fz;
-        complex *zmatrixSum_fx,*zmatrixSum_fy,*zmatrixSum_fz;
-	CkSectionInfo enlCookie; 
-	CProxySection_CP_State_ParticlePlane particlePlaneENLProxy;
-	CProxy_CP_State_RealParticlePlane realPP_proxy;
-#ifdef _CP_GS_DEBUG_COMPARE_VKS_
-	complex *savedprojpsiBf;
-	complex *savedprojpsiBfsend;
-	complex *savedprojpsiGBf;
-#endif
-
- public: 
-};
-//============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
+
+
+
 class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
  public:
   // Variables

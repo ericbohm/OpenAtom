@@ -28,6 +28,8 @@
  *  proceeds as normal through the S->T process.
  */
 
+#include "ortho.decl.h"
+
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
 

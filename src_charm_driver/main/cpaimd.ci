@@ -2,6 +2,106 @@
  *
  */
 
+module CPcharmParaInfo
+{
+        class CPcharmParaInfo;
+	// The physics configuration, both input, and derived, is kept here. This data is effectively readonly.
+	group CPcharmParaInfoGrp 
+	{
+		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
+	};
+};
+
+
+
+
+module groups
+{
+	// Forward declarations
+	class UberCollection; 
+	class Atom;
+	class AtomNHC;
+	
+	message AtomMsg 
+	{
+		double data[];
+	};
+	
+	message GSAtmMsg;
+
+	
+
+
+	// various chares use CkLocal to access the atoms:
+	// Rho_RHart RhoGHart StructureFactor RealParticlePlane
+	// ParticlePlane RealSpacePlane GSpacePlane  
+	// EJB: this could perhaps be better implemented in an MSA
+	group AtomsGrp {
+		entry AtomsGrp(int natm, int natm_nl,int len_nhc,
+                               int iextended_on,int cp_min_opt,int cp_wave_opt,
+                               int isokin_opt,
+                               double kT,Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
+
+
+	     /** trigger force computation 	
+		* based on real forces available in each processor's chare	
+		* then contribute to global group reduction -> recvContribute
+		*/
+                entry void StartRealspaceForces();  	
+
+	     /*** 
+		* Apply forces to each processor's copy of the atoms.
+		* This is parallelized so that a subset of the atoms
+		* are computed on each processor and their results broadcast
+		* to AtmGroup->acceptAtoms().
+		* Move the atoms each processor is responsible
+                * for. Set various energyGroup members.
+		* contribute to group reduction ->atomsDone
+		*/	
+                entry void recvContribute(CkReductionMsg *);
+
+
+	     /***
+		* Increment the iteration counters in atoms and eesData
+		* call gSpaceDriver->doneMovingAtoms()
+		* That is done via localbranch to all co-located gSpacePlanes
+		* in the localBarrier scheme.  Used to be via messages.
+		* This permits the new step to advance with the new Psi.
+		*/
+                entry void atomsDone(CkReductionMsg *);
+
+	     /***
+	        * Take packed message of a chunk of the atoms with
+	        * updated positions. Update local copy of atoms.
+		* Update local energyGroup members.
+		* Print atom energies when we have all of them.   		
+		* Do file output of atoms if desired.
+		*/
+                entry void acceptAtoms(AtomMsg *);
+	};
+
+
+
+	// The global energies are stored here.
+	group EnergyGroup {
+		entry EnergyGroup(UberCollection);
+		/***
+		   * CP_StateGspacePlane(0,0) calls this to replicate the 
+		   * energies everywhere for consistency and tolerance
+		   * checking.
+		   */
+		entry void updateEnergiesFromGS(EnergyStruct es);
+		/***
+		   * call GSpaceDriver->doneComputingEnergy()
+		   * on all co-located gspace chares which allows
+		   * the new step to advance with new psi			
+		   */
+                entry void energyDone(CkReductionMsg *);
+	};
+};
+
+
+
 mainmodule cpaimd {	
 	readonly double Timer;
 	readonly int nstates;
@@ -20,8 +120,18 @@ mainmodule cpaimd {
 	readonly CkVec <CkGroupID> mCastGrpIds;
 	initproc registersumFastDouble(void);	
 	readonly  CProxy_OrthoMap orthoMap;
-        extern module ckPairCalculator;
+	
+	extern module CPcharmParaInfo;
+	extern module gSpaceDriver;
+	extern module gParticlePlane;
+	extern module gStatePlane;
+	extern module ckPairCalculator;
 	extern module CLA_Matrix; 
+	extern module ortho;
+	extern module structureFactor;
+	extern module structureFactorCache;
+	extern module groups;
+	
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
@@ -61,6 +171,7 @@ mainmodule cpaimd {
 	readonly int UberKmax;
 	readonly int numInstances;
 	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+	readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
 	readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
 	readonly CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
 	readonly CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
@@ -127,35 +238,16 @@ mainmodule cpaimd {
         readonly GENERAL_DATA readonly_general_data;
         readonly CP           readonly_cp; 
 
-	message PPDummyMsg;
+
 	message CompAtmForcMsg {double zmat[];};
-	message NLDummyMsg;
-	message SFDummyMsg;
+
 	message RSDummyResume;
+	
 	message GHartDummyMsg;
 
 	message ProductMsg {double data[];};	
-	message AtomMsg {double data[];};	
-	
-	message EnlCookieMsg;
-	message orthoMtrigger;
 
-	message initCookieMsg;
-
-	message StructFactorMsg {
-		complex structFactor[];
-		complex structFactor_fx[];
-		complex structFactor_fy[];
-		complex structFactor_fz[];
-	};
-	
 	message TMsg {complex data[];};
-	
-	message GSIFFTMsg {complex data[];};
-
-	message GSPPIFFTMsg {complex data[];};
-
-	message RSFFTMsg {complex data[];};
 
 	message RPPPFFTMsg {complex data[];};
 
@@ -169,23 +261,8 @@ mainmodule cpaimd {
 
 	message RhoHartRSFFTMsg {complex data[];};
 
-	message GSRedPsiMsg {complex data[];};
-
-	message GSAtmMsg;
-
-	message GStateOutMsg {
-		complex data[];
-		complex vdata[];
-		int k_x[];
-		int k_y[];
-		int k_z[];
-	};
-
-	message OrthoHelperMsg {
-		double A[];
-		double B[];
-        };
 	message NLFFTMsg {complex data[];};
+
 
 	mainchare main {
 		entry main();
@@ -200,70 +277,7 @@ mainmodule cpaimd {
 		entry void doneInit(CkReductionMsg *msg);
 	}	
 
-	extern module RDMAMessages;
-	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
-	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
 
-	array [2D]  CP_State_GSpacePlane {
-		entry CP_State_GSpacePlane(int sizeX, 
-                        int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
-		entry void initGSpace(int m, 
-			complex pts[m],int mv, complex vpts[mv], 
-                        int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL,
-                        int istart_cp);
-		entry void acceptIFFT(GSIFFTMsg *);
-		entry [local] void doIFFT();
-		entry void doFFT();
-		entry void syncpsi();
-		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
-                entry [nokeep] void acceptAtoms(GSAtmMsg *msg);
-                entry [nokeep] void acceptEnergy(GSAtmMsg *msg);
-                entry void collectFileOutput(GStateOutMsg *msg);
-		entry void acceptNewPsi(CkReductionMsg *msg);	
-		entry void acceptNewPsi(partialResultMsg *msg);	
-		entry void acceptRedPsi(GSRedPsiMsg *msg);	
-		entry [local] void doNewPsi();
-		entry [local] void doNewPsiV();
-		entry [local] void doLambda();
-		entry void acceptLambda(CkReductionMsg *msg);
-		entry void acceptLambda(partialResultMsg *msg);
-		entry void acceptAllLambda(CkReductionMsg *msg);
-
-		entry void acceptNewPsiV(CkReductionMsg *msg);
-		entry void acceptNewPsiV(partialResultMsg *msg);
-		entry void requirePsiV();
-		entry void resumePsiV(CkReductionMsg *msg);
-		entry void gdonePsiV(CkReductionMsg *msg);
-		entry void gdonePsi(CkReductionMsg *msg);
-                entry void acceptRedPsiV(GSRedPsiMsg *msg);
-
-		entry void makePCproxies();
-		entry void isAtSync(int);
-		entry void startNewIter ();
-		entry void startNLEes (bool ,int);
-		entry void gdoneIFFT(CkReductionMsg *msg);
-
-		entry void psiWriteComplete(CkReductionMsg *msg);
-		entry void computeEnergies(int p, double d);
-                entry void run ();
-                entry void psiCgOvlap(CkReductionMsg *);
-		entry void readFile();
-		entry void combineForcesGetEke();	
-	};
-	
-	array [2D] CP_State_ParticlePlane {
-		entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,
-                                             int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
-		entry void computeZ(PPDummyMsg *dmsg);
-		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],
-			complex zmatrix_fx[size], complex zmatrix_fy[size],
-                        complex zmatrix_fz[size]);
-		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
-		entry void lPrioStartNLEes(NLDummyMsg *m);
-		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
-		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
-                entry void registrationDone(CkReductionMsg *msg);
-	};
 
 	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
@@ -284,6 +298,7 @@ mainmodule cpaimd {
 	        entry void launchFFTControl(int );
 	};
 
+	
 	array [2D] CP_State_RealSpacePlane {
 		entry CP_State_RealSpacePlane( int , int ,int, int, int,int, int, UberCollection);
 		entry void acceptFFT(RSFFTMsg *);
@@ -343,58 +358,6 @@ mainmodule cpaimd {
                 entry void exitForDebugging();
                 entry void acceptVks(int size, complex inVks[size]);
                 entry void acceptAtmSFTot(int size, complex inSF[size]);
-	};
-
-
-	class CLA_Matrix_interface;
-
-	array [2D] Ortho{
-		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
-		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
-		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
-		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
-		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
-	         int timekeep, UberCollection
-         	);
-		entry Ortho();
-		entry void acceptAllLambda(CkReductionMsg *msg);
-		entry void acceptSectionLambda(CkReductionMsg *msg);
-		entry void resume();
-		entry void resumeV(CkReductionMsg *msg);
-		entry void maxCheck(CkReductionMsg *msg);
-		entry void lbresume(CkReductionMsg *msg);
-		entry void makeSections(int indexSize, int indexZ[indexSize]);
-		entry void setPCproxy(CProxySection_PairCalculator inproxy);
-		entry void start_calc(CkReductionMsg *msg);	
-		entry void orthoCookieinit(initCookieMsg *msg);
-		entry void do_iteration();
-		entry [nokeep] void do_iteration(orthoMtrigger *msg);
-		entry void step_2();
-		entry void step_3();	
-		entry void recvStep2(double result[size], int size);
-		entry void collect_results();
-		entry [nokeep] void collect_results(orthoMtrigger *msg);
-		entry void print_results();
-  		entry void collect_error(CkReductionMsg *msg);
-		entry void ready();
-		entry void all_ready();
-		entry void sendOrthoTtoAsymm();
-      };
-
-	group OrthoMap : CkArrayMap {
-		entry OrthoMap(UberCollection);
-	};
-
-	array [2D] OrthoHelper {
-		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,
-		 CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, UberCollection);
-		entry OrthoHelper();
-	        entry void recvAB(OrthoHelperMsg *msg);
-
-	}
-	
-	group OrthoHelperMap : CkArrayMap {
-		entry OrthoHelperMap(UberCollection);
 	};
 
 
@@ -458,93 +421,7 @@ mainmodule cpaimd {
                    int ,  int ,  int , int, UberCollection );
 	};
 
-	/** Place to hold the computed structure factor.
-	  * 
-	  */ 
-	group StructFactCache {
-		entry void acceptStructFact(StructFactorMsg *msg);
 
-		entry StructFactCache(int numSfGrps,int natm_nl,int natm_nl_grp_max, UberCollection);
-	};
-
-	// This is what is used if NOT using ees for nonlocal structure factor comp
-        array [3D] StructureFactor { 
-	        entry StructureFactor(int, int, int,int nsend, int destinations[nsend], UberCollection);
-	        entry void acceptDestination(int nsend, int destinations[nsend]);
-         	entry void computeSF(SFDummyMsg *msg);
-		entry void acceptKVectors(int n, int k_x[n], int k_y[n], int k_z[n]);
-	};
-
-	// various chares use CkLocal to access the atoms:
-	// Rho_RHart RhoGHart StructureFactor RealParticlePlane
-	// ParticlePlane RealSpacePlane GSpacePlane  
-	// EJB: this could perhaps be better implemented in an MSA
-	group AtomsGrp {
-		entry AtomsGrp(int natm, int natm_nl,int len_nhc,
-                               int iextended_on,int cp_min_opt,int cp_wave_opt,
-                               int isokin_opt,
-                               double kT,Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
-
-
-	     /** trigger force computation 	
-		* based on real forces available in each processor's chare	
-		* then contribute to global group reduction -> recvContribute
-		*/
-                entry void StartRealspaceForces();  	
-
-	     /*** 
-		* Apply forces to each processor's copy of the atoms.
-		* This is parallelized so that a subset of the atoms
-		* are computed on each processor and their results broadcast
-		* to AtmGroup->acceptAtoms().
-		* Move the atoms each processor is responsible
-                * for. Set various energyGroup members.
-		* contribute to group reduction ->atomsDone
-		*/	
-                entry void recvContribute(CkReductionMsg *);
-
-
-	     /***
-		* Increment the iteration counters in atoms and eesData
-		* call gSpacePlane()->acceptAtoms 
-		* That is done via localbranch to all co-located gSpacePlanes
-		* in the localBarrier scheme.  Used to be via messages.
-		* This permits the new step to advance with the new Psi.
-		*/
-                entry void atomsDone(CkReductionMsg *);
-
-	     /***
-	        * Take packed message of a chunk of the atoms with
-	        * updated positions. Update local copy of atoms.
-		* Update local energyGroup members.
-		* Print atom energies when we have all of them.   		
-		* Do file output of atoms if desired.
-		*/
-                entry void acceptAtoms(AtomMsg *);
-	};
-
-	// The physics configuration, both input, and derived, is kept
-	// here.  This data is effectively readonly.
-	group CPcharmParaInfoGrp {
-		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
-	};
-
-	// The global energies are stored here.
-	group EnergyGroup {
-		entry EnergyGroup(UberCollection);
-		/***
-		   * CP_StateGspacePlane(0,0) calls this to replicate the 
-		   * energies everywhere for consistency and tolerance
-		   * checking.
-		   */
-		entry void updateEnergiesFromGS(EnergyStruct es);
-		/***
-		   * call CP_StateGSpacePlane()->acceptEnergy
-		   * on all co-located gspace chares which allows
-		   * the new step to advance with new psi			
-		   */
-                entry void energyDone(CkReductionMsg *);
-	};
 
 	/** 
 	  *  A place to hold the computed ees planewise data on each proc

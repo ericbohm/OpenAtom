@@ -1,0 +1,116 @@
+module gSpaceDriver
+{
+	class UberCollection;
+
+	array [2D] GSpaceDriver
+	{
+		// Constructor(s)
+		entry GSpaceDriver(const UberCollection _thisInstance);
+		
+		// Create, invoke, resume, and kill RTH threads
+		entry void startControl();
+		entry [local] void resumeControl();
+		entry [local] void readyToExit();
+		
+		// Requests to trigger things
+		entry void needUpdatedPsiV();
+		entry void startNonLocalEes(int iteration_loc);
+		
+		// Incoming notifications of task completion
+		entry [local] void doneComputingEnergy(const int AtomsGrpIter);
+		entry [local] void doneMovingAtoms(const int AtomsGrpIter);
+		entry [local] void doneNLForces();
+		
+		// Incoming reduction barrier notifications
+		entry void allDonePsi(CkReductionMsg *msg);
+		entry void allDoneWritingPsi(CkReductionMsg *msg);
+		entry void allDonePsiV(CkReductionMsg *msg);
+		entry void allDoneIFFT(CkReductionMsg *msg);
+		entry void allDoneNLForces(CkReductionMsg *msg);
+	};
+};
+
+
+
+	
+module gParticlePlane
+{
+	class UberCollection;
+	class PPDummyMsg;
+	
+	message NLDummyMsg;
+	message EnlCookieMsg;
+	message GSPPIFFTMsg {complex data[];};
+	
+	array [2D] CP_State_ParticlePlane 
+	{
+		entry CP_State_ParticlePlane(int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int ,int, UberCollection);
+		entry void launchComputeZs();
+		entry void computeZ(PPDummyMsg *dmsg);
+		entry void reduceZ(int size, int atmIndex, complex zmatrix[size],complex zmatrix_fx[size], complex zmatrix_fy[size],complex zmatrix_fz[size]);
+		entry void getForces(int zsize, int atmIndex, complex zmat[zsize]);
+		entry void lPrioStartNLEes(NLDummyMsg *m);
+		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
+		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
+		entry void registrationDone(CkReductionMsg *msg);
+	};
+};
+
+
+
+
+module gStatePlane
+{
+    extern module paircalcMessages;
+	extern module RDMAMessages;
+	class RDMApair_GSP_PC;
+	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
+	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
+	message RSFFTMsg     { complex data[]; };
+	message GSIFFTMsg    { complex data[]; };
+	message GSRedPsiMsg  { complex data[]; };
+	message GStateOutMsg 
+	{
+		complex data[];
+		complex vdata[];
+		int k_x[];
+		int k_y[];
+		int k_z[];
+	};
+
+
+	class UberCollection;
+
+	array [2D]  CP_State_GSpacePlane 
+	{
+		entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
+		entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
+		entry void acceptIFFT(GSIFFTMsg *);
+		entry [local] void doIFFT();
+		entry void doFFT();
+		entry void syncpsi();
+		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
+		entry void collectFileOutput(GStateOutMsg *msg);
+		entry void acceptNewPsi(CkReductionMsg *msg);	
+		entry void acceptNewPsi(partialResultMsg *msg);	
+		entry void acceptRedPsi(GSRedPsiMsg *msg);	
+		entry [local] void doNewPsi();
+		entry [local] void doNewPsiV();
+		entry [local] void doLambda();
+		entry void acceptLambda(CkReductionMsg *msg);
+		entry void acceptLambda(partialResultMsg *msg);
+		entry void acceptAllLambda(CkReductionMsg *msg);
+
+		entry void acceptNewPsiV(CkReductionMsg *msg);
+		entry void acceptNewPsiV(partialResultMsg *msg);
+		entry void acceptRedPsiV(GSRedPsiMsg *msg);
+
+		entry void makePCproxies();
+		entry void isAtSync(int);
+		entry void startNewIter ();
+
+		entry void computeEnergies(int p, double d);
+		entry void psiCgOvlap(CkReductionMsg *);
+		entry void readFile();
+	};
+};

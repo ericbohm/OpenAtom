@@ -41,15 +41,14 @@
  */
 //============================================================================
 
+#include "debug_flags.h"
+#include "ortho.h"
+#include "orthoHelper.h"
+#include "gSpaceDriver.decl.h"
 #include "charm++.h"
-#include "../../include/debug_flags.h"
 #include "util.h"
-#include "cpaimd.h"
 #include "groups.h"
 #include "fftCacheSlab.h"
-#include "CP_State_Plane.h"
-#include "orthoHelper.h"
-#include "ortho.h"
 #include <unistd.h>
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
@@ -64,6 +63,7 @@ extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
 extern CkVec <PairCalcID> UpairCalcID1;
 extern CkVec <PairCalcID> UpairCalcID2;
 extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
@@ -468,7 +468,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       CkPrintf("recalculating PsiV due to tolerance failure \n");
-      UgSpacePlaneProxy[thisInstance.proxyOffset].requirePsiV();  //gspace will trigger our resume
+      UgSpaceDriverProxy[thisInstance.proxyOffset].needUpdatedPsiV();  //GspaceDriver will trigger our resume
   }//endif
 
 //============================================================================
@@ -1103,3 +1103,6 @@ void Ortho::setPCproxy(CProxySection_PairCalculator inproxy)
 {
   oPairCalcID1.proxySym=inproxy;
 }
+
+#include "ortho.def.h"
+

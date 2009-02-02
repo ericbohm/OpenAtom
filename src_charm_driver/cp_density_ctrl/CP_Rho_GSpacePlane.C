@@ -38,12 +38,13 @@
 
 //============================================================================
 
-extern Config                       config;
+extern Config                               config;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
-extern CProxy_CPcharmParaInfoGrp    scProxy;
+extern CProxy_CPcharmParaInfoGrp            scProxy;
 extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>  UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>          UgSpaceDriverProxy;
 
 extern ComlibInstanceHandle commGInstance0;
 extern ComlibInstanceHandle commGInstance1;
@@ -224,26 +225,21 @@ void CP_Rho_GSpacePlane::init()
 		}
 	      //	      for(int i=0;i<ecount;i++)
 	      //		CkPrintf("nl sect %d %d\n",elems[i].data()[0],elems[i].data()[1]);
-	      nlsectproxy =
-		CProxySection_CP_State_GSpacePlane::ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].
-							  ckGetArrayID(),
-							  elems,ecount);
+	      nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),elems,ecount);
 	      delete [] elems;
 	    }
 	  else
 	    {
-	      nlsectproxy = CProxySection_CP_State_GSpacePlane::
-		ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
-		      0, config.nstates-1, 1,startplane, endplane, 1);
+	      nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),
+                                                            0, config.nstates-1, 1,startplane, endplane, 1);
 	      //	      CkPrintf("nl sect state 0 through %d plane %d through %d\n",config.nstates-1,startplane, endplane);
 	    }
 	}
       else
 	{
 	  if(thisIndex.x<config.nchareG){
-	    nlsectproxy = CProxySection_CP_State_GSpacePlane::
-	      ckNew(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),
-		    0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
+	    nlsectproxy = CProxySection_GSpaceDriver::ckNew(UgSpaceDriverProxy[thisInstance.proxyOffset].ckGetArrayID(),
+                                                            0, config.nstates-1, 1,thisIndex.x, thisIndex.x, 1);
 	  }//endif
 	}
     }//endif
@@ -569,7 +565,7 @@ void CP_Rho_GSpacePlane::launchNlG() {
       CkAssert(config.nchareRhoG>=config.nchareG);
     */
       if(thisIndex.x<config.nchareG){
-	nlsectproxy.startNLEes(false,myTime);
+	nlsectproxy.startNonLocalEes(myTime);
        }//endif
   }//endif
 

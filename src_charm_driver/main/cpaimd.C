@@ -47,6 +47,7 @@
 #include "eesCache.h"
 #include "StructFactorCache.h"
 #include "StructureFactor.h"
+#include "cp_state_ctrl/CP_State_ParticlePlane.h"
 #include "CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
@@ -57,7 +58,6 @@
 
 //============================================================================
 #include "../include/debug_flags.h"
-#include "../include/CPcharmParaInfo.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
 #include "../../src_piny_physics_v1.0/include/charm_defs/Interface_ctrl.decl.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
@@ -170,6 +170,7 @@ int UberKmax;
 int numInstances;
 
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
+CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
@@ -530,6 +531,7 @@ main::main(CkArgMsg *msg) {
     UpairCalcID2.resize(numInstances);
     UpairCalcID1.resize(numInstances);
     UgSpacePlaneProxy.reserve(numInstances);
+    UgSpaceDriverProxy.reserve(numInstances);
     UparticlePlaneProxy.reserve(numInstances);
     UrealParticlePlaneProxy.reserve(numInstances);
     UrealSpacePlaneProxy.reserve(numInstances);
@@ -1857,6 +1859,12 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 		     gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
+ //--------------------------------------------------------------------------------
+ // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
+ CkArrayOptions gspDriverOpts(nstates,nchareG);
+ gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
+ UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
+ UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
  //--------------------------------------------------------------------------------
  // We bind the particlePlane array to the gSpacePlane array migrate together
 
@@ -3286,7 +3294,9 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
 
 
 //============================================================================
+#include "CPcharmParaInfo.def.h"
 #include "cpaimd.def.h"
+
 //============================================================================
 
 

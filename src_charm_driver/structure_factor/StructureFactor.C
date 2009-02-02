@@ -1,18 +1,14 @@
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
 /** \file StructureFactor.C
  *
  */
 //============================================================================== 
 
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
-#include "../../include/debug_flags.h"
+#include "utility/util.h"
+#include "main/groups.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructureFactor.h"
 #include "StructFactorCache.h"
+#include "CPcharmParaInfoGrp.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 
 //==============================================================================
@@ -32,18 +28,13 @@ StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void StructureFactor::computeSF(SFDummyMsg *msg){
-//==============================================================================
-// 
-   int iteration_src = msg->iteration_src;
-   delete msg; // prioritized trigger
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-   if(sim->ees_nloc_on==1){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("No structure factors under EES nonlocal\n");
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-   }//endif
+void StructureFactor::computeSF(SFDummyMsg *msg)
+{
+    int iteration_src = msg->iteration_src;
+    delete msg; // prioritized trigger
+    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    if(sim->ees_nloc_on==1)
+        CkAbort("No structure factors under EES nonlocal\n");
    //    CkPrintf("[%d %d %d] compute %d\n",thisIndex.x,thisIndex.y,thisIndex.z,numdest);
    // The guy who called us is up to date. Are we? The caller is one ahead
    // of the energy dude and the atoms because it flipped its iteration counter
@@ -118,3 +109,4 @@ void StructureFactor::computeSF(SFDummyMsg *msg){
    }//end routine
 //==============================================================================
 
+#include "structureFactor.def.h"

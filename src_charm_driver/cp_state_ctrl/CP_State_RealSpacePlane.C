@@ -23,29 +23,33 @@
  */
 //============================================================================
 
-#include "charm++.h"
-#include <iostream.h>
-#include <fstream.h>
-#include <math.h>
-
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
+#include "CP_State_GSpacePlane.h"
 #include "CP_State_Plane.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "main/groups.h"
+#include "main/cpaimd.h"
+#include "utility/util.h"
+#include "charm++.h"
+
+#include <iostream>
+#include <fstream>
+#include <cmath>
+    using namespace std;
+
 
 
 //============================================================================
-extern CProxy_TimeKeeper              TimeKeeperProxy;
+extern CProxy_TimeKeeper                      TimeKeeperProxy;
 extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
-extern CProxy_CPcharmParaInfoGrp      scProxy;
-extern CProxy_main                    mainProxy;
+extern CProxy_CPcharmParaInfoGrp              scProxy;
+extern CProxy_main                            mainProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
-extern CProxy_InstanceController      instControllerProxy;
+extern CProxy_InstanceController              instControllerProxy;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssInstance;
 
@@ -318,11 +322,11 @@ void CP_State_RealSpacePlane::doFFT(){
     }//endif
 
     if(thisIndex.y<config.nchareG){
-      UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNLEes(false,iteration);
+      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNonLocalEes(iteration);
     }//endif
     if((div==1) && (thisIndex.y<rem))
       {
-	UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,ind).startNLEes(false,iteration);
+	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,ind).startNonLocalEes(iteration);
       }
   }//endif
 #endif

@@ -13,11 +13,11 @@
 #ifndef _CPAIMD_H
 #define _CPAIMD_H
 //#define MAP_DEBUG 1
+#include "CPcharmParaInfoGrp.h"
+#include "uber/Uber.h"
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
-#include "Uber.h"
-#include "pairCalculator.h"
 #include "ckhashtable.h"
 #include "PeList.h"
 
@@ -51,7 +51,7 @@ class MapType2 : public IntMap2on2 {
 #endif
 
 
-//#define GPSI_BARRIER 1
+//#define BARRIER_CP_GSPACE_PSI 1
 
 #define LOAD_BALANCE_STEP 100000000
 
@@ -628,27 +628,6 @@ class RhoRHartMap : public CkArrayMapTable3 {
 };
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-//============================================================================
-/**
- * \brief class CPcharmParaInfoGrp.
- *
- *
- */
-//============================================================================
-
-#include "../../include/CPcharmParaInfo.h"
-class CPcharmParaInfoGrp: public Group {
- public:
-    CPcharmParaInfoGrp(CkMigrateMessage *m) {}
-    CPcharmParaInfoGrp(CPcharmParaInfo &s);
-    ~CPcharmParaInfoGrp();
-    CPcharmParaInfo *cpcharmParaInfo;
-};
-//============================================================================
-
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -742,8 +721,10 @@ void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int
 //============================================================================
 
 // stuff to be include before the decl or else
-#include "../../include/Atoms.h"
+#include "Atoms.h"
 #include "energy.h"
+#include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
 
 #endif
+

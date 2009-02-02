@@ -10,7 +10,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "util.h"
 #include "para_grp_parse.h"
-#include "CPcharmParaInfo.h"
+#include "CPcharmParaInfoGrp.h"
 #include "../../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
