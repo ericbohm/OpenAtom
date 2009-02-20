@@ -1,7 +1,7 @@
 class CProxy_PairCalculator; 	///< Forward declaration required before including the decl.h file
+#include "debug_flags.h"
 #include "inputDataHandler.decl.h"
 #include "RDMAMessages.h"
-#include "../../include/debug_flags.h"
 
 
 #ifndef INPUT_DATA_HANDLER_H
@@ -120,9 +120,11 @@ class InputDataHandler: public ArrayElement4D // CBaseT< ArrayElementT<CkIndex4D
 //} // end namespace paircalc
 //} // end namespace cp
 
-#endif // INPUT_DATA_HANDLER_H
-
-
+/** This include is inside the #define block to avoid redefinition.
+ * def.h files dont have include guards and can cause problems for modules with template chares/messages.
+ */
 #define CK_TEMPLATES_ONLY
 	#include "inputDataHandler.def.h"
 #undef CK_TEMPLATES_ONLY
+#endif // INPUT_DATA_HANDLER_H
+
