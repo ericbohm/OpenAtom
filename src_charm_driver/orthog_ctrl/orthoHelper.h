@@ -35,7 +35,7 @@
 
 #include "CLA_Matrix.h"
 
-extern MapType2 OrthoHelperImaptable;
+extern CkVec <MapType2> OrthoHelperImaptable;
 extern CkHashtableT <intdual, int> OrthoHelpermaptable;
 extern bool fakeTorus;
 
@@ -150,7 +150,7 @@ class OrthoHelperMap : public CkArrayMapTable2 {
     {
       thisInstance=_instance;
 #ifdef USE_INT_MAP
-      maptable= &OrthoHelperImaptable;
+      maptable= &OrthoHelperImaptable[thisInstance.getPO()];
 #else
       maptable= &OrthoHelpermaptable;
 #endif
@@ -162,7 +162,7 @@ class OrthoHelperMap : public CkArrayMapTable2 {
     {
       CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-      maptable= &OrthoHelperImaptable;
+      maptable= &OrthoHelperImaptable[thisInstance.getPO()];
 #else
       maptable= &OrthoHelpermaptable;
 #endif

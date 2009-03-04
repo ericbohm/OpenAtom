@@ -33,7 +33,7 @@ extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
-extern MapType2                          RPPImaptable;
+extern CkVec <MapType2>                          RPPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;
 extern CkReduction::reducerType sumFastDoubleType;
@@ -215,7 +215,7 @@ void CP_State_RealParticlePlane::init(){
     while(plane<nChareR)
       {
         bool used=false;
-        int thisstateplaneproc=RPPImaptable.get(state,plane)%CkNumPes();
+        int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
 	if(usedProc[thisstateplaneproc]>charperpe);
 	{
 	  used=true;

@@ -99,7 +99,7 @@
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
-extern MapType2 OrthoImaptable;
+extern CkVec <MapType2> OrthoImaptable;
 extern CkHashtableT <intdual, int> Orthomaptable;
 extern bool fakeTorus;
 
@@ -389,7 +389,7 @@ class OrthoMap : public CkArrayMapTable2 {
     {
       thisInstance=_instance;
 #ifdef USE_INT_MAP
-      maptable= &OrthoImaptable;
+      maptable= &OrthoImaptable[thisInstance.getPO()];
 #else
       maptable= &Orthomaptable;
 #endif
@@ -401,7 +401,7 @@ class OrthoMap : public CkArrayMapTable2 {
     {
       CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-      maptable= &OrthoImaptable;
+      maptable= &OrthoImaptable[thisInstance.getPO()];
 #else
       maptable= &Orthomaptable;
 #endif
