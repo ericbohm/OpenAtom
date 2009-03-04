@@ -1,34 +1,33 @@
-/*** Uber Arrays connect multiple arrays by referring to them by Uber
-     Indexed collections.  So all elements which have Uarr[i][j][k]
-     are one logical instance.
+/** Uber Arrays connect multiple arrays by referring to them by Uber Indexed
+ * collections.  So all elements which have Uarr[i][j][k] are one logical
+ * instance.
+ *
+ * Where we formerly had readonly proxies we now have readonly CkVec's of
+ * proxies.  Each index tuple (i,j,k) will have an associated proxyOffset (PO).
+ * someProxy[PO] will have the proxy for the tuple associated with PO for all
+ * proxies.
+ *
+ * POs will be assigned using a dense 3D enumeration with k the innermost. So
+ * the PO is always derivable from the tuple and visa versa, but we keep PO to
+ * avoid recalculation overhead.  No race condition for the ID space.  Not that
+ * this matters since we don't have a scenario in which we create instances in
+ * parallel.
+ *
+ * PO=(i*Jmax+j) * Kmax +k;
+ *
+ * In practice, typical array objects only need a minority subset of the
+ * proxies in their instance, and perhaps 1 proxy outside their instance.
+ * These can be constructed local to the object without a great proliferation
+ * of proxies.  They simply copy the proxy from someProxy[proxyOffset] for
+ * frequently used proxies.
+ */
 
-     Where we formerly had readonly proxies we now have readonly
-     CkVec's of proxies.  Each index tuple (i,j,k) will have an
-     associated proxyOffset (PO).  someProxy[PO] will have the proxy
-     for the tuple associated with PO for all proxies.  
-
-     POs will be assigned using a dense 3D enumeration with k the
-     innermost. So the PO is always derivable from the tuple and visa
-     versa, but we keep PO to avoid recalculation overhead.  No race
-     condition for the ID space.  Not that this matters since we don't
-     have a scenario in which we create instances in parallel.
-
-     PO=(i*Jmax+j) * Kmax +k;
-
-     In practice, typical array objects only need a minority subset of
-     the proxies in their instance, and perhaps 1 proxy outside their
-     instance.  These can be constructed local to the object without a
-     great proliferation of proxies.  They simply copy the proxy from
-     someProxy[proxyOffset] for frequently used proxies. 
-     
-
-*/
 #ifndef _UBER_H
 #define _UBER_H
-extern int UberJmax;
-extern int UberKmax;
 
+#include "configure.h"
 
+extern Config config;
 
 class UberIndex {
  public:
@@ -84,7 +83,7 @@ class UberCollection {
   inline bool operator<(const UberCollection &obj) const {
     return(idxU<obj.idxU); }
  
-  inline unsigned char calcPO(){return (idxU.x*UberJmax+idxU.y) * UberKmax +idxU.z;}
-  inline unsigned char getPO(){return proxyOffset;}
+  inline unsigned char calcPO(){ return ((idxU.x*config.UberJmax + idxU.y) * config.UberKmax + idxU.z); }
+  inline unsigned char getPO(){ return proxyOffset; }
 };
 #endif
