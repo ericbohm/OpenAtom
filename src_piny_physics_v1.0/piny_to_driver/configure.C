@@ -1981,6 +1981,23 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
       CkPrintf("Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
+
+    UberImax = 1;
+    UberJmax = 1;
+    UberKmax = 1;
+
+    // TODO get the number of instances.  This is a Glenn item as most
+    // of the instance stuff will be on the piny side and determining
+    // how many instances there are of each type, and then the total
+    // sum, will presumably come directly from CPcharmParaInfoGrp.
+
+    // in default case we have only 1 instance, so we just use the 0,0,0th
+    // because it is simple.
+
+    numInstances = UberImax * UberJmax * UberKmax; // numIntegrals * numKpoints * numTempers;
+    numPesPerInstance = numPes / numInstances;
+    numPesPerInstance = (numPesPerInstance>0) ? numPesPerInstance : 1;
+
     int sqrtpes    = (int) sqrt((double)numPes);
     int sqrtstates = (int) sqrt((double)nstates);
     int igo;
@@ -2067,14 +2084,14 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     
     igo = dict_map[6].iuset;
 
-    if(numPes!=1 && igo==0){
-      if(numPes<=128){
+    if(numPesPerInstance!=1 && igo==0){
+      if(numPesPerInstance<=128){
         Gstates_per_pe=nstates/4;
       }else{ 
-	if(numPes>128 && numPes<=512){
+	if(numPesPerInstance>128 && numPesPerInstance<=512){
           Gstates_per_pe=nstates/16;
 	}else{
-          Gstates_per_pe= nchareG*nstates/numPes;
+          Gstates_per_pe= nchareG*nstates/numPesPerInstance;
 	}//endif
       }//endif
       if(Gstates_per_pe==0){Gstates_per_pe=1;}
@@ -2086,11 +2103,11 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     igo = dict_map[7].iuset;
 
-    if(numPes!=1 && igo==0){
-      if(numPes<=128){
+    if(numPesPerInstance!=1 && igo==0){
+      if(numPesPerInstance<=128){
         Rstates_per_pe=nstates/4;
       }else{
-        Rstates_per_pe= sizez*nstates/numPes;
+        Rstates_per_pe= sizez*nstates/numPesPerInstance;
       }//endif
       if (Rstates_per_pe==0){
         Rstates_per_pe=1;
@@ -2163,7 +2180,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     if(igo==0){ 
       int numRS=nchareRhoR*rhoRsubplanes;
       int numGH=nchareRhoG*rhoGHelpers;
-      if(numPes <numRS*3){
+      if(numPesPerInstance < numRS*3){
 	useReductionExclusionMap=0;
 	
 	strcpy(dict_map[17].keyarg,"off");
@@ -2180,14 +2197,14 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       int usedPes=numRS;
       int maxSubplanes=20; // arbitary choice, but probably good
       if(useReductionExclusionMap) usedPes+=nchareG;
-      while(numPes>usedPes && notdone)
+      while(numPesPerInstance > usedPes && notdone)
 	{
 
 	  // trick here is to keep bumping up both subplanes and
 	  // expandfact
-	  int target=numPes-usedPes;
+	  int target=numPesPerInstance - usedPes;
 	  if(numRS<target) target=numRS;
-	  if(numPes>numRS && nchareRhoR>nchareRhoG)
+	  if(numPesPerInstance>numRS && nchareRhoR>nchareRhoG)
 	    { // bring up expandfact to fill in 
 	      if(target>nplane_x_rho && target <= numRS && gExpandFactRho< (double) nplane_x_rho)
 		{
@@ -2201,7 +2218,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 		  if(useReductionExclusionMap) usedPes+=nchareG;
 		}
 	    }
-	  if (numPes>usedPes && numPes >nchareRhoR*(rhoRsubplanes+1) && (numPes >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT) &&(rhoRsubplanes<maxSubplanes))
+	  if (numPesPerInstance>usedPes && numPesPerInstance >nchareRhoR*(rhoRsubplanes+1) && (numPesPerInstance >= nchareRhoRHart* (rhoRsubplanes+1)* nchareHartAtmT) &&(rhoRsubplanes<maxSubplanes))
 	    {
 	      numRS= (++rhoRsubplanes)*nchareRhoR;
 	      usedPes=nchareRhoG+numRS;
@@ -2212,9 +2229,9 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	      notdone=false;
 	    }
 		   
-	  if (numPes>numRS && nchareRhoR<=nchareRhoG && gExpandFactRho< (double) nplane_x_rho)
+	  if (numPesPerInstance>numRS && nchareRhoR<=nchareRhoG && gExpandFactRho< (double) nplane_x_rho)
 	    { // keep ncharerhog close to numRS
-	      int target=numPes-numRS;
+	      int target=numPesPerInstance - numRS;
 	      if(target>numRS) target=numRS;
 
 	      if ( gExpandFactRho > double (nplane_x_rho))
@@ -2233,7 +2250,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	      notdone=false;
 	    }
 	  if(ees_eext_opt==1 && (nchareHartAtmT< natm_typ) && 
-	     (nchareRhoRHart* (rhoRsubplanes)* (nchareHartAtmT+1)<=numPes/2))
+	     (nchareRhoRHart* (rhoRsubplanes)* (nchareHartAtmT+1)<=numPesPerInstance/2))
 	    {
 	      nchareHartAtmT++;
 	    }

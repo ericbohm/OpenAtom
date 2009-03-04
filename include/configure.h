@@ -26,6 +26,8 @@ class Config {
   //----------------------------------
 
     int numPes;           // num of procs             (driver)
+    int numPesPerInstance;// num of procs for mapping
+			  // of one instance          (driver)
     int nstates;          // num of states            (piny)
     int maxIter;          // num of iterations        (piny)
     int fftopt;           // fft type[fftw/essl]      (piny)
@@ -40,6 +42,11 @@ class Config {
     int nchareG;          // num state g-space chares (driver)
     int nchareRhoG;       // num rho g-space chares   (driver)
     int scalc_per_plane;  // num of scalcs g-plane    (driver)
+
+    int UberImax;
+    int UberJmax;
+    int UberKmax;
+    int numInstances;
   //==================================
 
   //==================================
