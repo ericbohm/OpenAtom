@@ -40,7 +40,13 @@ typedef IntMap3 MapType3;
 class MapType2 : public IntMap2on2 {
  public:
   int getCentroid (int);
+  /*void pup(PUP::er &p)
+  {
+    CkPrintf("PUP of TypeMap2\n");
+    IntMap2on2::pup(p);
+  }*/
 };
+PUPmarshall(MapType2);
 
 #endif
 
@@ -73,15 +79,17 @@ class MapType2 : public IntMap2on2 {
 
 extern bool fakeTorus;
 
-extern MapType2 GSImaptable;
-extern MapType2 RSImaptable;
-extern MapType2 RPPImaptable;
-extern MapType2 RhoGSImaptable;
-extern MapType2 RhoRSImaptable;
-extern MapType2 RhoGHartImaptable;
-extern MapType3 RhoRHartImaptable;
-extern MapType4 AsymScalcImaptable;
-extern MapType4 SymScalcImaptable;
+extern CkVec <MapType2> GSImaptable;
+extern CkVec <MapType2> RSImaptable;
+extern CkVec <MapType2> RPPImaptable;
+extern CkVec <MapType2> RhoGSImaptable;
+extern CkVec <MapType2> RhoRSImaptable;
+extern CkVec <MapType2> RhoGHartImaptable;
+extern CkVec <MapType3> RhoRHartImaptable;
+extern CkVec <MapType2> OrthoImaptable;
+extern CkVec <MapType2> OrthoHelperImaptable;
+extern CkVec <MapType4> AsymScalcImaptable;
+extern CkVec <MapType4> SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
@@ -243,17 +251,22 @@ class GSMap: public CkArrayMapTable2 {
   GSMap(UberCollection _instance) 
       { 
 	thisInstance=_instance;
-#ifdef USE_INT_MAP	
-	maptable= &GSImaptable;
+#ifdef USE_INT_MAP
+	CkAssert(thisInstance.getPO() < 1);
+	maptable = &GSImaptable[thisInstance.getPO()];
+	if(CkMyPe()) {
+	  if(maptable == NULL)
+	    CkAbort("hey 2");
+	}
 #else
-	maptable= &GSmaptable;
+	maptable = &GSmaptable;
 #endif
       }
   void pup(PUP::er &p)
 	{
 	    CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP	
-	    maptable= &GSImaptable;
+	    maptable= &GSImaptable[thisInstance.getPO()];
 #else
 	    maptable= &GSmaptable;
 #endif
@@ -262,6 +275,10 @@ class GSMap: public CkArrayMapTable2 {
     int *index=(int *) iIndex.data();
     int proc;
 #ifdef USE_INT_MAP
+    if(maptable == NULL) {
+      CkPrintf("hey %d\n", CkMyPe());
+      CkAbort("hey");
+    }
     proc=maptable->get(index[0],index[1]);
 #else
     proc=maptable->get(intdual(index[0],index[1]));
@@ -295,7 +312,7 @@ class RSMap: public CkArrayMapTable2 {
       { 
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-	maptable= &RSImaptable;
+	maptable= &RSImaptable[thisInstance.getPO()];
 #else
 	maptable= &RSmaptable;
 #endif
@@ -304,7 +321,7 @@ class RSMap: public CkArrayMapTable2 {
 	{
 	    CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-	    maptable= &RSImaptable;
+	    maptable= &RSImaptable[thisInstance.getPO()];
 #else
 	    maptable= &RSmaptable;
 #endif
@@ -339,7 +356,7 @@ class RPPMap: public CkArrayMapTable2 {
       { 
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-	maptable= &RPPImaptable;
+	maptable= &RPPImaptable[thisInstance.getPO()];
 #else
 	maptable= &RPPmaptable;
 #endif
@@ -348,7 +365,7 @@ class RPPMap: public CkArrayMapTable2 {
 	{
 	    CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-	    maptable= &RPPImaptable;
+	    maptable= &RPPImaptable[thisInstance.getPO()];
 #else
 	    maptable= &RPPmaptable;
 #endif
@@ -398,9 +415,9 @@ class SCalcMap : public CkArrayMapTable4 {
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
 	if(symmetric)
-	  maptable= &SymScalcImaptable;
+	  maptable= &SymScalcImaptable[thisInstance.getPO()];
 	else
-	  maptable= &AsymScalcImaptable;
+	  maptable= &AsymScalcImaptable[thisInstance.getPO()];
 #else
 	if(symmetric)
 	  maptable= &SymScalcmaptable;
@@ -414,9 +431,9 @@ class SCalcMap : public CkArrayMapTable4 {
 	    p|symmetric;
 #ifdef USE_INT_MAP
 	    if(symmetric)
-	      maptable= &SymScalcImaptable;
+	      maptable= &SymScalcImaptable[thisInstance.getPO()];
 	    else
-	      maptable= &AsymScalcImaptable;
+	      maptable= &AsymScalcImaptable[thisInstance.getPO()];
 #else
 	    if(symmetric)
 	      maptable= &SymScalcmaptable;
@@ -454,7 +471,7 @@ class RhoRSMap : public CkArrayMapTable2 {
     {
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-      maptable= &RhoRSImaptable;
+      maptable= &RhoRSImaptable[thisInstance.getPO()];
 #else
       maptable= &RhoRSmaptable;
 #endif
@@ -467,7 +484,7 @@ class RhoRSMap : public CkArrayMapTable2 {
       {
 	CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-	maptable= &RhoRSImaptable;
+	maptable= &RhoRSImaptable[thisInstance.getPO()];
 #else
 	maptable= &RhoRSmaptable;
 #endif
@@ -502,7 +519,7 @@ class RhoGSMap : public CkArrayMapTable2 {
     {
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-      maptable= &RhoGSImaptable;
+      maptable= &RhoGSImaptable[thisInstance.getPO()];
 #else
       maptable= &RhoGSmaptable;
 #endif
@@ -542,7 +559,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
   {
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-    maptable= &RhoGHartImaptable;
+    maptable= &RhoGHartImaptable[thisInstance.getPO()];
 #else
     maptable= &RhoGHartmaptable;
 #endif
@@ -558,7 +575,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
       {
 	CkArrayMapTable2::pup(p);
 #ifdef USE_INT_MAP
-	maptable= &RhoGHartImaptable;
+	maptable= &RhoGHartImaptable[thisInstance.getPO()];
 #else
 	maptable= &RhoGHartmaptable;
 #endif
@@ -588,7 +605,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
   {
     thisInstance=_instance;
 #ifdef USE_INT_MAP
-    maptable= &RhoRHartImaptable;
+    maptable= &RhoRHartImaptable[thisInstance.getPO()];
 #else
     maptable= &RhoRHartmaptable;
 #endif
@@ -604,7 +621,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
       {
 	CkArrayMapTable3::pup(p);
 #ifdef USE_INT_MAP
-	maptable= &RhoRHartImaptable;
+	maptable= &RhoRHartImaptable[thisInstance.getPO()];
 #else
 	maptable= &RhoRHartmaptable;
 #endif
@@ -711,7 +728,7 @@ void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
 		    int *n_ret, int *istrt_ret, int *iend_ret);
 int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp, 
               int dup, int planeIndex);
-int gsprocNum(CPcharmParaInfo *sim,int state, int plane);
+int gsprocNum(CPcharmParaInfo *sim,int state, int plane, int numInst);
 bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn);
 void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *, int *);
 
@@ -725,6 +742,12 @@ void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int
 #include "energy.h"
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
+
+/*#include "paircalc/pairCalculator.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#define CK_TEMPLATES_ONLY
+#include "cpaimd.def.h"
+#undef CK_TEMPLATES_ONLY*/
 
 #endif
 
