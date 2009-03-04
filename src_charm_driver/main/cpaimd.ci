@@ -5,14 +5,13 @@
 module CPcharmParaInfo
 {
         class CPcharmParaInfo;
-	// The physics configuration, both input, and derived, is kept here. This data is effectively readonly.
+	// The physics configuration, both input, and derived, is kept here.
+	// This data is effectively readonly.
 	group CPcharmParaInfoGrp 
 	{
 		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
 	};
 };
-
-
 
 
 module groups
@@ -29,77 +28,23 @@ module groups
 	
 	message GSAtmMsg;
 
-	
-
-
-	// various chares use CkLocal to access the atoms:
-	// Rho_RHart RhoGHart StructureFactor RealParticlePlane
-	// ParticlePlane RealSpacePlane GSpacePlane  
-	// EJB: this could perhaps be better implemented in an MSA
 	group AtomsGrp {
-		entry AtomsGrp(int natm, int natm_nl,int len_nhc,
-                               int iextended_on,int cp_min_opt,int cp_wave_opt,
-                               int isokin_opt,
-                               double kT,Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
-
-
-	     /** trigger force computation 	
-		* based on real forces available in each processor's chare	
-		* then contribute to global group reduction -> recvContribute
-		*/
-                entry void StartRealspaceForces();  	
-
-	     /*** 
-		* Apply forces to each processor's copy of the atoms.
-		* This is parallelized so that a subset of the atoms
-		* are computed on each processor and their results broadcast
-		* to AtmGroup->acceptAtoms().
-		* Move the atoms each processor is responsible
-                * for. Set various energyGroup members.
-		* contribute to group reduction ->atomsDone
-		*/	
+		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
+			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
+			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
+                entry void startRealSpaceForces();  	
                 entry void recvContribute(CkReductionMsg *);
-
-
-	     /***
-		* Increment the iteration counters in atoms and eesData
-		* call gSpaceDriver->doneMovingAtoms()
-		* That is done via localbranch to all co-located gSpacePlanes
-		* in the localBarrier scheme.  Used to be via messages.
-		* This permits the new step to advance with the new Psi.
-		*/
                 entry void atomsDone(CkReductionMsg *);
-
-	     /***
-	        * Take packed message of a chunk of the atoms with
-	        * updated positions. Update local copy of atoms.
-		* Update local energyGroup members.
-		* Print atom energies when we have all of them.   		
-		* Do file output of atoms if desired.
-		*/
                 entry void acceptAtoms(AtomMsg *);
 	};
-
-
 
 	// The global energies are stored here.
 	group EnergyGroup {
 		entry EnergyGroup(UberCollection);
-		/***
-		   * CP_StateGspacePlane(0,0) calls this to replicate the 
-		   * energies everywhere for consistency and tolerance
-		   * checking.
-		   */
 		entry void updateEnergiesFromGS(EnergyStruct es);
-		/***
-		   * call GSpaceDriver->doneComputingEnergy()
-		   * on all co-located gspace chares which allows
-		   * the new step to advance with new psi			
-		   */
-                entry void energyDone(CkReductionMsg *);
+		entry void energyDone(CkReductionMsg *);
 	};
 };
-
 
 
 mainmodule cpaimd {	
@@ -145,17 +90,17 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
 
-	readonly MapType2 GSImaptable;
-	readonly MapType2 RSImaptable;
-	readonly MapType2 RPPImaptable;
-	readonly MapType2 RhoGSImaptable;
-	readonly MapType2 RhoRSImaptable;
-	readonly MapType2 RhoGHartImaptable;
-	readonly MapType3 RhoRHartImaptable;
-	readonly MapType2 OrthoImaptable;
-	readonly MapType2 OrthoHelperImaptable;
-	readonly MapType4 AsymScalcImaptable;
-	readonly MapType4 SymScalcImaptable;
+	readonly CkVec <MapType2> GSImaptable;
+	readonly CkVec <MapType2> RSImaptable;
+	readonly CkVec <MapType2> RPPImaptable;
+	readonly CkVec <MapType2> RhoGSImaptable;
+	readonly CkVec <MapType2> RhoRSImaptable;
+	readonly CkVec <MapType2> RhoGHartImaptable;
+	readonly CkVec <MapType3> RhoRHartImaptable;
+	readonly CkVec <MapType2> OrthoImaptable;
+	readonly CkVec <MapType2> OrthoHelperImaptable;
+	readonly CkVec <MapType4> AsymScalcImaptable;
+	readonly CkVec <MapType4> SymScalcImaptable;
 
 
 	readonly Config config;
@@ -166,10 +111,6 @@ mainmodule cpaimd {
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 
-	readonly int UberImax;
-	readonly int UberJmax;
-	readonly int UberKmax;
-	readonly int numInstances;
 	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 	readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
 	readonly CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
@@ -276,7 +217,6 @@ mainmodule cpaimd {
   		entry void printEnergyEke(CkReductionMsg *m);
 		entry void doneInit(CkReductionMsg *msg);
 	}	
-
 
 
 	// This is where the real component lives when using ees for nonlocal
@@ -395,9 +335,9 @@ mainmodule cpaimd {
 	};
 
 	/** 
-	  *  A place to hold the fftw plans or sizes for essl.
-	  *  Preallocated space for ffts some of which retain their data  
-	  *  across entry method calls.  Does no messaging.
+	  * A place to hold the fftw plans or sizes for essl.
+	  * Preallocated space for ffts some of which retain their data  
+	  * across entry method calls.  Does no messaging.
 	  */	
 	group FFTcache {
 		entry FFTcache( int , int , int , int , int , int , 
@@ -424,7 +364,7 @@ mainmodule cpaimd {
 
 
 	/** 
-	  *  A place to hold the computed ees planewise data on each proc
+	  * A place to hold the computed ees planewise data on each proc
 	  */	
 	group eesCache {
 		entry eesCache(int,int,int,int,int,int, UberCollection);

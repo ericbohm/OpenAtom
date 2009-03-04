@@ -18,10 +18,11 @@ class AtomMsg: public CMessage_AtomMsg
         double *data;  
 };
 
-
-
-
 /** AtomsGrp class.
+ * various chares use CkLocal to access the atoms:
+ * Rho_RHart RhoGHart StructureFactor RealParticlePlane
+ * ParticlePlane RealSpacePlane GSpacePlane
+ * EJB: this could perhaps be better implemented in an MSA
  */
 class AtomsGrp: public Group {
  public:
@@ -58,7 +59,7 @@ class AtomsGrp: public Group {
   void atomsDone();
   void sendAtoms(double,double ,double,int,int,int);
   void acceptAtoms(AtomMsg *);
-  void StartRealspaceForces();
+  void startRealSpaceForces();
   void outputAtmEnergy();
   void zeroforces() {
     double *fx = fastAtoms.fx;

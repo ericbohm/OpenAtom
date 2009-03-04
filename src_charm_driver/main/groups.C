@@ -152,10 +152,13 @@ AtomsGrp::~AtomsGrp(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::StartRealspaceForces(){
+/** trigger force computation
+ * based on real forces available in each processor's chare then contribute to
+ * global group reduction -> recvContribute
+ */
+void AtomsGrp::startRealSpaceForces(){
 //==========================================================================
 // Get the real space atom forces
-
 
    int myid   = CkMyPe();
    int nproc  = CkNumPes();
@@ -215,6 +218,13 @@ void AtomsGrp::contributeforces(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/**
+ * Apply forces to each processor's copy of the atoms.  This is parallelized so
+ * that a subset of the atoms are computed on each processor and their results
+ * broadcast to AtmGroup->acceptAtoms().  Move the atoms each processor is
+ * responsible for. Set various energyGroup members.  contribute to group
+ * reduction ->atomsDone
+ */
 void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //==========================================================================
 // Local pointers
@@ -488,6 +498,12 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/**
+ * Increment the iteration counters in atoms and eesData call
+ * gSpaceDriver->doneMovingAtoms() That is done via localbranch to all
+ * co-located gSpacePlanes in the localBarrier scheme.  Used to be via
+ * messages.  This permits the new step to advance with the new Psi.
+ */
   void AtomsGrp::atomsDone(CkReductionMsg *msg) {
 //==========================================================================
   delete msg;
@@ -619,6 +635,11 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/**
+ * Take packed message of a chunk of the atoms with updated positions. Update
+ * local copy of atoms.  Update local energyGroup members.  Print atom energies
+ * when we have all of them.  Do file output of atoms if desired.
+ */
   void AtomsGrp::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
 
@@ -755,6 +776,10 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/**
+ * CP_StateGspacePlane(0,0) calls this to replicate the energies everywhere for
+ * consistency and tolerance checking.
+ */
 void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 
@@ -788,6 +813,10 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/**
+ * call GSpaceDriver->doneComputingEnergy() on all co-located gspace chares
+ * which allows the new step to advance with new psi
+ */
   void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;

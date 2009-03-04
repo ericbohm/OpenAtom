@@ -201,7 +201,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
   delete m;
   CkPrintf("All done CP forces\n");
-  UatomsGrpProxy[thisIndex].StartRealspaceForces();
+  UatomsGrpProxy[thisIndex].startRealSpaceForces();
 }
 //============================================================================
 
