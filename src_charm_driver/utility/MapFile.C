@@ -72,13 +72,15 @@ void MapFile::setAttributes(int num, int* size, char *order, int x, int y, int z
 }
 
 
-void MapFile::dumpMapCoords(MapType2 *map)
+void MapFile::dumpMapCoords(MapType2 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       {
@@ -91,13 +93,15 @@ void MapFile::dumpMapCoords(MapType2 *map)
 }
 
 
-void MapFile::dumpMapCoords(MapType4 *map)
+void MapFile::dumpMapCoords(MapType4 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
@@ -113,13 +117,15 @@ void MapFile::dumpMapCoords(MapType4 *map)
 }
 
 
-void MapFile::dumpMapCoords(MapType3 *map)
+void MapFile::dumpMapCoords(MapType3 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)
@@ -134,13 +140,15 @@ void MapFile::dumpMapCoords(MapType3 *map)
 }
 
 
-void MapFile::dumpMap(MapType2 *map)
+void MapFile::dumpMap(MapType2 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
 	fprintf(fp, "%d %d %d\n", i, j, map->get(i, j));
@@ -148,13 +156,15 @@ void MapFile::dumpMap(MapType2 *map)
 }
 
 
-void MapFile::dumpMap(MapType4 *map)
+void MapFile::dumpMap(MapType4 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
@@ -164,13 +174,15 @@ void MapFile::dumpMap(MapType4 *map)
 }
 
 
-void MapFile::dumpMap(MapType3 *map)
+void MapFile::dumpMap(MapType3 *map, char c)
 {
-  FILE *fp = fopen(mapName, "w");
+  char name[100];
+  sprintf(name, "%s_inst_%d", mapName, (int)c);
+  FILE *fp = fopen(name, "w");
   fprintf(fp, "%s %d ", mapName, numDim);
   for(int i=0; i<numDim; i++)
     fprintf(fp, "%d ", sizeDim[i]);
-  fprintf(fp, "\n%d \n", numProcs);
+  fprintf(fp, "\n%d %d %d %d %d\n", numProcs, topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(), topoMgr->getDimNT());
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)

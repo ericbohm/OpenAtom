@@ -151,7 +151,7 @@ public:
 
 using namespace std;
 
-#include "../../include/configure.h"
+#include "configure.h"
 
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

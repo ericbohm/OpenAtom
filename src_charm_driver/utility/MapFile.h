@@ -40,12 +40,12 @@ class MapFile
      
     void setSize(int num, int* size); 
     void setAttributes(int num, int* size, char *order, int x, int y, int z, int t, int stride);
-    void dumpMap(MapType2 *map);
-    void dumpMap(MapType3 *map);
-    void dumpMap(MapType4 *map);
-    void dumpMapCoords(MapType2 *map);
-    void dumpMapCoords(MapType3 *map);
-    void dumpMapCoords(MapType4 *map);
+    void dumpMap(MapType2 *map, char c);
+    void dumpMap(MapType3 *map, char c);
+    void dumpMap(MapType4 *map, char c);
+    void dumpMapCoords(MapType2 *map, char c);
+    void dumpMapCoords(MapType3 *map, char c);
+    void dumpMapCoords(MapType4 *map, char c);
 
     int loadMap(const char *filename, MapType2 *map);
     int loadMap(const char *filename, MapType3 *map);
