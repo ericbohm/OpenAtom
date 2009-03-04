@@ -17,9 +17,11 @@
 extern TopoManager *topoMgr;
 extern Config config;
 
-//! construct the list by iterating through boxes which are sub
-//! partitions 
-PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
+/**
+ * construct the list by iterating through boxes which are sub partitions
+ * boxy constructor
+ */
+PeList::PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int maxZ, int maxT) 
 {
   if(config.torusMap==1)
   {
@@ -29,10 +31,6 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
       sorted=false;
       size=config.numPes;
       int i=0;
-      int maxX=topoMgr->getDimNX();
-      int maxY=topoMgr->getDimNY();
-      int maxZ=topoMgr->getDimNZ();
-      int maxT=topoMgr->getDimNT();
       CkPrintf("Ordering processors along long axis %d in %d X %d X %d\n",order, maxX, maxY, maxZ);
       TheList= new int[size];
       sortIdx= new int[size];
@@ -46,14 +44,13 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order) // boxy constructor
 		  // fill out this box
 		  numBoxes++;
 
-
 		  for(int bx=0;bx<boxX;bx++)
-		      for(int by=0;by<boxY;by++) // make inner planes along X
-			  for(int bz=0;bz<boxZ;bz++)
+		    for(int by=0;by<boxY;by++) // make inner planes along X
+		      for(int bz=0;bz<boxZ;bz++)
 			for(int bt=0;bt<maxT;bt++)
 			{
 			  sortIdx[i]=i;
-			  //			  CkPrintf("i %d bx %d x %d by %d y bz %d z bt %d\n",i,bx,x,by,y,bz,z,bt);
+			  // CkPrintf("i %d bx %d x %d by %d y bz %d z bt %d\n",i,bx,x,by,y,bz,z,bt);
 			  TheList[i++]=topoMgr->coordinatesToRank(bx+x, by+y, bz+z, bt);
 			}
 		}

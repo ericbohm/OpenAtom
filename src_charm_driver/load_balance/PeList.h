@@ -18,6 +18,10 @@
  *  Uses TopoManager for hopcount sorting if available.
  */
 
+/** \ingroup mapping
+ *
+ */
+//@{
 #ifndef _PELIST_H
 #define _PELIST_H
 
@@ -36,8 +40,8 @@ class PeList
   bool sorted;  // if pe list is kept in sorted order we can bin search it
   PeList();  //default constructor
 
-  // boxy constructor for BG/L
-  PeList(int boxX, int boxY, int boxZ, int order);
+  // boxy constructor for Torus machines
+  PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int maxZ, int maxT);
 
   PeList(int _size): size(_size)
     {
@@ -407,6 +411,5 @@ class PeList
 
 };
 
-
-
+//@}
 #endif

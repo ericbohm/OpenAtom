@@ -23,7 +23,6 @@
 #define _INTMAP_H_
 extern int numPes;
 
-
 class IntMap4 {
  private:
   int ****Map;
@@ -489,6 +488,5 @@ class IntMap2on1 {
 		CkPrintf("%d %d %d \n",x,y, get(x,y));
       }
 };
-
 
 #endif

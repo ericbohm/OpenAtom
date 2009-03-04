@@ -13,6 +13,11 @@
  *  CkHashtable <intdual, int> maps for use by CkArrayMap::procnum
  *  functions.
  */
+
+/** \defgroup mapping Mapping Framework
+ *
+ */
+//@{
 #ifndef _MAPTABLE_H_
 #define _MAPTABLE_H_
 #include "../../include/debug_flags.h"
@@ -285,13 +290,13 @@ class GSMapTable : public MapTable2
   double state_load;
   int planes_per_pe;
 
-  GSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareG,
-	       int _nstates, int _Gstates_per_pe, bool useCuboidMap
-	     );
+  GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs,
+    int _nchareG, int _nstates, int _Gstates_per_pe, bool useCuboidMap, int numInst,
+    int offsetX, int offsetY, int offsetZ);
 
   GSMapTable()
-    {
-    }
+  {
+  }
     
 };
 
@@ -343,8 +348,10 @@ class RSMapTable  : public MapTable2
   int nstates;
   int sizeZ;
   int Rstates_per_pe;
-  RSMapTable(MapType2  *_map, PeList *_availprocs,
-	int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboid, MapType2 *gsmap, int nchareG);
+  RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availprocs,
+    int _nstates, int _sizeZ, int _Rstates_per_pe, bool useCuboidMap, MapType2 *gsmap,
+    int nchareG, int numInst, int offsetX, int offsetY, int offsetZ);
+
   RSMapTable(){}
 };
 
@@ -426,5 +433,5 @@ class RhoGSMapTable  : public MapTable2
   RhoGSMapTable(){}
 };
 
-
+//@}
 #endif
