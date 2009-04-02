@@ -82,6 +82,7 @@ class PeList
 
   PeList(PeList &inlist)
     {
+      CmiAssert(inlist.size > 0);
       size=inlist.size;
       sorted=inlist.sorted;
       TheList = new int [size+1];

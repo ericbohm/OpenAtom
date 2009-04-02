@@ -741,8 +741,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 	  {
 	    
 	    int srsobjs_per_pe=rsobjs_per_pe;
-	    PeList *thisStateBox;
-	    thisStateBox = subListState(state, nchareG, gsmap);
+	    PeList *thisStateBox = subListState(state, nchareG, gsmap);
 	    int samplePe=thisStateBox->TheList[0];
 	    //  CkPrintf("RS state %d box has %d procs rsobjs_per_pe %d\n",state,thisStateBox->count(), rsobjs_per_pe);
 	    //	  bool useExclude=false;
@@ -814,7 +813,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 			    CkPrintf("State %d Plane %d Ran out of procs in RS centroid map increasing rs objects per proc to %d\n",state,plane,srsobjs_per_pe);
 			    if(exclusionList!=NULL)
 			      delete exclusionList;
-			    exclusionList=rebuildExclusion( Pecount, srsobjs_per_pe);
+			    exclusionList=rebuildExclusion(Pecount, srsobjs_per_pe);
 			    delete thisStateBox;
 			    thisStateBox = subListState(state, nchareG, gsmap);
 			    if(exclusionList!=NULL && useExclude)
@@ -867,7 +866,8 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
   #else						
 		maptable->put(intdual(state, plane))= destpe;
   #endif
-		//		if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
+		// if(CkMyPe()==0) CkPrintf("%d %d [%d]\n", state, plane, destpe);
+		// CkAssert(destpe < config.numPesPerInstance);
 		Pecount[destpe]++;
 		if(Pecount[destpe]>=srsobjs_per_pe)
 		  {
@@ -883,7 +883,7 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 			PeList one(1);
 			one.TheList[0]=destpe;
 			*thisStateBox - one;
-			*myavail-one;
+			*myavail - one;
 			thisStateBox->reindex();
 			thisStateBox->reset();
 			
@@ -894,7 +894,8 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
 	  }
 	if(exclusionList!=NULL)
 	  delete exclusionList;
-	delete myavail;
+	if(myavail != NULL)
+	  delete myavail;
       }
     else
       {

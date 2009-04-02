@@ -29,7 +29,7 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int 
 	  topoMgr= new TopoManager();
       current=0;
       sorted=false;
-      size=config.numPes;
+      size=config.numPesPerInstance;
       int i=0;
       CkPrintf("Ordering processors along long axis %d in %d X %d X %d\n",order, maxX, maxY, maxZ);
       TheList= new int[size];
@@ -103,19 +103,21 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int 
       // that fit in the mesh
       int end=numBoxes*boxX*boxY*boxZ;
       // fill out remainder 
-      if(i<config.numPes)
+      if(i<config.numPesPerInstance)
 	{
-	  PeList remainder(config.numPes);
+	  PeList remainder(config.numPesPerInstance);
 	  for(int i=0; i< size;i++)
 	    {
 	      int j=0;
 	      while(j< size)
 		if(remainder.TheList[j]==TheList[i])
 		  {
+		    CkPrintf("IF %d %d %d %d %d\n", i, j, size, TheList[j], TheList[i]);
 		    remainder.remove(j);
 		  }
 		else
 		  {
+		    CkPrintf("ELSE %d %d %d %d %d\n", i, j, size, TheList[j], TheList[i]);
 		    j++;
 		  }
 	    }
@@ -138,7 +140,7 @@ PeList::PeList() // default constructor
     {
       sorted=true;
       current=0;
-      size=config.numPes;
+      size=config.numPesPerInstance;
       TheList= new int[size+1];
       sortIdx= new int[size+1];
       for(int i=0;i<size;i++)
@@ -153,7 +155,7 @@ void PeList::rebuild()
 {
   sorted=true;
   current=0;
-  size=config.numPes;
+  size=config.numPesPerInstance;
   for(int i=0;i<size;i++)
     {
       TheList[i]=i;
@@ -179,7 +181,7 @@ void PeList::sortSource(int srcPe)
       // sort it using TopoManager 
       //  CkPrintf("PRE: sortIndexByHops\n");
       CkAssert(srcPe>=0);
-      CkAssert(srcPe<config.numPes);
+      CkAssert(srcPe<config.numPesPerInstance);
       topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
       //  CkPrintf("POST sortIndexByHops\n");
     }
