@@ -181,7 +181,7 @@ void PeList::sortSource(int srcPe)
       // sort it using TopoManager 
       //  CkPrintf("PRE: sortIndexByHops\n");
       CkAssert(srcPe>=0);
-      CkAssert(srcPe<config.numPesPerInstance);
+      CkAssert(srcPe<config.numPes);
       topoMgr->sortRanksByHops(srcPe, TheList, sortIdx, size);
       //  CkPrintf("POST sortIndexByHops\n");
     }

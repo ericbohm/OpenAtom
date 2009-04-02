@@ -683,9 +683,9 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
  
   if(numInst == 0) {
     int l, m, pl, pm, srem, rem, i=0, rsobjs_per_pe;
-    int *Pecount= new int [config.numPesPerInstance];
+    int *Pecount= new int [config.numPes];
 
-    bzero(Pecount, config.numPesPerInstance*sizeof(int));
+    bzero(Pecount, config.numPes*sizeof(int));
 
     rsobjs_per_pe = nstates*sizeZ/config.numPesPerInstance;
     if(config.useStrictCuboid) 
@@ -953,9 +953,9 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
   } else { // not instance 0
     int x, y, z, t, destpe;
     for(int state=0; state<nstates; state++)
-      for(int plane=0; plane<nchareG; plane++) {
+      for(int plane=0; plane<sizeZ; plane++) {
 	topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
-	destpe =  topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
+	destpe = topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
 	maptable->set(state, plane, destpe);
       }
   }
@@ -1052,9 +1052,9 @@ RPPMapTable::RPPMapTable(MapType2  *_map,
       //      PeList **maps= new PeList* [nstates];
       // this code is too memory hoggy
       int maxcharesperpe=states_per_pe;
-      int *usedPes= new int[config.numPesPerInstance];
+      int *usedPes= new int[config.numPes];
       bool *useExclude= new bool[nstates];
-      bzero(usedPes, config.numPesPerInstance * sizeof(int));
+      bzero(usedPes, config.numPes * sizeof(int));
       for(int state=0; state < nstates ; state++)
 	{
 	  // have variable number of exclusions per list
@@ -1483,8 +1483,8 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
   if(availprocs->count()==0)
     availprocs->reset();
   int destpe;
-  int *Pecount= new int [config.numPesPerInstance];
-  bzero(Pecount, config.numPesPerInstance*sizeof(int)); 
+  int *Pecount = new int [config.numPes];
+  bzero(Pecount, config.numPes*sizeof(int)); 
 
   //if(CkMyPe()==0) CkPrintf("nchareRhoR %d rrsobjs_per_pe %d rem %d\n", nchareRhoR, rrsobjs_per_pe, rem);   
   if(useCentroid) 
@@ -1650,7 +1650,7 @@ RhoGSMapTable::RhoGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
       CkPrintf("RhoG excluding %d from avail %d\n",exclude->count(), availprocs->count());
       *availprocs-*exclude;
       availprocs->reindex();
-      CkPrintf("avail now %d\n", availprocs->count());
+      // CkPrintf("avail now %d\n", availprocs->count());
     }
   else
     {
@@ -1725,11 +1725,11 @@ RhoRHartMapTable::RhoRHartMapTable(MapType3  *_map, PeList *_availprocs, int _nc
       CkPrintf("RhoRHart excluding %d from avail %d\n",exclude->count(), availprocs->count());
       *availprocs-*exclude;
       availprocs->reindex();
-      CkPrintf("avail now %d\n", availprocs->count());
+      // CkPrintf("avail now %d\n", availprocs->count());
     }
   else
     {
-      CkPrintf("cannot use exclusion in rhoRhart\n");
+      // CkPrintf("cannot use exclusion in rhoRhart\n");
       availprocs->reset();
     }
   delete avail;

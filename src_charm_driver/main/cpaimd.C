@@ -277,7 +277,7 @@ main::main(CkArgMsg *msg) {
     if (msg->argc < 3) {
       CkAbort("Usage: cpaimd.x cpaimd_config pinysystem.input");
     }//endif
-    CkPrintf("Executing leanCP %s\n", msg->argv[0]);
+    CkPrintf("Executing OpenAtom: BINARY - %s\n", msg->argv[0]);
     if(msg->argc >3 && msg->argv[3][0] == 't')
       {
 
@@ -563,11 +563,11 @@ main::main(CkArgMsg *msg) {
     int l=config.Gstates_per_pe;
     int m, pl, pm;
     pl = nstates / l;
-    pm = (config.numPes / config.numInstances) / pl;
+    pm = config.numPesPerInstance / pl;
     if(pm == 0) {
       CkPrintf("Choose a larger Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 \n", 
-      l, config.numPes, config.numInstances, nstates, l);
-      CkAssert( (config.numPesPerInstance / pl) > 0);
+	l, config.numPes, config.numInstances, nstates, l);
+      CkAssert( pm > 0);
     }
     m = config.nchareG / pm;
 
@@ -706,7 +706,6 @@ Per Instance startup BEGIN
 
 	    UberIndex thisInstanceIndex(integral,kpoint,temper);
 	    thisInstance=UberCollection(thisInstanceIndex);
-	    CkPrintf("making instance %d %d %d offset %d\n\n",thisInstanceIndex.x, thisInstanceIndex.y, thisInstanceIndex.z, thisInstance.proxyOffset);
 	    UberAlles.push_back(thisInstance);
 	    //============================================================================    
 	    // Transfer parameters from physics to driver
@@ -749,7 +748,7 @@ Per Instance startup BEGIN
 	    delete [] usedProc;
 	    UpeUsedByNLZ.push_back(peUsedByNLZ);	   
 	    UplaneUsedByNLZ.push_back(planeUsedByNLZ);
-	    CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
+	    // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
 	    // Create mapping classes for Paircalcular
 
 	    //-------------------------------------------------------------
@@ -962,7 +961,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
 
   CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse, thisInstance);
   newtime=CmiWallTimer();
-  CkPrintf("AsymScalcMap %d x %d x %d x %d created in %g\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksAsym, newtime-Timer);
+  CkPrintf("AsymScalcMap %d x %d x %d x %d created in %g\n\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksAsym, newtime-Timer);
   Timer=newtime;
 
   if(config.dumpMapFiles) {
@@ -1027,7 +1026,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     UpairCalcID1[thisInstance.proxyOffset].beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
-    CkPrintf("creating PC instance %d\n",thisInstance.proxyOffset);
+    // CkPrintf("creating PC instance %d\n",thisInstance.proxyOffset);
     createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), UorthoProxy[thisInstance.proxyOffset]), &(UpairCalcID1[thisInstance.proxyOffset]), gsp_ep, gsp_ep_tol, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false, thisInstance.proxyOffset);
 
     CkArrayIndex2D myindex(0, 0);
@@ -1526,7 +1525,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ, UberCollection t
 #endif
   }
   double newtime=CmiWallTimer();
-  CkPrintf("OrthoMap created in %g\n", newtime-Timer);
+  CkPrintf("OrthoMap created in %g\n\n", newtime-Timer);
 
   //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
   orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
@@ -1827,7 +1826,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   PRINT_LINE_STAR;
   PRINTF("Building G-space (%d %d) and R-space (%d %d/%d) state Chares\n",
-          nstates,nchareG,nstates,nchareR,nchareRPP);
+          nstates, nchareG, nstates, nchareR, nchareRPP);
   PRINT_LINE_DASH;printf("\n");
   availGlobG->reset();
   double newtime=CmiWallTimer();
@@ -1917,7 +1916,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
                      sizeX,  1, 1, sGrainSize,  gforward, 
 		     gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
-  CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
+  // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
 
  //--------------------------------------------------------------------------------
  // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
@@ -2004,9 +2003,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkPrintf("RSMap created in %g\n", newtime-Timer);
     Timer=newtime;
   } else {
-      RSMapTable RStable= RSMapTable(&RSImaptable[0], &RSImaptable[numInst], availGlobR, 
+    RSMapTable RStable= RSMapTable(&RSImaptable[0], &RSImaptable[numInst], availGlobR, 
 			    nstates, nchareR, Rstates_per_pe, config.useCuboidMapRS, 
 			    &GSImaptable[0], config.nchareG, numInst, x, y, z);
+    CkPrintf("RSMap instance %d created in %g\n", numInst, newtime-Timer);
   }
 
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew(thisInstance);
@@ -2189,8 +2189,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space state chare array build\n");
   PRINT_LINE_STAR;printf("\n");
-
-printf("GSImaptable: %d\n", GSImaptable.size());
 
 //----------------------------------------------------------------------------
     }//end routine

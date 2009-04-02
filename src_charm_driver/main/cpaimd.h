@@ -252,7 +252,6 @@ class GSMap: public CkArrayMapTable2 {
       { 
 	thisInstance=_instance;
 #ifdef USE_INT_MAP
-	CkAssert(thisInstance.getPO() < 1);
 	maptable = &GSImaptable[thisInstance.getPO()];
 	if(CkMyPe()) {
 	  if(maptable == NULL)
