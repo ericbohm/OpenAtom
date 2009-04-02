@@ -1979,7 +1979,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
   if(fakeTorus)
     { //
       numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
-      CkPrintf("Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
+      CkPrintf("  Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
 
     UberImax = 1;
@@ -2030,7 +2030,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     
     nchareG  = (int)(gExpandFact*(double)low_x_size);
-    CkPrintf("nchareG now %d based on gExpandFact %.5g\n", nchareG, gExpandFact);
+    CkPrintf("  nchareG now %d based on gExpandFact %.5g\n", nchareG, gExpandFact);
 //=============================================================================
 // numChunks, numChunksSym, numChunksAsym, sgrainsize are not set
 
@@ -2076,7 +2076,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
        dict_pc[19].iuset=1;
     }//endif : chunks not set
     else{
-      CkPrintf("guesstimate using user defined PC decomp\n");
+      // CkPrintf("guesstimate using user defined PC decomp\n");
     }
 
 //=============================================================================
