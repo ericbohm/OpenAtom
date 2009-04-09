@@ -802,6 +802,7 @@ void sendRightData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, 
 
 
 
+
 void sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb)
 {
 	#ifndef PC_USE_RDMA
@@ -819,14 +820,14 @@ void sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, 
 		/// Verify 
 		CkAssert(pid->numChunks > 0);
 		/// Compute the size of the chunk of data to be sent out in terms of the number of doubles (as PC treats them) and not complex
-		int chunksize  = 2 * totalsize / pid->numChunks;
+		int chunksize  = 2 * (totalsize / pid->numChunks);
 		
 		/// Send an RDMA setup request to each destination PC
 		for (int chunk=0; chunk < pid->numChunks; chunk++)
 		{
 			/// The last chunk gets the remainder of the points
 			if( (pid->numChunks > 1) && (chunk == pid->numChunks-1) )
-				chunksize = chunksize + 2 * (totalsize % pid->numChunks);
+				chunksize += 2 * (totalsize % pid->numChunks);
 			/// If the communication is through a direct p2p send
 			if(pid->useDirectSend)
 			{
@@ -869,14 +870,14 @@ void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize,
 		/// Verify 
 		CkAssert(pid->numChunks > 0);
 		/// Compute the size of the chunk of data to be sent out in terms of the number of doubles (as PC treats them) and not complex
-		int chunksize  = 2 * totalsize / pid->numChunks;
+		int chunksize  = 2 * (totalsize / pid->numChunks);
 		
 		/// Send an RDMA setup request to each destination PC
 		for (int chunk=0; chunk < pid->numChunks; chunk++)
 		{
 			/// The last chunk gets the remainder of the points
 			if( (pid->numChunks > 1) && (chunk == pid->numChunks-1) )
-				chunksize = chunksize + 2 * (totalsize % pid->numChunks);
+				chunksize += 2 * (totalsize % pid->numChunks);
 			/// If the communication is through a direct p2p send
 			if(pid->useDirectSend)
 			{
