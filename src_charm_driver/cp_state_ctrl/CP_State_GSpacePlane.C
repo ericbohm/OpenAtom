@@ -3785,6 +3785,7 @@ void testeke(int ncoef,complex *psi_g,int *k_x,int *k_y,int *k_z, int iflag,int 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
+#include <sstream>
 
 void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg)
 {
@@ -3797,9 +3798,10 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 	RDMApair_GSP_PC token = msg->token();
 	rdmaHandleType ourHandle = msg->handle();
 	#ifdef DEBUG_CP_PAIRCALC_RDMA
-		CkPrintf("GSpace[%d,%d] received RDMA setup confirmation from PC[%d,%d,%d,%d,%d] for L(%d)/R(%d) data. Now have %d handles of %d (%d symm + %d asymm)\n",
-			thisIndex.x,thisIndex.y,token.pcIndex.w,token.pcIndex.x,token.pcIndex.y,token.pcIndex.z,token.symmetric,token.shouldSendLeft,!token.shouldSendLeft,
-			gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm);
+        std::stringstream dbgStr; 
+        dbgStr<<token;
+		CkPrintf("%s : Received RDMA setup confirmation from paircalc. Now have %d handles of %d (%d symm + %d asymm)\n", dbgStr.str().c_str(),
+			thisIndex.x,thisIndex.y, gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm );
 	#endif
 	/// Determine which loop (symm/Asymm) this PC that has sent setup confirmation, belongs to
 	PairCalcID *pcid = 0;
@@ -3837,11 +3839,10 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 	}
 	
 	#ifdef DEBUG_CP_PAIRCALC_RDMA
-		CkPrintf("GSpace[%d,%d] - PC[%d,%d,%d,%d,%d]: RDMA send %d units of data at an offset of %d units from %p on proc %d to %p on proc %d\n",
-			thisIndex.x,thisIndex.y,
-			token.pcIndex.w,token.pcIndex.x,token.pcIndex.y,token.pcIndex.z,token.symmetric,
-			dataSize,offset,(!token.shouldSendLeft && !token.symmetric)? &(gs.packedForceData) : &(gs.packedPlaneData),
-			ourHandle.senderNode,ourHandle.recverBuf,ourHandle.recverNode); 
+        CkPrintf("%s : Will RDMA-put %d units of data at an offset of %d units from %p on proc %d to %p on proc %d\n",
+			dbgStr.str().c_str(), dataSize, offset, 
+            (!token.shouldSendLeft && !token.symmetric)? &(gs.packedForceData) : &(gs.packedPlaneData), ourHandle.senderNode,
+            ourHandle.recverBuf,ourHandle.recverNode); 
 	#endif
 
 	/// Call a reduction that signals the end of the initialization phase to main

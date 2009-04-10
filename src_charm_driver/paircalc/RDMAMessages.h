@@ -3,7 +3,7 @@
 #ifdef ENABLE_RDMA_HANDSHAKES
 	#include "cmidirect.h"
 #endif
-
+#include <ostream>
 
 #ifndef RDMA_MESSAGES_H
 #define RDMA_MESSAGES_H
@@ -45,7 +45,16 @@ class RDMASetupRequestMsg: public CMessage_RDMASetupRequestMsg<tokenType>
 		int senderID, senderProc, numUnits;
 		CkCallback callbk;
 		tokenType handshakeToken;
+
+    /// Stream inserter. Note: not a member function
+    inline friend std::ostream& operator<< (std::ostream &out, const RDMASetupRequestMsg<tokenType> &obj)
+    {
+        out<<"RDMA setup request from "<<obj.senderID<<" on proc "<<obj.senderProc
+        <<" sending "<<obj.numUnits<<" units. Token data: "<<obj.handshakeToken;
+        return out;
+    }
 };
+
 
 
 
@@ -62,7 +71,15 @@ class RDMASetupConfirmationMsg: public CMessage_RDMASetupConfirmationMsg<tokenTy
 	private:
 		tokenType handshakeToken;
 		rdmaHandleType ourHandle;
+
+    /// Stream inserter. Note: not a member function
+    inline friend std::ostream& operator<< (std::ostream &out, const RDMASetupConfirmationMsg<tokenType> &obj)
+    {
+        out<<"RDMA setup confirmation msg. Token data: "<<obj.handshakeToken;
+        return out;
+    }
 };
+
 
 
 
@@ -85,7 +102,18 @@ class RDMApair_GSP_PC
 		bool shouldSendLeft, symmetric;
 		CkIndex2D gspIndex;
 		CkIndex4D pcIndex;
+
+    /// Stream inserter. Note: not a member function 
+    inline friend std::ostream& operator<< (std::ostream &out, const RDMApair_GSP_PC &obj)
+    {
+        out<<"GSpace["<<obj.gspIndex.x<<","<<obj.gspIndex.y
+        <<"] - PC["<<obj.pcIndex.w<<","<<obj.pcIndex.x<<","<<obj.pcIndex.y<<","<<obj.pcIndex.z<<","<<obj.symmetric<<"] "
+        <<(obj.shouldSendLeft?"Left ":"Right ");
+        return out;
+    }
 };
+
+
 
 /** This include is inside the #define block to avoid redefinition.
  * def.h files dont have include guards and can cause problems for modules with template chares/messages.

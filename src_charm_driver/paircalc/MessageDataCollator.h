@@ -6,6 +6,7 @@
 #include "RDMAMessages.h"
 #include "charm++.h"
 #include <string>
+#include <sstream>
 
 #ifndef MESSAGE_DATA_COLLATOR_H
 #define MESSAGE_DATA_COLLATOR_H
@@ -13,7 +14,12 @@
 namespace cp {
 namespace paircalc {
 
-
+#ifdef DEBUG_MESSAGEDATACOLLATOR_ALL
+    #define DEBUG_MESSAGEDATACOLLATOR_CREATION
+    #define DEBUG_MESSAGE_DATACOLLATOR
+    #define DEBUG_MESSAGEDATACOLLATOR_RDMA
+#endif
+    
 /** Class that does the task of buffering data sent in via messages for an expected number of messages before
  * calling on a handler to process them. Assumes that all messages carry the same amount of data.
  *
@@ -55,7 +61,7 @@ class MessageDataCollator
 			minSender(offsetStart),
 			sampleMsg(0)    
 		{
-			#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+			#ifdef DEBUG_MESSAGEDATACOLLATOR_CREATION
 				CkPrintf("MessageDataCollator%s instantiated: numExpected = %d and buffer management = %d on(1)/off(0)\n",myName.c_str(),numExpected,isBufferMine);
 			#endif
 			#ifdef COLLATOR_ENABLE_RDMA
@@ -162,7 +168,7 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 		/// If buffer exists AND I manage it AND its not big enough for this batch of messages, delete it
 		if (dataBuffer && isBufferMine && reqdBufferSizeInUnits > bufferSizeInUnits)
 		{
-			#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+			#ifdef DEBUG_MESSAGEDATACOLLATOR
 				CkPrintf("MessageDataCollator%s: Deleting buffer as I need space for %d units. Available = %d units\n",myName.c_str(),reqdBufferSizeInUnits,bufferSizeInUnits);
 			#endif
 			delete [] dataBuffer;
@@ -173,8 +179,8 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 		{
 			/// Get some memory to hold the message data
 			bufferSizeInUnits =  reqdBufferSizeInUnits;
-			#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
-				CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units.\n",myName.c_str(),bufferSizeInUnits);
+			#ifdef DEBUG_MESSAGEDATACOLLATOR
+                CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg);
 			#endif
 			dataBuffer = new dataType[bufferSizeInUnits];
 			/// Zero out the memory region
@@ -198,7 +204,7 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 	/// If the expected number have arrived ...
 	if (numReceived >= numExpected)
 	{
-		#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+		#ifdef DEBUG_MESSAGEDATACOLLATOR
 			CkPrintf("MessageDataCollator%s: Collated %d of %d messages. Gonna trigger my client\n",myName.c_str(),numReceived,numExpected);
 		#endif
 		/// Increment the number of message batches that have been processed
@@ -217,7 +223,7 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 	} /// endif
 	else
 	{
-		#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+		#ifdef DEBUG_MESSAGEDATACOLLATOR
 			CkPrintf("MessageDataCollator%s: Received message %d of %d.\n",myName.c_str(),numReceived,numExpected);
 		#endif
 	}
@@ -247,8 +253,11 @@ void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupReque
 	#ifndef COLLATOR_ENABLE_RDMA
 		CkAbort("MessageDataCollator aborting because someone called an RDMA method when it has been turned off for me...\n");
 	#else
-	#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
-		CkPrintf("MessageDataCollator%s: Received RDMA setup request from sender %d on proc %d.\n",myName.c_str(),msg->sender(),msg->senderPE());
+    #ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
+        std::stringstream dbgStr; 
+		dbgStr<<"MessageDataCollator"<<myName<<": Received RDMA setup request from sender "<<msg->sender()<<" on proc "<<msg->senderPE()<<"."
+              <<"\n\tRDMA token at Receiver: "<<*replyToken<<" dataSize = "<<msg->numDataUnits();
+        CkPrintf("%s\n",dbgStr.str().c_str());
 	#endif
 	/// You usually will not want to setup an RDMA link in the middle of receiving a batch of messages
 	CkAssert(numReceived == 0);
@@ -262,7 +271,7 @@ void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupReque
 	/// If buffer exists AND I manage it AND its not big enough for this batch of data, delete it
 	if (dataBuffer && isBufferMine && reqdBufferSizeInUnits > bufferSizeInUnits)
 	{
-		#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+		#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
 			CkPrintf("MessageDataCollator%s: Deleting buffer as I need space for %d units. Available = %d units\n",myName.c_str(),reqdBufferSizeInUnits,bufferSizeInUnits);
 		#endif
 		delete [] dataBuffer;
@@ -273,8 +282,8 @@ void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupReque
 	{
 		/// Get some memory to hold the data
 		bufferSizeInUnits =  reqdBufferSizeInUnits;
-		#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
-			CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units.\n",myName.c_str(),bufferSizeInUnits);
+		#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
+			CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg);
 		#endif
 		dataBuffer = new dataType[bufferSizeInUnits];
 		/// Zero out the memory region
@@ -334,7 +343,7 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::operator() (void)
 		/// If the expected number have arrived ...
 		if (numReceived >= numExpected)
 		{
-			#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+			#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
 				CkPrintf("MessageDataCollator%s: Collated %d of %d RDMA data packets. Gonna trigger my client\n",myName.c_str(),numReceived,numExpected);
 			#endif
 			/// Increment the number of message batches that have been processed
@@ -350,7 +359,7 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::operator() (void)
 		} /// endif
 		else
 		{
-			#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+			#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
 				CkPrintf("MessageDataCollator%s: Someone deposited data via RDMA. Collated %d of %d.\n",myName.c_str(),numReceived,numExpected);
 			#endif
 		}
@@ -382,7 +391,7 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::expectNext()
 		CkAssert( numReceived==0 || numReceived>=numExpected );
 		/// Set the flag the will tell me to not allow data via messages for the next batch
 		isNextBatchViaRDMA = true; 
-		#ifdef DEBUG_CP_PAIRCALC_MESSAGEDATACOLLATOR
+		#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
 			CkPrintf("MessageDataCollator%s: Expecting the next batch of data via RDMA. Notifying the runtime to watch %d receive buffers.\n",myName.c_str(),RDMAhandles.size());
 		#endif
 		/// Notify the runtime to expect data arrival via RDMA 
