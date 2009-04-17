@@ -19,6 +19,8 @@ MapFile::~MapFile()
 }
 MapFile::MapFile(const char* name, int numpes)
 {
+  if(topoMgr==NULL) 
+    topoMgr= new TopoManager(); // just to keep dump coord from flaking
   mapName = (char *)malloc(sizeof(char)*15);
   strcpy(mapName, name);
   numProcs = numpes;
@@ -27,6 +29,8 @@ MapFile::MapFile(const char* name, int numpes)
 
 MapFile::MapFile(const char* name, int num, int* size, int numpes, const char *order, int x, int y, int z, int t, int _stride)
 {
+  if(topoMgr==NULL) 
+    topoMgr= new TopoManager(); // just to keep dump coord from flaking
   mapName = (char *)malloc(sizeof(char)*15);
   strcpy(mapName, name);
   numDim = num;
