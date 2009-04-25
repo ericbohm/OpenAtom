@@ -12,6 +12,7 @@ TOPINC		= ../../include
 UBER		= ../uber
 STATE		= ../cp_state_ctrl
 RHO		= ../cp_density_ctrl
+LARGE		= ../cp_largesp_ctrl
 STRUCTFACT	= ../structure_factor
 ORTHO		= ../orthog_ctrl
 UTIL		= ../utility
@@ -29,7 +30,7 @@ FLAGS	= \
 	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) \
 	-I$(MAIN) -I$(STATE) -I$(RHO) -I$(ORTHO) -I$(UTIL) -I$(MATH) \
 	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I$(UBER) \
-        -I$(PAIRCALC) -I$(SRC_COMPILE) -I../$(STANDARD_INC) 
+        -I$(PAIRCALC) -I$(SRC_COMPILE) -I../$(STANDARD_INC) -I$(LARGE)
 
 LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
 	-lm $(LOCAL_LIB) 
@@ -64,7 +65,7 @@ OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
 	CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o util.o \
 	ortho.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
 	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o \
-	InstanceController.o
+	InstanceController.o CP_LargeSP_RhoGSpacePlane.o CP_LargeSP_RhoRealSpacePlane.o
 
 OBJS_DECL	= $(MAIN)/gSpaceDriver.decl.h $(MAIN)/ortho.decl.h $(MAIN)/structureFactor.decl.h \
 		  $(MAIN)/cpaimd.decl.h $(MAIN)/groups.decl.h $(MAIN)/RDMAMessages.decl.h $(MAIN)/paircalcMessages.decl.h \
@@ -252,7 +253,7 @@ CP_Rho_RealSpacePlane.o: $(RHO)/CP_Rho_RealSpacePlane.C \
 	$(CHARMC) -c $(RHO)/CP_Rho_RealSpacePlane.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
-	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(STATE)/CP_State_Plane.h \
 	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
 	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/debug_flags.h \
 	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
@@ -262,7 +263,7 @@ CP_Rho_GSpacePlane.o: $(RHO)/CP_Rho_GSpacePlane.C \
 	$(CHARMC) -c $(RHO)/CP_Rho_GSpacePlane.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 CP_Rho_GHartExt.o: $(RHO)/CP_Rho_GHartExt.C \
-	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(STATE)/CP_State_Plane.h \
 	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
 	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
 	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
@@ -274,7 +275,7 @@ CP_Rho_GHartExt.o: $(RHO)/CP_Rho_GHartExt.C \
 	$(CHARMC) -c $(RHO)/CP_Rho_GHartExt.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 CP_Rho_RHartExt.o: $(RHO)/CP_Rho_RHartExt.C \
-	$(STATE)/CP_State_Plane.h $(STATE)/CP_State_Plane.h \
+	$(STATE)/CP_State_Plane.h \
 	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
 	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
 	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
@@ -284,6 +285,31 @@ CP_Rho_RHartExt.o: $(RHO)/CP_Rho_RHartExt.C \
 	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
 	$(ECHO) $@
 	$(CHARMC) -c $(RHO)/CP_Rho_RHartExt.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_LargeSP_RhoRealSpacePlane.o: $(LARGE)/CP_LargeSP_RhoRealSpacePlane.C \
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
+	$(ECHO) $@
+	$(CHARMC) -c $(LARGE)/CP_LargeSP_RhoRealSpacePlane.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+CP_LargeSP_RhoGSpacePlane.o: $(LARGE)/CP_LargeSP_RhoGSpacePlane.C \
+	$(STATE)/CP_State_Plane.h \
+	$(MAIN)/cpaimd.decl.h $(MAIN)/cpaimd.def.h \
+	$(MAIN)/groups.h $(MAIN)/cpaimd.h \
+	$(TOPINC)/CPcharmParaInfo.h $(TOPINC)/eesDataClass.h \
+	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
+	$(FFTSLAB)/fftCacheSlab.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h \
+	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h
+	$(ECHO) $@
+	$(CHARMC) -c $(LARGE)/CP_LargeSP_RhoGSpacePlane.C $(OPTS) $(FLAGS)
+
 #---------------------------------------------------------------------------
 util.o: $(UTIL)/util.C $(UTIL)/util.h $(TOPINC)/debug_flags.h \
 	$(TOPINC)/RunDescriptor.h $(TOPINC)/CPcharmParaInfo.h   

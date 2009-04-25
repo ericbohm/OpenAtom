@@ -102,7 +102,7 @@
 extern CkVec <MapType2> OrthoImaptable;
 extern CkHashtableT <intdual, int> Orthomaptable;
 extern bool fakeTorus;
-
+extern int numPes;
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
 };
 
@@ -417,7 +417,7 @@ class OrthoMap : public CkArrayMapTable2 {
       proc=maptable->get(intdual(index[0],index[1]));
 #endif
       CkAssert(proc>=0);
-      if(fakeTorus)
+      if(numPes != CkNumPes())
 	return(proc%CkNumPes());
       else
 	return(proc);

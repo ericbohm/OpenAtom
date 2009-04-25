@@ -604,6 +604,52 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
 };
 //============================================================================
 
+//============================================================================  
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
+//============================================================================
+/**
+ * The Large Sparse RhoG is where we interface with NAMD in QMMM for
+ * the large grid
+*/
+class CP_LargeSP_RhoGSpacePlane: public CBase_CP_LargeSP_RhoGSpacePlane {
+ public:
+  const UberCollection thisInstance;
+  // Functions
+   CP_LargeSP_RhoGSpacePlane(CkMigrateMessage *m) {}
+   CP_LargeSP_RhoGSpacePlane(UberCollection);
+   void init();
+  ~CP_LargeSP_RhoGSpacePlane();
+   void pup(PUP::er &);
+   void acceptMDSg();
+   void acceptLSPRhoR();
+
+};
+//============================================================================
+
+//============================================================================  
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  
+//============================================================================
+/**
+ * The Large Sparse RhoR is where we interpolate dense RhoR onto the large
+ * grid for QMMM
+*/
+class CP_LargeSP_RhoRealSpacePlane: public CBase_CP_LargeSP_RhoRealSpacePlane {
+ public:
+  const UberCollection thisInstance;
+  // constructor Functions
+   CP_LargeSP_RhoRealSpacePlane(CkMigrateMessage *m) {}
+   CP_LargeSP_RhoRealSpacePlane(UberCollection);
+   // entry methods
+   void init();
+   void acceptLSPRhoG();
+   void acceptRhoR();
+
+   // sequential stuff
+  ~CP_LargeSP_RhoRealSpacePlane();
+   void pup(PUP::er &);
+
+};
+//============================================================================
 
 //============================================================================
 #endif // #ifndef _PLANE_H_

@@ -115,6 +115,8 @@ CkVec <MapType2> RhoGSImaptable;
 CkVec <MapType2> RhoRSImaptable;
 CkVec <MapType2> RhoGHartImaptable;
 CkVec <MapType3> RhoRHartImaptable;
+//CkVec <MapType1> LSPRhoGSImaptable;
+CkVec <MapType2> LSPRhoRSImaptable;
 CkVec <MapType2> OrthoImaptable;
 CkVec <MapType2> OrthoHelperImaptable;
 CkVec <MapType4> AsymScalcImaptable;
@@ -186,6 +188,8 @@ CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 CkVec <CProxy_StructureFactor>            UsfCompProxy;
 CkVec <CProxy_eesCache>                   UeesCacheProxy;
 CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
+CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
+CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
 
 CkVec <UberCollection>			  UberAlles;
 
@@ -211,11 +215,11 @@ int planes_per_pe;
 CkVec < CkVec <int> > UpeUsedBySF;
 CkVec < CkVec <int> > UpeUsedByNLZ;
 CkVec < CkVec <int> > UplaneUsedByNLZ;
-PeList *availGlobR;
-PeList *availGlobG;
-PeList *excludePes;
+PeList *availGlobR=NULL;
+PeList *availGlobG=NULL;
+PeList *excludePes=NULL;
 int boxSize;
-TopoManager *topoMgr;
+TopoManager *topoMgr=NULL;
 
 //============================================================================
 
@@ -415,11 +419,12 @@ main::main(CkArgMsg *msg) {
     PRINT_LINE_DASH; CkPrintf("\n");
     Timer=CmiWallTimer();
     double phase1start=Timer;
-    numPes = CkNumPes();
+    numPes = 2048; //CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c);
     fakeTorus        = config.fakeTorus>0;
+    CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
     if(fakeTorus)
       numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
     int numSfGrps    = config.numSfGrps;  // local copies are nice
@@ -548,6 +553,8 @@ main::main(CkArgMsg *msg) {
     UeesCacheProxy.reserve(config.numInstances);
     UorthoHelperProxy.reserve(config.numInstances);
     UplaneUsedByNLZ.reserve(config.numInstances);
+    UlsRhoRealProxy.reserve(config.numInstances);
+    UlsRhoGProxy.reserve(config.numInstances);
 
     excludePes=NULL;
     mainProxy=thishandle;
@@ -572,6 +579,12 @@ main::main(CkArgMsg *msg) {
     m = config.nchareG / pm;
 
     planes_per_pe=m;
+    if(planes_per_pe <= 0) {
+      CkPrintf("Choose a Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 and config.nchareG [%d] / pm [%d] {where pm = config.numInstances [%d]/ pl [%d] }  > 0\n", 
+	l, config.numPes, config.numInstances, nstates, l, config.nchareG, pm, config.numPesPerInstance, pl);
+      CkAssert( m > 0);
+    }
+
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     //    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
     //    for(int i=0; i<nstates;i++){
@@ -2736,7 +2749,15 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CmiNetworkProgressAfter(0);
   //===========================================================================
   // Output to the screen
-
+  // need to add maps for these, for now just let em default
+  // IF some condition which triggers QMMM
+  int nchareRhoGLSP=1;
+  int nchareRhoRealLSP=1;
+  int nchareRhoRealLSPsubplanes=1;
+  CkArrayOptions lspgspOpts(nchareRhoGLSP);
+  CkArrayOptions lsprealOpts(nchareRhoRealLSP, nchareRhoRealLSPsubplanes);
+  UlsRhoGProxy.push_back(CProxy_CP_LargeSP_RhoGSpacePlane::ckNew(thisInstance,lspgspOpts));
+  UlsRhoRealProxy.push_back(CProxy_CP_LargeSP_RhoRealSpacePlane::ckNew(thisInstance,lsprealOpts));
   printf("\n");
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space Rho chare array build\n");

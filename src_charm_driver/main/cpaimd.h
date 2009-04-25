@@ -153,7 +153,7 @@ class CkArrayMapTable2 : public CkArrayMap
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -185,7 +185,7 @@ class CkArrayMapTable3 : public CkArrayMap
     proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -219,7 +219,7 @@ class CkArrayMapTable4 : public CkArrayMap
 	proc=maptable->get(intdual(index[0], index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -283,7 +283,7 @@ class GSMap: public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -336,7 +336,7 @@ class RSMap: public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -384,7 +384,7 @@ class RPPMap: public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -452,7 +452,7 @@ class SCalcMap : public CkArrayMapTable4 {
     proc=maptable->get(intdual(index[0], index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -500,7 +500,7 @@ class RhoRSMap : public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -538,7 +538,7 @@ class RhoGSMap : public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -588,7 +588,7 @@ class RhoGHartMap : public CkArrayMapTable2 {
     proc=maptable->get(intdual(index[0],index[1]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);
@@ -635,7 +635,7 @@ class RhoRHartMap : public CkArrayMapTable3 {
     proc=maptable->get(inttriple(index[0],index[1],index[2]));
 #endif
     CkAssert(proc>=0);
-    if(fakeTorus)
+    if(numPes!=CkNumPes())
       return(proc%CkNumPes());
     else
       return(proc);

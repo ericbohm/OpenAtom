@@ -129,6 +129,9 @@ mainmodule cpaimd {
 	readonly CkVec <CProxy_StructureFactor> UsfCompProxy;
 	readonly CkVec <CProxy_eesCache>  UeesCacheProxy;
 
+	readonly CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
+	readonly CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
+
 	readonly CkVec <UberCollection> UberAlles;
 	
 	readonly CkGroupID mCastGrpId;
@@ -265,6 +268,7 @@ mainmodule cpaimd {
                 entry void acceptRhoGradVksRyToGy(RhoGSFFTMsg *msg);
                 entry void acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg);
 	};
+
        array [3D] CP_Rho_RHartExt {
                 entry CP_Rho_RHartExt(int, int, int,int,int, UberCollection);
 		entry void init();
@@ -300,7 +304,31 @@ mainmodule cpaimd {
                 entry void acceptAtmSFTot(int size, complex inSF[size]);
 	};
 
+       array [1D] CP_LargeSP_RhoGSpacePlane {
+		entry CP_LargeSP_RhoGSpacePlane(UberCollection);
+		entry [nokeep] void init();
+		entry void acceptMDSg();
+		entry void acceptLSPRhoR();
+	}	
 
+       array [2D] CP_LargeSP_RhoRealSpacePlane {
+		entry CP_LargeSP_RhoRealSpacePlane(UberCollection);
+		entry [nokeep] void init();
+		entry void acceptLSPRhoG();
+		entry void acceptRhoR();
+	}	
+/** not implemented yet
+       array [3D] VanDerWaalsR {
+		entry VanderWaalsR();
+		entry [nokeep] void init();
+	}
+
+       array [2D] VanDerWaalsG {
+		entry VanderWaalsG();
+		entry [nokeep] void init();
+	}
+
+*/
 	group RhoGSMap : CkArrayMap {
 		entry RhoGSMap(UberCollection);
 	};
