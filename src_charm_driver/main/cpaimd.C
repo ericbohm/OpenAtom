@@ -419,7 +419,8 @@ main::main(CkArgMsg *msg) {
     PRINT_LINE_DASH; CkPrintf("\n");
     Timer=CmiWallTimer();
     double phase1start=Timer;
-    numPes = 2048; //CkNumPes();
+    //numPes = 2048; 
+    numPes=CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c);
