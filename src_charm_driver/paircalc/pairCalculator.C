@@ -679,7 +679,7 @@ void sendLeftData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, b
 							CkAssert(finite(msg->points[i].im));
 						}
 						#endif
-						pcid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptLeftData(msg);
+						pcid->handlerProxy(idx).acceptLeftData(msg);
 					}
 				}
 				// else, use a typical multicast to the destination section
@@ -774,7 +774,7 @@ void sendRightData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, 
 							CkAssert(finite(msg->points[i].im));
 						}
 						#endif
-						pcid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptRightData(msg);
+						pcid->handlerProxy(idx).acceptRightData(msg);
 					}
 				}
 				else

@@ -389,9 +389,9 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCol
 	#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
 		CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,leftCollator,rightCollator);
 	#endif
-	/// This is the first point during execution when I can supply my InputDataHandler with pointers to the collators, hence
+	/// This is the first point during execution when I can supply my InputDataHandler with pointers to the msg handlers, hence
 	/// it is (now) safe to insert the [w,x,y,z]th element of the InputDataHandler chare array (as it will immediately clamor 
-	/// for access to these collators)
+	/// for access to these handlers)
 	myMsgHandler = inProxy;
 	#ifdef DEBUG_CP_PAIRCALC_CREATION
 		CkPrintf("[%d,%d,%d,%d,%d] Inserting my InputDataHandler\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
@@ -669,62 +669,15 @@ inline void PairCalculator::acceptLeftData(const double *data, const int numRows
 	#endif
 
 	/// Set member data pertinent to the left block
-	inDataLeft = const_cast<double*> (data);
-	existsLeft = true;
-	numRecd += numRows;
-	numPoints  = numCols/2;  ///< @note: As complex data is sent in by GSpace, but treated as doubles here, numCols = 2*numPoints
-	isLeftReady = true;
+	inDataLeft   = const_cast<double*> (data);
+	existsLeft   = true;
+	numRecd     += numRows;
+	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
+	isLeftReady  = true;
 
 	/// If all data is ready, trigger the computation 
 	if (isLeftReady && isRightReady)
-	{
-		// Get a handle on a sample message from the collator
-		paircalcInputMsg *aMsg = leftCollator->getSampleMsg();
-		// Check that you have a valid handle on the sample message
-		if (aMsg == 0)
-		{
-			// If RDMA is enabled, there are no messages let alone a sample. Simply trigger the computation
-			#ifdef PC_USE_RDMA
-				actionType=0;
-				 if(!expectOrthoT || numRecdBWOT==numOrtho)
-				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
-				 else
-				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-			// If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
-			#else
-				CkPrintf("[%d,%d,%d,%d,%d] My left collator is not able to give me a sample message.",
-							thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
-				CkAbort("PairCalc aborting...");
-			#endif
-		}
-		else
-		{ 
-			blkSize = aMsg->blkSize;
-			// if this is not a PsiV loop
-			if(!aMsg->doPsiV)
-			{
-				// normal behavior
-				actionType=0;
-				/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
-				 * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
-				 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
-				 * all cases except (asymm, dynamics when T has not been received)
-				 * 
-				 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
-				 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
-				 */
-				 if(!expectOrthoT || numRecdBWOT==numOrtho)
-				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
-				 else
-				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-			}
-			// else, if this is a PsiV loop
-			else
-				thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
-			// Delete the sample message
-			delete aMsg;
-		}
-	}
+        launchComputations( leftCollator->getSampleMsg() );
 }
 
 
@@ -747,63 +700,67 @@ inline void PairCalculator::acceptRightData(const double *data, const int numRow
 	#endif
 
 	/// Set member data pertinent to the right block
-	inDataRight = const_cast<double*> (data);
-	existsRight = true;
-	numRecd += numRows;
-	numPoints  = numCols/2;
+	inDataRight  = const_cast<double*> (data);
+	existsRight  = true;
+	numRecd     += numRows;
+	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
 	isRightReady = true;
 
 	/// If all data is ready, trigger the computation 
 	if (isLeftReady && isRightReady)
-	{
-		// Get a handle on a sample message from the collator
-		paircalcInputMsg *aMsg = rightCollator->getSampleMsg();
-		// Check that you have a valid handle on the sample message
-		if (aMsg == 0)
-		{
-			// If RDMA is enabled, there are no messages let alone a sample. Simply trigger the computation
-			#ifdef PC_USE_RDMA
-				actionType=0;
-				 if(!expectOrthoT || numRecdBWOT==numOrtho)
-				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
-				 else
-				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-			// If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
-			#else
-				CkPrintf("[%d,%d,%d,%d,%d] My left collator is not able to give me a sample message.",
-							thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
-				CkAbort("PairCalc aborting...");
-			#endif
-		}
-		else
-		{ 
-			blkSize = aMsg->blkSize;
-			// if this is not a PsiV loop
-			if(!aMsg->doPsiV)
-			{
-				// normal behavior
-				actionType=0;
-				/** expectOrthoT is false in any scenario other than asymmetric, dynamics.
-				 * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
-				 * received completely (from Ortho). So this condition, invokes multiplyForward() on 
-				 * all cases except (asymm, dynamics when T has not been received)
-				 * 
-				 * In that exception scenario, we dont do anything now. Later, when all of T is received, 
-				 * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
-				 */
-				 if(!expectOrthoT || numRecdBWOT==numOrtho)
-				 	thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
-				 else
-				 	CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-			}
-			// else, if this is a PsiV loop
-			else
-				thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
-			// Delete the sample message
-			delete aMsg;
-		}
-	}
+        launchComputations( rightCollator->getSampleMsg() );
 }
+
+
+
+void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
+{
+    // If there is no sample message...
+    if (aMsg == 0)
+    {
+        // If RDMA is enabled, this is expected. Simply trigger the computation
+        #ifdef PC_USE_RDMA
+            actionType=0;
+            if(!expectOrthoT || numRecdBWOT==numOrtho)
+                thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
+            else
+                CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+        // If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
+        #else
+            CkPrintf("[%d,%d,%d,%d,%d] My collator was not able to give me a sample message.",
+                        thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+            CkAbort("PairCalc aborting...");
+        #endif
+    }
+    else
+    { 
+        blkSize = aMsg->blkSize;
+        // if this is not a PsiV loop
+        if(!aMsg->doPsiV)
+        {
+            // normal behavior
+            actionType=0;
+            /** expectOrthoT is false in any scenario other than asymmetric, dynamics.
+             * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
+             * received completely (from Ortho). So this condition, invokes multiplyForward() on 
+             * all cases except (asymm, dynamics when T has not been received)
+             * 
+             * In that exception scenario, we dont do anything now. Later, when all of T is received, 
+             * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
+             */
+             if(!expectOrthoT || numRecdBWOT==numOrtho)
+                 thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
+             else
+                 CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+        }
+        // else, if this is a PsiV loop
+        else
+            thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+        // Delete the sample message
+        delete aMsg;
+    }
+}
+
 
 
 

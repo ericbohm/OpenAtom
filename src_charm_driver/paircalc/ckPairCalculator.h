@@ -7,6 +7,7 @@
 #undef  OLD_COMMLIB
 #define OLD_COMMLIB 1
 #define _PC_COMMLIB_MULTI_ 0
+#include "debug_flags.h"
 #include "pairutil.h"
 #include "ckmulticast.h"
 #include "ckhashtable.h"
@@ -19,7 +20,7 @@
 #endif
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
-#include "../../include/debug_flags.h"
+
 
 // Debugging flag for Verbose output
 // #define _PAIRCALC_DEBUG_
@@ -145,6 +146,8 @@ class PairCalculator: public CBase_PairCalculator
 		void acceptLeftData(const double *data,const int numRows,const int numCols); 
 		/// @entry Method to send in the complete block of the right matrix
 		void acceptRightData(const double *data,const int numRows,const int numCols);
+        /// NOT an entry method. Called locally from the acceptData* methods to launch the appropriate number-crunching method
+        void launchComputations(paircalcInputMsg *aMsg);
 		/// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
 		void multiplyForward(bool flag_dp);
 		/// @entry Simply redirects call to multiplyForward()
