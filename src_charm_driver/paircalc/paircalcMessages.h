@@ -135,22 +135,30 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 	friend class CMessage_paircalcInputMsg;
 	
 	public:
-		/// Get the number of records of data in this message in terms of doubles
-		inline int numDataUnits() const 	{ return (2*numUnits); }
+		/// Provide the API required by the MessageDataCollator
+        /// An incomplete constructor just for the collator
+        paircalcInputMsg(const int _sender, const int _nCols, const int _nRows=1)
+                            : nCols(_nCols), nRows(_nRows), senderID(_sender), doPsiV(false) {}
+        /// The number of rows in the data array stored in this msg
+		inline int numRows() const 	{ return nRows; }
+        /// The number of columns of data units in the data array stored in this msg
+		inline int numCols() const 	{ return nCols; }
 		/// An integer representation of the sender's ID
 		inline int sender() const 			{ return senderID; }
 		/// A pointer to the message data. No checks on pointer validity. Use with a pinch of salt
-		inline complex* data() 				{ return points; }
-		/// 
-		void init(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize)
+		inline double* data() 				{ return reinterpret_cast<double*> (points); }
+		/// Constructor used to create actual GSpace to PC messages
+		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize)
 		{
-			numUnits =_size;
+            CkAssert(sizeof(complex)/sizeof(double) == 2);  /// Is it needed? Should be a compile time assert anyway.
+            nCols    =_size*2; ///< Convert the num of data units from complex to doubles
+            nRows    = 1;
 			senderID =_sender;
 			fromRow  =_fromRow;
 			flag_dp  =_flag_dp;
 			doPsiV   =_doPsiV;
 			blkSize  =_blkSize;
-			CmiMemcpy(points,_points,numUnits*sizeof(complex));
+			CmiMemcpy(points,_points,nRows*nCols*sizeof(double));
 		}
 		/// @todo: Message data, should slowly be hidden from the world. The sender and end user could become friends
 		complex *points;
@@ -158,7 +166,7 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 		int blkSize;
 		
 	private:
-		int senderID, numUnits;
+		int senderID, nCols, nRows;
 };
 
 

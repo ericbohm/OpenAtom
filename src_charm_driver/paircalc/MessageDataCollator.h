@@ -15,27 +15,36 @@ namespace cp {
 namespace paircalc {
 
 #ifdef DEBUG_MESSAGEDATACOLLATOR_ALL
+    #define DEBUG_MESSAGEDATACOLLATOR
     #define DEBUG_MESSAGEDATACOLLATOR_CREATION
-    #define DEBUG_MESSAGE_DATACOLLATOR
     #define DEBUG_MESSAGEDATACOLLATOR_RDMA
+    #define DEBUG_MESSAGEDATACOLLATOR_EACHARRIVAL
 #endif
     
-/** Class that does the task of buffering data sent in via messages for an expected number of messages before
- * calling on a handler to process them. Assumes that all messages carry the same amount of data.
+/** Class that buffers incoming data (via messages/RDMA) till it counts a pre-specified number of arrivals, and then spits the collated data out 
+ * (packaged in the same incoming message type) via a CkCallback. 
  *
- * This class is not generic enough to warrant being a template, but it might still be useful to start it as one, 
- * so that it has a chance to becoming abstracted enough with time. 
+ * Assumptions:
+ *    - All messages carry the same amount of data
+ *    - Each batch of data arrives completely only via RDMA or msgs (no interleaving of different methods within a single batch of messages)
+ *    - Incoming messages are not deleted after processing. This class is not a chare and will let the user code deal with such formalities as needed
+ *    - If this class manages the data buffer, then the post-collation callback goes to a chare on the same PE so that the output msg is not deleted/moved/resized in any way
+ *    - The first batch of messages immediately after an RDMA setup (which will involve a bunch of setupRDMA() calls) WILL be via RDMA (and not messages)
+ *    - expectNext() will be called before every new batch of RDMA arrivals (and only after the current batch is done)
+ *    - Every time the amount of data in an imminent batch will be more than in any previous batch, the buffer is reallocated. A fresh RDMA setup is required for subsequent RDMA arrivals
+ *    - Incoming data is treated as 2d (nRows x nCols). This is not binding. Higher / Lower dimensional data can be sent in as a contiguous array as long as msgType has the same API
+ *    - Some effort has been made to tolerate different data sizes across different batches, but no testing / guarantees as yet
+ *
  *
  * @note: Class msgType should provide the following methods:
- * - int numDataUnits() const  : returns the number of units of dataType in the message (or message size) 
- * - int sender() const        : returns the sender ID or some representation of the senderID as an int
- * - dataType* data()          : returns a pointer to the data held by the message. Does not strictly have to be 
- *                               of dataType as it is only used by CmiMemcpy. 
- *
- * @note: Class triggerType should be a functor that takes three arguments:
- * - void operator() (const dataType *collatedData, const unsigned int numMessages, const unsigned int numUnitsInMsg)
+ * - int numRows() const       : returns the number of rows in the dataType array in the message
+ * - int numCols() const       : returns the number of columns in the dataType array in the message
+ * - int sender() const        : returns the sender ID or a representation of the senderID as an int
+ * - dataType* data()          : returns a pointer to the data held by the message. Does not strictly
+ *                               have to be of dataType as it is only used by CmiMemcpy. 
+ * - msgType(const int senderID, const int nCols, const int nRows) : Used to create the output msg that holds the collated data
  */
-template <class msgType, typename dataType, class triggerType>
+template <class msgType, typename dataType>
 class MessageDataCollator 
 {
 	public:
@@ -46,10 +55,11 @@ class MessageDataCollator
 		 * arguments. Hence, be careful when copying collators to make sure multiple collators dont use the same memory region as
 		 * a data buffer and kill you.
 		 */
-		MessageDataCollator(std::string debugID, triggerType trigger, const unsigned int nExpected, bool manageBuffer=false, const unsigned int offsetStart=0):
+		MessageDataCollator(std::string debugID, CkCallback callbk, const unsigned int nExpected, bool manageBuffer=false, const unsigned int offsetStart=0):
 			myName(debugID),
-			doneTrigger(trigger),
+			uponCompletion(callbk),
 			isBufferMine(manageBuffer),
+			outputMsg(0),
 			dataBuffer(0),
 			bufferSizeInUnits(0),
 			numUnitsInMsg(0),
@@ -81,7 +91,7 @@ class MessageDataCollator
 		~MessageDataCollator()
 		{
 			if (isBufferMine)
-				delete [] dataBuffer;
+				delete outputMsg;
 			delete sampleMsg;
 		}
 		
@@ -116,16 +126,20 @@ class MessageDataCollator
 	private:
 		/// A string that encodes some kind of ID supplied by the owner of an instance
 		std::string myName;
-		/// This is the functor that is passed in to setup the post-collation operation. Typically a callback
-		triggerType doneTrigger;
+		/// Callback that is passed in to trigger the post-collation work. 
+		CkCallback uponCompletion;
 		/// If buffer is mine, I manage it, viz. reuse the same buffer for every batch of msgs where possible. If not, I allocate a fresh buffer and let the client manage it.
 		bool isBufferMine;
-		/// A memory region where incoming message data is collated
-		dataType* dataBuffer;
+        /// The message (which has the data buffer) in which the incoming data is collated
+		msgType *outputMsg;
+		/// A pointer to the memory region (contained in outputMsg) where incoming data is collated
+		dataType *dataBuffer;
 		/// Handle to a sample message copied from every batch of incoming messages
 		msgType *sampleMsg;
 		/// Counters to keep track of the messages
-		unsigned int numExpected, numReceived, numBatchesProcessed, bufferSizeInUnits, numUnitsInMsg;
+		unsigned int numExpected, numReceived, numBatchesProcessed;
+        /// Variables related to the message/buffer sizes 
+        unsigned int numRows, numCols, numUnitsInMsg, bufferSizeInUnits;
 		/** Senders should have an ID accessed by msgType::sender(). This stores the minimum value of sender(), 
 		 * so that offsets into the memory buffer can be computed
 		 *  
@@ -134,14 +148,14 @@ class MessageDataCollator
 		unsigned int minSender;
 		/// A vector of RDMA handles, one for each sender
 		CkVec<rdmaHandleType> RDMAhandles;
-		/// A boolean that indicates if the current batch of messages is via RDMA or not
+		/// Booleans indicating if the next/current batch of messages are via RDMA
 		bool isNextBatchViaRDMA, isThisBatchViaRDMA;
 };
 
 
 
-template <class msgType,typename dataType, class triggerType>
-void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg)
+template <class msgType,typename dataType>
+void MessageDataCollator<msgType,dataType>::operator() (msgType *msg)
 {
 	/** @todo: Debate if some kind of check is needed to ensure that the message received is the correct iteration etc.
 	 * For e.g, if the message defined a uniqID() method that would return a unique tag indicating the group the message
@@ -162,7 +176,9 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 		/// Since, this is the first message in a new batch, flag this whole batch as NOT via RDMA
 		isThisBatchViaRDMA = false;
 		/// Get the message size
-		numUnitsInMsg = msg->numDataUnits();
+        numRows       = msg->numRows();
+        numCols       = msg->numCols();
+		numUnitsInMsg = numRows * numCols; 
 		/// Get the required buffer size
 		int reqdBufferSizeInUnits = numExpected * numUnitsInMsg;
 		/// If buffer exists AND I manage it AND its not big enough for this batch of messages, delete it
@@ -171,8 +187,9 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 			#ifdef DEBUG_MESSAGEDATACOLLATOR
 				CkPrintf("MessageDataCollator%s: Deleting buffer as I need space for %d units. Available = %d units\n",myName.c_str(),reqdBufferSizeInUnits,bufferSizeInUnits);
 			#endif
-			delete [] dataBuffer;
-			dataBuffer = 0;
+			delete outputMsg;
+			outputMsg = 0; 
+            dataBuffer = 0;
 		}
 		/// If the buffer is unallocated ... 
 		if (!dataBuffer)
@@ -180,18 +197,19 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 			/// Get some memory to hold the message data
 			bufferSizeInUnits =  reqdBufferSizeInUnits;
 			#ifdef DEBUG_MESSAGEDATACOLLATOR
-                CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg);
+                CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units in %d rows x %d cols.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg,numRows,numCols);
 			#endif
-			dataBuffer = new dataType[bufferSizeInUnits];
+            outputMsg  = new (numExpected*numRows*numCols) msgType(-1,numCols,numRows*numExpected);
+            dataBuffer = outputMsg->data();
 			/// Zero out the memory region
 			bzero(dataBuffer,bufferSizeInUnits * sizeof(dataType));
 		} /// endif
 	}
 	
-	/// Ensure that the data buffer exists
-	CkAssert(dataBuffer != NULL);
+	/// Ensure that the output message and its data buffer exist
+	CkAssert( (outputMsg != NULL) && (dataBuffer != NULL) );
 	/// Ensure that this message has the same size as the others in this batch
-	CkAssert(numUnitsInMsg == msg->numDataUnits());
+    CkAssert( (numRows == msg->numRows()) && (numCols == msg->numCols()) );
 
 	/// Compute the offset for this message. This will depend on the sender index and thisIndex. 
 	int offset = msg->sender() - minSender;
@@ -205,7 +223,7 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 	if (numReceived >= numExpected)
 	{
 		#ifdef DEBUG_MESSAGEDATACOLLATOR
-			CkPrintf("MessageDataCollator%s: Collated %d of %d messages. Gonna trigger my client\n",myName.c_str(),numReceived,numExpected);
+			CkPrintf("MessageDataCollator%s: Collated data from %d of %d messages at %p. Gonna trigger my client\n",myName.c_str(),numReceived,numExpected,dataBuffer);
 		#endif
 		/// Increment the number of message batches that have been processed
 		numBatchesProcessed++;
@@ -214,19 +232,23 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
 			delete sampleMsg;
 		sampleMsg = reinterpret_cast<msgType*> ( CkCopyMsg(reinterpret_cast<void**>(&msg)) );
 		/// Call the trigger functor
-		doneTrigger(dataBuffer,numReceived,numUnitsInMsg);
+		uponCompletion.send(outputMsg);
 		/// Reset the number received so that we can start collating all over again
 		numReceived = 0;
 		/// If you are not managing the buffer, then you need to forget about it
 		if (!isBufferMine)
+        {
+            outputMsg  = 0;
 			dataBuffer = 0;
+        }
 	} /// endif
 	else
 	{
-		#ifdef DEBUG_MESSAGEDATACOLLATOR
+		#ifdef DEBUG_MESSAGEDATACOLLATOR_EACHARRIVAL
 			CkPrintf("MessageDataCollator%s: Received message %d of %d.\n",myName.c_str(),numReceived,numExpected);
 		#endif
 	}
+    /// Do NOT delete the msg; MessageDataCollator is not a chare and doesnt worry about the message formalities. Let the user code handle this
 }
 
 
@@ -236,8 +258,8 @@ void MessageDataCollator<msgType,dataType,triggerType>::operator() (msgType *msg
  * 
  * @note: This class makes no guarantees on which message will be held as a sample msg.
  */
-template <class msgType,typename dataType, class triggerType>
-inline msgType* MessageDataCollator<msgType,dataType,triggerType>::getSampleMsg() 
+template <class msgType,typename dataType>
+inline msgType* MessageDataCollator<msgType,dataType>::getSampleMsg() 
 { 
 	if (sampleMsg) 
 		return reinterpret_cast<msgType*> ( CkCopyMsg(reinterpret_cast<void**>(&sampleMsg)) );
@@ -247,8 +269,8 @@ inline msgType* MessageDataCollator<msgType,dataType,triggerType>::getSampleMsg(
 
 
 
-template <class msgType,typename dataType, class triggerType> template <class tokenType>
-void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupRequestMsg<tokenType> *msg, tokenType *replyToken)
+template <class msgType,typename dataType> template <class tokenType>
+void MessageDataCollator<msgType,dataType>::setupRDMA(RDMASetupRequestMsg<tokenType> *msg, tokenType *replyToken)
 {
 	#ifndef COLLATOR_ENABLE_RDMA
 		CkAbort("MessageDataCollator aborting because someone called an RDMA method when it has been turned off for me...\n");
@@ -265,37 +287,41 @@ void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupReque
 	isNextBatchViaRDMA = true; 
 	
 	/// Get the message size
-	numUnitsInMsg = msg->numDataUnits();
+    numCols = msg->numDataUnits();
+    numRows = 1;
+	numUnitsInMsg = numRows * numCols;
 	/// Get the required buffer size
 	int reqdBufferSizeInUnits = numExpected * numUnitsInMsg;
 	/// If buffer exists AND I manage it AND its not big enough for this batch of data, delete it
 	if (dataBuffer && isBufferMine && reqdBufferSizeInUnits > bufferSizeInUnits)
 	{
-		#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
-			CkPrintf("MessageDataCollator%s: Deleting buffer as I need space for %d units. Available = %d units\n",myName.c_str(),reqdBufferSizeInUnits,bufferSizeInUnits);
+        #ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
+            CkPrintf("MessageDataCollator%s: Deleting buffer as I need space for %d units. Available = %d units\n",myName.c_str(),reqdBufferSizeInUnits,bufferSizeInUnits);
 		#endif
-		delete [] dataBuffer;
-		dataBuffer = 0;
+        delete outputMsg;
+        outputMsg  = 0;
+        dataBuffer = 0;
 	}
 	/// If the buffer is unallocated ... 
 	if (!dataBuffer)
 	{
-		/// Get some memory to hold the data
-		bufferSizeInUnits =  reqdBufferSizeInUnits;
-		#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
-			CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg);
-		#endif
-		dataBuffer = new dataType[bufferSizeInUnits];
-		/// Zero out the memory region
-		bzero(dataBuffer,bufferSizeInUnits * sizeof(dataType));
-	} /// endif
+        /// Get some memory to hold the data
+        bufferSizeInUnits =  reqdBufferSizeInUnits;
+        #ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
+            CkPrintf("MessageDataCollator%s: Allocating buffer of size %d units for %d data packets each having %d units in %d rows x %d cols.\n",myName.c_str(),bufferSizeInUnits,numExpected,numUnitsInMsg,numRows,numCols);
+        #endif
+        outputMsg  = new (numExpected*numRows*numCols) msgType(-1,numCols,numRows*numExpected);
+        dataBuffer = outputMsg->data();
+        /// Zero out the memory region
+        bzero(dataBuffer,bufferSizeInUnits * sizeof(dataType));
+    } /// endif
 	
-	/// Compute the offset for this sender. This will depend on the sender index and thisIndex. 
+	/// Compute the offset for this sender.This may depend on (for eg) the sender index and thisIndex
 	int offset = msg->sender() - minSender;
 	/// Get the region of the data buffer that will store data from this sender 
 	dataType *recvLoc = &(dataBuffer[offset*numUnitsInMsg]);
 	/// Create a function pointer to give converse for a callback
-	void (*fnPtr)(void *) = MessageDataCollator<msgType,dataType,triggerType>::collatorCallback;
+	void (*fnPtr)(void *) = MessageDataCollator<msgType,dataType>::collatorCallback;
 	//double const actualQNaN = std::numeric_limits<double>::quiet_NaN();
 	double const actualQNaN = 999999999999999999999999999999999999999999999999.9999999999;
 	/// Create the RDMA handle for this sender-receiver pair
@@ -312,14 +338,14 @@ void MessageDataCollator<msgType,dataType,triggerType>::setupRDMA(RDMASetupReque
 	RDMASetupConfirmationMsg<tokenType> *acceptanceMsg = new RDMASetupConfirmationMsg<tokenType>(rToken,rHandle);
 	/// Notify the data sender of acceptance, to complete the RDMA setup handshake
 	msg->senderCallback().send(acceptanceMsg);
-		
+    /// Do NOT delete the msg; MessageDataCollator is not a chare and doesnt worry about the message formalities. Let the user code handle this
 	#endif // ENABLE_COLLATOR_RDMA
 }
 
 
 
-template <class msgType,typename dataType, class triggerType>
-inline void MessageDataCollator<msgType,dataType,triggerType>::operator() (void)
+template <class msgType,typename dataType>
+inline void MessageDataCollator<msgType,dataType>::operator() (void)
 {
 	#ifndef COLLATOR_ENABLE_RDMA
 		CkAbort("MessageDataCollator aborting because someone called an RDMA method when it has been turned off for me...\n");
@@ -352,14 +378,14 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::operator() (void)
 			if (sampleMsg)
 				delete sampleMsg;
 			sampleMsg = 0;
-			/// Call the trigger functor
-			doneTrigger(dataBuffer,numReceived,numUnitsInMsg);
+			/// Trigger the post-collation work via the callback
+			uponCompletion.send(outputMsg);
 			/// Reset the number received so that we can start collating all over again
 			numReceived = 0;
 		} /// endif
 		else
 		{
-			#ifdef DEBUG_MESSAGEDATACOLLATOR_RDMA
+			#ifdef DEBUG_MESSAGEDATACOLLATOR_EACHARRIVAL
 				CkPrintf("MessageDataCollator%s: Someone deposited data via RDMA. Collated %d of %d.\n",myName.c_str(),numReceived,numExpected);
 			#endif
 		}
@@ -368,21 +394,21 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::operator() (void)
 
 
 
-template <class msgType,typename dataType, class triggerType>
-inline void MessageDataCollator<msgType,dataType,triggerType>::collatorCallback(void *thisObj)
+template <class msgType,typename dataType>
+inline void MessageDataCollator<msgType,dataType>::collatorCallback(void *thisObj)
 {
 	#ifndef COLLATOR_ENABLE_RDMA
 		CkAbort("MessageDataCollator aborting because someone called an RDMA method when it has been turned off for me...\n");
 	#else
-		MessageDataCollator<msgType,dataType,triggerType> *thisCollator = reinterpret_cast<MessageDataCollator<msgType,dataType,triggerType>*>(thisObj);
+		MessageDataCollator<msgType,dataType> *thisCollator = reinterpret_cast<MessageDataCollator<msgType,dataType>*>(thisObj);
 		(*thisCollator)();
 	#endif
 }
 
 
 
-template <class msgType,typename dataType, class triggerType>
-inline void MessageDataCollator<msgType,dataType,triggerType>::expectNext() 
+template <class msgType,typename dataType>
+inline void MessageDataCollator<msgType,dataType>::expectNext() 
 {
 	#ifndef COLLATOR_ENABLE_RDMA
 		CkAbort("MessageDataCollator aborting because someone called an RDMA method when it has been turned off for me...\n");
@@ -405,3 +431,4 @@ inline void MessageDataCollator<msgType,dataType,triggerType>::expectNext()
 } // end namespace cp
 
 #endif // MESSAGE_DATA_COLLATOR_H
+

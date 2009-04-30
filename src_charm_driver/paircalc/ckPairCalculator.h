@@ -104,23 +104,11 @@ PUPmarshallBytes(FuncType);
 
 #include "MessageDataCollator.h"
 #include "paircalcMessages.h"
-///@{
-/// Forward declarations of the callback functors
-namespace cp {
-	namespace paircalc {
-		class LeftBlockReadyTrigger;
-		class RightBlockReadyTrigger;
-	}
-}
-///@}
 /// A shorter name for the namespace
 namespace pc = cp::paircalc;
-///@{
-/// Typedefs for the collator types
 class paircalcInputMsg;
-typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::LeftBlockReadyTrigger> leftCollatorType;
-typedef pc::MessageDataCollator<paircalcInputMsg,double,pc::RightBlockReadyTrigger> rightCollatorType;
-///@}
+/// Typedefs for the collator types
+typedef pc::MessageDataCollator<paircalcInputMsg,double> CollatorType;
 class CProxy_PairCalculator;  ///< Forward declaration to satisfy the CProxy_InputDataHandler declaration which will get included via ckPC.decl.h
 struct RDMApair_GSP_PC;
 #include "ckPairCalculator.decl.h"
@@ -133,19 +121,19 @@ class PairCalculator: public CBase_PairCalculator
 {
 	public:
 		/// @entry (obviously)
-		PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
 		/// Constructor for migration
 		PairCalculator(CkMigrateMessage *);
 		/// Destructor (nothing needs to be done?)
 		~PairCalculator();
 		/// Returns a pointer to the collator that will buffer the left matrix data (only for use by the corresponding InputDataHandler chare)
-		inline leftCollatorType* leftHandler() const { return leftCollator; }
+		inline CollatorType* leftHandler() const { return leftCollator; }
 		/// Returns a pointer to the collator that will buffer the right matrix data (only for use by the corresponding InputDataHandler chare)
-		inline rightCollatorType* rightHandler() const { return rightCollator; }
+		inline CollatorType* rightHandler() const { return rightCollator; }
 		/// @entry Method to send in the complete block of the left matrix
-		void acceptLeftData(const double *data,const int numRows,const int numCols); 
+		void acceptLeftData(paircalcInputMsg *msg); 
 		/// @entry Method to send in the complete block of the right matrix
-		void acceptRightData(const double *data,const int numRows,const int numCols);
+		void acceptRightData(paircalcInputMsg *msg);
         /// NOT an entry method. Called locally from the acceptData* methods to launch the appropriate number-crunching method
         void launchComputations(paircalcInputMsg *aMsg);
 		/// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
@@ -217,11 +205,9 @@ class PairCalculator: public CBase_PairCalculator
 
 	private:
 		/// A handle to the co-located chare array that handles data input 
-		CProxy_InputDataHandler<leftCollatorType,rightCollatorType> myMsgHandler;
-		/// Data collator for the left matrix block
-		leftCollatorType *leftCollator;
-		/// Data collator for the right matrix block
-		rightCollatorType *rightCollator;
+		CProxy_InputDataHandler<CollatorType,CollatorType> myMsgHandler;
+		/// Data collators for the left and right matrix blocks
+		CollatorType *leftCollator, *rightCollator;
 		/// Flags indicating if the left and right matrix blocks have been received
 		bool isLeftReady, isRightReady;
 		int instance; 							/// Instance number of this run in path-integral beads

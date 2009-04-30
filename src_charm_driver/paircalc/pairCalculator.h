@@ -58,15 +58,15 @@ class PairCalcID
 		 * Symmetric loop : Includes the post-diagonal chares on row 's' that get data from this GSpace[s,p] chare
 		 * Asymmetric loop: Includes all the chares on row 's' that get data from this GSpace[s,p] chare
 		 */
-		CProxySection_InputDataHandler<leftCollatorType,rightCollatorType> *sectionGettingLeft;
+		CProxySection_InputDataHandler<CollatorType,CollatorType> *sectionGettingLeft;
 		/** Array section which receives right matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the pre-diagonal chares on column 's' that get data from this GSpace[s,p] chare
 		 * Asymmetric loop: Includes all the chares on column 's' that get data from this GSpace[s,p] chare
 		 */
-		CProxySection_InputDataHandler<leftCollatorType,rightCollatorType> *sectionGettingRight;
+		CProxySection_InputDataHandler<CollatorType,CollatorType> *sectionGettingRight;
 
 		/// A proxy to the PC input handler chare array
-		CProxy_InputDataHandler<leftCollatorType,rightCollatorType> handlerProxy;
+		CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy;
 		/// A list of PC array elements which expect left matrix data from owning GSpace chare
 		CkVec <CkArrayIndex4D> listGettingLeft;
 		/// A list of PC array elements which expect right matrix data from owning GSpace chare
@@ -103,7 +103,7 @@ class PairCalcID
 		void Init(CkArrayID aid, CkArrayID handlerID, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
 		  Aid = aid;
 		  ipHandlerID = handlerID;
-		  handlerProxy = CProxy_InputDataHandler<leftCollatorType,rightCollatorType> (handlerID);
+		  handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (handlerID);
 		  GrainSize = grain;
 		  numChunks = _numChunks;
 		  nstates = s;
@@ -205,9 +205,9 @@ PairCalcID &operator=(const PairCalcID& pid) {
     if(p.isUnpacking())
       {
 	if(existsLproxy)
-	    sectionGettingLeft=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+	    sectionGettingLeft=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
 	if(existsRproxy)
-	    sectionGettingRight=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+	    sectionGettingRight=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
       }
     if(existsLproxy)
       {

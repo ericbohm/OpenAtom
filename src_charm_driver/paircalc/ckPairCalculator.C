@@ -178,7 +178,6 @@
 
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
-#include "ForwardPathPostCollationTriggers.h" 		///< Including the class definitions of the callback functors
 #include <sstream> 
 
 #ifdef CMK_BLUEGENEL
@@ -261,7 +260,7 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
+PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkCallback _cb, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
@@ -377,15 +376,16 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCol
 		isRightReady = true;
 	else
 		isRightReady = false;
-	/// Setup the callback functors
-	pc::LeftBlockReadyTrigger leftTrigger(this);
-	pc::RightBlockReadyTrigger rightTrigger(this);
+	/// Setup the callbacks functors
+    CkArrayIndex4D myIndex(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z);
+    CkCallback leftTrigger (CkIndex_PairCalculator::acceptLeftData (NULL),myIndex,thisProxy,true);
+    CkCallback rightTrigger(CkIndex_PairCalculator::acceptRightData(NULL),myIndex,thisProxy,true);
 	/// Create a string that holds the chare ID and pass it to the message handlers
 	std::ostringstream idStream;
 	idStream<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]";
 	/// Create the message handlers for the left and right input matrix blocks
-	leftCollator = new leftCollatorType  (idStream.str()+" LeftHandler",leftTrigger, numExpectedX,(conserveMemory<=0),thisIndex.x);
-	rightCollator= new rightCollatorType (idStream.str()+" RightHandler",rightTrigger,numExpectedY,(conserveMemory<=0),thisIndex.y);
+	leftCollator = new CollatorType (idStream.str()+" LeftHandler" , leftTrigger, numExpectedX,(conserveMemory<=0),thisIndex.x);
+	rightCollator= new CollatorType (idStream.str()+" RightHandler",rightTrigger, numExpectedY,(conserveMemory<=0),thisIndex.y);
 	#ifdef DEBUG_CP_PAIRCALC_INPUTDATAHANDLER
 		CkPrintf("[%d,%d,%d,%d,%d] My left and right data collators: %p %p\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,leftCollator,rightCollator);
 	#endif
@@ -651,8 +651,11 @@ void PairCalculator::ResumeFromSync() {
 
 
 
-inline void PairCalculator::acceptLeftData(const double *data, const int numRows, const int numCols)
+void PairCalculator::acceptLeftData(paircalcInputMsg *msg) 
 {
+    const double *data = msg->data();
+    const int numRows  = msg->numRows();
+    const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer
 	CkAssert(data != NULL);
 	/// Assert that numRows is as expected
@@ -662,10 +665,10 @@ inline void PairCalculator::acceptLeftData(const double *data, const int numRows
 		for(int i=0; i < numRows*numCols; i++)
 			CkAssert(finite(data[i]));
 	#endif
-        /// Once the basic checks have passed, and if we're debugging print status info
+    /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
-		CkPrintf("[%d,%d,%d,%d,%d] Received left matrix block of size %d x %d \n",
-                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
+		CkPrintf("[%d,%d,%d,%d,%d] Received left matrix block of size %d x %d at %p\n",
+                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols,data);
 	#endif
 
 	/// Set member data pertinent to the left block
@@ -682,8 +685,11 @@ inline void PairCalculator::acceptLeftData(const double *data, const int numRows
 
 
 
-inline void PairCalculator::acceptRightData(const double *data, const int numRows, const int numCols)
+void PairCalculator::acceptRightData(paircalcInputMsg *msg) 
 {
+    const double *data = msg->data();
+    const int numRows  = msg->numRows();
+    const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer
 	CkAssert(data != NULL);
 	/// Assert that numRows is as expected
@@ -693,10 +699,10 @@ inline void PairCalculator::acceptRightData(const double *data, const int numRow
 		for(int i=0; i < numRows*numCols; i++)
 			CkAssert(finite(data[i]));
 	#endif
-        /// Once the basic checks have passed, and if we're debugging print status info
+    /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
-		CkPrintf("[%d,%d,%d,%d,%d] Received right matrix block of size %d x %d \n",
-                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols);
+		CkPrintf("[%d,%d,%d,%d,%d] Received right matrix block of size %d x %d at %p\n",
+                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numRows,numCols,data);
 	#endif
 
 	/// Set member data pertinent to the right block
@@ -715,6 +721,10 @@ inline void PairCalculator::acceptRightData(const double *data, const int numRow
 
 void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
 {
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d] Going to launch computations...\n",
+                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+    #endif
     // If there is no sample message...
     if (aMsg == 0)
     {
@@ -727,9 +737,10 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
                 CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
         // If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
         #else
-            CkPrintf("[%d,%d,%d,%d,%d] My collator was not able to give me a sample message.",
-                        thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-            CkAbort("PairCalc aborting...");
+            std::stringstream dbgStr;
+            dbgStr<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]"
+                  <<" My collator was not able to give me a sample message. Aborting...";
+            CkAbort(dbgStr.str().c_str());
         #endif
     }
     else
@@ -896,10 +907,10 @@ PairCalculator::sendTiles(bool flag_dp)
 void
 PairCalculator::multiplyForward(bool flag_dp)
 {
-  CkAssert(numRecd == numExpected);
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d] multiplyForward numRecd %d numExpected %d numExpectedX %d numExpected Y %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected, numExpectedX, numExpectedY);
 #endif
+  CkAssert(numRecd == numExpected);
   if(!existsOut){
     CkAssert(outData==NULL);
     existsOut=true;

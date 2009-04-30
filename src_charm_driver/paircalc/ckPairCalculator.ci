@@ -92,11 +92,11 @@ module ckPairCalculator
 	extern module paircalcMessages;
 	
 	extern module inputDataHandler;
-	array [4D] InputDataHandler <leftCollatorType,rightCollatorType>;
+	array [4D] InputDataHandler <CollatorType,CollatorType>;
 	
 	array [4D] PairCalculator 
 	{
- 		entry PairCalculator(CProxy_InputDataHandler<leftCollatorType,rightCollatorType>, bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
+ 		entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType>, bool, int, int, int, CkCallback cb, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);
@@ -108,8 +108,8 @@ module ckPairCalculator
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
 		entry [nokeep] void acceptOrthoT(multiplyResultMsg *msg);
 		entry [nokeep,inline] void multiplyResultI(multiplyResultMsg *msg);
-		entry [local] void acceptLeftData(const double *data, const int numRows, const int numCols);
-		entry [local] void acceptRightData(const double *data, const int numRows, const int numCols);
+		entry [inline] void acceptLeftData (paircalcInputMsg *msg);
+		entry [inline] void acceptRightData(paircalcInputMsg *msg);
 		entry [local] void multiplyForward(bool);
 		entry [local] void bwMultiplyDynOrthoT();
 		entry [local] void multiplyPsiV();

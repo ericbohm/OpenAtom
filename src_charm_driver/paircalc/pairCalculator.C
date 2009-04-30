@@ -92,7 +92,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 
   CkArrayOptions paircalcOpts,handlerOpts;
   CProxy_PairCalculator pairCalculatorProxy;
-  CProxy_InputDataHandler<leftCollatorType,rightCollatorType> inputHandlerProxy;
+  CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
   redtypes cpreduce=section;
 
 #ifdef CONVERSE_VERSION_ELAN
@@ -124,7 +124,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 #endif 
   /// Create an empty input handler chare array that will accept all incoming messages from GSpace
   handlerOpts.bindTo(pairCalculatorProxy);
-  inputHandlerProxy = CProxy_InputDataHandler<leftCollatorType,rightCollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
+  inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
 
   int proc = 0;
   // Initialize the PairCalcID instance
@@ -527,11 +527,11 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 	else
 	{
 		/// Allocate one section proxy for each chunk
-		pcid->sectionGettingLeft=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+		pcid->sectionGettingLeft=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
 		/// Build an array section for each chunk
 		for (int chunk = 0; chunk < numChunks; chunk++)
 		{
-			pcid->sectionGettingLeft[chunk] = CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>::ckNew(pcid->ipHandlerID,
+			pcid->sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcid->ipHandlerID,
 																myPlane, myPlane, 1,
 																s1, s1, 1,
 																sColMin, maxpcstateindex, grainSize,
@@ -554,7 +554,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 	 * this point, instead of simply creating them in the pcid object's Init() method. Perhaps, getting a proxy
 	 * to an empty chare array is not a robust operation. Or there could be some other issue. Look into this. 
 	 */
-	pcid->handlerProxy = CProxy_InputDataHandler<leftCollatorType,rightCollatorType> (pcid->ipHandlerID);
+	pcid->handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (pcid->ipHandlerID);
 }
 
 
@@ -592,11 +592,11 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 		else
 		{
 			/// Allocate one section proxy for each chunk
-			pcid->sectionGettingRight=new CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>[numChunks];
+			pcid->sectionGettingRight=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
 			/// Build an array section for each chunk
 			for (int c = 0; c < numChunks; c++)
 			{
-				pcid->sectionGettingRight[c] = CProxySection_InputDataHandler<leftCollatorType,rightCollatorType>::ckNew(pcid->ipHandlerID,
+				pcid->sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcid->ipHandlerID,
 																myPlane, myPlane, 1,
 																0, sRowMax, grainSize,
 																s2, s2, 1,
@@ -666,10 +666,9 @@ void sendLeftData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, b
 					CkArrayIndex4D idx;
 					for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
 					{
-						paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+						paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 						*(int*)CkPriorityPtr(msg) = pcid->priority;
 						CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-						msg->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 						idx=pcid->listGettingLeft[elem];
 						idx.index[3]=chunk;
 						#ifdef _NAN_CHECK_
@@ -685,10 +684,9 @@ void sendLeftData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, b
 				// else, use a typical multicast to the destination section
 				else
 				{
-					paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg;
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 					*(int*)CkPriorityPtr(msg) = pcid->priority;
 					CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-					msg->init(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 					#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
 					if(pcid->Symmetric && myPlane==0)  
 						dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
@@ -763,10 +761,9 @@ void sendRightData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, 
 					{ 
 						idx=pcid->listGettingRight[elem];
 						idx.index[3]=chunk;
-						paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
+                        paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 						CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 						*(int*)CkPriorityPtr(msg) = pcid->priority;
-						msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],psiV, n);
 						#ifdef _NAN_CHECK_
 						for(int i=0;i<outsize ;i++)
 						{
@@ -779,10 +776,9 @@ void sendRightData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, 
 				}
 				else
 				{
-					paircalcInputMsg *msg= new ( outsize,8*sizeof(int) ) paircalcInputMsg;
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 					CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 					*(int*)CkPriorityPtr(msg) = pcid->priority;
-					msg->init(outsize,myS,false,flag_dp,&ptr[chunk*chunksize],psiV, n);
 					#ifdef _NAN_CHECK_
 					for(int i=0;i<outsize ;i++)
 					{
