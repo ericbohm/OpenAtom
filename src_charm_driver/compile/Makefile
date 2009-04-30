@@ -44,7 +44,6 @@ PCHEADERS = \
 	$(PAIRCALC)/paircalcMessages.h \
 	$(PAIRCALC)/MessageDataCollator.h \
 	$(PAIRCALC)/InputDataHandler.h \
-	$(PAIRCALC)/ForwardPathPostCollationTriggers.h \
 	$(PAIRCALC)/ckPairCalculator.h \
 	$(MAIN)/paircalcMessages.decl.h \
 	$(MAIN)/paircalcMessages.def.h \
