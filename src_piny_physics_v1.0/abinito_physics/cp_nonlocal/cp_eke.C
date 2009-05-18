@@ -17,7 +17,7 @@
 
 void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_g,
                   int *k_x, int *k_y, int *k_z, double *g2, double *eke_ret,
-                  int mydoublePack,int nkx0)
+                  int mydoublePack,int nkx0, int nfreq_cmi_update)
 
 //============================================================================
   { /* Begin Function */
@@ -31,7 +31,6 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 #include "../class_defs/allclass_strip_cp.h"
 
    double ecut      = cpcoeffs_info->ecut_psi; // KS-state cutoff in Ryd
-   int nfreq = 400;
 
 //============================================================================
 // Debugging
@@ -64,7 +63,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].im = 0.0;
      }//endif
 #ifdef CMK_BLUEGENEL
-     if(i%nfreq==0){CmiNetworkProgress();}
+     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
    }/* endfor */
 #ifdef CMK_BLUEGENEL
@@ -90,7 +89,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
        forces[i].im = 0.0;
      }//endif
 #ifdef CMK_BLUEGENEL
-     if(i%nfreq==0){CmiNetworkProgress();}
+     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
    }/* endfor */
 #ifdef CMK_BLUEGENEL

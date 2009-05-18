@@ -19,7 +19,7 @@ void CPINTEGRATE::CP_integrate_min_CG
              (int ncoef, int istate,complex *forces,complex *conj_grad,
               complex *psi_g,
               int *k_x, int *k_y, int *k_z,
-              double *cmass, double gamma)
+              double *cmass, double gamma, int nfreq_cmi_update)
 
 //============================================================================
    { /* Begin Function */
@@ -37,7 +37,6 @@ void CPINTEGRATE::CP_integrate_min_CG
    double ecut      = cpcoeffs_info->ecut_psi;
    double tpi       = 2.0*M_PI; 
    double dt        = gentimeinfo->dt;
-   int nfreq = 400;
 
 //----------------------------------------------------------------------------
 // 0. Create the new conjugate gradient
@@ -49,7 +48,7 @@ void CPINTEGRATE::CP_integrate_min_CG
     g2 = gx*gx + gy*gy + gz*gz;
     if(g2<=ecut){conj_grad[i] = conj_grad[i]*gamma + forces[i];}
 #ifdef CMK_BLUEGENEL
-     if(i%nfreq==0){CmiNetworkProgress();}
+     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 
@@ -96,7 +95,7 @@ void CPINTEGRATE::CP_integrate_min_CG
      }
 #endif
 #ifdef CMK_BLUEGENEL
-     if(i%nfreq==0){CmiNetworkProgress();}
+     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
    } /* endfor */
 

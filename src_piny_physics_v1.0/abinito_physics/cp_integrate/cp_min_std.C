@@ -17,7 +17,7 @@
 void CPINTEGRATE::CP_integrate_min_STD
               (int ncoef,int istate,complex *forces,complex *psi_g,
                int *k_x, int *k_y, int *k_z,
-               double *cmass)
+               double *cmass, int nfreq_cmi_update)
 
 //============================================================================
    { /* Begin Function */
@@ -35,7 +35,6 @@ void CPINTEGRATE::CP_integrate_min_STD
    double ecut      = cpcoeffs_info->ecut_psi;
    double tpi       = 2.0*M_PI; 
    double dt        = gentimeinfo->dt;
-   int nfreq = 400;
 //----------------------------------------------------------------------------
 // I. Perform a step of steepest descent minimization
 #ifdef _CP_DEBUG_NEWFORCE_
@@ -85,7 +84,7 @@ void CPINTEGRATE::CP_integrate_min_STD
      }
 #endif
 #ifdef CMK_BLUEGENEL
-     if(i%nfreq==0){CmiNetworkProgress();}
+     if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
    } /* endfor */
 

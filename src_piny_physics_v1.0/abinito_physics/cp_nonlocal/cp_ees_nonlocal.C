@@ -575,7 +575,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
                      int ihave_g0, int ind_g0, int iter_nl,
                      double *d_re, double *d_im, double *dyp_re, double *dyp_im,
                      complex *projPsiG, int *ind_gspl, double *h_gspl,
-                     int istate,int ichare)
+                     int istate,int ichare,int nfreq_cmi_update)
 //==========================================================================
    {//begin routine
 //==========================================================================
@@ -614,7 +614,6 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   int natm     = natm_lang[iatm_typ];        // # atms of this type 
   int iatm_str = iatm_str_lang[iatm_typ];    // where atms begin    
 
-  int nfreq=100;
 
 //==========================================================================
 // Set up the debugging stuff
@@ -657,7 +656,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
 #ifdef CMK_BLUEGENEL
-    if(i%nfreq==0){CmiNetworkProgress();}
+    if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 #ifdef CMK_BLUEGENEL
@@ -674,7 +673,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
     dyp_re[i]  *= vnow;
     dyp_im[i]  *= vnow;
 #ifdef CMK_BLUEGENEL
-    if(i%nfreq==0){CmiNetworkProgress();}
+    if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 
@@ -691,7 +690,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
      }/*endif*/
 #endif
 #ifdef CMK_BLUEGENEL
-    if(ig%nfreq==0){CmiNetworkProgress();}
+    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 
@@ -718,7 +717,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 //==========================================================================
 void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
                      double *dy_re,double *dy_im, double *d_re, double *d_im,
-                     double *hmati)
+                     double *hmati,int nfreq_cmi_update)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -748,7 +747,6 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
   double rt_threpi  = cpylm_cons->rt_threpi;
   rt_threpi        *= sqrt(2.0);
 
-  int nfreq = 100;
 
 //==========================================================================
 // Spherical harmonic times the ees g-space weight, d                       
@@ -766,7 +764,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         dy_re[i] = d_re[i]*y00;
         dy_im[i] = d_im[i]*y00;
 #ifdef CMK_BLUEGENEL
-        if(i%nfreq==0){CmiNetworkProgress();}
+        if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
       }//endfor
     break;
@@ -793,7 +791,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_im[i] = 0.0;
 	    }
 #ifdef CMK_BLUEGENEL
-           if(i%nfreq==0){CmiNetworkProgress();}
+           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
 	  }//endfor
         break;
@@ -819,7 +817,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_im[i] = 0.0;
 	    }//endif
 #ifdef CMK_BLUEGENEL
-            if(i%nfreq==0){CmiNetworkProgress();}
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -845,7 +843,7 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_im[i] = 0.0;
 	    }//endif
 #ifdef CMK_BLUEGENEL
-            if(i%nfreq==0){CmiNetworkProgress();}
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1259,7 +1257,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
     			          complex *projPsiG,complex *fPsiG, 
                                   double *dyp_re,double *dyp_im,
                                   int *ka, int *kb,int *kc,
-                                  int istate,int ichare,int iter_nl)
+                                  int istate,int ichare,int iter_nl,int nfreq_cmi_update)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -1285,7 +1283,6 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 // Gx=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
 //        The sum over iterations leads to a sum reduction here.
 
-  int nfreq   = 100;
   for(int ig=0;ig<nkx0;ig++){ 
     fPsiG[ig].re    -= (dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
     fPsiG[ig].im    += (dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
@@ -1294,7 +1291,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
                  fPsiG[ig].re,fPsiG[ig].im);}
 #endif
 #ifdef CMK_BLUEGENEL
-    if(ig%nfreq==0){CmiNetworkProgress();}
+    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 
@@ -1314,7 +1311,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
                  fPsiG[ig].re,fPsiG[ig].im);}
 #endif
 #ifdef CMK_BLUEGENEL
-    if(ig%nfreq==0){CmiNetworkProgress();}
+    if(ig%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
   }//endfor
 

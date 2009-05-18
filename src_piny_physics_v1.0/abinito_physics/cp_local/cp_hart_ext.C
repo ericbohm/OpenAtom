@@ -22,7 +22,7 @@
 void CPLOCAL::CP_hart_eext_calc(int ncoef, complex *rho,int natm, FastAtoms *atoms,
                                 complex *vks, double *ehart_ret,double *eext_ret,
                                 double *ewd_ret,int *k_x, int *k_y, int *k_z, 
-                                double *perdCorr,int index)
+                                double *perdCorr,int index,int nfreq_cmi_update)
 //============================================================================
 // Function:  Hartree and External potentials
 //
@@ -188,7 +188,6 @@ PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
    for(int i = 0; i < ncoef; i++){/* Note that the (0,0,0) term is excluded! */
 
 #ifdef CMK_BLUEGENEL
-      int nfreq_cmi_update=4; 
       if((i+1)%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
 
@@ -992,7 +991,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
                                 double *b_re, double *b_im,
                                 double *ehart_ret,double *eext_ret,
                                 int *k_x,int *k_y,int *k_z,double *perdCorr,
-                                int index)
+                                int index,int nfreq_cmi_update)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -1073,7 +1072,6 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
    //----------------------------------------------------------------------------
 #ifdef CMK_BLUEGENEL
-     int nfreq_cmi_update = 100; 
      if( ((i+1)%nfreq_cmi_update)==0 ){CmiNetworkProgress();}
 #endif
    //----------------------------------------------------------------------------
@@ -1209,7 +1207,7 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
                              double *b_re, double *b_im,double *ewd_ret,
                              int *k_x, int *k_y, int *k_z,
-                             double *perdCorr,int index)
+                             double *perdCorr,int index,int nfreq_cmi_update)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -1253,7 +1251,6 @@ void CPLOCAL::eesEwaldGchare(int ncoef, complex *sfAtmTotG,
    //---------------------------------------
    // Make Sameer Happy with some progress
 #ifdef CMK_BLUEGENEL
-    int nfreq_cmi_update = 100; 
     if( ((i+1)%nfreq_cmi_update)==0 ){CmiNetworkProgress();}
 #endif
    //---------------------------------------

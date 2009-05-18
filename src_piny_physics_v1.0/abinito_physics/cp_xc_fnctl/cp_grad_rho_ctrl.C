@@ -25,7 +25,7 @@
 void CPXCFNCTS::CP_getGGAFunctional(
           const int npts, const int nf1,const int nf2,const int nf3,
           double *density,double *rhoIRX, double *rhoIRY, double *rhoIRZ, 
-          double *Vks,int iyPlane_ind,double *exc_gga_ret)
+          double *Vks,int iyPlane_ind,double *exc_gga_ret,int nfreq_cmi_update)
 //============================================================================
    {/* Begin function */
 //============================================================================
@@ -70,7 +70,6 @@ void CPXCFNCTS::CP_getGGAFunctional(
 //============================================================================
 // Start Loop over part of grid I have 
 
-   int nfreq_cmi_update=8;
    for(int y = 0; y < nf2; y++){
    for(int x = 0; x < nf1; x++){
 

@@ -12,7 +12,7 @@
 
 void CPXCFNCTS::CP_exc_calc(
               const int numFFT, const int nf1, const int nf2, const int nf3,
-              double *density,double *result,double *exc_ret,double *muxc_ret)
+              double *density,double *result,double *exc_ret,double *muxc_ret,int nfreq_cmi_update)
 
 //============================================================================
 // Function:  Exchange-correlation functional
@@ -95,7 +95,6 @@ void CPXCFNCTS::CP_exc_calc(
      result[(i+1)]=0.0;
    }//endfor
 
-   int nfreq_cmi_update = 8;
    for(int y=0 ; y< nf2; y++){
    for(int x=0 ; x< nf1; x++){
       int i = y*(nf1+2) + x;

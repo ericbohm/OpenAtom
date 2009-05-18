@@ -25,7 +25,7 @@ class CPNONLOCAL{
  // functions
 
 static void CP_eke_calc(int, int ,complex *,complex *,
-                        int *, int *, int *,double *,double *,int,int);
+                        int *, int *, int *,double *,double *,int,int,int nfreq_cmi_update = 400);
 
 static void CP_enl_matrix_calc(int , complex *, int *, int *, int *, 
                                complex *, complex *,complex *,complex *,
@@ -60,10 +60,10 @@ static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA *);
 
 static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
                           double *, double *, double *, double *,complex *,int *,
-                          double *,int,int);
+                          double *,int,int,int nfreq_cmi_update=100);
 
 static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double *, 
-                      double *,double *);
+                      double *,double *,int nfreq_cmi_update = 100);
 
 static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,int);
 
@@ -73,7 +73,7 @@ static void eesEnergyAtmForcRchare(int , double *, double *,
                                    int , int , FastAtoms *);
 
 static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
-                             int *,int *, int *,int , int, int);
+                             int *,int *, int *,int , int, int, int nfreq_cmi_update = 100);
 
 static void genericSetKvector(int ,int *,int *,int *,double *,double *,
                               int ,RunDescriptor *,GCHAREPKG *,int ,int ,int ,int );
