@@ -523,7 +523,7 @@ void CP_Rho_RealSpacePlane::energyComputation(){
 //============================================================================
 // Perform exchange correlation computation (no grad corr here).
 
-   CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret);
+   CPXCFNCTS::CP_exc_calc(npts,nf1,nf2,nf3,density,Vks,exc_ret,muxc_ret,config.nfreq_xcfnctl);
 
 #ifdef CMK_BLUEGENEL
    CmiNetworkProgress();
@@ -1775,7 +1775,7 @@ void CP_Rho_RealSpacePlane::GradCorr(){
   double StartTime=CmiWallTimer();
 #endif
     CPXCFNCTS::CP_getGGAFunctional(npts,nf1,nf2,nf3,density,rhoIRX,rhoIRY,rhoIRZ,
-                                   Vks,thisIndex.x,exc_gga_ret);
+                                   Vks,thisIndex.x,exc_gga_ret,config.nfreq_xcfnctl);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
 #endif

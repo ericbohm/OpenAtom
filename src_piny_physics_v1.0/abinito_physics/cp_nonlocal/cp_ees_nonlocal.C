@@ -631,7 +631,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 // they cannot be cached without synchonizing.
 // The d_re,d_im are from the cache and only depend on g-plane index.
 
-  eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati);
+  eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati,nfreq_cmi_update);
 
   int ii = (ihave_g0==1 ? ind_g0 : ncoef);
   if(lang==0 && ihave_g0==1){

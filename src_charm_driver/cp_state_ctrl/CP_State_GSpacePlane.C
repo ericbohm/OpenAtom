@@ -1470,7 +1470,7 @@ void CP_State_GSpacePlane::combineForcesGetEke()
   complex *psi_g    = gs.packedPlaneData;
   double *eke_ret   = &(gs.eke_ret);
 
-  CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,config.doublePack,nkx0);
+  CPNONLOCAL::CP_eke_calc(ncoef,istate,forces,psi_g,k_x,k_y,k_z,g2,eke_ret,config.doublePack,nkx0,config.nfreq_cpnonlocal_eke);
   contribute(sizeof(double), &gs.eke_ret, CkReduction::sum_double, 
 	     CkCallback(CkIndex_InstanceController::printEnergyEke(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   //isEnergyReductionDone = false; ///@note: This doesnt seem necessary here and commenting out has not affected simple tests. This flag is reset at the start of the iter itself.
@@ -2304,7 +2304,7 @@ void CP_State_GSpacePlane::integrateModForce() {
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
    	       mNHC,v0NHC,a2NHC,a4NHC,kTCP,gamma_conj_grad,&fictEke,
                nkx0_red,nkx0_uni,nkx0_zero,&ekeNhc,&potNHC,degfree,degfreeNHC,
-	       degFreeSplt,istrNHC,iendNHC,halfStepEvolve);
+	       degFreeSplt,istrNHC,iendNHC,halfStepEvolve,config.nfreq_cpintegrate);
   halfStepEvolve = 1;
 
 

@@ -63,7 +63,7 @@ static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
                           double *,int,int,int nfreq_cmi_update=100);
 
 static void eesYlmOnD(int ,int ,int ,int *,int *,int *,double *,double *, double *, 
-                      double *,double *,int nfreq_cmi_update = 100);
+                      double *,double *,int nfreq_cmi_update);
 
 static void eesZmatRchare(double *, int ,double *,int **, double **,int *,int ,int);
 

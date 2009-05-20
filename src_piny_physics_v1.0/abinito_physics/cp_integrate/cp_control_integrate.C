@@ -18,7 +18,7 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
              double *mNHC,double *v0NHC, double *a2NHC, double *a4NHC, double kTCP,
              double gamma_conj_grad,double *fictEke,int nkx0_red,int nkx0_uni,
              int nkx0_zero,double *ekeNHC,double *potNHC, double degfree,double degfreeNHC,
-             double *degFreeSplt, int *istrNHC,int *iendNHC,int halfStepEvolve)
+             double *degFreeSplt, int *istrNHC,int *iendNHC,int halfStepEvolve, int nfreq_cmi_update)
 //============================================================================
    { /* Begin Function */
 //---------------------------------------------------------------------------
@@ -50,13 +50,13 @@ void CPINTEGRATE::CP_integrate(int ncoef, int istate,int iteration,
 
     if(genminopts->cp_min_std==1){
       ifound++;
-      CP_integrate_min_STD(ncoef,istate,forces,psi_g,k_x,k_y,k_z,cmass);
+      CP_integrate_min_STD(ncoef,istate,forces,psi_g,k_x,k_y,k_z,cmass,nfreq_cmi_update);
     }//endif
 
     if(genminopts->cp_min_cg==1){
       ifound++;
       CP_integrate_min_CG(ncoef,istate,forces,forcesold,psi_g,k_x,k_y,k_z,cmass,
-                          gamma_conj_grad);
+                          gamma_conj_grad,nfreq_cmi_update);
       //      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       //      PRINTF("CP-CG wave function minimization not implemented");
       //      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

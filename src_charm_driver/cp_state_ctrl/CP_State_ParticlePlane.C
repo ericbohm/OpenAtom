@@ -937,7 +937,7 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 
    CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
                               d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
-                              thisIndex.x,thisIndex.y);
+                              thisIndex.x,thisIndex.y,config.nfreq_cpnonlocal_eesfwd);
 #ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
 #endif
@@ -1275,7 +1275,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
 #endif    
 
   CPNONLOCAL::eesPsiForcGspace(ncoef,ihave_g0,ind_g0,nkx0,projPsiGTmp,fPsiG,dyp_re,dyp_im,
-                               k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL);
+                               k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk);
   fftcache->freeCacheMem("CP_State_ParticlePlane::computeNLEesForces");
 
 #ifndef CMK_OPTIMIZE

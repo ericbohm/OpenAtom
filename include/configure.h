@@ -197,6 +197,20 @@ class Config {
   //==================================
 
   //==================================
+  // Network progress checking frequencies (useful only on BGL where you have to periodically let call CmiNetworkProgress)
+  //----------------------------------
+  //  nfreq_classname_methodname (Class and method names may have been shortened a bit)
+  int nfreq_cpintegrate;        ///< CPINTEGRATE::CP_integrate_min_STD, CPINTEGRATE::CP_integrate_min_CG
+  int nfreq_cplocal_hartext;    ///< CPLOCAL::CP_hart_eext_calc
+  int nfreq_cplocal_eeshart;    ///< CPLOCAL::eesHartEextGchare
+  int nfreq_cplocal_eesewald;   ///< CPLOCAL::eesEwaldGchare
+  int nfreq_cpnonlocal_eke;     ///< CPNONLOCAL::CP_eke_calc
+  int nfreq_cpnonlocal_eesfwd;  ///< CPNONLOCAL::eesProjGchare, CPNONLOCAL::eesYlmOnD 
+  int nfreq_cpnonlocal_eesbk;   ///< CPNONLOCAL::eesPsiForcGspace
+  int nfreq_xcfnctl;            ///< CPXCFNCTS::CP_exc_calc, CPXCFNCTS::CP_getGGAFunctional
+  //==================================
+
+  //==================================
   // Class Functions
   //----------------------------------
    Config(){};
@@ -215,6 +229,7 @@ class Config {
    void set_config_dict_pc     (int *, DICT_WORD **);
    void set_config_dict_nl     (int *, DICT_WORD **);
    void set_config_dict_map    (int *, DICT_WORD **);
+   void set_config_dict_nfreq  (int *, DICT_WORD **);
 
    void set_config_params_gen  (DICT_WORD *, char *, char *);
    void set_config_params_rho  (DICT_WORD *, char *, char *, int);
@@ -222,6 +237,7 @@ class Config {
    void set_config_params_pc   (DICT_WORD *, char *, char *);
    void set_config_params_nl   (DICT_WORD *, char *, char *, int);
    void set_config_params_map  (DICT_WORD *, char *, char *);
+   void set_config_params_nfreq(DICT_WORD *, char *, char *);
    void guesstimateParmsConfig (int, DICT_WORD *, DICT_WORD *, DICT_WORD *, 
 				     DICT_WORD *, DICT_WORD *,DICT_WORD *, 
 				int, int, int );

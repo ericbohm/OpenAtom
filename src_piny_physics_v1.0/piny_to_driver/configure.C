@@ -39,9 +39,11 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   int num_dict_fun;
   int num_dict_rho, num_dict_state, num_dict_pc;
   int num_dict_nl,  num_dict_gen,   num_dict_map;
+  int num_dict_nfreq;
   DICT_WORD *dict_fun;
   DICT_WORD *dict_rho, *dict_state, *dict_pc;
   DICT_WORD *dict_nl, *dict_gen, *dict_map;
+  DICT_WORD *dict_nfreq;
   DICT_WORD word;            
 
   int nline;
@@ -94,6 +96,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   set_config_dict_nl   (&num_dict_nl,   &dict_nl);
   set_config_dict_gen  (&num_dict_gen,  &dict_gen);
   set_config_dict_map  (&num_dict_map,  &dict_map);
+  set_config_dict_nfreq(&num_dict_nfreq,&dict_nfreq);
 
 //===================================================================================
 // Read the input file and fill the dictionaries with user input
@@ -119,6 +122,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                                nkey,nfun_key,input_name);break;
         case 6 : put_word_dict(&word,dict_map, num_dict_map, fun_key, nline,
                                nkey, nfun_key, input_name); break;
+        case 7 : put_word_dict(&word,dict_nfreq, num_dict_nfreq, fun_key, nline,
+                               nkey, nfun_key, input_name); break;
       }//end switch
     }// end while 
   }//end while
@@ -136,6 +141,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   set_config_params_pc   (dict_pc,   dict_fun[3].keyword, input_name);
   set_config_params_nl   (dict_nl,   dict_fun[4].keyword, input_name, iflag);
   set_config_params_map  (dict_map,  dict_fun[6].keyword, input_name);
+  set_config_params_nfreq(dict_nfreq,dict_fun[7].keyword, input_name);
 
   simpleRangeCheck(); // redundant checking
 
@@ -217,6 +223,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
    write_cpaimd_config(fp,dict_nl,   num_dict_nl,   dict_fun[4].keyword);
    write_cpaimd_config(fp,dict_gen,  num_dict_gen,  dict_fun[5].keyword);
    write_cpaimd_config(fp,dict_map,  num_dict_map,  dict_fun[6].keyword);
+   write_cpaimd_config(fp,dict_nfreq,num_dict_nfreq,dict_fun[7].keyword);
   fclose(fp);
 
 //===================================================================================
@@ -232,6 +239,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   cfree(&dict_nl[1]   ,"Config::readCconfig");
   cfree(&dict_gen[1]  ,"Config::readCconfig");
   cfree(&dict_map[1]  ,"Config::readCconfig");
+  cfree(&dict_nfreq[1],"Config::readCconfig");
 
 //===================================================================================
 // Tell Everyone you are done
@@ -253,7 +261,7 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 6;
+  num_dict[0] = 7;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_fun")-1;
 
 //=================================================================================
@@ -301,6 +309,12 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
     ind = 6;
     strcpy((*dict)[ind].error_mes," ");
     strcpy((*dict)[ind].keyword,"charm_conf_map_def");
+    strcpy((*dict)[ind].keyarg," ");
+  //------------------------------------------------------------------------------
+  //  6)~charm_conf_nfreq_def[ ]
+    ind = 7;
+    strcpy((*dict)[ind].error_mes," ");
+    strcpy((*dict)[ind].keyword,"charm_conf_nfreq_def");
     strcpy((*dict)[ind].keyarg," ");
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1914,6 +1928,142 @@ void Config::set_config_params_map (DICT_WORD *dict, char *fun_key, char *input_
 
   }//end routine
 //===================================================================================
+
+
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+void Config::set_config_dict_nfreq (int *num_dict ,DICT_WORD **dict){
+//==================================================================================
+//  I) Malloc the dictionary                                              
+
+  num_dict[0] = 8;
+  *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_nfreq")-1;
+
+//=================================================================================
+//  II) Initialize the user set option(did the user set the key word      
+
+  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iuset    = 0;}
+  for(int i=1;i<=num_dict[0];i++){(*dict)[i].iflag    = 0;}
+  for(int i=1;i<=num_dict[0];i++){(*dict)[i].key_type = 1;} //spec only once
+
+  // Setup the default values
+  int nfreq_cpintegrate       = 400;   ///< CPINTEGRATE::CP_integrate_min_STD, CPINTEGRATE::CP_integrate_min_CG
+  int nfreq_cplocal_hartext   = 4;     ///< CPLOCAL::CP_hart_eext_calc
+  int nfreq_cplocal_eeshart   = 100;   ///< CPLOCAL::eesHartEextGchare
+  int nfreq_cplocal_eesewald  = 100;   ///< CPLOCAL::eesEwaldGchare
+  int nfreq_cpnonlocal_eke    = 400;   ///< CPNONLOCAL::CP_eke_calc
+  int nfreq_cpnonlocal_eesfwd = 100;   ///< CPNONLOCAL::eesProjGchare, CPNONLOCAL::eesYlmOnD
+  int nfreq_cpnonlocal_eesbk  = 100;   ///< CPNONLOCAL::eesPsiForcGspace
+  int nfreq_xcfnctl           = 8;     ///< CPXCFNCTS::CP_exc_calc, CPXCFNCTS::CP_getGGAFunctional
+
+//=================================================================================
+// III) Set up the dictionary
+  int ind;
+  //-----------------------------------------------------------------------------
+  // 1)\integrate{}
+    ind = 1;
+    strcpy((*dict)[ind].keyword,"integrate");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cpintegrate);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 2)\localHartExt{}
+    ind = 2;
+    strcpy((*dict)[ind].keyword,"localHartExt");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_hartext);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 3)\localEesHart{}
+    ind = 3;
+    strcpy((*dict)[ind].keyword,"localEesHart");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_eeshart);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 4)\localEesEwald{}
+    ind = 4;
+    strcpy((*dict)[ind].keyword,"localEesEwald");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cplocal_eesewald);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 5)\nonlocalEke{}
+    ind = 5;
+    strcpy((*dict)[ind].keyword,"nonlocalEke");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eke);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 6)\nonlocalEesFwd{}
+    ind = 6;
+    strcpy((*dict)[ind].keyword,"nonlocalEesFwd");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eesfwd);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 7)\nonlocalEesBk{}
+    ind = 7;
+    strcpy((*dict)[ind].keyword,"nonlocalEesBk");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_cpnonlocal_eesbk);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  //-----------------------------------------------------------------------------
+  // 8)\xcfnctl{}
+    ind = 8;
+    strcpy((*dict)[ind].keyword,"xcfnctl");
+    sprintf((*dict)[ind].keyarg,"%d",nfreq_xcfnctl);
+    strcpy((*dict)[ind].error_mes,"freq at which network progress should be called on BGL");
+  }//end routine
+//===================================================================================
+
+
+//===================================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===================================================================================
+void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *input_name){
+//===================================================================================
+
+  int ind,ierr;
+
+//===================================================================================
+  //-----------------------------------------------------------------------------
+  // 1)\integrate{}
+    ind = 1;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cpintegrate);
+    if(nfreq_cpintegrate<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 2)\localHartExt{}
+    ind = 2;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_hartext);
+    if(nfreq_cplocal_hartext<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 3)\localEesHart{}
+    ind = 3;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_eeshart);
+    if(nfreq_cplocal_eeshart<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 4)\localEesEwald{}
+    ind = 4;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cplocal_eesewald);
+    if(nfreq_cplocal_eesewald<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 5)\nonlocalEke{}
+    ind = 5;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eke);
+    if(nfreq_cpnonlocal_eke<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 6)\nonlocalEesFwd{}
+    ind = 6;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eesfwd);
+    if(nfreq_cpnonlocal_eesfwd<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 7)\nonlocalEesBk{}
+    ind = 7;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_cpnonlocal_eesbk);
+    if(nfreq_cpnonlocal_eesbk<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 8)\xcfnctl{}
+    ind = 8;
+    sscanf(dict[ind].keyarg,"%d",&nfreq_xcfnctl);
+    if(nfreq_xcfnctl<1){keyarg_barf(dict,input_name,fun_key,ind);}
+  }//end routine
+//===================================================================================
+
 
 
 

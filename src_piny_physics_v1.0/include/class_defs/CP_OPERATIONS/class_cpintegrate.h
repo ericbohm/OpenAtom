@@ -27,7 +27,7 @@ class CPINTEGRATE{
                            double ***,double ***,double***,double ***,
                            double *,double *, double *, double *,double ,
                            double , double *,int ,int ,int,
-                           double *,double*,double,double,double*,int *,int *,int);
+                           double *,double*,double,double,double*,int *,int *,int,int nfreq_cmi_update=400);
 
   static void CP_create_mass(int ,int *, int *, int *, double *,int);
 
@@ -36,12 +36,12 @@ class CPINTEGRATE{
   //-------------------------------------------------------------------------
   // cp_min_STD.C
   static void CP_integrate_min_STD(int , int ,complex *,complex *,
-                                   int *,int *, int *,double *,int nfreq_cmi_update=400);
+                                   int *,int *, int *,double *,int nfreq_cmi_update);
 
   //-------------------------------------------------------------------------
   // cp_min_CG.C
   static void CP_integrate_min_CG(int ,int ,complex *,complex *,complex *,
-                                  int *,int *, int *,double *, double, int nfreq_cmi_update=400);
+                                  int *,int *, int *,double *, double, int nfreq_cmi_update);
 
   static void CP_fovlap_calc(int, int, complex *,double *);
 
