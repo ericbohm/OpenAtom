@@ -285,6 +285,7 @@ class PairCalculator: public CBase_PairCalculator
 		                           //! or the C=-1 *inRight* orthoT +c in dynamics
 		double *inDataLeft; 						///< the input pair to be transformed
 		double *inDataRight; 						///< the input pair to be transformed
+        paircalcInputMsg *msgLeft, *msgRight;   ///< Incoming messages with left and right matrix data that are kept around so that we can directly compute on them
 		double *outData; 							///< results of fw multiply
 		int actionType; 							///< matrix usage control [NORMAL, KEEPORTHO, PSIV]
 		

@@ -327,6 +327,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
   resumed=true;
 
   touchedTiles=NULL;
+  msgLeft = msgRight = 0;
   inDataLeft = NULL;
   inDataRight = NULL;
   allCaughtLeft=NULL;
@@ -367,7 +368,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
     // but we make them anyway
     otherResultCookies=new CkSectionInfo[numExpectedY];
 
-	/** -------- Setup the forward path input message handling -------- **/ 
+	/** -------- Setup the forward path input message handling -------- **/
 	/// Set flags indicating if input data has been received
 	isLeftReady = false;
 	/// Chares on the chare array diagonals will only get a left matrix (which will also be the right). 
@@ -463,6 +464,7 @@ PairCalculator::pup(PUP::er &p)
 	  outData= new double[grainSizeX*grainSizeY];
       else
 	  outData=NULL;
+      /// @todo: Fix this to allocate or grab a msgLeft and msgRight. inDataLeft/Right is no longer allocated directly
       if(existsLeft)
 	  inDataLeft = new double[2*numExpectedX*numPoints];
       else
@@ -489,6 +491,11 @@ PairCalculator::pup(PUP::er &p)
     CmiAssert(resultCookies[i].get_redNo() > 0);
   if(existsOut)
     p(outData, grainSize*grainSize);
+    /** @todo: Fix this to pack msgLeft and msgRight directly. inDataLeft/Right is no longer allocated directly
+      * msgLeft and msgRight will already be packed and available as msgs. They just wont be packed together with the rest of paircalc. 
+      * Is there any way we could simply hand the msgs back to charm and ask it to deliver them to me after I am done migrating.?
+      * Or am I talking crap?
+      */
   if(existsLeft)
     p(inDataLeft, numExpectedX * numPoints * 2);
   if(existsRight)
@@ -522,10 +529,10 @@ PairCalculator::~PairCalculator()
 #endif
   if(outData!=NULL)
     delete [] outData;
-  if(inDataLeft!=NULL)
-    delete [] inDataLeft;
-  if(inDataRight!=NULL)
-    delete [] inDataRight;
+  if(msgLeft)
+      delete msgLeft;
+  if(msgRight)
+      delete msgRight;
   if(mynewData!=NULL)
     delete [] mynewData;
   if(othernewData!=NULL)
@@ -672,6 +679,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 	#endif
 
 	/// Set member data pertinent to the left block
+    msgLeft      = msg;
 	inDataLeft   = const_cast<double*> (data);
 	existsLeft   = true;
 	numRecd     += numRows;
@@ -706,6 +714,7 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 	#endif
 
 	/// Set member data pertinent to the right block
+    msgRight     = msg;
 	inDataRight  = const_cast<double*> (data);
 	existsRight  = true;
 	numRecd     += numRows;
@@ -1733,14 +1742,16 @@ PairCalculator::multiplyResult(multiplyResultMsg *msg)
 	  // clear the right and left they'll get reallocated on the next pass
 #ifndef PC_USE_RDMA
 	  // we really don't want to reregister this every phase
-	  delete [] inDataLeft;
+	  delete msgLeft;
+      msgLeft = 0;
 	  inDataLeft=NULL;
 	  if(!symmetric || (symmetric && notOnDiagonal)) {
-	    delete [] inDataRight;
+	    delete msgRight;
+        msgRight = 0;
 	    inDataRight = NULL;
 	  }
 	  existsLeft=false;
-	  existsRight=false;
+	  existsRight=false;  ///< @todo: Shouldnt this be inside the previous if block. Check if it makes a difference while running with conserveMem>0
 #endif
 	  if(outData!=NULL && actionType!=KEEPORTHO)
 	    {
