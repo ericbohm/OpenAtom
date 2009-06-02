@@ -148,11 +148,11 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 		/// A pointer to the message data. No checks on pointer validity. Use with a pinch of salt
 		inline double* data() 				{ return reinterpret_cast<double*> (points); }
 		/// Constructor used to create actual GSpace to PC messages
-		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize)
+		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize, int _nRows=1)
 		{
-            CkAssert(sizeof(complex)/sizeof(double) == 2);  /// Is it needed? Should be a compile time assert anyway.
+            CkAssert(sizeof(complex)/sizeof(double) == 2);  ///< Is it needed? Should be a compile time assert anyway.
             nCols    =_size*2; ///< Convert the num of data units from complex to doubles
-            nRows    = 1;
+            nRows    =_nRows;
 			senderID =_sender;
 			fromRow  =_fromRow;
 			flag_dp  =_flag_dp;
@@ -163,14 +163,14 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 		/// @todo: Message data, should slowly be hidden from the world. The sender and end user could become friends
 		complex *points;
 		bool fromRow, flag_dp, doPsiV;
-		int blkSize;
+		int blkSize; ///< @todo: blkSize is used in paircalc only for dumping data files in the backward path. Also, it cannot be retreived when usng RDMA. Is there an alternative?
 		
 	private:
 		int senderID, nCols, nRows;
 };
 
 
-
+/*
 class phantomMsg : public CMessage_phantomMsg {
  public:
   int size;
@@ -180,6 +180,7 @@ class phantomMsg : public CMessage_phantomMsg {
   int actionType;
   void init(int _size, int _numPoints, bool _flag_dp, double *_points, int _blkSize, int _actionType)
     {
+        CkPrintf("WARNING: WARNING: phantomMsg has been created\n");
       size=_size;
       numPoints=_numPoints;
       blkSize=_blkSize;
@@ -189,7 +190,7 @@ class phantomMsg : public CMessage_phantomMsg {
 
 };
 
-
+*/
 
 class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultMsg {
  public:

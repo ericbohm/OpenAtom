@@ -148,8 +148,6 @@ class PairCalculator: public CBase_PairCalculator
 		void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
 		/// @entry Initializes the section cookie and the reduction client. Called on startup as the chare world is being created
 		void initGRed(initGRedMsg *msg);
-		/// @entry Phantom chare entry method to accept the whole forward path input data before the backward path is triggered (while the Orthos are chugging away)
-		void acceptPhantomData(phantomMsg *msg);
 		/// @entry During dynamics, each Ortho calls this on the Asymm loop PC instances to send its share of T back to avoid a race condition between Gamma and T.
 		void acceptOrthoT(multiplyResultMsg *msg);
 		/// @entry Backward path multiplication

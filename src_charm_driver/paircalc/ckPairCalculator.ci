@@ -32,10 +32,6 @@ module paircalcMessages {
 		complex points[];
 	};
 
-	message phantomMsg  {
-	  double points[];
-	};
-
 	message multiplyResultMsg  {
 	  double matrix1[];
 	  double matrix2[];
@@ -103,7 +99,6 @@ module ckPairCalculator
 		entry void sendBWResultDirect(sendBWsignalMsg *msg);
 		entry [nokeep] void initGRed(initGRedMsg *msg);
 		entry [nokeep] void initResultSection(initResultMsg *msg);
-   		entry void acceptPhantomData(phantomMsg *msg);
 		entry void multiplyForwardRDMA();
 		entry [nokeep] void multiplyResult(multiplyResultMsg *msg);
 		entry [nokeep] void acceptOrthoT(multiplyResultMsg *msg);

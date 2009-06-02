@@ -321,8 +321,12 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
 
   notOnDiagonal= (thisIndex.x!=thisIndex.y) ? true: false;
   symmetricOnDiagonal=(symmetric && thisIndex.x==thisIndex.y) ? true: false;
-  if(symmetricOnDiagonal)  //diagonals only get 1 side
+  // If I lie on the chare array diagonal, I expect to get only left matrix data
+  if(symmetricOnDiagonal)
     numExpected=numExpectedX;
+  // If I am a phantom chare, I expect to get only right matrix data
+  if(amPhantom)
+      numExpected = numExpectedY;
   cpreduce=_cpreduce;
   resumed=true;
 
@@ -369,15 +373,24 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
     otherResultCookies=new CkSectionInfo[numExpectedY];
 
 	/** -------- Setup the forward path input message handling -------- **/
-	/// Set flags indicating if input data has been received
-	isLeftReady = false;
-	/// Chares on the chare array diagonals will only get a left matrix (which will also be the right). 
-	/// Hence, fool the trigger methods into starting computation as soon as left arrives
-	if (symmetricOnDiagonal)
-		isRightReady = true;
-	else
-		isRightReady = false;
-	/// Setup the callbacks functors
+	/// Set isDataReady flags to false only for those inputs this chare will be getting
+    if (amPhantom)
+    {
+        /// Phantoms will get only a right matrix input from their mirror chares
+        isLeftReady  = true;
+        isRightReady = false;
+    }
+    else
+    {
+        /// Non-phantoms will always get at least a left matrix input
+        isLeftReady = false;
+        /// Chares on the chare array diagonals will get ONLY a left matrix (which will also be the right). 
+        if (symmetricOnDiagonal)
+            isRightReady = true;
+        else
+            isRightReady = false;
+    }
+	/// Setup the callbacks 
     CkArrayIndex4D myIndex(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z);
     CkCallback leftTrigger (CkIndex_PairCalculator::acceptLeftData (NULL),myIndex,thisProxy,true);
     CkCallback rightTrigger(CkIndex_PairCalculator::acceptRightData(NULL),myIndex,thisProxy,true);
@@ -686,9 +699,34 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
 	isLeftReady  = true;
 
-	/// If all data is ready, trigger the computation 
+	/// If all data is ready 
 	if (isLeftReady && isRightReady)
-        launchComputations( leftCollator->getSampleMsg() );
+    {
+        // Obtain a sample incoming msg from the collator and extract relevant data from it
+        paircalcInputMsg *sampleMsg = leftCollator->getSampleMsg();
+        if (sampleMsg)
+        {
+            msgLeft->doPsiV = sampleMsg->doPsiV;
+            msgLeft->blkSize= sampleMsg->blkSize;
+            msgLeft->flag_dp= sampleMsg->flag_dp;
+        }
+        else 
+        {
+            // If RDMA is enabled, there will be no sample msgs available for any non-PsiV loop. Hence doPsiV is false
+            #ifdef PC_USE_RDMA
+                msgLeft->doPsiV = false;
+            // If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
+            #else
+                std::stringstream dbgStr;
+                dbgStr<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]"
+                    <<" My collator was not able to give me a sample message. Aborting...";
+                CkAbort(dbgStr.str().c_str());
+            #endif
+        }
+        delete sampleMsg;
+        /// Trigger the computation 
+        launchComputations(msgLeft);
+    }
 }
 
 
@@ -721,9 +759,38 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
 	isRightReady = true;
 
-	/// If all data is ready, trigger the computation 
+	/// If all data is ready 
 	if (isLeftReady && isRightReady)
-        launchComputations( rightCollator->getSampleMsg() );
+    {
+        /// Phantom chares already have correct info in the incoming msg. Only non-phantoms have to be handled
+        if (!amPhantom)
+        {
+            // Obtain a sample incoming msg from the collator and extract relevant data from it
+            paircalcInputMsg *sampleMsg = rightCollator->getSampleMsg();
+            if (sampleMsg)
+            {
+                msgRight->doPsiV = sampleMsg->doPsiV;
+                msgRight->blkSize= sampleMsg->blkSize;
+                msgRight->flag_dp= sampleMsg->flag_dp;
+            }
+            else
+            {
+                // If RDMA is enabled, there will be no sample msgs available for any non-PsiV loop. Hence doPsiV is false
+                #ifdef PC_USE_RDMA
+                    msgRight->doPsiV = false;
+                // If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
+                #else
+                    std::stringstream dbgStr;
+                    dbgStr<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]"
+                        <<" My collator was not able to give me a sample message. Aborting...";
+                    CkAbort(dbgStr.str().c_str());
+                #endif
+            }
+            delete sampleMsg;
+        }
+        /// Trigger the computation 
+        launchComputations(msgRight);
+    }
 }
 
 
@@ -731,54 +798,58 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
 {
     #ifdef _PAIRCALC_DEBUG_
-        CkPrintf("[%d,%d,%d,%d,%d] Going to launch computations...\n",
-                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+        CkPrintf("[%d,%d,%d,%d,%d] Going to launch computations... numRecd = %d numExpected = %d numExpectedX = %d, numExpectedY = %d\n",
+                                thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,
+                                numRecd, numExpected, numExpectedX, numExpectedY);
     #endif
-    // If there is no sample message...
-    if (aMsg == 0)
+    /// Ensure that we're really ready to launch computations
+    CkAssert(numRecd == numExpected);
+    blkSize = aMsg->blkSize;
+    
+    // If this is not a PsiV loop, trigger the forward path for just the non-phantom chares
+    if(!aMsg->doPsiV)
     {
-        // If RDMA is enabled, this is expected. Simply trigger the computation
-        #ifdef PC_USE_RDMA
-            actionType=0;
+        // This iteration is a normal loop. Hence normal behavior
+        actionType = NORMALPC;
+        if (!amPhantom)
+        {
+            /** expectOrthoT is false in any scenario other than asymmetric, dynamics.
+            * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
+            * received completely (from Ortho). So this condition, invokes multiplyForward() on 
+            * all cases except (asymm, dynamics when T has not been received)
+            * 
+            * In that exception scenario, we dont do anything now. Later, when all of T is received, 
+            * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
+            */
             if(!expectOrthoT || numRecdBWOT==numOrtho)
-                thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForwardRDMA();
+                thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
             else
                 CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-        // If RDMA is NOT enabled, we should have obtained a sample message. Something must be wrong
-        #else
-            std::stringstream dbgStr;
-            dbgStr<<"["<<thisIndex.w<<","<<thisIndex.x<<","<<thisIndex.y<<","<<thisIndex.z<<","<<symmetric<<"]"
-                  <<" My collator was not able to give me a sample message. Aborting...";
-            CkAbort(dbgStr.str().c_str());
+        }
+        else
+        {
+            /// Do nothing for the phantom chare, non-psiv loops. Computation will be triggered only in the backward path
+        }
+    }
+    // else, if this is a PsiV loop (there is no forward path, only backward path computations to update PsiV)
+    else
+    {
+        // This is a PsiV loop. Hence behave accordingly
+        actionType = PSIV;
+        thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
+        #ifdef PC_USE_RDMA
+            // Let the collators know that they should now expect the next batch of (non-PsiV) data via RDMA
+            leftCollator->expectNext();
+            rightCollator->expectNext();
         #endif
     }
-    else
-    { 
-        blkSize = aMsg->blkSize;
-        // if this is not a PsiV loop
-        if(!aMsg->doPsiV)
-        {
-            // normal behavior
-            actionType=0;
-            /** expectOrthoT is false in any scenario other than asymmetric, dynamics.
-             * numRecdBWOT is equal to numOrtho only when it is asymm, dynamics and T has been 
-             * received completely (from Ortho). So this condition, invokes multiplyForward() on 
-             * all cases except (asymm, dynamics when T has not been received)
-             * 
-             * In that exception scenario, we dont do anything now. Later, when all of T is received, 
-             * both multiplyForward() and bwMultiplyDynOrthoT() are called. Look for these calls in acceptOrthoT().
-             */
-             if(!expectOrthoT || numRecdBWOT==numOrtho)
-                 thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
-             else
-                 CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
-        }
-        // else, if this is a PsiV loop
-        else
-            thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyPsiV();
-        // Delete the sample message
-        delete aMsg;
-    }
+    
+    /// Reset the counters and flags for the next iteration
+    numRecd = 0;
+    if (!amPhantom)
+        isLeftReady = false;
+    if (!symmetricOnDiagonal)
+        isRightReady = false;
 }
 
 
@@ -917,9 +988,8 @@ void
 PairCalculator::multiplyForward(bool flag_dp)
 {
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] multiplyForward numRecd %d numExpected %d numExpectedX %d numExpected Y %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, numRecd, numExpected, numExpectedX, numExpectedY);
+  CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 #endif
-  CkAssert(numRecd == numExpected);
   if(!existsOut){
     CkAssert(outData==NULL);
     existsOut=true;
@@ -1038,19 +1108,6 @@ PairCalculator::multiplyForward(bool flag_dp)
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif  // SPLIT
-  if(numRecd == numExpected)
-    {
-      numRecd = 0;
-      isLeftReady = false;
-      /// Except for chares on the symmetric chare array diagonal, everyone else should expect a right matrix again
-      if (!symmetricOnDiagonal)
-        isRightReady = false;
-    }
-  else
-    {
-      CkPrintf("[%d,%d,%d,%d,%d]: Going to abort. numRecd=%d numExpctd=%d \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,numRecd,numExpected);
-      CkAbort("How did we get into multiplyfoward with mismatch numRecd?\n");
-    }
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
@@ -1083,16 +1140,14 @@ PairCalculator::multiplyForward(bool flag_dp)
     {
       CkAssert(existsRight);
       //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-      phantomMsg *phantom=new ( numExpectedY*numPoints*2, 8*sizeof(int)) phantomMsg;
+      paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,(complex*)inDataRight,false,blkSize,numExpectedY);
       bool prioPhan=false;
       if(prioPhan)
 	{
-	  CkSetQueueing(phantom, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
-	  // than non prioritized
+	  CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
 	}
-      phantom->init(numExpectedY*numPoints*2, numPoints, flag_dp, inDataRight, blkSize,0);
-      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
     }
 
 	  /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T, 
@@ -1107,6 +1162,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 	      numRecdBWOT=0;
 	  }
 }
+
 
 
 
@@ -1205,50 +1261,6 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 }
 
 
-/**
- * Data enters the phantom chares on the symmetric loop via here and triggers the backward path 
- * computation. The data is sent by the symmetric loop (NON)phantom chares that do the forward path work
- */
-void
-PairCalculator::acceptPhantomData(phantomMsg *msg)
-{
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] accept Phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-#endif
-
-
-#ifdef _CP_SUBSTEP_TIMING_
-  //satisfy fw path reduction for this triangle
-  if(UpairCalcID1[instance].forwardTimerID>0)
-    {
-      double pstart=CmiWallTimer();
-      contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].forwardTimerID);
-      pstart=CmiWallTimer();
-      contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].forwardTimerID);
-    }
-#endif
-
-  blkSize=msg->blkSize;
-  CkAssert(amPhantom);
-  if (!existsRight)
-      { // now that we know numPoints we can allocate contiguous space
-	CkAssert(inDataRight==NULL);
-	existsRight=true;
-	numPoints = msg->numPoints; // numPoints is init here with the size of the data chunk.
-	inDataRight = new double[numExpectedX*numPoints*2];
-	bzero(inDataRight,numExpectedX*numPoints*2*sizeof(double));
-#ifdef _PAIRCALC_DEBUG_
-	CkPrintf("[%d,%d,%d,%d,%d] Allocated right %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,numExpectedX,numPoints);
-#endif
-      }
-  CkAssert(numPoints== msg->numPoints);
-  CmiMemcpy(inDataRight, msg->points, numExpectedX*numPoints*2* sizeof(double));
-  actionType=msg->actionType;
-  delete msg;
-  if(actionType==PSIV)
-    multiplyPsiV();
-}
-
 
 
 /** Basically calls collectTile to accept incoming ortho data from an Ortho chare
@@ -1293,7 +1305,7 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
   int matrixSize=grainSizeX*grainSizeY;
 
   collectTile(false, true, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBWOT, matrixSize, matrix2, matrix1);
-  if ((numRecdBWOT==numOrtho) && (numRecd == numExpected))
+  if ((numRecdBWOT==numOrtho) && (numRecd == numExpected)) ///< @todo: resetting numRecd in launchComputations can have effects here. Fix this or change launchComp()
     { // forward path beat orthoT
       CkPrintf("GAMMA beat orthoT, multiplying\n");
       actionType=0;
@@ -1321,6 +1333,9 @@ PairCalculator::multiplyResultI(multiplyResultMsg *msg)
 
 /**
  * Tolerance correction PsiV Backward path multiplication
+ * This is the same as the regular one matrix backward path with the following exceptions:
+ * - inDataLeft and inDataRight contain PsiV
+ * - outData contains the orthoT from the previous (standard) backward path invocation
  */
 void
 PairCalculator::multiplyPsiV()
@@ -1328,38 +1343,20 @@ PairCalculator::multiplyPsiV()
 	#ifdef DEBUG_CP_PAIRCALC_PSIV
 		CkPrintf("[%d,%d,%d,%d,%d] In multiplyPsiV\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 	#endif
-	/// If I am not a phantom chare, then my numRecd should have been updated correctly in acceptL/RData().
-	CkAssert(amPhantom || numRecd==numExpected);
-	/// Reset counters/flags for next batch of data
-	numRecd=0;
-	isLeftReady = false;
-	/// Except for chares on the symmetric chare array diagonal, everyone else should expect a right matrix again
-	if (!symmetricOnDiagonal)
-		isRightReady = false;
 
-  // this is the same as the regular one matrix backward path
-  // with the following exceptions
-
-  // inDataLeft and inDataRight contain PsiV
-
-  // outData contains the orthoT from the previous (standard) backward
-  // path invocation
-
-  // make a message
-  if(!amPhantom && phantomSym && symmetric && notOnDiagonal) //mirror our data to the phantom
+  // If I am a non-phantom chare in the symmetric instance, send a copy of my data to my mirror phantom chare
+  if(!amPhantom && phantomSym && symmetric && notOnDiagonal) 
     {
       CkAssert(existsRight);
       //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-      phantomMsg *phantom=new ( numExpectedY*numPoints*2, 8*sizeof(int)) phantomMsg;
+      paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,true,(complex*)inDataRight,true,blkSize,numExpectedY);
       bool prioPhan=false;
       if(prioPhan)
 	{
-	  CkSetQueueing(phantom, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(phantom) = 1; // just make it slower
-	  // than non prioritized
+	  CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
+	  *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
 	}
-      phantom->init(numExpectedY*numPoints*2, numPoints, true, inDataRight, blkSize, PSIV);
-      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptPhantomData(phantom);
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
     }
   // we do not need to go through the all of multiplyresult for psiv
   // all we really need is the setup for the multiplyHelper
@@ -1406,12 +1403,6 @@ PairCalculator::multiplyPsiV()
     thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
   else
     thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-
-	#ifdef PC_USE_RDMA
-		// Let the collators know that they should now expect the next batch of data via RDMA
-		leftCollator->expectNext();
-		rightCollator->expectNext();
-	#endif
 }
 
 
