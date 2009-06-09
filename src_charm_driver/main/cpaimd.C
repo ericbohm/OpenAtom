@@ -1704,6 +1704,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ, UberCollection t
     
   UorthoProxy[thisInstance.proxyOffset].makeSections(indexSize, indexZ);
   delete avail;
+  delete excludePes;
 //============================================================================
   }//end routine 
 //============================================================================
@@ -2698,6 +2699,7 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     } //endfor
     */
   UrhoRealProxy[thisInstance.proxyOffset].doneInserting();
+  /// @todo: valgrind complains of a tiny memleak here. Check if callbacks get destroyed properly. 
   UrhoRealProxy[thisInstance.proxyOffset].ckSetReductionClient( new CkCallback(CkIndex_InstanceController::printEnergyEexc(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   CmiNetworkProgressAfter(0);
   //--------------------------------------------------------------------------
@@ -2725,6 +2727,7 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }//endfor
   }//endfor
   */
+  /// @todo: valgrind complains of a tiny memleak here. Check if callbacks get destroyed properly. 
   UrhoGHartExtProxy[thisInstance.proxyOffset].ckSetReductionClient(new CkCallback(CkIndex_InstanceController::printEnergyHart(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   UrhoGHartExtProxy[thisInstance.proxyOffset].doneInserting();
   CmiNetworkProgressAfter(0);

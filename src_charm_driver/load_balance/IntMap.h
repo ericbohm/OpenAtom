@@ -68,6 +68,8 @@ class IntMap4 {
 	  delete [] Map; 
 	  Map=NULL;
 	}
+      if (stepTable)
+          delete [] stepTable;
     }
 
     void buildMap(int keyW=1, int keyX=1, int keyY=1, int keyZ=1, int step=1)
@@ -95,9 +97,12 @@ class IntMap4 {
 		  Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
 	      }
 	  }
-	stepTable= new int [keyXmax*keyStep];
-	for(int s=0;s<keyXmax*keyStep;s++)
-	  stepTable[s]=s/keyStep;
+    if (stepTable == 0)
+    {
+        stepTable= new int [keyXmax*keyStep];
+        for(int s=0;s<keyXmax*keyStep;s++)
+            stepTable[s]=s/keyStep;
+    }
       }
     void pup(PUP::er &p)
       {
@@ -142,8 +147,8 @@ class IntMap4 {
 			      }
 			  }
 		      }
-		    if(p.isUnpacking())
-		      stepTable= new int[keyXmax*keyStep];
+		    if( p.isUnpacking() && (stepTable == 0) )
+                stepTable= new int[keyXmax*keyStep];
 		    PUParray(p,stepTable,keyXmax*keyStep);
 		  }
 		}
@@ -184,7 +189,7 @@ class IntMap4 {
 	      for(int z=0;z<keyZmax;z++)
 		CkPrintf("%d %d %d %d %d \n",w,x,y,z, get(w,x*keyStep,y*keyStep,z));
       }
-    IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL;}
+    IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL; stepTable=0; }
 };
 
 class IntMap3 {

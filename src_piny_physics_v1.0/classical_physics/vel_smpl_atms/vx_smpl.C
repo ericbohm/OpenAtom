@@ -234,6 +234,8 @@ void VX_SMPL::sampl3DVelMultiT(int natm, double* vx, double* vy,
    gaussran(natm,iseed,iseed2,qseed,ptemp);
    for(int i=0;i<natm;i++){vz[i] = temp[i];}
 
+   delete [] temp;
+
 //===================================================================
 // Apply the width
 

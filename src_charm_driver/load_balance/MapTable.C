@@ -1606,7 +1606,7 @@ RhoRSMapTable::RhoRSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRh
 	  }
 	}
     }
-  // delete [] Pecount;
+  delete [] Pecount;
   CkPrintf("Built RhoRS Map [%d, %d] on %d processors\n",nchareRhoR,rhoRsubplanes, pesused ); 
 #ifdef _MAP_DEBUG_
   CkPrintf("RhoRSMap created on processor %d\n", CkMyPe());

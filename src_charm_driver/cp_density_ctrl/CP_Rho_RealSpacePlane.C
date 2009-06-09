@@ -241,7 +241,7 @@ void CP_Rho_RealSpacePlane::init(){
 
     ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxy);
 
-    //    delete [] elems;    
+    delete [] elems;   
 
     ProductMsg *dummyProductMessage = new (0) ProductMsg;    
     // inform realspace element of this section proxy.

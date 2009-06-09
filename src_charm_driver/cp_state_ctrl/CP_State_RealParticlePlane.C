@@ -288,6 +288,7 @@ void CP_State_RealParticlePlane::init(){
       mcastGrp->setSection(rPlaneENLProxy);
       EnlCookieMsg *emsg= new EnlCookieMsg;
       rPlaneENLProxy.setEnlCookie(emsg);
+      delete [] elems;
   }//endif
   delete [] red_pl;
 
