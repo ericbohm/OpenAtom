@@ -606,6 +606,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 
   */
 
+  /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
   if(!symmetric && ++numRecd==numOrtho)
   {
     struct s_array { //(sendArray, bcastArray)
@@ -845,9 +846,14 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
     }
     
     /// Reset the counters and flags for the next iteration
-    numRecd = 0;
+
+    /// If asymm,dyn and T has not yet arrived completely, fw path has not yet been triggered. In this case numRecd will be checked and reset in acceptOrthoT(). Reset numRecd for other cases.
+    if(!expectOrthoT || numRecdBWOT==numOrtho)
+        numRecd = 0;
+    /// All non-phantoms should expect left matrix data again
     if (!amPhantom)
         isLeftReady = false;
+    /// All non(symm, on-diagonal) chares should expect right matrix data again
     if (!symmetricOnDiagonal)
         isRightReady = false;
 }
@@ -1151,7 +1157,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     }
 
 	  /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T, 
-	   * call byMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
+	   * call bwMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
 	   * 
 	   * @note: This if condition originally lived in acceptPairData(). Has been shoveled here 
 	   * to reduce branching over there.
@@ -1305,14 +1311,15 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
   int matrixSize=grainSizeX*grainSizeY;
 
   collectTile(false, true, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBWOT, matrixSize, matrix2, matrix1);
-  if ((numRecdBWOT==numOrtho) && (numRecd == numExpected)) ///< @todo: resetting numRecd in launchComputations can have effects here. Fix this or change launchComp()
+  if ((numRecdBWOT==numOrtho) && (numRecd == numExpected)) 
     { // forward path beat orthoT
       CkPrintf("GAMMA beat orthoT, multiplying\n");
-      actionType=0;
-      bool myfalse=false;
+      actionType  = 0;
+      bool myfalse= false;
       thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(myfalse);
       thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
-      numRecdBWOT=0;
+      numRecd     = 0;
+      numRecdBWOT = 0;
     }
 
 }
@@ -1418,7 +1425,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     //============================================================================
     
     #ifdef _PAIRCALC_DEBUG_
-        CkPrintf("[%d,%d,%d,%d,%d]: MultiplyResult from orthoX %d orthoY %d size %d numRecd %d actionType %d amPhantom %d notOnDiagonal %d phantomSym %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, phantomSym, symmetricOnDiagonal);
+        CkPrintf("[%d,%d,%d,%d,%d]: MultiplyResult from orthoX %d orthoY %d size %d numRecdBW %d actionType %d amPhantom %d notOnDiagonal %d phantomSym %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, phantomSym, symmetricOnDiagonal);
     #endif
     #ifdef _CP_SUBSTEP_TIMING_
         if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID1[instance].backwardTimerID>0))
@@ -1471,7 +1478,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         int swap=orthoY;
         orthoY=orthoX;
         orthoX=swap;
-        //      CkPrintf("[%d,%d,%d,%d,%d]: phantom MultiplyResult with size %d numRecd %d actionType %d numPoints %d orthoX %d orthoY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType, numPoints, orthoX, orthoY);
+        //      CkPrintf("[%d,%d,%d,%d,%d]: phantom MultiplyResult with size %d numRecdBW %d actionType %d numPoints %d orthoX %d orthoY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType, numPoints, orthoX, orthoY);
     }
     else
     {
@@ -1912,7 +1919,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     {
       streamCaughtR++;
     }
-  CkPrintf("[%d,%d,%d,%d,%d]: bwMultiplyHelper with size %d numRecd %d actionType %d orthoX %d orthoY %d orthoGrainSizeX %d orthoGrainSizeY %d BTCoffset %d BNCoffset %d m_in %d n_in %d k_in %d iter %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, size, numRecdBW, actionType, orthoX, orthoY,orthoGrainSizeX, orthoGrainSizeY, BTCoffset, BNCoffset, m_in, n_in, k_in, streamCaughtR);
+  CkPrintf("[%d,%d,%d,%d,%d]: bwMultiplyHelper with size %d numRecdBW %d actionType %d orthoX %d orthoY %d orthoGrainSizeX %d orthoGrainSizeY %d BTCoffset %d BNCoffset %d m_in %d n_in %d k_in %d iter %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, size, numRecdBW, actionType, orthoX, orthoY,orthoGrainSizeX, orthoGrainSizeY, BTCoffset, BNCoffset, m_in, n_in, k_in, streamCaughtR);
 #endif
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
@@ -2285,7 +2292,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
 void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int orthoGrainSizeX, int orthoGrainSizeY)
 {
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper with  numRecd %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
+  CkPrintf("[%d,%d,%d,%d,%d]: bwSendHelper with  numRecdBW %d actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
 #endif
 
 
