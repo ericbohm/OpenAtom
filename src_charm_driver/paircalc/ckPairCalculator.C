@@ -1317,7 +1317,11 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
       actionType  = 0;
       bool myfalse= false;
       thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(myfalse);
-      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
+      /** @note: multiplyForward() already checks for numRecdBWOT and calls bwMultiplyDynOrthoT().
+       * There is no need to call it again here. It appears, this would have been a correctness bug 
+       * that would have showed up if gamma did beat OrthoT. Verify.
+       */
+      //thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
       numRecd     = 0;
       numRecdBWOT = 0;
     }
