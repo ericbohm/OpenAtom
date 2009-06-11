@@ -1411,348 +1411,360 @@ PairCalculator::multiplyPsiV()
 /**
  * Backward path multiplication
  */
-void
-PairCalculator::multiplyResult(multiplyResultMsg *msg)
+void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
-//============================================================================
-// Do not delete msg. Its a nokeep.
-//============================================================================
+    //============================================================================
+    // Do not delete msg. Its a nokeep.
+    //============================================================================
+    
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d]: MultiplyResult from orthoX %d orthoY %d size %d numRecd %d actionType %d amPhantom %d notOnDiagonal %d phantomSym %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, phantomSym, symmetricOnDiagonal);
+    #endif
+    #ifdef _CP_SUBSTEP_TIMING_
+        if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID1[instance].backwardTimerID>0))
+            if(numRecdBW==0)
+            {
+                double pstart=CmiWallTimer();
+                if(symmetric)
+                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].backwardTimerID);
+                else
+                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].backwardTimerID);
+            }
+    #endif
 
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d]: MultiplyResult from orthoX %d orthoY %d size %d numRecd %d actionType %d amPhantom %d notOnDiagonal %d phantomSym %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, phantomSym, symmetricOnDiagonal);
-#endif
-#ifdef _CP_SUBSTEP_TIMING_
-  if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID1[instance].backwardTimerID>0))
-  if(numRecdBW==0)
+    /// Increment the number of tiles received in the backward path
+    numRecdBW++;
+
+    #ifdef _NAN_CHECK_
+        for(int i=0;i<msg->size;i++)
+            CkAssert(finite(msg->matrix1[i]));
+    #endif
+
+    int size=msg->size;
+    int size2=msg->size2;
+    double *matrix1=msg->matrix1;
+    double *matrix2=msg->matrix2;
+
+    #ifdef TEST_ALIGN
+        if((unsigned int) msg->matrix1 %16 !=0)
+        {
+            CkPrintf("msg->matrix1 is %p\n",msg->matrix1);
+        }
+        CkAssert((unsigned int) msg->matrix1 %16 ==0);
+        CkAssert((unsigned int) msg->matrix2 %16 ==0);
+    #endif
+
+    actionType=msg->actionType;
+    bool unitcoef = false;
+
+    int maxorthostateindex=(numStates/orthoGrainSize-1)*orthoGrainSize;
+    /// Find our tile indices within this sGrain
+    int orthoX=msg->orthoX*orthoGrainSize;
+
+    int orthoY=msg->orthoY*orthoGrainSize;
+    orthoX= (orthoX>maxorthostateindex) ? maxorthostateindex : orthoX;
+    orthoY= (orthoY>maxorthostateindex) ? maxorthostateindex : orthoY;
+    if(amPhantom)
     {
-      double pstart=CmiWallTimer();
-      if(symmetric)
-	contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].backwardTimerID);
-
-      else
-	contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].backwardTimerID);
+        orthoX=(orthoX-thisIndex.y)/orthoGrainSize;
+        orthoY=(orthoY-thisIndex.x)/orthoGrainSize;
+        int swap=orthoY;
+        orthoY=orthoX;
+        orthoX=swap;
+        //      CkPrintf("[%d,%d,%d,%d,%d]: phantom MultiplyResult with size %d numRecd %d actionType %d numPoints %d orthoX %d orthoY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType, numPoints, orthoX, orthoY);
     }
-#endif
-  numRecdBW++;
-#ifdef _NAN_CHECK_
-  for(int i=0;i<msg->size;i++)
-      CkAssert(finite(msg->matrix1[i]));
-#endif
-
-  int size=msg->size;
-  int size2=msg->size2;
-  double *matrix1=msg->matrix1;
-  double *matrix2=msg->matrix2;
-#ifdef TEST_ALIGN
-  if((unsigned int) msg->matrix1 %16 !=0)
+    else
     {
-      CkPrintf("msg->matrix1 is %p\n",msg->matrix1);
+        orthoX=(orthoX-thisIndex.x)/orthoGrainSize;
+        orthoY=(orthoY-thisIndex.y)/orthoGrainSize;
     }
-  CkAssert((unsigned int) msg->matrix1 %16 ==0);
-  CkAssert((unsigned int) msg->matrix2 %16 ==0);
-#endif
-  actionType=msg->actionType;
-  bool unitcoef = false;
-
-
-  int maxorthostateindex=(numStates/orthoGrainSize-1)*orthoGrainSize;
-  // find our tile indices within this sGrain
-  int orthoX=msg->orthoX*orthoGrainSize;
-
-  int orthoY=msg->orthoY*orthoGrainSize;
-  orthoX= (orthoX>maxorthostateindex) ? maxorthostateindex : orthoX;
-  orthoY= (orthoY>maxorthostateindex) ? maxorthostateindex : orthoY;
-  if(amPhantom)
+    
+    int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemY : orthoGrainSize;
+    int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemX : orthoGrainSize;
+    //  CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
+    //  CkPrintf("orthoGrainSizeX*orthoGrainSizeY = %d msg->size %d\n",orthoGrainSizeY*orthoGrainSizeX, msg->size);
+    if(matrix2==NULL||size2<1)
     {
-      orthoX=(orthoX-thisIndex.y)/orthoGrainSize;
-      orthoY=(orthoY-thisIndex.x)/orthoGrainSize;
-      int swap=orthoY;
-      orthoY=orthoX;
-      orthoX=swap;
-      //      CkPrintf("[%d,%d,%d,%d,%d]: phantom MultiplyResult with size %d numRecd %d actionType %d numPoints %d orthoX %d orthoY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric, msg->size, numRecdBW, msg->actionType, numPoints, orthoX, orthoY);
+        unitcoef = true;
     }
-  else
-  {
-      orthoX=(orthoX-thisIndex.x)/orthoGrainSize;
-      orthoY=(orthoY-thisIndex.y)/orthoGrainSize;
-  }
 
-  int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemY : orthoGrainSize;
-
-  int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemX : orthoGrainSize;
-  //  CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
-  //  CkPrintf("orthoGrainSizeX*orthoGrainSizeY = %d msg->size %d\n",orthoGrainSizeY*orthoGrainSizeX, msg->size);
-  if(matrix2==NULL||size2<1)
-    {
-      unitcoef = true;
-    }
-  if(amPhantom && !existsRight)
+    /// If I am a phantom chare and have not yet received the right matrix data from my non-phantom mirror
+    if(amPhantom && !existsRight)
     { //our mirror data is delayed
-      collectAllTiles=true;
-      PCstreamBWout=false;
-      CkPrintf("[%d,%d,%d,%d,%d] Warning! phantom got bw before fw, forcing tile collection\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+        collectAllTiles=true;
+        PCstreamBWout=false;
+        CkPrintf("[%d,%d,%d,%d,%d] Warning! phantom got bw before fw, forcing tile collection\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
     }
-  int matrixSize=grainSizeX*grainSizeY;
 
-  //ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
+    int matrixSize=grainSizeX*grainSizeY;
 
-  double *amatrix=NULL;
-  double *amatrix2=matrix2;  // may be overridden later
+    /// @note: ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
 
-#ifdef _PAIRCALC_DEBUG_PARANOID_BW_
-  CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
-  if(grainSize==orthoGrainSize)
+    double *amatrix=NULL;
+    double *amatrix2=matrix2;  ///< @note: may be overridden later
+
+    #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
+        CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
+        if(grainSize==orthoGrainSize)
+        {
+            dumpMatrixDouble("bwm1idata",msg->matrix1,grainSizeX,grainSizeY,0,0,orthoX, orthoY);
+            if(!unitcoef)
+            { // CG non minimization case
+                dumpMatrixDouble("bwm2idata",msg->matrix2,grainSizeX,grainSizeY);
+            }
+        }
+        else
+        {          
+            dumpMatrixDouble("bwm1idata",msg->matrix1,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
+            if(!unitcoef)
+            { // CG non minimization case
+                dumpMatrixDouble("bwm2idata",msg->matrix2,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
+            }
+        }
+    #endif
+
+    // default DGEMM for non streaming comp case
+    int m_in=numPoints*2;   // rows of op(A)==rows C
+    // TODO: is n_in grainSizeX or is k_in?
+    int n_in=grainSizeY;     // columns of op(B)==columns C
+    int k_in=grainSizeX;     // columns op(A) == rows op(B)
+    double beta(0.0);
+
+    /// expectOrthoT is true only in asymm, dynamics. Hence only for the asymm, off-diagonal chares in dynamics
+    if(expectOrthoT && !notOnDiagonal)
+        beta=1.0;  // need to subtract fpsi*orthoT
+    // default these to 0, will be set for streaming comp if !collectAllTiles
+    //BTransform=T offsets for C and A matrices
+    int BTCoffset=0;
+    int BTAoffset=0;
+    //BTransform=N offsets for C and A matrices
+    int BNCoffset=0;
+    int BNAoffset=0;
+    
+    if(numStates==grainSize)// all at once no malloc
     {
-      dumpMatrixDouble("bwm1idata",msg->matrix1,grainSizeX,grainSizeY,0,0,orthoX, orthoY);
-      if(!unitcoef)
-	{ // CG non minimization case
-	  dumpMatrixDouble("bwm2idata",msg->matrix2,grainSizeX,grainSizeY);
-	}
-    }
-  else
-    {
-
-      dumpMatrixDouble("bwm1idata",msg->matrix1,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
-      if(!unitcoef)
-	{ // CG non minimization case
-	  dumpMatrixDouble("bwm2idata",msg->matrix2,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
-	}
-    }
-#endif
-  // default DGEMM for non streaming comp case
-  int m_in=numPoints*2;   // rows of op(A)==rows C
-  // TODO: is n_in grainSizeX or is k_in?
-  int n_in=grainSizeY;     // columns of op(B)==columns C
-  int k_in=grainSizeX;     // columns op(A) == rows op(B)
-  double beta(0.0);
-  if(expectOrthoT && !notOnDiagonal)
-    beta=1.0;  // need to subtract fpsi*orthoT
-  // default these to 0, will be set for streaming comp if !collectAllTiles
-  //BTransform=T offsets for C and A matrices
-  int BTCoffset=0;
-  int BTAoffset=0;
-  //BTransform=N offsets for C and A matrices
-  int BNCoffset=0;
-  int BNAoffset=0;
-
-  if(numStates==grainSize)// all at once no malloc
-    {
-      amatrix=matrix1;  // index is 0 in this case, so this is silly
+        amatrix=matrix1;  // index is 0 in this case, so this is silly
     }
 
-  if (orthoGrainSize==grainSize)
+    /// If the grain size for paircalc and ortho are the same
+    if (orthoGrainSize==grainSize)
     { // you were sent the correct section only
-      amatrix=matrix1;
-      // the other tiles were already collected for PSIV
-      numRecdBW=numOrtho;
+        amatrix=matrix1;
+        // the other tiles were already collected for PSIV
+        numRecdBW=numOrtho;
     }
-  else if(actionType==PSIV)
+    /// else, if this is a PsiV loop
+    else if(actionType==PSIV)
     {
-      amatrix=matrix1;
-      // the other tiles were already collected for PSIV
-      numRecdBW=numOrtho;
+        amatrix=matrix1;
+        // the other tiles were already collected for PSIV
+        numRecdBW=numOrtho;
     }
-  else if (collectAllTiles)
+    /// else, if PC is collecting all the tiles from Ortho 
+    else if (collectAllTiles)
     {
-      collectTile(true, !unitcoef, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
-      amatrix = inResult1;
-      amatrix2 = inResult2;
+        collectTile(true, !unitcoef, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
+        amatrix = inResult1;
+        amatrix2 = inResult2;
     } //else !collectAllTiles
-  else
+    else
     {  // settings for streaming computation on each tile
+        /* For Reference to collect tiles we do this
+         * if(symmetric && notOnDiagonal) //swap the non diagonals
+         * {  // this is trickier to do than one might expect
+         * // because the tiles can have funny shapes
+         * bigGindex=grainSizeX;
+         * bigOindex=orthoGrainSizeX;
+         * orthoXoff=orthoGrainSize*bigGindex*orthoY;
+         * orthoYoff=orthoX*orthoGrainSize;
+         * 
+         * }
+         * // which means we set up our multiply for oY lines of oX size
+         * // embedded in gY lines of gX size
+         */
+        
+        amatrix=matrix1;
+        if(!unitcoef)
+            amatrix2=matrix2;
+        // fix n_in and k_in
+        n_in=orthoGrainSizeY;
+        k_in=orthoGrainSizeX;
+        if(symmetric && notOnDiagonal) //swap the non diagonals
+        {
+            if(!amPhantom)
+            {
+                int swap=orthoX;
+                orthoX=orthoY;
+                orthoY=swap;
+            }
+            /* int swap=orthoX;
+             * orthoX=orthoY;
+             * orthoY=swap;
+             * if(amPhantom)
+             * {
+             *      n_in=orthoGrainSizeX;
+             *      k_in=orthoGrainSizeY;
+             * }
+             * k_in=(orthoX==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemX : orthoGrainSize;
+             * n_in=(orthoY == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemY : orthoGrainSize;
+             */
+        }
+        
+        // skip to the rows which apply to this ortho
+        BTCoffset=orthoY * m_in * orthoGrainSize;
+        BTAoffset=orthoX * m_in * orthoGrainSize;
+        BNCoffset=orthoX * m_in * orthoGrainSize;
+        BNAoffset=orthoY * m_in * orthoGrainSize;
 
-      /* For Reference to collect tiles we do this
-	 if(symmetric && notOnDiagonal) //swap the non diagonals
-	 {  // this is trickier to do than one might expect
-	 // because the tiles can have funny shapes
-	 bigGindex=grainSizeX;
-	 bigOindex=orthoGrainSizeX;
-	 orthoXoff=orthoGrainSize*bigGindex*orthoY;
-	 orthoYoff=orthoX*orthoGrainSize;
-
-	 }
-      // which means we set up our multiply for oY lines of oX size
-      // embedded in gY lines of gX size
-      */
-
-      amatrix=matrix1;
-      if(!unitcoef)
-	amatrix2=matrix2;
-      // fix n_in and k_in
-      n_in=orthoGrainSizeY;
-      k_in=orthoGrainSizeX;
-      if(symmetric && notOnDiagonal) //swap the non diagonals
-	{
-	  if(!amPhantom)
-	    {
-	      int swap=orthoX;
-	      orthoX=orthoY;
-	      orthoY=swap;
-	    }
-
-	  //	  int swap=orthoX;
-	  //	  orthoX=orthoY;
-	  //	  orthoY=swap;
-	  //	  if(amPhantom)
-	  // {
-	  //    n_in=orthoGrainSizeX;
-	  //     k_in=orthoGrainSizeY;
-	  //  }
-	  //
-	  //	  k_in=(orthoX==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemX : orthoGrainSize;
-
-	  //	  n_in=(orthoY == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemY : orthoGrainSize;
-
-	}
-
-      // skip to the rows which apply to this ortho
-      BTCoffset=orthoY * m_in * orthoGrainSize;
-      BTAoffset=orthoX * m_in * orthoGrainSize;
-      BNCoffset=orthoX * m_in * orthoGrainSize;
-      BNAoffset=orthoY * m_in * orthoGrainSize;
-
-      /*      if(symmetricOnDiagonal)
-	{
-	  BNCoffset=orthoY * m_in * orthoGrainSize;
-	  BNAoffset=orthoX * m_in * orthoGrainSize;
-	}
-      */
-      beta=1.0;  // need to sum over tiles within orthoY columns
+        /*
+        if(symmetricOnDiagonal)
+        {
+            BNCoffset=orthoY * m_in * orthoGrainSize;
+            BNAoffset=orthoX * m_in * orthoGrainSize;
+        }
+        */
+        beta=1.0;  // need to sum over tiles within orthoY columns
+    }
+    
+    /// If there's only one corresponding Ortho, or if we've received all tiles, or if we're streaming or if this is a PsiV loop
+    if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV)
+    { // have all the input we need
+        // call helper function to do the math
+        if(actionType!=PSIV && !collectAllTiles && n_in*k_in>size)
+        {
+            CkPrintf("[%d,%d,%d,%d,%d] Warning! your n_in %d and k_in %d is larger than matrix1->size %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, n_in,k_in,size);
+            n_in=orthoGrainSize;
+            k_in=orthoGrainSize;
+        }
+        bwMultiplyHelper(size, matrix1, matrix2, amatrix, amatrix2,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, orthoGrainSizeX, orthoGrainSizeY);
     }
 
-  if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV)
-   { // have all the input we need
-     // call helper function to do the math
+    //#define SKIP_PARTIAL_SEND
+    #ifndef SKIP_PARTIAL_SEND
+        /// If we're streaming without issues (no collecting tiles, barriers, PsiV loops etc)
+        if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV)
+        { // send results which are complete and not yet sent
+            /*
+            if(symmetric && notOnDiagonal &&!amPhantom) //swap the non diagonals
+            {
+                k_in=(orthoX==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemX : orthoGrainSize;
+                n_in=(orthoY == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemY : orthoGrainSize;
+            }
+            */
+            bwSendHelper( orthoX, orthoY, k_in, n_in, orthoGrainSizeX, orthoGrainSizeY);
+            // bwSendHelper( orthoX, orthoY, k_in, n_in, k_in, n_in);
+        }
+    #else // dump them all after multiply complete
+        /// If we're stream computing and we've received all the tiles
+        if((PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV) && numRecdBW==numOrtho)
+        {
+            sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
+            if(PCdelayBWSend)
+            {
+                CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+                *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+            }
+            //collapse this into 1 flag
+            if(amPhantom)
+                sigmsg->otherdata= true;
+            else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
+                sigmsg->otherdata=true;
+            else
+                sigmsg->otherdata= false;
 
-     if(actionType!=PSIV && !collectAllTiles && n_in*k_in>size)
-       {
-	 CkPrintf("[%d,%d,%d,%d,%d] Warning! your n_in %d and k_in %d is larger than matrix1->size %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric, n_in,k_in,size);
-	 n_in=orthoGrainSize;
-	 k_in=orthoGrainSize;
-       }
-     bwMultiplyHelper(size, matrix1, matrix2, amatrix, amatrix2,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, orthoGrainSizeX, orthoGrainSizeY);
-   }
-  //#define SKIP_PARTIAL_SEND
-#ifndef SKIP_PARTIAL_SEND
-  if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV)
-    { // send results which are complete and not yet sent
-      //      if(symmetric && notOnDiagonal && !amPhantom) //swap the
-      //      non diagonals
+            if(gSpaceSum)
+                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+            else
+                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+            numRecdBW=0;
+        }
+        else
+        {
+            CkPrintf("[%d,%d,%d,%d,%d] not sending PCstreamBWout %d collectAllTiles %d useBWBarrier %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,PCstreamBWout,collectAllTiles,useBWBarrier,actionType, numRecdBW,numOrtho);
+        }
+    #endif
 
-      /*      if(symmetric && notOnDiagonal &&!amPhantom) //swap the non diagonals
-	{
-	  k_in=(orthoX==numOrthoRow-1) ? orthoGrainSize+orthoGrainSizeRemX : orthoGrainSize;
-
-	  n_in=(orthoY == numOrthoCol-1) ? orthoGrainSize + orthoGrainSizeRemY : orthoGrainSize;
-	  }
-      */
-      bwSendHelper( orthoX, orthoY, k_in, n_in, orthoGrainSizeX, orthoGrainSizeY);
-      //      bwSendHelper( orthoX, orthoY, k_in, n_in, k_in, n_in);
-    }
-
-#else // dump them all after multiply complete
-
-  if((PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV) && numRecdBW==numOrtho)
-    {
-      sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-      if(PCdelayBWSend)
-	{
-	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-	}
-      //collapse this into 1 flag
-      if(amPhantom)
-	sigmsg->otherdata= true;
-      else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
-	sigmsg->otherdata=true;
-      else
-	sigmsg->otherdata= false;
-
-      if(gSpaceSum)
-	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-      else
-	thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-      numRecdBW=0;
-    }
-  else
-    {
-      CkPrintf("[%d,%d,%d,%d,%d] not sending PCstreamBWout %d collectAllTiles %d useBWBarrier %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,PCstreamBWout,collectAllTiles,useBWBarrier,actionType, numRecdBW,numOrtho);
-    }
-#endif
-  // check to see if we're all done
-  if(((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho)) || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))|| actionType==PSIV)
+    /// Check to see if we're all done. We're not streaming and we've received all tiles or we're barriered or this is a PsiV loop
+    if(   ((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho))
+       || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))
+       || actionType==PSIV
+      )
     { // clean up
-      if(collectAllTiles || !unitcoef)
-	{  // only safe to do this if we allocated them
-	  if(conserveMemory>=0)
-	    {
-	      if(inResult2!=NULL)
-		delete [] inResult2;
-	      if(inResult1!=NULL)
-		delete [] inResult1;
-	      inResult1=NULL;
-	      inResult2=NULL;
-	    }
-	}
+        if(collectAllTiles || !unitcoef)
+        {  // only safe to do this if we allocated them
+            if(conserveMemory>=0)
+            {
+                if(inResult2!=NULL)
+                    delete [] inResult2;
+                if(inResult1!=NULL)
+                    delete [] inResult1;
+                inResult1=NULL;
+                inResult2=NULL;
+            }
+        }
+        
+        /// If we're barriered on the backward path
+        if(useBWBarrier)
+        {
+            int wehaveours=1;
+            contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
+        }
+        else
+        {
+            sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
+            if(PCdelayBWSend)
+            {
+                CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+                *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
+            }
+            /// Collapse this into 1 flag
+            if(amPhantom)
+                sigmsg->otherdata= true;
+            else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
+                sigmsg->otherdata=true;
+            else
+                sigmsg->otherdata= false;
+            /// Either reduce the results or sum them direct in GSpace
+            if(gSpaceSum)
+                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+            else
+                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+        }
 
-      if(useBWBarrier){
+        /// Reset the backward counter
+        numRecdBW=0;
+        if(PCstreamBWout)
+        {
+            bzero(columnCount, sizeof(int) * numOrthoCol);
+            bzero(columnCountOther, sizeof(int) * numOrthoCol);
+        }
 
-	int wehaveours=1;
-	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-		   CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
-      }
-      else
-	{
-	  sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-	  if(PCdelayBWSend)
-	    {
-	      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-	      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-	    }
-	  //collapse this into 1 flag
-	  if(amPhantom)
-	    sigmsg->otherdata= true;
-	  else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
-	    sigmsg->otherdata=true;
-	  else
-	    sigmsg->otherdata= false;
-
-	  if(gSpaceSum)
-	    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-	  else
-	    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-	}
-      numRecdBW=0;
-      if(PCstreamBWout)
-	{
-	  bzero(columnCount, sizeof(int) * numOrthoCol);
-	  bzero(columnCountOther, sizeof(int) * numOrthoCol);
-	}
-      if(conserveMemory>0)
-	{
-	  // clear the right and left they'll get reallocated on the next pass
-#ifndef PC_USE_RDMA
-	  // we really don't want to reregister this every phase
-	  delete msgLeft;
-      msgLeft = 0;
-	  inDataLeft=NULL;
-	  if(!symmetric || (symmetric && notOnDiagonal)) {
-	    delete msgRight;
-        msgRight = 0;
-	    inDataRight = NULL;
-	  }
-	  existsLeft=false;
-	  existsRight=false;  ///< @todo: Shouldnt this be inside the previous if block. Check if it makes a difference while running with conserveMem>0
-#endif
-	  if(outData!=NULL && actionType!=KEEPORTHO)
-	    {
-	      delete [] outData;
-	      outData = NULL;
-	      existsOut=false;
-	    }
-	}
+        /// For the strictest of the low mem footprint modes, delete even the input matrices
+        if(conserveMemory>0)
+        {
+            // clear the right and left they'll get reallocated on the next pass
+            #ifndef PC_USE_RDMA
+                // we really don't want to reregister this every phase
+                delete msgLeft;
+                msgLeft       = 0;
+                inDataLeft    = NULL;
+                existsLeft    = false;
+                if(!symmetric || (symmetric && notOnDiagonal)) 
+                {
+                    delete msgRight;
+                    msgRight    = 0;
+                    inDataRight = 0;
+                    existsRight = false;  
+                }
+            #endif
+            if(outData!=NULL && actionType!=KEEPORTHO)
+            {
+                delete [] outData;
+                outData = NULL;
+                existsOut=false;
+            }
+        }
     }
-
 }
 
 
