@@ -806,6 +806,7 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
     /// Ensure that we're really ready to launch computations
     CkAssert(numRecd == numExpected);
     blkSize = aMsg->blkSize;
+    bool isForwardPathPending = false; ///< Flag to make sure we cleanup only if FW path starts
     
     // If this is not a PsiV loop, trigger the forward path for just the non-phantom chares
     if(!aMsg->doPsiV)
@@ -825,7 +826,10 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
             if(!expectOrthoT || numRecdBWOT==numOrtho)
                 thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(aMsg->flag_dp);
             else
-                CkPrintf("\nGamma beat OrthoT. Waiting for T to arrive before proceeding with forward path");
+            {
+                isForwardPathPending = true;
+                CkPrintf("[%d,%d,%d,%d,%d] Gamma beat OrthoT. Waiting for T to arrive before proceeding with forward path\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+            }
         }
         else
         {
@@ -847,8 +851,11 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
     
     /// Reset the counters and flags for the next iteration
 
-    /// If asymm,dyn and T has not yet arrived completely, fw path has not yet been triggered. In this case numRecd will be checked and reset in acceptOrthoT(). Reset numRecd for other cases.
-    if(!expectOrthoT || numRecdBWOT==numOrtho)
+    /** If asymm,dyn and T has not yet arrived completely, fw path has not yet been triggered. 
+     * In this case numRecd will be reset in acceptOrthoT() after the fw path has been triggered. 
+     * numRecd is reset here for all other cases.
+     */
+    if (!isForwardPathPending)
         numRecd = 0;
     /// All non-phantoms should expect left matrix data again
     if (!amPhantom)
@@ -1163,10 +1170,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 	   * to reduce branching over there.
 	   */
 	  if(expectOrthoT && numRecdBWOT==numOrtho)
-	  {
 	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
-	      numRecdBWOT=0;
-	  }
 }
 
 
@@ -1313,8 +1317,8 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
   collectTile(false, true, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBWOT, matrixSize, matrix2, matrix1);
   if ((numRecdBWOT==numOrtho) && (numRecd == numExpected)) 
     { // forward path beat orthoT
-      CkPrintf("GAMMA beat orthoT, multiplying\n");
-      actionType  = 0;
+      CkPrintf("[%d,%d,%d,%d,%d] Just received all of OrthoT. Triggering forward path multiply which has been pending since Gamma arrival\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+      actionType  = NORMALPC;
       bool myfalse= false;
       thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).multiplyForward(myfalse);
       /** @note: multiplyForward() already checks for numRecdBWOT and calls bwMultiplyDynOrthoT().
@@ -1323,9 +1327,7 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
        */
       //thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
       numRecd     = 0;
-      numRecdBWOT = 0;
     }
-
 }
 
 
@@ -2221,8 +2223,14 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 void PairCalculator::bwMultiplyDynOrthoT()
 {
 
-    // output modified by subtracting an application of orthoT
+    /// Ensure that we're the correct paircalc instance
+    CkAssert(expectOrthoT);
+    /// Ensure that we really have received all the OrthoT pieces
+    CkAssert( numRecdBWOT == numOrtho);
+    /// Reset the counter
+    numRecdBWOT = 0;
 
+    // output modified by subtracting an application of orthoT
     // C = alpha*A*B + beta*C
     // C= -1 * inRight * orthoT + C
 
