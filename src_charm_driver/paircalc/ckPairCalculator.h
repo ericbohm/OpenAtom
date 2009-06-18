@@ -202,6 +202,11 @@ class PairCalculator: public CBase_PairCalculator
 		};
 
 	private:
+
+        /// Cleans up at end of an iteration (fw-bw computation loop), frees mem, resets counters etc
+        void cleanupAfterBWPath(bool unitcoef);
+
+
 		/// A handle to the co-located chare array that handles data input 
 		CProxy_InputDataHandler<CollatorType,CollatorType> myMsgHandler;
 		/// Data collators for the left and right matrix blocks

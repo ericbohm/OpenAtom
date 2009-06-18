@@ -1639,7 +1639,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         beta=1.0;  // need to sum over tiles within orthoY columns
     }
     
-    /// If there's only one corresponding Ortho, or if we've received all tiles, or if we're streaming or if this is a PsiV loop
+    /// If we've received all the tiles, or if we're streaming the computations
     if(orthoGrainSize==grainSize || numRecdBW==numOrtho || !collectAllTiles || actionType==PSIV)
     { // have all the input we need
         // call helper function to do the math
@@ -1654,7 +1654,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
     //#define SKIP_PARTIAL_SEND
     #ifndef SKIP_PARTIAL_SEND
-        /// If we're streaming without issues (no collecting tiles, barriers, PsiV loops etc)
+        /// If we're stream computing without any barriers, simply send whatever results are ready now
         if(PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV)
         { // send results which are complete and not yet sent
             /*
@@ -1668,7 +1668,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
             // bwSendHelper( orthoX, orthoY, k_in, n_in, k_in, n_in);
         }
     #else // dump them all after multiply complete
-        /// If we're stream computing and we've received all the tiles
+        /// If SKIP_PARTIAL_SEND is defined, and we're streaming, then we send only if we've received all the tiles
         if((PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV) && numRecdBW==numOrtho)
         {
             sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
@@ -1689,7 +1689,6 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
                 thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
             else
                 thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-            numRecdBW=0;
         }
         else
         {
@@ -1697,25 +1696,19 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         }
     #endif
 
-    /// Check to see if we're all done. We're not streaming and we've received all tiles or we're barriered or this is a PsiV loop
+    /** If all the computations are done, and we're either collecting tiles or are barriered, then we need to send our results to GSpace now
+     * @note: We do not enter this if we're streaming without barriers, as in that case data will be sent out as it is ready
+     */
+    /** @note: orthoGrainSize == grainSize implies this PC chare will get only one msg in the bw path. 
+     * This is covered by the check numRecdBW==numOrtho, hence is just for paranoia.
+     *
+     * @note: It appears actionType = PSIV will not enter multiplyResult. Needs to be verified.
+     */
     if(   ((!PCstreamBWout && collectAllTiles) && (orthoGrainSize==grainSize || numRecdBW==numOrtho))
        || (useBWBarrier && (orthoGrainSize==grainSize || numRecdBW==numOrtho))
        || actionType==PSIV
       )
     { // clean up
-        if(collectAllTiles || !unitcoef)
-        {  // only safe to do this if we allocated them
-            if(conserveMemory>=0)
-            {
-                if(inResult2!=NULL)
-                    delete [] inResult2;
-                if(inResult1!=NULL)
-                    delete [] inResult1;
-                inResult1=NULL;
-                inResult2=NULL;
-            }
-        }
-        
         /// If we're barriered on the backward path
         if(useBWBarrier)
         {
@@ -1744,41 +1737,85 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
                 thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
         }
 
-        /// Reset the backward counter
-        numRecdBW=0;
         if(PCstreamBWout)
         {
             bzero(columnCount, sizeof(int) * numOrthoCol);
             bzero(columnCountOther, sizeof(int) * numOrthoCol);
         }
+    }
 
-        /// For the strictest of the low mem footprint modes, delete even the input matrices
-        if(conserveMemory>0)
+    /// If we're done with all the paircalc work in this loop (iteration), then cleanup
+    if (numRecdBW == numOrtho)
+        cleanupAfterBWPath(unitcoef);
+}
+
+
+
+
+void PairCalculator::cleanupAfterBWPath(bool unitcoef)
+{
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d] Cleaning up at end of BW path\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
+    #endif
+
+    /// Reset the backward counter
+    numRecdBW = 0;
+
+    /// Phantom chares will get a fresh right matrix every time in an incoming msg. Hence, delete it irrespective of conserveMemory or RDMA settings
+    if (amPhantom)
+    {
+        delete msgRight;
+        msgRight    = 0;
+        inDataRight = 0;
+        existsRight = false;
+    }
+
+    /// For the normal and strict low-mem modes
+    if(conserveMemory>=0)
+    {
+        /// If we're not streaming, delete inResult*
+        if(collectAllTiles || !unitcoef)
         {
-            // clear the right and left they'll get reallocated on the next pass
-            #ifndef PC_USE_RDMA
-                // we really don't want to reregister this every phase
-                delete msgLeft;
-                msgLeft       = 0;
-                inDataLeft    = NULL;
-                existsLeft    = false;
-                if(!symmetric || (symmetric && notOnDiagonal)) 
-                {
-                    delete msgRight;
-                    msgRight    = 0;
-                    inDataRight = 0;
-                    existsRight = false;  
-                }
-            #endif
-            if(outData!=NULL && actionType!=KEEPORTHO)
+            if(inResult2!=NULL)
+                delete [] inResult2;
+            if(inResult1!=NULL)
+                delete [] inResult1;
+            inResult1=NULL;
+            inResult2=NULL;
+        }
+    }
+    
+    /// For the strictest of the low-mem footprint modes, 
+    if(conserveMemory>0)
+    {
+        /** Delete the input matrices and they'll get reallocated on the next pass. 
+         * Only do this if we dont use RDMA because we dont want to setup an RDMA channel every iteration
+         */
+        #ifndef PC_USE_RDMA
+            delete msgLeft;
+            msgLeft       = 0;
+            inDataLeft    = NULL;
+            existsLeft    = false;
+            /// If this chare received a right matrix message and it still exists
+            if(msgRight && (!symmetric || (symmetric && notOnDiagonal)) )
             {
-                delete [] outData;
-                outData = NULL;
-                existsOut=false;
+                delete msgRight;
+                msgRight    = 0;
+                inDataRight = 0;
+                existsRight = false;  
             }
+        #endif
+
+        /// Delete the storage for the output matrix too
+        if(outData!=NULL && actionType!=KEEPORTHO)
+        {
+            delete [] outData;
+            outData = NULL;
+            existsOut=false;
         }
     }
 }
+
 
 
 
@@ -2481,7 +2518,7 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
-      numRecdBW=0;
+      //numRecdBW=0;
 #ifdef _CP_SUBSTEP_TIMING_
       if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID2[instance].backwardTimerID>0))
 	{
