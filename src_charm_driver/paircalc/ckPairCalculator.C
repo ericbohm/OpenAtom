@@ -1737,22 +1737,23 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
                 thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
         }
 
-        if(PCstreamBWout)
+        /// If we're not streaming, delete inResult*
+        if(conserveMemory>=0 && (collectAllTiles || !unitcoef))
         {
-            bzero(columnCount, sizeof(int) * numOrthoCol);
-            bzero(columnCountOther, sizeof(int) * numOrthoCol);
+            if(inResult2!=NULL)
+                delete [] inResult2;
+            if(inResult1!=NULL)
+                delete [] inResult1;
+            inResult1=NULL;
+            inResult2=NULL;
         }
     }
-
-    /// If we're done with all the paircalc work in this loop (iteration), then cleanup
-    if (numRecdBW == numOrtho)
-        cleanupAfterBWPath(unitcoef);
 }
 
 
 
 
-void PairCalculator::cleanupAfterBWPath(bool unitcoef)
+void PairCalculator::cleanupAfterBWPath()
 {
     #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d] Cleaning up at end of BW path\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
@@ -1770,23 +1771,38 @@ void PairCalculator::cleanupAfterBWPath(bool unitcoef)
         existsRight = false;
     }
 
-    /// For the normal and strict low-mem modes
-    if(conserveMemory>=0)
+
+    /// For all mem usage modes
+    if (conserveMemory >= -1)
     {
-        /// If we're not streaming, delete inResult*
-        if(collectAllTiles || !unitcoef)
+        if (PCstreamBWout)
         {
-            if(inResult2!=NULL)
-                delete [] inResult2;
-            if(inResult1!=NULL)
-                delete [] inResult1;
-            inResult1=NULL;
-            inResult2=NULL;
+            bzero(columnCount, sizeof(int) * numOrthoCol);
+            bzero(columnCountOther, sizeof(int) * numOrthoCol);
         }
+
+        /// These deletes lived in sendBWResult() and sendBWResultDirect() 
+        if (!amPhantom)
+        {
+            if (mynewData)
+                delete [] mynewData;
+            mynewData    = 0;
+            existsNew    = false;
+        }
+        if (othernewData)
+            delete [] othernewData;
+        othernewData = 0;
+    }
+
+
+    /// For the normal and strict low-mem modes
+    if (conserveMemory >= 0)
+    {
     }
     
+
     /// For the strictest of the low-mem footprint modes, 
-    if(conserveMemory>0)
+    if (conserveMemory >= 1)
     {
         /** Delete the input matrices and they'll get reallocated on the next pass. 
          * Only do this if we dont use RDMA because we dont want to setup an RDMA channel every iteration
@@ -2518,7 +2534,7 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 
       bzero(columnCount, sizeof(int) * numOrthoCol);
       bzero(columnCountOther, sizeof(int) * numOrthoCol);
-      //numRecdBW=0;
+      numRecdBW=0;
 #ifdef _CP_SUBSTEP_TIMING_
       if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID2[instance].backwardTimerID>0))
 	{
@@ -2782,9 +2798,6 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 			#endif
 			mycb.send(omsg);
 		}
-		if(otherdata)delete [] othernewData;
-		othernewData=NULL;
-		existsNew=false;
 	}
 	
 	///
@@ -2818,11 +2831,11 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 			#endif
 			mycb.send(omsg);
 		}
-		if(mynewData!=NULL)
-			delete [] mynewData;
-		mynewData=NULL;
-		existsNew=false;
 	}
+
+    /// If we're done with all the paircalc work in this loop (iteration), then cleanup
+    if (numRecdBW == numOrtho)
+        cleanupAfterBWPath();
 }
 
 
@@ -2913,16 +2926,10 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	  */
 	}
     }
-  if(!amPhantom)
-    {
-      if(mynewData!=NULL)
-	delete [] mynewData;
-      mynewData=NULL;
-      existsNew=false;
-    }
-  if(otherdata)
-    delete [] othernewData;
-  othernewData=NULL;
+
+    /// If we're done with all the paircalc work in this loop (iteration), then cleanup
+    if (numRecdBW == numOrtho)
+        cleanupAfterBWPath();
 }
 
 
