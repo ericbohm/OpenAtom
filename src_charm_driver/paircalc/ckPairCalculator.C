@@ -1332,6 +1332,38 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
 
 
 
+
+inline void PairCalculator::enqueueBWsend(bool unitcoef, int priority)
+{
+    /// Create a signal message
+    sendBWsignalMsg *sigmsg;
+    if(PCdelayBWSend)
+    {
+        sigmsg = new (8*sizeof(int)) sendBWsignalMsg;
+        CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
+        *(int*)CkPriorityPtr(sigmsg) = priority; // Just make it slower (default value is 1)
+    }
+    else
+        sigmsg = new sendBWsignalMsg;
+
+    /// Collapse this into 1 flag
+    if(amPhantom)
+        sigmsg->otherdata= true;
+    else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
+        sigmsg->otherdata=true;
+    else
+        sigmsg->otherdata= false;
+
+    /// Either reduce the results or sum them direct in GSpace
+    if(gSpaceSum)
+        thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
+    else
+        thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+}
+
+
+
+
 //PairCalculator::multiplyResult(int size, double *matrix1, double *matrix2)
 void
 PairCalculator::multiplyResultI(multiplyResultMsg *msg)
@@ -1398,24 +1430,8 @@ PairCalculator::multiplyPsiV()
   int BNAoffset=0;
   actionType=PSIV;
   bwMultiplyHelper(size, outData, NULL, outData, NULL,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, grainSizeX, grainSizeY);
-
-  sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-  if(PCdelayBWSend)
-    {
-      CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-    }
-  //collapse this into 1 flag
-  if(amPhantom)
-    sigmsg->otherdata= true;
-  else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
-    sigmsg->otherdata=true;
-  else
-    sigmsg->otherdata= false;
-  if(gSpaceSum)
-    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-  else
-    thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+  /// Schedule the entry methods that will send the bw results out
+  enqueueBWsend(unitcoef);
 }
 
 
@@ -1674,26 +1690,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     #else // dump them all after multiply complete
         /// If SKIP_PARTIAL_SEND is defined, and we're streaming, then we send only if we've received all the tiles
         if((PCstreamBWout && !collectAllTiles && !useBWBarrier && actionType!=PSIV) && numRecdBW==numOrtho)
-        {
-            sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-            if(PCdelayBWSend)
-            {
-                CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-                *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-            }
-            //collapse this into 1 flag
-            if(amPhantom)
-                sigmsg->otherdata= true;
-            else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
-                sigmsg->otherdata=true;
-            else
-                sigmsg->otherdata= false;
-
-            if(gSpaceSum)
-                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-            else
-                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-        }
+            enqueueBWsend(unitcoef);
         else
         {
             CkPrintf("[%d,%d,%d,%d,%d] not sending PCstreamBWout %d collectAllTiles %d useBWBarrier %d actionType %d  numRecdBW %d numOrtho%d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric,PCstreamBWout,collectAllTiles,useBWBarrier,actionType, numRecdBW,numOrtho);
@@ -1720,26 +1717,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
             contribute(sizeof(int),&wehaveours,CkReduction::sum_int,CkCallback(CkIndex_PairCalculator::bwbarrier(NULL),thisProxy));
         }
         else
-        {
-            sendBWsignalMsg *sigmsg=new (8*sizeof(int)) sendBWsignalMsg;
-            if(PCdelayBWSend)
-            {
-                CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-                *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-            }
-            /// Collapse this into 1 flag
-            if(amPhantom)
-                sigmsg->otherdata= true;
-            else if(((!phantomSym && symmetric) || !unitcoef) && notOnDiagonal)
-                sigmsg->otherdata=true;
-            else
-                sigmsg->otherdata= false;
-            /// Either reduce the results or sum them direct in GSpace
-            if(gSpaceSum)
-                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-            else
-                thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
-        }
+            enqueueBWsend(unitcoef);
 
         /// If we're not streaming, delete inResult*
         if(conserveMemory>=0 && (collectAllTiles || !unitcoef))
@@ -1986,33 +1964,8 @@ void PairCalculator::bwbarrier(CkReductionMsg *msg)
 {
       // everyone is done
       delete msg;
-      // figure out how to send the results from here sanely
-      sendBWsignalMsg *sigmsg;
-      if(PCdelayBWSend)
-    	  sigmsg= new (8*sizeof(int)) sendBWsignalMsg;
-      else
-    	  sigmsg= new  sendBWsignalMsg;
-      //collapse this into 1 flag
       bool unitcoef=true;  //cheap hack for minimzation only
-      //collapse this into 1 flag
-      if(amPhantom)
-    	  sigmsg->otherdata= true;
-      else if(((!phantomSym && symmetric) || !unitcoef) && (thisIndex.x != thisIndex.y))
-    	  sigmsg->otherdata=true;
-      else
-    	  sigmsg->otherdata= false;
-
-
-      if(PCdelayBWSend)
-      {
-    	  CkSetQueueing(sigmsg, CK_QUEUEING_IFIFO);
-    	  *(int*)CkPriorityPtr(sigmsg) = 1; // just make it slower
-    	  // than non prioritized
-      }
-      if(gSpaceSum)
-    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-      else
-    	  thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+      enqueueBWsend(unitcoef);
 }
 
 

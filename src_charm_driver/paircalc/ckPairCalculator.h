@@ -203,6 +203,8 @@ class PairCalculator: public CBase_PairCalculator
 
 	private:
 
+        /// Schedules the entry methods that send out the results to GSpace with appropriate priority
+        void enqueueBWsend(bool unitcoef, int priority=1);
         /// Cleans up at end of an iteration (fw-bw computation loop); frees mem, resets counters etc
         void cleanupAfterBWPath(); 
 
