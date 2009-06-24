@@ -1365,13 +1365,11 @@ inline void PairCalculator::enqueueBWsend(bool unitcoef, int priority)
 
 
 //PairCalculator::multiplyResult(int size, double *matrix1, double *matrix2)
-void
-PairCalculator::multiplyResultI(multiplyResultMsg *msg)
+void PairCalculator::multiplyResultI(multiplyResultMsg *msg)
 {
 //============================================================================
 // Do not delete msg. Its a nokeep.
 //============================================================================
-
     multiplyResult(msg);
 }
 
@@ -1382,56 +1380,54 @@ PairCalculator::multiplyResultI(multiplyResultMsg *msg)
  * - inDataLeft and inDataRight contain PsiV
  * - outData contains the orthoT from the previous (standard) backward path invocation
  */
-void
-PairCalculator::multiplyPsiV()
+void PairCalculator::multiplyPsiV()
 {
 	#ifdef DEBUG_CP_PAIRCALC_PSIV
 		CkPrintf("[%d,%d,%d,%d,%d] In multiplyPsiV\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
 	#endif
-
-  // If I am a non-phantom chare in the symmetric instance, send a copy of my data to my mirror phantom chare
-  if(!amPhantom && phantomSym && symmetric && notOnDiagonal) 
+        
+    // If I am a non-phantom chare in the symmetric instance, send a copy of my data to my mirror phantom chare
+    if(!amPhantom && phantomSym && symmetric && notOnDiagonal) 
     {
-      CkAssert(existsRight);
-      //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-      paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,true,(complex*)inDataRight,true,blkSize,numExpectedY);
-      bool prioPhan=false;
-      if(prioPhan)
-	{
-	  CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
-	}
-      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
+        CkAssert(existsRight);
+        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,true,(complex*)inDataRight,true,blkSize,numExpectedY);
+        bool prioPhan=false;
+        if(prioPhan)
+        {
+            CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
+            *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
+        }
+        thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
     }
-  // we do not need to go through the all of multiplyresult for psiv
-  // all we really need is the setup for the multiplyHelper
 
-     // call helper function to do the math
-  int  size=grainSizeX*grainSizeY;
-  bool unitcoef=true;
-  // TODO: figure out relationship between n_in k_in and grainSizeX grainSizeY
-  int m_in=numPoints*2;   // rows of op(A)==rows C
-
-  int n_in=grainSizeY;     // columns of op(B)==columns C
-  int k_in=grainSizeX;     // columns op(A) == rows op(B)
-  /*   if(amPhantom)
+    /// We do not need to go through the all of multiplyresult for PsiV. All we really need is the setup for multiplyHelper
+    // call helper function to do the math
+    int  size=grainSizeX*grainSizeY;
+    bool unitcoef=true;
+    // TODO: figure out relationship between n_in k_in and grainSizeX grainSizeY
+    int m_in=numPoints*2;   // rows of op(A)==rows C
+    int n_in=grainSizeY;     // columns of op(B)==columns C
+    int k_in=grainSizeX;     // columns op(A) == rows op(B)
+    /*
+    if(amPhantom)
     {
-      n_in=grainSizeX;
-      k_in=grainSizeY;
-      }*/
-  double beta(0.0);
-  int orthoX=0;
-  int orthoY=0;
-  //BTransform=T offsets for C and A matrices
-  int BTCoffset=0;
-  int BTAoffset=0;
-  //BTransform=N offsets for C and A matrices
-  int BNCoffset=0;
-  int BNAoffset=0;
-  actionType=PSIV;
-  bwMultiplyHelper(size, outData, NULL, outData, NULL,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, grainSizeX, grainSizeY);
-  /// Schedule the entry methods that will send the bw results out
-  enqueueBWsend(unitcoef);
+        n_in=grainSizeX;
+        k_in=grainSizeY;
+    }
+    */
+    double beta(0.0);
+    int orthoX=0;
+    int orthoY=0;
+    //BTransform=T offsets for C and A matrices
+    int BTCoffset=0;
+    int BTAoffset=0;
+    //BTransform=N offsets for C and A matrices
+    int BNCoffset=0;
+    int BNAoffset=0;
+    actionType=PSIV;
+    bwMultiplyHelper(size, outData, NULL, outData, NULL,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, grainSizeX, grainSizeY);
+    /// Schedule the entry methods that will send the bw results out
+    enqueueBWsend(unitcoef);
 }
 
 
