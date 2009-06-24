@@ -203,7 +203,7 @@ class PairCalculator: public CBase_PairCalculator
 
 	private:
 
-        /// Cleans up at end of an iteration (fw-bw computation loop), frees mem, resets counters etc
+        /// Cleans up at end of an iteration (fw-bw computation loop); frees mem, resets counters etc
         void cleanupAfterBWPath(); 
 
 

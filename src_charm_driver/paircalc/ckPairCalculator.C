@@ -1666,6 +1666,10 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
             */
             bwSendHelper( orthoX, orthoY, k_in, n_in, orthoGrainSizeX, orthoGrainSizeY);
             // bwSendHelper( orthoX, orthoY, k_in, n_in, k_in, n_in);
+
+            /// If we're done with all the paircalc work in this loop (iteration), then cleanup
+            if(numRecdBW==numOrtho)
+                cleanupAfterBWPath();
         }
     #else // dump them all after multiply complete
         /// If SKIP_PARTIAL_SEND is defined, and we're streaming, then we send only if we've received all the tiles
@@ -1752,35 +1756,59 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
 
 
-
+/** Resets counters, zeroes out data structures, frees mem when appropriate. 
+ * Readies other components (collators) for the next iteration. Ends the backward path substep
+ * timing. Paircalc behavior under different conserveMemory settings are defined solely in this 
+ * method.
+ */
 void PairCalculator::cleanupAfterBWPath()
 {
     #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d] Cleaning up at end of BW path\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
     #endif
 
-    /// Reset the backward counter
+    /// Reset the backward path tile counter
     numRecdBW = 0;
 
-    /// Phantom chares will get a fresh right matrix every time in an incoming msg. Hence, delete it irrespective of conserveMemory or RDMA settings
-    if (amPhantom)
-    {
-        delete msgRight;
-        msgRight    = 0;
-        inDataRight = 0;
-        existsRight = false;
-    }
-
-
     /// For all mem usage modes
-    if (conserveMemory >= -1)
     {
+        /// If we're stream computing, zero out these containers
         if (PCstreamBWout)
         {
             bzero(columnCount, sizeof(int) * numOrthoCol);
             bzero(columnCountOther, sizeof(int) * numOrthoCol);
         }
 
+        /// Phantom chares will get a fresh right matrix every time in an incoming msg. Hence, delete it irrespective of conserveMemory or RDMA settings
+        if (amPhantom)
+        {
+            delete msgRight;
+            msgRight    = 0;
+            inDataRight = 0;
+            existsRight = false;
+        }
+    }
+
+    /// For only the speed-optimized (high-mem) mode
+    if (conserveMemory == -1)
+    {
+        if (!amPhantom)
+        {
+            bzero(mynewData,numPoints*numExpectedY* sizeof(complex));
+            if (othernewData) ///< @todo: is this redundant? isnt othernewData always allocated?
+                bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
+	    }
+        else
+        {
+            if (othernewData) ///< @todo: is this redundant? isnt othernewData always allocated?
+                bzero(othernewData,numPoints*numExpectedY * sizeof(complex));
+        }
+    }
+
+
+    /// For the normal and strict low-mem modes
+    if (conserveMemory >= 0)
+    {
         /// These deletes lived in sendBWResult() and sendBWResultDirect() 
         if (!amPhantom)
         {
@@ -1793,16 +1821,10 @@ void PairCalculator::cleanupAfterBWPath()
             delete [] othernewData;
         othernewData = 0;
     }
-
-
-    /// For the normal and strict low-mem modes
-    if (conserveMemory >= 0)
-    {
-    }
     
 
     /// For the strictest of the low-mem footprint modes, 
-    if (conserveMemory >= 1)
+    if (conserveMemory == 1)
     {
         /** Delete the input matrices and they'll get reallocated on the next pass. 
          * Only do this if we dont use RDMA because we dont want to setup an RDMA channel every iteration
@@ -1830,6 +1852,35 @@ void PairCalculator::cleanupAfterBWPath()
             existsOut=false;
         }
     }
+
+
+    #ifdef PC_USE_RDMA
+        // Unless a PsiV step is next, let the collators know that they should now expect the next batch of data via RDMA. If a PsiV step is next, then PsiV data will come in via traditional messages. expectNext() will be called later at the end of multiplyPsiV().
+        if ( !(symmetric && actionType == KEEPORTHO) )
+        {
+            leftCollator->expectNext();
+            rightCollator->expectNext();
+        }
+        else
+        {
+            #ifdef DEBUG_CP_PAIRCALC_PSIV
+                CkPrintf("[%d,%d,%d,%d,%d]: Am NOT notifying the message handlers to expectNext() as a PsiV step is next (actionType=%d). Data should be arriving in messages. \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
+            #endif
+        }
+    #endif
+
+
+    #ifdef _CP_SUBSTEP_TIMING_
+        /// End the timing for this sub-step.
+        if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID2[instance].backwardTimerID>0))
+        {
+            double pstart=CmiWallTimer();
+            if(symmetric)
+                contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].backwardTimerID);
+            else
+                contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[instance].endTimerCB , UpairCalcID2[instance].backwardTimerID);
+        }
+    #endif
 }
 
 
@@ -2481,72 +2532,6 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
   // this could be refined to track an array of completed columns
   // and send them in some grouping scheme
   CkAssert(numRecdBW<=numOrtho);
-  if(numRecdBW==numOrtho)
-    { //all done clean up after ourselves
-      //      CkPrintf("[PAIRCALC] [%d,%d,%d,%d,%d] cleaning up \n",
-  // thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,symmetric);
-
-      if(!amPhantom)
-	{
-	  if(conserveMemory>=0)
-	    {
-	      delete [] mynewData;
-	      mynewData=NULL;
-	      existsNew=false;
-	    }
-	  else
-	    {
-	      bzero(mynewData,numPoints*numExpectedY* sizeof(complex));
-	    }
-	}
-      if(othernewData!=NULL)
-	{
-	  if(conserveMemory>=0)
-	    {
-#ifdef _PAIRCALC_DEBUG_
-	    CkPrintf("[%d,%d,%d,%d,%d] deleting othernewData\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,symmetric);
-#endif
-	      delete [] othernewData;
-	      othernewData=NULL;
-	    }
-	  else
-	    {
-	      if(amPhantom)
-		bzero(othernewData,numPoints*numExpectedY * sizeof(complex));
-	      else
-		bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
-	    }
-	}
-	#ifdef PC_USE_RDMA
-		// Unless a PsiV step is next, let the collators know that they should now expect the next batch of data via RDMA. If a PsiV step is next, then PsiV data will come in via traditional messages. expectNext() will be called later at the end of multiplyPsiV().
-		if ( !(symmetric && actionType == KEEPORTHO) )
-		{
-			leftCollator->expectNext();
-			rightCollator->expectNext();
-		}
-		else
-		{
-			#ifdef DEBUG_CP_PAIRCALC_PSIV
-				CkPrintf("[%d,%d,%d,%d,%d]: Am NOT notifying the message handlers to expectNext() as a PsiV step is next (actionType=%d). Data should be arriving in messages. \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, symmetric,  numRecdBW, actionType);
-			#endif
-		}
-	#endif
-
-      bzero(columnCount, sizeof(int) * numOrthoCol);
-      bzero(columnCountOther, sizeof(int) * numOrthoCol);
-      numRecdBW=0;
-#ifdef _CP_SUBSTEP_TIMING_
-      if((UpairCalcID1[instance].backwardTimerID>0)||(UpairCalcID2[instance].backwardTimerID>0))
-	{
-	  double pstart=CmiWallTimer();
-	  if(symmetric)
-	    contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].backwardTimerID);
-	  else
-	    contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[instance].endTimerCB , UpairCalcID2[instance].backwardTimerID);
-	}
-#endif
-
-    }
 }
 
 
