@@ -107,7 +107,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();
         void launchOrthoT();
-        void syncpsi();
         void doFFT();
         void startNewIter ();
         void sendPsi();
@@ -120,8 +119,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void combineForcesGetEke();
         void integrateModForce();
         void writeStateDumpFile();
-        void isAtSync(int);
-        void ResumeFromSync();
         /// @entry This is used to receive data from all the corresponding RealSpacePlanes, upon which the inverse FFTs are triggered
         void acceptIFFT(GSIFFTMsg *);
         void doIFFT();

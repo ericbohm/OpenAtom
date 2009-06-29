@@ -321,7 +321,6 @@ void Ortho::collect_results(void){
                thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
 	   AtSync();
    	   if(thisIndex.x==0 && thisIndex.y==0){
-             UgSpacePlaneProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
 	     UrhoRealProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
 	     UrhoGProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
 	     UrhoGHartExtProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
