@@ -1004,70 +1004,10 @@ void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int
 
 /* This version uses a section multicast to only send the part of the matrix needed by each section */
 void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc Finish Mcast 2\n");
-#endif
-  //NOTE need some configuration adherence check here!
-  /*
-  if(pcid->Symmetric)
-    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxySym.pcSection);
-  else
-    ComlibAssociateProxy(&mcastInstanceACP,pcid->proxyAsym.pcSection);
-  */
-
-  if(ptr2==NULL){
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	if(pcid->Symmetric)  // just so we can discern in the abort
-	  CkAssert(finite(ptr1[i]));
-	else
-	  CkAssert(finite(ptr1[i]));
-      }
-#endif
-
-    multiplyResultMsg *omsg;
-
-    if(priority>0)
-      {
-	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,0 ) multiplyResultMsg;
-      }
-    omsg->init1(n, ptr1, orthoX, orthoY, actionType);
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	CkAssert(finite(omsg->matrix1[i]));
-      }
-#endif
     if(pcid->Symmetric)
-      pcid->proxySym.pcSection.multiplyResult(omsg);
+        pcid->proxySym.sendResults(n,ptr1,ptr2,pcid,orthoX,orthoY,actionType,priority);
     else
-      pcid->proxyAsym.pcSection.multiplyResult(omsg);
-  }
-  else {
-    multiplyResultMsg *omsg;
-    if(priority>0)
-      {
-	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,n ) multiplyResultMsg;
-      }
-    omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
-  if(pcid->Symmetric)
-    pcid->proxySym.pcSection.multiplyResult(omsg);
-  else
-    pcid->proxyAsym.pcSection.multiplyResult(omsg);
-  }
+        pcid->proxyAsym.sendResults(n,ptr1,ptr2,pcid,orthoX,orthoY,actionType,priority);
 }
 
 

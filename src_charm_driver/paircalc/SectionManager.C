@@ -85,5 +85,43 @@ void SectionManager::setupArraySection(int numZ, int* z, int numChunks,  PairCal
     //  return *sectProxy;
 }
 
+
+
+
+void SectionManager::sendResults(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority)
+{
+    #ifdef VERBOSE_SECTIONMANAGER
+        CkPrintf("SectionManager::sendResults()\n");
+    #endif
+
+    /// Allocate a msg of the right size
+    multiplyResultMsg *omsg;
+    int size2 = (ptr2)? n : 0;
+    if(priority>0)
+    {
+        omsg=new (n, size2, 8*sizeof(int) ) multiplyResultMsg;
+        *(int*)CkPriorityPtr(omsg) = priority;
+        CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+    }
+    else
+        omsg=new (n, size2) multiplyResultMsg;
+
+    /// Fill it with results
+    if(ptr2==NULL)
+        omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+    else 
+        omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
+    #ifdef _NAN_CHECK_
+        for(int i=0;i<n ;i++)
+        {
+            CkAssert(finite(ptr1[i]));
+            CkAssert(finite(omsg->matrix1[i]));
+        }
+    #endif
+
+    /// Trigger the backward path for my paircalc section
+    pcSection.multiplyResult(omsg);
+}
+
     } // end namespace paircalc
 } // end namespace cp

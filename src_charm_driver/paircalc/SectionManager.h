@@ -15,6 +15,7 @@ class SectionManager
         SectionManager() {}
         /// initOneRedSect
         void setupArraySection(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib);
+        void sendResults(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
         /// setGredProxy
         /// finishPairCalcSection
         /// sendMatrix
