@@ -15,6 +15,7 @@
 
 //============================================================================
 
+#include "SectionManager.h"
 
 
 /// A place to keep the section proxies for the reduction
@@ -50,9 +51,9 @@ class PairCalcID
 		int priority;
 
 		/// Section of symmetric PC chare array used by an Ortho chare
-		CProxySection_PairCalculator proxySym;
+        cp::paircalc::SectionManager proxySym;
 		/// Section of asymmetric PC chare array used by an Ortho chare
-		CProxySection_PairCalculator proxyAsym;
+        cp::paircalc::SectionManager proxyAsym;
 
 		/** Array section which receives left matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the post-diagonal chares on row 's' that get data from this GSpace[s,p] chare
