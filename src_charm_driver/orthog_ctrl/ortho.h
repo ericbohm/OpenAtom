@@ -128,9 +128,6 @@ class Ortho : public CBase_Ortho{
   // catch lambda for later non_minimization use
   void acceptAllLambda(CkReductionMsg *msg); 
 
-  // catch lbresume reduction
-  void lbresume(CkReductionMsg *msg); 
-
   void step_2_send(void);
 
   void recvStep2(double *step2result, int size);
@@ -165,25 +162,6 @@ class Ortho : public CBase_Ortho{
     do_iteration();
   }
 
-  void ResumeFromSync() {
-    /*
-    if(thisIndex.x <= thisIndex.y)
-      {
-
-	CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID1.mCastGrpId).ckLocalBranch();               
-	mcastGrp->resetSection(pcProxy);
-	setGredProxy(&pcProxy, pairCalcID1.mCastGrpId,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)),true,CkCallback(CkIndex_Ortho::lbresume(NULL),thisProxy));
-	if(thisIndex.x!=thisIndex.y)
-	  thisProxy(thisIndex.y,thisIndex.x).setPCproxy(pcProxy);	  
-
-      }
-
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pairCalcID2.mCastGrpId).ckLocalBranch();               
-//      mcastGrp->resetSection(pcLambdaProxy);
-
-//      resume(); // should be handled by ortho reduction
-*/
-  }
   void makeSections(int indexSize, int *indexZ);
 
   void print_results(void){
