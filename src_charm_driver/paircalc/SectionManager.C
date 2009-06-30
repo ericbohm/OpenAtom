@@ -3,6 +3,14 @@
 namespace cp {
     namespace paircalc {
 
+void SectionManager::pup(PUP::er &p) 
+{
+    p | pcSection;
+}
+
+
+
+
 void SectionManager::setupArraySection(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
 {
     #ifdef VERBOSE_SECTIONMANAGER
@@ -58,8 +66,15 @@ void SectionManager::setupArraySection(int numZ, int* z, int numChunks,  PairCal
     {
         CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();
         sectProxy->ckSectionDelegate(mcastGrp);
-        // send the message to initialize it with the callback and groupid
-        setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, synccb, orthoX, orthoY);
+        // Send the multcast message to initialize the ortho section tree and set the cookie
+        initGRedMsg *gredMsg=new initGRedMsg;
+        gredMsg->cb=cb;
+        gredMsg->mCastGrpId= pcid->orthoRedGrpId;
+        gredMsg->lbsync=false;
+        gredMsg->synccb=synccb;
+        gredMsg->orthoX=orthoX;
+        gredMsg->orthoY=orthoY;
+        sectProxy->initGRed(gredMsg);
     }
     else
     {
@@ -121,6 +136,42 @@ void SectionManager::sendResults(int n, double *ptr1, double *ptr2, PairCalcID *
 
     /// Trigger the backward path for my paircalc section
     pcSection.multiplyResult(omsg);
+}
+
+
+void SectionManager::sendMatrix(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority)
+{
+    #ifdef VERBOSE_SECTIONMANAGER
+        CkPrintf("SectionManager::sendMatrix()\n");
+    #endif
+
+    /// Allocate a msg of the right size
+    multiplyResultMsg *omsg;
+    int size2 = (ptr2)? n : 0;
+    if(priority>0)
+    {
+        omsg=new (n, size2, 8*sizeof(int) ) multiplyResultMsg;
+        *(int*)CkPriorityPtr(omsg) = priority;
+        CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
+    }
+    else
+        omsg=new (n, size2) multiplyResultMsg;
+
+    /// Fill it with results
+    if(ptr2==NULL)
+        omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+    else 
+        omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
+    #ifdef _NAN_CHECK_
+        for(int i=0;i<n ;i++)
+        {
+            CkAssert(finite(ptr1[i]));
+            CkAssert(finite(omsg->matrix1[i]));
+        }
+    #endif
+
+    /// Trigger the backward path for my paircalc section
+    pcSection.acceptOrthoT(omsg);
 }
 
     } // end namespace paircalc

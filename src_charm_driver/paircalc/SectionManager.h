@@ -13,20 +13,18 @@ class SectionManager
         /// Constructor
         //SectionManager(const CkIndex2D idx, const int grSize);
         SectionManager() {}
-        /// initOneRedSect
+        /// PUP serializer
+        void pup(PUP::er &p);
+        /// Creates a paircalc array section given the necessary info. Replaces initOneRedSect()
         void setupArraySection(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib);
+        /// Sends out the results to the paircalc section. Replaces finishPairCalcSection()
         void sendResults(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-        /// setGredProxy
-        /// finishPairCalcSection
-        /// sendMatrix
+        /// Used to send OrthoT to the asymm instance. Replaces sendMatrix()
+        void sendMatrix(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
 
-    public:
-        /// A paircalc section proxy
+    private:
+        /// Paircalc section proxy
         CProxySection_PairCalculator pcSection;
-        /// The index of the calling Ortho chare
-        //CkIndex2D orthoIndex;
-        /// The ortho grainsize
-        //int orthoGrainSize;
 };
 
     } // end namespace paircalc

@@ -385,21 +385,6 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 }
 
 /**
- * send the multcast message to initialize the ortho section tree and set the cookie
- */
-void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY)
-{
-  initGRedMsg *gredMsg=new initGRedMsg;
-  gredMsg->cb=cb;
-  gredMsg->mCastGrpId=mCastGrpId;
-  gredMsg->lbsync=lbsync;
-  gredMsg->synccb=synccb;
-  gredMsg->orthoX=orthoX;
-  gredMsg->orthoY=orthoY;
-  sectProxy->initGRed(gredMsg);
-}
-
-/**
  * send the multcast message to initialize the section tree and set the cookie
  */
 void setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int GrainSize, CkGroupID mCastGrpId, bool lbsync, CkCallback synccb)
@@ -1014,30 +999,7 @@ void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid,
 /* Send orthoT now that we have it so it will be ready when Asymm
    starts this iteration.  */
 void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc SendMatrix (orthoT)\n");
-#endif
-
-    multiplyResultMsg *omsg;
-
-    if(priority>0)
-      {
-	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,0 ) multiplyResultMsg;
-      }
-    omsg->init1(n, ptr1, orthoX, orthoY, actionType);
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	CkAssert(finite(omsg->matrix1[i]));
-      }
-#endif
-    pcid->proxyAsym.pcSection.acceptOrthoT(omsg);
+    pcid->proxyAsym.sendMatrix(n,ptr1,0,pcid,orthoX,orthoY,actionType,priority);
 }
 
 

@@ -85,7 +85,6 @@
  *  The total multiply itself will still of course be nstates X
  *  nstates.
  ******************************************************************************/
-
 #include "ortho.decl.h"
 #include "paircalc/pairCalculator.h" 
 #include "uber/Uber.h"
@@ -135,7 +134,7 @@ class Ortho : public CBase_Ortho{
   void sendOrthoTtoAsymm();
 
   // get our copy of the pcproxy
-  void setPCproxy(CProxySection_PairCalculator inproxy);
+  void setPCproxy(cp::paircalc::SectionManager sectionMgr);
 
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 

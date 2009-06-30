@@ -656,7 +656,7 @@ void Ortho::makeSections(int indexSize, int *indexZ){
       else
 	{
 	  if(s1!=s2)
-	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym.pcSection);
+	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym);
 	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	       doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
 	}
     }
@@ -1053,9 +1053,9 @@ void OrthoHelper::sendMatrix()
 
 
 // highly questionable that this is safe
-void Ortho::setPCproxy(CProxySection_PairCalculator inproxy)
+void Ortho::setPCproxy(cp::paircalc::SectionManager sectionMgr)
 {
-  oPairCalcID1.proxySym.pcSection=inproxy;
+  oPairCalcID1.proxySym = sectionMgr;
 }
 
 #include "ortho.def.h"
