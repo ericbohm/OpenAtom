@@ -378,10 +378,17 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
 void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
 
 {
+    cp::paircalc::InstanceInfo info(pcid->Aid,pcid->Symmetric,phantom,pcid->nstates,pcid->numChunks,pcid->GrainSize);
+    info.orthoIndex.x = orthoX;
+    info.orthoIndex.y = orthoY;
+    info.orthoGrainSize = orthoGrainSize;
+    info.orthomCastGrpID = pcid->orthomCastGrpId;
+    info.orthoRedGrpID   = pcid->orthoRedGrpId;
+
     if (pcid->Symmetric)
-        pcid->proxySym.setupArraySection(numZ,z,numChunks,pcid,cb,synccb,s1,s2,orthoX,orthoY,orthoGrainSize,phantom,direct,commlib);
+        pcid->proxySym.setupArraySection(info,numZ,z,cb,synccb,s1,s2,direct,commlib);
     else
-        pcid->proxyAsym.setupArraySection(numZ,z,numChunks,pcid,cb,synccb,s1,s2,orthoX,orthoY,orthoGrainSize,phantom,direct,commlib);
+        pcid->proxyAsym.setupArraySection(info,numZ,z,cb,synccb,s1,s2,direct,commlib);
 }
 
 /**
@@ -990,16 +997,16 @@ void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int
 /* This version uses a section multicast to only send the part of the matrix needed by each section */
 void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
     if(pcid->Symmetric)
-        pcid->proxySym.sendResults(n,ptr1,ptr2,pcid,orthoX,orthoY,actionType,priority);
+        pcid->proxySym.sendResults(n,ptr1,ptr2,orthoX,orthoY,actionType,priority);
     else
-        pcid->proxyAsym.sendResults(n,ptr1,ptr2,pcid,orthoX,orthoY,actionType,priority);
+        pcid->proxyAsym.sendResults(n,ptr1,ptr2,orthoX,orthoY,actionType,priority);
 }
 
 
 /* Send orthoT now that we have it so it will be ready when Asymm
    starts this iteration.  */
 void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-    pcid->proxyAsym.sendMatrix(n,ptr1,0,pcid,orthoX,orthoY,actionType,priority);
+    pcid->proxyAsym.sendMatrix(n,ptr1,0,orthoX,orthoY,actionType,priority);
 }
 
 
