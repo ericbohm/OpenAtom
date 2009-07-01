@@ -15,7 +15,6 @@
 
 //============================================================================
 
-#include "SectionManager.h"
 
 
 /// A place to keep the section proxies for the reduction
@@ -50,10 +49,6 @@ class PairCalcID
 		CkGroupID orthoRedGrpId;
 		int priority;
 
-		/// Section of symmetric PC chare array used by an Ortho chare
-        cp::paircalc::SectionManager proxySym;
-		/// Section of asymmetric PC chare array used by an Ortho chare
-        cp::paircalc::SectionManager proxyAsym;
 
 		/** Array section which receives left matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the post-diagonal chares on row 's' that get data from this GSpace[s,p] chare
@@ -263,15 +258,6 @@ struct RDMApair_GSP_PC;
 void sendLeftRDMARequest (PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
 /// Send out RDMA setup requests to all the destination PC chares that will be getting right data 
 void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
-//@{
-/// Triggers the backward path
-extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-//@}
-/// Via point for Ortho chares to send T to Lambda path PCs. This calls PairCalculator::acceptOrthoT()
-extern "C" void sendMatrix( int n, double *ptr1, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-/// Initializes the section of PCs that will talk to the calling Ortho chare (reductions/broadcasts)
-void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 /// 
 void isAtSyncPairCalc(PairCalcID* pcid);
 

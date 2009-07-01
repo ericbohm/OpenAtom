@@ -90,6 +90,7 @@
 #include "uber/Uber.h"
 #include "CLA_Matrix.h"
 #include "cpaimd.h"
+#include "paircalc/SectionManager.h"
 
 #ifndef _ortho_h_
 #define _ortho_h_
@@ -299,6 +300,10 @@ class Ortho : public CBase_Ortho{
   int lbcaught;
   PairCalcID oPairCalcID1;
   PairCalcID oPairCalcID2;
+    /// Section of symmetric PC chare array used by an Ortho chare
+    cp::paircalc::SectionManager symmSectionMgr;
+    /// Section of asymmetric PC chare array used by an Ortho chare
+    cp::paircalc::SectionManager asymmSectionMgr;
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;
