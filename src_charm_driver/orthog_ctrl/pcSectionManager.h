@@ -3,6 +3,7 @@
 
 /// Forward declaration
 class PairCalcID;
+class Ortho; 
 
 namespace cp {
     namespace ortho {
@@ -11,6 +12,8 @@ namespace cp {
 /// Class that manages the paircalc sections that each Ortho chare communicates with
 class PCSectionManager
 {
+    friend class ::Ortho;
+
     public:
         /// Constructor
         PCSectionManager() {}
@@ -49,6 +52,8 @@ class PCSectionManager
         CkIndex2D orthoIndex;
         /// The multicast and reduction groups that handle comm
         CkGroupID orthomCastGrpID, orthoRedGrpID;
+        /// The priority to use for messages to PC
+        int msgPriority;
 };
 
     } // end namespace ortho

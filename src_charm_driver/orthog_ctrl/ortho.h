@@ -300,8 +300,6 @@ class Ortho : public CBase_Ortho{
   int num_ready;
   bool got_start;
   int lbcaught;
-  PairCalcID oPairCalcID1;
-  PairCalcID oPairCalcID2;
     /// Section of symmetric PC chare array used by an Ortho chare
     PCSectionManager symmSectionMgr;
     /// Section of asymmetric PC chare array used by an Ortho chare

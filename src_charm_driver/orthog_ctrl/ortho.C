@@ -444,7 +444,7 @@ void Ortho::sendOrthoTtoAsymm(){
 //============================================================================
   int actionType=0; //normal
   //  CkPrintf("[%d,%d] sending orthoT\n",thisIndex.x,thisIndex.y);
-  asymmSectionMgr.sendMatrix(m*n, orthoT, 0, thisIndex.x, thisIndex.y, actionType, oPairCalcID2.priority-1);
+  asymmSectionMgr.sendMatrix(m*n, orthoT, 0, thisIndex.x, thisIndex.y, actionType, asymmSectionMgr.msgPriority-1);
 
 }
 //============================================================================
@@ -574,7 +574,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 #endif
 
       // finish pair calc
-      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -592,11 +592,9 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ)
 {
-    // this readonly should be ok by now
-    oPairCalcID1=UpairCalcID1[thisInstance.proxyOffset];
-    oPairCalcID2=UpairCalcID2[thisInstance.proxyOffset];
-    symmSectionMgr.init(thisIndex,oPairCalcID1,config.orthoGrainSize);
-    asymmSectionMgr.init(thisIndex,oPairCalcID2,config.orthoGrainSize);
+    // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
+    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config.orthoGrainSize);
+    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config.orthoGrainSize);
     
     /// The (0,0) Ortho chare sets up mcast/redn sections across all Orthos
     if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
@@ -607,7 +605,7 @@ void Ortho::makeSections(int indexSize, int *indexZ)
         if(config.useOrthoSectionRed)
         {
             CProxySection_Ortho rproxy =   multiproxy;
-            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthoRedGrpId).ckLocalBranch();
+            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthoRedGrpID).ckLocalBranch();
             rproxy.ckSectionDelegate(mcastGrp);
             initCookieMsg *redMsg=new initCookieMsg;
             /// Ask the rest of the section (the whole array) to init their cookies
@@ -623,7 +621,7 @@ void Ortho::makeSections(int indexSize, int *indexZ)
             }
             else
             {
-                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
+                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();               
                 multiproxy.ckSectionDelegate(mcastGrp);
             }
         }
@@ -715,11 +713,11 @@ void Ortho::gamma_done(){
   if(config.PCCollectTiles)
     {
       // if not streaming we might as well just lockstep these
-      asymmSectionMgr.sendResults(m*n, B, ortho, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(m*n, B, ortho, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
     }
   else // orthoT was already sent ahead for processing
     {
-      asymmSectionMgr.sendResults(m*n, B, 0, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(m*n, B, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
     }
 
 //----------------------------------------------------------------------------
@@ -989,7 +987,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
     {
       CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();               
       mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
     }
   else
@@ -1016,8 +1014,6 @@ void Ortho::pup(PUP::er &p){
     p | lbcaught;
     p | orthoCookie;
     p | toleranceCheckOrthoT;
-    p | oPairCalcID1;    
-    p | oPairCalcID2;
     p | step2done;
     p | step3done;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
