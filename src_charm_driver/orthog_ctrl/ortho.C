@@ -41,7 +41,6 @@
  */
 //============================================================================
 
-#include "debug_flags.h"
 #include "ortho.h"
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
@@ -50,6 +49,8 @@
 #include "groups.h"
 #include "fftCacheSlab.h"
 #include <unistd.h>
+#include "paircalc/pairCalculator.h" ///< Just for the global PairCalcIDs used to init SectionMgrs
+
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
@@ -1055,6 +1056,5 @@ void Ortho::setPCproxy(PCSectionManager sectionMgr)
   symmSectionMgr = sectionMgr;
 }
 
-#include "pcSectionManager.C"
 #include "ortho.def.h"
 

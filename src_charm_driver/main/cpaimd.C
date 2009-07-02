@@ -55,7 +55,7 @@
 #include "MapFile.h"
 #include "TopoManager.h"
 #include "TimeKeeper.h"
-
+#include "paircalc/pairCalculator.h" ///< Just for defining the readonly globals (UPairCalcID 1 & 2)
 //============================================================================
 #include "../include/debug_flags.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"

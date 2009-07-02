@@ -1,13 +1,15 @@
+#include "paircalc/ckPairCalculator.h"
+
 #ifndef PC_SECTION_MANAGER_H
 #define PC_SECTION_MANAGER_H
 
-/// Forward declaration
-class PairCalcID;
+/// Forward declarations
 class Ortho; 
+class PairCalcID;
+
 
 namespace cp {
     namespace ortho {
-
 
 /// Class that manages the paircalc sections that each Ortho chare communicates with
 class PCSectionManager
