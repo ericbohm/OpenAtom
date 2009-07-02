@@ -5,15 +5,15 @@
 class PairCalcID;
 
 namespace cp {
-    namespace paircalc {
+    namespace ortho {
 
 
 /// Class that manages the paircalc sections that each Ortho chare communicates with
-class SectionManager
+class PCSectionManager
 {
     public:
         /// Constructor
-        SectionManager() {}
+        PCSectionManager() {}
         /// An initializer method that fills this with data
         void init(const CkIndex2D orthoIdx, const PairCalcID &pcid, const int orthoGrainSize);
         /// PUP serializer
@@ -51,7 +51,7 @@ class SectionManager
         CkGroupID orthomCastGrpID, orthoRedGrpID;
 };
 
-    } // end namespace paircalc
+    } // end namespace ortho
 } // end namespace cp
 
 #endif // PC_SECTION_MANAGER

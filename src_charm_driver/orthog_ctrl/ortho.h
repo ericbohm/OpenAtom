@@ -85,12 +85,14 @@
  *  The total multiply itself will still of course be nstates X
  *  nstates.
  ******************************************************************************/
+
 #include "ortho.decl.h"
 #include "paircalc/pairCalculator.h" 
 #include "uber/Uber.h"
 #include "CLA_Matrix.h"
 #include "cpaimd.h"
-#include "paircalc/SectionManager.h"
+#include "pcSectionManager.h"
+using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
 #define _ortho_h_
@@ -135,7 +137,7 @@ class Ortho : public CBase_Ortho{
   void sendOrthoTtoAsymm();
 
   // get our copy of the pcproxy
-  void setPCproxy(cp::paircalc::SectionManager sectionMgr);
+  void setPCproxy(PCSectionManager sectionMgr);
 
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
@@ -301,9 +303,9 @@ class Ortho : public CBase_Ortho{
   PairCalcID oPairCalcID1;
   PairCalcID oPairCalcID2;
     /// Section of symmetric PC chare array used by an Ortho chare
-    cp::paircalc::SectionManager symmSectionMgr;
+    PCSectionManager symmSectionMgr;
     /// Section of asymmetric PC chare array used by an Ortho chare
-    cp::paircalc::SectionManager asymmSectionMgr;
+    PCSectionManager asymmSectionMgr;
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;

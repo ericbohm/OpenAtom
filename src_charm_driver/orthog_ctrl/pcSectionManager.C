@@ -1,18 +1,31 @@
-#include "SectionManager.h"
-#include "pairCalculator.h" ///< @note: Just for the definition of PairCalcID. Eliminate
+#include "pcSectionManager.h"
+#include "paircalc/pairCalculator.h" ///< @note: Just for the definition of PairCalcID. Eliminate
+
+extern ComlibInstanceHandle mcastInstanceCP;
+extern ComlibInstanceHandle mcastInstanceACP;
 
 namespace cp {
-    namespace paircalc {
+    namespace ortho {
 
-void SectionManager::pup(PUP::er &p) 
+void PCSectionManager::pup(PUP::er &p) 
 {
     p | pcSection;
+    p | numStates;
+    p | pcGrainSize;
+    p | orthoGrainSize;
+    p | numChunks;
+    p | pcArrayID;
+    p | isSymmetric;
+    p | arePhantomsOn; 
+    p | orthoIndex;
+    p | orthomCastGrpID;
+    p | orthoRedGrpID;
 }
 
 
 
 
-void SectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const int orthoGrSize)
+void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const int orthoGrSize)
 {
     numStates       = pcid.nstates;
     numChunks       = pcid.numChunks;
@@ -36,10 +49,10 @@ void SectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const
  * pass through the the owning Ortho chare so the cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-void SectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool direct, bool commlib)
+void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool direct, bool commlib)
 {
     #ifdef VERBOSE_SECTIONMANAGER
-        CkPrintf("SectionManager::setupArraySection called\n");
+        CkPrintf("PCSectionManager::setupArraySection called\n");
     #endif
     int ecount=0;
     CkArrayIndex4D *elems=new CkArrayIndex4D[numZ*numChunks*2];
@@ -128,10 +141,10 @@ void SectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallba
 
 
 
-void SectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
+void PCSectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
 {
     #ifdef VERBOSE_SECTIONMANAGER
-        CkPrintf("SectionManager::sendResults()\n");
+        CkPrintf("PCSectionManager::sendResults()\n");
     #endif
 
     /// Allocate a msg of the right size
@@ -164,10 +177,10 @@ void SectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX, 
 }
 
 
-void SectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
+void PCSectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
 {
     #ifdef VERBOSE_SECTIONMANAGER
-        CkPrintf("SectionManager::sendMatrix()\n");
+        CkPrintf("PCSectionManager::sendMatrix()\n");
     #endif
 
     /// Allocate a msg of the right size
@@ -199,5 +212,5 @@ void SectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX, i
     pcSection.acceptOrthoT(omsg);
 }
 
-    } // end namespace paircalc
+    } // end namespace ortho
 } // end namespace cp

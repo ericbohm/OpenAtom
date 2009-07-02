@@ -368,7 +368,6 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
   return sectProxy;
 }
 
-#include "SectionManager.C"
 
 /**
  * send the multcast message to initialize the section tree and set the cookie

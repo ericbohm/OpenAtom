@@ -1054,10 +1054,11 @@ void OrthoHelper::sendMatrix()
 
 
 // highly questionable that this is safe
-void Ortho::setPCproxy(cp::paircalc::SectionManager sectionMgr)
+void Ortho::setPCproxy(PCSectionManager sectionMgr)
 {
   symmSectionMgr = sectionMgr;
 }
 
+#include "pcSectionManager.C"
 #include "ortho.def.h"
 
