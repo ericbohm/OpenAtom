@@ -39,6 +39,7 @@ void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,con
     orthoIndex      = orthoIdx;
     orthomCastGrpID = oMCastGID;
     orthoRedGrpID   = oRedGID;
+    msgPriority     = pcid.priority;
 }
 
 
