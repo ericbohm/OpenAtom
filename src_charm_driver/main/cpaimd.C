@@ -1031,9 +1031,6 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
       mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
     //mCastGrpIds.push_back(symMcast);
    //symmetric AKA Psi
-    orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
-    orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
-
 #ifdef _CP_SUBSTEP_TIMING_
     UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
     UpairCalcID1[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Sym Backward");
@@ -1041,7 +1038,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
     // CkPrintf("creating PC instance %d\n",thisInstance.proxyOffset);
-    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), UorthoProxy[thisInstance.proxyOffset]), &(UpairCalcID1[thisInstance.proxyOffset]), gsp_ep, gsp_ep_tol, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, orthomCastGrpId, orthoRedGrpId, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false, thisInstance.proxyOffset);
+    createPairCalculator(true, nstates, config.sGrainSize, indexSize, indexZ,  CkCallback(CkIndex_Ortho::start_calc(NULL), UorthoProxy[thisInstance.proxyOffset]), &(UpairCalcID1[thisInstance.proxyOffset]), gsp_ep, gsp_ep_tol, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false, thisInstance.proxyOffset);
 
     CkArrayIndex2D myindex(0, 0);
     if(config.gSpaceSum)
@@ -1060,7 +1057,7 @@ void init_pair_calculators(int nstates, int indexSize, int *indexZ ,
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()), &(UpairCalcID2[thisInstance.proxyOffset]), gsp_ep, 0, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, orthomCastGrpId, orthoRedGrpId,config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW, cp_need_orthoT,thisInstance.proxyOffset);
+    createPairCalculator(false, nstates,  config.sGrainSize, indexSize, indexZ,CkCallback(CkIndex_CP_State_GSpacePlane::acceptAllLambda(NULL), myindex, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()), &(UpairCalcID2[thisInstance.proxyOffset]), gsp_ep, 0, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW, cp_need_orthoT,thisInstance.proxyOffset);
     
 
 //============================================================================ 
@@ -1680,6 +1677,10 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ, UberCollection t
    config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
 
+  /// Create multicast manager groups for Ortho to use
+  orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
+  orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
+
   int timekeep=keeperRegister("Ortho S to T");
   int maxorthoindex=(nstates/config.orthoGrainSize-1);
   int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
@@ -1691,7 +1692,7 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ, UberCollection t
       indY = (indY>maxorthoindex) ? maxorthoindex : indY;
 
       UorthoProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep, thisInstance);
+      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep, thisInstance, orthomCastGrpId, orthoRedGrpId);
       if(config.useOrthoHelpers)
       {
 	UorthoHelperProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,

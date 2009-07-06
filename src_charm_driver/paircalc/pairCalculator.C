@@ -75,7 +75,6 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc,
 			  int priority, CkVec <CkGroupID> mCastGrpId,
-			  CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId,
 			  int numChunks, int orthoGrainSize, bool collectTiles,
 			  bool streamBWout, bool delayBWSend, int streamFW,
 			  bool useDirectSend, bool gSpaceSum, int gpriority,
@@ -129,8 +128,6 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   int proc = 0;
   // Initialize the PairCalcID instance
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useDirectSend);
-  pcid->orthomCastGrpId=orthomCastGrpId;
-  pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->mCastGrpId=mCastGrpId;
   
   // Setup the appropriate multicast strategy

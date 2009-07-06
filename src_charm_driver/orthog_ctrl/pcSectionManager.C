@@ -25,7 +25,7 @@ void PCSectionManager::pup(PUP::er &p)
 
 
 
-void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const int orthoGrSize)
+void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const int orthoGrSize, CkGroupID oMCastGID, CkGroupID oRedGID)
 {
     numStates       = pcid.nstates;
     numChunks       = pcid.numChunks;
@@ -37,8 +37,8 @@ void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,con
     //arePhantomsOn   = phantom;
 
     orthoIndex      = orthoIdx;
-    orthomCastGrpID = pcid.orthomCastGrpId;
-    orthoRedGrpID   = pcid.orthoRedGrpId;
+    orthomCastGrpID = oMCastGID;
+    orthoRedGrpID   = oRedGID;
 }
 
 

@@ -248,7 +248,7 @@ class Ortho : public CBase_Ortho{
    CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
    CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
    CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, 
-	int timeKeep, UberCollection );
+	int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
   void tolerance_check(void);
   void step_2();
@@ -304,6 +304,8 @@ class Ortho : public CBase_Ortho{
     PCSectionManager symmSectionMgr;
     /// Section of asymmetric PC chare array used by an Ortho chare
     PCSectionManager asymmSectionMgr;
+    /// Group IDs for the multicast manager groups
+    CkGroupID oMCastGID, oRedGID;
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;

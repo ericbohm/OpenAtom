@@ -594,8 +594,8 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 void Ortho::makeSections(int indexSize, int *indexZ)
 {
     // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
-    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config.orthoGrainSize);
-    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config.orthoGrainSize);
+    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
+    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
     
     /// The (0,0) Ortho chare sets up mcast/redn sections across all Orthos
     if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
@@ -757,8 +757,11 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matB1, CLA_Matrix_interface _matC1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
-	     CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
-	     int timekeep, UberCollection _instance) : thisInstance(_instance){
+ CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
+ int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
+    thisInstance(_instance), 
+    oMCastGID(_oMCastGID), oRedGID(_oRedGID)
+{
 
 //============================================================================
 /* do basic initialization */

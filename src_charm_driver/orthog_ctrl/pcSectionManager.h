@@ -20,7 +20,7 @@ class PCSectionManager
         /// Constructor
         PCSectionManager() {}
         /// An initializer method that fills this with data
-        void init(const CkIndex2D orthoIdx, const PairCalcID &pcid, const int orthoGrainSize);
+        void init(const CkIndex2D orthoIdx, const PairCalcID &pcid, const int orthoGrainSize, CkGroupID oMCastGID, CkGroupID oRedGID);
         /// PUP serializer
         void pup(PUP::er &p);
         /// Creates a paircalc array section given the necessary info. Replaces initOneRedSect()

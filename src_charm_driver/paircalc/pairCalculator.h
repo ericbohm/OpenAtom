@@ -45,8 +45,6 @@ class PairCalcID
 		bool existsRproxy;
 
 		CkVec <CkGroupID> mCastGrpId;
-		CkGroupID orthomCastGrpId;
-		CkGroupID orthoRedGrpId;
 		int priority;
 
 
@@ -159,8 +157,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
   existsRproxy=pid.existsRproxy;
   priority=pid.priority;
   mCastGrpId=pid.mCastGrpId;
-  orthomCastGrpId=pid.orthomCastGrpId;
-  orthoRedGrpId=pid.orthoRedGrpId;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
     backwardTimerID=pid.backwardTimerID;
@@ -189,8 +185,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
     p|existsLproxy;
     p|existsRproxy;
     p|mCastGrpId;
-    p|orthomCastGrpId;
-    p|orthoRedGrpId;
     p|priority;
 #ifdef _CP_SUBSTEP_TIMING_
     p|forwardTimerID;
@@ -224,7 +218,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 };
 
 /// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
 
 
 /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section 
