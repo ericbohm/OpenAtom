@@ -50,10 +50,10 @@ void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,con
  * pass through the the owning Ortho chare so the cookie can be placed in the 2d array
  * (grainSize/orthoGrainSize)^2
  */
-void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool direct, bool commlib)
+void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool direct, bool useComlibForOrthoToPC)
 {
     #ifdef VERBOSE_SECTIONMANAGER
-        CkPrintf("PCSectionManager::setupArraySection called\n");
+        CkPrintf("Ortho[%d,%d] PCSectionManager::setupArraySection called\n",orthoIndex.x,orthoIndex.y);
     #endif
     int ecount=0;
     CkArrayIndex4D *elems=new CkArrayIndex4D[numZ*numChunks*2];
@@ -63,18 +63,10 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
         for(int numX = numZ-1; numX >=0; numX--)
         {
             #ifdef VERBOSE_SECTIONMANAGER
-                CkPrintf("initOneRedSect for s1 %d s2 %d ortho %d %d sym %d plane %d\n",s1,s2,orthoIndex.x, orthoIndex.y,isSymmetric, numX);
+                CkPrintf("Ortho[%d,%d] will talk to a paircalc section that includes PC[%d,%d,%d,%d,%d]\n",orthoIndex.x, orthoIndex.y,z[numX],s1,s2,chunk,isSymmetric);
             #endif
-            if(arePhantomsOn && s1!=s2)
-            {
-                CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
-                elems[ecount++]=idx4d;
-            }
-            else
-            {
-                CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
-                elems[ecount++]=idx4d;
-            }
+            CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
+            elems[ecount++]=idx4d;
         }
     }
     int numOrthoCol= pcGrainSize / orthoGrainSize;
@@ -100,12 +92,13 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
     
     // and do delegation
     pcSection = sProxy;
-    
+   
+    /// Only for sections that are not made up of symm, phantoms
     if(!arePhantomsOn && !direct) // only delegating nonphantom mcast proxy for reduction
     {
         CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthoRedGrpID).ckLocalBranch();
         sectProxy->ckSectionDelegate(mcastGrp);
-        // Send the multcast message to initialize the ortho section tree and set the cookie
+        // Register this ortho chare with all the paircalcs in this section so that they send their data to me too
         initGRedMsg *gredMsg=new initGRedMsg;
         gredMsg->cb=cb;
         gredMsg->mCastGrpId= orthoRedGrpID;
@@ -117,7 +110,7 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
     }
     else
     {
-        if(commlib)
+        if(useComlibForOrthoToPC)
         {
             CkPrintf("NOTE: Rectangular Send In USE\n");
             if(isSymmetric)
@@ -131,7 +124,6 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
         }
         else
         {
-            //CkPrintf("PC: proxy without commlib\n");
             CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthomCastGrpID).ckLocalBranch();
             sectProxy->ckSectionDelegate(mcastGrp);
         }

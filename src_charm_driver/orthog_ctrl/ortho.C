@@ -597,38 +597,47 @@ void Ortho::makeSections(int indexSize, int *indexZ)
     symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
     asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
     
-    /// The (0,0) Ortho chare sets up mcast/redn sections across all Orthos
+    /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
+     * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
+     * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to comlib / CkMulticast
+     * by building a section that includes all chare elements! :)
+     *
+     * The (0,0) Ortho chare sets up these sections and delegates them
+     */
     if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
     {
+        /// Create an array section that includes the whole Ortho chare array
         int numOrtho=config.nstates/config.orthoGrainSize;
         multiproxy = CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(), 0, numOrtho-1,1, 0, numOrtho-1, 1);
-        /// 
+        /// If reductions are being delegated to a comm library
         if(config.useOrthoSectionRed)
         {
             CProxySection_Ortho rproxy =   multiproxy;
             CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthoRedGrpID).ckLocalBranch();
             rproxy.ckSectionDelegate(mcastGrp);
             initCookieMsg *redMsg=new initCookieMsg;
-            /// Ask the rest of the section (the whole array) to init their cookies
+            /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
             rproxy.orthoCookieinit(redMsg);
         }
-        ///
+        /// If multicasts are being delegated to a comm library
         if(config.useOrthoSection)
         {
             /// Use the appropriate library for multicasts
             if( config.useCommlib && config.useOrthoDirect)
-            {
                 ComlibAssociateProxy(&orthoInstance,multiproxy);	  
-            }
             else
             {
-                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();               
+                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch(); 
                 multiproxy.ckSectionDelegate(mcastGrp);
             }
         }
     }
 
-    /// Identify the indices of the Paircalc chare 
+    /** Ortho chares are a 2D (nstates x nstates) array. ortho[sx,sy] talks to all the paircalc chares which handle 
+     * the ordered pair of states (sx,sy). This will be pc[p,sx,sy,c] where p ranges across all planes and c across 
+     * all chunks.
+     */
+    /// Identify the state indices of the Paircalc chares this ortho chare needs to talk to
     int s1=thisIndex.x * config.orthoGrainSize;
     int s2=thisIndex.y * config.orthoGrainSize;
     int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
@@ -644,37 +653,29 @@ void Ortho::makeSections(int indexSize, int *indexZ)
     /** m and n are orthograinsize which must be <=config.sGrainSize
      * thisIndex.x and thisIndex.y range from 0 to nstates/config.orthoGrainSize
      */
-    /// Setup a callback to the instance controller
+    /// Setup appropriate callbacks
     CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
     CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));	
-    
-    if(s1 <= s2)   //we get the reduction
+
+    /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
+
+    /// If the paircalc chares this ortho will talk to, in the symmetric paircalc instance, are non-phantoms
+    if(s1 <= s2)   
     {
         symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,false,false,false);
-        if(config.phantomSym)
-        {
-            symmSectionMgr.setupArraySection(indexSize, indexZ,orthoCB,doneInitCB,s1,s2,true,true,config.useOrthoDirect);
-        }
-        else
-        {
-            if(s1!=s2)
-                thisProxy(thisIndex.y,thisIndex.x).setPCproxy(symmSectionMgr);
-            symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,false,true,config.useOrthoDirect);
-        }
+        symmSectionMgr.setupArraySection(indexSize, indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,true,config.useOrthoDirect);
+        /// Hack to keep the section proxies of the ortho chares corresponding to the phantoms from being empty
+        if(!config.phantomSym && s1!=s2)
+            thisProxy(thisIndex.y,thisIndex.x).setPCproxy(symmSectionMgr); ///< @todo: PCSecMgr stored orthoIndex which is not the same for the ortho[y,x]. Beware. You only need to send pcSectionMgr
     }
+    /// else, if they are phantoms (AND phantoms are allowed by the user) 
     else if(config.phantomSym)
-    {  // we are not phantoms
         symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,false,true,config.useOrthoDirect);
-    }
 
-    if(config.lambdaGrainSize==config.orthoGrainSize)
-    { //no point in having a different chare if you won't have more of them
-        CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
-        // in the != case this will happen in the lambda chare
-        asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, false, false);
-        //everybody sends in lambda
-        asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, true, config.useOrthoDirect);
-    }
+    /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
+    CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
+    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, false, false);
+    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, true, config.useOrthoDirect);
 }
 
 
