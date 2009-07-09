@@ -662,20 +662,18 @@ void Ortho::makeSections(int indexSize, int *indexZ)
     /// If the paircalc chares this ortho will talk to, in the symmetric paircalc instance, are non-phantoms
     if(s1 <= s2)   
     {
-        symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,false,false,false);
-        symmSectionMgr.setupArraySection(indexSize, indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,true,config.useOrthoDirect);
+        symmSectionMgr.setupArraySection(indexSize, indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,config.useOrthoDirect);
         /// Hack to keep the section proxies of the ortho chares corresponding to the phantoms from being empty
         if(!config.phantomSym && s1!=s2)
             thisProxy(thisIndex.y,thisIndex.x).setPCproxy(symmSectionMgr); ///< @todo: PCSecMgr stored orthoIndex which is not the same for the ortho[y,x]. Beware. You only need to send pcSectionMgr
     }
     /// else, if they are phantoms (AND phantoms are allowed by the user) 
     else if(config.phantomSym)
-        symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,false,true,config.useOrthoDirect);
+        symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,config.useOrthoDirect);
 
     /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
     CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
-    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, false, false);
-    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, false, true, config.useOrthoDirect);
+    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, config.phantomSym, config.useOrthoDirect);
 }
 
 

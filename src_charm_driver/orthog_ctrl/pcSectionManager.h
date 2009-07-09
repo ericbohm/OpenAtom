@@ -24,7 +24,7 @@ class PCSectionManager
         /// PUP serializer
         void pup(PUP::er &p);
         /// Creates a paircalc array section given the necessary info. Replaces initOneRedSect()
-        void setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool direct, bool commlib);
+        void setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool useComlibForOrthoToPC);
         /// Sends out the results to the paircalc section. Replaces finishPairCalcSection()
         void sendResults(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority);
         /// Used to send OrthoT to the asymm instance. Replaces sendMatrix()
@@ -47,8 +47,6 @@ class PCSectionManager
         CkArrayID pcArrayID;
         /// Is this paircalc array a symmetric or asymmetric instance
         bool isSymmetric;
-        /// If symmetric, does this paircalc array have phantoms turned on?
-        bool arePhantomsOn;
 
         /// The index of the calling Ortho chare
         CkIndex2D orthoIndex;
