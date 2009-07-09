@@ -1,3 +1,7 @@
+# Ignore compilation artifacts
 *.[oa]
 *.decl.h
 *.def.h
+# Ignore the binary directory
+binary
+
