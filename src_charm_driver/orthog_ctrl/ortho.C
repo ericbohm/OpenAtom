@@ -575,7 +575,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::makeSections(int indexSize, int *indexZ)
+void Ortho::makeSections()
 {
     /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
      * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 

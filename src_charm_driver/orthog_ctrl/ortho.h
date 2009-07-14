@@ -161,7 +161,7 @@ class Ortho : public CBase_Ortho{
     do_iteration();
   }
 
-  void makeSections(int indexSize, int *indexZ);
+  void makeSections();
 
   void print_results(void){
     char outname[80];
