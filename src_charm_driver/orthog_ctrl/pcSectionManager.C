@@ -9,27 +9,32 @@ namespace cp {
 
 void PCSectionManager::pup(PUP::er &p) 
 {
-    p | pcSection;
+    p | numPlanes;
     p | numStates;
+    p | numChunks;
     p | pcGrainSize;
     p | orthoGrainSize;
-    p | numChunks;
+
     p | pcArrayID;
     p | isSymmetric;
+    p | pcSection;
+
     p | orthoIndex;
     p | orthomCastGrpID;
     p | orthoRedGrpID;
+    p | msgPriority;
 }
 
 
 
 
-void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const int orthoGrSize, CkGroupID oMCastGID, CkGroupID oRedGID)
+void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const Config &cfg, CkGroupID oMCastGID, CkGroupID oRedGID)
 {
-    numStates       = pcid.nstates;
-    numChunks       = pcid.numChunks;
-    pcGrainSize     = pcid.GrainSize;
-    orthoGrainSize  = orthoGrSize;
+    numPlanes       = cfg.nchareG;
+    numStates       = cfg.nstates;
+    numChunks       = cfg.numChunks;
+    pcGrainSize     = cfg.sGrainSize;
+    orthoGrainSize  = cfg.orthoGrainSize;
 
     pcArrayID       = pcid.Aid;
     isSymmetric     = pcid.Symmetric;
@@ -42,31 +47,50 @@ void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,con
 
 
 
+/**
+ * ortho and paircalc grainsizes do not complicate this discussion a whole lot because of the restriction that 
+ * ortho grainsize = multiple of paircalc grain size. Because of this equal or exact multiple clause, ortho grains
+ * will line up perfectly inside a paircalc grain and, hence, every ortho chare will hold a bunch of states that 
+ * will all get delivered to the same paircalc section.
+ *
+ * paircalcs on the other hand will have to chop up their data along the ortho tile boundaries and contribute to 
+ * multiple reductions that end up at the respective ortho chares. Refer PairCalculator::contributeSubTiles.
+ *
+ */
+CkIndex2D PCSectionManager::computePCStateIndices(const int orthoX, const int orthoY)
+{
+    CkIndex2D pc;
+    pc.x = orthoX * orthoGrainSize;
+    pc.y = orthoY * orthoGrainSize;
+    // Do something clever if the grainsizes are not the same
+    if(orthoGrainSize != pcGrainSize)
+    {
+        int maxpcstateindex = (numStates/pcGrainSize - 1) * pcGrainSize;
+        pc.x = pc.x / pcGrainSize * pcGrainSize;
+        pc.y = pc.y / pcGrainSize * pcGrainSize;
+        pc.x = (pc.x>maxpcstateindex) ? maxpcstateindex :pc.x;
+        pc.y = (pc.y>maxpcstateindex) ? maxpcstateindex :pc.y;
+    }
+    return pc;
+}
+
+
 
 /**
- * Initialize the planewise section reduction for Ortho sums across all planes and chunks 
- * pass through the the owning Ortho chare so the cookie can be placed in the 2d array
- * (grainSize/orthoGrainSize)^2
+ * Ortho chares are a 2D (nstates x nstates) array. ortho[sx,sy] talks to all the paircalc chares which handle 
+ * the ordered pair of states (sx,sy). This will be pc[p,s1,s2,c] where p ranges across all planes and c across 
+ * all chunks. 
  */
-void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCallback synccb, int s1, int s2, bool arePhantomsOn, bool useComlibForOrthoToPC)
+void PCSectionManager::createPCsection(const int s1, const int s2)
 {
-    #ifdef VERBOSE_SECTIONMANAGER
-        CkPrintf("Ortho[%d,%d] PCSectionManager::setupArraySection called\n",orthoIndex.x,orthoIndex.y);
-    #endif
     int ecount=0;
-    CkArrayIndex4D *elems=new CkArrayIndex4D[numZ*numChunks*2];
-    //add chunk loop
+    CkArrayIndex4D *elems=new CkArrayIndex4D[numPlanes*numChunks*2];
     for(int chunk = numChunks-1; chunk >=0; chunk--)
-    {
-        for(int numX = numZ-1; numX >=0; numX--)
+        for(int numX = numPlanes-1; numX >=0; numX--)
         {
-            #ifdef VERBOSE_SECTIONMANAGER
-                CkPrintf("Ortho[%d,%d] will talk to a paircalc section that includes PC[%d,%d,%d,%d,%d]\n",orthoIndex.x, orthoIndex.y,z[numX],s1,s2,chunk,isSymmetric);
-            #endif
-            CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
+            CkArrayIndex4D idx4d(numX,s1,s2,chunk);
             elems[ecount++]=idx4d;
         }
-    }
     int numOrthoCol= pcGrainSize / orthoGrainSize;
     int maxorthostateindex=(numStates / orthoGrainSize - 1) * orthoGrainSize;
     int orthoIndexX=(orthoIndex.x * orthoGrainSize);
@@ -85,18 +109,77 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
     CkAssert(order);
 
     /// Create and save this paircalc section
-    CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);
-    CProxySection_PairCalculator *sectProxy=&sProxy;
-    pcSection = sProxy;
+    pcSection = CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);
     delete [] elems;
-    
+}
+
+
+
+
+/**
+ * Initialize the planewise section reduction for Ortho sums across all planes and chunks 
+ * pass through the the owning Ortho chare so the cookie can be placed in the 2d array
+ * (grainSize/orthoGrainSize)^2
+ * 
+ * Ortho chares talk to paircalc chares based on their state indices. That is, results for an ordered pair of states
+ * (s1,s2) from an ortho will end up at the paircalc(s) responsible for that state pair. As paircalcs are decomposed
+ * along two other dimensions (planes & points), this results in a section of paircalcs which need to get data for 
+ * any given state pair (s1,s2) via a multicast from the ortho responsible for that state pair (s1,s2).
+ *
+ * The same logic holds for input data from the paircalcs to ortho. As orthos are 2D and oblivious of any plane-wise
+ * or point-wise decomposition, all data pertaining to a state pair (s1,s2) from all the paircalcs mut be collated and
+ * delivered to the ortho that handles (s1,s2). This results in a reduction across a paircalc section that spans all 
+ * planes and chunks of the paircalc array.
+ *
+ * An extra twist in these straightforward section rules happens because of the presence of phantom chares in symmetric
+ * paircalc instance. Phantom chares do not participate in the forward path and hence do not send any input data. Hence
+ * they should not be included in the reductions to ortho. However, they work in the backward path off the results from 
+ * ortho and are hence included in the multicasts back to the paircalcs. 
+ *
+ * We compound this a bit further in our greed to avoid extra work when possible. It should be noted that because of the 
+ * limitations of the underlying matrix multiply libraries, we canNOT perform a triangular multiply on what is essentially
+ * symmetric input. Hence orthos orchestrate a square matrix multiply and end up with almost identical results (differing
+ * only by a transpose) in mirror chares across the array diagonal. Without going into the underlying math, we can say
+ * that the orthos that talk to phantom or on-diagonal pc chares end up with the exact data required, whereas the ortho 
+ * chares that need to talk to the non-phantom sections, have to perform an additional transpose before they can pack the
+ * data off to their pc sections. This is where we get lazy and try to avoid this extra transpose if we can. Basically,
+ * when phantoms are turned off we rig the section creation so that the orthos which should have spoken to the phantoms
+ * instead talk to their non-phantom mirror sections. As these orthos have the data in the correct form already, no one 
+ * has to perform any extra transposes.
+ *
+ * Hence orthos whose indices correspond to those of phantom paircalc chares, will talk to:
+ *  - their original phantom section if the user turns on phantoms
+ *  - a mirror non-phantom section if the user turns off phantoms 
+ *
+ */
+void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool arePhantomsOn, bool useComlibForOrthoToPC)
+{
+    int s1, s2;
+    /// Find the states indices of the paircalcs this ortho *should* be talking to. 
+    CkIndex2D pc = computePCStateIndices(orthoIndex.x,orthoIndex.y);
+    /// When phantoms are off, ortho chares that should talk to a phantom section will instead talk to  a mirror section
+    if (!arePhantomsOn && isSymmetric && pc.y<pc.x)
+    {   s1 = pc.y;  s2 = pc.x;  }
+    else
+    {   s1 = pc.x;  s2 = pc.y;  }
+
+    #ifdef VERBOSE_SECTIONMANAGER
+        CkPrintf("Ortho[%d,%d] PCSectionManager setting up a paircalc section that includes PC[%d-%d,%d,%d,%d-%d,%d]\n",orthoIndex.x, orthoIndex.y,0,numPlanes-1,s1,s2,0,numChunks-1,isSymmetric);
+    #endif
+
+    /// Create the paircalc section that this ortho chare will actually talk to
+    createPCsection(s1,s2);
    
-    /// If the paircalc section is NOT made up of phantoms, register with them so they can send data to you
-    if ( !(isSymmetric && s2<s1) )
+    /// Paircalcs end their forward path by sending data to the orthos. Irrespective of their type (symm/asymm) or 
+    /// whether phantoms are turned on or not, they always talk to the orthos corresponding to their state indices.
+    /// All the mirrors and section switching tricks that happen above only apply to the multicast back from ortho to
+    /// paircalc. Also, phantom paircalcs do not participate in the forward path and do not have any data to send. 
+    /// Hence, only orthos whose indices correspond to the non-phantoms will register with their pc sections to get data
+    if ( !(isSymmetric && pc.y<pc.x) )
     {
-        /// Delegate the reduction to CkMulticast
+        /// Delegate the pc section --> ortho reduction to CkMulticast
         CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthoRedGrpID).ckLocalBranch();
-        sectProxy->ckSectionDelegate(mcastGrp);
+        pcSection.ckSectionDelegate(mcastGrp);
         /// Register this ortho chare with all the paircalcs in this section 
         initGRedMsg *gredMsg=new initGRedMsg;
         gredMsg->cb=cb;
@@ -105,23 +188,23 @@ void PCSectionManager::setupArraySection(int numZ, int* z, CkCallback cb, CkCall
         gredMsg->synccb=synccb;
         gredMsg->orthoX=orthoIndex.x;
         gredMsg->orthoY=orthoIndex.y;
-        sectProxy->initGRed(gredMsg);
+        pcSection.initGRed(gredMsg);
     }
-    /// Delegate the ortho --> paircalcs multicast to the appropriate library
+
+    /// Delegate the ortho --> pc section multicast to the appropriate library
     if(useComlibForOrthoToPC)
     {
         CkPrintf("NOTE: Rectangular Send In USE\n");
         if(isSymmetric)
-            ComlibAssociateProxy(&mcastInstanceCP,*sectProxy);
+            ComlibAssociateProxy(&mcastInstanceCP,pcSection);
         else
-            ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
+            ComlibAssociateProxy(&mcastInstanceACP,pcSection);
     }
     else
     {
         CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(orthomCastGrpID).ckLocalBranch();
-        sectProxy->ckSectionDelegate(mcastGrp);
+        pcSection.ckSectionDelegate(mcastGrp);
     }
-    //  return *sectProxy;
 }
 
 

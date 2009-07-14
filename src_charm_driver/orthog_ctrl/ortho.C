@@ -394,6 +394,12 @@ void Ortho::resume(){
     }
 #endif
 
+    /**
+     * orthos talking to non-phantoms in the symm pc instance will have to perform an extra transpose of their data.
+     * Hence, they do this only when they have to. We avoid this when phantoms are turned off by rigging the pc
+     * sections to make the mirror orthos deliver the data to our non-phantoms. 
+     * Refer PCSectionManager::setupArraySection for more info.
+     */
     if(s1 == s2)   //we have the answer scalc wants
       symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
@@ -593,10 +599,6 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 void Ortho::makeSections(int indexSize, int *indexZ)
 {
-    // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
-    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
-    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config.orthoGrainSize, oMCastGID, oRedGID);
-    
     /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
      * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
      * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to comlib / CkMulticast
@@ -633,47 +635,19 @@ void Ortho::makeSections(int indexSize, int *indexZ)
         }
     }
 
-    /** Ortho chares are a 2D (nstates x nstates) array. ortho[sx,sy] talks to all the paircalc chares which handle 
-     * the ordered pair of states (sx,sy). This will be pc[p,sx,sy,c] where p ranges across all planes and c across 
-     * all chunks.
-     */
-    /// Identify the state indices of the Paircalc chares this ortho chare needs to talk to
-    int s1=thisIndex.x * config.orthoGrainSize;
-    int s2=thisIndex.y * config.orthoGrainSize;
-    int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-    if(config.orthoGrainSize!=config.sGrainSize)
-    {
-        // do something clever
-        s1=s1/config.sGrainSize*config.sGrainSize;
-        s2=s2/config.sGrainSize*config.sGrainSize;
-        s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-        s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-    }
-
-    /** m and n are orthograinsize which must be <=config.sGrainSize
-     * thisIndex.x and thisIndex.y range from 0 to nstates/config.orthoGrainSize
-     */
+    // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
+    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    
     /// Setup appropriate callbacks
     CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
     CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));	
+    CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
 
     /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
-
-    /// If the paircalc chares this ortho will talk to, in the symmetric paircalc instance, are non-phantoms
-    if(s1 <= s2)   
-    {
-        symmSectionMgr.setupArraySection(indexSize, indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,config.useOrthoDirect);
-        /// Hack to keep the section proxies of the ortho chares corresponding to the phantoms from being empty
-        if(!config.phantomSym && s1!=s2)
-            thisProxy(thisIndex.y,thisIndex.x).setPCproxy(symmSectionMgr); ///< @todo: PCSecMgr stored orthoIndex which is not the same for the ortho[y,x]. Beware. You only need to send pcSectionMgr
-    }
-    /// else, if they are phantoms (AND phantoms are allowed by the user) 
-    else if(config.phantomSym)
-        symmSectionMgr.setupArraySection(indexSize,indexZ,orthoCB,doneInitCB,s1,s2,config.phantomSym,config.useOrthoDirect);
-
+    symmSectionMgr.setupArraySection(orthoCB,doneInitCB,config.phantomSym,config.useOrthoDirect);
     /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
-    CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
-    asymmSectionMgr.setupArraySection(indexSize, indexZ, orthoLambdaCB, doneInitCB ,s1, s2, config.phantomSym, config.useOrthoDirect);
+    asymmSectionMgr.setupArraySection(orthoLambdaCB, doneInitCB, config.phantomSym, config.useOrthoDirect);
 }
 
 
@@ -1049,13 +1023,6 @@ void OrthoHelper::sendMatrix()
   if(trigger!=NULL)
     delete trigger;
   UorthoProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).recvStep2(C, m*n);
-}
-
-
-// highly questionable that this is safe
-void Ortho::setPCproxy(PCSectionManager sectionMgr)
-{
-  symmSectionMgr = sectionMgr;
 }
 
 #include "ortho.def.h"

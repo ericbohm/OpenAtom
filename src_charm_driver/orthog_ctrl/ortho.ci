@@ -27,7 +27,6 @@ module ortho
 		entry void resumeV(CkReductionMsg *msg);
 		entry void maxCheck(CkReductionMsg *msg);
 		entry void makeSections(int indexSize, int indexZ[indexSize]);
-		entry void setPCproxy(cp::ortho::PCSectionManager sectionMgr);
 		entry void start_calc(CkReductionMsg *msg);	
 		entry void orthoCookieinit(initCookieMsg *msg);
 		entry void do_iteration();

@@ -136,9 +136,6 @@ class Ortho : public CBase_Ortho{
 
   void sendOrthoTtoAsymm();
 
-  // get our copy of the pcproxy
-  void setPCproxy(PCSectionManager sectionMgr);
-
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
 
