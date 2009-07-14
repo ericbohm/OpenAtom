@@ -165,19 +165,8 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
   step = 0;
   iterations = 0;
-  int s1=thisIndex.x * config.orthoGrainSize;
-  int s2=thisIndex.y * config.orthoGrainSize;
-  int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-  if(config.orthoGrainSize!=config.sGrainSize)
-    {
-      // do something clever
-      s1=s1/config.sGrainSize*config.sGrainSize;
-      s2=s2/config.sGrainSize*config.sGrainSize;
-      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-
-    }
-  if(s1 < s2)   
+  CkIndex2D pc = symmSectionMgr.computePCStateIndices();
+  if(pc.x < pc.y)   
     {
       //we get the reduction and //we have a spare to copy to  
       //make a copy
@@ -204,11 +193,11 @@ void Ortho::start_calc(CkReductionMsg *msg){
       thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
 
     }
-  else if(s2 < s1)
+  else if(pc.y < pc.x)
     { //we get a transposed copy be happy
       
     }
-  else if((s1==s2) && (thisIndex.x > thisIndex.y))
+  else if((pc.x==pc.y) && (thisIndex.x > thisIndex.y))
     { //we are a spare, got our matrix direct from Scalc 
 
     }
@@ -358,20 +347,9 @@ void Ortho::resume(){
 	  { orthoT = new double[m * n];}
 	CmiMemcpy(orthoT,A,m*n*sizeof(double));
       }
-    int s1=thisIndex.x * config.orthoGrainSize;
-    int s2=thisIndex.y * config.orthoGrainSize;
-    int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-
-    if(config.orthoGrainSize!=config.sGrainSize)
-      {
-	// do something clever
-	s1=s1/config.sGrainSize*config.sGrainSize;
-	s2=s2/config.sGrainSize*config.sGrainSize;
-	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-	s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-      }
+    CkIndex2D pc = symmSectionMgr.computePCStateIndices();
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
-    //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
+    //    if((pc.y < pc.x) || ((pc.y==pc.x)&&()))   //we have the answer scalc wants
 #ifdef _CP_ORTHO_DUMP_TMAT_
     dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
 #endif
@@ -400,7 +378,7 @@ void Ortho::resume(){
      * sections to make the mirror orthos deliver the data to our non-phantoms. 
      * Refer PCSectionManager::setupArraySection for more info.
      */
-    if(s1 == s2)   //we have the answer scalc wants
+    if(pc.x == pc.y)   //we have the answer scalc wants
       symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
       symmSectionMgr.sendResults(m*n, A, 0, thisIndex.y, thisIndex.x, actionType, 0);
