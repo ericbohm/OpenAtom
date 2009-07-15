@@ -3,6 +3,11 @@ module ortho
 	class CLA_Matrix_interface;
 	class UberCollection;
 	class CProxySection_PairCalculator;
+    namespace cp {
+        namespace ortho {
+            class PCSectionManager;
+        }
+    }
 
 	message orthoMtrigger;
 	message initCookieMsg;
@@ -13,7 +18,7 @@ module ortho
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
 		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
-	         int timekeep, UberCollection
+         int timekeep, UberCollection, CkGroupID oMCastGID, CkGroupID oRedGID
          	);
 		entry Ortho();
 		entry void acceptAllLambda(CkReductionMsg *msg);
@@ -21,8 +26,7 @@ module ortho
 		entry void resume();
 		entry void resumeV(CkReductionMsg *msg);
 		entry void maxCheck(CkReductionMsg *msg);
-		entry void makeSections(int indexSize, int indexZ[indexSize]);
-		entry void setPCproxy(CProxySection_PairCalculator inproxy);
+		entry void makeSections();
 		entry void start_calc(CkReductionMsg *msg);	
 		entry void orthoCookieinit(initCookieMsg *msg);
 		entry void do_iteration();

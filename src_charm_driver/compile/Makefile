@@ -62,7 +62,7 @@ OBJS	= ckPairCalculator.o pairCalculator.o CLA_Matrix.o cpaimd.o \
 	CP_State_ParticlePlane.o CP_State_RealParticlePlane.o \
 	CP_State_RealSpacePlane.o CP_Rho_RealSpacePlane.o \
 	CP_Rho_GSpacePlane.o CP_Rho_GHartExt.o CP_Rho_RHartExt.o util.o \
-	ortho.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
+	ortho.o pcSectionManager.o fftCache.o stateSlab.o rhoSlab.o eesCache.o \
 	groups.o MapTable.o PeList.o para_grp_parse.o MapFile.o \
 	InstanceController.o CP_LargeSP_RhoGSpacePlane.o CP_LargeSP_RhoRealSpacePlane.o
 
@@ -338,12 +338,16 @@ MapTable.o: $(LOADB)/MapTable.C $(LOADB)/MapTable.h $(TOPINC)/debug_flags.h\
 	$(ECHO) $@
 	$(CHARMC) -c $(LOADB)/MapTable.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
-ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/ortho.decl.h \
+ortho.o: $(ORTHO)/ortho.C $(ORTHO)/ortho.h $(MAIN)/ortho.decl.h $(ORTHO)/pcSectionManager.h \
 	$(TOPINC)/debug_flags.h $(TOPINC)/RunDescriptor.h \
 	$(PHYSICS)/include/class_defs/CP_OPERATIONS/class_cporthog.h \
 	$(TOPINC)/CPcharmParaInfo.h 
 	$(ECHO) $@
 	$(CHARMC) -c $(ORTHO)/ortho.C $(OPTS) $(FLAGS)
+#---------------------------------------------------------------------------
+pcSectionManager.o: $(ORTHO)/pcSectionManager.C $(ORTHO)/pcSectionManager.h $(PAIRCALC)/pairCalculator.h 
+	$(ECHO) $@
+	$(CHARMC) -c $(ORTHO)/pcSectionManager.C $(OPTS) $(FLAGS)
 #---------------------------------------------------------------------------
 StructureFactor.o: $(STRUCTFACT)/StructureFactor.h \
 	$(STRUCTFACT)/StructureFactor.C $(STRUCTFACT)/StructFactorCache.h \

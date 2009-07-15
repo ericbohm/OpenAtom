@@ -86,11 +86,13 @@
  *  nstates.
  ******************************************************************************/
 
+#include "debug_flags.h"
 #include "ortho.decl.h"
-#include "paircalc/pairCalculator.h" 
+#include "pcSectionManager.h"
 #include "uber/Uber.h"
-#include "CLA_Matrix.h"
-#include "cpaimd.h"
+#include "main/CLA_Matrix.h"
+#include "main/cpaimd.h"
+using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
 #define _ortho_h_
@@ -134,9 +136,6 @@ class Ortho : public CBase_Ortho{
 
   void sendOrthoTtoAsymm();
 
-  // get our copy of the pcproxy
-  void setPCproxy(CProxySection_PairCalculator inproxy);
-
   // catch lambda for later non_minimization use
   void acceptSectionLambda(CkReductionMsg *msg); 
 
@@ -162,7 +161,7 @@ class Ortho : public CBase_Ortho{
     do_iteration();
   }
 
-  void makeSections(int indexSize, int *indexZ);
+  void makeSections();
 
   void print_results(void){
     char outname[80];
@@ -246,7 +245,7 @@ class Ortho : public CBase_Ortho{
    CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
    CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
    CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, 
-	int timeKeep, UberCollection );
+	int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
   void tolerance_check(void);
   void step_2();
@@ -298,8 +297,12 @@ class Ortho : public CBase_Ortho{
   int num_ready;
   bool got_start;
   int lbcaught;
-  PairCalcID oPairCalcID1;
-  PairCalcID oPairCalcID2;
+    /// Section of symmetric PC chare array used by an Ortho chare
+    PCSectionManager symmSectionMgr;
+    /// Section of asymmetric PC chare array used by an Ortho chare
+    PCSectionManager asymmSectionMgr;
+    /// Group IDs for the multicast manager groups
+    CkGroupID oMCastGID, oRedGID;
   bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
   double *A, *B, *C, *tmp_arr;
   int step;

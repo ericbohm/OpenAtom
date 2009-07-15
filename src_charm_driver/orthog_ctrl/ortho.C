@@ -41,7 +41,6 @@
  */
 //============================================================================
 
-#include "debug_flags.h"
 #include "ortho.h"
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
@@ -50,6 +49,8 @@
 #include "groups.h"
 #include "fftCacheSlab.h"
 #include <unistd.h>
+#include "paircalc/pairCalculator.h" ///< Just for the global PairCalcIDs used to init SectionMgrs
+
 #include "../../src_mathlib/mathlib.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
@@ -164,19 +165,8 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
   step = 0;
   iterations = 0;
-  int s1=thisIndex.x * config.orthoGrainSize;
-  int s2=thisIndex.y * config.orthoGrainSize;
-  int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-  if(config.orthoGrainSize!=config.sGrainSize)
-    {
-      // do something clever
-      s1=s1/config.sGrainSize*config.sGrainSize;
-      s2=s2/config.sGrainSize*config.sGrainSize;
-      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-
-    }
-  if(s1 < s2)   
+  CkIndex2D pc = symmSectionMgr.computePCStateIndices();
+  if(pc.x < pc.y)   
     {
       //we get the reduction and //we have a spare to copy to  
       //make a copy
@@ -203,11 +193,11 @@ void Ortho::start_calc(CkReductionMsg *msg){
       thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
 
     }
-  else if(s2 < s1)
+  else if(pc.y < pc.x)
     { //we get a transposed copy be happy
       
     }
-  else if((s1==s2) && (thisIndex.x > thisIndex.y))
+  else if((pc.x==pc.y) && (thisIndex.x > thisIndex.y))
     { //we are a spare, got our matrix direct from Scalc 
 
     }
@@ -357,20 +347,9 @@ void Ortho::resume(){
 	  { orthoT = new double[m * n];}
 	CmiMemcpy(orthoT,A,m*n*sizeof(double));
       }
-    int s1=thisIndex.x * config.orthoGrainSize;
-    int s2=thisIndex.y * config.orthoGrainSize;
-    int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-
-    if(config.orthoGrainSize!=config.sGrainSize)
-      {
-	// do something clever
-	s1=s1/config.sGrainSize*config.sGrainSize;
-	s2=s2/config.sGrainSize*config.sGrainSize;
-	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-	s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-      }
+    CkIndex2D pc = symmSectionMgr.computePCStateIndices();
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
-    //    if((s2 < s1) || ((s2==s1)&&()))   //we have the answer scalc wants
+    //    if((pc.y < pc.x) || ((pc.y==pc.x)&&()))   //we have the answer scalc wants
 #ifdef _CP_ORTHO_DUMP_TMAT_
     dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
 #endif
@@ -393,10 +372,16 @@ void Ortho::resume(){
     }
 #endif
 
-    if(s1 == s2)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType,  0);
+    /**
+     * orthos talking to non-phantoms in the symm pc instance will have to perform an extra transpose of their data.
+     * Hence, they do this only when they have to. We avoid this when phantoms are turned off by rigging the pc
+     * sections to make the mirror orthos deliver the data to our non-phantoms. 
+     * Refer PCSectionManager::setupArraySection for more info.
+     */
+    if(pc.x == pc.y)   //we have the answer scalc wants
+      symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
-      finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.y, thisIndex.x, actionType, 0);
+      symmSectionMgr.sendResults(m*n, A, 0, thisIndex.y, thisIndex.x, actionType, 0);
     else if(thisIndex.y > thisIndex.x && config.phantomSym)
       {
 	transpose(A,m,n);
@@ -410,7 +395,7 @@ void Ortho::resume(){
 	  }
 	*/
 	// we have a transposed copy of what scalc wants
-	finishPairCalcSection(m * n, A, &oPairCalcID1, thisIndex.x, thisIndex.y, actionType, 0);
+    symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
 #ifdef _CP_ORTHO_DUMP_TMAT_
 	dumpMatrixDouble("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
 
@@ -444,7 +429,7 @@ void Ortho::sendOrthoTtoAsymm(){
 //============================================================================
   int actionType=0; //normal
   //  CkPrintf("[%d,%d] sending orthoT\n",thisIndex.x,thisIndex.y);
-  sendMatrix(m * n, orthoT, &oPairCalcID2, thisIndex.x, thisIndex.y,0,oPairCalcID2.priority-1 );
+  asymmSectionMgr.sendMatrix(m*n, orthoT, 0, thisIndex.x, thisIndex.y, actionType, asymmSectionMgr.msgPriority-1);
 
 }
 //============================================================================
@@ -574,7 +559,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 #endif
 
       // finish pair calc
-      finishPairCalcSection(lambdaCount, lambda, &oPairCalcID2, thisIndex.x, thisIndex.y, 0, oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
 #ifdef _CP_DEBUG_ORTHO_VERBOSE_
       if(thisIndex.x==0 && thisIndex.y==0)
 	CkPrintf("[%d,%d] finishing asymm\n",thisIndex.x, thisIndex.y);
@@ -590,92 +575,58 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::makeSections(int indexSize, int *indexZ){
-  // this readonly should be ok by now
-  oPairCalcID1=UpairCalcID1[thisInstance.proxyOffset];
-  oPairCalcID2=UpairCalcID2[thisInstance.proxyOffset];
-  if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
+void Ortho::makeSections()
+{
+    /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
+     * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
+     * migration support). Hence, to avoid this anti-scaling overhead, we delegate array collectives to comlib / CkMulticast
+     * by building a section that includes all chare elements! :)
+     *
+     * The (0,0) Ortho chare sets up these sections and delegates them
+     */
+    if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
     {
-      int numOrtho=config.nstates/config.orthoGrainSize;
-      multiproxy = 
-      CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(),  
-				 0, numOrtho-1,1,
-				 0, numOrtho-1, 1);
-
-      if(config.useOrthoSectionRed)
-	{
-	  CProxySection_Ortho rproxy =   multiproxy;
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthoRedGrpId).ckLocalBranch();               
-	  rproxy.ckSectionDelegate(mcastGrp);
-	  initCookieMsg *redMsg=new initCookieMsg;
-	  rproxy.orthoCookieinit(redMsg);
-
-	}
-      if(config.useOrthoSection)
-	{
-	  if( config.useCommlib && config.useOrthoDirect)
-	    {
-	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
-	    }
-	  else
-	    {
-	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
-	      multiproxy.ckSectionDelegate(mcastGrp);
-	    }
-	}
-  }
-
-
-  int s1=thisIndex.x * config.orthoGrainSize;
-  int s2=thisIndex.y * config.orthoGrainSize;
-  int maxpcstateindex=(config.nstates/config.sGrainSize-1)*config.sGrainSize;
-  if(config.orthoGrainSize!=config.sGrainSize)
-    {
-      // do something clever
-      s1=s1/config.sGrainSize*config.sGrainSize;
-      s2=s2/config.sGrainSize*config.sGrainSize;
-      s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
-      s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-    }
-  
-  // m and n are orthograinsize which must be <=config.sGrainSize
-  // thisIndex.x and thisIndex.y range from 0 to
-  // nstates/config.orthoGrainSize
-  //  if(thisIndex.x==0 && thisIndex.y==0)
-  //  CkCallback
-  // doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy);
-  CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-  //  CkPrintf("{%d} O [%d,%d] will callback to controller %d\n",thisInstance.proxyOffset,thisIndex.x,thisIndex.y, thisInstance.proxyOffset);
-  if(s1 <= s2)   //we get the reduction
-    {  
-      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false,false,false);
-      if(config.phantomSym)
-	{
-	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, true, true, config.useOrthoDirect);
-	}
-      else
-	{
-	  if(s1!=s2)
-	    thisProxy(thisIndex.y,thisIndex.x).setPCproxy(oPairCalcID1.proxySym);
-	  initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	       doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
-	}
-    }
-  else if(config.phantomSym)
-    {  // we are not phantoms
-      initOneRedSect(indexSize, indexZ, config.numChunksSym, &oPairCalcID1,  CkCallback(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y)), doneInitCB,s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true,config.useOrthoDirect);
-    }
-  if(config.lambdaGrainSize==config.orthoGrainSize)
-    { //no point in having a different chare if you won't have more of them
-
-      // in the != case this will happen in the lambda chare
-      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)), 	   doneInitCB ,s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, false, false);
-      //everybody sends in lambda
-      initOneRedSect(indexSize, indexZ, config.numChunksAsym, &oPairCalcID2, CkCallback(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y)) , 	    doneInitCB, s1, s2, thisIndex.x, thisIndex.y, config.orthoGrainSize, false, true, config.useOrthoDirect);
+        /// Create an array section that includes the whole Ortho chare array
+        int numOrtho=config.nstates/config.orthoGrainSize;
+        multiproxy = CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(), 0, numOrtho-1,1, 0, numOrtho-1, 1);
+        /// If reductions are being delegated to a comm library
+        if(config.useOrthoSectionRed)
+        {
+            CProxySection_Ortho rproxy =   multiproxy;
+            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthoRedGrpID).ckLocalBranch();
+            rproxy.ckSectionDelegate(mcastGrp);
+            initCookieMsg *redMsg=new initCookieMsg;
+            /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
+            rproxy.orthoCookieinit(redMsg);
+        }
+        /// If multicasts are being delegated to a comm library
+        if(config.useOrthoSection)
+        {
+            /// Use the appropriate library for multicasts
+            if( config.useCommlib && config.useOrthoDirect)
+                ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+            else
+            {
+                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch(); 
+                multiproxy.ckSectionDelegate(mcastGrp);
+            }
+        }
     }
 
-//----------------------------------------------------------------------------
-  }// end routine
-//==============================================================================
+    // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
+    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    
+    /// Setup appropriate callbacks
+    CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+    CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));	
+    CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
+
+    /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
+    symmSectionMgr.setupArraySection(orthoCB,doneInitCB,config.phantomSym,config.useOrthoDirect);
+    /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
+    asymmSectionMgr.setupArraySection(orthoLambdaCB, doneInitCB, config.phantomSym, config.useOrthoDirect);
+}
 
 
 //============================================================================
@@ -714,11 +665,11 @@ void Ortho::gamma_done(){
   if(config.PCCollectTiles)
     {
       // if not streaming we might as well just lockstep these
-      finishPairCalcSection2(m * n, B, ortho, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(m*n, B, ortho, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
     }
   else // orthoT was already sent ahead for processing
     {
-      finishPairCalcSection(m * n, B, &oPairCalcID2,thisIndex.x, thisIndex.y, 0,  oPairCalcID2.priority+1);
+      asymmSectionMgr.sendResults(m*n, B, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
     }
 
 //----------------------------------------------------------------------------
@@ -757,8 +708,11 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matB1, CLA_Matrix_interface _matC1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
-	     CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
-	     int timekeep, UberCollection _instance) : thisInstance(_instance){
+ CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
+ int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
+    thisInstance(_instance), 
+    oMCastGID(_oMCastGID), oRedGID(_oRedGID)
+{
 
 //============================================================================
 /* do basic initialization */
@@ -988,7 +942,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
     {
       CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();               
       mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
     }
   else
@@ -1015,8 +969,6 @@ void Ortho::pup(PUP::er &p){
     p | lbcaught;
     p | orthoCookie;
     p | toleranceCheckOrthoT;
-    p | oPairCalcID1;    
-    p | oPairCalcID2;
     p | step2done;
     p | step3done;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
@@ -1049,13 +1001,6 @@ void OrthoHelper::sendMatrix()
   if(trigger!=NULL)
     delete trigger;
   UorthoProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).recvStep2(C, m*n);
-}
-
-
-// highly questionable that this is safe
-void Ortho::setPCproxy(CProxySection_PairCalculator inproxy)
-{
-  oPairCalcID1.proxySym=inproxy;
 }
 
 #include "ortho.def.h"

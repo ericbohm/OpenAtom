@@ -712,9 +712,9 @@ class RhoRHartMap : public CkArrayMapTable3 {
  */
 //============================================================================
 class size2d; //forward decl to shup the compiler
-void init_pair_calculators(int nstates, int indexSize, int *indexZ, int doublePack, 
+void init_pair_calculators(int nstates, int doublePack, 
                            CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance);
-void init_ortho_chares(int, int, int *, UberCollection thisInstance);
+void init_ortho_chares(int nstates, UberCollection thisInstance);
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);

@@ -45,14 +45,8 @@ class PairCalcID
 		bool existsRproxy;
 
 		CkVec <CkGroupID> mCastGrpId;
-		CkGroupID orthomCastGrpId;
-		CkGroupID orthoRedGrpId;
 		int priority;
 
-		/// Section of symmetric PC chare array used by an Ortho chare
-		CProxySection_PairCalculator proxySym;
-		/// Section of asymmetric PC chare array used by an Ortho chare
-		CProxySection_PairCalculator proxyAsym;
 
 		/** Array section which receives left matrix block data from the owner of this object (a Gspace chare)
 		 * Symmetric loop : Includes the post-diagonal chares on row 's' that get data from this GSpace[s,p] chare
@@ -163,8 +157,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
   existsRproxy=pid.existsRproxy;
   priority=pid.priority;
   mCastGrpId=pid.mCastGrpId;
-  orthomCastGrpId=pid.orthomCastGrpId;
-  orthoRedGrpId=pid.orthoRedGrpId;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
     backwardTimerID=pid.backwardTimerID;
@@ -193,8 +185,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
     p|existsLproxy;
     p|existsRproxy;
     p|mCastGrpId;
-    p|orthomCastGrpId;
-    p|orthoRedGrpId;
     p|priority;
 #ifdef _CP_SUBSTEP_TIMING_
     p|forwardTimerID;
@@ -228,7 +218,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 };
 
 /// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, int* z,  CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, CkGroupID orthomcastgrpid, CkGroupID orthoredgrpid, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
+void createPairCalculator(bool sym, int w, int grainSize, int numZ, CkCallback cb, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
 
 
 /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section 
@@ -262,15 +252,6 @@ struct RDMApair_GSP_PC;
 void sendLeftRDMARequest (PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
 /// Send out RDMA setup requests to all the destination PC chares that will be getting right data 
 void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
-//@{
-/// Triggers the backward path
-extern "C" void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-extern "C" void finishPairCalcSection2( int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-//@}
-/// Via point for Ortho chares to send T to Lambda path PCs. This calls PairCalculator::acceptOrthoT()
-extern "C" void sendMatrix( int n, double *ptr1, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority);
-/// Initializes the section of PCs that will talk to the calling Ortho chare (reductions/broadcasts)
-void initOneRedSect( int numZ, int* z, int blkSize,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int o1, int o2, int ograin, bool phantom, bool direct, bool commlib);
 /// 
 void isAtSyncPairCalc(PairCalcID* pcid);
 
@@ -288,7 +269,6 @@ CProxySection_PairCalculator makeOneResultSection_sym1(PairCalcID* pcid, int sta
 CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk);
 //@}
 
-void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY);
 void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
 //@{

@@ -69,13 +69,12 @@ extern ComlibInstanceHandle gSymInstance;
 
 
 
-void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
+void createPairCalculator(bool sym, int s, int grainSize, int numZ, 
 			  CkCallback cb,  PairCalcID* pcid, int cb_ep,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc,
 			  int priority, CkVec <CkGroupID> mCastGrpId,
-			  CkGroupID orthomCastGrpId, CkGroupID orthoRedGrpId,
 			  int numChunks, int orthoGrainSize, bool collectTiles,
 			  bool streamBWout, bool delayBWSend, int streamFW,
 			  bool useDirectSend, bool gSpaceSum, int gpriority,
@@ -129,8 +128,6 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   int proc = 0;
   // Initialize the PairCalcID instance
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useDirectSend);
-  pcid->orthomCastGrpId=orthomCastGrpId;
-  pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->mCastGrpId=mCastGrpId;
   
   // Setup the appropriate multicast strategy
@@ -164,17 +161,17 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 				if(mapid) 
 				{
 					#ifdef DEBUG_CP_PAIRCALC_CREATION
-						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
+						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 					#endif
-					pairCalculatorProxy(z[numX],s1,s2,c).
+					pairCalculatorProxy(numX,s1,s2,c).
 						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
 				}
 				else
 				{
 					#ifdef DEBUG_CP_PAIRCALC_CREATION
-						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",z[numX],s1,s2,c,sym,proc);
+						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,sym,proc);
 					#endif
-					pairCalculatorProxy(z[numX],s1,s2,c).
+					pairCalculatorProxy(numX,s1,s2,c).
 						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
 					proc++;
 					if (proc >= CkNumPes()) proc = 0;
@@ -197,17 +194,17 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
 					if(mapid)
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
-							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",z[numX],s1,s2,c,sym);
+							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 						#endif
-						pairCalculatorProxy(z[numX],s1,s2,c).
+						pairCalculatorProxy(numX,s1,s2,c).
 						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
 					}
 					else
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
-							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",z[numX],s1,s2,c,sym,proc);
+							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,sym,proc);
 						#endif
-						pairCalculatorProxy(z[numX],s1,s2,c).
+						pairCalculatorProxy(numX,s1,s2,c).
 							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
 						proc++;
 						if (proc >= CkNumPes()) proc = 0;
@@ -368,114 +365,6 @@ CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int sta
   return sectProxy;
 }
 
-/**
- * initialize the planewise section reduction for Ortho sums across
- * all planes and chunks pass through the orthoX and orthoY so the
- * cookie can be placed in the 2d array
- * (grainSize/orthoGrainSize)^2
- */
-void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallback cb, CkCallback synccb, int s1, int s2, int orthoX, int orthoY, int orthoGrainSize, bool phantom, bool direct, bool commlib)
-
-{
-  int ecount=0;
-  //  CkPrintf("initOneRedSect for s1 %d s2 %d ortho %d %d sym %d planes %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numZ);
-  CkArrayIndex4D *elems=new CkArrayIndex4D[numZ*numChunks*2];
-  //add chunk loop
-  for(int chunk = numChunks-1; chunk >=0; chunk--){
-    for(int numX = numZ-1; numX >=0; numX--){
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("initOneRedSect for s1 %d s2 %d ortho %d %d sym %d plane %d\n",s1,s2,orthoX, orthoY,pcid->Symmetric, numX);
-#endif
-      if(phantom && s1!=s2)
-	{
-	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
-	  elems[ecount++]=idx4d;
-	}
-      else
-	{
-	  CkArrayIndex4D idx4d(z[numX],s1,s2,chunk);
-	  elems[ecount++]=idx4d;
-	  //	  CkPrintf("O [%d,%d] initGred section includes %d %d %d %d sym %d\n",orthoX, orthoY,z[numX],s1,s2,chunk,pcid->Symmetric);
-	}
-    }
-  }
-  int numOrthoCol=pcid->GrainSize/orthoGrainSize;
-  int maxorthostateindex=(pcid->nstates/orthoGrainSize-1)*orthoGrainSize;
-  int orthoIndexX=(orthoX*orthoGrainSize);
-
-  orthoIndexX= (orthoIndexX>maxorthostateindex) ? maxorthostateindex : orthoIndexX;
-  int orthoIndexY=(orthoY*orthoGrainSize);
-  orthoIndexY= (orthoIndexY>maxorthostateindex) ? maxorthostateindex : orthoIndexY;
-  orthoIndexX-=s1;
-  orthoIndexY-=s2;
-  int orthoIndex=orthoIndexX*numOrthoCol+orthoIndexY;
-
-  int newListStart=orthoIndex;
-  if(newListStart> ecount)
-    newListStart= newListStart % ecount;
-  bool order=reorder_elem_list_4D( elems, ecount, newListStart);
-  CkAssert(order);
-  // now that we have the section, make the proxy
-  CProxySection_PairCalculator sProxy=CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount);
-  CProxySection_PairCalculator *sectProxy=&sProxy;
-  delete [] elems;
-
-  // and do delegation
-  if(pcid->Symmetric)
-    {
-      pcid->proxySym = sProxy;
-    }
-  else
-    {
-      pcid->proxyAsym = sProxy;
-    }
-  if(!phantom && !direct) // only delegating nonphantom mcast proxy for reduction
-    {
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthoRedGrpId).ckLocalBranch();
-      sectProxy->ckSectionDelegate(mcastGrp);
-      // send the message to initialize it with the callback and groupid
-      setGredProxy(sectProxy, pcid->orthoRedGrpId, cb, false, synccb, orthoX, orthoY);
-    }
-  else
-    {
-      if(commlib)
-	{
-	  CkPrintf("NOTE: Rectangular Send In USE\n");
-	  if(pcid->Symmetric)
-	    ComlibAssociateProxy(&mcastInstanceCP,*sectProxy);
-	  else
-	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
- /*
-	  if(!pcid->Symmetric)
-	    ComlibAssociateProxy(&mcastInstanceACP,*sectProxy);
-	  */
-	}
-      else
-	{
-	  //CkPrintf("PC: proxy without commlib\n");
-	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();
-	  sectProxy->ckSectionDelegate(mcastGrp);
-
-	}
-    }
-
-  //  return *sectProxy;
-}
-
-/**
- * send the multcast message to initialize the ortho section tree and set the cookie
- */
-void setGredProxy(CProxySection_PairCalculator *sectProxy, CkGroupID mCastGrpId, CkCallback cb, bool lbsync, CkCallback synccb, int orthoX, int orthoY)
-{
-  initGRedMsg *gredMsg=new initGRedMsg;
-  gredMsg->cb=cb;
-  gredMsg->mCastGrpId=mCastGrpId;
-  gredMsg->lbsync=lbsync;
-  gredMsg->synccb=synccb;
-  gredMsg->orthoX=orthoX;
-  gredMsg->orthoY=orthoY;
-  sectProxy->initGRed(gredMsg);
-}
 
 /**
  * send the multcast message to initialize the section tree and set the cookie
@@ -1074,109 +963,6 @@ void isAtSyncPairCalc(PairCalcID* pcid){
 }
 
 
-
-void finishPairCalcSection(int n, double *ptr, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-  finishPairCalcSection2(n, ptr, NULL, pcid, orthoX, orthoY, actionType, priority);
-}
-
-
-/* This version uses a section multicast to only send the part of the matrix needed by each section */
-void finishPairCalcSection2(int n, double *ptr1, double *ptr2, PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc Finish Mcast 2\n");
-#endif
-  //NOTE need some configuration adherence check here!
-  /*
-  if(pcid->Symmetric)
-    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxySym);
-  else
-    ComlibAssociateProxy(&mcastInstanceACP,pcid->proxyAsym);
-  */
-
-  if(ptr2==NULL){
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	if(pcid->Symmetric)  // just so we can discern in the abort
-	  CkAssert(finite(ptr1[i]));
-	else
-	  CkAssert(finite(ptr1[i]));
-      }
-#endif
-
-    multiplyResultMsg *omsg;
-
-    if(priority>0)
-      {
-	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,0 ) multiplyResultMsg;
-      }
-    omsg->init1(n, ptr1, orthoX, orthoY, actionType);
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	CkAssert(finite(omsg->matrix1[i]));
-      }
-#endif
-    if(pcid->Symmetric)
-      pcid->proxySym.multiplyResult(omsg);
-    else
-      pcid->proxyAsym.multiplyResult(omsg);
-  }
-  else {
-    multiplyResultMsg *omsg;
-    if(priority>0)
-      {
-	omsg=new ( n,n, 8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,n ) multiplyResultMsg;
-      }
-    omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
-  if(pcid->Symmetric)
-    pcid->proxySym.multiplyResult(omsg);
-  else
-    pcid->proxyAsym.multiplyResult(omsg);
-  }
-}
-
-
-/* Send orthoT now that we have it so it will be ready when Asymm
-   starts this iteration.  */
-void sendMatrix(int n, double *ptr1,PairCalcID *pcid, int orthoX, int orthoY, int actionType, int priority) {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     Calc SendMatrix (orthoT)\n");
-#endif
-
-    multiplyResultMsg *omsg;
-
-    if(priority>0)
-      {
-	omsg=new ( n,0,8*sizeof(int) ) multiplyResultMsg;
-	*(int*)CkPriorityPtr(omsg) = priority;
-	CkSetQueueing(omsg, CK_QUEUEING_IFIFO);
-      }
-    else
-      {
-	omsg=new ( n,0 ) multiplyResultMsg;
-      }
-    omsg->init1(n, ptr1, orthoX, orthoY, actionType);
-#ifdef _NAN_CHECK_
-    for(int i=0;i<n ;i++)
-      {
-	CkAssert(finite(omsg->matrix1[i]));
-      }
-#endif
-    pcid->proxyAsym.acceptOrthoT(omsg);
-}
 
 
 #ifdef ROTATE_LIST

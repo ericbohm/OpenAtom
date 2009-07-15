@@ -109,7 +109,6 @@ namespace pc = cp::paircalc;
 class paircalcInputMsg;
 /// Typedefs for the collator types
 typedef pc::MessageDataCollator<paircalcInputMsg,double> CollatorType;
-class CProxy_PairCalculator;  ///< Forward declaration to satisfy the CProxy_InputDataHandler declaration which will get included via ckPC.decl.h
 struct RDMApair_GSP_PC;
 #include "ckPairCalculator.decl.h"
 
