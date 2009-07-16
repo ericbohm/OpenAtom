@@ -2,7 +2,7 @@
 #include "gSpaceDriver.decl.h"
 #include "structureFactor.decl.h"
 #include "RTH.h"
-#include "CPcharmParaInfoGrp.h"
+#include "main/CPcharmParaInfoGrp.h"
 #include "charm++.h"
 #include "uber/Uber.h"
 

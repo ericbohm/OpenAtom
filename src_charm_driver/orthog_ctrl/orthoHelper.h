@@ -33,7 +33,7 @@
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
 
-#include "CLA_Matrix.h"
+#include "main/CLA_Matrix.h"
 
 extern CkVec <MapType2> OrthoHelperImaptable;
 extern CkHashtableT <intdual, int> OrthoHelpermaptable;

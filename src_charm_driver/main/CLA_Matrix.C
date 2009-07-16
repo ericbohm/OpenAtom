@@ -32,9 +32,9 @@ extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 #define MULTARG_B	1
 #define MULTARG_C	2
 extern CkReduction::reducerType sumFastDoubleType;
-#include "cpaimd.h"
-#include "MapTable.h"
-#include "ortho.h"
+#include "main/cpaimd.h"
+#include "load_balance/MapTable.h"
+#include "orthog_ctrl/ortho.h"
 extern CProxy_OrthoMap orthoMap;
 
 /******************************************************************************/

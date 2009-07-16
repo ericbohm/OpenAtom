@@ -11,7 +11,7 @@
 
 #include "charm++.h"
 #include "PeList.h"
-#include "MapFile.h"
+#include "utility/MapFile.h"
 
 #define USE_INT_MAP
 #ifdef USE_INT_MAP

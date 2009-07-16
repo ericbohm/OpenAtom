@@ -10,7 +10,7 @@
 #ifndef _eesCache_h_
 #define _eesCache_h_
 
-#include "../../include/eesDataClass.h"
+#include "eesDataClass.h"
 
 //============================================================================
 // Group Container class : Only allowed chare data classes have data.

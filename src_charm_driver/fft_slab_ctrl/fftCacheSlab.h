@@ -12,10 +12,10 @@
 #ifndef _fftcacheslab_h_
 #define _fftcacheslab_h_
 
-#include "../../include/RunDescriptor.h"
+#include "RunDescriptor.h"
 
 #ifdef _CP_USE_BLAS_GATHER_
-include "../../src_mathlib/mathlib.h"
+include "src_mathlib/mathlib.h"
 #endif
 
 //==============================================================================

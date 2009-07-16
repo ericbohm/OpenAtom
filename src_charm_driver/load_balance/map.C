@@ -31,10 +31,10 @@
 #include "charm++.h"
 #include "ckarray.h"
 #include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
-#include "CP_State_Plane.h"
+#include "main/cpaimd.h"
+#include "main/groups.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "cp_state_plane/CP_State_Plane.h"
 
 //============================================================================
 

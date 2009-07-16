@@ -8,8 +8,8 @@
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructureFactor.h"
 #include "StructFactorCache.h"
-#include "CPcharmParaInfoGrp.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "main/CPcharmParaInfoGrp.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 
 //==============================================================================
 

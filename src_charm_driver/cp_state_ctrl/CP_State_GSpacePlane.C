@@ -54,13 +54,13 @@
 #include "main/TimeKeeper.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "structure_factor/StructFactorCache.h"
-#include "CPcharmParaInfoGrp.h"
+#include "main/CPcharmParaInfoGrp.h"
 #include "main/cpaimd.h"
 
 #ifdef PC_USE_RDMA
     #define ENABLE_RDMA_HANDSHAKES
 #endif
-#include "RDMAMessages.h"
+#include "paircalc/RDMAMessages.h"
 
 #include "charm++.h"
 

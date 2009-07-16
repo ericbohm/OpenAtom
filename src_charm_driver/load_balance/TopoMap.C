@@ -16,8 +16,8 @@
  */
 
 #include "charm++.h"
-#include "cpaimd.h"
-#include "util.h"
+#include "main/cpaimd.h"
+#include "utility/util.h"
 #include "PeList.h"
 
 

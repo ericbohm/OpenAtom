@@ -21,16 +21,16 @@
 #include <fstream.h>
 #include <math.h>
 
-#include "../../include/debug_flags.h"
-#include "util.h"
-#include "cpaimd.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
-#include "eesCache.h"
-#include "CP_State_Plane.h"
+#include "debug_flags.h"
+#include "utility/util.h"
+#include "main/cpaimd.h"
+#include "main/groups.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "main/eesCache.h"
+#include "cp_state_ctrl/CP_State_Plane.h"
 
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
 //============================================================================
 

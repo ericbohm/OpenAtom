@@ -31,3 +31,4 @@ class StructFactorMsg: public CkMcastBaseMsg, public CMessage_StructFactorMsg {
 };
 
 #endif // STRUCTURE_FACTOR_MESSAGES_H
+

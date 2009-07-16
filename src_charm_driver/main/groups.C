@@ -15,10 +15,10 @@
 
 //----------------------------------------------------------------------------
 #define CHARM_ON
-#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomoutput.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
+#include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#include "src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
+#include "src_piny_physics_v1.0/include/class_defs/ATOM_OPERATIONS/class_atomoutput.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
 
 //----------------------------------------------------------------------------
 

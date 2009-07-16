@@ -27,10 +27,8 @@ SRC_COMPILE	= ../compile
 
 #===========================================================================
 FLAGS	= \
-	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) \
-	-I$(MAIN) -I$(STATE) -I$(RHO) -I$(ORTHO) -I$(UTIL) -I$(MATH) \
-	-I$(LOADB) -I$(FFTSLAB) -I$(STRUCTFACT) -I$(TOPINC) -I$(UBER) \
-        -I$(PAIRCALC) -I$(SRC_COMPILE) -I../$(STANDARD_INC) -I$(LARGE)
+	-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib -I$(HEAD) -I$(HEAD)/.. \
+	-I$(MATH) -I$(TOPINC) -I$(SRC_COMPILE) -I../$(STANDARD_INC) 
 
 LIB	= -L$(LOCAL_LIB_PATH) -L$(FFT_HOME)/lib -module commlib \
 	-lm $(LOCAL_LIB) 

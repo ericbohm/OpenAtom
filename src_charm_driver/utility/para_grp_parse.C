@@ -10,7 +10,7 @@
 #include "ckcomplex.h"
 
 #include "para_grp_parse.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

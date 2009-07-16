@@ -9,7 +9,7 @@
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructFactorCache.h"
 #include "gParticlePlane.decl.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 extern CkVec <CProxy_CP_State_ParticlePlane> UparticlePlaneProxy;
 extern Config config;
 

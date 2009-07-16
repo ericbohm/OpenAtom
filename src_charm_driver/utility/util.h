@@ -29,7 +29,7 @@ class CPcharmParaInfo; //forward decl
 #include <rfftw.h>
 #endif
 #include <charm++.h>
-#include <pairutil.h>
+#include <paircalc/pairutil.h>
 
 #define CAREFUL 1
 

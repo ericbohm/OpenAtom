@@ -291,7 +291,7 @@ void GSpaceDriver::startNonLocalEes(int iteration_loc)
 
 
 
-#include "StructureFactorMessages.h"
+#include "structure_factor/StructureFactorMessages.h"
 
 void GSpaceDriver::releaseSFComputeZ()
 {

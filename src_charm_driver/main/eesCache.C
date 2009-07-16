@@ -12,16 +12,16 @@
 
 //==============================================================================
 #include "charm++.h"
-#include "util.h"
+#include "utility/util.h"
 #include "cpaimd.h"
 #include "groups.h"
 #include "eesCache.h"
 #include <math.h>
-#include "fftCacheSlab.h"
-#include "CP_State_Plane.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpintegrate.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "cp_state_ctrl/CP_State_Plane.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpintegrate.h"
 
 
 //----------------------------------------------------------------------------

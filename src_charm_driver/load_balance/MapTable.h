@@ -20,7 +20,7 @@
 //@{
 #ifndef _MAPTABLE_H_
 #define _MAPTABLE_H_
-#include "../../include/debug_flags.h"
+#include "debug_flags.h"
 
 class inttriple {
  private:

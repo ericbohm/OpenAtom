@@ -7,15 +7,15 @@
 //===================================================================================
 
 #define CHARM_ON
-#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #include "util.h"
 #include "para_grp_parse.h"
-#include "CPcharmParaInfoGrp.h"
-#include "../../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
-#include "../../src_mathlib/mathlib.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
-#include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include "main/CPcharmParaInfoGrp.h"
+#include "src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
+#include "src_mathlib/mathlib.h"
+#include "src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
+#include "src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
+#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 extern Config config;
 extern int sizeX;
 #if CMK_PROJECTIONS_USE_ZLIB
@@ -37,8 +37,8 @@ void make_rho_runs(CPcharmParaInfo *sim){
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP *cp                     = CP::get();
 
-#include "../class_defs/allclass_strip_gen.h"
-#include "../class_defs/allclass_strip_cp.h"
+#include "src_piny_physics_v1.0/include/class_defs/allclass_strip_gen.h"
+#include "src_piny_physics_v1.0/include/class_defs/allclass_strip_cp.h"
 
 //===================================================================================
 // set up the rho kvectors

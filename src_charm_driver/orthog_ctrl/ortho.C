@@ -45,15 +45,15 @@
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
 #include "charm++.h"
-#include "util.h"
-#include "groups.h"
-#include "fftCacheSlab.h"
+#include "utility/util.h"
+#include "main/groups.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
 #include "paircalc/pairCalculator.h" ///< Just for the global PairCalcIDs used to init SectionMgrs
 
-#include "../../src_mathlib/mathlib.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#include "src_mathlib/mathlib.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
+#include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #define PRINTF CkPrintf
 
 //============================================================================

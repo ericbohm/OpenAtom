@@ -14,8 +14,8 @@
 #include "charm++.h"
 #include "debug_flags.h"
 #include "ckmulticast.h"
-#include "StructFactorCache.h"
-#include "StructureFactor.h"
+#include "structure_factor/StructFactorCache.h"
+#include "structure_factor/StructureFactor.h"
 #include "RTH.h"
 //#include "ckPairCalculator.h"
 void getSplitDecomp(int *,int *,int *,int , int ,int );

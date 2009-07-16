@@ -1,5 +1,5 @@
 #include "charm++.h"
-#include "util.h"
+#include "utility/util.h"
 #include "cpaimd.h"
 #include "groups.h"
 #include "InstanceController.h"

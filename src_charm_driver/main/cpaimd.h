@@ -19,7 +19,7 @@
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
-#include "PeList.h"
+#include "load_balance/PeList.h"
 
 #define OLD_COMMLIB 1
 #define USE_INT_MAP
@@ -34,7 +34,7 @@ class IntMap2
 
 typedef IntMap2 IntMap4;
 #else
-#include "IntMap.h"
+#include "load_balance/IntMap.h"
 typedef IntMap4 MapType4;
 typedef IntMap3 MapType3;
 class MapType2 : public IntMap2on2 {
@@ -50,7 +50,7 @@ PUPmarshall(MapType2);
 
 #endif
 
-#include "MapTable.h"
+#include "load_balance/MapTable.h"
 
 #ifdef CMK_BLUEGENEL
 //#include "builtins.h"

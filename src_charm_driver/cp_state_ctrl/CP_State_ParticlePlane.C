@@ -45,8 +45,8 @@
 
 #include "ckmulticast.h"
 #include "charm++.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 
 //=========================================================================
 extern CProxy_main                               mainProxy;
