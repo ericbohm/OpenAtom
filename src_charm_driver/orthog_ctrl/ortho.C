@@ -604,7 +604,11 @@ void Ortho::makeSections()
         {
             /// Use the appropriate library for multicasts
             if( config.useCommlib && config.useOrthoDirect)
-                ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+            {
+                #ifdef USE_COMLIB
+                    ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+                #endif
+            }
             else
             {
                 CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch(); 

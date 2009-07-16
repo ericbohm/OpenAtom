@@ -251,6 +251,8 @@ void CP_Rho_GSpacePlane::init()
     rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
     rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
     rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB 
     if(config.useGIns0RhoRP)
        ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
     if(config.useGIns1RhoRP)
@@ -261,6 +263,7 @@ void CP_Rho_GSpacePlane::init()
        ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
     if(config.useGByrdInsRhoRBP)
        ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
+#endif
 
 }
 
@@ -306,6 +309,8 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
       rhoRealProxy2_com = UrhoRealProxy[thisInstance.proxyOffset];
       rhoRealProxy3_com = UrhoRealProxy[thisInstance.proxyOffset];
       rhoRealProxyByrd_com = UrhoRealProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
       if(config.useGIns0RhoRP)
 	ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
       if(config.useGIns1RhoRP)
@@ -316,6 +321,8 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
 	ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
       if(config.useGByrdInsRhoRBP)
 	ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
+#endif
+
    }//endif
 
 //--------------------------------------------------------------------------
@@ -683,6 +690,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Do a Comlib Dance
 
+#ifdef USE_COMLIB
   if(rhoRsubplanes==1){
    switch(iopt){
 #ifdef OLD_COMMLIB
@@ -699,6 +707,8 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     default: CkAbort("impossible iopt"); break;
    }//end switc
   }//endif
+#endif
+
 
 //============================================================================
 // Send the message
@@ -756,6 +766,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Complete the commlib dance
 
+#ifdef USE_COMLIB
   if(rhoRsubplanes==1){    
    switch(iopt){
 #ifdef OLD_COMMLIB
@@ -772,6 +783,8 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     default: CkAbort("impossible iopt"); break;
    }//end switc
   }//endif
+
+#endif
 
 //---------------------------------------------------------------------------
    }//end routine
@@ -1152,6 +1165,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 //============================================================================
 void CP_Rho_GSpacePlane::ResumeFromSync(){
 
+#ifdef USE_COMLIB
   if (config.useGIns0RhoRP) 
     ComlibResetProxy(&rhoRealProxy0_com);
   if (config.useGIns1RhoRP) 
@@ -1162,6 +1176,7 @@ void CP_Rho_GSpacePlane::ResumeFromSync(){
     ComlibResetProxy(&rhoRealProxy3_com);
   if (config.useGByrdInsRhoRBP) 
     ComlibResetProxy(&rhoRealProxyByrd_com);
+#endif
 
 }
 //============================================================================

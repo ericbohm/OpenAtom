@@ -1,8 +1,10 @@
 #include "pcSectionManager.h"
 #include "paircalc/pairCalculator.h" ///< @note: Just for the definition of PairCalcID. Eliminate
 
+#ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle mcastInstanceACP;
+#endif
 
 namespace cp {
     namespace ortho {
@@ -170,11 +172,13 @@ void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool 
     /// Delegate the ortho --> pc section multicast to the appropriate library
     if(useComlibForOrthoToPC)
     {
-        CkPrintf("NOTE: Rectangular Send In USE\n");
-        if(isSymmetric)
-            ComlibAssociateProxy(&mcastInstanceCP,pcSection);
-        else
-            ComlibAssociateProxy(&mcastInstanceACP,pcSection);
+        #ifdef USE_COMLIB
+            CkPrintf("NOTE: Rectangular Send In USE\n");
+            if(isSymmetric)
+                ComlibAssociateProxy(&mcastInstanceCP,pcSection);
+            else
+                ComlibAssociateProxy(&mcastInstanceACP,pcSection);
+        #endif
     }
     else
     {

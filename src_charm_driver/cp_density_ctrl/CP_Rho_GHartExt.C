@@ -261,16 +261,22 @@ void CP_Rho_GHartExt::init(){
   setMigratable(false);
 
   rhoRealProxy_com = UrhoRealProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
   if(config.useGHartInsRhoRP){
      ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
   }//endif
+#endif
 
   rhoRHartProxy_com0 = UrhoRHartExtProxy[thisInstance.proxyOffset];
   rhoRHartProxy_com1 = UrhoRHartExtProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
   if(config.useGHartInsRHart){
      ComlibAssociateProxy(&commGHartRHartIns0,rhoRHartProxy_com0);
      ComlibAssociateProxy(&commGHartRHartIns1,rhoRHartProxy_com1);
   }//endif
+#endif
   
 //---------------------------------------------------------------------------
 }//end routine
@@ -557,7 +563,7 @@ void CP_Rho_GHartExt::sendVks() {
 
 //============================================================================
 // Do a Comlib Dance
-
+#ifdef USE_COMLIB
    if(rhoRsubplanes==1){
 #ifdef OLD_COMMLIB
     if(config.useGHartInsRhoRP){commGHartInstance.beginIteration();}
@@ -565,7 +571,8 @@ void CP_Rho_GHartExt::sendVks() {
     if(config.useGHartInsRhoRP){ComlibBegin(rhoRealProxy_com);}
 #endif
    }//endif
-  
+#endif
+
 //============================================================================
 
   int sizeZ=rho_gs.sizeZ;
@@ -612,7 +619,8 @@ void CP_Rho_GHartExt::sendVks() {
 
 //============================================================================
 // Complete the commlib dance and hang out.
-    
+
+#ifdef USE_COMLIB    
   if(rhoRsubplanes==1){
 #ifdef OLD_COMMLIB
     if(config.useGHartInsRhoRP){commGHartInstance.endIteration();}
@@ -620,6 +628,7 @@ void CP_Rho_GHartExt::sendVks() {
     if(config.useGHartInsRhoRP){ComlibEnd(rhoRealProxy_com);}
 #endif
   }//endif
+#endif
 
   fftcache->freeCacheMem("CP_Rho_GHartExt::sendVks");
 
@@ -983,7 +992,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
 //============================================================================
 // start commlib
-
+#ifdef USE_COMLIB
   if(rhoRsubplanes==1){
     switch(flag){
 #ifdef OLD_COMMLIB
@@ -995,6 +1004,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 #endif
     }//endif
   }//endif
+#endif
 
 //============================================================================
 // Send the message : 1 pt from each line to each chareR
@@ -1051,6 +1061,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 //============================================================================
 // end commlib
 
+#ifdef USE_COMLIB
   if(rhoRsubplanes==1){
    switch(flag){
 #ifdef OLD_COMMLIB
@@ -1063,6 +1074,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
 
    }//end switch
   }//endif
+#endif
 
 //============================================================================
 // We are done when when have sent out all SFs and the Ewald total SF (index=0)

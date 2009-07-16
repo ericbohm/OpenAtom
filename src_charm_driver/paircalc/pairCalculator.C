@@ -62,11 +62,13 @@
 #include "InputDataHandler.h"
 
 #include <algorithm>
+
+#ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle mcastInstanceACP;
 extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
-
+#endif
 
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, 
@@ -129,7 +131,9 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   // Initialize the PairCalcID instance
   pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useDirectSend);
   pcid->mCastGrpId=mCastGrpId;
-  
+
+#ifdef USE_COMLIB
+
   // Setup the appropriate multicast strategy
 #ifdef CMK_BLUEGENEL
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
@@ -138,13 +142,19 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #endif
   
+#endif
+
   // 
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
   // 
+
+#ifdef USE_COMLIB
   if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
+#endif
+
   CkAssert(mapid);
   // If the symmetric loop PC instances are being created
   if(sym)
@@ -427,9 +437,11 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 																chunk, chunk, 1);
 			/// Delegate the multicast work to an appropriate library
 			#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifdef USE_COMLIB
 				if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
 					ComlibAssociateProxy(&mcastInstanceCP,pcid->sectionGettingLeft[chunk]);
 				else
+#endif
 				{
 					CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 					pcid->sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
@@ -492,9 +504,11 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 																c, c, 1);
 				/// Delegate the multicast work to an appropriate library
 				#ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifdef USE_COMLIB
 					if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 						ComlibAssociateProxy(&mcastInstanceCP, pcid->sectionGettingRight[c]);
 					else
+#endif
 					{
 						CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();
 						pcid->sectionGettingRight[c].ckSectionDelegate(mcastGrp);

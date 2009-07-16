@@ -785,9 +785,12 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 // Section Reductions and SF proxy creation
 
   real_proxy = UrealSpacePlaneProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
   if (config.useGssInsRealP){
      ComlibAssociateProxy(&gssInstance,real_proxy);
   }//endif
+#endif
   
 //============================================================================
 // Register with the cache : Eric's multiple reduction schemes ensure its done
@@ -1201,11 +1204,12 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 //============================================================================
 // Do a Comlib Dance
-
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.beginIteration();}
 #else
   //  if (config.useGssInsRealP){ComlibBegin(real_proxy);}
+#endif
 #endif
 
 //============================================================================
@@ -1237,12 +1241,14 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 //============================================================================    
 // Finish up 
-
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.endIteration();}
 #else
   //  if (config.useGssInsRealP){ComlibEnd(real_proxy);}
 #endif
+#endif
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0)
     {
