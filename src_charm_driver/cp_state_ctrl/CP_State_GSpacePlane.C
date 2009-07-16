@@ -1054,9 +1054,12 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 // Section Reductions and SF proxy creation
 
   real_proxy = UrealSpacePlaneProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
   if (config.useGssInsRealP){
      ComlibAssociateProxy(&gssInstance,real_proxy);
   }//endif
+#endif
 
   // create structure factor proxy
   if(thisIndex.x==0 && ees_nonlocal==0){
@@ -1512,11 +1515,12 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 //============================================================================
 // Do a Comlib Dance
-
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.beginIteration();}
 #else
   //  if (config.useGssInsRealP){ComlibBegin(real_proxy);}
+#endif
 #endif
 
 //============================================================================
@@ -1548,12 +1552,14 @@ void CP_State_GSpacePlane::sendFFTData () {
 
 //============================================================================    
 // Finish up 
-
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.endIteration();}
 #else
   //  if (config.useGssInsRealP){ComlibEnd(real_proxy);}
 #endif
+#endif
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0)
     {
@@ -4067,8 +4073,9 @@ void CP_State_GSpacePlane::ResumeFromSync() {
 
 //==============================================================================
 // reset commlib proxies
-
+#ifdef USE_COMLIB
   if(config.useGssInsRealP){ComlibResetProxy(&real_proxy);}
+#endif
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
   int cp_min_opt = sim->cp_min_opt;
 

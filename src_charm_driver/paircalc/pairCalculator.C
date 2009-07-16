@@ -56,11 +56,13 @@
 #include "ckPairCalculator.h"
 #include "pairCalculator.h"
 #include <algorithm>
+
+#ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
 extern ComlibInstanceHandle mcastInstanceACP;
 extern ComlibInstanceHandle gAsymInstance;
 extern ComlibInstanceHandle gSymInstance;
-
+#endif
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z, 
 			  CkCallback cb,  PairCalcID* pcid, int cb_ep, 
@@ -113,18 +115,29 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ, int* z,
   pcid->orthoRedGrpId=orthoRedGrpId;
   pcid->cproxy=pairCalculatorProxy;
   pcid->mCastGrpId=mCastGrpId;
+
+#ifdef USE_COMLIB
+
+  // Setup the appropriate multicast strategy
 #ifdef CMK_BLUEGENEL
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #else
   CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
 #endif
+  
+#endif
 
   int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  // 
+
+#ifdef USE_COMLIB
   if(sym)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
+#endif
+
   CkAssert(mapid);
   if(sym)
     for(int numX = 0; numX < numZ; numX ++){
@@ -401,6 +414,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
     }
   else
     {
+#ifdef USE_COMLIB
       if(commlib)
 	{
 	  CkPrintf("NOTE: Rectangular Send In USE\n");
@@ -414,6 +428,7 @@ void initOneRedSect(int numZ, int* z, int numChunks,  PairCalcID* pcid, CkCallba
 	  */
 	}
       else
+#endif
 	{
 	  //CkPrintf("PC: proxy without commlib\n");
 	  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->orthomCastGrpId).ckLocalBranch();       
@@ -822,11 +837,13 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		pcid->proxyLNotFrom[chunk] = CProxySection_PairCalculator::ckNew(pairCalculatorID, elems, ecount); 
 		pcid->existsLNotFromproxy=true;	  
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
-		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
+#ifdef USE_COMLIB
+        if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 		  {
 		    ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLNotFrom[chunk]);
 		  }
 		else
+#endif
 		  {
 
 		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch();       
@@ -839,11 +856,13 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		pcid->proxyLFrom[chunk]  = CProxySection_PairCalculator::ckNew(pairCalculatorID, elemsfromrow, erowcount); 
 		pcid->existsLproxy=true;	  
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifdef USE_COMLIB
 		if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 		  {
 		    ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyLFrom[chunk]);
 		  }
 		else
+#endif
 		  {
 		    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 		    pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
@@ -873,11 +892,13 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane){
 		}
 	      }
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifdef USE_COMLIB
 	    if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
 	      {
 		ComlibAssociateProxy(&mcastInstanceCP,pcid->proxyLFrom[chunk]);
 	      }
 	    else
+#endif
 	      {
 		CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 		pcid->proxyLFrom[chunk].ckSectionDelegate(mcastGrp);
@@ -1024,11 +1045,13 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane){
 	    }
 	  pcid->existsRproxy=true;      
 #ifndef _PAIRCALC_DO_NOT_DELEGATE_
+#ifdef USE_COMLIB
 	  if(pcid->useComlib && _PC_COMMLIB_MULTI_)
 	    {
 	      ComlibAssociateProxy(&mcastInstanceCP, pcid->proxyRNotFrom[c]);
 	    }
 	  else
+#endif
 	    {
 	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[myPlane]).ckLocalBranch(); 
 	      pcid->proxyRNotFrom[c].ckSectionDelegate(mcastGrp);

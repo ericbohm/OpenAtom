@@ -178,9 +178,12 @@ void CP_State_ParticlePlane::initKVectors(GStateSlab *gss){
 // Comlib to talk to realPP : used when ees_enl_on==1
 
   realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
+#ifdef USE_COMLIB
   if (config.useGssInsRealPP){
       ComlibAssociateProxy(&gssPInstance,realPP_proxy);
   }//endif
+#endif
+
 //============================================================================
 //  Register with the SFCache
 
@@ -1018,11 +1021,14 @@ void CP_State_ParticlePlane::sendToEesRPP(){
    CkPrintf("HI, I am gPP %d %d in sendtoEesRPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.beginIteration();}
 #else
   //  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy);}
 #endif
+#endif
+
 //============================================================================
 // Send your (x,y,z) to processors z.
 
@@ -1050,11 +1056,14 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 
 //============================================================================
 // Turn off commlib
+
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.endIteration();}
 #else
   //  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy);}
 #endif    
+#endif
   sendDone = 1;
 
 //============================================================================

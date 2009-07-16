@@ -659,11 +659,13 @@ void Ortho::makeSections(int indexSize, int *indexZ){
 	}
       if(config.useOrthoSection)
 	{
+#ifdef USE_COMLIB
 	  if( config.useCommlib && config.useOrthoDirect)
 	    {
 	      ComlibAssociateProxy(&orthoInstance,multiproxy);	  
 	    }
 	  else
+#endif
 	    {
 	      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oPairCalcID1.orthomCastGrpId).ckLocalBranch();               
 	      multiproxy.ckSectionDelegate(mcastGrp);

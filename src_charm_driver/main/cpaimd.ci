@@ -81,44 +81,45 @@ mainmodule cpaimd {
 	
 	readonly CkGroupID mCastGrpId;
 
+#ifdef USE_COMLIB
         // exc, hart, eext communication
-	readonly ComlibInstanceHandle commGHartInstance;
-	readonly ComlibInstanceHandle commGInstance0;
-	readonly ComlibInstanceHandle commGInstance1;
-	readonly ComlibInstanceHandle commGInstance2;
-	readonly ComlibInstanceHandle commGInstance3;	
-	readonly ComlibInstanceHandle commGByrdInstance;
-	readonly ComlibInstanceHandle commRealInstance;
-	readonly ComlibInstanceHandle commRealIGXInstance;
-	readonly ComlibInstanceHandle commRealIGYInstance;
-	readonly ComlibInstanceHandle commRealIGZInstance;
+  	readonly ComlibInstanceHandle commGHartInstance;
+  	readonly ComlibInstanceHandle commGInstance0;
+  	readonly ComlibInstanceHandle commGInstance1;
+  	readonly ComlibInstanceHandle commGInstance2;
+  	readonly ComlibInstanceHandle commGInstance3;	
+  	readonly ComlibInstanceHandle commGByrdInstance;
+  	readonly ComlibInstanceHandle commRealInstance;
+  	readonly ComlibInstanceHandle commRealIGXInstance;
+  	readonly ComlibInstanceHandle commRealIGYInstance;
+  	readonly ComlibInstanceHandle commRealIGZInstance;
 
-	//ortho to itself
-	readonly ComlibInstanceHandle orthoInstance;
+    //ortho to itself
+  	readonly ComlibInstanceHandle orthoInstance;
 
         // pc communication
-	readonly ComlibInstanceHandle gAsymInstance;
-	readonly ComlibInstanceHandle gSymInstance;
+  	readonly ComlibInstanceHandle gAsymInstance;
+  	readonly ComlibInstanceHandle gSymInstance;
 
         // multicast for vks to states and other things
-	readonly ComlibInstanceHandle mcastInstance;
-	readonly ComlibInstanceHandle mcastInstancePP;
-	readonly ComlibInstanceHandle mcastInstanceRPP;
-	readonly ComlibInstanceHandle mcastInstancemRPP;
+  	readonly ComlibInstanceHandle mcastInstance;
+  	readonly ComlibInstanceHandle mcastInstancePP;
+  	readonly ComlibInstanceHandle mcastInstanceRPP;
+  	readonly ComlibInstanceHandle mcastInstancemRPP;
 
         // density from psi : g->r and r->g
-	readonly ComlibInstanceHandle mssInstance;
-	readonly ComlibInstanceHandle gssInstance;
+  	readonly ComlibInstanceHandle mssInstance;
+  	readonly ComlibInstanceHandle gssInstance;
 
         // Nonlocal Ees method : g->r and r->g
-	readonly ComlibInstanceHandle gssPInstance;
-	readonly ComlibInstanceHandle mssPInstance;
+  	readonly ComlibInstanceHandle gssPInstance;
+  	readonly ComlibInstanceHandle mssPInstance;
 
         // Eext method : g->r and r->g
-	readonly ComlibInstanceHandle commRHartGHartIns;
-	readonly ComlibInstanceHandle commGHartRHartIns0;
-	readonly ComlibInstanceHandle commGHartRHartIns1;
-
+  	readonly ComlibInstanceHandle commRHartGHartIns;
+  	readonly ComlibInstanceHandle commGHartRHartIns0;
+  	readonly ComlibInstanceHandle commGHartRHartIns1;
+#endif
         // PINY Physics readonly data structures
         readonly MDINTEGRATE  readonly_mdintegrate;
         readonly MDATOMS      readonly_mdatoms;

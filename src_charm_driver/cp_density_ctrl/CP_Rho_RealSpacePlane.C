@@ -238,7 +238,9 @@ void CP_Rho_RealSpacePlane::init(){
 
     mcastGrp->setSection(realSpaceSectionProxy);
 
+#ifdef USE_COMLIB
     ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxy);
+#endif
 
     //    delete [] elems;    
 
@@ -251,6 +253,8 @@ void CP_Rho_RealSpacePlane::init(){
     rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
     if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
@@ -259,6 +263,8 @@ void CP_Rho_RealSpacePlane::init(){
 	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
     if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+#endif
+
 }
 
 //============================================================================
@@ -317,6 +323,8 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
     rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGZ_com = UrhoGProxy[thisInstance.proxyOffset];
+
+#ifdef USE_COMLIB
     if (config.useRInsRhoGP) 
 	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
@@ -325,6 +333,7 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
 	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
     if (config.useRInsIGZRhoGP) 
 	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+#endif
 
     }//endif
 
@@ -705,6 +714,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
   //-----------------------------------------------------------------------------
   // Commlib launch : 
 
+#ifdef USE_COMLIB
 #ifdef _ERIC_SETS_UP_COMMLIB_
     switch(iopt){
        case 0 : if(config.useRInsRhoRP)    commRealInstanceRx.beginIteration();    break;
@@ -713,6 +723,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTRyToGy(int iopt){
        case 3 : if(config.useRInsIGZRhoRP) commRealIGZInstanceRx.beginIteration(); break;
        default: CkAbort("impossible iopt");break;
     }//end switch
+#endif
 #endif
 
    //-----------------------------------------------------------------------------
@@ -967,6 +978,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Commlib launch
 
+#ifdef USE_COMLIB
     if(rhoRsubplanes==1){
       switch(iopt){
 #ifdef OLD_COMMLIB
@@ -983,6 +995,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
        default: CkAbort("impossible iopt");break;
      }//end switch
     }//endif
+#endif
 
 //============================================================================
 // Send the data
@@ -1050,6 +1063,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 //============================================================================
 // Commlib stop
 
+#ifdef USE_COMLIB
     if(rhoRsubplanes==1){
       switch(iopt){
 #ifdef OLD_COMMLIB
@@ -1066,6 +1080,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       default: CkAbort("impossible iopt");break;
       }//end switch
     }//endif
+#endif
 
 //---------------------------------------------------------------------------
   }//end routine

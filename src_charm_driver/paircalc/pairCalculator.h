@@ -95,6 +95,7 @@ class PairCalcID {
       for(int chunk=0;chunk<numChunks;chunk++)
 	{
 
+#ifdef USE_COMLIB
 	  if(useComlib && _PC_COMMLIB_MULTI_)
 	    {
 	      if(existsLNotFromproxy)
@@ -105,6 +106,7 @@ class PairCalcID {
 		ComlibResetSectionProxy(&proxyLFrom[chunk]);
 	    }
 	  else
+#endif
 	    {
 	      if(existsRproxy)
 		{

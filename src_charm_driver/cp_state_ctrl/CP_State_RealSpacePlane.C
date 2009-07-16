@@ -581,11 +581,15 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
   complex *vks_on_state  = rs.planeArr;
 
  //------------------------------------------------------------------
+
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.beginIteration();}
 #else
   //  if (config.useMssInsGP){ComlibBegin(gproxy);}
 #endif
+#endif
+
     for (int ic = 0; ic < nchareG; ic ++) { // chare arrays to which we will send
 
       int sendFFTDataSize = nlines_per_chareG[ic];
@@ -605,10 +609,12 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 
     }//end for : chare sending
 
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.endIteration();}
 #else
   //  if (config.useMssInsGP){ComlibEnd(gproxy);}
+#endif
 #endif
 
  //------------------------------------------------------------------
@@ -652,9 +658,11 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
       contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
 	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
     // do not delete nokeep message
+#ifdef USE_COMLIB
     if (config.useMssInsGP){
       ComlibAssociateProxy(&mssInstance,gproxy);
     }//endif
+#endif
 
 }
 //============================================================================
@@ -663,8 +671,10 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_State_RealSpacePlane::ResumeFromSync(){
+#ifdef USE_COMLIB
     if(config.useMssInsGP)
 	ComlibResetProxy(&gproxy);
+#endif
 }
 //============================================================================
 

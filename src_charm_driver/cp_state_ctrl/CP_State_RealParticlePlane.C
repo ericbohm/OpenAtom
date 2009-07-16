@@ -294,10 +294,11 @@ void CP_State_RealParticlePlane::init(){
 // Setup the comlib to talk to GPP
 
   gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
+#ifdef USE_COMLIB
   if (config.useMssInsGPP){
      ComlibAssociateProxy(&mssPInstance,gPP_proxy);
   }//endif
-
+#endif
 
 }
 
@@ -1111,11 +1112,15 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
   if(thisIndex.x==0)
    CkPrintf("HI, I am rPP %d %d in sendtoGPP : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
+
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.beginIteration();}
 #else
   //  if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset]);}
 #endif
+#endif
+
 
     for (int ic=0;ic<nchareG;ic++) { // chare arrays to which we will send
       int sendFFTDataSize = nlines_per_chareG[ic];
@@ -1135,11 +1140,14 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 #endif
     }//end for : chare sending
 
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.endIteration();}
 #else
   //  if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset]);}
 #endif
+#endif
+
 //============================================================================
 // If it looks like this is the end, reset my counters baby.
 // If its not the end, GParticlePlane will invoke entry methods.

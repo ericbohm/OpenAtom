@@ -225,6 +225,7 @@ TopoManager *topoMgr;
 CkGroupID            mCastGrpId; 
 CkGroupID            orthomCastGrpId; 
 CkGroupID            orthoRedGrpId; 
+#ifdef USE_COMLIB
 ComlibInstanceHandle orthoInstance;
 ComlibInstanceHandle commGHartInstance;
 ComlibInstanceHandle commGInstance0;
@@ -254,6 +255,8 @@ ComlibInstanceHandle mssPInstance;
 ComlibInstanceHandle commRHartGHartIns;
 ComlibInstanceHandle commGHartRHartIns0;
 ComlibInstanceHandle commGHartRHartIns1;
+#endif
+
 
 CkReduction::reducerType complexVectorAdderType;
 //============================================================================
@@ -1048,6 +1051,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
   int numRhoGHart = rhoGhelpers*numRhoG;
   int nchareHartAtmT = config.nchareHartAtmT;
 //============================================================================
+#ifdef USE_COMLIB
   if (config.useCommlib) {        
 
     /*
@@ -1399,10 +1403,13 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
     }
 
   }//endif : use commlib
+#endif
+
 
     //============================================================================
     // Real state space to gspace state and particle plane comm.
 
+#ifdef USE_COMLIB
     if (config.useCommlibMulticast) {
       DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
 	(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
@@ -1447,6 +1454,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       }//endif
 	
     }// end Sameer's new communication strategies 
+#endif
 
     //============================================================================
   }//end routine
@@ -1507,12 +1515,16 @@ void init_ortho_chares(int nstates, int indexSize, int *indexZ, UberCollection t
   orthoOpts.setMap(orthoMap);
 
   UorthoProxy.push_back( CProxy_Ortho::ckNew(orthoOpts));
+
+#ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
 #else
   Strategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
 #endif
   orthoInstance=ComlibRegister(multistrat);
+#endif
+
 
   CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), UorthoProxy[thisInstance.proxyOffset](0, 0));
   UorthoProxy[thisInstance.proxyOffset].ckSetReductionClient(&ocb);
@@ -2068,6 +2080,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   if(firstInstance)
     {
 
+#ifdef USE_COMLIB
     if(config.useCommlib) {
       // TODO: do we need to do this for each Uber instance?
       // technically they are operating on mutually exclusive process
@@ -2104,7 +2117,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 	gssPInstance= ComlibRegister(gpmstrat);    
       }
     }//endif
-    }
+#endif
+
+  }
 //============================================================================
 
   printf("\n");
