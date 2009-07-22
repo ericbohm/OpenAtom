@@ -26,7 +26,7 @@ setup:
 	mkdir -p $(BINDIR)
 
 cpaimd_driver: setup
-	(cd $(MAKE_CPAIMD_DRV_INC); make driverlib OPTS="$(OPTS)";)
+	cd $(MAKE_CPAIMD_DRV_INC) && make CXXFLAGS+="$(OPTS)"
 
 #===============================================================================
 physics: setup
