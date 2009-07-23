@@ -131,8 +131,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void acceptNewPsiV(partialResultMsg *msg);
         /// @RTH resume
         void doNewPsiV();
-        /// @warning: Deprecated! @todo: Deprecated
-        void acceptAllLambda(CkReductionMsg *msg);
         /// @entry @RTH resume
         void psiCgOvlap(CkReductionMsg *msg);
         void acceptLambda(CkReductionMsg *msg);

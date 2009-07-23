@@ -98,7 +98,6 @@ module gStatePlane
 		entry [local] void doLambda();
 		entry void acceptLambda(CkReductionMsg *msg);
 		entry void acceptLambda(partialResultMsg *msg);
-		entry void acceptAllLambda(CkReductionMsg *msg);
 
 		entry void acceptNewPsiV(CkReductionMsg *msg);
 		entry void acceptNewPsiV(partialResultMsg *msg);

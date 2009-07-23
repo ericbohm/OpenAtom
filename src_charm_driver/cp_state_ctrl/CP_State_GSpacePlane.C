@@ -3602,19 +3602,6 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 
 
 
-//==============================================================================
-// Deprecated routine
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-void CP_State_GSpacePlane::acceptAllLambda(CkReductionMsg *msg) {
-    delete msg;
-    CkAbort("GSP do not call acceptAllLambda\n");
-}// end routine
-//==============================================================================
-
-
-
 
 //==============================================================================
 // Test program : Does ReadFile() parse psi(g) and g-vectors properly

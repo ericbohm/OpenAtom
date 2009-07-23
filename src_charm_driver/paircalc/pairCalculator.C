@@ -72,7 +72,7 @@ extern ComlibInstanceHandle gSymInstance;
 
 
 void createPairCalculator(bool sym, int s, int grainSize, int numZ, 
-			  CkCallback cb,  PairCalcID* pcid, int cb_ep,
+			  PairCalcID* pcid, int cb_ep,
 			  int cb_ep_tol, 
 			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
 			  int flag_dp, bool conserveMemory, bool lbpaircalc,
@@ -114,7 +114,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   else 
   {
     paircalcOpts.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier,
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier,
 						       gemmSplitFWk, gemmSplitFWm,
 						       gemmSplitBW,expectOrthoT, instance,
 						       paircalcOpts);
@@ -174,7 +174,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 					#endif
 					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
 				}
 				else
 				{
@@ -182,7 +182,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,sym,proc);
 					#endif
 					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
 					proc++;
 					if (proc >= CkNumPes()) proc = 0;
 				}
@@ -207,7 +207,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 						#endif
 						pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
+						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
 					}
 					else
 					{
@@ -215,7 +215,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,sym,proc);
 						#endif
 						pairCalculatorProxy(numX,s1,s2,c).
-							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
+							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
 						proc++;
 						if (proc >= CkNumPes()) proc = 0;
 					}

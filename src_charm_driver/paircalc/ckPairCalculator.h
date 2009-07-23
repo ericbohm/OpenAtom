@@ -120,7 +120,7 @@ class PairCalculator: public CBase_PairCalculator
 {
 	public:
 		/// @entry (obviously)
-		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkCallback cb,  CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
 		/// Constructor for migration
 		PairCalculator(CkMigrateMessage *);
 		/// Destructor (nothing needs to be done?)
