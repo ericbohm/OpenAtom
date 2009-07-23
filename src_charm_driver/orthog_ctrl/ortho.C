@@ -76,6 +76,24 @@ extern ComlibInstanceHandle orthoInstance;
 extern CkVec <CProxy_Ortho> UorthoProxy;
 //============================================================================
 
+
+Ortho::~Ortho()
+{
+    delete [] A;
+    delete [] B;
+    delete [] C;
+    delete [] tmp_arr;
+    if(thisIndex.x==0 && thisIndex.y==0)
+    {
+        delete [] ortho;
+        delete [] orthoT;
+        delete [] wallTimeArr;
+    }
+}
+
+
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -718,7 +736,6 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
     oMCastGID(_oMCastGID), oRedGID(_oRedGID)
 {
 
-//============================================================================
 /* do basic initialization */
   parallelStep2=config.useOrthoHelpers;
   
@@ -780,20 +797,15 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   savedtmat=NULL;
 #endif
-
-//============================================================================
-   }//end routine
-//============================================================================
+}//end routine
 
 
-//============================================================================
-/* start step 1 on proxy 1, the callback will be for step 2
+
+
+/** start step 1 on proxy 1, the callback will be for step 2
  * S2 = 3 * I - T * S1
  * currently A has T, B has S1, need to construct 3*I in C
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::do_iteration(void){
   step = 1;
   memset(C, 0, m * n * sizeof(double));
@@ -816,18 +828,15 @@ void Ortho::do_iteration(void){
   matC1.multiply(-1, 1, C, Ortho::step_2_cb, (void*) this,
    thisIndex.x, thisIndex.y);
 }
-//============================================================================
 
 
-//============================================================================
+
+
 /* S1 = 0.5 * S3 * S2 (on proxy 2)
  * currently A has T, B has S1, C has S2
  * Multiply tmp_arr = B*C
  * tmp_arr not used in step3, therefore no data dependence
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::step_2(void){
 
   if(config.useOrthoHelpers)
@@ -855,47 +864,27 @@ void Ortho::step_2(void){
 //============================================================================
 
 
-//============================================================================
+
 /** S1 = 0.5 * S3 * S2 (on proxy 2)
  * currently A has T, B has S1, C has S2
  * Multiply tmp_arr = B*C
  * tmp_arr not used in step3, therefore no data dependence
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::step_2_send(void){
-  step = 2;
-  // copy our data to the helper
-  OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
-  omsg->init(m*n, B,C,0.5, 0.5, 0.5);
-  UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
-  // will come back in recvStep2
-}
-//============================================================================
-
-//============================================================================
-/** result of 0.5 * S3 * S2 arrives from helper
- *
- */
-void Ortho::recvStep2(double *step2result, int size){
-  // copy our data into the tmp_arr
-  
-    CmiMemcpy(tmp_arr, step2result, m * n * sizeof(double));
-    step2done=true;
-    if(step3done) //end of iteration check
-      { 
-	tolerance_check();
-      }
+inline void Ortho::step_2_send()
+{
+    step = 2;
+    // Send our data to the helper and await results which will arrive in recvStep2
+    OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
+    omsg->init(m*n, B,C,0.5, 0.5, 0.5);
+    UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
 }
 
-//============================================================================
-/* T = 0.5 * S2 * S3 (do S3 = T before) (on proxy 3)
+
+
+/**
+ * T = 0.5 * S2 * S3 (do S3 = T before) (on proxy 3)
  * currently A has T, B has S1 (old), C has S2, tmp_arr has new S1
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::step_3(){
   step = 3;
   CmiMemcpy(B, A, m * n * sizeof(double));
@@ -915,13 +904,9 @@ void Ortho::step_3(){
 //============================================================================
 
 
-//============================================================================
-/* calculate error and reset pointers (for step 1)
+/** calculate error and reset pointers (for step 1)
  * current: T -> A, S1 -> tmp_arr, S2 -> C, S3 -> B
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 void Ortho::tolerance_check(){
   step = 4;
   step2done=false;
@@ -954,8 +939,6 @@ void Ortho::tolerance_check(){
   iterations++;
 }
 
-
-//============================================================================
 
 
 
