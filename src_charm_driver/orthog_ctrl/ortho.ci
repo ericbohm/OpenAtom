@@ -21,7 +21,6 @@ module ortho
          int timekeep, UberCollection, CkGroupID oMCastGID, CkGroupID oRedGID
          	);
 		entry Ortho();
-		entry void acceptAllLambda(CkReductionMsg *msg);
 		entry void acceptSectionLambda(CkReductionMsg *msg);
 		entry void resume();
 		entry void resumeV(CkReductionMsg *msg);

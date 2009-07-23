@@ -491,15 +491,6 @@ void Ortho::resumeV(CkReductionMsg *msg){ // gspace tolerance check entry
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::acceptAllLambda(CkReductionMsg *msg) {
-    delete msg;
-    CkAbort("do not call acceptAllLambda");
-}
-//============================================================================
-
 
 
 //============================================================================
@@ -699,25 +690,6 @@ void Ortho::gamma_done(){
 //==============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void Ortho::multiplyForGamma(double *orthoT, double *lambda, double *gamma, int n){
-//============================================================================
-
-  double alpha=1.0;
-  double beta=0.0;
-  int n_in=n;
-  int m_in=n;
-  int k_in=n;
-  char transform='N';
-  char transformT='T';
-  DGEMM(&transform, &transform, &n_in, &m_in, &k_in, &alpha, orthoT, &n_in, lambda, 
-        &k_in, &beta, gamma, &n_in);      
-
-//-----------------------------------------------------------------------------
-  }// end routine
-//==============================================================================
 
 
 //============================================================================
@@ -839,9 +811,13 @@ void Ortho::do_iteration(void){
  */
 void Ortho::step_2(void){
 
+    step = 2;
   if(config.useOrthoHelpers)
     {
-      step_2_send();
+    // Send our data to the helper and await results which will arrive in recvStep2
+    OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
+    omsg->init(m*n, B,C,0.5, 0.5, 0.5);
+    UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
       step_3();
     }
   else
@@ -852,7 +828,6 @@ void Ortho::step_2(void){
     //    dumpMatrixDouble("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
 #endif
 
-      step = 2;
       matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
       matB2.multiply(0.5, 0, C, Ortho::step_3_cb, (void*) this,
@@ -860,23 +835,6 @@ void Ortho::step_2(void){
       matC2.multiply(0.5, 0, tmp_arr, Ortho::step_3_cb, (void*) this,
 		     thisIndex.x, thisIndex.y);
     }
-}
-//============================================================================
-
-
-
-/** S1 = 0.5 * S3 * S2 (on proxy 2)
- * currently A has T, B has S1, C has S2
- * Multiply tmp_arr = B*C
- * tmp_arr not used in step3, therefore no data dependence
- */
-inline void Ortho::step_2_send()
-{
-    step = 2;
-    // Send our data to the helper and await results which will arrive in recvStep2
-    OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
-    omsg->init(m*n, B,C,0.5, 0.5, 0.5);
-    UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
 }
 
 

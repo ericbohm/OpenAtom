@@ -141,9 +141,7 @@ class Ortho : public CBase_Ortho
         void do_iteration(orthoMtrigger *m) { do_iteration(); /* do not delete nokeep msg */ }
         /// Triggers step 2, and optionally step 3 (if ortho helpers are being used)
         void step_2();
-        /// Sends data to my shadow OrthoHelper chare during step 2 to let it do its thing
-        void step_2_send();
-        /// Receives the results of the call to OrthoHelper from step_2_send 
+        /// Receives the results of the call to OrthoHelper from step_2 
         void recvStep2(double *step2result, int size);
         /// Triggers step 3 in the S->T process
         void step_3();
@@ -201,11 +199,6 @@ class Ortho : public CBase_Ortho
                 ((Ortho*) obj)->tolerance_check();
         }
         
-        /// Deprecated method. Needs to be deleted
-        void acceptAllLambda(CkReductionMsg *msg);
-        /// Appears deprecated. No calls from anywhere
-        void multiplyForGamma(double *orthoT, double *lambda, double *gamma,int n);
-
         bool parallelStep2;
         bool step2done;
         bool step3done;
