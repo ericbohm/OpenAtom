@@ -128,13 +128,9 @@ class Ortho : public CBase_Ortho
 
         /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
         void makeSections();
-        ///
-        void start_calc(CkReductionMsg *msg);
-        ///
-        void maxCheck(CkReductionMsg *msg);
-        ///
-        void resumeV(CkReductionMsg *msg);
 
+        /// Symmetric PCs contribute data that is summed via this reduction to deposit a portion of the S matrix with this ortho, triggering S->T
+        void start_calc(CkReductionMsg *msg);
         /// Triggers the matrix multiplies in step 1 of an ortho iteration.
         void do_iteration(void);
         /// Used when array broadcasts in ortho are delegated to comlib/CkMulticast so as to not involve all PEs in bcast
@@ -163,6 +159,13 @@ class Ortho : public CBase_Ortho
         /// Used in dynamics, to accept computed gamma and send it to the asymm PC instance. Also sends T if it hasnt yet been sent
         void gamma_done();
 
+        /// S should be equal to 2I. This returns max value of deviation from that in this ortho's portion of the S matrix. 
+        inline double array_diag_max(int sizem, int sizen, double *array);
+        /// Called on ortho(0,0). Checks if PsiV update is needed based on the max deviation in S received via a redn across all orthos. Notifies GSpaceDriver if so. Called periodically in start_calc only for dynamics 
+        void maxCheck(CkReductionMsg *msg);
+        /// Once all GSpaceDriver chares are notified, they resume Ortho execution via a redn broadcast to this method
+        void resumeV(CkReductionMsg *msg);
+
         /// Dumps the T matrix to an appropriately named file
         void print_results(void);
         /// pack/unpack method
@@ -179,8 +182,6 @@ class Ortho : public CBase_Ortho
             if(got_start)
                 do_iteration();
         }
-        ///
-        inline double array_diag_max(int sizem, int sizen, double *array);
 
         /// Static methods used as callbacks. Could be replaced by CkCallbacks
         static inline void step_2_cb(void *obj) { ((Ortho*) obj)->step_2(); }

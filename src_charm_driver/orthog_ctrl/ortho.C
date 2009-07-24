@@ -630,9 +630,11 @@ void Ortho::makeSections()
     symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
     asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
     
-    /// Setup appropriate callbacks
+    /// Once the PC - ortho channel is setup, the PC instance should notify the instance controller that its ready
     CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-    CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));	
+    /// Symmetric PC sections should trigger S -> T computations in Ortho via this method
+    CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));
+    /// Asymmetric sections should simply drop off lambda at this method
     CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
 
     /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
