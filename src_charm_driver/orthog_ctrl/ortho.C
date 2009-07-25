@@ -602,7 +602,7 @@ void Ortho::makeSections()
         if(config.useOrthoSectionRed)
         {
             CProxySection_Ortho rproxy =   multiproxy;
-            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthoRedGrpID).ckLocalBranch();
+            CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
             rproxy.ckSectionDelegate(mcastGrp);
             initCookieMsg *redMsg=new initCookieMsg;
             /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
@@ -620,7 +620,7 @@ void Ortho::makeSections()
             }
             else
             {
-                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch(); 
+                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch(); 
                 multiproxy.ckSectionDelegate(mcastGrp);
             }
         }
