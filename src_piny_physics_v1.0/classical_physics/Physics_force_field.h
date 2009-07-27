@@ -10,7 +10,7 @@
 #ifndef __Physics_h__
 #define __Physics_h__
 
-#include <math.h>
+#include <cmath>
 #include "leanMD.h"
 #include "Physics_defines.h"
 #include "group_bond_con.h"

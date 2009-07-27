@@ -28,7 +28,7 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================ 
-#include <math.h>
+#include <cmath>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>

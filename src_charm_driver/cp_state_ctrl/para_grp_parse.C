@@ -3,10 +3,10 @@
  *
  */
 //==========================================================================
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 
 #include "para_grp_parse.h"
 

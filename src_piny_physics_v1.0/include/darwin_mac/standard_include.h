@@ -3,11 +3,11 @@
 #define SIMP_NINT
 #define CHARM_ON
 #define PUP_ON
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <ctime>
 #include <iostream>
 
 using namespace std;

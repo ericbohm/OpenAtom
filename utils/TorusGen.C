@@ -11,8 +11,8 @@
  *
  */
 
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 
 #define CUBE_SIZE	2
 #define DISTANCE	10
