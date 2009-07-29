@@ -20,6 +20,7 @@ CHARMINC  = $(CHARMBASE)/include
 	@g++ -MM -MG $(CPPFLAGS) $(INCDIRS:%=-I%) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) $(DEPSTRIPDIRS) > $@
 
 # Rule to generate dependency info for charm++ interface (ci) definition files
+# @note: Need to handle pathological cases like multi-line module declarations 
 %.di: %.ci
 	$(info Generating dependencies for $<)
 	@grep -oE "(extern[ ]+)?module[ ]+\w+" $< | \
