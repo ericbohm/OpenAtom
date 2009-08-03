@@ -36,14 +36,14 @@ void PCSectionManager::pup(PUP::er &p)
  */
 void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const Config &cfg, CkGroupID oMCastGID, CkGroupID oRedGID)
 {
-    numPlanes       = cfg.nchareG;
-    numStates       = cfg.nstates;
-    numChunks       = cfg.numChunks;
-    pcGrainSize     = cfg.sGrainSize;
-    orthoGrainSize  = cfg.orthoGrainSize;
-
     pcArrayID       = pcid.Aid;
     isSymmetric     = pcid.Symmetric;
+
+    numPlanes       = cfg.nchareG;
+    numStates       = cfg.nstates;
+    numChunks       = (isSymmetric)? cfg.numChunksSym : cfg.numChunksAsym;
+    pcGrainSize     = cfg.sGrainSize;
+    orthoGrainSize  = cfg.orthoGrainSize;
 
     orthoIndex      = orthoIdx;
     orthomCastGrpID = oMCastGID;
