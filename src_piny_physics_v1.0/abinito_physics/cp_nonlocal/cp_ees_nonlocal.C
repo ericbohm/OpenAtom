@@ -739,14 +739,19 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
   double y33;
   double aka,akb,akc;
   double xk,yk,zk,g2,g,gs;
-  double ctheta,stheta,cphi,sphi;
+  double ctheta,stheta,cphi,sphi,c2phi,s2phi,c3phi,s3phi; 
 
   double tpi        = 2.0*M_PI;
   double rt_fpi     = cpylm_cons->rt_fpi;
   double rt_thrfpi  = cpylm_cons->rt_thrfpi;
   double rt_threpi  = cpylm_cons->rt_threpi;
+  double hrt_fivfpi = cpylm_cons->hrt_fivfpi;
+  double rt_fiftepi = cpylm_cons->rt_fiftepi;
+  double hrt_sevfpi = cpylm_cons->hrt_sevfpi;
+  double hrt_toepi  = cpylm_cons->hrt_toepi;
+  double hrt_ohffpi = cpylm_cons->hrt_ohffpi;
+  double hrt_tfepi  = cpylm_cons->hrt_tfepi;
   rt_threpi        *= sqrt(2.0);
-
 
 //==========================================================================
 // Spherical harmonic times the ees g-space weight, d                       
@@ -759,6 +764,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
   switch(lang){  
     //-----------------------------------------------------------
     case 0:
+      // ------------------------------------------------------
+      // Case: l=0, m=0
+      // ------------------------------------------------------
       for(i=0;i<ncoef;i++){
         y00      = rt_fpi;
         dy_re[i] = d_re[i]*y00;
@@ -771,6 +779,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
     //-----------------------------------------------------------
     case 1:
       switch(mang){  
+        // ------------------------------------------------------
+        // Case: l=1, m=0
+        // ------------------------------------------------------
         case 0:
           for(i=0;i<ncoef;i++){
             aka = (double)(ka[i]);
@@ -786,16 +797,19 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               y10      = rt_thrfpi*ctheta;
               dy_re[i] = -d_im[i]*y10;
               dy_im[i] =  d_re[i]*y10;
-	    }else{
+            }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
-	    }
+            }
 #ifdef CMK_BLUEGENEL
            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
 	  }//endfor
         break;
         case 1:
+        // ------------------------------------------------------
+        // Case: l=1, m=1
+        // ------------------------------------------------------
           for(i=0;i<ncoef;i++){
             aka = (double)(ka[i]);
             akb = (double)(kb[i]);
@@ -812,16 +826,19 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               y11    =  rt_threpi*stheta*cphi;
               dy_re[i] = -d_im[i]*y11;
               dy_im[i] =  d_re[i]*y11;
-	    }else{
+            }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
-	    }//endif
+            }//endif
 #ifdef CMK_BLUEGENEL
             if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
         case -1:
+        // ------------------------------------------------------
+        // Case: l=1, m=-1
+        // ------------------------------------------------------
           for(i=0;i<ncoef;i++){
             aka = (double)(ka[i]);
             akb = (double)(kb[i]);
@@ -838,10 +855,10 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               y11    =  rt_threpi*stheta*sphi;
               dy_re[i] = -d_im[i]*y11;
               dy_im[i] =  d_re[i]*y11;
-	    }else{
+            }else{
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
-	    }//endif
+            }//endif
 #ifdef CMK_BLUEGENEL
             if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
@@ -851,17 +868,379 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
     break;
     //-----------------------------------------------------------
     case 2:
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("No l=2 ees projectors yet\n"); 
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout); EXIT(1);
+      switch(mang){
+        // ------------------------------------------------------
+        // Case: l=2, m=0
+        // ------------------------------------------------------
+        case 0:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              ctheta   = zk/g;
+              y20      = hrt_fivfpi*(3.0*ctheta*ctheta - 1.0);
+              dy_re[i] =  d_re[i]*y20;
+              dy_im[i] =  d_im[i]*y20;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }
+#ifdef CMK_VERSION_BLUEGENE
+           if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=2, m=2
+        // ------------------------------------------------------
+        case 2:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              stheta = gs/g;
+              cphi  = (gs==0.0 ? 1.0 : xk/gs);
+              sphi  = (gs==0.0 ? 1.0 : yk/gs);
+              c2phi = cphi*cphi - sphi*sphi;
+              y22    =  0.5*rt_fiftepi*stheta*stheta*c2phi;
+              dy_re[i] =  d_re[i]*y22;
+              dy_im[i] =  d_im[i]*y22;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=2, m=-2
+        // ------------------------------------------------------
+        case -2:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              stheta = gs/g;
+              cphi  = (gs==0.0 ? 1.0 : xk/gs);
+              sphi  = (gs==0.0 ? 1.0 : yk/gs);
+              s2phi = 2.0*cphi*sphi;
+              y22    =  0.5*rt_fiftepi*stheta*stheta*s2phi;
+              dy_re[i] =  d_re[i]*y22;
+              dy_im[i] =  d_im[i]*y22;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=2, m=1
+        // ------------------------------------------------------
+        case 1:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              y21    = rt_fiftepi*stheta*ctheta*cphi;
+              dy_re[i] =  d_re[i]*y21;
+              dy_im[i] =  d_im[i]*y21;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=2, m=-1
+        // ------------------------------------------------------
+        case -1:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              y21    = rt_fiftepi*stheta*ctheta*sphi;
+              dy_re[i] =  d_re[i]*y21;
+              dy_im[i] =  d_im[i]*y21;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+      }//end : switch m : l = 2
     break;
     //-----------------------------------------------------------
     case 3:
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("No l=3 ees projectors yet\n");
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-      FFLUSH(stdout); EXIT(1);
+      switch(mang){
+        // ------------------------------------------------------
+        // Case: l=3, m=0
+        // ------------------------------------------------------
+        case 0:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              ctheta   = zk/g;
+              y30      = hrt_sevfpi*(5.0*ctheta*ctheta*ctheta - 3.0*ctheta);
+              dy_re[i] = -d_im[i]*y30;
+              dy_im[i] =  d_re[i]*y30;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }
+#ifdef CMK_VERSION_BLUEGENE
+           if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=3
+        // ------------------------------------------------------
+        case 3:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs     = sqrt(xk*xk + yk*yk);
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              c2phi  = cphi*cphi - sphi*sphi;
+              s2phi  = 2.0*cphi*sphi;
+              c3phi  = cphi*c2phi - sphi*s2phi;
+              y33    = hrt_tfepi*stheta*stheta*stheta*c3phi;
+              dy_re[i] = -d_im[i]*y33;
+              dy_im[i] =  d_re[i]*y33;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=-3
+        // ------------------------------------------------------
+        case -3:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs     = sqrt(xk*xk + yk*yk);
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              c2phi  = cphi*cphi - sphi*sphi;
+              s2phi  = 2.0*cphi*sphi;
+              s3phi  = cphi*s2phi + sphi*c2phi;
+              y33    = hrt_tfepi*stheta*stheta*stheta*s3phi;
+              dy_re[i] = -d_im[i]*y33;
+              dy_im[i] =  d_re[i]*y33;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=2
+        // ------------------------------------------------------
+        case 2:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              c2phi  = cphi*cphi - sphi*sphi;
+              y32    = hrt_ohffpi*stheta*stheta*ctheta*c2phi;
+              dy_re[i] = -d_im[i]*y32;
+              dy_im[i] =  d_re[i]*y32;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=-2
+        // ------------------------------------------------------
+        case -2:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              s2phi  = 2.0*cphi*sphi;
+              y32    = hrt_ohffpi*stheta*stheta*ctheta*s2phi;
+              dy_re[i] = -d_im[i]*y32;
+              dy_im[i] =  d_re[i]*y32;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=1
+        // ------------------------------------------------------
+        case 1:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              cphi   = (gs==0.0 ? 1.0 : xk/gs);
+              y31    = hrt_toepi*stheta*(5.0*ctheta*ctheta - 1.0)*cphi;
+              dy_re[i] = -d_im[i]*y31;
+              dy_im[i] =  d_re[i]*y31;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+        // ------------------------------------------------------
+        // Case: l=3, m=-1
+        // ------------------------------------------------------
+        case -1:
+          for(i=0;i<ncoef;i++){
+            aka = (double)(ka[i]);
+            akb = (double)(kb[i]);
+            akc = (double)(kc[i]);
+            xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+            yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+            zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+            g2  = xk*xk+yk*yk+zk*zk;
+            g   = sqrt(g2);
+            if(g!=0.0){
+              gs  = sqrt(xk*xk + yk*yk);
+              ctheta = zk/g;
+              stheta = gs/g;
+              sphi   = (gs==0.0 ? 1.0 : yk/gs);
+              y31    = hrt_toepi*stheta*(5.0*ctheta*ctheta - 1.0)*sphi;
+              dy_re[i] = -d_im[i]*y31;
+              dy_im[i] =  d_re[i]*y31;
+            }else{
+              dy_re[i] = 0.0;
+              dy_im[i] = 0.0;
+            }//endif
+#ifdef CMK_VERSION_BLUEGENE
+            if(i%nfreq==0){CmiNetworkProgress();}
+#endif
+          }//endfor
+        break;
+      }//end : switch m : l = 3
     break;
   }//end swithc : l
 

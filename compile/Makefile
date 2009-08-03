@@ -71,7 +71,9 @@ sum_code: setup physics cpaimd_driver mymathlib
 #===============================================================================
 clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
 	/bin/rm -rf $(TARGET) $(TARGET).prj
-	/bin/rm -rf $(BINDIR)
+#===============================================================================
+#	/bin/rm -rf $(BINDIR)
+#===============================================================================
 
 clean_cpaimd_driver:
 	cd $(MAKE_CPAIMD_DRV_INC); make clean; 
