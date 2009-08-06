@@ -1,19 +1,22 @@
 # Setp the basic compiler variables, flags, implicit rules etc
 ########### This stuff should be able take care of itself ############
 
+# Required directory structure within the charm installation
+CHARMBIN  = $(CHARMBASE)/bin
+CHARMINC  = $(CHARMBASE)/include
+
 # Compilers
 CC        = charmc
 CXX       = charmc
 F77       = charmc
+DOXYGEN   = doxygen
+
 # Basic compiler/linker flags
 CFLAGS   += -language charm++
 CXXFLAGS += -language charm++
 FFLAGS   += -language f77
 
 ####### Pattern rules
-CHARMBIN  = $(CHARMBASE)/bin
-CHARMINC  = $(CHARMBASE)/include
-
 # Rule to generate dependency information for C++ source files
 %.d: %.C
 	$(info Generating dependencies for $<)

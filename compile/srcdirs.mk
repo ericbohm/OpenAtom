@@ -7,10 +7,13 @@
 driver    = $(base)/src_charm_driver
 physics   = $(base)/src_piny_physics_v1.0
 mathlib   = $(base)/mathlib
+topinclude= $(base)/include
+docs      = $(base)/doc
 
 # Charm driver directory structure
 density   = $(driver)/cp_density_ctrl
 state     = $(driver)/cp_state_ctrl
+largesp   = $(driver)/cp_largesp_ctrl
 fftslab   = $(driver)/fft_slab_ctrl
 loadbal   = $(driver)/load_balance
 main      = $(driver)/main
@@ -19,5 +22,5 @@ paircalc  = $(driver)/paircalc
 strfact   = $(driver)/structure_factor
 uber      = $(driver)/uber
 util      = $(driver)/utility
-alldriverdirs = $(main) $(density) $(state) $(fftslab) $(loadbal) $(ortho) $(paircalc) $(strfact) $(uber) $(util)
+alldriverdirs = $(main) $(density) $(state) $(fftslab) $(loadbal) $(ortho) $(paircalc) $(strfact) $(uber) $(util) $(largesp)
 

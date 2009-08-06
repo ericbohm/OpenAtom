@@ -1,90 +1,90 @@
-#===============================================================================
-# include definitions
-#-------------------------------------------------------------------------------
-include ./Makefile.config
+# Define the base directory of the openatom tree
+base := ..
 
-#===============================================================================
-# general definitions
-#-------------------------------------------------------------------------------
-BINDIR = ../binary
-TARGET = $(BINDIR)/OpenAtom
+# Include basic make rules
+makedir   = $(base)/compile
+include $(makedir)/srcdirs.mk
+include $(makedir)/basicrules.mk
+include $(makedir)/Makefile.config
+
+# Directory structure and vpath related stuff
+# Overriding values set in srcdirs.mk for a shorter, cleaner paths
+build         = $(base)/binary
+CPAIMD        = $(base)
+PINY_STD_INC  = $(STANDARD_INC)
+DEPSTRIPDIRS += 
+VPATH        += 
+
+# Specify the compilation target
+TARGET    = OpenAtom
+
+# The relevant source files for this project
+SRC       = 
+HDR       = 
+OBJ       = $(SRC:.C=.o)
+INTF      = 
+LIBS      = CharmDriver PinyInterface MyMathLib
+LIBNAMES  = $(LIBS:%=lib%.a)
+
+########### Specify the flags, include paths, libraries etc.###########
+# Preprocessor flags (Used for all preprocessing, compilation and linking)
+CPPFLAGS += -I$(driver) -I$(build) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
+# Compiler flags (Used for compilation and linking)
+CFLAGS   += 
+CXXFLAGS += 
+FFLAGS   += 
+# Linker flags (Used for all linking)
+LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu
+# Additional libraries
+LDLIBS   += -module CkMulticast -module comlib
 ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-  FFT_INC = -lrfftw -lfftw
+  LDLIBS += -lrfftw -lfftw
 else
-  FFT_INC = -ldrfftw -ldfftw
+  LDLIBS += -ldrfftw -ldfftw
 endif
-    
-#===============================================================================
-all: full_code
+LDLIBS   += -lz -lm -lconv-util
 
-#===============================================================================
-docs:
-	(cd doc; make;)
 
-#===============================================================================
-setup: 
-	mkdir -p $(BINDIR)
+.PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test translateInterface
 
-cpaimd_driver: setup
-	cd $(MAKE_CPAIMD_DRV_INC) && make CXXFLAGS+="$(OPTS)"
+all: $(TARGET)
 
-#===============================================================================
-physics: setup
-	test -n "$(MAKE_PHYS_INC)" && cd $(MAKE_PHYS_INC) &&  $(MAKE) PINYLIB 
+$(TARGET): $(LIBNAMES) $(OBJ) 
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-#===============================================================================
-doxygen:
-	doxygen ../doc/Doxyfile
+libCharmDriver.a:
+	cd $(driver)/compile && $(MAKE) CXXFLAGS+="$(OPTS)"
 
-#===============================================================================
-mymathlib: setup
-	(cd $(MYMATH_HOME_INC); make OPTS="$(OPTS)";)
+libPinyInterface.a:
+	cd $(MAKE_PHYS_INC) && $(MAKE) PINYLIB
 
-#===============================================================================
-full_code: setup physics cpaimd_driver mymathlib
-	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o $(TARGET) \
-		  -language charm++ $(CHARMLIB) \
-                  -L$(BINDIR) -lCharmDriver -lPinyInterface -lMyMathLib \
-                  -L$(FFT_HOME)/lib $(FFT_INC) -lconv-util \
-		  $(MATH_LIB) $(LNK_OPTS)
-	cp charmrun $(BINDIR)
+libMyMathlib.a:
+	cd $(mathlib) && $(MAKE) OPTS="$(OPTS)"
 
-#===============================================================================
-proj_code: setup physics cpaimd_driver mymathlib
-	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o $(TARGET).prj \
-		  -language charm++ $(CHARMLIB) \
-                  -L$(BINDIR) -lCharmDriver -lPinyInterface -lMyMathLib \
-	          -tracemode projections -lconv-util \
-		  -L$(FFT_HOME)/lib $(FFT_INC) $(MATH_LIB) $(LNK_OPTS)
+driver: libCharmDriver.a
 
-#===============================================================================
-sum_code: setup physics cpaimd_driver mymathlib
-	cd $(CPAIMD)/compile; \
-	$(CHARMC) -o $(TARGET).sum \
-		  -language charm++ $(CHARMLIB) \
-                  -L$(BINDIR) -lCharmDriver -lPinyInterface -lMyMathLib \
-	          -tracemode summary -lconv-util \
-		  -L$(FFT_HOME)/lib -lrfftw -lfftw $(MATH_LIB) $(LNK_OPTS)
+physics: libPinyPhysics.a
 
-#===============================================================================
-clean: 	clean_cpaimd_driver clean_physics clean_mymathlib
-	/bin/rm -rf $(TARGET) $(TARGET).prj
-	/bin/rm -rf $(BINDIR)
+libs: libMyMathlib.a
 
-clean_cpaimd_driver:
-	cd $(MAKE_CPAIMD_DRV_INC); make clean; 
+# Clean only the build artifacts. Leave the binary etc around
+clean: clean_driver clean_physics clean_libs
+	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o) 
 
-clean_physics:
-	cd $(MAKE_PHYS_INC); make clean; 
+clean_driver: 
+	cd $(driver)/compile && $(MAKE) clean
 
-clean_mymathlib:
-	cd $(MYMATH_HOME_INC); make clean; 
+clean_physics: 
+	cd $(MAKE_PHYS_INC) && $(MAKE) clean
 
-valid_water: full_code
-	(cd $(VALID_DIR); ./tidy water; $(RUNCOMMAND) $(AUTOTEST)/cpaimd_config.water $(AUTOTEST)/water.input >valid.result)
-	perl $(VALID_EXEC)/valid.pl $(VALID_DIR)/ANSWERS_TRUE_PHYSICS $(VALID_DIR)/valid.result 
+clean_libs:
+	cd $(mathlib) && $(MAKE) clean
 
-#===============================================================================
+again: 
+	$(MAKE) clean; $(MAKE)
+
+
+# Include the generated files containing dependency info
+-include $(SRC:.C=.d)
+-include $(INTF:.ci=.di)
 
