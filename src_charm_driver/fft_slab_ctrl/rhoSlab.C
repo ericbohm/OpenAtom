@@ -17,7 +17,7 @@
 
 #include "utility/util.h"
 #include "debug_flags.h"
-#include <math.h>
+#include <cmath>
 #include "main/cpaimd.h"
 #include "main/groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"

@@ -23,9 +23,9 @@
 //============================================================================
 
 #include "charm++.h"
-#include <iostream.h>
-#include <fstream.h>
-#include <math.h>
+#include <iostream>
+#include <fstream>
+#include <cmath>
 
 #include "debug_flags.h"
 #include "utility/util.h"

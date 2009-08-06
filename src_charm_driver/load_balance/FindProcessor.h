@@ -7,8 +7,8 @@
 #ifndef _FINDPROCESSOR_H
 #define _FINDPROCESSOR_H
 
-#include <math.h>
-#include <iostream.h>
+#include <cmath>
+#include <iostream>
 /*class inttriple {
  private:
   int x, y,z;

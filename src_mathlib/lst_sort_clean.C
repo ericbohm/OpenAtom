@@ -1,7 +1,7 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 
 void lst_sort_clean(int , int *, int *);
 void sort_commence(int , int *,int *);

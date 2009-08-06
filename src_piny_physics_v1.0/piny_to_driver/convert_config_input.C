@@ -17,10 +17,10 @@
 
 #define _COOL_CONVERSION_ON_
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 using namespace std;
 #include "../../include/configure.h"
 

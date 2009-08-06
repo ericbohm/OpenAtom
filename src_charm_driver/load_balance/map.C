@@ -27,7 +27,7 @@
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-#include <math.h>
+#include <cmath>
 #include "charm++.h"
 #include "ckarray.h"
 #include "util.h"

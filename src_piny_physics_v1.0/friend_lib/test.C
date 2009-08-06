@@ -1,8 +1,8 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <ctime>
 
 void bar(int *,int );
 void foo(int **,int );

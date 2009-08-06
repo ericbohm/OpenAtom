@@ -25,7 +25,7 @@
 #ifndef _PELIST_H
 #define _PELIST_H
 
-#include <math.h>
+#include <cmath>
 #include "configure.h"
 #include "TopoManager.h"
 #include "cklists.h"

@@ -32,9 +32,6 @@
 //============================================================================
 
 #include "charm++.h"
-#include <iostream.h>
-#include <fstream.h>
-#include <math.h>
 
 #include "debug_flags.h"
 #include "utility/util.h"
@@ -47,6 +44,11 @@
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 #include "src_piny_physics_v1.0/include/proto_defs/proto_cp_ewald_corrs.h"
+
+#include <iostream>
+#include <fstream>
+#include <cmath>
+    using namespace std;
 
 //============================================================================
 
