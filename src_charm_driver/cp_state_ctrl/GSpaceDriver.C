@@ -33,7 +33,11 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 	/// Initialize flags and counters that record the control state
 	paraInfo = scProxy.ckLocalBranch ()->cpcharmParaInfo;
 	ees_nonlocal = paraInfo->ees_nloc_on;
-}
+        int natm_nl  = paraInfo->natm_nl;
+        if(natm_nl==0){
+	  areNLForcesDone=true;
+        }//endif
+}//end routine
 
 
 
@@ -53,12 +57,12 @@ void GSpaceDriver::pup(PUP::er &p)
 {
 	p|isFirstStep;
 	p|ees_nonlocal;
-    p|areNLForcesDone;
+        p|areNLForcesDone;
 	p|waitingForEnergy;
 	p|waitingForAtoms;
 	p|isAtomIntegrationDone;
 	p|isEnergyReductionDone;
-    p|isPsiVupdateNeeded;
+        p|isPsiVupdateNeeded;
 	p|sfCompSectionProxy;
 	if( p.isUnpacking() )
 	{
@@ -271,21 +275,28 @@ void GSpaceDriver::needUpdatedPsiV()
 /// Trigger the nonlocal computations
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
+
+    paraInfo = scProxy.ckLocalBranch ()->cpcharmParaInfo;
+    int natm_nl  = paraInfo->natm_nl;
+
     if(iteration_loc!=myGSpaceObj->iteration)
         CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");
 
     /// Set to false, just before I spawn the nonlocal work
-    areNLForcesDone = false;
-    #define _NLEES_PRIO_START_
-    #ifdef _NLEES_PRIO_START_OFF_
-        myParticlePlaneObj->startNLEes(iteration);
-    #else
-        NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
-        CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-        *(int*)CkPriorityPtr(msg) = config.sfpriority;
-        msg->iteration = myGSpaceObj->iteration;
-        UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).lPrioStartNLEes(msg);
+
+    if(natm_nl!=0){
+      areNLForcesDone = false;
+      #define _NLEES_PRIO_START_
+      #ifdef _NLEES_PRIO_START_OFF_
+         myParticlePlaneObj->startNLEes(iteration);
+      #else
+         NLDummyMsg *msg = new(8*sizeof(int)) NLDummyMsg;
+         CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+         *(int*)CkPriorityPtr(msg) = config.sfpriority;
+         msg->iteration = myGSpaceObj->iteration;
+         UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).lPrioStartNLEes(msg);
     #endif
+    }//endif
 }
 
 

@@ -498,11 +498,18 @@ void PhysicsParamTransfer::get_Sfgrp_params(int natm_nl, int numSfGrps,
 void PhysicsParamTransfer::get_Sfgrp_max(int natm_nl, int numSfGrps, 
                                          int *natm_nl_grp_max)
 {
+    if(numSfGrps==0){
+
+     (*natm_nl_grp_max) = 0;
+
+    }else{
+
      int n = (natm_nl / numSfGrps);
      int m = (natm_nl % numSfGrps);
      if(m!=0){n++;}
-
      (*natm_nl_grp_max) = n;
+
+    }//enddif
 }
 //========================================================================
 

@@ -305,7 +305,9 @@ void CP_State_RealSpacePlane::doFFT(){
 
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
   int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
-  if(ees_nonlocal==1 && config.launchNLeesFromRho==0){
+  int natm_nl      = scProxy.ckLocalBranch()->cpcharmParaInfo->natm_nl;
+
+  if(ees_nonlocal==1 && config.launchNLeesFromRho==0 && natm_nl>0){
     /*    if(config.nchareG>32)
       {
 	fprintf(stderr,"[%d,%d]on %d nchareG is %d\n",thisIndex.x, thisIndex.y, CkMyPe(),config.nchareG);
@@ -321,14 +323,14 @@ void CP_State_RealSpacePlane::doFFT(){
       CkExit();
     }//endif
 
-    if(thisIndex.y<config.nchareG){
-      UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNonLocalEes(iteration);
-    }//endif
-    if((div==1) && (thisIndex.y<rem))
-      {
+     if(thisIndex.y<config.nchareG){
+       UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).startNonLocalEes(iteration);
+     }//endif
+     if((div==1) && (thisIndex.y<rem)){
 	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,ind).startNonLocalEes(iteration);
-      }
-  }//endif
+     }//endif
+
+  }//endif : eesnonlocal is on
 #endif
 
 //============================================================================

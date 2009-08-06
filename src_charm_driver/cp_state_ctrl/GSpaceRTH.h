@@ -29,8 +29,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 /// (B) If nonlocal energy computations are allowed, start SF/computeZ of NL forces.
                 #ifndef _CP_DEBUG_SFNL_OFF_
                     /// If EES is turned off, trigger nonlocal computations
-                    if (c->ees_nonlocal==0)
-                    {
+                    if (c->ees_nonlocal==0 && c->paraInfo->natm_nl!=0){
                         /// Launch the structure factor and the Z matrix computations
                         c->releaseSFComputeZ();
                         /// If NL computations have been barriered, then wait (GSpaceDriver::doneNLForces or GSpaceDriver::allDoneNLForces resumes)
@@ -59,7 +58,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                     /// If nonlocals are turned on, 
                     #ifndef _CP_DEBUG_SFNL_OFF_
                         /// If ees methods are turned on, then trigger the ees computations
-                        if(c->ees_nonlocal==1)
+                        if(c->ees_nonlocal==1 && c->paraInfo->natm_nl!=0)
                             c->startNonLocalEes(c->myGSpaceObj->iteration);
                     #endif
                     /// Even if we're not doing the FFT loop, just set the flag to fool ourselves if/when we check later
@@ -84,7 +83,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
             /// (G) Add contraint forces (rotate forces to non-orthogonal frame)
             #ifndef _CP_DEBUG_PSI_OFF_  // you are moving everything
                 /// Reset ParticlePlane's flag to false
-                c->areNLForcesDone = false;
+	      if(c->paraInfo->natm_nl!=0)c->areNLForcesDone = false;
                 c->myGSpaceObj->sendLambda();
                 #ifndef _CP_DEBUG_ORTHO_OFF_
                     RTH_Suspend(); // wait for forces to be fixed up  

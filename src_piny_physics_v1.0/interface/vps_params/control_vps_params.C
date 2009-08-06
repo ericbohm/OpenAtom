@@ -1970,11 +1970,11 @@ void nlEesSetIter(CPPSEUDO *cppseudo){
 //==========================================================================
 // Malloc
 
-  int *lang_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
-  int *mang_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
-  int *ityp_v    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
-  int *n_zmat    = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
-  int *ioff_zmat = (int *)cmalloc(nl_iter*sizeof(int),"nlEesSet")-1;
+  int *lang_v    = (int *)cmalloc((nl_iter+1)*sizeof(int),"nlEesSet")-1;
+  int *mang_v    = (int *)cmalloc((nl_iter+1)*sizeof(int),"nlEesSet")-1;
+  int *ityp_v    = (int *)cmalloc((nl_iter+1)*sizeof(int),"nlEesSet")-1;
+  int *n_zmat    = (int *)cmalloc((nl_iter+1)*sizeof(int),"nlEesSet")-1;
+  int *ioff_zmat = (int *)cmalloc((nl_iter+1)*sizeof(int),"nlEesSet")-1;
 
 //==========================================================================
 // Store the {l,m,ityp} of each iteration 

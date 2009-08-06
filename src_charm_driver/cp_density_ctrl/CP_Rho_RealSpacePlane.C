@@ -476,11 +476,12 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 //  Spread the launch over all the rhoRchares you can.
 
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
-  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1){ 
+
+  if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==1 && sim->natm_nl>0){ 
 
       CkAssert(rho_rs.sizeZ>=config.nchareG);
       if(thisIndex.x<config.nchareG){
-          int nstates = config.nstates; 
+         int nstates = config.nstates; 
          int div     = (nstates/rhoRsubplanes);
          int rem     = (nstates % rhoRsubplanes);
          int add     = (thisIndex.y < rem ? 1 : 0);
@@ -495,7 +496,8 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
            UgSpaceDriverProxy[thisInstance.proxyOffset](ns,thisIndex.x).startNonLocalEes(myTime);
          }//endfor
        }//endif
-  }//endif
+
+  }//endif : launch the non-local ees
 
 //----------------------------------------------------------------------------
    }//end routine 

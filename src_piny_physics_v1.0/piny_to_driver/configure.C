@@ -2441,9 +2441,11 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
        }else{ 
            numSfGrps=natm_nl-1;
        }//endif
-       if(numSfGrps==0){numSfGrps=1;}
+       if(numSfGrps==0 && natm_nl>0){numSfGrps=1;}
        sprintf(dict_nl[5].keyarg,"%d",numSfGrps);
     }//endif
+
+    if(natm_nl==0){numSfGrps=0;}
 
 //=============================================================================
 // numsfdups
@@ -3131,16 +3133,16 @@ void Config::rangeExit(int param, const char *name, int iopt){
 //===================================================================================
 // Nonlocal Controls 
 
-    if(numSfGrps<1 || numSfGrps> natm_nl){
+    if((numSfGrps<1 && natm_nl>0)|| numSfGrps> natm_nl){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   The number of sf atm groups must be >=1 < natm_nl\n");
+      PRINTF("   The number of sf atm groups must be >=1 < natm_nl %d\n",numSfGrps);
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
 
-    if(numSfDups<1||numSfDups>nstates){
+    if((numSfDups<1 && natm_nl>0)|| numSfDups>nstates){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   The number of sf dup groups must be >=1 < num states\n");
+      PRINTF("   The number of sf dup groups must be >=1 < num states %d\n",numSfDups);
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif

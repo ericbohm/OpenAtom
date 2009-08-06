@@ -826,6 +826,13 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
 
   iterNL++;  if(iterNL==1){iteration++;}
 
+  if(natm_nl==0){
+   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+   CkPrintf("Duuuuude, natm_nl==0 don't start NL Ees\n");
+   CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+   CkExit();
+  }//endif
+
   if(ees_nonlocal==0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("Yo dawg, ees nonlocal is off. You can't call startNLEes\n");

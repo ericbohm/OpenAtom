@@ -3554,11 +3554,13 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
   }//end switch
 
 //==============================================================================
-// if you debuggin you get fewer energies
+// if your debugging or natm_nl==0 you get fewer energies
 
   int isub =0;
+  int natm_nl = scProxy.ckLocalBranch()->cpcharmParaInfo->natm_nl;
+  if(natm_nl==0){isub++;}
 #ifdef _CP_DEBUG_SFNL_OFF_
-  isub++;
+  if(natm_nl!=0){isub++;}
 #endif
 #ifdef  _CP_DEBUG_RHO_OFF_
   isub+=5;
