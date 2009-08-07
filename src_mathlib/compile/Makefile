@@ -1,153 +1,69 @@
-#===========================================================================
-include ../../compile/Makefile.config
-#===========================================================================
+# Define the base directory of the openatom tree
+base := ../..
+
+# Include basic make rules
+include $(base)/compile/srcdirs.mk
+include $(base)/compile/basicrules.mk
+include $(base)/compile/Makefile.config
+
+# Directory structure and vpath related stuff
+# Overriding values set in srcdirs.mk for a shorter, cleaner paths
+build         = .
+mathlib       = ..
+CPAIMD        = $(base)
+DEPSTRIPDIRS += 
+VPATH        += $(mathlib)
+
+# Specify the compilation target
+TARGET        = $(base)/binary/libMyMathLib.a
+
+# The relevant source files for this project
+SRC           = \
+                fastadd.C altRandom.C lst_sort_clean.C ibm_essl_dummy.C \
+				random_num_gen.f genmatmul.f $(src_math)
+HDR           = 
+OBJ           = $(addsuffix .o, $(basename $(SRC)) )
+INTF          = 
+#src_math     = $(src_blas) $(src_lapack) $(src_eispack) $(src_xerbla)
+src_blas      = dble_blas_stuff.f lsame.f xerbla.f zdotu.f zgemm.f zgemv.f dgemm.f dgemv.f
+src_xerbla    = xerbla.f
+src_eispack   = math_rs.f gefa_gesl.f
+src_lapack    = dble_lapack_stuff.f dopgtr.f dorg2l.f dorg2r.f dspev.f \
+                dspmv.f dspr2.f dsptrd.f dsteqr.f dsterf.f
+
+########### Specify the flags, include paths, libraries etc.###########
+# Preprocessor flags (Used for all preprocessing, compilation and linking)
+CPPFLAGS += 
+# Compiler flags (Used for compilation and linking)
+CFLAGS    = -seq $(OPTS)
+CXXFLAGS  = -seq $(OPTS)
+FFLAGS    = -f77 $(FOPTS)
+# Add some compile flags just for these targets
+fastadd.o:        CXXFLAGS += $(MATH_OPTS)
+ibm_essl_dummy.o: CXXFLAGS += $(IBM_ESSL_DUMMY) 
+# Linker flags (Used for all linking)
+LDFLAGS  += 
+# Additional libraries
+LDLIBS   += 
+
+.PHONY: all clean again 
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ) 
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
+
+clean:
+	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o *.a) $(TARGET) charmrun 
+
+again: 
+	$(MAKE) clean; $(MAKE)
 
 
-#===========================================================================
-RM    = /bin/rm -f
-ECHO  = /bin/echo making
-HEAD  = ..
-MAIN  = ../main
-#===========================================================================
+# Include the generated files containing dependency info
+depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
+ifneq ($(MAKECMDGOALS),clean)
+-include $(depFiles)
+-include $(INTF:.ci=.di)
+endif
 
-
-#===========================================================================
-FLAGS  = 
-MATH   = ..
-#===========================================================================
-
-#===========================================================================
-OBJS_REQ= random_num_gen.o genmatmul.o fastadd.o altRandom.o
-include $(BLAS_FORT)
-include $(LAPACK_FORT)
-include $(EISPACK_FORT)
-include $(EISPACK_FORT)
-OBJS 	= $(OBJS_REQ) $(OBJS_BLAS) $(OBJS_LAPACK) $(OBJS_EISPACK) \
-	$(OBJS_IBM_ESSL) lst_sort_clean.o ibm_essl_dummy.o
-TARGET_LIB = ../../binary/libMyMathLib.a
-#===========================================================================
-
-
-#===========================================================================
-mymathlib: $(OBJS) 
-	$(CHARMC) -o $(TARGET_LIB) $(OBJS) $(LIB) -language charm++ \
-        $(OPTS) $(FLAGS)
-
-#===========================================================================
-
-
-#---------------------------------------------------------------------------
-altRandom.o: $(MATH)/altRandom.C $(MATH)/mathlib.h
-	$(ECHO) $@
-	$(CHARMC) -c $(MATH)/altRandom.C
-
-#---------------------------------------------------------------------------
-ibm_essl_dummy.o: $(MATH)/ibm_essl_dummy.C $(MATH)/mathlib.h 
-	$(ECHO) $@
-	$(CHARMC) -c $(IBM_ESSL_DUMMY) $(MATH)/ibm_essl_dummy.C
-
-#---------------------------------------------------------------------------
-lst_sort_clean.o: $(MATH)/lst_sort_clean.C $(MATH)/mathlib.h
-	$(ECHO) $@
-	$(CHARMC) -c $(MATH)/lst_sort_clean.C
-
-#---------------------------------------------------------------------------
-fastadd.o: $(MATH)/fastadd.C $(MATH)/mathlib.h
-	$(ECHO) $@
-	$(CHARMC) -seq -c $(MATH_OPTS) $(MATH)/fastadd.C
-
-#---------------------------------------------------------------------------
-math_rs.o: $(MATH)/math_rs.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/math_rs.f
-#---------------------------------------------------------------------------
-gefa_gesl.o: $(MATH)/gefa_gesl.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/gefa_gesl.f
-#---------------------------------------------------------------------------
-random_num_gen.o : $(MATH)/random_num_gen.f
-	$(ECHO) $@
-	$(F_COMPILER_NOPT) -c $(MATH)/random_num_gen.f
-#---------------------------------------------------------------------------
-genmatmul.o : $(MATH)/genmatmul.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/genmatmul.f
-#---------------------------------------------------------------------------
-dble_blas_stuff.o: $(MATH)/dble_blas_stuff.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dble_blas_stuff.f
-#---------------------------------------------------------------------------
-xerbla.o: $(MATH)/xerbla.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/xerbla.f
-#---------------------------------------------------------------------------
-lsame.o: $(MATH)/lsame.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/lsame.f
-#---------------------------------------------------------------------------
-dgemm.o: $(MATH)/dgemm.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dgemm.f
-#---------------------------------------------------------------------------
-zgemm.o: $(MATH)/zgemm.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/zgemm.f
-#---------------------------------------------------------------------------
-dgemv.o: $(MATH)/dgemv.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dgemv.f
-#---------------------------------------------------------------------------
-zgemv.o: $(MATH)/zgemv.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/zgemv.f
-#---------------------------------------------------------------------------
-zdotu.o: $(MATH)/zdotu.f
-	$(ECHO) $@
-	$(F_COMPILER) -c -g $(MATH)/zdotu.f
-#---------------------------------------------------------------------------
-dble_lapack_stuff.o: $(MATH)/dble_lapack_stuff.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dble_lapack_stuff.f
-#---------------------------------------------------------------------------
-dopgtr.o: $(MATH)/dopgtr.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dopgtr.f
-#---------------------------------------------------------------------------
-dorg2l.o: $(MATH)/dorg2l.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dorg2l.f
-#---------------------------------------------------------------------------
-dorg2r.o: $(MATH)/dorg2r.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dorg2r.f
-#---------------------------------------------------------------------------
-dspev.o: $(MATH)/dspev.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dspev.f
-#---------------------------------------------------------------------------
-dspmv.o: $(MATH)/dspmv.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dspmv.f
-#---------------------------------------------------------------------------
-dspr2.o: $(MATH)/dspr2.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dspr2.f
-#---------------------------------------------------------------------------
-dsptrd.o: $(MATH)/dsptrd.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dsptrd.f
-#---------------------------------------------------------------------------
-dsteqr.o: $(MATH)/dsteqr.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dsteqr.f
-#---------------------------------------------------------------------------
-dsterf.o: $(MATH)/dsterf.f
-	$(ECHO) $@
-	$(F_COMPILER) -c $(MATH)/dsterf.f
-#===========================================================================
-
-
-#===========================================================================
-clean:	
-	$(RM) $(TARGET_LIB) core  *.o
-#===========================================================================

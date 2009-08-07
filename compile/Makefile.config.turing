@@ -43,9 +43,7 @@ AUTOTEST	= $(VALID_EXEC)
 #-------------------------------------------------------------------------------
 # Fortran Source / Optimized Libraries
 #-------------------------------------------------------------------------------
-BLAS_FORT	= ../blas_routines.h
-LAPACK_FORT	= ../lapack_routines.h
-EISPACK_FORT	= ../eispack_routines.h
+src_math     = $(src_blas) $(src_lapack) $(src_eispack) 
 IBM_ESSL_DUMMY	= 
 MATH_LIB	= 
 #===============================================================================

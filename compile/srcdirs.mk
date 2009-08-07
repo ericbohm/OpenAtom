@@ -6,7 +6,7 @@
 ################## Modify only if directory structure changes ####################
 driver    = $(base)/src_charm_driver
 physics   = $(base)/src_piny_physics_v1.0
-mathlib   = $(base)/mathlib
+mathlib   = $(base)/src_mathlib
 topinclude= $(base)/include
 docs      = $(base)/doc
 

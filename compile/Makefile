@@ -58,18 +58,21 @@ libCharmDriver.a:
 libPinyInterface.a:
 	cd $(MAKE_PHYS_INC) && $(MAKE) PINYLIB
 
-libMyMathlib.a:
-	cd $(mathlib) && $(MAKE) OPTS="$(OPTS)"
+libMyMathLib.a:
+	cd $(mathlib)/compile && $(MAKE)
 
 driver: libCharmDriver.a
 
 physics: libPinyPhysics.a
 
-libs: libMyMathlib.a
+libs: libMyMathLib.a
 
 # Clean only the build artifacts. Leave the binary etc around
 clean: clean_driver clean_physics clean_libs
 	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o) 
+
+realclean: clean
+	$(RM) $(LIBNAMES) $(TARGET) charmrun 
 
 clean_driver: 
 	cd $(driver)/compile && $(MAKE) clean
@@ -78,13 +81,15 @@ clean_physics:
 	cd $(MAKE_PHYS_INC) && $(MAKE) clean
 
 clean_libs:
-	cd $(mathlib) && $(MAKE) clean
+	cd $(mathlib)/compile && $(MAKE) clean
 
 again: 
 	$(MAKE) clean; $(MAKE)
 
 
 # Include the generated files containing dependency info
+ifneq ($(MAKECMDGOALS),clean)
 -include $(SRC:.C=.d)
 -include $(INTF:.ci=.di)
+endif
 

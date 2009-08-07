@@ -44,9 +44,7 @@ AUTOTEST	= $(VALID_EXEC)
 #-------------------------------------------------------------------------------
 # Fortran Source / Optimized Libraries
 #-------------------------------------------------------------------------------
-BLAS_FORT	= ../xerbla_routine.h
-LAPACK_FORT	= ../no_lapack_routines.h
-EISPACK_FORT	= ../eispack_routines.h
+src_math     = $(src_xerbla) $(src_eispack) 
 IBM_ESSL_DUMMY	= -D_IBM_ESSL_
 MATH_LIB	= $(LOCAL_LIBS) -lesslbg -lesslsmpbg -lxlf90_r  \
 		-lmass -lmassv -lxlfmath -lxlomp_ser -lxlsmp -lpthread \
