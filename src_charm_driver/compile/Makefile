@@ -33,7 +33,7 @@ SRC       = \
 			util.C MapFile.C para_grp_parse.C
             
 HDR       = 
-OBJ       = $(SRC:.C=.o)
+OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci cpaimd.ci 
 
 ########### Specify the flags, include paths, libraries etc.###########
@@ -46,22 +46,25 @@ FFLAGS   +=
 # Linker flags (Used for all linking)
 LDFLAGS  += 
 # Additional libraries
-LDLIBS   += -module CkMultiCast 
+LDLIBS   += 
 
-.PHONY: all clean again test bgtest translateInterface
+.PHONY: all clean again 
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ) 
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o *.a) $(TARGET) charmrun 
+	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o *.a) $(TARGET) 
 
 again: 
 	$(MAKE) clean; $(MAKE)
 
 # Include the generated files containing dependency info
--include $(SRC:.C=.d)
+depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
+ifneq ($(MAKECMDGOALS),clean)
+-include $(depFiles)
 -include $(INTF:.ci=.di)
+endif
 
