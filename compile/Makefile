@@ -13,7 +13,7 @@ build         = $(base)/binary
 CPAIMD        = $(base)
 PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 
-VPATH        += 
+VPATH        += $(build_drv) $(build_phy) $(build_math) 
 
 # Specify the compilation target
 TARGET    = OpenAtom
@@ -21,20 +21,20 @@ TARGET    = OpenAtom
 # The relevant source files for this project
 SRC       = 
 HDR       = 
-OBJ       = $(SRC:.C=.o)
+OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = 
 LIBS      = CharmDriver PinyInterface MyMathLib
 LIBNAMES  = $(LIBS:%=lib%.a)
 
 ########### Specify the flags, include paths, libraries etc.###########
 # Preprocessor flags (Used for all preprocessing, compilation and linking)
-CPPFLAGS += -I$(driver) -I$(build) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
+CPPFLAGS += -I$(base) -I$(base)/include 
 # Compiler flags (Used for compilation and linking)
 CFLAGS   += 
 CXXFLAGS += 
 FFLAGS   += 
 # Linker flags (Used for all linking)
-LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu
+LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu 
 # Additional libraries
 LDLIBS   += -module CkMulticast -module comlib
 ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
@@ -49,47 +49,48 @@ LDLIBS   += -lz -lm -lconv-util
 
 all: $(TARGET)
 
-$(TARGET): $(LIBNAMES) $(OBJ) 
+$(TARGET): $(LIBS:%=-l%) $(OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-libCharmDriver.a:
-	cd $(driver)/compile && $(MAKE) CXXFLAGS+="$(OPTS)"
+$(build_drv)/libCharmDriver.a: driver
 
-libPinyInterface.a:
-	cd $(MAKE_PHYS_INC) && $(MAKE) PINYLIB
+$(build_phy)/libPinyInterface.a: physics
 
-libMyMathLib.a:
-	cd $(mathlib)/compile && $(MAKE)
+$(build_math)/libMyMathLib.a: libs
 
-driver: libCharmDriver.a
+driver:
+	@cd $(build_drv) && $(MAKE) CXXFLAGS+="$(OPTS)"
 
-physics: libPinyPhysics.a
+physics:
+	@cd $(build_phy) && $(MAKE) PINYLIB
 
-libs: libMyMathLib.a
+libs:
+	@cd $(build_math) && $(MAKE)
 
 # Clean only the build artifacts. Leave the binary etc around
 clean: clean_driver clean_physics clean_libs
-	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o) 
+	@$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o) 
 
 realclean: clean
-	$(RM) $(LIBNAMES) $(TARGET) charmrun 
+	@$(RM) $(LIBNAMES) $(TARGET) charmrun 
 
 clean_driver: 
-	cd $(driver)/compile && $(MAKE) clean
+	@cd $(build_drv) && $(MAKE) clean
 
 clean_physics: 
-	cd $(MAKE_PHYS_INC) && $(MAKE) clean
+	@cd $(build_phy) && $(MAKE) clean
 
 clean_libs:
-	cd $(mathlib)/compile && $(MAKE) clean
+	@cd $(build_math) && $(MAKE) clean
 
 again: 
-	$(MAKE) clean; $(MAKE)
+	@$(MAKE) clean; $(MAKE)
 
 
 # Include the generated files containing dependency info
+depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
 ifneq ($(MAKECMDGOALS),clean)
--include $(SRC:.C=.d)
+-include $(depFiles)
 -include $(INTF:.ci=.di)
 endif
 

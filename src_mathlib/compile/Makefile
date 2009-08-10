@@ -8,14 +8,14 @@ include $(base)/compile/Makefile.config
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-build         = .
+build_math    = .
 mathlib       = ..
 CPAIMD        = $(base)
 DEPSTRIPDIRS += 
 VPATH        += $(mathlib)
 
 # Specify the compilation target
-TARGET        = $(base)/binary/libMyMathLib.a
+TARGET        = libMyMathLib.a
 
 # The relevant source files for this project
 SRC           = \

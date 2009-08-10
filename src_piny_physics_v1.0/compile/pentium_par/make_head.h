@@ -17,7 +17,7 @@ ECODE      = $(MYHOME)/../binary
 #-----------------------------
 INCLUDES = $(DCODE)/include/pentium_par
 EXE      = $(ECODE)/piny_md_pentium_par.x
-LIB      = $(ECODE)/libPinyInterface.a
+LIB      = libPinyInterface.a
 
 #--------------------------
 # compiler

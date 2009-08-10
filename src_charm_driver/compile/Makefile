@@ -9,14 +9,14 @@ include $(base)/compile/Makefile.config
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
 driver        = ..
-build         = .
+build_drv     = .
 CPAIMD        = $(base)
 PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 
 VPATH         = $(alldriverdirs) $(PINY_STD_INC) 
 
 # Specify the compilation target
-TARGET    = $(base)/binary/libCharmDriver.a
+TARGET    = libCharmDriver.a
 
 # The relevant source files for this project
 SRC       = \
@@ -38,7 +38,7 @@ INTF      = ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor
 
 ########### Specify the flags, include paths, libraries etc.###########
 # Preprocessor flags (Used for all preprocessing, compilation and linking)
-CPPFLAGS += -I$(driver) -I$(build) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
+CPPFLAGS += -I$(driver) -I$(build_drv) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
 # Compiler flags (Used for compilation and linking)
 CFLAGS   += 
 CXXFLAGS += 

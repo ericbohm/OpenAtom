@@ -4,11 +4,18 @@
 # complete source tree structure will be available thro the following variables
 
 ################## Modify only if directory structure changes ####################
+# Top-level directories
 driver    = $(base)/src_charm_driver
 physics   = $(base)/src_piny_physics_v1.0
 mathlib   = $(base)/src_mathlib
 topinclude= $(base)/include
 docs      = $(base)/doc
+
+# Build directories
+build     = $(base)/binary
+build_drv = $(driver)/compile
+build_phy = $(MAKE_PHYS_INC)
+build_math= $(mathlib)/compile
 
 # Charm driver directory structure
 density   = $(driver)/cp_density_ctrl
