@@ -48,6 +48,9 @@ template <class msgType, typename dataType>
 class MessageDataCollator 
 {
 	public:
+
+  MERGE_PATH_DECLARE(collatorPath);
+
 		// ----------------------------------------- Cons/Des-truction -----------------------------------------
 		/// @warning: Do not use this. This exists only to appease charm migration code which screams for default constructors.
 		MessageDataCollator() {}
@@ -164,6 +167,8 @@ void MessageDataCollator<msgType,dataType>::operator() (msgType *msg)
 	 * sender are to be grouped together. Other possible scenarios where it is possible to receive messages from separate
 	 * collation groups might occur.
 	 */
+
+  MERGE_PATH_MAX(collatorPath);
 	
 	/// If we're in the middle of a batch of messages
 	if (numReceived != 0)
@@ -231,6 +236,8 @@ void MessageDataCollator<msgType,dataType>::operator() (msgType *msg)
 		if (sampleMsg)
 			delete sampleMsg;
 		sampleMsg = reinterpret_cast<msgType*> ( CkCopyMsg(reinterpret_cast<void**>(&msg)) );
+
+		MERGE_PATH_RESET(collatorPath);
 		/// Call the trigger functor
 		uponCompletion.send(outputMsg);
 		/// Reset the number received so that we can start collating all over again
