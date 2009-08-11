@@ -12,6 +12,8 @@ struct EnergyStruct; /// @warning: Forward declarations of structs seem to choke
 
 using namespace cp::gspace; ///< @note: Should be temporary until GSpace chares live within namespace gspace
 
+#include <pathHistory.h>
+
 #ifndef CP_STATE_GSPACE_PLANE_H
 #define CP_STATE_GSPACE_PLANE_H
 
@@ -230,6 +232,12 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
             complex *savedlambdaBf;
             complex *savedlambdaAf;
         #endif
+
+  MERGE_PATH_DECLARE(countIFFT);
+  MERGE_PATH_DECLARE(countRedPsi);
+  MERGE_PATH_DECLARE(countRedPsiV);
+
+
 };
 
 #endif // CP_STATE_GSPACE_PLANE_H

@@ -8,6 +8,8 @@
 #include <string>
 #include <sstream>
 
+#include <pathHistory.h>
+
 #ifndef MESSAGE_DATA_COLLATOR_H
 #define MESSAGE_DATA_COLLATOR_H
 

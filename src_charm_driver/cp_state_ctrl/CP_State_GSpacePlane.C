@@ -1291,6 +1291,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 // Recv the message
 
   countIFFT++;
+  MERGE_PATH_MAX(countIFFT);
 
   // This is not a reduction. Don't zero me please. Every elements is set.
   // z=offset is inner index : collections of z-lines of constant (gx,gy)
@@ -1302,6 +1303,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 // If you have recved from every z plane, go on
 
   if (countIFFT == gs.planeSize[1]) {
+    MERGE_PATH_RESET(countIFFT)
     countIFFT = 0;
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
   }//endif : has everyone arrived?
@@ -2495,7 +2497,10 @@ void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
 // Done
 
   countRedPsi++;
+  MERGE_PATH_MAX(countRedPsi);
+
   if(countRedPsi==numRecvRedPsi){
+    MERGE_PATH_RESET(countRedPsi);
     countRedPsi=0;
     iRecvRedPsi=1;
     if(jtemp!=gs.nkx0_red){
@@ -3089,10 +3094,12 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 // Done
 
   countRedPsiV++;
+  MERGE_PATH_MAX(countRedPsiV);
   if(countRedPsiV==numRecvRedPsi){
 	#ifdef DEBUG_CP_GSPACE_PSIV
 		CkPrintf("GSpace[%d,%d] acceptRedPsiV received all %d GSRedPsi messages carrying redundant PsiV data\n",thisIndex.x,thisIndex.y,countRedPsiV);
 	#endif
+    MERGE_PATH_RESET(countRedPsiV);
     countRedPsiV = 0;
     iRecvRedPsiV  = 1;
     if(jtemp!=gs.nkx0_red){
