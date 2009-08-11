@@ -58,6 +58,9 @@
 #include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #define PRINTF CkPrintf
 
+// ISAAC added this include:
+#include <pathHistory.h>
+
 //============================================================================
 
 extern Config config;
@@ -92,6 +95,28 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     #endif
     CmiAssert(thisIndex.x == 0 && thisIndex.y == 0);
     //			end_t = CmiWallTimer();
+
+    if(numGlobalIter == 1 && iterations==1){
+      resetThisEntryPath();
+    }
+
+
+    if(numGlobalIter == 20 && iterations==1){
+      CkPrintf("[%d] Calling useThisCriticalPathForPriorities()  ORTHO\n", CkMyPe());
+      useThisCriticalPathForPriorities();
+    }
+
+
+    //  CkPrintf("ISAAC: iterations=%d numGlobalIter=%d\n", iterations, (int)numGlobalIter); 
+    if(numGlobalIter == 6 && iterations==1 && false){ 
+      CkPrintf("ISAAC: tracing back critical path\n"); 
+      //      CkCallback cb(CkCallback::ignore); 
+      CkCallback cb(CkCallback::ckExit);
+      traceCriticalPathBack(cb); 
+    } else {
+ 
+
+
     double error = *((double *) msg->getData());
     error = sqrt(error / (cfg.numStates * cfg.numStates));
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
@@ -121,6 +146,9 @@ void Ortho::collect_error(CkReductionMsg *msg) {
       else
 	thisProxy.collect_results();
     }
+
+    }
+
     delete msg;
     
   }
