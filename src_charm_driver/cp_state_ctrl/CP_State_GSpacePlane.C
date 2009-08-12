@@ -1303,7 +1303,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 // If you have recved from every z plane, go on
 
   if (countIFFT == gs.planeSize[1]) {
-    MERGE_PATH_RESET(countIFFT)
+    MERGE_PATH_RESET(countIFFT);
     countIFFT = 0;
         UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
   }//endif : has everyone arrived?
