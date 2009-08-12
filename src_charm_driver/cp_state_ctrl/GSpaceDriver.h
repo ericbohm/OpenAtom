@@ -5,6 +5,7 @@
 #include "main/CPcharmParaInfoGrp.h"
 #include "charm++.h"
 #include "uber/Uber.h"
+#include <pathHistory.h>
 
 #ifndef GSPACE_DRIVER_H
 #define GSPACE_DRIVER_H
@@ -103,6 +104,9 @@ class GSpaceDriver: public CBase_GSpaceDriver
 		RTH_Runtime* controlThread;
 		/// Array section of the structure factor chares that I will be triggering
 		CProxySection_StructureFactor sfCompSectionProxy;
+
+		MERGE_PATH_DECLARE(waitForEnergyAndAtoms);
+
 };
 
 #endif // GSPACE_DRIVER_H
