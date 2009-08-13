@@ -6,11 +6,9 @@ makedir := $(base)/compile
 include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
 include $(makedir)/Makefile.config
-
+include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
-CPAIMD        = $(base)
-PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 
 VPATH        += $(build_driver) $(build_physics) $(build_mathlib) 
 
@@ -25,27 +23,9 @@ INTF      =
 LIBS      = CharmDriver PinyInterface MyMathLib
 LIBNAMES  = $(LIBS:%=lib%.a)
 
-########### Specify the flags, include paths, libraries etc.###########
-# Preprocessor flags (Used for all preprocessing, compilation and linking)
-CPPFLAGS += -I$(base) -I$(base)/include 
-# Compiler flags (Used for compilation and linking)
-CFLAGS   += 
-CXXFLAGS += 
-FFLAGS   += 
-# Linker flags (Used for all linking)
-LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu 
-# Additional libraries
-LDLIBS   += -module CkMulticast -module comlib
-ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-  LDLIBS += -lrfftw -lfftw
-else
-  LDLIBS += -ldrfftw -ldfftw
-endif
-LDLIBS   += -lz -lm -lconv-util
-
 # Tiny function to help generate the correct arguments for a module's sub-make invocation
 # @note: Some string manipulation to automatically generate correct relative paths will be good
-genMakeArgs  = -C $(build_$1) -f ../$($1)/compile/Makefile CXXFLAGS+="$(OPTS)" base=../..
+genMakeArgs  = -C $(build_$1) -f ../$($1)/compile/Makefile base=../..
 
 
 .PHONY: all driver physics libs mathlib clean again test translateInterface

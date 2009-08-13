@@ -6,6 +6,7 @@ makedir := $(base)/compile
 include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
 include $(makedir)/Makefile.config
+include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
@@ -34,18 +35,8 @@ SRC       = \
 HDR       = 
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci cpaimd.ci 
-
-########### Specify the flags, include paths, libraries etc.###########
-# Preprocessor flags (Used for all preprocessing, compilation and linking)
 CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
-# Compiler flags (Used for compilation and linking)
-CFLAGS   += 
-CXXFLAGS += 
-FFLAGS   += 
-# Linker flags (Used for all linking)
-LDFLAGS  += 
-# Additional libraries
-LDLIBS   += 
+
 
 .PHONY: all clean again 
 
