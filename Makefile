@@ -9,11 +9,11 @@ MAKEARGS = -C $(build) -f ../$(makedir)/Makefile
 
 .PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test docs doxygen
 
-all driver physics libs clean clean_driver clean_physics clean_libs again: $(build) 
+all driver physics libs clean clean_driver clean_physics clean_libs again: setup
 	@$(MAKE) $(MAKEARGS) $@
 
 realclean:
-	@test ! -d $(build) || { $(MAKE) $(MAKEARGS) $@ && rmdir $(build); }
+	@test ! -d $(build) || $(RM) -r $(build)
 
 docs:
 	@cd $(docs) && $(MAKE)
@@ -21,6 +21,8 @@ docs:
 doxygen:
 	@cd $(docs) && $(DOXYGEN) $(docs)/Doxyfile
 
-$(build): 
-	@mkdir -p $(build)
+setup: $(build) $(build_driver) $(build_physics) $(build_mathlib)
+
+$(build) $(build_driver) $(build_physics) $(build_mathlib): 
+	@mkdir -p $(@)
 

@@ -37,7 +37,7 @@ INTF      = ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor
 
 ########### Specify the flags, include paths, libraries etc.###########
 # Preprocessor flags (Used for all preprocessing, compilation and linking)
-CPPFLAGS += -I$(driver) -I$(build_drv) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
+CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
 # Compiler flags (Used for compilation and linking)
 CFLAGS   += 
 CXXFLAGS += 

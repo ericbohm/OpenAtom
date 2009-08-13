@@ -53,7 +53,7 @@ $(TARGET): $(OBJ)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o *.a) $(TARGET) charmrun 
+	$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o *.a) $(TARGET) 
 
 again: 
 	$(MAKE) clean; $(MAKE)

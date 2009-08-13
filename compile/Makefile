@@ -7,11 +7,12 @@ include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
 include $(makedir)/Makefile.config
 
+
 # Directory structure and vpath related stuff
 CPAIMD        = $(base)
 PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 
-VPATH        += $(build_drv) $(build_phy) $(build_math) 
+VPATH        += $(build_driver) $(build_physics) $(build_mathlib) 
 
 # Specify the compilation target
 TARGET    = OpenAtom
@@ -42,44 +43,33 @@ else
 endif
 LDLIBS   += -lz -lm -lconv-util
 
+# Tiny function to help generate the correct arguments for a module's sub-make invocation
+# @note: Some string manipulation to automatically generate correct relative paths will be good
+genMakeArgs  = -C $(build_$1) -f ../$($1)/compile/Makefile CXXFLAGS+="$(OPTS)" base=../..
 
-.PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test translateInterface
+
+.PHONY: all driver physics libs mathlib clean again test translateInterface
 
 all: $(TARGET)
 
 $(TARGET): $(LIBS:%=-l%) $(OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(build_drv)/libCharmDriver.a: driver
+$(build_driver)/libCharmDriver.a: driver
 
-$(build_phy)/libPinyInterface.a: physics
+$(build_physics)/libPinyInterface.a: physics
 
-$(build_math)/libMyMathLib.a: libs
+$(build_mathlib)/libMyMathLib.a: libs
 
-driver:
-	@cd $(build_drv) && $(MAKE) CXXFLAGS+="$(OPTS)"
+driver physics mathlib:
+	@$(MAKE) $(call genMakeArgs,$@)
 
-physics:
-	@cd $(build_phy) && $(MAKE)
-
-libs:
-	@cd $(build_math) && $(MAKE)
+libs: mathlib
 
 # Clean only the build artifacts. Leave the binary etc around
-clean: clean_driver clean_physics clean_libs
-	@$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o) 
-
-realclean: clean
-	@$(RM) $(LIBNAMES) $(TARGET) charmrun 
-
-clean_driver: 
-	@cd $(build_drv) && $(MAKE) clean
-
-clean_physics: 
-	@cd $(build_phy) && $(MAKE) clean
-
-clean_libs:
-	@cd $(build_math) && $(MAKE) clean
+clean: 
+	@$(RM) -r $(build_driver) $(build_physics) $(build_mathlib)
+	@$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o)
 
 again: 
 	@$(MAKE) clean; $(MAKE)
