@@ -62,7 +62,7 @@ driver:
 	@cd $(build_drv) && $(MAKE) CXXFLAGS+="$(OPTS)"
 
 physics:
-	@cd $(build_phy) && $(MAKE) PINYLIB
+	@cd $(build_phy) && $(MAKE)
 
 libs:
 	@cd $(build_math) && $(MAKE)

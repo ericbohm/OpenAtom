@@ -14,7 +14,7 @@ docs      = $(base)/doc
 # Build directories
 build     = $(base)/binary
 build_drv = $(driver)/compile
-build_phy = $(MAKE_PHYS_INC)
+build_phy = $(physics)/compile
 build_math= $(mathlib)/compile
 
 # Charm driver directory structure
