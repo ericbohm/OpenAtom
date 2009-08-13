@@ -1,15 +1,14 @@
 # Define the base directory of the openatom tree
 base := ../..
+makedir := $(base)/compile
 
 # Include basic make rules
-include $(base)/compile/srcdirs.mk
-include $(base)/compile/basicrules.mk
-include $(base)/compile/Makefile.config
+include $(makedir)/srcdirs.mk
+include $(makedir)/basicrules.mk
+include $(makedir)/Makefile.config
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-driver        = ..
-build_drv     = .
 CPAIMD        = $(base)
 PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 

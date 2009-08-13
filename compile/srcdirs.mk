@@ -5,6 +5,7 @@
 
 ################## Modify only if directory structure changes ####################
 # Top-level directories
+makedir   = $(base)/compile
 driver    = $(base)/src_charm_driver
 physics   = $(base)/src_piny_physics_v1.0
 mathlib   = $(base)/src_mathlib
@@ -30,4 +31,8 @@ strfact   = $(driver)/structure_factor
 uber      = $(driver)/uber
 util      = $(driver)/utility
 alldriverdirs = $(main) $(density) $(state) $(fftslab) $(loadbal) $(ortho) $(paircalc) $(strfact) $(uber) $(util) $(largesp)
+
+# PINY physics directory structure
+pinymake  = $(physics)/compile
+pinyinc   = $(physics)/include
 

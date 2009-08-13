@@ -1,15 +1,14 @@
 # Define the base directory of the openatom tree
 base := ../..
+makedir := $(base)/compile
 
 # Include basic make rules
-include $(base)/compile/srcdirs.mk
-include $(base)/compile/basicrules.mk
-include $(base)/compile/Makefile.config
+include $(makedir)/srcdirs.mk
+include $(makedir)/basicrules.mk
+include $(makedir)/Makefile.config
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-physics       = ..
-build_phy     = .
 CPAIMD        = $(base)
 DEPSTRIPDIRS += 
 VPATH        += 
@@ -18,7 +17,7 @@ VPATH        +=
 TARGET    = libPinyInterface.a
 
 # The relevant source files for this project
-include $(build_phy)/make_defs/obj_files.h
+include $(pinymake)/make_defs/obj_files.h
 SRC       = 
 HDR       = 
 OBJ       = $(addsuffix .o, $(basename $(SRC)) ) $(LIB_OBJS)
@@ -52,8 +51,8 @@ again:
 
 #----------------- Temporary legacy variable definitions ---------------------------
 include $(MAKE_PHYS_INC)/make_head.h
-include $(build_phy)/make_defs/proto_files.h
-include $(build_phy)/targetdeps.mk
+include $(pinymake)/make_defs/proto_files.h
+include $(pinymake)/targetdeps.mk
 
 FOBJ          = $(FC) $(FFLAGS) $(FOPTS) $(CPPFLAGS) -c -o $@
 COBJ          = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_FULL)
