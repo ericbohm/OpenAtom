@@ -3,17 +3,17 @@ base   := .
 makedir = $(base)/compile
 include $(makedir)/srcdirs.mk
 
+# Define the command line args to sub-makes
+MAKEARGS = -C $(build) -f ../$(makedir)/Makefile
+
+
 .PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test docs doxygen
 
-all: $(build)
-	@cd $(build) && $(MAKE) -f ../$(makedir)/Makefile $@
-
-driver physics libs clean clean_driver clean_physics clean_libs again: $(build) 
-	@cd $(build) && $(MAKE) -f ../$(makedir)/Makefile $@
+all driver physics libs clean clean_driver clean_physics clean_libs again: $(build) 
+	@$(MAKE) $(MAKEARGS) $@
 
 realclean:
-	@cd $(build) && $(MAKE) -f ../$(makedir)/Makefile $@
-	@rmdir $(build)
+	@test ! -d $(build) || { $(MAKE) $(MAKEARGS) $@ && rmdir $(build); }
 
 docs:
 	@cd $(docs) && $(MAKE)
