@@ -62,6 +62,9 @@ STANDARD_INC	= $(PINY_PHY)/include/pentium_par
 # Makefile for PINY physics
 #-------------------------------------------------------------------------------
 MAKE_PHYS_INC	= $(PINY_PHY)/compile/pentium_par
+LDLIBS += -lm
+$(libphysics): OPT_CARE      = -O2
+$(libphysics): FFLAGS += -fno-second-underscore
 #-------------------------------------------------------------------------------
 # include file paths for physics: general
 #-------------------------------------------------------------------------------

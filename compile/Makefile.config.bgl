@@ -65,6 +65,7 @@ STANDARD_INC	= $(PINY_PHY)/include/ibm_noessl_par
 # Makefile for PINY physics
 #-------------------------------------------------------------------------------
 MAKE_PHYS_INC	= $(PINY_PHY)/compile/ibm_noessl_par
+$(libphysics): OPT_CARE = -O2 -qstrict
 #-------------------------------------------------------------------------------
 # include file paths for physics: general
 #-------------------------------------------------------------------------------

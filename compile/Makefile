@@ -20,8 +20,7 @@ SRC       =
 HDR       = 
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = 
-LIBS      = CharmDriver PinyInterface MyMathLib
-LIBNAMES  = $(LIBS:%=lib%.a)
+LIBS      = $(moddriver) $(modphysics) $(modmath)
 
 # Tiny function to help generate the correct arguments for a module's sub-make invocation
 # @note: Some string manipulation to automatically generate correct relative paths will be good

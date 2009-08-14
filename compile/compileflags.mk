@@ -1,15 +1,13 @@
-####### Target and machine specific flags for compilation and linking #######
+# Flags, include paths, libraries etc. on a per-target basis
 
-# Specify the flags, include paths, libraries etc. here on a per-target basis
-# Preprocessor flags are used for all preprocessing, compilation and linking
-# Compiler flags are used while compiling and linking
-# Linker flags are used only for the link stage
+# CPPFLAGS - Flags used for all preprocessing, compilation and linking
+# FFLAGS   - Flags used for compiling and linking fortran code
+# CFLAGS   - Flags used for compiling and linking C code
+# CXXFLAGS - Flags used for compiling and linking C++ code
+# LDFLAGS  - Flags used only for the link stage
+# LDLIBS   - Extra libraries to be linked in
 
 
-# List of modules 
-libdriver  := libCharmDriver.a
-libphysics := libPinyInterface.a
-libmath    := libMyMathLib.a
 #--------- Flags for linking ---------#
 # Linker flags (Used for all linking)
 LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu 
@@ -18,33 +16,40 @@ LDLIBS   += -module CkMulticast -module comlib
 ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
   LDLIBS += -lrfftw -lfftw
 else
-  LDLIBS += -ldrfftw -ldfftw
+  LDLIBS += -ldrfftw -ldfftw $(MATH_LIB)
 endif
-LDLIBS   += -lz -lm -lconv-util
+LDLIBS   += -lz -lconv-util
 
 
-#--------- Flags for the driver ---------#
+#--------- Flags for the whole code ---------#
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1
+               FFLAGS   += -O3
+               CFLAGS   += -O3
+               CXXFLAGS += -O3
+
+
+#--------- Flags just for the driver code ---------#
 $(libdriver):  CPPFLAGS +=
-$(libdriver):  FFLAGS   += $(FOPTS)
-$(libdriver):  CFLAGS   += $(OPTS)
-$(libdriver):  CXXFLAGS += $(OPTS) 
+$(libdriver):  FFLAGS   +=
+$(libdriver):  CFLAGS   +=
+$(libdriver):  CXXFLAGS +=
 
 
-#--------- Flags for the physics code ---------#
-$(libphysics): CPPFLAGS +=
-$(libphysics): FFLAGS   += $(FOPTS) 
+#--------- Flags just for the physics code ---------#
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC)
+$(libphysics): FFLAGS   +=
 $(libphysics): CFLAGS   += 
 $(libphysics): CXXFLAGS += 
 
 
-#--------- Flags for the math libs ---------#
+#--------- Flags just for the math libs ---------#
 $(libmath):    CPPFLAGS +=
-$(libmath):    FFLAGS   += $(FOPTS) 
-$(libmath):    CFLAGS   += -seq $(OPTS)
-$(libmath):    CXXFLAGS += -seq $(OPTS)
+$(libmath):    FFLAGS   +=
+$(libmath):    CFLAGS   += -seq
+$(libmath):    CXXFLAGS += -seq
 
 
 ##### Other target-specific modifications ####
 fastadd.o:        CXXFLAGS += $(MATH_OPTS)
-ibm_essl_dummy.o: CXXFLAGS += $(IBM_ESSL_DUMMY) 
+ibm_essl_dummy.o: CPPFLAGS += $(IBM_ESSL_DUMMY) 
 

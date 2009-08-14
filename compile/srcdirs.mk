@@ -36,3 +36,11 @@ alldriverdirs = $(main) $(density) $(state) $(fftslab) $(loadbal) $(ortho) $(pai
 pinymake  = $(physics)/compile
 pinyinc   = $(physics)/include
 
+# List of modules and libraries to be built (yuck,,,)
+moddriver  := CharmDriver
+modphysics := PinyInterface
+modmath    := MyMathLib
+libdriver  := lib$(moddriver).a
+libphysics := lib$(modphysics).a
+libmath    := lib$(modmath).a
+

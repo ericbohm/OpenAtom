@@ -10,9 +10,8 @@ include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-CPAIMD        = $(base)
 DEPSTRIPDIRS += 
-VPATH        += 
+VPATH        += $(STANDARD_INC) 
 
 # Specify the compilation target
 TARGET    = libPinyInterface.a
@@ -40,12 +39,11 @@ again:
 	$(MAKE) clean; $(MAKE)
 
 #----------------- Temporary legacy variable definitions ---------------------------
-include $(MAKE_PHYS_INC)/make_head.h
 include $(pinymake)/make_defs/proto_files.h
 include $(pinymake)/targetdeps.mk
 
-FOBJ          = $(FC) $(FFLAGS) $(FOPTS) $(CPPFLAGS) -c -o $@
-COBJ          = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_FULL)
+FOBJ          = $(FC) $(FFLAGS) $(CPPFLAGS) -c -o $@
+COBJ          = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@
 COBJ_CARE     = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_CARE)
 COBJ_DECL     = $(CC) $(CFLAGS) 
 

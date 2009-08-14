@@ -10,10 +10,8 @@ include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-CPAIMD        = $(base)
-PINY_STD_INC  = $(STANDARD_INC)
 DEPSTRIPDIRS += 
-VPATH         = $(alldriverdirs) $(PINY_STD_INC) 
+VPATH         = $(alldriverdirs) $(STANDARD_INC) 
 
 # Specify the compilation target
 TARGET    = libCharmDriver.a
@@ -35,7 +33,7 @@ SRC       = \
 HDR       = 
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci cpaimd.ci 
-CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(PINY_STD_INC)
+CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
 
 
 .PHONY: all clean again 

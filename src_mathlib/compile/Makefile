@@ -10,7 +10,6 @@ include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 # Overriding values set in srcdirs.mk for a shorter, cleaner paths
-CPAIMD        = $(base)
 DEPSTRIPDIRS += 
 VPATH        += $(mathlib)
 
