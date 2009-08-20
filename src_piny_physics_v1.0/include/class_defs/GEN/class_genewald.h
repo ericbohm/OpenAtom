@@ -72,16 +72,16 @@ class GENEWALD {
    };
   ~GENEWALD(){
     if(ncorr_c>0){
-      cfree(ka_corr_c);
-      cfree(kb_corr_c);
-      cfree(kc_corr_c);
-      cfree(kernel_corr_c);
+      free(ka_corr_c);
+      free(kb_corr_c);
+      free(kc_corr_c);
+      free(kernel_corr_c);
     }//endif
     if(ncorr_b>0){
-      cfree(ka_corr_b);
-      cfree(kb_corr_b);
-      cfree(kc_corr_b);
-      cfree(kernel_corr_b);
+      free(ka_corr_b);
+      free(kb_corr_b);
+      free(kc_corr_b);
+      free(kernel_corr_b);
     }//endif
   };
 

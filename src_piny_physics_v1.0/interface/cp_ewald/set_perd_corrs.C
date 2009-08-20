@@ -85,8 +85,8 @@ void setput_nd_eext_corrs(int nktot, int *ka, int *kb, int *kc, double *perdCorr
       create_wire_corr(nktot,ka,kb,kc,hmat,hmati,nquad,anode,weight,data,wmax,wmin,perdCorr);
     }//endif
 
-    cfree(&anode[1]);
-    cfree(&weight[1]);
+    free(&anode[1]);
+    free(&weight[1]);
     cfree_mat(data,1,nquad,0,M+1);    
   }//endif
 
@@ -312,8 +312,8 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
                      wmax,wmin,kernel_corr_c);
     create_wire_corr(ncorr_b,ka_corr_b,kb_corr_b,kc_corr_b,hmat,hmati,nquad,anode,weight,data,
                      wmax,wmin,kernel_corr_b);
-    cfree(&anode[1]);
-    cfree(&weight[1]);
+    free(&anode[1]);
+    free(&weight[1]);
     cfree_mat(data,1,nquad,0,M+1);    
   }//endif
 
@@ -325,9 +325,9 @@ void setput_nd_ewd_corrs(GENEWALD *genewald, GENCELL *gencell){
 //============================================================================
 // Clean the memory; Store the goodies
 
-   cfree(kastr);
-   cfree(kbstr);
-   cfree(kcstr);
+   free(kastr);
+   free(kbstr);
+   free(kcstr);
 
    cfree_int_mat(kcmax_str,0,nka_fix,0,2*nkb_fix);
    cfree_int_mat(kcmin_str,0,nka_fix,0,2*nkb_fix);
@@ -713,8 +713,8 @@ void create_perd_corr_data(int ngxMax,int ngyMax, int ngzMax,int *M_ret,
 //============================================================================
 // Clean up and return 
 
-   cfree(&datafft[1]);
-   cfree(&workfft[1]);
+   free(&datafft[1]);
+   free(&workfft[1]);
 
    *M_ret      = M;
    *nquad_ret  = nquad;
