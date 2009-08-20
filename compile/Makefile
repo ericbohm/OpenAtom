@@ -34,14 +34,11 @@ all: $(TARGET)
 $(TARGET): $(LIBS:%=lib%.a) $(OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-libCharmDriver.a: driver
+driver: $(libdriver)
 
-libPinyInterface.a: physics
+physics: $(libphysics)
 
-libMyMathLib.a: libs
-
-driver physics mathlib:
-	@$(MAKE) $(call genMakeArgs,$@)
+mathlib: $(libmath)
 
 libs: mathlib
 
@@ -53,10 +50,14 @@ again:
 	@$(MAKE) clean; $(MAKE)
 
 
+ifneq ($(MAKECMDGOALS),clean)
 # Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(SRC)) ) )
-ifneq ($(MAKECMDGOALS),clean)
 -include $(depFiles)
 -include $(INTF:.ci=.di)
+# Include the source lists and dependency information for each sub-module
+include $(driver)/makerules.mk
+include $(physics)/makerules.mk
+include $(mathlib)/makerules.mk
 endif
 
