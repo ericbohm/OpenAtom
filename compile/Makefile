@@ -10,7 +10,7 @@ include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 DEPSTRIPDIRS += 
-VPATH        += $(build_driver) $(build_physics) $(build_mathlib) 
+VPATH        +=
 
 # Specify the compilation target
 TARGET    = OpenAtom
@@ -24,21 +24,21 @@ LIBS      = $(moddriver) $(modphysics) $(modmath)
 
 # Tiny function to help generate the correct arguments for a module's sub-make invocation
 # @note: Some string manipulation to automatically generate correct relative paths will be good
-genMakeArgs  = -C $(build_$1) -f ../$($1)/compile/Makefile base=../..
+genMakeArgs  = -f $($1)/compile/Makefile base=..
 
 
 .PHONY: all driver physics libs mathlib clean again test translateInterface
 
 all: $(TARGET)
 
-$(TARGET): $(LIBS:%=-l%) $(OBJ) 
+$(TARGET): $(LIBS:%=lib%.a) $(OBJ) 
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(build_driver)/libCharmDriver.a: driver
+libCharmDriver.a: driver
 
-$(build_physics)/libPinyInterface.a: physics
+libPinyInterface.a: physics
 
-$(build_mathlib)/libMyMathLib.a: libs
+libMyMathLib.a: libs
 
 driver physics mathlib:
 	@$(MAKE) $(call genMakeArgs,$@)
@@ -47,7 +47,6 @@ libs: mathlib
 
 # Clean only the build artifacts. Leave the binary etc around
 clean: 
-	@$(RM) -r $(build_driver) $(build_physics) $(build_mathlib)
 	@$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o)
 
 again: 

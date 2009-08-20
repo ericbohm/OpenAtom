@@ -14,9 +14,9 @@ docs      = $(base)/doc
 
 # Build directories
 build     = $(base)/binary
-build_driver = $(build)/driver
-build_physics = $(build)/physics
-build_mathlib= $(build)/mathlib
+build_driver = $(build)
+build_physics = $(build)
+build_mathlib= $(build)
 
 # Charm driver directory structure
 density   = $(driver)/cp_density_ctrl

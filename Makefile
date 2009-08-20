@@ -21,8 +21,8 @@ docs:
 doxygen:
 	@cd $(docs) && $(DOXYGEN) $(docs)/Doxyfile
 
-setup: $(build) $(build_driver) $(build_physics) $(build_mathlib)
+setup: $(build)
 
-$(build) $(build_driver) $(build_physics) $(build_mathlib): 
+$(build):
 	@mkdir -p $(@)
 
