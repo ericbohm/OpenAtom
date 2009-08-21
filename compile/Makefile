@@ -22,10 +22,6 @@ OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      = 
 LIBS      = $(moddriver) $(modphysics) $(modmath)
 
-# Tiny function to help generate the correct arguments for a module's sub-make invocation
-# @note: Some string manipulation to automatically generate correct relative paths will be good
-genMakeArgs  = -f $($1)/compile/Makefile base=..
-
 
 .PHONY: all driver physics libs mathlib clean again test translateInterface
 
