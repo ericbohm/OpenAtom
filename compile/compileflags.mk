@@ -10,12 +10,13 @@
 
 #--------- Flags for linking ---------#
 # Linker flags (Used for all linking)
-LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu 
+LDFLAGS  += -L$(FFT_HOME)/lib
 # Additional libraries
 LDLIBS   += -module CkMulticast -module comlib
 ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
   LDLIBS += -lrfftw -lfftw
 else
+  LDFLAGS+= $(MATH_LIB_PATH)
   LDLIBS += -ldrfftw -ldfftw $(MATH_LIB)
 endif
 LDLIBS   += -lz -lconv-util
@@ -47,9 +48,4 @@ $(libmath):    CPPFLAGS +=
 $(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
-
-
-##### Other target-specific modifications ####
-fastadd.o:        CXXFLAGS += $(MATH_OPTS)
-ibm_essl_dummy.o: CPPFLAGS += $(IBM_ESSL_DUMMY) 
 

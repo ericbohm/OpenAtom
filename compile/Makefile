@@ -6,7 +6,6 @@ makedir := $(base)/compile
 include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
 include $(makedir)/Makefile.config
-include $(makedir)/compileflags.mk
 
 # Directory structure and vpath related stuff
 DEPSTRIPDIRS += 

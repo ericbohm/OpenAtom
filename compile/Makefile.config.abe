@@ -1,99 +1,83 @@
-#===============================================================================
-#-------------------------------------------------------------------------------
-# Configurable Options
-#-------------------------------------------------------------------------------
-CHARMBASE	= $(HOME)/charm
-LNK_OPTS	= -lz -lm -memory os -thread context
-#-------------------------------------------------------------------------------
-DUAL_FFTW	= -DDUAL_FFTW
-FFT_HOME	= /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
-#-------------------------------------------------------------------------------
-LOCAL_LIBS	= -L${MKL_HOME}/lib/em64t
-#===============================================================================
+# Location of the charm installation
+CHARMBASE     = $(HOME)/charm
+# Location of the FFTW library installation
+FFT_HOME	  = /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
 
 
-#===============================================================================
-# General definitions (Makefile.config.gen)
-#-------------------------------------------------------------------------------
-# Compile options
-#-------------------------------------------------------------------------------
-DBG_FLAG	= 
-FOPTS           = $(DBG_FLAG) -O3
-COPTS           = $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1
-OPTS            = $(FOPTS) $(COPTS)
-MATH_OPTS	=
-RUNCOMMAND	= ../OpenAtom
-#-------------------------------------------------------------------------------
-# Directories
-#-------------------------------------------------------------------------------
-CPAIMD		= ../
-MYMATH_HOME_INC	= ../src_mathlib/compile
-VALID_DIR	= ../binary/water_32M_10Ry
-VALID_EXEC	= ../autotest
-AUTOTEST	= $(VALID_EXEC)
-#===============================================================================
+#---------------------------------------------------------------
+# Flags, include paths, libraries etc. on a per-target basis
+
+# CPPFLAGS - Flags used for all preprocessing, compilation and linking
+# FFLAGS   - Flags used for compiling and linking fortran code
+# CFLAGS   - Flags used for compiling and linking C code
+# CXXFLAGS - Flags used for compiling and linking C++ code
+# LDFLAGS  - Flags used only for the link stage
+# LDLIBS   - Extra libraries to be linked in
 
 
-#===============================================================================
-# Blas/ Lapack/ Eispack libraries
-#-------------------------------------------------------------------------------
-# Fortran Source / Optimized Libraries
-#-------------------------------------------------------------------------------
-src_math     = $(src_eispack) 
-IBM_ESSL_DUMMY	= 
-MATH_LIB	= $(LOCAL_LIBS) -lmkl -lguide -lpthread
-#===============================================================================
-
-#===============================================================================
-# PINY Definitions (Makefile.config.piny)
-#-------------------------------------------------------------------------------
-# PINY physics directories: forcefield, abinitio, interface 
-#-------------------------------------------------------------------------------
-PINY_PHY                = $(CPAIMD)/src_piny_physics_v1.0
-PINY_CPAIMD_ROUT        = $(PINY_PHY)/abinito_physics
-PINY_FORCEFIELD_ROUT    = $(PINY_PHY)/classical_physics
-PINY_INTERFACE_ROUT     = $(PINY_PHY)/interface
-#-------------------------------------------------------------------------------
-# header files for PINY physics
-#-------------------------------------------------------------------------------
-PHYSICS_INC	= $(PINY_PHY)/include/class_defs
-STANDARD_INC	= $(PINY_PHY)/include/pentium_par
-#-------------------------------------------------------------------------------
-# Makefile for PINY physics
-#-------------------------------------------------------------------------------
-MAKE_PHYS_INC	= $(PINY_PHY)/compile/pentium_par
-LDLIBS += -lm
-$(libphysics): OPT_CARE      = -O2
-$(libphysics): FFLAGS += -fno-second-underscore
-#-------------------------------------------------------------------------------
-# include file paths for physics: general
-#-------------------------------------------------------------------------------
-INC_OPT		= -I$(PHYSICS_INC) -I$(STANDARD_INC)
-#-------------------------------------------------------------------------------
-# libmodulePhysics.a is located here
-#-------------------------------------------------------------------------------
-PINY_LIB_PATH	= $(PINY_PHY)/runable
-#-------------------------------------------------------------------------------
-# Module name for reader library
-#-------------------------------------------------------------------------------
-INTERFACE_MOD	= Interface_ctrl
-#-------------------------------------------------------------------------------
-# compile time flags
-#-------------------------------------------------------------------------------
-FLAGS		= $(FLAG) -D_PINY_READER_ -DUSE_SPLINE_LJ
-#===============================================================================
+#---------------------------------------------------------------
+#--------- Flags for the whole code ---------#
+               # Optimization level and debug (Dont add other flags to OPT)
+               OPT       = -O3
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1
+               FFLAGS   += $(OPT)
+               CFLAGS   += $(OPT)
+               CXXFLAGS += $(OPT)
 
 
-#===============================================================================
-#-------------------------------------------------------------------------------
-# Charm Options
-#-------------------------------------------------------------------------------
-CHARMC			= $(CHARMBASE)/bin/charmc $(OPTS) $(FLAGS) 
-CPAIMD_DRV_SRC		= $(CPAIMD)/src_charm_driver
-MAKE_CPAIMD_DRV_INC	= $(CPAIMD)/src_charm_driver/compile
-CHARMLIB		= -module CkMulticast -module commlib
-FORT			= $(CHARMBASE)/bin/charmc -f77
-F_COMPILER		= $(FORT) $(FOPTS) 
-F_COMPILER_NOPT		= $(FORT) $(DBG_FLAG)
-#===============================================================================
+#---------------------------------------------------------------
+#--------- Flags for linking ---------#
+               LDFLAGS  += -L$(FFT_HOME)/lib -memory os -thread context
+               LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lmkl -lguide -lpthread -lm
+
+
+#---------------------------------------------------------------
+#--------- Flags and settings just for the driver code ---------#
+$(libdriver):  CPPFLAGS +=
+$(libdriver):  FFLAGS   +=
+$(libdriver):  CFLAGS   +=
+$(libdriver):  CXXFLAGS +=
+
+
+#---------------------------------------------------------------
+#--------- Flags and settings just for the physics code ---------#
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC)
+$(libphysics): FFLAGS   +=
+$(libphysics): CFLAGS   += 
+$(libphysics): CXXFLAGS += 
+
+# Where should we look for standard_include.h
+STANDARD_INC             = $(physics)/include/pentium_par
+# What flags do we use when compiling the fragile portions of piny
+$(libphysics): OPT_CARE  = -O2
+# Flags for compiling the fortran portions of the physics code
+$(libphysics): FFLAGS   += -fno-second-underscore
+
+
+#---------------------------------------------------------------
+#--------- Flags  and settings just for the math libs ---------#
+$(libmath):    CPPFLAGS +=
+$(libmath):    FFLAGS   +=
+$(libmath):    CFLAGS   += -seq
+$(libmath):    CXXFLAGS += -seq
+
+# Should we use dual fft or not
+DUAL_FFTW                = -DDUAL_FFTW
+# Extra math libraries to be linked in if DUAL_FFTW is off
+MATH_LIB                 =
+# Where the linker should find these extra math libraries
+MATH_LIB_PATH            = -L$(MKL_HOME)/lib/em64t
+# Which math library sources (that OpenAtom lugs around) need to be compiled
+src_math                 = $(src_eispack)
+# Special optimization options to used for compiling fastadd.C
+fastadd.o:     CXXFLAGS +=
+# Should we pass -D_IBM_ESSL_ as a preprocessor flag when building ibm_essl_dummy.o
+ibm_essl_dummy.o: CPPFLAGS  +=
+# The fft (and other) math libraries to link based on whether DUAL_FFTW is turned on or off
+          ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
+               LDLIBS   += -lrfftw -lfftw
+          else
+               LDFLAGS  += $(MATH_LIB_PATH)
+               LDLIBS   += -ldrfftw -ldfftw $(MATH_LIB)
+          endif
 
