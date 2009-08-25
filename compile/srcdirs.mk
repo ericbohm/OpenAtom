@@ -3,6 +3,12 @@
 # variable 'base' will need to be defined by any makefile that includes this, and then the 
 # complete source tree structure will be available thro the following variables
 
+# Utilities for path manipulation: Requires perl
+PERL          = /usr/bin/perl
+rel2abs       = $(shell $(PERL) -e "use File::Spec; print File::Spec->rel2abs('$(1)','$(2)');")
+abs2rel       = $(shell $(PERL) -e "use File::Spec; print File::Spec->abs2rel('$(1)','$(2)');")
+realpath      = $(shell $(PERL) -e "use Cwd; print Cwd::realpath('$(1)');")
+
 ################## Modify only if directory structure changes ####################
 # Top-level directories
 makedir       = $(base)/compile

@@ -9,15 +9,12 @@ where         = $(base)
 # The name prefix of the build directory
 builddir      = build
 # The actual build directory name and location
-build         = $(strip $(where)/$(builddir)$(buildsuffix))
+build         = $(strip $(where))/$(strip $(builddir))$(strip $(buildsuffix))
 
-# Define the command line args to sub-makes
-MAKEARGS      = -C $(build) -f $(abspath $(makedir)/Makefile) 
-# No available, assured portable utility to compute the relative path between any two absolute paths
-# Hence use absolute path to specify the project root if build directory is elsewhere
-ifneq ($(abspath $(where)),$(abspath $(base)))
-MAKEARGS     += base=$(abspath $(CURDIR))
-endif
+# Define the command line args to sub-make
+MAKEARGS      =-C $(call realpath,$(build)) \
+               -f $(call realpath,$(makedir)/Makefile) \
+			   base=$(call abs2rel,$(base),$(call realpath,$(build)))
 
 .PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test docs doxygen
 
