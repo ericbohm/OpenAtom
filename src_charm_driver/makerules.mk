@@ -14,7 +14,6 @@ libdriver_src = \
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
 libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci cpaimd.ci 
 
-CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
 
 # Specify the list of directories whose contents should be stripped from prerequisite lists 
 # during dependency generation
@@ -33,6 +32,7 @@ $(libdriver): $(libdriver_obj)
 # Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(libdriver_src)) ) )
 ifneq ($(MAKECMDGOALS),clean)
+$(depFiles): CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
 -include $(depFiles)
 -include $(libdriver_intf:.ci=.di)
 endif

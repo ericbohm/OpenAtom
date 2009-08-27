@@ -33,7 +33,7 @@ FFT_HOME	  = /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
 
 #---------------------------------------------------------------
 #--------- Flags and settings just for the driver code ---------#
-$(libdriver):  CPPFLAGS +=
+$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
