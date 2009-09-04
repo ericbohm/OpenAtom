@@ -270,16 +270,18 @@ void CP_Rho_GHartExt::init(){
   }//endif
 #endif
 
-  rhoRHartProxy_com0 = UrhoRHartExtProxy[thisInstance.proxyOffset];
-  rhoRHartProxy_com1 = UrhoRHartExtProxy[thisInstance.proxyOffset];
-
-#ifdef USE_COMLIB
-  if(config.useGHartInsRHart){
-     ComlibAssociateProxy(&commGHartRHartIns0,rhoRHartProxy_com0);
-     ComlibAssociateProxy(&commGHartRHartIns1,rhoRHartProxy_com1);
-  }//endif
-#endif
-  
+  if (ees_eext_on == 1)
+  {
+      rhoRHartProxy_com0 = UrhoRHartExtProxy[thisInstance.proxyOffset];
+      rhoRHartProxy_com1 = UrhoRHartExtProxy[thisInstance.proxyOffset];
+      #ifdef USE_COMLIB
+        if(config.useGHartInsRHart)
+        {
+            ComlibAssociateProxy(&commGHartRHartIns0,rhoRHartProxy_com0);
+            ComlibAssociateProxy(&commGHartRHartIns1,rhoRHartProxy_com1);
+        }//endif
+      #endif
+  }
 //---------------------------------------------------------------------------
 }//end routine
 //============================================================================

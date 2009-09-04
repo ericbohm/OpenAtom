@@ -171,12 +171,15 @@ void CP_State_ParticlePlane::initKVectors()
 //============================================================================
 // Comlib to talk to realPP : used when ees_enl_on==1
 
-  realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
-#ifdef USE_COMLIB
-  if (config.useGssInsRealPP){
-      ComlibAssociateProxy(&gssPInstance,realPP_proxy);
-  }//endif
-#endif
+    /// realPP proxies are created only if ees_nonlocal is turned on
+    if(ees_nonlocal == 1)
+    {
+        realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
+        #ifdef USE_COMLIB
+            if (config.useGssInsRealPP)
+                ComlibAssociateProxy(&gssPInstance,realPP_proxy);
+        #endif
+    }
 
 //============================================================================
 //  Register with the SFCache
@@ -1076,6 +1079,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 
      // beam out all points with same z to chare array index z
      complex *data = msg->data;
+     /// @todo: realPP_proxy is initialized in initKVectors only if nloc_on is true. Should we check the same here too?
      for (int i=0,j=z; i<numLines; i++,j+=ngridcNL){data[i] = projPsiG[j];}
      realPP_proxy(thisIndex.x, z).recvFromEesGPP(msg);  // same state, realspace char[z]
 #ifdef CMK_BLUEGENEL
