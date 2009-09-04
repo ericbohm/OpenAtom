@@ -873,9 +873,10 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 //============================================================================
 // Setup gpspaceplane and particle plane
 
-  CmiAssert(UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal());
-  CmiAssert(UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal());
-  UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal()->initKVectors();
+  CkAssert(UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal());
+  CP_State_ParticlePlane *localParticlePlaneChare = UparticlePlaneProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).ckLocal();
+  CkAssert(localParticlePlaneChare);
+  localParticlePlaneChare->initKVectors();
 
 //============================================================================
 // Setup k-vector ranges, masses and zero the force overlap
