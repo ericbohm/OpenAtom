@@ -22,28 +22,32 @@ ifndef v
 endif
 
 ifeq ($(strip $v),0)
-  info-dep = $(info Generating dependencies for $(<F))
-  info-ci  = $(info Parsing interface definitions in $(<F))
-  info-cpp = $(info Compiling $(<F))
-  info-c   = $(info Compiling $(<F))
-  info-f   = $(info Compiling $(<F))
+  info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
+  info-cpp = @echo Compiling $(<F)
+  info-c   = @echo Compiling $(<F)
+  info-f   = @echo Compiling $(<F)
   q = @
-else ifeq ($(strip $v),1)
-  info-dep = $(info Generating dependencies for $(<F))
-  info-ci  = $(info Parsing interface definitions in $(<F))
-  info-cpp = $(info Compiling $(<F) with options $(CXXFLAGS))
-  info-c   = $(info Compiling $(<F) with options $(CFLAGS))
-  info-f   = $(info Compiling $(<F) with options $(FFLAGS))
+else 
+ifeq ($(strip $v),1)
+  info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
+  info-cpp = @echo Compiling $(<F) with options $(CXXFLAGS)
+  info-c   = @echo Compiling $(<F) with options $(CFLAGS)
+  info-f   = @echo Compiling $(<F) with options $(FFLAGS)
   q = @
-else ifeq ($(strip $v),2)
-  info-dep = $(info Generating dependencies for $(<F))
-  info-ci  = $(info Parsing interface definitions in $(<F))
+else 
+ifeq ($(strip $v),2)
+  info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp =
   info-c   =
   info-f   =
   q =
 else
   $(error Wrong level of verboseness input. Use a value between 0-2)
+endif
+endif
 endif
 
 ####### Pattern rules
@@ -103,6 +107,6 @@ endif
 	$q$(COMPILE.F) $(OUTPUT_OPTION) $<
 
 %.f: %.F
-	$(info Preprocessing $<)
+	@echo Preprocessing $<
 	$q$(PREPROCESS.F) $(OUTPUT_OPTION) $<
 
