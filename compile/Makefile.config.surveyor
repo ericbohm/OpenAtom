@@ -30,8 +30,14 @@ FFT_HOME      = /soft/apps/fftw-2.1.5-double
 
 #---------------------------------------------------------------
 #--------- Flags for linking ---------#
-               LDFLAGS  += -L$(FFT_HOME)/lib $(MATH_LIB_PATH)
-               LDLIBS   += -module CkMulticast -module comlib -lconv-util $(MATH_LIB) -lm
+               LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/apps/LAPACK \
+                           -L/opt/ibmcmp/xlf/bg/11.1/bglib -L/opt/ibmcmp/xlsmp/bg/1.7/bglib \
+                           -L/bgsys/ibm_essl/sles10/prod/opt/ibmmath/lib \
+                           -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib \
+                           -L/gpfs/home/bohm/zlib/lib
+               LDLIBS   += -module CkMulticast -module comlib -lconv-util \
+			               -lesslbg -lesslsmpbg -lxlf90_r -lmass -lmassv -lxlfmath \
+                           -lxlomp_ser -lxlsmp -lpthread xerbla.o -lm
 
 
 #---------------------------------------------------------------
@@ -66,16 +72,6 @@ $(libmath):    CXXFLAGS += -seq
 
 # Should we use dual fft or not
 DUAL_FFTW                = -DDUAL_FFTW_OFF
-# Extra math libraries to be linked in if DUAL_FFTW is off
-MATH_LIB                 = -lesslbg -lesslsmpbg -lxlf90_r -lmass -lmassv -lxlfmath \
-                           -lxlomp_ser -lxlsmp -lpthread xerbla.o
-# Where the linker should find these extra math libraries
-MATH_LIB_PATH            = -L/soft/apps/LAPACK \
-                           -L/opt/ibmcmp/xlf/bg/11.1/bglib \
-                           -L/opt/ibmcmp/xlsmp/bg/1.7/bglib \
-                           -L/bgsys/ibm_essl/sles10/prod/opt/ibmmath/lib \
-                           -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib \
-                           -L/gpfs/home/bohm/zlib/lib
 # Which math library sources (that OpenAtom lugs around) need to be compiled
 src_math                 = $(src_xerbla) $(src_eispack)
 # Special optimization options to used for compiling fastadd.C

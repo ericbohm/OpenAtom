@@ -63,10 +63,6 @@ $(libmath):    CXXFLAGS += -seq
 
 # Should we use dual fft or not
 DUAL_FFTW                = -DDUAL_FFTW_OFF
-# Extra math libraries to be linked in if DUAL_FFTW is off
-MATH_LIB                 =
-# Where the linker should find these extra math libraries
-MATH_LIB_PATH            =
 # Which math library sources (that OpenAtom lugs around) need to be compiled
 src_math                 = $(src_eispack)
 # Special optimization options to used for compiling fastadd.C
@@ -77,8 +73,6 @@ ibm_essl_dummy.o: CPPFLAGS  +=
           ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
                LDLIBS   += -lrfftw -lfftw
           else
-               LDFLAGS  += $(MATH_LIB_PATH)
-               LDLIBS   += -ldrfftw -ldfftw $(MATH_LIB)
-			   CPPFLAGS +=
+               LDLIBS   += -ldrfftw -ldfftw
           endif
 
