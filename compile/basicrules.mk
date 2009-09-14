@@ -46,3 +46,26 @@ FFLAGS   += -f77
 	@grep -oE "(extern[ ]+)?module[ ]+\w+" $< | \
 	awk ' function printExternDeps(nExt,module,externs) { if (nExt>0) { printf "%s.decl.h: ",module; for (i=0;i<nExt;i++) printf "%s.decl.h ",externs[i]; printf "\n\n" } }   { if ($$1 ~ /extern/) { externs[nExt++] = $$3 } else { printExternDeps(nExt,modules[cnt-1],externs); nExt=0; modules[cnt++] = $$2 } }    END { printExternDeps(nExt,modules[cnt-1],externs); for (i=0;i<cnt;i++) printf "%s.decl.h %s.def.h ",modules[i],modules[i]; printf ": $<\n\t$(CXX) -c $$<\n\n" }' > $@
 
+
+# Pattern rules copied from the built-in make rules
+%.o: %.C
+	$(COMPILE.C) $(OUTPUT_OPTION) $<
+
+%.o: %.cpp
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+
+%.o: %.cc
+	$(COMPILE.cc) $(OUTPUT_OPTION) $<
+
+%.o: %.c
+	$(COMPILE.c) $(OUTPUT_OPTION) $<
+
+%.o: %.f
+	$(COMPILE.f) $(OUTPUT_OPTION) $<
+
+%.o: %.F
+	$(COMPILE.F) $(OUTPUT_OPTION) $<
+
+%.f: %.F
+	$(PREPROCESS.F) $(OUTPUT_OPTION) $<
+
