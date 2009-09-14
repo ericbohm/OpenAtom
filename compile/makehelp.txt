@@ -1,0 +1,44 @@
+##### Using the OpenAtom build system #####
+#
+#Some useful command-line features:
+#
+# make -jN v=<verbose-level> where=<build-dir-location> builddir=<build-dir-name-prefix> [otherflags]
+#
+#      -jN
+#        Extent of build parallelization. Parallel builds are faster. Refer GNU make docs
+#
+#      v=<verbose-level>
+#        A number between 0 and 2. Higher is more verbose. Default: 0
+#
+#      where=<build-dir-location>
+#        Where to place the build directory. Relative or absolute path. Default: project root
+#
+#      builddir=<build-dir-name-prefix>
+#        What prefix to use for the name of the build directory. Default: build
+#
+#      [otherflags]
+#        You can set other flags controlling the build on the command line
+#        itself, instead of setting them in the configuration file.
+#        For eg:
+#           make CXXFLAGS+=-verbose to make the charmc compiler really verbose
+#           make OPT=-g to compiler with debugging on
+#           make CHARMBASE=<some-path> to use some specific charm installation
+#
+#
+#-------------------------------------------------------------------------------
+#
+#- The makefile to be invoked by users is in the project root directory
+#
+#- The makefile with machine-specific configurations (config.mk) also needs to
+#  be copied to the project root from the makefiles directory.
+#
+#- Flags and make variables for controlling any portion of the build can be set
+#  in this configuration file or on the command line.
+#
+#- This location of the build directory is by default at the root of the
+#  OpenAtom project. You can change this by specifying the variable 'where' on
+#  your make command line. This path can be a relative or absolute path and can
+#  be located anywhere in your filesystem independent of the location of the
+#  OpenAtom directory. Of course, you'll need write permissions. The build
+#  directory will be created inside 'where'.
+#

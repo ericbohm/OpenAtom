@@ -35,3 +35,6 @@ $(build):
 	@echo "Creating build directory $@"
 	@mkdir -p $@
 
+help:
+	@less $(makedir)/makehelp.txt
+
