@@ -6,15 +6,15 @@ CHARMBIN  = $(CHARMBASE)/bin
 CHARMINC  = $(CHARMBASE)/include
 
 # Compilers
-CC        = charmc
-CXX       = charmc
-FC        = charmc
+CC        = $(CHARMBIN)/charmc
+CXX       = $(CHARMBIN)/charmc
+FC        = $(CHARMBIN)/charmc
 DOXYGEN   = doxygen
 
 # Basic compiler/linker flags
 CFLAGS   += -language charm++
 CXXFLAGS += -language charm++
-FFLAGS   += -language f77
+FFLAGS   += -f77
 
 ####### Pattern rules
 # Rule to generate dependency information for C++ source files

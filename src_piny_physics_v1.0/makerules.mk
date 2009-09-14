@@ -23,7 +23,7 @@ $(libphysics): $(libphysics_obj) | $(LIB_DECLS)
 include $(pinymake)/make_defs/proto_files.h
 include $(pinymake)/targetdeps.mk
 
-FOBJ          = $(FC) $(FFLAGS) $(CPPFLAGS) -c -o $@
+FOBJ          = $(FC) $(FFLAGS) -c -o $@
 COBJ          = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@
 COBJ_CARE     = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_CARE)
 COBJ_DECL     = $(CC) $(CFLAGS) 
