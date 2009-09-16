@@ -55,7 +55,6 @@ LIB_FILES             = PhysicsAtomPosInit.o vx_smpl.o Interface_ctrl.o \
 MATH_FILES            = fft_generic.o mathlib.o
 
 MAIN_DECLS            = 
-LIB_DECLS             = Interface_ctrl.decl.h
 
 ABINITIO_PHYSICS_FILES = cp_eke.o cp_nl_energy_forc.o cp_nlmat.o \
                          cp_hart_ext.o cp_struct_fact.o \

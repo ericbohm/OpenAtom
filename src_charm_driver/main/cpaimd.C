@@ -59,7 +59,6 @@
 //============================================================================
 #include "debug_flags.h"
 #include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
-#include "src_piny_physics_v1.0/include/charm_defs/Interface_ctrl.decl.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
 //============================================================================

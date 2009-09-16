@@ -920,18 +920,10 @@ Interface_ctrl.o     :           $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) \
-                         $(LIB_DECLS) \
                          $(physics)/piny_to_driver/Interface_ctrl.C \
                          $(physics)/piny_to_driver/Interface_ctrl.h
 	cp -f $(physics)/piny_to_driver/Interface_ctrl.h $(physics)/include/class_defs
 	$(COBJ) $(physics)/piny_to_driver/Interface_ctrl.C
-
-#==========================================================================
-Interface_ctrl.decl.h  : $(physics)/piny_to_driver/Interface_ctrl.ci
-	$(COBJ_DECL) $(physics)/piny_to_driver/Interface_ctrl.ci
-	test ! -d  $(physics)/include/charm_defs && mkdir $(physics)/include/charm_defs || true
-	/bin/cp -f Interface_ctrl.decl.h $(physics)/include/charm_defs
-	/bin/cp -f Interface_ctrl.def.h $(physics)/include/charm_defs
 
 #==========================================================================
 PhysicsAtomPosInit.o     : $(STANDARD) $(DEFINES) \
