@@ -42,20 +42,25 @@ FFT_HOME      = /soft/apps/fftw-2.1.5-double
                            -lxlomp_ser -lxlsmp -lpthread xerbla.o -lm
 
 
+# @note: Empty target specific appends (+=) hide previous global values for
+#        make version 3.80 on bgp. Hence uncomment any of the following 
+#        target-specific variables settings only if you actually want to 
+#        modify the content.
+
 #---------------------------------------------------------------
 #--------- Flags and settings just for the driver code ---------#
 $(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
-$(libdriver):  FFLAGS   +=
-$(libdriver):  CFLAGS   +=
-$(libdriver):  CXXFLAGS +=
+#$(libdriver):  FFLAGS   +=
+#$(libdriver):  CFLAGS   +=
+#$(libdriver):  CXXFLAGS +=
 
 
 #---------------------------------------------------------------
 #--------- Flags and settings just for the physics code ---------#
 $(libphysics): CPPFLAGS += -I$(STANDARD_INC)
-$(libphysics): FFLAGS   +=
-$(libphysics): CFLAGS   +=
-$(libphysics): CXXFLAGS +=
+#$(libphysics): FFLAGS   +=
+#$(libphysics): CFLAGS   +=
+#$(libphysics): CXXFLAGS +=
 
 # Where should we look for standard_include.h
 STANDARD_INC             = $(physics)/include/ibm_noessl_par
@@ -63,8 +68,8 @@ STANDARD_INC             = $(physics)/include/ibm_noessl_par
 
 #---------------------------------------------------------------
 #--------- Flags  and settings just for the math libs ---------#
-$(libmath):    CPPFLAGS +=
-#$(libmath):    FFLAGS   +=  # bcos target specific += hides prev global += (for make version on bgp)
+#$(libmath):    CPPFLAGS +=
+#$(libmath):    FFLAGS   +=
 $(libmath):    CFLAGS   += -seq
 $(libmath):    CXXFLAGS += -seq
 
