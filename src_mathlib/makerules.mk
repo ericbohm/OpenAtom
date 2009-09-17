@@ -23,7 +23,8 @@ $(foreach suf, $(fileTypes), $(eval vpath %$(suf) $(mathlib)) )
 
 # The primary target for this module
 $(libmath): $(libmath_obj) 
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
+	$(info-ar)
+	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
 
 #Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(libmath_src)) ) )

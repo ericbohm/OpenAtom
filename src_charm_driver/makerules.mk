@@ -26,8 +26,9 @@ $(foreach suf, $(fileTypes), $(eval vpath %$(suf) $(alldriverdirs) $(STANDARD_IN
 
 
 # The primary target for this module
-$(libdriver): $(libdriver_obj) 
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
+$(libdriver): $(libdriver_obj)
+	$(info-ar)
+	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
 
 # Include the generated files containing dependency info
 depFiles := $(addsuffix .d, $(basename $(filter %.C %.cpp %.cxx %.c, $(libdriver_src)) ) )

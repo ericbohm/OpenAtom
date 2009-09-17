@@ -19,7 +19,8 @@ vpath fft_generic.f $(physics)/mathlib
 
 # The primary target for this module
 $(libphysics): $(libphysics_obj) | $(LIB_DECLS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
+	$(info-ar)
+	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^
 
 #----------------- Temporary legacy variable definitions ---------------------------
 include $(pinymake)/make_defs/proto_files.h

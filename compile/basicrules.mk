@@ -16,10 +16,8 @@ CFLAGS   += -language charm++
 CXXFLAGS += -language charm++
 FFLAGS   += -f77
 
-####### Canned verboseness settings
-ifndef v
-  v = 0
-endif
+####### Canned verbosity settings
+v ?= 0
 
 ifeq ($(strip $v),0)
   info-dep = @echo Generating dependencies for $(<F)
@@ -27,6 +25,8 @@ ifeq ($(strip $v),0)
   info-cpp = @echo Compiling $(<F)
   info-c   = @echo Compiling $(<F)
   info-f   = @echo Compiling $(<F)
+  info-ar  = @echo =========== Producing archive $@
+  info-ld  = @echo =========== Linking to produce $@
   q = @
 else 
 ifeq ($(strip $v),1)
@@ -35,6 +35,8 @@ ifeq ($(strip $v),1)
   info-cpp = @echo Compiling $(<F) with options $(CXXFLAGS)
   info-c   = @echo Compiling $(<F) with options $(CFLAGS)
   info-f   = @echo Compiling $(<F) with options $(FFLAGS)
+  info-ar  = @echo =========== Producing archive $@ containing $^
+  info-ld  = @echo =========== Linking to produce $@ with extra libs: $(LDLIBS)
   q = @
 else 
 ifeq ($(strip $v),2)
@@ -43,6 +45,8 @@ ifeq ($(strip $v),2)
   info-cpp =
   info-c   =
   info-f   =
+  info-ar  = @echo ===================================================
+  info-ld  = @echo ===================================================
   q =
 else
   $(error Wrong level of verboseness input. Use a value between 0-2)

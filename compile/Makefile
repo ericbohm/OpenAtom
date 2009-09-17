@@ -26,8 +26,9 @@ LIBS      = $(moddriver) $(modphysics) $(modmath)
 
 all: $(TARGET)
 
-$(TARGET): $(LIBS:%=lib%.a) $(OBJ) 
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+$(TARGET): $(LIBS:%=lib%.a) $(OBJ)
+	$(info-ld)
+	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 driver: $(libdriver)
 
@@ -39,7 +40,7 @@ libs: mathlib
 
 # Clean only the build artifacts. Leave the binary etc around
 clean: 
-	@$(RM) $(wildcard *.decl.h *.def.h *.d *.di *.o)
+	@$(RM) $(wildcard *.decl.h *.def.h *.o)
 
 again: 
 	@$(MAKE) clean; $(MAKE)
