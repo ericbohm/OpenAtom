@@ -47,10 +47,10 @@ INTERFACE_MOL_FILES   = control_mol_params.o control_set_mol_params.o \
                         set_mol_dict.o set_mol_params.o \
                         set_surf_params.o
 
-MAIN_FILES            = PhysicsAtomPosInit.o vx_smpl.o ParaInfoInit.o configure.o
+MAIN_FILES            = PhysicsAtomPosInit.o vx_smpl.o Parainfoinit.o configure.o
 
 LIB_FILES             = PhysicsAtomPosInit.o vx_smpl.o Interface_ctrl.o \
-                        ParaInfoInit.o configure.o
+                        Parainfoinit.o configure.o
 
 MATH_FILES            = fft_generic.o mathlib.o
 

@@ -4,124 +4,113 @@
 
 
 #=================================================================
-cp_eke.o    :  $(STANDARD) $(FFTW) \
+cp_eke.o    : $(physics)/abinito_physics/cp_nonlocal/cp_eke.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)  $(DBG_FLAGS) \
-               $(CLASS_CP_NONLOC) \
-               $(physics)/abinito_physics/cp_nonlocal/cp_eke.C
-	$(COBJ) $(physics)/abinito_physics/cp_nonlocal/cp_eke.C
+               $(CLASS_CP_NONLOC) 
 #------------------------------------------------------------------
-cp_nl_energy_forc.o :  $(STANDARD) $(FFTW) \
+cp_nl_energy_forc.o : $(physics)/abinito_physics/cp_nonlocal/cp_nl_energy_forc.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) \
-               $(physics)/abinito_physics/cp_nonlocal/cp_nl_energy_forc.C
-	$(COBJ) $(physics)/abinito_physics/cp_nonlocal/cp_nl_energy_forc.C
-
+               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) 
 #------------------------------------------------------------------
-cp_nlmat.o  :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
+cp_nlmat.o  : $(physics)/abinito_physics/cp_nonlocal/cp_nlmat.C \
+               $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
                $(COMPLEX)   \
-               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) \
-               $(physics)/abinito_physics/cp_nonlocal/cp_nlmat.C
-	$(COBJ) $(physics)/abinito_physics/cp_nonlocal/cp_nlmat.C
+               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) 
 #------------------------------------------------------------------
-cp_ees_nonlocal.o  :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
+cp_ees_nonlocal.o  : $(physics)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C \
+               $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) $(CLASS_CP) $(FFTW) \
                $(COMPLEX)   \
-               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) \
-               $(physics)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C
-	$(COBJ) $(physics)/abinito_physics/cp_nonlocal/cp_ees_nonlocal.C
+               $(CP_OPERATIONS) $(CLASS_CP_NONLOC) 
 #------------------------------------------------------------------
-cp_hart_ext.o :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) \
+cp_hart_ext.o : $(physics)/abinito_physics/cp_local/cp_hart_ext.C \
+               $(STANDARD) $(CLASS_GEN) $(CLASS_MDATM) \
                $(CLASS_CP) $(FFTW)   $(DBG_FLAGS) \
                $(COMPLEX)   \
-               $(CLASS_CP_LOC) \
-               $(physics)/abinito_physics/cp_local/cp_hart_ext.C
-	$(COBJ) $(physics)/abinito_physics/cp_local/cp_hart_ext.C
-
+               $(CLASS_CP_LOC) 
 #------------------------------------------------------------------
-cp_struct_fact.o :  $(STANDARD) $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
+cp_struct_fact.o : $(physics)/abinito_physics/cp_nonlocal/cp_struct_fact.C \
+               $(STANDARD) $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                $(CLASS_MDINTER) $(CLASS_MDINTRA) $(CLASS_CP) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CP_LOC) $(CLASS_CP_NONLOC)\
-               $(physics)/abinito_physics/cp_nonlocal/cp_struct_fact.C
-	$(COBJ) $(physics)/abinito_physics/cp_nonlocal/cp_struct_fact.C
+               $(CLASS_CP_LOC) $(CLASS_CP_NONLOC)
+#------------------------------------------------------------------
+cp_process_grad.o : $(physics)/abinito_physics/cp_xc_fnctl/cp_process_grad.C \
+               $(STANDARD) $(FFTW) \
+               $(COMPLEX)   \
+               $(CLASS_CPXC_FNCTLS) 
+#------------------------------------------------------------------
+cp_grad_rho_ctrl.o : $(physics)/abinito_physics/cp_xc_fnctl/cp_grad_rho_ctrl.C \
+               $(STANDARD) $(FFTW) \
+               $(COMPLEX)   \
+               $(CLASS_CPXC_FNCTLS) 
+
 
 #------------------------------------------------------------------
-cp_process_grad.o :  $(STANDARD) $(FFTW) \
+cp_becke.o : $(physics)/abinito_physics/cp_xc_fnctl/cp_becke.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CPXC_FNCTLS) \
-               $(physics)/abinito_physics/cp_xc_fnctl/cp_process_grad.C
-	$(COBJ) $(physics)/abinito_physics/cp_xc_fnctl/cp_process_grad.C
+               $(CLASS_CPXC_FNCTLS)
+
 
 #------------------------------------------------------------------
-cp_grad_rho_ctrl.o :  $(STANDARD) $(FFTW) \
+cp_pz_lda.o : $(physics)/abinito_physics/cp_xc_fnctl/cp_pz_lda.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CPXC_FNCTLS) \
-               $(physics)/abinito_physics/cp_xc_fnctl/cp_grad_rho_ctrl.C
-	$(COBJ) $(physics)/abinito_physics/cp_xc_fnctl/cp_grad_rho_ctrl.C
+               $(CLASS_CPXC_FNCTLS)
+
 
 #------------------------------------------------------------------
-cp_becke.o :  $(STANDARD) $(FFTW) \
+cp_control_integrate.o : $(physics)/abinito_physics/cp_integrate/cp_control_integrate.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CPXC_FNCTLS) \
-               $(physics)/abinito_physics/cp_xc_fnctl/cp_becke.C
-	$(COBJ) $(physics)/abinito_physics/cp_xc_fnctl/cp_becke.C
+               $(CLASS_CP_INTEGRATE)
 
 #------------------------------------------------------------------
-cp_pz_lda.o :  $(STANDARD) $(FFTW) \
+cp_dynamics.o : $(physics)/abinito_physics/cp_integrate/cp_dynamics.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CPXC_FNCTLS) \
-               $(physics)/abinito_physics/cp_xc_fnctl/cp_pz_lda.C
-	$(COBJ) $(physics)/abinito_physics/cp_xc_fnctl/cp_pz_lda.C
+               $(CLASS_CP_INTEGRATE)
 
 #------------------------------------------------------------------
-cp_control_integrate.o :  $(STANDARD) $(FFTW) \
+cp_vel_sampl.o : $(physics)/abinito_physics/cp_integrate/cp_vel_sampl.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_control_integrate.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_control_integrate.C
+               $(CLASS_CP_INTEGRATE)
+
 #------------------------------------------------------------------
-cp_dynamics.o :  $(STANDARD) $(FFTW) \
+cp_isokin.o : $(physics)/abinito_physics/cp_integrate/cp_isokin.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_dynamics.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_dynamics.C
+               $(CLASS_CP_INTEGRATE)
+
 #------------------------------------------------------------------
-cp_vel_sampl.o :  $(STANDARD) $(FFTW) \
+cp_rspace_ion.o : $(physics)/abinito_physics/cp_ions/cp_rspace_ion.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_vel_sampl.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_vel_sampl.C
+               $(CLASS_CP_RSPACEION)
+
 #------------------------------------------------------------------
-cp_isokin.o :  $(STANDARD) $(FFTW) \
-               $(COMPLEX)   \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_isokin.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_isokin.C
-#------------------------------------------------------------------
-cp_rspace_ion.o :  $(STANDARD) $(FFTW) \
-               $(COMPLEX)   \
-               $(CLASS_CP_RSPACEION) \
-               $(physics)/abinito_physics/cp_ions/cp_rspace_ion.C
-	$(COBJ) $(physics)/abinito_physics/cp_ions/cp_rspace_ion.C
-#------------------------------------------------------------------
-cp_min_std.o :  $(STANDARD) $(FFTW) \
+cp_min_std.o : $(physics)/abinito_physics/cp_integrate/cp_min_std.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)  $(DBG_FLAGS) \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_min_std.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_min_std.C
+               $(CLASS_CP_INTEGRATE)
+
 
 #------------------------------------------------------------------
-cp_min_CG.o :  $(STANDARD) $(FFTW) \
+cp_min_CG.o : $(physics)/abinito_physics/cp_integrate/cp_min_CG.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)  \
-               $(CLASS_CP_INTEGRATE) \
-               $(physics)/abinito_physics/cp_integrate/cp_min_CG.C
-	$(COBJ) $(physics)/abinito_physics/cp_integrate/cp_min_CG.C
+               $(CLASS_CP_INTEGRATE)
+
 
 #------------------------------------------------------------------
-cp_lowdin.o :  $(STANDARD) $(FFTW) \
+cp_lowdin.o : $(physics)/abinito_physics/cp_orthog/cp_lowdin.C \
+               $(STANDARD) $(FFTW) \
                $(COMPLEX)   \
-               $(CLASS_CP_ORTHOG) $(MATH) \
-               $(physics)/abinito_physics/cp_orthog/cp_lowdin.C
-	$(COBJ) $(physics)/abinito_physics/cp_orthog/cp_lowdin.C
+               $(CLASS_CP_ORTHOG) $(MATH)
+
 
 #===================================================================
 #===================================================================
@@ -129,29 +118,29 @@ cp_lowdin.o :  $(STANDARD) $(FFTW) \
 #===================================================================
 
 #------------------------------------------------------------------
-control_integrate.o :  $(STANDARD) \
+control_integrate.o : $(physics)/classical_physics/integrate/control_integrate.C \
+               $(STANDARD) \
                $(CLASS_CHARM_ATOM)   $(DBG_FLAGS) \
-               $(CLASS_ATOM_INTEGRATE) \
-               $(physics)/classical_physics/integrate/control_integrate.C
-	$(COBJ) $(physics)/classical_physics/integrate/control_integrate.C
+               $(CLASS_ATOM_INTEGRATE)
+
 #------------------------------------------------------------------
-integration_drivers.o :  $(STANDARD) \
+integration_drivers.o : $(physics)/classical_physics/integrate/integration_drivers.C \
+               $(STANDARD) \
                $(CLASS_CHARM_ATOM) \
-               $(CLASS_ATOM_INTEGRATE)   $(DBG_FLAGS) \
-               $(physics)/classical_physics/integrate/integration_drivers.C
-	$(COBJ) $(physics)/classical_physics/integrate/integration_drivers.C
+               $(CLASS_ATOM_INTEGRATE)   $(DBG_FLAGS)
+
 #------------------------------------------------------------------
-write_gen_header.o :  $(STANDARD) \
+write_gen_header.o : $(physics)/classical_physics/output/write_gen_header.C \
+               $(STANDARD) \
                $(CLASS_CHARM_ATOM) \
-               $(CLASS_ATOM_OUTPUT)   $(DBG_FLAGS) \
-               $(physics)/classical_physics/output/write_gen_header.C
-	$(COBJ) $(physics)/classical_physics/output/write_gen_header.C
+               $(CLASS_ATOM_OUTPUT)   $(DBG_FLAGS)
+
 #------------------------------------------------------------------
-write_output.o :  $(STANDARD) \
+write_output.o : $(physics)/classical_physics/output/write_output.C \
+               $(STANDARD) \
                $(CLASS_CHARM_ATOM) \
-               $(CLASS_ATOM_OUTPUT)   $(DBG_FLAGS) \
-               $(physics)/classical_physics/output/write_output.C
-	$(COBJ) $(physics)/classical_physics/output/write_output.C
+               $(CLASS_ATOM_OUTPUT)   $(DBG_FLAGS)
+
 #------------------------------------------------------------------
 
 #===================================================================
@@ -161,22 +150,19 @@ write_output.o :  $(STANDARD) \
 
 
 #=================================================================
-piny_malloc.o     :      $(STANDARD) $(DEFINES) \
-                         $(FRND_ENT) \
-                         $(physics)/friend_lib/piny_malloc.C
-	$(COBJ) $(DUAL_FFTW) -I$(FFT_HOME)/include $(physics)/friend_lib/piny_malloc.C
+piny_malloc.o     : $(physics)/friend_lib/piny_malloc.C \
+                   $(STANDARD) $(DEFINES) $(FRND_ENT)
+#-----------------------------------------------------------------
+piny_pup.o     : $(physics)/friend_lib/piny_pup.C \
+                       $(STANDARD) $(DEFINES) \
+                         $(FRND_ENT)
+
 
 #-----------------------------------------------------------------
-piny_pup.o     :          $(STANDARD) $(DEFINES) \
-                         $(FRND_ENT) \
-                         $(physics)/friend_lib/piny_pup.C
-	$(COBJ) $(physics)/friend_lib/piny_pup.C
+friend_lib.o   : $(physics)/friend_lib/friend_lib.C \
+                      $(STANDARD) $(DEFINES) \
+                         $(FRND_ENT)
 
-#-----------------------------------------------------------------
-friend_lib.o   :         $(STANDARD) $(DEFINES) \
-                         $(FRND_ENT) \
-                         $(physics)/friend_lib/friend_lib.C
-	$(COBJ) $(physics)/friend_lib/friend_lib.C
 
 #=================================================================
 #==================================================================
@@ -192,153 +178,153 @@ DMOL_PARMS1 = $(physics)/interface/mol_params
 
 
 #==================================================================
-set_wave_params.o   :    $(STANDARD) $(DEFINES) \
+set_wave_params.o   : $(MOL_PARMS1)/set_params/set_wave_params.C \
+                 $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_CP) \
-                         $(MOL_LOC) $(HANDLE_ENT) \
-                         $(MOL_PARMS1)/set_params/set_wave_params.C
-	$(COBJ_CARE) $(MOL_PARMS1)/set_params/set_wave_params.C
+                         $(MOL_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_coef_NHC.o    :      $(STANDARD) $(DEFINES) \
+set_coef_NHC.o    : $(physics)/interface/coords_cp/set_coef_NHC.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_CP) \
-                         $(COORD_CP_ENT) $(FRND_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/coords_cp/set_coef_NHC.C
-	$(COBJ_CARE) $(physics)/interface/coords_cp/set_coef_NHC.C
+                         $(COORD_CP_ENT) $(FRND_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-read_coef.o     :        $(STANDARD) $(DEFINES) \
+read_coef.o     : $(physics)/interface/coords_cp/read_coef.C \
+                     $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_CP) \
                          $(ENR_CPCON_ENT) $(COORD_CP_ENT) $(HANDLE_ENT) \
-                         $(FRND_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/coords_cp/read_coef.C
-	$(COBJ_CARE) $(physics)/interface/coords_cp/read_coef.C
+                         $(FRND_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-mall_properties.o     :  $(STANDARD) $(DEFINES) \
+mall_properties.o     : $(physics)/interface/coords_cp/mall_properties.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_CP) \
                          $(COORD_CP_ENT) $(COORD_CP_LOC) \
-                         $(FRND_ENT) \
-                         $(physics)/interface/coords_cp/mall_properties.C
-	$(COBJ_CARE) $(physics)/interface/coords_cp/mall_properties.C
+                         $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-mall_coef.o     :        $(STANDARD) $(DEFINES) \
+mall_coef.o     : $(physics)/interface/coords_cp/mall_coef.C \
+                     $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_CP) \
-                         $(COORD_CP_ENT) $(COORD_CP_LOC) $(FRND_ENT) \
-                         $(physics)/interface/coords_cp/mall_coef.C
-	$(COBJ_CARE) $(physics)/interface/coords_cp/mall_coef.C
+                         $(COORD_CP_ENT) $(COORD_CP_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_set_cp_ewald.o : $(STANDARD) $(DEFINES) \
+control_set_cp_ewald.o : $(physics)/interface/cp_ewald/control_set_cp_ewald.C \
+              $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_GEN) $(CLASS_CP) \
                          $(CLASS_MDINTRA) $(TYP_PAR) \
                          $(CPEWALD_ENT) $(CPEWALD_LOC) $(ENR_CP_LOC) \
-                         $(MATH) $(FRND_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/cp_ewald/control_set_cp_ewald.C
-	$(COBJ_CARE) $(physics)/interface/cp_ewald/control_set_cp_ewald.C
+                         $(MATH) $(FRND_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_perd_corrs.o : $(STANDARD) $(DEFINES) \
+set_perd_corrs.o : $(physics)/interface/cp_ewald/set_perd_corrs.C \
+              $(STANDARD) $(DEFINES) \
                    $(CLASS_GEN) $(CPEWALD_ENTRY) \
-                   $(CPEWALD_CORR) $(MATH) $(FRND_ENT) \
-                   $(physics)/interface/cp_ewald/set_perd_corrs.C
-	$(COBJ_CARE) $(physics)/interface/cp_ewald/set_perd_corrs.C
+                   $(CPEWALD_CORR) $(MATH) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_cp_ewald.o     :     $(STANDARD) $(DEFINES) \
+set_cp_ewald.o     : $(physics)/interface/cp_ewald/set_cp_ewald.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(CLASS_CP) \
-                         $(CPEWALD_LOC) $(MATH) $(FRND_ENT) \
-                         $(physics)/interface/cp_ewald/set_cp_ewald.C
-	$(COBJ_CARE) $(physics)/interface/cp_ewald/set_cp_ewald.C
+                         $(CPEWALD_LOC) $(MATH) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-search_base_cp.o  :      $(STANDARD) $(DEFINES) \
+search_base_cp.o  : $(physics)/interface/search_base/search_base_cp.C \
+                   $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) \
-                         $(SEARCH_ENT) $(VPS_LOC) $(HANDLE_ENT) \
-                         $(physics)/interface/search_base/search_base_cp.C
-	$(COBJ_CARE) $(physics)/interface/search_base/search_base_cp.C
+                         $(SEARCH_ENT) $(VPS_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-proj_vel_cp.o     :      $(STANDARD) $(DEFINES) \
+proj_vel_cp.o     : $(physics)/interface/vel_sampl_cp/proj_vel_cp.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_CP) $(CLASS_MDINTRA) \
-                         $(SMPL_CP_LOC) $(SMPL_CP_ENT) $(ENR_CPCON_ENT) \
-                         $(physics)/interface/vel_sampl_cp/proj_vel_cp.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_cp/proj_vel_cp.C
+                         $(SMPL_CP_LOC) $(SMPL_CP_ENT) $(ENR_CPCON_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_vps_dict.o     :     $(STANDARD) $(DEFINES) \
+set_vps_dict.o     : $(physics)/interface/vps_params/set_vps_dict.C \
+                  $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) \
-                         $(VPS_LOC)  $(FRND_ENT) \
-                         $(physics)/interface/vps_params/set_vps_dict.C
-	$(COBJ_CARE) $(physics)/interface/vps_params/set_vps_dict.C
+                         $(VPS_LOC)  $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-samp_vel_cp.o     :      $(STANDARD) $(DEFINES) \
+samp_vel_cp.o     : $(physics)/interface/vel_sampl_cp/samp_vel_cp.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) \
-                         $(SMPL_CP_LOC)  $(MATH) \
-                         $(physics)/interface/vel_sampl_cp/samp_vel_cp.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_cp/samp_vel_cp.C
+                         $(SMPL_CP_LOC)  $(MATH)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_vps_params.o  :  $(STANDARD) $(DEFINES) \
+control_vps_params.o  : $(physics)/interface/vps_params/control_vps_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(TYP_PAR) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_MDINTRA) \
                          $(VPS_ENT) $(SEARCH_ENT) $(INTRA_LOC) $(VPS_LOC) \
-                         $(HANDLE_ENT) $(FRND_ENT) $(COMM_WRAP) $(MATH) \
-                         $(physics)/interface/vps_params/control_vps_params.C
-	$(COBJ_CARE) $(physics)/interface/vps_params/control_vps_params.C
+                         $(HANDLE_ENT) $(FRND_ENT) $(COMM_WRAP) $(MATH)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-weight_node_gauss_hermite.o     :     $(STANDARD) $(DEFINES) \
+weight_node_gauss_hermite.o     : $(physics)/interface/vps_params/weight_node_gauss_hermite.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) \
-                         $(VPS_LOC)  $(FRND_ENT) \
-                         $(physics)/interface/vps_params/weight_node_gauss_hermite.C
-	$(COBJ_CARE) $(physics)/interface/vps_params/weight_node_gauss_hermite.C
+                         $(VPS_LOC)  $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_vc_smpl.o     :  $(STANDARD) $(DEFINES) \
+control_vc_smpl.o     : $(physics)/interface/vel_sampl_cp/control_vc_smpl.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) \
-                         $(SMPL_CP_ENT) $(SMPL_CP_LOC) $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_cp/control_vc_smpl.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_cp/control_vc_smpl.C
+                         $(SMPL_CP_ENT) $(SMPL_CP_LOC) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_vcnhc_smpl.o  :  $(STANDARD) $(DEFINES) \
+control_vcnhc_smpl.o  : $(physics)/interface/vel_sampl_cp/control_vcnhc_smpl.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) \
-                         $(SMPL_CP_ENT) $(SMPL_CP_LOC) $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_cp/control_vcnhc_smpl.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_cp/control_vcnhc_smpl.C
+                         $(SMPL_CP_ENT) $(SMPL_CP_LOC) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_scale_cp.o    :  $(STANDARD) $(DEFINES) \
+control_scale_cp.o    : $(physics)/interface/vel_sampl_cp/control_scale_cp.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_CP)  \
                          $(CLASS_MDINTRA) $(TYP_PAR) \
-                         $(SMPL_CLASS_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_cp/control_scale_cp.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_cp/control_scale_cp.C
+                         $(SMPL_CLASS_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-gen_wave.o  :  $(STANDARD) $(DEFINES) \
+gen_wave.o  : $(physics)/interface/coords_cp/gen_wave.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(TYP_PAR) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_MDINTRA) \
                          $(CLASS_CP_GEN_WAVE)  \
                          $(VPS_ENT) $(SEARCH_ENT) $(INTRA_LOC) $(VPS_LOC) \
-                         $(HANDLE_ENT) $(FRND_ENT) $(MATH) \
-                         $(physics)/interface/coords_cp/gen_wave.C
-	$(COBJ_CARE) $(physics)/interface/coords_cp/gen_wave.C
+                         $(HANDLE_ENT) $(FRND_ENT) $(MATH)
+	$(COBJ_CARE)
 
 #==================================================================
 
@@ -350,7 +336,8 @@ gen_wave.o  :  $(STANDARD) $(DEFINES) \
 
 
 #==================================================================
-parse.o     :            $(STANDARD) $(DEFINES) \
+parse.o     : $(physics)/interface/parse/parse.C \
+                         $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(TYP_PAR) $(TYP_STAT) $(PARSE_ENT) $(PARSE_LOC) \
@@ -361,219 +348,218 @@ parse.o     :            $(STANDARD) $(DEFINES) \
                          $(SAMPL_CP_ENT) $(SAMPL_CP_LOC) $(COORD_CP_ENT) \
                          $(COORD_CP_LOC) $(MATH) $(PATH_INIT_ENT) \
                          $(FRND_ENT) $(COMM_ENT) $(COMM_LOC) $(COMM_WRAP) \
-                         $(INT_CPMIN_ENT) \
-                         $(physics)/interface/parse/parse.C
-	$(COBJ_CARE) $(physics)/interface/parse/parse.C
+                         $(INT_CPMIN_ENT)
+	$(COBJ_CARE)
 
 #==================================================================
-interface_hand.o     :   $(STANDARD) $(DEFINES) \
+interface_hand.o     : $(physics)/interface/handle/interface_hand.C \
+                $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) \
-                         $(HANDLE_ENT) \
-                        $(physics)/interface/handle/interface_hand.C
-	$(COBJ_CARE) $(physics)/interface/handle/interface_hand.C
+                         $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-search_base_class.o   :  $(STANDARD) $(DEFINES) \
+search_base_class.o   : $(physics)/interface/search_base/search_base_class.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(INTRA_LOC) $(SEARCH_ENT) $(SEARCH_LOC) \
-                         $(FRND_ENT) \
-                         $(physics)/interface/search_base/search_base_class.C
-	$(COBJ_CARE) $(physics)/interface/search_base/search_base_class.C
+                         $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-data_base_handle.o    :  $(STANDARD) $(DEFINES) \
+data_base_handle.o    : $(physics)/interface/search_base/data_base_handle.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(SEARCH_ENT) $(INTER_ENT) $(INTER_LOC) \
-                         $(INTRA_LOC)  $(HANDLE_ENT) $(FRND_ENT) \
-                         $(physics)/interface/search_base/data_base_handle.C
-	$(COBJ_CARE) $(physics)/interface/search_base/data_base_handle.C
+                         $(INTRA_LOC)  $(HANDLE_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #=========================================================================
-control_sim_params.o :   $(STANDARD) $(DEFINES) \
+control_sim_params.o : $(physics)/interface/sim_params/control_sim_params.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(CLASS_CP) $(TYP_PAR) $(TYP_STAT)\
-                         $(SIM_ENT) $(SIM_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(physics)/interface/sim_params/control_sim_params.C
-	$(COBJ_CARE) $(physics)/interface/sim_params/control_sim_params.C
+                         $(SIM_ENT) $(SIM_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_sim_dict.o     :     $(STANDARD) $(DEFINES) \
+set_sim_dict.o     : $(physics)/interface/sim_params/set_sim_dict.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_MDINTRA)  \
                          $(CLASS_CP) $(TYP_PAR) $(TYP_STAT)\
-                         $(SIM_LOC) $(FRND_ENT) \
-                         $(physics)/interface/sim_params/set_sim_dict.C
-	$(COBJ_CARE) $(physics)/interface/sim_params/set_sim_dict.C
+                         $(SIM_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_sim_params.o  :      $(STANDARD) $(DEFINES) \
+set_sim_params.o  : $(physics)/interface/sim_params/set_sim_params.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(TYP_PAR) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_MDINTRA) $(SIM_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(COMM_WRAP) $(TYP_STAT)\
-                         $(physics)/interface/sim_params/set_sim_params.C
-	$(COBJ_CARE) $(physics)/interface/sim_params/set_sim_params.C
+                         $(COMM_WRAP) $(TYP_STAT)
+	$(COBJ_CARE)
 
 #=========================================================================
-set_atm_NHC.o     :      $(STANDARD) $(DEFINES) \
+set_atm_NHC.o     : $(physics)/interface/coords/set_atm_NHC.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINTRA) \
-                         $(COORD_ENT) $(FRND_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/coords/set_atm_NHC.C
-	$(COBJ_CARE) $(physics)/interface/coords/set_atm_NHC.C
+                         $(COORD_ENT) $(FRND_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-read_coord.o     :       $(STANDARD) $(DEFINES) \
+read_coord.o     : $(physics)/interface/coords/read_coord.C \
+                    $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINTRA) \
                          $(COORD_ENT) $(COORD_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(MATH) $(COMM_WRAP) \
-                         $(physics)/interface/coords/read_coord.C
-	$(COBJ_CARE) $(physics)/interface/coords/read_coord.C
+                         $(MATH) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-molecule_decomp.o  :     $(STANDARD) $(DEFINES) \
+molecule_decomp.o  : $(physics)/interface/coords/molecule_decomp.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) $(CLASS_MDINT)\
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
-                         $(COORD_ENT) $(COORD_LOC) $(FRND_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/coords/molecule_decomp.C
-	$(COBJ_CARE) $(physics)/interface/coords/molecule_decomp.C
+                         $(COORD_ENT) $(COORD_LOC) $(FRND_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-read_hmat.o     :        $(STANDARD) $(DEFINES) \
+read_hmat.o     : $(physics)/interface/coords/read_hmat.C \
+                     $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINTRA) \
-                         $(COORD_ENT) $(HANDLE_ENT) $(FRND_ENT) $(MATH) \
-                         $(physics)/interface/coords/read_hmat.C
-	$(COBJ_CARE) $(physics)/interface/coords/read_hmat.C
+                         $(COORD_ENT) $(HANDLE_ENT) $(FRND_ENT) $(MATH)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-mall_coord.o     :       $(STANDARD) $(DEFINES) \
+mall_coord.o     : $(physics)/interface/coords/mall_coord.C \
+                    $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINTRA) \
-                         $(COORD_LOC) $(FRND_ENT) \
-                         $(physics)/interface/coords/mall_coord.C
-	$(COBJ_CARE) $(physics)/interface/coords/mall_coord.C
+                         $(COORD_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #=========================================================================
-control_surf_params.o : $(STANDARD) $(DEFINES) \
+control_surf_params.o : $(physics)/interface/surf_params/control_surf_params.C \
+              $(STANDARD) $(DEFINES) \
                         $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                         $(TYP_PAR) $(CLASS_MDINTRA) \
                         $(CLASS_CP) \
                         $(SURF_PRMS_ENT) $(SURF_PRMS_LOC) \
                         $(INTRA_LOC) $(SEARCH_ENT) \
-                        $(FRND_ENT) $(HANDLE_ENT) $(COMM_WRAP) \
-                        $(physics)/interface/surf_params/control_surf_params.C
-	$(COBJ_CARE) $(physics)/interface/surf_params/control_surf_params.C
+                        $(FRND_ENT) $(HANDLE_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_surf_dict.o   :     $(STANDARD) $(DEFINES) \
+set_surf_dict.o   : $(physics)/interface/surf_params/set_surf_dict.C \
+                  $(STANDARD) $(DEFINES) \
                         $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                         $(CLASS_MDINTER) \
-                        $(SURF_PRMS_LOC) $(FRND_ENT) \
-                        $(physics)/interface/surf_params/set_surf_dict.C
-	$(COBJ_CARE) $(physics)/interface/surf_params/set_surf_dict.C
+                        $(SURF_PRMS_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #=========================================================================
-control_inter_params.o : $(STANDARD) $(DEFINES) \
+control_inter_params.o : $(physics)/interface/inter_params/control_inter_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(INTER_ENT) $(INTER_LOC) $(INTRA_LOC) $(SEARCH_ENT) \
-                         $(FRND_ENT) $(HANDLE_ENT) $(COMM_WRAP) \
-                         $(physics)/interface/inter_params/control_inter_params.C
-	$(COBJ_CARE) $(physics)/interface/inter_params/control_inter_params.C
+                         $(FRND_ENT) $(HANDLE_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_inter_dict.o   :     $(STANDARD) $(DEFINES) \
+set_inter_dict.o   : $(physics)/interface/inter_params/set_inter_dict.C \
+                  $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) \
-                         $(INTER_LOC) $(FRND_ENT) \
-                         $(physics)/interface/inter_params/set_inter_dict.C
-	$(COBJ_CARE) $(physics)/interface/inter_params/set_inter_dict.C
+                         $(INTER_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-get_clong.o     :        $(STANDARD) $(DEFINES) \
+get_clong.o     : $(physics)/interface/inter_params/get_clong.C \
+                     $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) \
-                         $(INTER_LOC) $(FRND_ENT) \
-                         $(physics)/interface/inter_params/get_clong.C
-	$(COBJ_CARE) $(physics)/interface/inter_params/get_clong.C
+                         $(INTER_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-spline_fit.o     :       $(STANDARD) $(DEFINES) \
+spline_fit.o     : $(physics)/interface/inter_params/spline_fit.C \
+                    $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) \
-                         $(INTER_LOC) $(FRND_ENT) \
-                         $(physics)/interface/inter_params/spline_fit.C
-	$(COBJ) $(physics)/interface/inter_params/spline_fit.C
+                         $(INTER_LOC) $(FRND_ENT)
+
 
 #==================================================================
-control_vnhc_smpl.o   :  $(STANDARD) $(DEFINES) \
+control_vnhc_smpl.o   : $(physics)/interface/vel_sampl_class/control_vnhc_smpl.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) $(TYP_PAR) \
-                         $(SMPL_CLASS_ENT) $(SMPL_CLASS_LOC) $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_class/control_vnhc_smpl.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_class/control_vnhc_smpl.C
+                         $(SMPL_CLASS_ENT) $(SMPL_CLASS_LOC) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_vx_smpl.o     :  $(STANDARD) $(DEFINES) \
+control_vx_smpl.o     : $(physics)/interface/vel_sampl_class/control_vx_smpl.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) $(TYP_PAR) \
                          $(SMPL_CLASS_ENT) $(SMPL_CLASS_LOC) $(COORD_LOC) \
-                         $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_class/control_vx_smpl.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_class/control_vx_smpl.C
+                         $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_scale_class.o : $(STANDARD) $(DEFINES) \
+control_scale_class.o : $(physics)/interface/vel_sampl_class/control_scale_class.C \
+              $(STANDARD) $(DEFINES) \
                         $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                         $(CLASS_MDINTRA) $(CLASS_GEN) $(TYP_PAR) \
-                        $(SMPL_CLASS_ENT) $(COMM_WRAP) \
-                        $(physics)/interface/vel_sampl_class/control_scale_class.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_class/control_scale_class.C
+                        $(SMPL_CLASS_ENT) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-proj_vel_class.o     :   $(STANDARD) $(DEFINES) \
+proj_vel_class.o     : $(physics)/interface/vel_sampl_class/proj_vel_class.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) \
-                         $(INTRA_CON_ENT) $(SMPL_CLASS_LOC) $(COMM_WRAP) \
-                         $(physics)/interface/vel_sampl_class/proj_vel_class.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_class/proj_vel_class.C
+                         $(INTRA_CON_ENT) $(SMPL_CLASS_LOC) $(COMM_WRAP)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-samp_vel_class.o     :   $(STANDARD) $(DEFINES) \
+samp_vel_class.o     : $(physics)/interface/vel_sampl_class/samp_vel_class.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINTRA) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) \
-                         $(INTRA_CON_ENT) $(SMPL_CLASS_LOC) $(MATH) \
-                         $(physics)/interface/vel_sampl_class/samp_vel_class.C
-	$(COBJ_CARE) $(physics)/interface/vel_sampl_class/samp_vel_class.C
+                         $(INTRA_CON_ENT) $(SMPL_CLASS_LOC) $(MATH)
+	$(COBJ_CARE)
 
 #==================================================================
-set_exclude.o     :      $(STANDARD) $(DEFINES) \
+set_exclude.o     : $(physics)/interface/lists/set_exclude.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(CLASS_GEN) $(CLASS_MDINTRA) $(TYP_PAR) \
-                         $(LISTS_ENT) $(LISTS_LOC) $(FRND_ENT) $(WEIGH_NODE) \
-                         $(physics)/interface/lists/set_exclude.C
-	$(COBJ_CARE) $(physics)/interface/lists/set_exclude.C
+                         $(LISTS_ENT) $(LISTS_LOC) $(FRND_ENT) $(WEIGH_NODE)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-exl_sort.o     :         $(STANDARD) $(DEFINES) \
+exl_sort.o     : $(physics)/interface/lists/exl_sort.C \
+                      $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_GEN) $(CLASS_MDINTRA) $(TYP_PAR) \
-                         $(LISTS_LOC) $(FRND_ENT) \
-                         $(physics)/interface/lists/exl_sort.C
-	$(COBJ_CARE) $(physics)/interface/lists/exl_sort.C
+                         $(LISTS_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-path_integral_init.o     :         $(STANDARD) $(DEFINES) \
+path_integral_init.o     : $(physics)/interface/path_integral/path_integral_init.C \
+                      $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_GEN) $(CLASS_MDINTRA) \
-                         $(PATH_INIT_ENT) $(MATH) $(FRND_ENT) \
-                         $(physics)/interface/path_integral/path_integral_init.C
-	$(COBJ_CARE) $(physics)/interface/path_integral/path_integral_init.C
+                         $(PATH_INIT_ENT) $(MATH) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #==================================================================
 
@@ -593,244 +579,244 @@ DSET_PARM = $(physics)/interface/intra_params/set_params
 
 
 #==================================================================
-close_intra_params.o :   $(STANDARD) $(DEFINES) \
+close_intra_params.o : $(physics)/interface/intra_params/close_intra_params.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) $(CLASS_GEN) \
-                         $(INTRA_ENT) $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/close_intra_params.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/close_intra_params.C
+                         $(INTRA_ENT) $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_intra_params.o : $(STANDARD) $(DEFINES) \
+control_intra_params.o : $(physics)/interface/intra_params/control_intra_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(TYP_PAR) $(CLASS_INTRA) \
                          $(INTRA_ENT) $(INTRA_LOC) $(FRND_ENT) $(PIMD_LOC) \
-                         $(MATH) \
-                         $(physics)/interface/intra_params/control_intra_params.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/control_intra_params.C
+                         $(MATH)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-control_res_params.o  :  $(STANDARD) $(DEFINES) \
+control_res_params.o  : $(physics)/interface/intra_params/control_res_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/control_res_params.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/control_res_params.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-fetch_residue.o     :    $(STANDARD) $(DEFINES) \
+fetch_residue.o     : $(physics)/interface/intra_params/fetch_residue.C \
+                 $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/fetch_residue.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/fetch_residue.C
+                         $(INTRA_LOC) $(HANDLE_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-fetch_resbond_prm.o  :   $(STANDARD) $(DEFINES) \
+fetch_resbond_prm.o  : $(physics)/interface/intra_params/fetch_resbond_prm.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) \
-                         $(physics)/interface/intra_params/fetch_resbond_prm.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/fetch_resbond_prm.C
+                         $(INTRA_LOC)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-fetch_free_energy_index.o     : \
+fetch_free_energy_index.o     : $(physics)/interface/intra_params/fetch_free_energy_index.C \
+              \
                          $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) \
-                       $(physics)/interface/intra_params/fetch_free_energy_index.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/fetch_free_energy_index.C
+                         $(INTRA_LOC)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-fetch_freeze.o     :     $(STANDARD) $(DEFINES) \
+fetch_freeze.o     : $(physics)/interface/intra_params/fetch_freeze.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/fetch_freeze.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/fetch_freeze.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-init_intra_params.o  :   $(STANDARD) $(DEFINES) \
+init_intra_params.o  : $(physics)/interface/intra_params/init_intra_params.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/init_intra_params.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/init_intra_params.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-manipulate_res_bonds.o : $(STANDARD) $(DEFINES) \
+manipulate_res_bonds.o : $(physics)/interface/intra_params/manipulate_res_bonds.C \
+              $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/manipulate_res_bonds.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/manipulate_res_bonds.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-replicate_mol.o     :    $(STANDARD) $(DEFINES) \
+replicate_mol.o     : $(physics)/interface/intra_params/replicate_mol.C \
+                 $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER)\
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/replicate_mol.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/replicate_mol.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 #------------------------------------------------------------------
-residue_bond.o     :     $(STANDARD) $(DEFINES) \
+residue_bond.o     : $(physics)/interface/intra_params/residue_bond.C \
+                  $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_INTRA) $(CLASS_MDINT)\
                          $(CLASS_MDATM) $(CLASS_MDINTER) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/residue_bond.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/residue_bond.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #==================================================================
-set_atm_mask.o     :     $(STANDARD) $(DEFINES) \
+set_atm_mask.o     : $(SET_PARM)/set_atm_mask.C \
+                  $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_atm_mask.C
-	$(COBJ_CARE) $(SET_PARM)/set_atm_mask.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_atm_morph.o     :    $(STANDARD) $(DEFINES) \
+set_atm_morph.o     : $(SET_PARM)/set_atm_morph.C \
+                 $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_atm_morph.C
-	$(COBJ_CARE) $(SET_PARM)/set_atm_morph.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_atm_params.o     :   $(STANDARD) $(DEFINES) \
+set_atm_params.o     : $(SET_PARM)/set_atm_params.C \
+                $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_atm_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_atm_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_bend_bnd_params.o  : $(STANDARD) $(DEFINES) \
+set_bend_bnd_params.o  : $(SET_PARM)/set_bend_bnd_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_bend_bnd_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_bend_bnd_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_bend_params.o     :  $(STANDARD) $(DEFINES) \
+set_bend_params.o     : $(SET_PARM)/set_bend_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_bend_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_bend_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_bond_params.o     :  $(STANDARD) $(DEFINES) \
+set_bond_params.o     : $(SET_PARM)/set_bond_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_bond_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_bond_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_intra_dict.o     :   $(STANDARD) $(DEFINES) \
+set_intra_dict.o     : $(SET_PARM)/set_intra_dict.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(SET_PARM)/set_intra_dict.C
-	$(COBJ_CARE) $(SET_PARM)/set_intra_dict.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_intra_dict_pot.o  :  $(STANDARD) $(DEFINES) \
+set_intra_dict_pot.o  : $(SET_PARM)/set_intra_dict_pot.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(SET_PARM)/set_intra_dict_pot.C
-	$(COBJ_CARE) $(SET_PARM)/set_intra_dict_pot.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_intra_potent.o  :    $(STANDARD) $(DEFINES) \
+set_intra_potent.o  : $(physics)/interface/intra_params/set_intra_potent.C \
+                 $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(SEARCH_ENT) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/set_intra_potent.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/set_intra_potent.C
+                         $(INTRA_LOC) $(SEARCH_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 #------------------------------------------------------------------
-intra_coefs.o     :      $(STANDARD) $(DEFINES) \
+intra_coefs.o     : $(physics)/interface/intra_params/intra_coefs.C \
+                   $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(physics)/interface/intra_params/intra_coefs.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/intra_coefs.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_mol_name_params.o :  $(STANDARD) $(DEFINES) \
+set_mol_name_params.o : $(SET_PARM)/set_mol_name_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_mol_name_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_mol_name_params.C
+                         $(INTRA_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_onfo_params.o     :  $(STANDARD) $(DEFINES) \
+set_onfo_params.o     : $(SET_PARM)/set_onfo_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_onfo_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_onfo_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_res_bond_params.o  : $(STANDARD) $(DEFINES) \
+set_res_bond_params.o  : $(SET_PARM)/set_res_bond_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_res_bond_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_res_bond_params.C
+                         $(INTRA_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_res_def_params.o   : $(STANDARD) $(DEFINES) \
+set_res_def_params.o   : $(SET_PARM)/set_res_def_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_res_def_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_res_def_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_res_name_params.o :  $(STANDARD) $(DEFINES) \
+set_res_name_params.o : $(SET_PARM)/set_res_name_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_res_name_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_res_name_params.C
+                         $(INTRA_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_res_morph_params.o : $(STANDARD) $(DEFINES) \
+set_res_morph_params.o : $(SET_PARM)/set_res_morph_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_res_morph_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_res_morph_params.C
+                         $(INTRA_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_grp_con_params.o  :  $(STANDARD) $(DEFINES) \
+set_grp_con_params.o  : $(SET_PARM)/set_grp_con_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_GEN) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(SET_PARM)/set_grp_con_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_grp_con_params.C
+                         $(INTRA_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-set_tors_params.o     :  $(STANDARD) $(DEFINES) \
+set_tors_params.o     : $(SET_PARM)/set_tors_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(SET_PARM)/set_tors_params.C
-	$(COBJ_CARE) $(SET_PARM)/set_tors_params.C
+                         $(INTRA_LOC) $(HANDLE_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #------------------------------------------------------------------
-fetch_hydrog_mass.o :    $(STANDARD) $(DEFINES) \
+fetch_hydrog_mass.o : $(physics)/interface/intra_params/fetch_hydrog_mass.C \
+                 $(STANDARD) $(DEFINES) \
                          $(CLASS_MDINT) $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(TYP_PAR) $(CLASS_INTRA) \
-                         $(INTRA_LOC) $(FRND_ENT) \
-                         $(physics)/interface/intra_params/fetch_hydrog_mass.C
-	$(COBJ_CARE) $(physics)/interface/intra_params/fetch_hydrog_mass.C
+                         $(INTRA_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #==================================================================
 #==================================================================
@@ -845,68 +831,68 @@ DMOL_PARMS = $(physics)/interface/mol_params
 
 
 #==================================================================
-control_mol_params.o  :  $(STANDARD) $(DEFINES) \
+control_mol_params.o  : $(MOL_PARMS)/control_mol_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(CLASS_GEN) $(CLASS_CP) \
-                         $(MOL_ENT) $(MOL_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(MOL_PARMS)/control_mol_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/control_mol_params.C
+                         $(MOL_ENT) $(MOL_LOC) $(HANDLE_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-control_set_mol_params.o : \
+control_set_mol_params.o : $(MOL_PARMS)/set_params/control_set_mol_params.C \
+              \
                          $(STANDARD) $(DEFINES) \
                          $(TYP_PAR) $(CLASS_MDINT) $(CLASS_MDATM)\
                          $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(CLASS_GEN) $(CLASS_CP) \
-                         $(MOL_LOC) $(HANDLE_ENT) $(FRND_ENT) \
-                         $(MOL_PARMS)/set_params/control_set_mol_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/control_set_mol_params.C
+                         $(MOL_LOC) $(HANDLE_ENT) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-set_base_file_params.o : $(STANDARD) $(DEFINES) \
+set_base_file_params.o : $(MOL_PARMS)/set_params/set_base_file_params.C \
+              $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(CLASS_CP) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) \
-                         $(MOL_LOC) \
-                         $(MOL_PARMS)/set_params/set_base_file_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/set_base_file_params.C
+                         $(MOL_LOC)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-set_surf_params.o     :  $(STANDARD) $(DEFINES) \
+set_surf_params.o     : $(MOL_PARMS)/set_params/set_surf_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_CP) \
                          $(TYP_PAR) $(CLASS_MDINTRA) \
-                         $(MOL_LOC) $(HANDLE_ENT) \
-                         $(MOL_PARMS)/set_params/set_surf_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/set_surf_params.C
+                         $(MOL_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-set_free_params.o     :  $(STANDARD) $(DEFINES) \
+set_free_params.o     : $(MOL_PARMS)/set_params/set_free_params.C \
+               $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) $(CLASS_CP) \
                          $(TYP_PAR) $(CLASS_MDINTRA) \
-                         $(MOL_LOC) $(HANDLE_ENT) \
-                         $(MOL_PARMS)/set_params/set_free_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/set_free_params.C
+                         $(MOL_LOC) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-set_mol_dict.o     :     $(STANDARD) $(DEFINES) \
+set_mol_dict.o     : $(MOL_PARMS)/set_params/set_mol_dict.C \
+                  $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) \
                          $(CLASS_MDINTRA) $(CLASS_CP) \
-                         $(MOL_LOC) $(FRND_ENT) \
-                         $(MOL_PARMS)/set_params/set_mol_dict.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/set_mol_dict.C
+                         $(MOL_LOC) $(FRND_ENT)
+	$(COBJ_CARE)
 
 #----------------------------------------------------------------
-set_mol_params.o     :   $(STANDARD) $(DEFINES) \
+set_mol_params.o     : $(MOL_PARMS)/set_params/set_mol_params.C \
+                $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(TYP_PAR) $(CLASS_MDINTRA) \
                          $(CLASS_CP) $(CLASS_MDINT) $(CLASS_MDATM) \
                          $(CLASS_MDINTER) \
-                         $(MOL_LOC) $(FRND_ENT) $(HANDLE_ENT) \
-                         $(MOL_PARMS)/set_params/set_mol_params.C
-	$(COBJ_CARE) $(MOL_PARMS)/set_params/set_mol_params.C
+                         $(MOL_LOC) $(FRND_ENT) $(HANDLE_ENT)
+	$(COBJ_CARE)
 
 #==================================================================
 
@@ -916,43 +902,44 @@ set_mol_params.o     :   $(STANDARD) $(DEFINES) \
 
 
 #==========================================================================
-Interface_ctrl.o     :           $(STANDARD) $(DEFINES) \
+Interface_ctrl.o     : $(physics)/piny_to_driver/Interface_ctrl.C \
+                        $(STANDARD) $(DEFINES) \
                          $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                          $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                          $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) \
-                         $(physics)/piny_to_driver/Interface_ctrl.C \
                          $(physics)/piny_to_driver/Interface_ctrl.h
-	cp -f $(physics)/piny_to_driver/Interface_ctrl.h $(physics)/include/class_defs
-	$(COBJ) $(physics)/piny_to_driver/Interface_ctrl.C
+
+#	cp -f $(physics)/piny_to_driver/Interface_ctrl.h $(physics)/include/class_defs
+
 
 #==========================================================================
-PhysicsAtomPosInit.o     : $(STANDARD) $(DEFINES) \
+PhysicsAtomPosInit.o     : $(physics)/piny_to_driver/PhysicsAtomPosInit.C  \
+              $(STANDARD) $(DEFINES) \
                            $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
                            $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
                            $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) \
-                           $(CLASS_PhysicsAtomPosinit) \
-                           $(physics)/piny_to_driver/PhysicsAtomPosInit.C 
-	$(COBJ) $(physics)/piny_to_driver/PhysicsAtomPosInit.C
-#==========================================================================
-vx_smpl.o     :          $(STANDARD) $(DEFINES) \
-                         $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
-                         $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
-                         $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) $(CLASS_VX_SMPL) \
-                         $(physics)/classical_physics/vel_smpl_atms/vx_smpl.C 
-	$(COBJ) $(physics)/classical_physics/vel_smpl_atms/vx_smpl.C
-                                                                               
-#==========================================================================
-ParaInfoInit.o     :      $(STANDARD) $(DEFINES) \
-                         $(CLASS_GEN) $(CLASS_CP) $(DBG_FLAGS) \
-                         $(CLASS_PARAINIT) \
-                         $(physics)/piny_to_driver/Parainfoinit.C
-	$(COBJ) $(physics)/piny_to_driver/Parainfoinit.C
+                           $(CLASS_PhysicsAtomPosinit)
 
 #==========================================================================
-configure.o     :      $(STANDARD) $(DEFINES) $(TYP_PAR) \
-                       $(CLASS_CHARM_CONFIG) $(HANDLE_ENT) $(FRIEND_ENT) \
-                       $(physics)/piny_to_driver/configure.C
-	$(COBJ_CARE) $(physics)/piny_to_driver/configure.C
+vx_smpl.o     : $(physics)/classical_physics/vel_smpl_atms/vx_smpl.C  \
+                       $(STANDARD) $(DEFINES) \
+                         $(CLASS_GEN) $(CLASS_CP) $(CLASS_MDINT) \
+                         $(CLASS_MDATM) $(CLASS_MDINTER) $(CLASS_MDINTRA) \
+                         $(MAIN_ENT) $(MAIN_LOC) $(PARSE_ENT) $(CLASS_VX_SMPL)
+
+                                                                               
+#==========================================================================
+Parainfoinit.o     : $(physics)/piny_to_driver/Parainfoinit.C \
+                   $(STANDARD) $(DEFINES) \
+                         $(CLASS_GEN) $(CLASS_CP) $(DBG_FLAGS) \
+                         $(CLASS_PARAINIT)
+
+
+#==========================================================================
+configure.o     : $(physics)/piny_to_driver/configure.C \
+                   $(STANDARD) $(DEFINES) $(TYP_PAR) \
+                       $(CLASS_CHARM_CONFIG) $(HANDLE_ENT) $(FRIEND_ENT)
+	$(COBJ_CARE)
 
 #==========================================================================
 
@@ -963,15 +950,13 @@ configure.o     :      $(STANDARD) $(DEFINES) $(TYP_PAR) \
 
 
 #=================================================================
-mathlib.o     :          $(STANDARD) $(DEFINES) \
+mathlib.o     : $(physics)/mathlib/mathlib.C \
+                       $(STANDARD) $(DEFINES) \
                          $(TYP_GEN) \
-                         $(MATH) $(COMM_WRAP) \
-                         $(physics)/mathlib/mathlib.C
-	$(COBJ) $(physics)/mathlib/mathlib.C
+                         $(MATH) $(COMM_WRAP)
+
 
 #------------------------------------------------------------------
-fft_generic.o       :    $(DEFINES) $(STANDARD) $(MATH) \
-                         $(physics)/mathlib/fft_generic.f
-	$(FOBJ) $(physics)/mathlib/fft_generic.f
+fft_generic.o       : $(physics)/mathlib/fft_generic.f $(DEFINES) $(STANDARD) $(MATH)
 
 #===================================================================

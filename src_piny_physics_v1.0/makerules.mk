@@ -2,7 +2,7 @@
 include $(pinymake)/make_defs/obj_files.h
 libphysics_src=
 libphysics_obj= $(addsuffix .o, $(basename $(libphysics_src)) ) $(LIB_OBJS)
-libphysics_intf= 
+libphysics_intf=
 CPPFLAGS += -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
 
 # Specify the list of directories whose contents should be stripped from prerequisite lists 
@@ -13,7 +13,9 @@ DEPSTRIPDIRS +=
 # VPATH with a long list of directories hurting the build times that we hope to improve
 fileTypes     = $(sort $(suffix $(libphysics_src) $(libphysics_intf)) )
 #$(foreach suf, $(fileTypes), $(eval vpath %$(suf) $(STANDARD_INC)) )
-vpath %.h $(STANDARD_INC)
+vpath standard_include.h $(STANDARD_INC)
+vpath %.C $(pinysrcdirs)
+vpath fft_generic.f $(physics)/mathlib
 
 # The primary target for this module
 $(libphysics): $(libphysics_obj) | $(LIB_DECLS)
@@ -23,13 +25,12 @@ $(libphysics): $(libphysics_obj) | $(LIB_DECLS)
 include $(pinymake)/make_defs/proto_files.h
 include $(pinymake)/targetdeps.mk
 
-FOBJ          = $(FC) $(FFLAGS) -c -o $@
-COBJ          = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@
-COBJ_CARE     = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_CARE)
-COBJ_DECL     = $(CC) $(CFLAGS) 
+define COBJ_CARE
+$(info-cpp)
+$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $(OPT_CARE) $<
+endef
 
-z3dfft_dec_noimsl.o : $(PROTO) $(CODE)/mathlib/z3dfft_dec_noimsl.f
-	$(FOBJ) $(CODE)/mathlib/z3dfft_dec_noimsl.f
+z3dfft_dec_noimsl.o : $(physics)/mathlib/z3dfft_dec_noimsl.f $(PROTO)
 
 #-----------------------------------------------------------
 # Include the generated files containing dependency info

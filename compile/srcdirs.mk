@@ -35,6 +35,21 @@ alldriverdirs = $(main) $(density) $(state) $(fftslab) $(loadbal) $(ortho) $(pai
 # PINY physics directory structure
 pinymake      = $(physics)/compile
 pinyinc       = $(physics)/include
+abinitio      = $(physics)/abinito_physics
+classical     = $(physics)/classical_physics
+interface     = $(physics)/interface
+
+abinitio_dirs = cp_nonlocal cp_local cp_xc_fnctl cp_integrate cp_ions cp_orthog
+classical_dirs= integrate output vel_smpl_atms
+interface_dirs= coords_cp cp_ewald search_base vel_sampl_cp vps_params parse \
+                handle sim_params coords surf_params inter_params vel_sampl_class \
+                lists path_integral intra_params intra_params/set_params mol_params \
+				mol_params/set_params
+pinysrcdirs   = $(abinitio_dirs:%=$(abinitio)/%) \
+                $(classical_dirs:%=$(classical)/%) \
+                $(interface_dirs:%=$(interface)/%) \
+                $(physics)/piny_to_driver $(physics)/friend_lib $(physics)/mathlib
+		   
 
 
 # List of modules and libraries to be built (yuck,,,)
