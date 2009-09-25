@@ -9,32 +9,45 @@ INSTALLATION
     ii.  FFTW Library Path
     iii. Optimized Math Libraries
 
-2. Before anything else, copy the machine specific Makefile.config.ARCH
-   file to Makefile.config
+2. Before anything else, copy the machine specific configuration file 
+   (config.MACHINE.mk) in the makefiles/ directory to the OpenAtom base 
+   directory and rename it to config.mk.
 
-   Linux Workstations	Makefile.config
-   Abe (NCSA)		Makefile.config.abe
-   Blue Gene/L		Makefile.config.bgl
-   Lonestar (TACC)	Makefile.config.tacc
-   Turing		Makefile.config.turing
-   XT3/XT4		Makefile.config.xt3
+   Linux Workstations config.mk
+   Abe (NCSA)         config.abe.mk
+   Blue Gene/L        config.bgl.mk
+   Ranger (TACC)      config.ranger.mk
+   Surveyor (ANL)     config.surveyor.mk
+   Turing             config.turing.mk
+   XT3/XT4            config.xt3.mk
   
-
-2. To install Charm++, download a copy from http://charm.cs.uiuc.edu
+2. To install Charm++, download a copy from http://charm.cs.illinois.edu
    Depending on the architecture of the machine, choose the right
    build options and build Charm.
    If you have trouble building Charm, mail ppl AT cs.uiuc.edu
 
-   Edit the CHARMBASE variable in Makefile.config to point to the
+   Edit the CHARMBASE variable in config.mk to point to the
    Charm++ installation.
 
 3. OpenAtom requires double precision FFTW installed in some location.
    
-   Edit the FFT_HOME variable in Makefile.config to point to the
+   Edit the FFT_HOME variable in config.mk to point to the
    FFTW installation. You might also need to edit the DUAL_FFTW 
    variable depending on how FFTW was compiled. It takes two values:
    DUAL_FFTW_OFF and DUAL_FFTW
 
-4. Once this is done, you can type make in the compile directory
-   and then go for a cup of coffee :)
-   The binary 'OpenAtom' is placed in the binary directory 
+4. Check to make sure the optimization options are the ones that you
+   desire. These are set as the value of the variable OPT in the 
+   config.mk file. These flags are also suffixed to the name of the
+   build directory giving you a separate directory for each different
+   set of flags.
+
+5. Be sure to type 'make help' to review the different options you have
+   when invoking the build. For e.g., parallel builds can be much faster
+   if your machine supports it.
+
+6. To start the build, simply type make in the top-level directory along
+   with any other options that you require.  The binary 'OpenAtom' is 
+   placed in the build directory whose name is indicated at the start 
+   and end of the build process.
+

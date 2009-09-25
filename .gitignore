@@ -4,9 +4,9 @@
 *.decl.h
 *.def.h
 # Ignore the binary directory
-binary
+binary/
 # Ignore typically named build directories
-build*
+build*/
 # Ignore the configuration makefile
 config.mk
 

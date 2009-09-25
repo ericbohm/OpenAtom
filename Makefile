@@ -15,10 +15,10 @@ buildsuffix   = $(shell echo $(sort $(OPT)) | sed "s| ||g")
 build         = $(strip $(where))/$(strip $(builddir))$(strip $(buildsuffix))
 
 # Define the command line args to sub-make
-MAKEARGS      =-C $(call realpath,$(build)) \
-               -f $(call realpath,$(makedir)/mainrecipe.mk) \
+MAKEARGS      =-C "$(call realpath,$(build))" \
+               -f "$(call realpath,$(makedir)/mainrecipe.mk)" \
                -r \
-               base=$(call abs2rel,$(base),$(call realpath,$(build)))
+               base="$(call abs2rel,$(base),$(call realpath,$(build)))"
 
 .PHONY: all driver physics libs clean clean_driver clean_physics clean_libs again test docs doxygen
 

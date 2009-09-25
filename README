@@ -7,23 +7,15 @@
 -----------------------------------------------------------------------
 The important directories in this distribution are:
 
-Documentation	./doc
-Installation	./compile
-Binaries	./binary
-Autotest	./autotest
-PINY Physics	./src_piny_physics_v1.0
-CHARM++ Driver	./src_charm_driver
-MATH Libraries	./src_mathlib
+Documentation    ./doc
+Build files      ./makefiles
+PINY Physics     ./src_piny_physics_v1.0
+CHARM++ Driver   ./src_charm_driver
+MATH Libraries   ./src_mathlib
 
 -----------------------------------------------------------------------
  INSTALLATION 
 -----------------------------------------------------------------------
-To build OpenAtom read the INSTALL file in the compile directory
-
-
------------------------------------------------------------------------
-AUTOTEST
------------------------------------------------------------------------
-Read the README in the autotest directory
+To build OpenAtom read the INSTALL file
 
 =======================================================================
