@@ -43,7 +43,7 @@ $(libdriver):  CXXFLAGS +=
 
 #---------------------------------------------------------------
 #--------- Flags and settings just for the physics code ---------#
-$(libphysics): CPPFLAGS += -I$(STANDARD_INC) -I$(FFT_HOME)/include
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC) -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
 $(libphysics): FFLAGS   += -Mnosecond_underscore
 $(libphysics): CFLAGS   += 
 $(libphysics): CXXFLAGS += 
