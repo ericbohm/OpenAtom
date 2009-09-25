@@ -1,8 +1,8 @@
 # Define the base directory and get the openatom tree
 base   := .
-makedir = $(base)/compile
+makedir = $(base)/makefiles
 include $(makedir)/srcdirs.mk
-include $(makedir)/Makefile.config
+include $(base)/config.mk
 
 ################## Build directory related stuff ####################
 # Location in which the build directory should be created
@@ -16,7 +16,7 @@ build         = $(strip $(where))/$(strip $(builddir))$(strip $(buildsuffix))
 
 # Define the command line args to sub-make
 MAKEARGS      =-C $(call realpath,$(build)) \
-               -f $(call realpath,$(makedir)/Makefile) \
+               -f $(call realpath,$(makedir)/mainrecipe.mk) \
                -r \
                base=$(call abs2rel,$(base),$(call realpath,$(build)))
 

@@ -11,7 +11,7 @@ realpath      = $(shell $(PERL) -e "use Cwd; print Cwd::realpath('$(1)');")
 
 ################## Modify only if directory structure changes ####################
 # Top-level directories
-makedir       = $(base)/compile
+makedir       = $(base)/makefiles
 driver        = $(base)/src_charm_driver
 physics       = $(base)/src_piny_physics_v1.0
 mathlib       = $(base)/src_mathlib
@@ -49,7 +49,7 @@ pinysrcdirs   = $(abinitio_dirs:%=$(abinitio)/%) \
                 $(classical_dirs:%=$(classical)/%) \
                 $(interface_dirs:%=$(interface)/%) \
                 $(physics)/piny_to_driver $(physics)/friend_lib $(physics)/mathlib
-		   
+
 
 
 # List of modules and libraries to be built (yuck,,,)

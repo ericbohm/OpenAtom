@@ -1,24 +1,24 @@
 # Define the base directory of the openatom tree
 base := ..
-makedir := $(base)/compile
+makedir := $(base)/makefiles
 
 # Include basic make rules
 include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
-include $(makedir)/Makefile.config
+include $(base)/config.mk
 
 # Directory structure and vpath related stuff
-DEPSTRIPDIRS += 
+DEPSTRIPDIRS +=
 VPATH        +=
 
 # Specify the compilation target
 TARGET    = OpenAtom
 
 # The relevant source files for this project
-SRC       = 
-HDR       = 
+SRC       =
+HDR       =
 OBJ       = $(addsuffix .o, $(basename $(SRC)) )
-INTF      = 
+INTF      =
 LIBS      = $(moddriver) $(modphysics) $(modmath)
 
 
@@ -39,10 +39,10 @@ mathlib: $(libmath)
 libs: mathlib
 
 # Clean only the build artifacts. Leave the binary etc around
-clean: 
+clean:
 	@$(RM) $(wildcard *.decl.h *.def.h *.o)
 
-again: 
+again:
 	@$(MAKE) clean; $(MAKE)
 
 
