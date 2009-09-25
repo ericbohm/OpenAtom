@@ -42,3 +42,22 @@
 #  OpenAtom directory. Of course, you'll need write permissions. The build
 #  directory will be created inside 'where'.
 #
+#- The build directory is only a temporary artifact and can be completely deleted. For
+#  e.g, make realclean will nuke the whole directory. Do not put useful stuff (like data) 
+#  that you want to keep within this directory.
+#
+#
+#-------------------------------------------------------------------------------
+#
+# Some useful top-level targets are listed here
+#
+# all        - builds the whole OpenAtom code
+# physics    - builds the physics module of OpenAtom
+# driver     - builds the charm++ based parallelization module for OpenAtom
+# libs       - builds all required libraries (currently math routines)
+# clean      - removes all object files from the build directory. Files containing dependency info are retained
+# realclean  - spotless clean by deleting the whole build directory and everything within it
+# docs       - Builds any documents available in the docs directory
+# doxygen    - calls doxygen to generate code documentation
+# help       - Prints (this) info on how to use the build system
+
