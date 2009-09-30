@@ -17,6 +17,7 @@ physics       = $(base)/src_piny_physics_v1.0
 mathlib       = $(base)/src_mathlib
 topinclude    = $(base)/include
 docs          = $(base)/doc
+data          = $(base)/data
 
 # Charm driver directory structure
 density       = $(driver)/cp_density_ctrl

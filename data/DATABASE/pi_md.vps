@@ -1,0 +1,9 @@
+~PSEUDO_PARM[\ATOM1{H} \VPS_TYP{LOC} \N_ANG{0} \LOC_OPT{0}
+             \VPS_FILE{../DATABASE/H_BLYP_PP30.pseud}]
+
+~PSEUDO_PARM[\ATOM1{O} \VPS_TYP{KB} \N_ANG{1} \LOC_OPT{1}
+             \VPS_FILE{../DATABASE/O_BLYP_PP30.pseud}]
+
+~PSEUDO_PARM[\ATOM1{Si} \VPS_TYP{KB} \N_ANG{1} \LOC_OPT{1}
+             \VPS_FILE{../DATABASE/Si_BHS.pseud}]
+

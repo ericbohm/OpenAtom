@@ -1,0 +1,10 @@
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{WATER}\NATOM{3}]
+
+~ATOM_DEF[\ATOM_TYP{O}\ATOM_IND{1}\MASS{16.0}\CHARGE{6}
+\cp_valence_up{2}\cp_atom{yes}]
+
+~ATOM_DEF[\ATOM_TYP{H}\ATOM_IND{2}\MASS{1.0}\CHARGE{1.0}
+\cp_valence_up{1}\cp_atom{yes}]
+
+~ATOM_DEF[\ATOM_TYP{H}\ATOM_IND{3}\MASS{1.0}\CHARGE{1.0}
+\cp_valence_up{1}\cp_atom{yes}]

@@ -1,0 +1,46 @@
+~molecule_name_def[ \molecule_name{NMA} \natom{12} ]
+
+~atom_def[ \atom_typ{C} \atom_ind{1} \mass{12.011} \charge{ 4.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{HA} \atom_ind{2} \mass{1.00800} \charge{ 1.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{HA} \atom_ind{3} \mass{1.00800} \charge{ 1.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{HA} \atom_ind{4} \mass{1.00800} \charge{ 1.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{C} \atom_ind{5} \mass{12.011} \charge{ 4.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{O} \atom_ind{6} \mass{15.999} \charge{ 6.0}
+          \cp_valence_up{2} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{N} \atom_ind{7} \mass{14.0067} \charge{ 5.0} 
+          \cp_valence_up{3} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{H} \atom_ind{8} \mass{1.00800} \charge{ 1.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{C} \atom_ind{9} \mass{12.011} \charge{ 4.0} 
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{HA} \atom_ind{10} \mass{1.00800} \charge{ 1.0}
+          \cp_valence_up{1} \cp_atom{yes}]
+
+~atom_def[ \atom_typ{HA} \atom_ind{11} \mass{1.00800} \charge{ 1.0} 
+          \cp_valence_up{1} \cp_atom{yes}] 
+
+~atom_def[ \atom_typ{HA} \atom_ind{12} \mass{1.00800} \charge{ 1.0} 
+          \cp_valence_up{1} \cp_atom{yes}] 
+
+
+
+
+
+
+
+
+

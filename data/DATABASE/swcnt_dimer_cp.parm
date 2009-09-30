@@ -1,0 +1,132 @@
+------------------------------------------------------------------------
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{swcnt}\NATOM{64}]
+------------------------------------------------------------------------
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{1}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{2}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{3}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{4}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{5}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{6}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{7}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{8}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{9}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{10}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{11}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{12}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{13}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{14}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{15}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{16}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{17}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{18}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{19}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{20}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{21}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{22}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{23}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{24}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{25}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{26}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{27}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{28}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{29}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{30}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{31}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{32}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{33}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{34}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{35}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{36}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{37}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{38}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{39}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{40}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{41}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{42}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{43}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{44}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{45}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{46}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{47}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{48}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{49}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{50}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{51}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{52}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{53}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{54}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{55}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{56}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{57}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{58}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{59}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{60}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{61}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{62}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{63}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+~ATOM_DEF[\ATOM_TYP{C}\ATOM_IND{64}\MASS{12.0}\CHARGE{ 4.000}
+          \cp_valence_up{2} \cp_atom{yes}]
+------------------------------------------------------------------------
