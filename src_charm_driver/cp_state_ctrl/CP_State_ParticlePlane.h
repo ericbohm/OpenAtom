@@ -82,7 +82,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane
         void FFTNLEesBck();
         void computeNLEesForces();
         void registrationDone(CkReductionMsg *msg);
-
+        void printEnl(CkReductionMsg *msg);
         int myChareG;
         int iteration;
         int iterNL;

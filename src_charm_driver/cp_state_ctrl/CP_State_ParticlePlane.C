@@ -80,15 +80,14 @@ extern Config config;
 //============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void printEnl(void *param, void *msg){
+void CP_State_ParticlePlane::CP_State_ParticlePlane::printEnl(CkReductionMsg *msg){
 
-  CkReductionMsg *m=(CkReductionMsg *)msg; //unpack
-  double d = ((double *)m->getData())[0];
-  delete m;
+  double d = ((double *)msg->getData())[0];
+  delete msg;
 
-  CkPrintf("ENL         = %5.8lf\n", d);   // tell the world
-  CkAbort("fix CP_StateParticlePlane printEnl to be instance aware");
-  //  UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  //store it
+  CkPrintf("{%d} ENL         = %5.8lf\n", thisInstance.proxyOffset, d);   // tell the world
+  //  CkAbort("fix CP_StateParticlePlane printEnl to be instance aware");
+  UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  //store it
 }
 //============================================================================
 
@@ -650,7 +649,8 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
    // If completely done with Z stuff send out our ENL
     if(thisIndex.y==reductionPlaneNum && doneEnl==numSfGrps){
        CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-       CkCallback cb=CkCallback(printEnl, NULL);
+
+       CkCallback cb=CkCallback(CkIndex_CP_State_ParticlePlane::printEnl(NULL),CkArrayIndex2D(0,0), UparticlePlaneProxy[thisInstance.proxyOffset]);
        mcastGrp->contribute(sizeof(double),(void*) &enl, 
 			   CkReduction::sum_double, enlCookie, cb);
        doneEnl=0;

@@ -53,6 +53,7 @@ module gParticlePlane
 		entry [nokeep] void setEnlCookie(EnlCookieMsg *m);	
 		entry void recvFromEesRPP(GSPPIFFTMsg  *m);
 		entry void registrationDone(CkReductionMsg *msg);
+		entry void printEnl(CkReductionMsg *msg);
 	};
 };
 
