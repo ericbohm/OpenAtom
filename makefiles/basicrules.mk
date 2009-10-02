@@ -9,6 +9,9 @@ CHARMINC  = $(CHARMBASE)/include
 CC        = $(CHARMBIN)/charmc
 CXX       = $(CHARMBIN)/charmc
 FC        = $(CHARMBIN)/charmc
+
+# Other tools
+LN        = ln -sf
 DOXYGEN   = doxygen
 
 # Basic compiler/linker flags

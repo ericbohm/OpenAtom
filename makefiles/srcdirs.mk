@@ -18,6 +18,7 @@ mathlib       = $(base)/src_mathlib
 topinclude    = $(base)/include
 docs          = $(base)/doc
 data          = $(base)/data
+tests         = $(base)/tests
 
 # Charm driver directory structure
 density       = $(driver)/cp_density_ctrl
@@ -50,6 +51,10 @@ pinysrcdirs   = $(abinitio_dirs:%=$(abinitio)/%) \
                 $(classical_dirs:%=$(classical)/%) \
                 $(interface_dirs:%=$(interface)/%) \
                 $(physics)/piny_to_driver $(physics)/friend_lib $(physics)/mathlib
+
+# Tests directory
+testregr      = $(tests)/regression
+testunit      = $(tests)/unit
 
 
 

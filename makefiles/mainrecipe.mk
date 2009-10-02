@@ -22,9 +22,9 @@ INTF      =
 LIBS      = $(moddriver) $(modphysics) $(modmath)
 
 
-.PHONY: all driver physics libs mathlib clean again test translateInterface
+.PHONY: build driver physics libs mathlib clean again test translateInterface
 
-all: $(TARGET)
+build: $(TARGET)
 
 $(TARGET): $(LIBS:%=lib%.a) $(OBJ)
 	$(info-ld)
