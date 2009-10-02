@@ -1,49 +1,81 @@
-####### Machine specific settings for the build #######
-
 # Location of the charm installation
 CHARMBASE     = $(HOME)/charm
 # Location of the FFTW library installation
-FFT_HOME	  = $(HOME)/fftw
+FFT_HOME      = $(HOME)/fftw
 
 
-# Extra flags for compiling and linking the whole code. 
-# Note that most necessary flags are specified in other makefiles. Only 
-# mention any machine speciic stuff here.
-# If you realllly want, you can clear and reset the flags here or on the command line
 #---------------------------------------------------------------
-CPPFLAGS     += -DFORTRANUNDERSCORE 
-CXXFLAGS     += -mdynamic-no-pic -mpowerpc-gpopt -mtune=G5 -mcpu=G5 -mpowerpc64
-CFLAGS       +=
-FFLAGS       += -qstrict -qextname -funroll-all-loops -fsched-interblock \
-                -falign-loops=16 -falign-jumps=16 -falign-functions=16 \
-				-falign-jumps-max-skip=15 -falign-loops-max-skip=15 \
-				-force_cpusubtype_ALL -ffast-math
-LDFLAGS      += -memory gnu
-LDLIBS       += -lm
+# Flags, include paths, libraries etc. on a per-target basis
+
+# CPPFLAGS - Flags used for all preprocessing, compilation and linking
+# FFLAGS   - Flags used for compiling and linking fortran code
+# CFLAGS   - Flags used for compiling and linking C code
+# CXXFLAGS - Flags used for compiling and linking C++ code
+# LDFLAGS  - Flags used only for the link stage
+# LDLIBS   - Extra libraries to be linked in
 
 
-# Options related to math routines
 #---------------------------------------------------------------
+#--------- Flags for the whole code ---------#
+               # Optimization level and debug (Dont add other flags to OPT)
+               OPT       = -O3
+               # What flags do we use when compiling the fragile portions of piny
+               OPT_CARE  = -O2
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
+                           -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+               FFLAGS   += $(OPT) -qstrict -qextname \
+                           -funroll-all-loops -fsched-interblock -falign-loops=16 \
+                           -falign-jumps=16 -falign-functions=16 \
+                           -falign-jumps-max-skip=15 -falign-loops-max-skip=15 \
+                           -force_cpusubtype_ALL -ffast-math
+               CFLAGS   += $(OPT)
+               CXXFLAGS += $(OPT)
+
+
+#---------------------------------------------------------------
+#--------- Flags for linking ---------#
+               LDFLAGS  += -L$(FFT_HOME)/lib -memory gnu
+               LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lm
+
+
+#---------------------------------------------------------------
+#--------- Flags and settings just for the driver code ---------#
+$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
+$(libdriver):  FFLAGS   +=
+$(libdriver):  CFLAGS   +=
+$(libdriver):  CXXFLAGS +=
+
+
+#---------------------------------------------------------------
+#--------- Flags and settings just for the physics code ---------#
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC)
+$(libphysics): FFLAGS   += -fno-second-underscore
+$(libphysics): CFLAGS   += 
+$(libphysics): CXXFLAGS += 
+
+# Where should we look for standard_include.h
+STANDARD_INC             = $(physics)/include/pentium_par
+
+
+#---------------------------------------------------------------
+#--------- Flags  and settings just for the math libs ---------#
+$(libmath):    CPPFLAGS +=
+$(libmath):    FFLAGS   +=
+$(libmath):    CFLAGS   += -seq
+$(libmath):    CXXFLAGS += -seq
+
 # Should we use dual fft or not
-DUAL_FFTW     = -DDUAL_FFTW_OFF
-# Extra math libraries to be linked in if DUAL_FFTW is off
-MATH_LIB      =
-# Where the linker should find these extra math libraries
-MATH_LIB_PATH = -L$(MKL_HOME)/lib/em64t
+DUAL_FFTW                = -DDUAL_FFTW_OFF
 # Which math library sources (that OpenAtom lugs around) need to be compiled
-src_math      = $(src_blas) $(src_lapack) $(src_eispack) 
+src_math                 = $(src_blas) $(src_lapack) $(src_eispack)
 # Special optimization options to used for compiling fastadd.C
-fastadd.o:        CXXFLAGS  +=
+fastadd.o:     CXXFLAGS +=
 # Should we pass -D_IBM_ESSL_ as a preprocessor flag when building ibm_essl_dummy.o
 ibm_essl_dummy.o: CPPFLAGS  +=
-
-
-# Options related to the physics module
-#---------------------------------------------------------------
-# Where should we look for standard_include.h
-STANDARD_INC  = $(physics)/include/pentium_par
-# What flags do we use when compiling the fragile portions of piny
-$(libphysics): OPT_CARE      = -O2
-# Flags for compiling the fortran portions of the physics code
-$(libphysics): FFLAGS       += -fno-second-underscore
+# The fft (and other) math libraries to link based on whether DUAL_FFTW is turned on or off
+          ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
+               LDLIBS   += -lrfftw -lfftw
+          else
+               LDLIBS   += -ldrfftw -ldfftw
+          endif
 
