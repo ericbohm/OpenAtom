@@ -181,12 +181,12 @@ class PSNONLOCAL{
       pup1d_dbl(p,&y,natm);
       pup1d_dbl(p,&z,natm);
       pup1d_dbl(p,&vnorm_0,natm);
-
-      pup1d_int(p,&index_atm,natm_tot);  // reused by hartree
-      pup1d_dbl(p,&vtemp,natm_tot);
-      pup1d_cpl(p,&ei_inc,natm_tot);
-      pup1d_cpl(p,&ti_inc,natm_tot);
     }//endif
+
+    pup1d_int(p,&index_atm,natm_tot);  // reused by hartree and are scratch
+    pup1d_dbl(p,&vtemp,natm_tot);
+    pup1d_cpl(p,&ei_inc,natm_tot);
+    pup1d_cpl(p,&ti_inc,natm_tot);
 
   }//end pupping
 #endif
