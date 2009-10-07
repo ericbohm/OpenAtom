@@ -7,11 +7,15 @@
 -----------------------------------------------------------------------
 The important directories in this distribution are:
 
-Documentation    ./doc
-Build files      ./makefiles
-PINY Physics     ./src_piny_physics_v1.0
-CHARM++ Driver   ./src_charm_driver
-MATH Libraries   ./src_mathlib
+Charm++ driver      :   src_charm_driver
+PINY physics        :   src_piny_physics_v1.0
+Math routines       :   src_mathlib
+
+Test configurations :   tests
+Build files         :   makefiles
+
+Documentation       :   doc
+Simulation data     :   data
 
 -----------------------------------------------------------------------
  INSTALLATION 
