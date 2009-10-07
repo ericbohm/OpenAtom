@@ -18,17 +18,17 @@
 
 #-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
-    # Optimization level and debug (Dont add other flags to OPT)
-    OPT       = -O3
-    # What flags do we use when compiling the fragile portions of piny
-    OPT_CARE  = -O2
-    CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
-		-I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
-    FFLAGS   += $(OPT)
-    CFLAGS   += $(OPT)
-    CXXFLAGS += $(OPT)
-    INCDIRS  +=
-    DEPSTRIPDIRS +=
+               # Optimization level and debug (Dont add other flags to OPT)
+               OPT       = -O3
+               # What flags do we use when compiling the fragile portions of piny
+               OPT_CARE  = -O2
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
+                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+               FFLAGS   += $(OPT)
+               CFLAGS   += $(OPT)
+               CXXFLAGS += $(OPT)
+               INCDIRS  +=
+               DEPSTRIPDIRS +=
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------

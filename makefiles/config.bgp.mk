@@ -21,7 +21,8 @@ FFT_HOME      = /soft/apps/fftw-2.1.5-double
                OPT       = -O3
                # What flags do we use when compiling the fragile portions of piny
                OPT_CARE  = -O2 -qstrict
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -DCMK_OPTIMIZE=1
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -DCMK_OPTIMIZE=1 \
+                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
                FFLAGS   += $(OPT)
                CFLAGS   += $(OPT)
                CXXFLAGS += $(OPT) -qarch=450 -qtune=450
@@ -57,7 +58,7 @@ $(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STAND
 
 #---------------------------------------------------------------
 #--------- Flags and settings just for the physics code ---------#
-$(libphysics): CPPFLAGS += -I$(STANDARD_INC) -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+$(libphysics): CPPFLAGS += -I$(STANDARD_INC)
 #$(libphysics): FFLAGS   +=
 #$(libphysics): CFLAGS   +=
 #$(libphysics): CXXFLAGS +=
