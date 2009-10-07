@@ -4,9 +4,23 @@ makedir     = $(base)/makefiles
 
 # Include project directory hierarchy information
 include $(makedir)/srcdirs.mk
-# Include any machine-specific configs if we're going to need them
+
+# Determine if we'll need info from a configuration file
 infoTargets:= help docs doxygen
+shouldInclude := no
+ifeq (,$(MAKECMDGOALS))
+  shouldInclude := yes
+endif
 ifneq (,$(filter-out $(infoTargets),$(MAKECMDGOALS)))
+  shouldInclude := yes
+endif
+
+# Include the configuration file if we're going to need it
+ifeq (yes,$(shouldInclude))
+  isExist  := $(shell test -r $(base)/config.mk || echo "no")
+  ifeq (no,$(isExist))
+    $(error $(base)/config.mk does not exist! Please copy $(makedir)/config.MACHINE.mk to $(base)/config.mk and customize it for your build)
+  endif
   include $(base)/config.mk
 endif
 
@@ -79,7 +93,7 @@ docs:
 	@cd $(docs) && $(MAKE)
 
 doxygen:
-	@cd $(docs) && $(DOXYGEN) $(docs)/Doxyfile
+	@cd $(docs) && doxygen $(call abs2rel,$(base),$(docs))/Doxyfile
 
 ################## Utility targets ####################
 $(build) $(testop) $(testop_regr) $(testop_unit):
