@@ -215,7 +215,18 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Output your parameter choices to the screen
 
-  sprintf(fname,"%s.out",input_name);
+  // Tokenize the input cpaimd config file name to remove all directory paths
+  char *cfgInputName  = new char[strlen(input_name)+1];
+  char *cfgOutputName = NULL;
+  char dirSeparator[] = "/"; ///< @warning: Will we ever run on Windows and get screwed?
+  char *tokenized     = strtok( strcpy(cfgInputName,input_name), dirSeparator);
+  while (tokenized != NULL)
+  {
+      cfgOutputName = tokenized;
+      tokenized = strtok(NULL,dirSeparator);
+  }
+  // The cpaimd config output file is written in the current directory (and not where the input file is located)
+  sprintf(fname,"%s.out",cfgOutputName);
   fp = cfopen((const char*) fname,"w");
    write_cpaimd_config(fp,dict_rho,  num_dict_rho,  dict_fun[1].keyword);
    write_cpaimd_config(fp,dict_state,num_dict_state,dict_fun[2].keyword);
@@ -225,7 +236,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
    write_cpaimd_config(fp,dict_map,  num_dict_map,  dict_fun[6].keyword);
    write_cpaimd_config(fp,dict_nfreq,num_dict_nfreq,dict_fun[7].keyword);
   fclose(fp);
-
+  delete [] cfgInputName;
 //===================================================================================
 // Free memory : 
 

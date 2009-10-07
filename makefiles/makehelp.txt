@@ -1,0 +1,81 @@
+#---- Using the OpenAtom build system ----#
+
+This file has some descriptions of how this build system can be used 
+effectively and some common features that may be useful.
+
+@note: For instructions on how to install OpenAtom, please read the file named
+ INSTALL in the project base directory.
+
+
+-------------------------------------------------------------------------------
+ Some useful make targets that can be invoked
+
+ all        - builds the whole OpenAtom code
+ build      - builds the whole OpenAtom code
+ test       - runs minimal regression tests and reports failures
+
+ physics    - builds the physics module of OpenAtom
+ driver     - builds the charm++ based parallelization module for OpenAtom
+ libs       - builds all required libraries (currently math routines)
+ 
+ clean      - removes all object files from the build directory. Files containing dependency info are retained
+ realclean  - spotless clean by deleting the whole build directory and everything within it
+ clean-test - removes all the results of any previously run tests
+
+ again      - clean and build code again
+ retest     - clean-test and test again
+
+ docs       - Builds any documents available in the docs directory
+ doxygen    - calls doxygen to generate code documentation
+ help       - Prints (this) info on how to use the build system
+
+
+-------------------------------------------------------------------------------
+Some useful command-line features:
+
+ make -jN v=<verbose-level> where=<build-dir-location> builddir=<build-dir-name-prefix> [otherflags]
+
+      -jN
+        Extent of build parallelization. Parallel builds are faster. Refer GNU make docs
+
+      v=<verbose-level>
+        A number between 0 and 2. Higher is more verbose. Default: 0
+
+      where=<build-dir-location>
+        Where to place the build directory. Relative or absolute path. Default: project root
+
+      builddir=<build-dir-name-prefix>
+        What prefix to use for the name of the build directory. Default: build
+
+      [otherflags]
+        You can set other flags controlling the build on the command line
+        itself, instead of setting them in the configuration file.
+        For eg:
+           make CXXFLAGS+=-verbose to make the charmc compiler really verbose
+           make OPT=-g to compiler with debugging on
+           make CHARMBASE=<some-path> to use some specific charm installation
+
+
+-------------------------------------------------------------------------------
+- The makefile to be invoked by users is in the project root directory
+
+- The makefile with machine-specific configurations (config.machine.mk) also 
+  needs to be copied to the project root from the makefiles directory and 
+  renamed to config.mk. Custom changes to the build settings should go into 
+  this config.mk and not to any files inside makefiles/ unless theses changes 
+  need to be permanent.
+
+- Flags and make variables for controlling any portion of the build can be set
+  in this configuration file (config.mk) or on the command line.
+
+- This location of the build directory is by default at the root of the
+  OpenAtom project. You can change this by specifying the variable 'where' on
+  your make command line. This path can be a relative or absolute path and can
+  be located anywhere in your filesystem independent of the location of the
+  OpenAtom directory. Of course, you'll need write permissions. The build
+  directory will be created inside 'where'.
+
+- The build directory is only a temporary artifact and can be completely 
+  deleted. For e.g, make realclean will nuke the whole directory. Do not put 
+  useful stuff (like data) that you want to keep within this directory.
+

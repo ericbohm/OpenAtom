@@ -1,0 +1,4 @@
+~MOLECULE_NAME_DEF[\MOLECULE_NAME{SILICON}\NATOM{1}]
+
+~ATOM_DEF[\ATOM_TYP{SI}\ATOM_IND{1}\MASS{28.0855}\CHARGE{4}
+          \cp_valence_up{2} \cp_valence_dn{2} \cp_atom{yes}]

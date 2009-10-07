@@ -1,3 +1,0 @@
-g++ -I/expand8/home/glenn/NEW_PINY_V.2/include/pentium $1.C -c
-/bin/rm -rf $1.o
-

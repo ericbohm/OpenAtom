@@ -21,7 +21,6 @@
 //==========================================================================
 
 #include "../include/class_defs/Interface_ctrl.h"
-#include "../include/charm_defs/Interface_ctrl.decl.h"
 
 // Defined as globals because we want 1 copy per node
 // not one copy per object which would be silly given
@@ -104,5 +103,3 @@ Interface_ctrl::Interface_ctrl (char* fname, CkCallback c)
    }//end main
 //==========================================================================
 
-
-#include "../include/charm_defs/Interface_ctrl.def.h"
