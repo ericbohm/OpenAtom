@@ -1,8 +1,14 @@
 # Define the base directory and get the openatom tree
-base   := .
-makedir = $(base)/makefiles
+base       := .
+makedir     = $(base)/makefiles
+
+# Include project directory hierarchy information
 include $(makedir)/srcdirs.mk
-include $(base)/config.mk
+# Include any machine-specific configs if we're going to need them
+infoTargets:= help docs doxygen
+ifneq (,$(filter-out $(infoTargets),$(MAKECMDGOALS)))
+  include $(base)/config.mk
+endif
 
 ################## Build directory related stuff ####################
 # Location in which the build directory should be created
@@ -35,15 +41,15 @@ TESTARGS      =-C "$(call realpath,$1)" \
 
 
 .PHONY: all \
-        build driver physics libs \
+        compile driver physics libs \
 		again clean clean_driver clean_physics clean_libs \
 		test test-regr test-unit clean-test retest \
 		docs doxygen
 
-all: build
+all: compile
 
 ################## Build-related targets ####################
-build driver physics libs again: $(build)
+compile driver physics libs again: $(build)
 	@$(MAKE) $(BUILDARGS) $@
 	@echo "=========== Build results are in the build directory: $(build)"
 
@@ -59,7 +65,7 @@ test: test-unit test-regr
 
 test-unit:
 
-test-regr: build $(testop_regr)
+test-regr: compile $(testop_regr)
 	@$(MAKE) $(call TESTARGS,$(testop_regr),testrecipe.mk) $@
 	@echo "=========== Regression test output is in the test directory: $(testop_regr)"
 
