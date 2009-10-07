@@ -16,10 +16,10 @@ INSTALLATION
    Linux Workstations config.mk
    Abe (NCSA)         config.abe.mk
    Blue Gene/L        config.bgl.mk
+   Blue Gene/P        config.bgp.mk
    Ranger (TACC)      config.ranger.mk
-   Surveyor (ANL)     config.surveyor.mk
-   Turing             config.turing.mk
-   XT3/XT4            config.xt3.mk
+   Turing (UIUC CSE)  config.turing.mk
+   XT4/XT5            config.xt5.mk
   
 2. To install Charm++, download a copy from http://charm.cs.illinois.edu
    Depending on the architecture of the machine, choose the right
@@ -50,4 +50,10 @@ INSTALLATION
    with any other options that you require.  The binary 'OpenAtom' is 
    placed in the build directory whose name is indicated at the start 
    and end of the build process.
+
+7. make test should run a minimal set of regression tests and report failures.
+   Note that this setup is still quite nascent and in development. Also, note
+   that it currently directly invokes the OpenAtom binary for simple sequential
+   runs. If your machine has a job queue or a headnode, this may not be 
+   desirablei or possible.
 
