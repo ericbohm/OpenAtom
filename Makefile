@@ -68,7 +68,7 @@ compile driver physics libs again: $(build)
 	@echo "=========== Build results are in the build directory: $(build)"
 
 clean clean_driver clean_physics clean_libs: $(build)
-	@$(MAKE) $(MAKEARGS) $@
+	@$(MAKE) $(BUILDARGS) $@
 
 realclean:
 	@test ! -d $(testop) || $(RM) -r $(testop)
