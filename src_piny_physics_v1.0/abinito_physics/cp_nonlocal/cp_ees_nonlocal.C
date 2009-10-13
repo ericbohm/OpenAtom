@@ -1397,6 +1397,9 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
   double vol     = gencell->vol;
 
   double *vpsnorm = cppseudo->vpsnorm; 
+  double *occ     = cpcoeffs_info->occ_up;
+  double occ_now  = occ[state+1];
+
   int n_ang_max   = cppseudo->n_ang_max;
   int n_interp    = cppseudo->n_interp_ps;
   int n_interp2   = n_interp*n_interp;
@@ -1462,7 +1465,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    }//endfor
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
 
-   cp_enl_tot[0] += (cp_enl*vnormVol);
+   cp_enl_tot[0] += (cp_enl*vnormVol*occ_now);
 
 #ifdef CMK_BLUEGENEL
        CmiNetworkProgress();

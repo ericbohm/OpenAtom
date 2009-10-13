@@ -22,6 +22,8 @@ class CPATOM_MAPS {
   int natm_typ_nl;             /* Num: Number of nonlocal atom types     */
   int nab_initio;              /* Num: Number of QM atoms                */
 
+  int *cp_vlnc_true_up;        /* lst: cp atoms cp_valence_true_up > 0 */
+  int *cp_vlnc_true_dn;        /* lst: cp atoms cp_valence_true_dn > 0 */
   int *cp_vlnc_up,*cp_vlnc_dn; /* lst: cp atoms cp_valence > 0           */
   int *cp_atm_flag;            /* lst: list of cp atoms :lth natm_tot    */
   int *iatm_atm_typ_nl;        /* Map: Atm ind -> cp nonlocal atm_typ ind;
@@ -68,7 +70,9 @@ class CPATOM_MAPS {
 
    if(nab_initio>0){
     pup1d_int(p,&cp_vlnc_up,nab_initio);
-    pup1d_int(p,&cp_vlnc_dn,nab_initio); 
+    pup1d_int(p,&cp_vlnc_dn,nab_initio);
+    pup1d_int(p,&cp_vlnc_true_up,nab_initio);
+    pup1d_int(p,&cp_vlnc_true_dn,nab_initio); 
     pup1d_int(p,&cp_atm_lst,nab_initio);
    }//endif
    if(natm_tot>0){

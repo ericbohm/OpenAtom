@@ -327,7 +327,7 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
   int i;
   /*=======================================================================*/
   /* 0) Malloc the dictionary */
-  *num_wave_dict = 8;
+  *num_wave_dict = 9;
   *wave_dict      = (DICT_WORD *)cmalloc(*num_wave_dict*sizeof(DICT_WORD),"set_wave_dict")-1;  
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -374,11 +374,15 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
   sprintf((*wave_dict)[7].keyarg,"%g",cp_parse->cp_mass_tau_def);
   strcpy((*wave_dict)[7].error_mes,"a number > 0");
   /*-----------------------------------------------------------------------*/ 
-  /*-----------------------------------------------------------------------*/ 
   /* 8) /cp_energy_cut_dual_grid{} */
   strcpy((*wave_dict)[8].keyword,"cp_energy_cut_dual_grid");
   sprintf((*wave_dict)[8].keyarg,"%g",cp_parse->cp_ecut_dual_grid_def);
   strcpy((*wave_dict)[8].error_mes,"a number > 0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 9) /cp_occupation_file{} */
+  strcpy((*wave_dict)[9].keyword,"cp_occupation_file");
+  sprintf((*wave_dict)[9].keyarg,"%s","junk");
+  strcpy((*wave_dict)[9].error_mes,"an existing file of length nstate");
 
   /*-----------------------------------------------------------------------*/ 
 

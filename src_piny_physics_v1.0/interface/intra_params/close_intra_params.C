@@ -184,6 +184,10 @@ void close_intra_params(MDCLATOMS_INFO *clatoms_info,
                               natm_mall*sizeof(int),"close_intra_params")-1;
   cpatommaps->cp_vlnc_dn  = (int *)crealloc(&(cpatommaps->cp_vlnc_dn)[1],
                               natm_mall*sizeof(int),"close_intra_params")-1;
+  cpatommaps->cp_vlnc_true_up  = (int *)crealloc(&(cpatommaps->cp_vlnc_true_up)[1],
+                              natm_mall*sizeof(int),"close_intra_params")-1;
+  cpatommaps->cp_vlnc_true_dn  = (int *)crealloc(&(cpatommaps->cp_vlnc_true_dn)[1],
+                              natm_mall*sizeof(int),"close_intra_params")-1;
   cpatommaps->cp_atm_flag  = (int *)crealloc(&(cpatommaps->cp_atm_flag)[1],
                               natm_mall*sizeof(int),"close_intra_params")-1;
   clatoms_info->ichrg  = (int *)crealloc(&(clatoms_info->ichrg)[1],

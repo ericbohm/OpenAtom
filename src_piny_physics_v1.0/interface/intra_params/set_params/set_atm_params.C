@@ -173,20 +173,6 @@ void set_atm_params(DICT_WORD atm_dict[],int num_atm_dict,
      index = 12;
      if(strlen(site)==0||num2<-1||num3<-1||num2>MAX_VALENCE||num3>MAX_VALENCE){
        keyarg_barf(atm_dict,filename,fun_key,index);}
-/*--------------------------------------------------------------------*/
-/*  13) \cp_valence_up{} */
-     sscanf(atm_dict[13].keyarg,"%d",&num);
-     cpatom_maps->cp_vlnc_up[iatm_ind] = num; 
-  
-/*--------------------------------------------------------------------*/
-/*  14) \cp_valence_dn{} */
-     sscanf(atm_dict[14].keyarg,"%d",&num);
-     cpatom_maps->cp_vlnc_dn[iatm_ind] = num; 
-
-    /* if cp_valence_up is assigned but down is not assign dn = to up */
-     if(atm_dict[13].iuset == 1 && atm_dict[14].iuset == 0){
-      cpatom_maps->cp_vlnc_dn[iatm_ind] = cpatom_maps->cp_vlnc_up[iatm_ind];
-     }/*endif*/
 
 /*------------------------------------------------------------------------*/ 
 /*  15) \cp_atom{} */
@@ -198,6 +184,27 @@ void set_atm_params(DICT_WORD atm_dict[],int num_atm_dict,
      if(strcasecmp(atm_dict[15].keyarg,"no")==0){
        ifound=1;cpatom_maps->cp_atm_flag[iatm_ind] = 0;
      }
+
+/*--------------------------------------------------------------------*/
+/*  13) \cp_valence_up{} */
+    cpatom_maps->cp_vlnc_up[iatm_ind] = 0;
+    if(atm_dict[13].iuset==1){
+      sscanf(atm_dict[13].keyarg,"%d",&num);
+      cpatom_maps->cp_vlnc_up[iatm_ind] = num; 
+    }/*endif*/
+    if(atm_dict[13].iuset==0 && cpatom_maps->cp_atm_flag[iatm_ind]==1){
+        index = 13;
+        keyarg_barf(atm_dict,filename,fun_key,index);
+    }/*endif*/
+
+ 
+/*--------------------------------------------------------------------*/
+/*  14) \cp_valence_dn{} */
+     cpatom_maps->cp_vlnc_dn[iatm_ind] =  cpatom_maps->cp_vlnc_up[iatm_ind];
+     if(atm_dict[14].iuset == 1){
+       sscanf(atm_dict[14].keyarg,"%d",&num);
+       cpatom_maps->cp_vlnc_dn[iatm_ind] = num;
+     }/*endif*/
 
 /*------------------------------------------------------------------------*/ 
 /*  16) /def_ghost1{} */
@@ -223,10 +230,31 @@ void set_atm_params(DICT_WORD atm_dict[],int num_atm_dict,
        ifound=1;mdconstrnt->atom_label[iatm_ind] = 2;
      }
 
-
     if(ifound==0){
      keyarg_barf(atm_dict,filename,fun_key,index);    
     }/*endif*/
+/*--------------------------------------------------------------------*/
+/*  18+NCOEF_GHOST_MAX) \cp_valence_true_up{} */
+     cpatom_maps->cp_vlnc_true_up[iatm_ind] = cpatom_maps->cp_vlnc_up[iatm_ind]; 
+     if(atm_dict[18+NCOEF_GHOST_MAX].iuset == 1){
+       sscanf(atm_dict[18+NCOEF_GHOST_MAX].keyarg,"%d",&num);
+       cpatom_maps->cp_vlnc_true_up[iatm_ind] = num;
+       if (num>cpatom_maps->cp_vlnc_up[iatm_ind]){
+         index = 18+NCOEF_GHOST_MAX;
+         keyarg_barf(atm_dict,filename,fun_key,index);	
+       }/*endif*/
+     }/*endif*/
+/*--------------------------------------------------------------------*/
+/*  19+NCOEF_GHOST_MAX) \cp_valence_true_dn{} */
+     cpatom_maps->cp_vlnc_true_dn[iatm_ind] = cpatom_maps->cp_vlnc_true_up[iatm_ind]; 
+     if(atm_dict[19+NCOEF_GHOST_MAX].iuset == 1){
+       sscanf(atm_dict[19+NCOEF_GHOST_MAX].keyarg,"%d",&num);
+       cpatom_maps->cp_vlnc_true_dn[iatm_ind] = num;
+       if (num>cpatom_maps->cp_vlnc_dn[iatm_ind]){
+         index = 19+NCOEF_GHOST_MAX;
+         keyarg_barf(atm_dict,filename,fun_key,index);	
+       }/*endif*/
+     }/*endif*/
 /*------------------------------------------------------------------------*/ 
 /*====================================================================*/
 /* IV) Do up atom types  */

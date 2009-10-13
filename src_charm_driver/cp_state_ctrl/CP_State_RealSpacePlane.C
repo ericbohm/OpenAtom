@@ -56,6 +56,14 @@ extern ComlibInstanceHandle mssInstance;
 extern int    sizeX;
 extern Config config;
 extern CkReduction::reducerType sumFastDoubleType;
+
+#define CHARM_ON
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpintegrate.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cprspaceion.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/piny_constants.h"
+#include "../../src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 //============================================================================
 
 //#define _CP_DEBUG_STATER_VERBOSE_
@@ -123,6 +131,7 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     csize = (ngrida/2 + 1)*ngridb; 
     rsize = (ngrida   + 2)*ngridb; ;
     iplane_ind  = thisIndex.y;
+    istate      = thisIndex.x;
     forwardTimeKeep=_rfortime;
     backwardTimeKeep=_rbacktime;
     initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
@@ -144,6 +153,7 @@ void CP_State_RealSpacePlane::pup(PUP::er &p){
   ArrayElement2D::pup(p);
 
   p|iplane_ind;
+  p|istate;
   p|iteration;
   p|rhoRsubplanes;
   p|ngrida;
@@ -272,6 +282,11 @@ void CP_State_RealSpacePlane::doFFT(){
    ckout << "Real Space " << thisIndex.x << " " << thisIndex.y << " doing FFT" << endl;
 #endif
 
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+  double *occ = cpcoeffs_info->occ_up;
+  double occ_now=occ[istate+1];
+
 //============================================================================
 // Perform the FFT and get psi^2 which we can store in cache tmpData because
 // we will blast it right off before losing control
@@ -289,9 +304,10 @@ void CP_State_RealSpacePlane::doFFT(){
 
     fftcache->getCacheMem("CP_State_RealSpacePlane::doFFT");
     double *data = fftcache->tmpDataR;
+
     for(int i=0,i2=0;i<ngridb;i++,i2+=2){
       for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)];
+        data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)]*occ_now;
       }//endfor
     }//endfor
     CmiNetworkProgress();

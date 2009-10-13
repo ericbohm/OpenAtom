@@ -36,7 +36,7 @@ static void CP_enl_force_calc(complex* , int , int *, int *, int *,
                           complex *,complex *, int , int ,int , int);
 
 static void CP_enl_atm_forc_calc(int , int , FastAtoms *,
-                          complex *,complex *,complex *,complex *,double *,int );
+			  complex *,complex *,complex *,complex *,double *,int, int);
 
 static void CP_calc_Struct_Fact(int , int *, int *, int *, 
                                 complex *, complex *, complex *, complex *,

@@ -318,6 +318,10 @@ void replicate_mol(MDCLATOMS_INFO *clatoms_info,
                       cpatom_maps->cp_vlnc_up[(i+iatm_off)];
       cpatom_maps->cp_vlnc_dn[(i+iatm_offn)]= 
                       cpatom_maps->cp_vlnc_dn[(i+iatm_off)];
+      cpatom_maps->cp_vlnc_true_up[(i+iatm_offn)]= 
+                      cpatom_maps->cp_vlnc_true_up[(i+iatm_off)];
+      cpatom_maps->cp_vlnc_true_dn[(i+iatm_offn)]= 
+                      cpatom_maps->cp_vlnc_true_dn[(i+iatm_off)];
       cpatom_maps->cp_atm_flag[(i+iatm_offn)]= 
                       cpatom_maps->cp_atm_flag[(i+iatm_off)];
       clatoms_info->alp_pol[(i+iatm_offn)]= clatoms_info->alp_pol[(i+iatm_off)];
@@ -538,6 +542,10 @@ void reallocate_intra_list(MDCLATOMS_INFO *clatoms_info,
       cpatom_maps->cp_vlnc_up  = (int *)crealloc(&((cpatom_maps->cp_vlnc_up[1])),
             build_intra->natm_tot_max*sizeof(int),"realloc_intra_list")-1;
       cpatom_maps->cp_vlnc_dn  = (int *)crealloc(&((cpatom_maps->cp_vlnc_dn[1])),
+            build_intra->natm_tot_max*sizeof(int),"realloc_intra_list")-1;
+      cpatom_maps->cp_vlnc_true_up  = (int *)crealloc(&((cpatom_maps->cp_vlnc_true_up[1])),
+            build_intra->natm_tot_max*sizeof(int),"realloc_intra_list")-1;
+      cpatom_maps->cp_vlnc_true_dn  = (int *)crealloc(&((cpatom_maps->cp_vlnc_true_dn[1])),
             build_intra->natm_tot_max*sizeof(int),"realloc_intra_list")-1;
       cpatom_maps->cp_atm_flag =(int *)crealloc(&((cpatom_maps->cp_atm_flag[1])),
             build_intra->natm_tot_max*sizeof(int),"realloc_intra_list")-1;

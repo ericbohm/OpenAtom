@@ -164,7 +164,20 @@ void set_wave_params(char *molsetname,char fun_key[],
     keyarg_barf(wave_dict,molsetname,fun_key,index);
   }
   /*-----------------------------------------------------------------------*/ 
-}/*end routine*/
+  /* 9) /cp_occupation_file{} */
+  cp_parse->occupation_file = (char *)cmalloc(MAXWORD*sizeof(char),"set_wave_params.C");
+  sscanf(wave_dict[9].keyarg,"%s",cp_parse->occupation_file);
+  cp_parse->occupation_file_set=wave_dict[9].iuset; /* 0 means use default occs */
+
+  if(cp_parse->occupation_file_set>0){
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+    PRINTF("No guarantees that gen_wave will/has paired the states\n");
+    PRINTF("and occupation numbers nicely at first! \n");
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+  }//endif
+
+/*-----------------------------------------------------------------------*/ 
+  }/*end routine*/
 /*==========================================================================*/
 
 

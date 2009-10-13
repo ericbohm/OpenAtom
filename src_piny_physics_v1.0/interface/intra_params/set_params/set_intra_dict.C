@@ -164,7 +164,7 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
 /*========================================================================*/
   /* 0) Malloc the dictionary */
   if(ifirst==1){
-    *num_atm_dict=17+NCOEF_GHOST_MAX;
+    *num_atm_dict=19+NCOEF_GHOST_MAX;
     *atm_dict    = (DICT_WORD *)
          cmalloc(*num_atm_dict*sizeof(DICT_WORD),"set_atm_dict")-1;  
   }/*endif*/
@@ -245,12 +245,12 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
   /*  13) /cp_valence_up{} */
   strcpy((*atm_dict)[13].keyword,"cp_valence_up");
   strcpy((*atm_dict)[13].keyarg,"0");
-  strcpy((*atm_dict)[13].error_mes,"a number >= 0");
+  strcpy((*atm_dict)[13].error_mes,"a number >= 0 : must be set for cp atoms");
   /*------------------------------------------------------------------------*/ 
   /*  14) /cp_valence_dn{} */
   strcpy((*atm_dict)[14].keyword,"cp_valence_dn");
   strcpy((*atm_dict)[14].keyarg,"0");
-  strcpy((*atm_dict)[14].error_mes,"a number >= 0");
+  strcpy((*atm_dict)[14].error_mes,"a number >= 0 : must be set for cp atoms");
   /*------------------------------------------------------------------------*/ 
   /*  15) /cp_atom{} */
   strcpy((*atm_dict)[15].keyword,"cp_atom");
@@ -277,6 +277,16 @@ void set_atm_dict(DICT_WORD *atm_dict[],int *num_atm_dict, int ifirst)
   strcpy((*atm_dict)[(17+NCOEF_GHOST_MAX)].keyword,"pdb_typ");
   strcpy((*atm_dict)[(17+NCOEF_GHOST_MAX)].keyarg,"");
   strcpy((*atm_dict)[(17+NCOEF_GHOST_MAX)].error_mes,"");
+  /*------------------------------------------------------------------------*/ 
+  /*  18+NCOEF_GHOST_MAX) /cp_valence_true_up{} */
+  strcpy((*atm_dict)[(18+NCOEF_GHOST_MAX)].keyword,"cp_valence_true_up");
+  strcpy((*atm_dict)[(18+NCOEF_GHOST_MAX)].keyarg,"0");
+  strcpy((*atm_dict)[(18+NCOEF_GHOST_MAX)].error_mes,"a number <= cp_valence_up >=0");
+  /*------------------------------------------------------------------------*/ 
+  /*  19+NCOEF_GHOST_MAX) /cp_valence_true_dn{} */
+  strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].keyword,"cp_valence_true_dn");
+  strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].keyarg,"0");
+  strcpy((*atm_dict)[(19+NCOEF_GHOST_MAX)].error_mes,"a number <= cp_valence_dn >= 0");
 /*==========================================================================*/
 }/*end routine*/
 /*==========================================================================*/

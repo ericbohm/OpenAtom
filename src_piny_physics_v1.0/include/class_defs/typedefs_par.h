@@ -71,6 +71,7 @@ typedef struct CP_PARSE {
 
   int ivc_scale,ivcnhc_scale;    /* Num: Coeff and coeff NHC initial
                                        velocity resampling opt        */
+  int occupation_file_set;      /* Num : occupation file set by user */
 
   double cp_mass_tau_def;      /* Num: CP coeff default time scale    */
   double cp_mass_tau;          /* Num: CP coeff time scale            */
@@ -81,6 +82,8 @@ typedef struct CP_PARSE {
                                              g dependent mass opt     */ 
   double cp_ecut_dual_grid_def; /*Num:Coef cutoffs for large sparse grid*/
   double cp_ecut_dual_grid;
+
+  char *occupation_file;       /* char: Occupation number file : has set  flag */
 
 //Default Constructor/Destructor
   CP_PARSE(){};

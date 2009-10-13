@@ -121,6 +121,7 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
   energy_count         = 0;
   totalEnergy          = 0.0;
   sendDone             = 0;
+  istate_ind           = thisIndex.x;
 
   numSfGrps            = numSfGrps_in;
   natm_nl              = natm_nl_in;
@@ -354,6 +355,7 @@ CP_State_ParticlePlane::~CP_State_ParticlePlane(){
 //============================================================================
 void CP_State_ParticlePlane::pup(PUP::er &p){
 	ArrayElement2D::pup(p);
+	p|istate_ind;
 	p|registrationFlag;
         p|myChareG;
 	p|iteration;
@@ -625,7 +627,7 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
     CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,fastAtoms,&zmatrixSum[zoffset],
                &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],
-               &myenl,mydoublePack);
+	       &myenl,mydoublePack,istate_ind);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(enlAtmForcCalc_, StartTime, CmiWallTimer());    
 #endif

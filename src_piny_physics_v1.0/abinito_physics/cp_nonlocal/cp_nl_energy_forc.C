@@ -9,7 +9,8 @@
 
 #include "../class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 
-
+//============================================================================
+// This routine is depricated old junk
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -146,12 +147,14 @@ void CPNONLOCAL::CP_enl_force_calc(complex* zMatrixRow, int forcesSize,
 
 
 //============================================================================
+// This routine is is the ticket
+//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
 void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, FastAtoms *atoms,
         complex *zmatrixSum,complex *zmatrixSum_fx,complex *zmatrixSum_fy,
-        complex *zmatrixSum_fz,double *enl_ret,int mydoublePack)
+        complex *zmatrixSum_fz,double *enl_ret,int mydoublePack, int istate)
 
 //============================================================================
   {// begin routine
@@ -162,7 +165,11 @@ void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, FastAtoms *
 
   int natm_nl     = cp->cppseudo.nonlocal.natm;
   int *map_nl     = cp->cppseudo.nonlocal.map_nl;
+
   double *vnorm_0 = cp->cppseudo.nonlocal.vnorm_0;
+  double *occ     = cp->cpcoeffs_info.occ_up;
+
+  double occ_now  = occ[istate+1];
   double vol      = general_data->gencell.vol;
   double fpi      = 4.0*M_PI;
   double y00      = 1.0/sqrt(fpi);
@@ -228,7 +235,7 @@ void CPNONLOCAL::CP_enl_atm_forc_calc(int numSfGrps, int indexSfGrp, FastAtoms *
 
   }//endif
 
-  (*enl_ret) = enl;
+  (*enl_ret) = enl*occ_now;
 
 //============================================================================
   } /* End function */

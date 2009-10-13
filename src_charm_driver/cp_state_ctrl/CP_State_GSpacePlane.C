@@ -121,9 +121,26 @@ void testeke(int ,complex *,int *,int *,int *, int ,int);
 void cleanExit(void *param, void *msg)
 {
   
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+
   CkReductionMsg *m=(CkReductionMsg *)msg;
   delete m;
   PRINT_LINE_STAR; CkPrintf("\n"); CkPrintf("\n");
+
+  if(sim->cp_min_opt==1 && cpcoeffs_info->uniform_flag==1){
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+    PRINTF("Non uniform occupations encountered. At present,\n");
+    PRINTF("the code minimizes and KS rotates at the end.\n");
+    PRINTF("This will properly assign highest occ numbers with\n");
+    PRINTF("low energy states. In principle, you must reminimize until\n");
+    PRINTF("you converge as we are currently preconditioning with a\n");
+    PRINTF("state dependent mass proporational to the occupations number.\n");
+    PRINTF("No idea how well this works. An upgrade will do the KS-dance\n");
+    PRINTF("self-consistently for you. DWKSR dancing with KS rotation\n");
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+  }//endif
 
   PRINT_LINE_STAR;
   CkPrintf("         Open Atom Simulation Complete                \n");
@@ -1524,7 +1541,6 @@ void CP_State_GSpacePlane::launchAtoms() {
 	 (TimeKeeperProxy.ckLocalBranch())->printHPM();
 #endif	
 #endif
-
     contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
     cleanExitCalled = 1;
   }else{

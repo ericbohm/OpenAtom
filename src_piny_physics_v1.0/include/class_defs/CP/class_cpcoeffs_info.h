@@ -24,6 +24,8 @@ class CPCOEFFS_INFO {
   int ncoef_l_dens_cp_box;    // Num: # of coef on small dense rho
                               //      spherical cutoff cp_grid (hmat_cp)  
                               //      on dens_cp_box  
+  int uniform_flag;
+
   double ecut_psi;            // Num: Energy cutoff small sparse grid    
   double ecut_mass;           // Num: mass preconditioning
   double tau_mass;            // Num: mass tau
@@ -43,6 +45,7 @@ class CPCOEFFS_INFO {
     ncoef           = 0;
     ncoef_l         = 0;                
     ncoef_l_dens_cp_box = 0;    
+    uniform_flag    = 0;
    };
   ~CPCOEFFS_INFO(){};
 
@@ -51,6 +54,7 @@ class CPCOEFFS_INFO {
  //pupping
   void pup(PUP::er &p){
     //pupping ints
+      p | uniform_flag;
       p | cp_any_on;
       p | pi_beads;
       p | nstate_up;

@@ -116,6 +116,10 @@ int natm_now,i,index;
           build_intra->natm_tot_max*sizeof(int),"create_atm_ind")-1;
       cpatom_maps->cp_vlnc_dn =(int *)crealloc(&((cpatom_maps->cp_vlnc_dn[1])),
           build_intra->natm_tot_max*sizeof(int),"create_atm_ind")-1;
+      cpatom_maps->cp_vlnc_true_up =(int *)crealloc(&((cpatom_maps->cp_vlnc_true_up[1])),
+          build_intra->natm_tot_max*sizeof(int),"create_atm_ind")-1;
+      cpatom_maps->cp_vlnc_true_dn =(int *)crealloc(&((cpatom_maps->cp_vlnc_true_dn[1])),
+          build_intra->natm_tot_max*sizeof(int),"create_atm_ind")-1;
       cpatom_maps->cp_atm_flag=
           (int *)crealloc(&((cpatom_maps->cp_atm_flag[1])),
             build_intra->natm_tot_max*sizeof(int),"create_atm_ind")-1;

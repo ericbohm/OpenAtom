@@ -37,6 +37,8 @@ GEN_WAVE::GEN_WAVE(){
    iatm_atm_typ_cp = NULL;  // nab_initio
    iatm_state_str  = NULL;  // nab_initio
    iatm_state_end  = NULL;  // nab_initio
+   iatm_state_excess_str  = NULL;  // nab_initio
+   iatm_state_excess_end  = NULL;  // nab_initio
 
 
    gpsi0           = NULL;     // natm_typ_cp x 3 x nsplin
@@ -64,6 +66,8 @@ GEN_WAVE::~GEN_WAVE( ){
     cfree(&(iatm_atm_typ_cp[1]),"gen_wave_destructor");
     cfree(&(iatm_state_str[1]),"gen_wave_destructor");
     cfree(&(iatm_state_end[1]),"gen_wave_destructor");
+    cfree(&(iatm_state_excess_str[1]),"gen_wave_destructor");
+    cfree(&(iatm_state_excess_end[1]),"gen_wave_destructor");
 
     cfree(&(gpsi00[1]),"gen_wave_destructor");
     cfree_mat(gpsi_now,1,natm_typ_cp,1,3);
@@ -101,13 +105,13 @@ GEN_WAVE::~GEN_WAVE( ){
 void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_info,
                             int nsplin_in, double gmin_in,double gmax_in, 
 			    int *iatm_atm_typ, int natm_typ,NAME *vps_name,
-                            int cp_lda_in, int cp_lsda_in)
+                            int cp_lda_in, int cp_lsda_in, int occupation_file_set)
 //========================================================================
   { //begin routine
 //========================================================================
 //             Local variable declarations                               
   
-  int i,j,k,iatm;
+  int i,j,k,iatm, iatm_typ;
   int ind1,ind2,n;
   int iflag;
 
@@ -121,6 +125,8 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
   int   *cp_atm_lst = cpatom_maps->cp_atm_lst;
   int   *cp_vlnc_up = cpatom_maps->cp_vlnc_up;
   int   *cp_vlnc_dn = cpatom_maps->cp_vlnc_dn;
+  int   *cp_vlnc_true_up = cpatom_maps->cp_vlnc_true_up;
+  int   *cp_vlnc_true_dn = cpatom_maps->cp_vlnc_true_dn;
 
   int nstate_up     = cpcoeffs_info->nstate_up;
   int nstate_dn     = cpcoeffs_info->nstate_dn; 
@@ -155,10 +161,14 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
 
   int  nstate_up_gw = 0;
   int  nstate_dn_gw = 0;
+  int  nstate_true_up_gw = 0;
+  int  nstate_true_dn_gw = 0;
   for(i=1; i<= nab_initio; i++){
    iatm = cp_atm_lst[i];
    nstate_up_gw += cp_vlnc_up[iatm];
    nstate_dn_gw += cp_vlnc_dn[iatm];
+   nstate_true_up_gw += cp_vlnc_true_up[iatm];
+   nstate_true_dn_gw += cp_vlnc_true_dn[iatm];
   }//endfor
 
   if( nstate_up_gw != nstate_up ){
@@ -198,9 +208,33 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
      EXIT(1);
   }//endif
 
+  if( (nstate_true_up_gw != nstate_up_gw) && occupation_file_set==0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("You must provide an occupation_file if you want extended states.\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
+
+  if( (nstate_true_dn_gw != nstate_dn_gw) && occupation_file_set==0){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("You must provide an occupation_file if you want extended states.\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
+
+  if( (nstate_true_up_gw != nstate_up_gw) ){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Non uniform occupations encountered\n");
+    PRINTF("At present, the code minimizes and KS rotates at the end.\n");
+    PRINTF("That won't for you!.\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
+
 //=======================================================================
 // check that the value assigned for cp_valence_up is same for 
-// for all atoms of the same atm_typ                         
+// for all atoms of the same atm_typ : also for true valence
 
   for(i=1; i <= nab_initio; i++){
     ind1 = cp_atm_lst[i];
@@ -221,6 +255,32 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("There are two different assigned values for    \n");
        PRINTF("cp_valence_dn for the same atom type           \n");
+       PRINTF("atom numbers %d and %d \n",ind1,ind2);
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       EXIT(1);
+      }//endif
+    }//endfor
+  }//endfor
+
+  for(i=1; i <= nab_initio; i++){
+    ind1 = cp_atm_lst[i];
+    for(j=i+1; j <= nab_initio;j++){
+     ind2 = cp_atm_lst[j];
+     if( iatm_atm_typ[ind2] == iatm_atm_typ[ind1] &&
+         cp_vlnc_true_up[ind2] != cp_vlnc_true_up[ind1]){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("There are two different assigned values for    \n");
+     PRINTF("cp_valence_true_up for the same atom type      \n");
+     PRINTF("atom numbers %d and %d \n",ind1,ind2);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+     }//endif
+
+   if( cp_lsda == 1 && iatm_atm_typ[ind2] == iatm_atm_typ[ind1] &&
+       cp_vlnc_true_dn[ind2] != cp_vlnc_true_dn[ind1]){
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("There are two different assigned values for    \n");
+       PRINTF("cp_valence_true_dn for the same atom type      \n");
        PRINTF("atom numbers %d and %d \n",ind1,ind2);
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
@@ -252,6 +312,9 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
   iatm_atm_typ_cp = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
   iatm_state_str  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
   iatm_state_end  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_state_excess_str  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_state_excess_end  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
+  iatm_state_excess_off  = (int *) cmalloc(nab_initio*sizeof(int),"gen_wave_init") -1;
 
   NAME *fname_ps = (NAME *) cmalloc(natm_typ_cp*sizeof(NAME),"gen_wave_init")-1;
 
@@ -307,31 +370,6 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
     }//endfor
   }//endfor
 
-//===========================================================================
-// assign the occupation numbers 
-
-  double *occ_dn = (double *) cmalloc(nstate_up*sizeof(double),"gen_wave_init") -1;
-  double *occ_up = (double *) cmalloc(nstate_up*sizeof(double),"gen_wave_init") -1;
-
-  for(i=1; i<= nstate_up; i++){
-    occ_up[i] = 0.0;
-    occ_dn[i] = 0.0;
-  }//endfor
-
-  for(i=1; i<= nstate_up_gw; i++){
-    occ_up[i] = 1.0;
-  }//endfor
-
-  for(i=1; i<= nstate_dn_gw; i++){
-    occ_dn[i] = 1.0;
-  }//endfor
-
-  if(cp_lda==1){
-    for(i=1; i<= nstate_up; i++){
-      occ_up[i] += occ_dn[i];
-    }//endfor
-  }//endif cp_lda
-
 //=========================================================================
 // bessel transform the radial wave functions and spline the result        
 // nsplin rows 3 columns natm_typ dimensions  [d][c][r]                    
@@ -348,19 +386,47 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
                 &(gpsi00[i]),&(n_ang[i]),fname_ps[i]);
   }//endfor
  
+
+  for(i=1; i<= nab_initio; i++){
+    iatm     = cp_atm_lst[i];       // true atom index
+    iatm_typ = iatm_atm_typ_cp[i];  // ab initio ordered atom type index
+    if(cp_vlnc_up[iatm]>(n_ang[iatm_typ]+1)*(n_ang[iatm_typ]+1)){
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       PRINTF("Too many states %d required from atom pseudo file, %s \n",cp_vlnc_up[iatm],fname_ps[iatm_typ]);
+       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       EXIT(1);
+    }/*endif*/
+  }/*endfor*/
+
   cfree(&g[1],"gen_wave");
   cfree(&(fname_ps[1]),"fill_gw_gpsi");
 
 //===========================================================================
 // Create map : Which states are assigned to each atom's radial psi.
+// cp_vlnc_up is based on true atom index not ab initio atom index
 
+  iatm = cp_atm_lst[1];
   iatm_state_str[1] = 1;
-  iatm_state_end[1] = iatm_state_str[1] + cp_vlnc_up[1]-1;
+  iatm_state_end[1] = iatm_state_str[1] + cp_vlnc_true_up[iatm]-1;
 
   for(i=2; i<= nab_initio; i++){
+    iatm = cp_atm_lst[i];
     iatm_state_str[i] = iatm_state_end[i-1] + 1;
-    iatm_state_end[i] = iatm_state_str[i] + cp_vlnc_up[i]-1;
+    iatm_state_end[i] = iatm_state_str[i] + cp_vlnc_true_up[iatm]-1;
   }//endfor
+
+  iatm = cp_atm_lst[1];
+  iatm_state_excess_str[1] = nstate_true_up_gw + 1;
+  iatm_state_excess_end[1] = iatm_state_excess_str[1] + (cp_vlnc_up[iatm]-cp_vlnc_true_up[iatm])-1;
+  iatm_state_excess_off[1] = cp_vlnc_true_up[iatm];
+
+  for(i=2; i<= nab_initio; i++){
+    iatm = cp_atm_lst[i];
+    iatm_state_excess_str[i] = iatm_state_excess_end[i-1] + 1;
+    iatm_state_excess_end[i] = iatm_state_excess_str[i] + (cp_vlnc_up[iatm]-cp_vlnc_true_up[iatm])-1;
+    iatm_state_excess_off[i] = cp_vlnc_true_up[iatm];
+  }//endfor
+
 
 //===========================================================================
 
@@ -437,9 +503,19 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
 // Which atom's radial psi forms this KS state
 
   int my_atom = 0;
+  int my_state_str  = 0;
+  int my_state_off  = 0;
   for(int i=1;i<=nab_initio;i++){
     if(state_ind>=iatm_state_str[i] &&
-       state_ind<=iatm_state_end[i]){my_atom=i;}
+       state_ind<=iatm_state_end[i]){
+      my_atom=i; my_state_str=iatm_state_str[i];
+    }//endif
+    if(state_ind>=iatm_state_excess_str[i] &&
+       state_ind<=iatm_state_excess_end[i]){
+      my_atom=i; 
+      my_state_str=iatm_state_excess_str[i];
+      my_state_off=iatm_state_excess_off[i];
+    }//endif
   }//endfor
 
   if(my_atom==0){
@@ -449,12 +525,17 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
     for(int i=1;i<=nab_initio;i++){
       PRINTF("  iatm=%d state_low=%d state_high=%d\n",i,iatm_state_str[i],iatm_state_end[i]);
     }//endfor
+    PRINTF("Excess States:\n");
+    for(int i=1;i<=nab_initio;i++){
+      PRINTF("  iatm=%d state_low=%d state_high=%d\n",
+	     i,iatm_state_excess_str[i],iatm_state_excess_end[i]);
+    }//endfo
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     EXIT(1);
   }//endif
 
   int ipart = my_atom;
-  int is    = state_ind - iatm_state_str[ipart] + 1;
+  int is    = state_ind - my_state_str + 1 + my_state_off;
   int ityp  = iatm_atm_typ_cp[ipart];
   int iatm  = cp_atm_lst[ipart];
 
@@ -1023,3 +1104,74 @@ void GEN_WAVE::get_ylm(double xk,double yk,double zk,double g,
   }//end routine
 //==========================================================================
 
+
+//==========================================================================
+//==========================================================================
+void GEN_WAVE::read_occupation_numbers(double *occ_up,double *occ_dn,
+                                       int nstate_up, int nstate_dn,int cp_lda_tmp,
+                                       char *occupation_file,int *uniform_flag)
+//==========================================================================
+ {//begin routine
+//==========================================================================
+// Read in the occupation numbers
+
+  int ncnt=0;
+  int nstate_file;
+
+  FILE *fp;
+  fp=cfopen((const char *) occupation_file,"r");
+  fscanf(fp,"%d",&nstate_file); readtoendofline(fp);
+  if (nstate_file != nstate_up){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Yo, dawg, occupation number file %s\n",occupation_file);
+      PRINTF("has wrong number of states.\n");
+      PRINTF("Expected: %d  and occ file: %d\n",nstate_up,nstate_file);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+  }/*endif*/
+  for (int i=1; i<=nstate_up; i++){
+    fscanf(fp,"%lf %lf",&occ_up[i],&occ_dn[i]); readtoendofline(fp);
+    ncnt++;
+    if(occ_up[i]<0 || occ_up[i]>1.0){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Yo, dawg, occupation numbers better be\n");
+      PRINTF("between 0 and 1. Try again, dude.\n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+  }//endfor
+  fclose(fp);
+
+  int ierr =0;
+  for(int i=1;i<=nstate_up-1;i++){if(occ_up[i]!=occ_up[i+1]){ierr++;}}
+  for(int i=1;i<=nstate_dn-1;i++){if(occ_dn[i]!=occ_dn[i+1]){ierr++;}}
+
+  uniform_flag[0] = 0;
+  if(ierr!=0){
+    uniform_flag[0] = 1;
+  }//endif
+
+//==========================================================================
+// open atom normalizes the states to 2 under LDA
+
+  if(cp_lda_tmp==1){
+    for(int i=1; i<=nstate_up; i++){occ_up[i] += occ_dn[i]; occ_up[i] /=2.0;}
+  }//endif
+
+//==========================================================================
+// Check to see if the occupation numbers are correct
+
+  for (int i=2; i<=nstate_up; i++){
+    if(occ_up[i+1]>occ_up[i]||occ_dn[i+1]>occ_dn[i]){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Openatom likes Occupation numbers in ascending order.\n");
+      PRINTF("State up+1 up dn+1 dn: %d %d %d %d %d\n",
+	     i,occ_up[i+1],occ_up[i],occ_dn[i+1],occ_dn[i]);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+  }//endif
+
+//--------------------------------------------------------------------------
+ }//end routine
+//==========================================================================

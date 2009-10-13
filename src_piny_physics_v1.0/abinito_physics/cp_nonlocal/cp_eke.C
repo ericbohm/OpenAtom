@@ -31,7 +31,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 #include "../class_defs/allclass_strip_cp.h"
 
    double ecut      = cpcoeffs_info->ecut_psi; // KS-state cutoff in Ryd
-
+   double *occ      = cpcoeffs_info->occ_up;   // Occupation numbers from file
 //============================================================================
 // Debugging
 
@@ -47,6 +47,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 //============================================================================
 // I. Forces and energy (kinetic energy contribution) : gx=0
 
+   double occ_now = occ[istate+1];
    double eke = 0.0;
    for(int i = 0; i < nkx0; i++){
      if(g2[i]<=ecut){
@@ -99,7 +100,7 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 //============================================================================
 // Energy return value
 
-   eke_ret[0] = eke/2.0;
+   eke_ret[0] = eke*occ_now/2.0;
 
 //============================================================================
 // Complete Debugging

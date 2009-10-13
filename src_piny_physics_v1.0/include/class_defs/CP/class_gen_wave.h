@@ -16,6 +16,9 @@ class GEN_WAVE{
    int *n_ang;
    int *iatm_state_str;
    int *iatm_state_end;
+   int *iatm_state_excess_str;
+   int *iatm_state_excess_end;
+   int *iatm_state_excess_off;
    int *iatm_atm_typ_cp;
 
    double *gpsi00;
@@ -26,7 +29,7 @@ class GEN_WAVE{
   ~GEN_WAVE();
    void fill_gw_gpsi(CPATOM_MAPS * ,CPCOEFFS_INFO *,
    		     int ,double ,double ,int *iatm_atm_typ, int natm_typ,
-                     NAME *vps_name, int cp_lda_in, int cp_lsda_in);
+                     NAME *vps_name, int cp_lda_in, int cp_lsda_in, int occupation_file_set);
 
    void create_coefs(int *k_x,int *k_y,int *k_z,
                      int gSpaceSize,int nstate_in,complex *gspace_coefs,
@@ -47,6 +50,10 @@ class GEN_WAVE{
 
    void get_ylm(double xk,double yk,double zk,double g,
                 double *ylmr,double *ylmi,CPYLM_CONS *ylm_cons);
+
+static void read_occupation_numbers(double *occ_up,double *occ_dn,
+                                    int nstate_up, int nstate_dn,int cp_lda_tmp,
+                                    char *occupation_file,int *uniform_flag);
 
 //-------------------------------------------------------------------------
 #ifdef PUP_ON
@@ -70,6 +77,9 @@ class GEN_WAVE{
       if(nab_initio>0){
         pup1d_int(p,&iatm_state_str,nab_initio);
         pup1d_int(p,&iatm_state_end,nab_initio);
+        pup1d_int(p,&iatm_state_excess_str,nab_initio);
+        pup1d_int(p,&iatm_state_excess_end,nab_initio);
+        pup1d_int(p,&iatm_state_excess_off,nab_initio);
         pup1d_int(p,&iatm_atm_typ_cp,nab_initio);
       }//endif
 

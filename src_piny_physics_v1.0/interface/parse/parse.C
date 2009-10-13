@@ -259,17 +259,27 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
       ncoef   = cpcoeffs_info->ncoef;
       nstate  = cpcoeffs_info->nstate_up;
-      cpcoeffs_info->occ_up      =  (double *)
+      cpcoeffs_info->uniform_flag = 0;
+      cpcoeffs_info->occ_up       =  (double *)
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
-      cpcoeffs_info->occ_dn      = (double *)
+      cpcoeffs_info->occ_dn       = (double *)
                      cmalloc(nstate*sizeof(double),"parse:hack")-1;
+      for(int i=1;i<=nstate;i++){cpcoeffs_info->occ_up[i] = 1.0;}
+      for(int i=1;i<=nstate;i++){cpcoeffs_info->occ_dn[i] = 1.0;}
+      if(cp_parse.occupation_file_set==1){
+	cpgen_wave->read_occupation_numbers(cpcoeffs_info->occ_up,cpcoeffs_info->occ_dn,
+                                    cpcoeffs_info->nstate_up,cpcoeffs_info->nstate_dn,
+				    cpopts->cp_lda,
+                                    cp_parse.occupation_file,&(cpcoeffs_info->uniform_flag));
+      }//endif
+      free(cp_parse.occupation_file);
    //----------------------------------------------------------------------
     if(gensimopts->istart_cp==0){
       cpgen_wave->fill_gw_gpsi(cpatom_maps,cpcoeffs_info,cppseudo->nsplin_g,
 		               cppseudo->gmin_spl,cppseudo->gmax_spl,
 			       mdatom_maps->iatm_atm_typ,mdatom_maps->natm_typ,
                                &filename_parse.vps_name[0],
-                               cpopts->cp_lda,cpopts->cp_lsda);
+                               cpopts->cp_lda,cpopts->cp_lsda,cp_parse.occupation_file_set);
     }//endif
   }//endif : cp_on
 

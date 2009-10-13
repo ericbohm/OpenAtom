@@ -108,6 +108,10 @@ void init_intra_params(MDCLATOMS_INFO *clatoms_info,
                                            *sizeof(int),"init_intra_params")-1;
   cpatom_maps->cp_vlnc_dn   = (int *)cmalloc(build_intra->natm_tot_max
                                             *sizeof(int),"init_intra_params")-1;
+  cpatom_maps->cp_vlnc_true_up   = (int *)cmalloc(build_intra->natm_tot_max
+                                           *sizeof(int),"init_intra_params")-1;
+  cpatom_maps->cp_vlnc_true_dn   = (int *)cmalloc(build_intra->natm_tot_max
+                                            *sizeof(int),"init_intra_params")-1;
   cpatom_maps->cp_atm_flag  = (int *)cmalloc(build_intra->natm_tot_max
                                             *sizeof(int),"init_intra_params")-1;
   clatoms_info->alp_pol     = (double *)cmalloc(build_intra->natm_tot_max

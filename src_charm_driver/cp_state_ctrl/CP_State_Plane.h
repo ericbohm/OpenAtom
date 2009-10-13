@@ -204,6 +204,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int csize;
         int countProduct;
 	int numCookies;
+        int istate;
 	bool vksDone;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;

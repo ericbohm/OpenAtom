@@ -164,22 +164,7 @@ void set_atm_morph(DICT_WORD *atm_dict,int num_atm_dict,
         keyarg_barf(atm_dict,filename,fun_key,index);}
     }/*endif*/
   /*---------------------------------------------------------------------*/
-  /*  13) \cp_vlnc_up{} */
-    if(atm_dict[13].iuset==1){
-      sscanf(atm_dict[13].keyarg,"%d",&num);
-      cpatom_maps->cp_vlnc_up[iatm_ind] = num; 
-    }/*endif*/
-
-  /*---------------------------------------------------------------------*/
-  /*  14) \cp_vlnc_dn{} */
-    if(atm_dict[14].iuset==1){
-      sscanf(atm_dict[14].keyarg,"%d",&num);
-      cpatom_maps->cp_vlnc_dn[iatm_ind] = num; 
-    }/*endif*/
-
-  /*---------------------------------------------------------------------*/
   /*  15) \cp_atom{yes,no} */
-
     if(atm_dict[15].iuset==1){
      if(strcasecmp(atm_dict[15].keyarg,"yes")==0){
        cpatom_maps->cp_atm_flag[iatm_ind] = 1;
@@ -187,6 +172,25 @@ void set_atm_morph(DICT_WORD *atm_dict,int num_atm_dict,
      if(strcasecmp(atm_dict[15].keyarg,"no")==0){
        cpatom_maps->cp_atm_flag[iatm_ind] = 0;
      }
+    }/*endif*/
+  /*---------------------------------------------------------------------*/
+  /*  13) \cp_vlnc_up{} */
+    cpatom_maps->cp_vlnc_up[iatm_ind] = 0;
+    if(atm_dict[13].iuset==1){
+      sscanf(atm_dict[13].keyarg,"%d",&num);
+      cpatom_maps->cp_vlnc_up[iatm_ind] = num; 
+    }/*endif*/
+    if(atm_dict[13].iuset==0 && cpatom_maps->cp_atm_flag[iatm_ind]==1){
+        index = 13;
+        keyarg_barf(atm_dict,filename,fun_key,index);
+    }/*endif*/
+
+  /*---------------------------------------------------------------------*/
+  /*  14) \cp_vlnc_dn{} */
+    cpatom_maps->cp_vlnc_dn[iatm_ind] =  cpatom_maps->cp_vlnc_up[iatm_ind];
+    if(atm_dict[14].iuset==1){
+      sscanf(atm_dict[14].keyarg,"%d",&num);
+      cpatom_maps->cp_vlnc_dn[iatm_ind] = num; 
     }/*endif*/
 
   /*---------------------------------------------------------------------*/
@@ -197,6 +201,31 @@ void set_atm_morph(DICT_WORD *atm_dict,int num_atm_dict,
      set_ghost(ghost_atoms,clatoms_info,atommaps,build_intra,atm_dict,
                num_atm_dict,
                filename,fun_key,iatm_ind);
+    }/*endif*/
+  /*---------------------------------------------------------------------*/
+  /*  18+NCOEF_GHOST_MAX \cp_vlnc_true_up{} */
+
+    cpatom_maps->cp_vlnc_true_up[iatm_ind] = cpatom_maps->cp_vlnc_up[iatm_ind]; 
+    if(atm_dict[(18+NCOEF_GHOST_MAX)].iuset==1){
+      sscanf(atm_dict[18+NCOEF_GHOST_MAX].keyarg,"%d",&num);
+      cpatom_maps->cp_vlnc_true_up[iatm_ind] = num;
+      if (num>cpatom_maps->cp_vlnc_up[iatm_ind]){
+        index = 18+NCOEF_GHOST_MAX;
+        keyarg_barf(atm_dict,filename,fun_key,index);	
+      }/*endif*/
+    }/*endif*/
+
+  /*---------------------------------------------------------------------*/
+  /*  19+NCOEF_GHOST_MAX \cp_vlnc_true_dn{} */
+
+    cpatom_maps->cp_vlnc_true_dn[iatm_ind] = cpatom_maps->cp_vlnc_dn[iatm_ind]; 
+    if(atm_dict[(19+NCOEF_GHOST_MAX)].iuset==1){
+      sscanf(atm_dict[(19+NCOEF_GHOST_MAX)].keyarg,"%d",&num);
+      cpatom_maps->cp_vlnc_true_dn[iatm_ind] = num; 
+      if (num>cpatom_maps->cp_vlnc_dn[iatm_ind]){
+        index = 19+NCOEF_GHOST_MAX;
+        keyarg_barf(atm_dict,filename,fun_key,index);	
+      }/*endif*/
     }/*endif*/
 
   /*=====================================================================*/
