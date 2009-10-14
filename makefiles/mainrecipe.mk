@@ -1,11 +1,12 @@
 # Define the base directory of the openatom tree
 base := ..
 makedir := $(base)/makefiles
+cfg  := $(base)/config.mk
 
 # Include basic make rules
 include $(makedir)/srcdirs.mk
 include $(makedir)/basicrules.mk
-include $(base)/config.mk
+include $(cfg)
 
 # Directory structure and vpath related stuff
 DEPSTRIPDIRS +=

@@ -47,6 +47,11 @@ Some useful command-line features:
       builddir=<build-dir-name-prefix>
         What prefix to use for the name of the build directory. Default: build
 
+      cfg=<name-of-config-file>
+        Name of the make config file to get the user settings from. Default: config.mk
+        Use this if you're working with multiple builds and hence need to use
+        different settings stored in different config files for each build.
+
       [otherflags]
         You can set other flags controlling the build on the command line
         itself, instead of setting them in the configuration file.
