@@ -1,10 +1,9 @@
 #===============================================================================
 #------------------------- Path to Charm++ and FFTW ----------------------------
-    # Location of the charm installation
-    CHARMBASE     = $(HOME)/work/opt-charm/charm
-    # Location of the FFTW library installation
-    FFT_HOME      = $(HOME)/work/fftw
-
+  # Location of the charm installation
+  CHARMBASE	= $(HOME)/charm
+  # Location of the FFTW library installation
+  FFT_HOME	= $(HOME)/fftw
 
 #===============================================================================
 # Flags, include paths, libraries etc. on a per-target basis
@@ -18,23 +17,23 @@
 
 #-------------------------------------------------------------------------------
 #------------------------- Flags for the whole code ----------------------------
-               # Optimization level and debug (Dont add other flags to OPT)
-               OPT       = -O3
-               # What flags do we use when compiling the fragile portions of piny
-               OPT_CARE  = -O2
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
-                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
-               FFLAGS   += $(OPT)
-               CFLAGS   += $(OPT)
-               CXXFLAGS += $(OPT)
-               INCDIRS  +=
-               DEPSTRIPDIRS +=
+  # Optimization level and debug (Dont add other flags to OPT)
+  OPT       = -O3
+  # What flags do we use when compiling the fragile portions of piny
+  OPT_CARE  = -O2
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
+	      -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+  FFLAGS   += $(OPT)
+  CFLAGS   += $(OPT)
+  CXXFLAGS += $(OPT)
+  INCDIRS  +=
+  DEPSTRIPDIRS +=
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-    LDFLAGS  += -L$(FFT_HOME)/lib -L/opt/acml/4.3.0/gfortran64_int64/lib
-    LDLIBS   += -module CkMulticast -module comlib -lconv-util -lm -lz \
-		-lacml
+  LDFLAGS  += -L$(FFT_HOME)/lib -L/opt/acml/4.3.0/gfortran64_int64/lib
+  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lm -lz \
+	      -lacml
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
@@ -73,11 +72,11 @@ $(libmath):    CXXFLAGS += -seq
   # Should we pass -D_IBM_ESSL_ as a preprocessor flag when building 
   # ibm_essl_dummy.o
   ibm_essl_dummy.o: CPPFLAGS  +=
-  # The fft (and other) math libraries to link based on whether DUAL_FFTW is 
+  # The fft (and other) math libraries to link based on whether DUAL_FFTW is
   # turned on or off
-    ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
-	 LDLIBS   += -lrfftw -lfftw
-    else
-	 LDLIBS   += -ldrfftw -ldfftw
-    endif
+  ifeq ($(DUAL_FFTW), -DDUAL_FFTW_OFF)
+    LDLIBS   += -lrfftw -lfftw
+  else
+    LDLIBS   += -ldrfftw -ldfftw
+  endif
 
