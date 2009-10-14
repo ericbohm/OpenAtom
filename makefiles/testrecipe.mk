@@ -14,13 +14,13 @@ opFile     = op-$*.log
 refFile    = ref-$*.log
 
 # Define all the test configurations
-ees-nl0l0-p1-desc = ENL off EES off
+ees-nl0l0-p1-desc = EES: off for nonlocals; off for locals;
 ees-nl0l0-p1-args = $(testregr)/cpaimd_config.p1 $(testregr)/water.input.min.ees-nl0l0
-ees-nl0l1-p1-desc = ENL off EES on
+ees-nl0l1-p1-desc = EES: off for nonlocals; on for locals;
 ees-nl0l1-p1-args = $(testregr)/cpaimd_config.p1 $(testregr)/water.input.min.ees-nl0l1
-ees-nl1l0-p1-desc = ENL on EES off
+ees-nl1l0-p1-desc = EES: on for nonlocals; off for locals;
 ees-nl1l0-p1-args = $(testregr)/cpaimd_config.p1 $(testregr)/water.input.min.ees-nl1l0
-ees-nl1l1-p1-desc = ENL on EES on
+ees-nl1l1-p1-desc = EES: on for nonlocal; on for locals;
 ees-nl1l1-p1-args = $(testregr)/cpaimd_config.p1 $(testregr)/water.input.min.ees-nl1l1
 
 # Define the list of tests to run
