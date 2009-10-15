@@ -2998,10 +2998,10 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   }/*endif*/
 
  if((cp_on || cp_min_on) && (mdenergy_ctrl->iget_pe_real_inter_freq != 1)){
-    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
     PRINTF("For CP calculations, interatomic PE should be \n");
     PRINTF("Calculated every step.  Setting the frequency to 1\n");
-    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n"); 
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n"); 
     mdenergy_ctrl->iget_pe_real_inter_freq = 1;   
  }
 

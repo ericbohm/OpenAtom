@@ -152,7 +152,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   if(gen_wave==0){
     sprintf (fname, "%s/state1.out", dataPath);
-    PRINTF("   Opening state file : %s\n",fname);
+    PRINTF("  Opening state file : %s\n",fname);
   }//endif
 
   readStateInfo(nPacked,minx,maxx,sizex,sizey,sizez,fname,ibinary_opt,
@@ -160,7 +160,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   if(gen_wave==0){
     sprintf (fname, "%s/state1.out", dataPath);
-    PRINTF("   Closing state file : %s\n\n",fname);
+    PRINTF("  Closing state file : %s\n\n",fname);
   }//endif
 
   sprintf (fname, "%s/ChkDirExistOAtom", dataPathOut);
@@ -191,7 +191,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   int nplane_x     = minx+1;
   int nplane_x_rho = 2*minx+1;
-  PRINTF("   nplane = %d and nplane_rho = %d for the current system\n\n",
+  PRINTF("  nplane = %d and nplane_rho = %d for the current system\n",
          nplane_x,nplane_x_rho);
 
   double temp      = (gExpandFact)*((double)nplane_x);
@@ -867,9 +867,9 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
     parse_on_off(dict[ind].keyarg,&stateOutput,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
     if(stateOutput==0){
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("   You are in a state of danger! Your stateOutput is off! \n");
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("    You are in a state of danger! Your stateOutput is off! \n");
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
     }//
   //-----------------------------------------------------------------------------
   //  8)\psipriority{}
@@ -2191,7 +2191,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     
     nchareG  = (int)(gExpandFact*(double)low_x_size);
-    CkPrintf("  nchareG now %d based on gExpandFact %.5g\n", nchareG, gExpandFact);
+    CkPrintf("  nchareG now %d based on gExpandFact %.5g\n\n", nchareG, gExpandFact);
 //=============================================================================
 // numChunks, numChunksSym, numChunksAsym, sgrainsize are not set
 
@@ -2288,10 +2288,10 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
         int iii = orthoGrainSize;
         if(orthoGrainSize>32){orthoGrainSize=32;}
         if(orthoGrainSize>sGrainSize){orthoGrainSize=sGrainSize;}
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("   Changing the default choice of orthograinsize\n");
-        //PRINTF("             from %d to %d\n",iii,orthoGrainSize);
-        PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("    Changing the default choice of orthograinsize\n");
+        PRINTF("    from %d to %d\n", iii, orthoGrainSize);
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
         sprintf(dict_pc[19].keyarg,"%d",orthoGrainSize);
       }//endif
     }//endif
@@ -2306,10 +2306,10 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 
     if((sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)){
       if(igo==1){
-         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
-         PRINTF("   (sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
-         //PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
-         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+        PRINTF("    (sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
+        //PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
+        PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
       }//endif
       lambdaGrainSize=orthoGrainSize;
       sprintf(dict_pc[10].keyarg,"%d",lambdaGrainSize);
@@ -3106,14 +3106,14 @@ void Config::rangeExit(int param, const char *name, int iopt){
     int size3 = (nstates/orthoGrainSize)*(nstates/orthoGrainSize);
    
     if(size1>numPes || size2 > numPes || size3 > numPes){
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$\n");
-      PRINTF("      You only have %d processors\n",numPes);
-      PRINTF("      You have asked for %d Symm  PC\n",size1);
-      PRINTF("      You have asked for %d Asymm PC\n",size2);
-      PRINTF("      You have asked for %d orthos  \n",size3);
-      PRINTF("      nstates=%d sGrainSize=%d numChunks=%d %d orhoGrain=%d\n",
+      PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("    You only have %d processors\n",numPes);
+      PRINTF("    You have asked for %d Symm  PC\n",size1);
+      PRINTF("    You have asked for %d Asymm PC\n",size2);
+      PRINTF("    You have asked for %d orthos  \n",size3);
+      PRINTF("    nstates=%d sGrainSize=%d numChunks=%d %d orhoGrain=%d\n",
                  nstates,sGrainSize,numChunksSym,numChunksAsym,orthoGrainSize);
-      PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$\n\n");
+      PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     }//endif
 
 //===================================================================================
