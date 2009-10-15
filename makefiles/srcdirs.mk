@@ -59,6 +59,7 @@ testunit      = $(tests)/unit
 
 
 # List of modules and libraries to be built (yuck,,,)
+executable   := OpenAtom
 moddriver    := CharmDriver
 modphysics   := PinyInterface
 modmath      := MyMathLib

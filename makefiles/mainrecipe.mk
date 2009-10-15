@@ -13,7 +13,7 @@ DEPSTRIPDIRS +=
 VPATH        +=
 
 # Specify the compilation target
-TARGET    = OpenAtom
+TARGET    = $(executable)
 
 # The relevant source files for this project
 SRC       =

@@ -10,7 +10,7 @@ include $(cfg)
 
 # Basic test command settings
 runCmd     = $(build)/charmrun
-binary     = $(build)/OpenAtom
+binary     = $(build)/$(executable)
 opFile     = op-$*.log
 refFile    = ref-$*.log
 
