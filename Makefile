@@ -42,6 +42,7 @@ build         = $(strip $(where))/$(strip $(builddir))$(strip $(buildsuffix))
 testop = $(build)/test-output
 testop_regr = $(testop)/regression
 testop_unit = $(testop)/unit
+testop_perf = $(testop)/scaling
 
 ################## Arguments to the sub-makes ####################
 # Define the command line args to sub-make
@@ -62,7 +63,8 @@ TESTARGS      =-C "$(call realpath,$1)" \
 .PHONY: all \
         compile driver physics libs \
 		again clean clean_driver clean_physics clean_libs \
-		test test-regr test-unit clean-test retest \
+		test test-regr test-unit clean_test retest \
+		perf clean_perf
 		docs doxygen
 
 all: compile
@@ -90,8 +92,16 @@ test-regr: compile $(testop_regr)
 
 retest: clean-test test
 
-clean-test:
+clean_test:
 	@test ! -d $(testop) || $(RM) -r $(testop)
+
+################## Scaling / Performance measurement related targets ####################
+perf: compile $(testop_perf)
+	@$(MAKE) $(call TESTARGS,$(testop_perf),perfrecipe.mk) $@
+	@echo "=========== Performance measurement output is in the scaling directory: $(testop_perf)"
+
+clean_perf:
+	@test ! -d $(testop) || $(RM) -r $(testop_perf)
 
 ################## Other targets ####################
 docs:
@@ -101,7 +111,7 @@ doxygen:
 	@cd $(docs) && doxygen $(call abs2rel,$(base),$(docs))/Doxyfile
 
 ################## Utility targets ####################
-$(build) $(testop) $(testop_regr) $(testop_unit):
+$(build) $(testop) $(testop_regr) $(testop_unit) $(testop_perf):
 	@echo "=========== Creating directory: $@"
 	@mkdir -p $@
 

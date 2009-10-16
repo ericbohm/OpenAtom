@@ -89,3 +89,37 @@ ibm_essl_dummy.o: CPPFLAGS  += -D_IBM_ESSL_
                LDLIBS   += -ldrfftw -ldfftw
           endif
 
+
+#------------------------------------------------------------------------------
+#------------- Variables to control how scaling runs are set up --------------#
+# The min num of cores to run on
+procStart      = 64
+# The max num of cores to run on
+procEnd        = 4096
+# The wall time to request for each run
+walltime       = 15
+# The number of cores (used) per node
+ppn            = 4
+
+# The location of the molecule database
+perfDatabase = $(data)/DATABASE
+# The location of the dataset to use for the scaling runs
+perfDataset = $(data)/water_32M_70Ry
+# The location of the input files within the dataset
+perfInpDir = $(perfDataset)/scaling/bgp
+
+# The following placeholders can be used in anything that is part of the job submission command
+# @C - num cores
+# @N - num nodes
+# @T - wall time
+# @X - eXecutable
+
+# The parallel config file to use 
+perfConfig  = cpaimd_config.topo.@C
+# The simulation config file to use 
+perfInput   = water.input
+# Any other arguments required. Placeholders can be used here too
+perfOtherArgs   = 
+# The command line to submit to the BGP scheduler. All arguments will be appended 
+submitLine     = qsub -A CharmRTS --mode vn -n @N -t @T @X
+
