@@ -64,7 +64,7 @@ TESTARGS      =-C "$(call realpath,$1)" \
         compile driver physics libs \
 		again clean clean_driver clean_physics clean_libs \
 		test test-regr test-unit clean_test retest \
-		perf clean_perf
+		perf perf-setup perf-chk clean_perf
 		docs doxygen
 
 all: compile
@@ -96,7 +96,7 @@ clean_test:
 	@test ! -d $(testop) || $(RM) -r $(testop)
 
 ################## Scaling / Performance measurement related targets ####################
-perf: compile $(testop_perf)
+perf perf-setup perf-chk: compile $(testop_perf)
 	@$(MAKE) $(call TESTARGS,$(testop_perf),perfrecipe.mk) $@
 	@echo "=========== Performance measurement output is in the scaling directory: $(testop_perf)"
 

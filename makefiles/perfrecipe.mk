@@ -15,28 +15,34 @@ procList = $(shell myvar=$(procStart); while [ $$myvar -le $(procEnd) ];do echo 
 setupTargets = $(procList:%=setup_%)
 # Generate the list of targets that will be used to submit the jobs
 submitTargets= $(procList:%=submit_%)
+# Generate the list of targets that will be used to check command correctness
+chkTargets   = $(procList:%=chk_%)
 
 # This is the unprocessed command line that will be used to submit the job
-cmd_raw = $(submitLine) $(perfInpDir)/$(perfConfig) $(perfInpDir)/$(perfInput) $(perfOtherArgs)
+cmd_raw = $(submitLine) ../$(perfInpDir)/$(perfConfig) ../$(perfInpDir)/$(perfInput) $(perfOtherArgs)
 # An innocent placeholder-replacement mechanism to process the command line
-parseIt = $(subst @X,$(build)/$(executable),$(subst @T,$(walltime),$(subst @N,$3,$(subst @C,$2,$1))))
+parseIt = $(subst @X,../$(build)/$(executable),$(subst @T,$(walltime),$(subst @N,$3,$(subst @C,$2,$1))))
 # Run some arithmetic in bash to compute the number of nodes
 numNodes = $(shell echo $$(( $1/$(ppn) )))
 
-$(submitTargets): override base  := $(addprefix ../,$(base))
-$(submitTargets): override build := $(addprefix ../,$(build))
+#$(submitTargets) $(chkTargets): override base  := $(addprefix ../,$(base))
+#$(submitTargets) $(chkTargets): override build := $(addprefix ../,$(build))
 
-.PHONY: perf perf-setup
+.PHONY: perf perf-setup perf-chk
 
-perf: perf-setup perf-submit
+perf: $(submitTargets)
 
 perf-setup: $(setupTargets)
 
-perf-submit: $(submitTargets)
+perf-chk: $(chkTargets)
 
 submit_%: setup_% | proc_%
 	@echo "Submitting the job using command ..."
 	cd $| && $(call parseIt,$(cmd_raw),$*,$(call numNodes,$*))
+
+chk_%: setup_% | proc_%
+	@echo "The job submission command that will be used is: ..."
+	@echo "cd $| && $(call parseIt,$(cmd_raw),$*,$(call numNodes,$*))"
 
 setup_%: | proc_%
 	@echo "Setting up a job using $* cores on $(call numNodes,$*) nodes in directory: $|"
