@@ -12,6 +12,7 @@ FC        = $(CHARMBIN)/charmc
 
 # Other tools
 LN        = ln -sf
+GIT       = $(shell which git)
 DOXYGEN   = doxygen
 
 # Basic compiler/linker flags

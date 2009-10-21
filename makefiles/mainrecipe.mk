@@ -22,6 +22,13 @@ OBJ       = $(addsuffix .o, $(basename $(SRC)) )
 INTF      =
 LIBS      = $(moddriver) $(modphysics) $(modmath)
 
+# Compute the revision number (hash) of the build and feed it to the code
+ifeq ($(GIT),)
+  $(warning Cannot find the git binary. Will not compute the revision number)
+else
+  REVNUM  = $(shell $(GIT) --git-dir=$(base)/.git rev-parse HEAD)
+endif
+CPPFLAGS += -DOPENATOM_REVISION=$(REVNUM)
 
 .PHONY: compile driver physics libs mathlib clean again test translateInterface
 
@@ -30,6 +37,7 @@ compile: $(TARGET)
 $(TARGET): $(LIBS:%=lib%.a) $(OBJ)
 	$(info-ld)
 	$q$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	@echo "=========== Target produced from commit hash: $(REVNUM)"
 
 driver: $(libdriver)
 

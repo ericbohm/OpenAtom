@@ -265,6 +265,16 @@ ComlibInstanceHandle commGHartRHartIns1;
 CkReduction::reducerType complexVectorAdderType;
 //============================================================================
 
+/// The build system should define this macro to be the commit identifier
+#ifndef OPENATOM_REVISION 
+ #define OPENATOM_REVISION Unknown
+#endif
+#define _QUOTEIT(x) #x
+#define INQUOTES(x) _QUOTEIT(x)
+
+/// A global constant for use in the code
+const char OpenAtomRevision[] = INQUOTES(OPENATOM_REVISION);
+
 
 
 //============================================================================
@@ -284,6 +294,8 @@ main::main(CkArgMsg *msg) {
       CkAbort("Usage: cpaimd.x cpaimd_config pinysystem.input");
     }//endif
     CkPrintf("Executing OpenAtom: BINARY - %s\n", msg->argv[0]);
+    CkPrintf("Binary produced from source-tree at commit: %s\n",OpenAtomRevision);
+
     if(msg->argc >3 && msg->argv[3][0] == 't')
       {
 
