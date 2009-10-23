@@ -121,5 +121,5 @@ perfInput   = water.input
 # Any other arguments required. Placeholders can be used here too
 perfOtherArgs   = 
 # The command line to submit to the BGP scheduler. All arguments will be appended 
-submitLine     = qsub -A CharmRTS --mode vn -n @N -t @T @X
+submitLine     = qsub -A CharmRTS --mode vn -n @N -t @T -O proc@C @X
 
