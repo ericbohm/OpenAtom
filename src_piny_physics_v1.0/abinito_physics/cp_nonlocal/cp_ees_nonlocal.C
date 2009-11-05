@@ -891,8 +891,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }
-#ifdef CMK_VERSION_BLUEGENE
-           if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -922,8 +922,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -953,8 +953,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -983,8 +983,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1013,8 +1013,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1045,8 +1045,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }
-#ifdef CMK_VERSION_BLUEGENE
-           if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+           if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1078,8 +1078,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1111,8 +1111,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1143,8 +1143,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1175,8 +1175,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1205,8 +1205,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
@@ -1235,8 +1235,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
               dy_re[i] = 0.0;
               dy_im[i] = 0.0;
             }//endif
-#ifdef CMK_VERSION_BLUEGENE
-            if(i%nfreq==0){CmiNetworkProgress();}
+#ifdef CMK_BLUEGENEL
+            if(i%nfreq_cmi_update==0){CmiNetworkProgress();}
 #endif
           }//endfor
         break;
