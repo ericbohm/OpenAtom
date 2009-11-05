@@ -101,7 +101,7 @@ void Ortho::collect_error(CkReductionMsg *msg) {
     }
 
 
-    if(numGlobalIter == 20 && iterations==1){
+    if(numGlobalIter == 100 && iterations==1){
       CkPrintf("[%d] Calling useThisCriticalPathForPriorities()  ORTHO\n", CkMyPe());
       useThisCriticalPathForPriorities();
     }
