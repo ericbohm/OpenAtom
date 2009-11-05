@@ -21,7 +21,7 @@ INSTALLATION
    Turing (UIUC CSE)  config.turing.mk
    XT4/XT5            config.xt5.mk
   
-2. To install Charm++, download a copy from http://charm.cs.illinois.edu
+3. To install Charm++, download a copy from http://charm.cs.illinois.edu
    Depending on the architecture of the machine, choose the right
    build options and build Charm.
    If you have trouble building Charm, mail ppl AT cs.uiuc.edu
@@ -29,31 +29,31 @@ INSTALLATION
    Edit the CHARMBASE variable in config.mk to point to the
    Charm++ installation.
 
-3. OpenAtom requires double precision FFTW installed in some location.
+4. OpenAtom requires double precision FFTW installed in some location.
    
    Edit the FFT_HOME variable in config.mk to point to the
    FFTW installation. You might also need to edit the DUAL_FFTW 
    variable depending on how FFTW was compiled. It takes two values:
    DUAL_FFTW_OFF and DUAL_FFTW
 
-4. Check to make sure the optimization options are the ones that you
+5. Check to make sure the optimization options are the ones that you
    desire. These are set as the value of the variable OPT in the 
    config.mk file. These flags are also suffixed to the name of the
    build directory giving you a separate directory for each different
    set of flags.
 
-5. Be sure to type 'make help' to review the different options you have
+6. Be sure to type 'make help' to review the different options you have
    when invoking the build. For e.g., parallel builds can be much faster
    if your machine supports it.
 
-6. To start the build, simply type make in the top-level directory along
+7. To start the build, simply type make in the top-level directory along
    with any other options that you require.  The binary 'OpenAtom' is 
    placed in the build directory whose name is indicated at the start 
    and end of the build process.
 
-7. make test should run a minimal set of regression tests and report failures.
+8. make test should run a minimal set of regression tests and report failures.
    Note that this setup is still quite nascent and in development. Also, note
    that it currently directly invokes the OpenAtom binary for simple sequential
    runs. If your machine has a job queue or a headnode, this may not be 
-   desirablei or possible.
+   desirable or possible.
 
