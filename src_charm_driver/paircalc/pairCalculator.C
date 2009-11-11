@@ -578,7 +578,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 	      CkArrayIndex4D idx;
 	      for(int elem=0; elem<pcid->listLNotFrom.size();elem++)
 		{ idx=pcid->listLNotFrom[elem];
-		  idx.index[3]=chunk;
+          reinterpret_cast<short*> (idx.data() )[3]=chunk;
 		  calculatePairsMsg *msg= new ( outsize,8*sizeof(int) ) calculatePairsMsg;
 		  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 		  *(int*)CkPriorityPtr(msg) = pcid->priority;    
@@ -592,7 +592,7 @@ void startPairCalcLeft(PairCalcID* pcid, int n, complex* ptr, int myS, int myPla
 #endif
 
 
-		  pcid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).acceptPairData(msg);
+		  pcid->cproxy(idx).acceptPairData(msg);
 		}
 	    }
 	  else
@@ -1215,8 +1215,8 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 	      for(int elem=0; elem < pid->listLFrom.size() ; elem++)
 		{
 		  idx=pid->listLFrom[elem];
-		  idx.index[3]=chunk;
-		  pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
+          reinterpret_cast<short*> (idx.data() )[3]=chunk;
+		  pid->cproxy(idx).receiveRDMASenderNotify(senderProc, sender, true, outsize,totalsize);
 		}
 	    }
 	  else{
@@ -1233,8 +1233,8 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 		  for(int elem=0; elem < pid->listLNotFrom.size() ; elem++)
 		    {
 		      idx=pid->listLNotFrom[elem];
-		      idx.index[3]=chunk;
-		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+              reinterpret_cast<short*> (idx.data() )[3]=chunk;
+		      pid->cproxy(idx).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
 		    }
 		}
 	      else
@@ -1254,8 +1254,8 @@ void initPairCalcRDMA(PairCalcID *pid, int sender, int totalsize,int myPlane)
 		  for(int elem=0; elem < pid->listRNotFrom.size() ; elem++)
 		    {
 		      idx=pid->listRNotFrom[elem];
-		      idx.index[3]=chunk;
-		      pid->cproxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
+              reinterpret_cast<short*> (idx.data() )[3]=chunk;
+		      pid->cproxy(idx).receiveRDMASenderNotify(senderProc, sender, false, outsize,totalsize);
 		    }
 		}
 	      else{

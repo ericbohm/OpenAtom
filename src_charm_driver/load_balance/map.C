@@ -318,8 +318,9 @@ void SCalcMap::makemap(){
 //============================================================================
 
 int SCalcMap::slowprocNum2(int hdl, const CkArrayIndex4D &idx4d){
+  short *idx = reinterpret_cast<short*> ( idx4d.data() );
   // Just use gspace as our guide for (w,x,y,z) use gsp(y+x/grainsize,w);
-  return cheesyhackgsprocNum(scProxy.ckLocalBranch()->cpcharmParaInfo, idx4d.index[2]+idx4d.index[3]/gs,idx4d.index[0]);
+  return cheesyhackgsprocNum(scProxy.ckLocalBranch()->cpcharmParaInfo, idx[2] + idx[3]/gs, idx[0]);
 }
 
 /*
@@ -426,9 +427,10 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 
 int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
 {
-  
+    short *idx = reinterpret_cast<short*> ( idx4d.data() );
+
     //Here maxY is the max number of planes;
-    int planeid = idx4d.index[0];
+    int planeid = idx[0];
     int numChareG = 0;
 
 
@@ -491,8 +493,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
           
 	  load[pe] += curload;
 	  
-	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
-	     (y == idx4d.index[2])) {
+	  if((w == idx[0]) && (x == idx[1]) && (y == idx[2])) {
 
               //if(CkMyPe() == 0)
               //  CkPrintf ("scalc %d %d %d %d assigned to pe %d and curload = %f, load = %f\n", w, x ,y, symmetric, pe, curload, load[pe]);
@@ -504,7 +505,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d)
       }
     
     delete [] load;
-    return (idx4d.index[0]*197+idx4d.index[1]*23+idx4d.index[2]*7+idx4d.index[3])%CkNumPes();    
+    return (idx[0]*197+idx[1]*23+idx[2]*7+idx[3])%CkNumPes();    
 
 }
 
