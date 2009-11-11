@@ -573,7 +573,7 @@ void sendLeftData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, b
 						*(int*)CkPriorityPtr(msg) = pcid->priority;
 						CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 						idx=pcid->listGettingLeft[elem];
-						idx.index[3]=chunk;
+						reinterpret_cast<short*> (idx.data() )[3]=chunk;
 						#ifdef _NAN_CHECK_
 						for(int i=0;i<outsize ;i++)
 						{
@@ -663,7 +663,7 @@ void sendRightData(PairCalcID* pcid, int n, complex* ptr, int myS, int myPlane, 
 					for(int elem=0; elem<pcid->listGettingRight.size();elem++)
 					{ 
 						idx=pcid->listGettingRight[elem];
-						idx.index[3]=chunk;
+						reinterpret_cast<short*> (idx.data() )[3]=chunk;
                         paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
 						CkSetQueueing(msg, CK_QUEUEING_IFIFO);
 						*(int*)CkPriorityPtr(msg) = pcid->priority;
@@ -734,9 +734,9 @@ void sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, 
 				for(int elem=0; elem < pid->listGettingLeft.size() ; elem++)
 				{
 					idx=pid->listGettingLeft[elem];
-					idx.index[3]=chunk;
+					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-					pid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).setupRDMALeft(msg);
+					pid->handlerProxy(idx).setupRDMALeft(msg);
 				}
 			}
 			/// else, if we're multicasting
@@ -784,9 +784,9 @@ void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize,
 				for(int elem=0; elem < pid->listGettingRight.size() ; elem++)
 				{
 					idx=pid->listGettingRight[elem];
-					idx.index[3]=chunk;
+					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-					pid->handlerProxy(idx.index[0],idx.index[1],idx.index[2],idx.index[3]).setupRDMARight(msg);
+					pid->handlerProxy(idx).setupRDMARight(msg);
 				}
 			}
 			/// else, if we're multicasting
