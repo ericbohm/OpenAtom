@@ -90,7 +90,7 @@ test-regr: compile $(testop_regr)
 	@$(MAKE) $(call TESTARGS,$(testop_regr),testrecipe.mk) $@
 	@echo "=========== Regression test output is in the test directory: $(testop_regr)"
 
-retest: clean-test test
+retest: clean_test test
 
 clean_test:
 	@test ! -d $(testop) || $(RM) -r $(testop)
