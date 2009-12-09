@@ -813,6 +813,19 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
     {
         // This iteration is a normal loop. Hence normal behavior
         actionType = NORMALPC;
+
+        // Start the forward path substep timer
+        #ifdef _CP_SUBSTEP_TIMING_
+            if((UpairCalcID1[instance].forwardTimerID>0)||(UpairCalcID1[instance].forwardTimerID>0))
+            {
+                double pstart=CmiWallTimer();
+                if(symmetric)
+                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[instance].beginTimerCB , UpairCalcID1[instance].forwardTimerID);
+                else
+                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[instance].beginTimerCB , UpairCalcID2[instance].forwardTimerID);
+            }
+        #endif
+
         if (!amPhantom)
         {
             /** expectOrthoT is false in any scenario other than asymmetric, dynamics.
@@ -834,6 +847,14 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
         else
         {
             /// Do nothing for the phantom chare, non-psiv loops. Computation will be triggered only in the backward path
+            // Just stop the forward path substep timer for the phantom chares
+            #ifdef _CP_SUBSTEP_TIMING_
+               if(UpairCalcID1[instance].forwardTimerID>0)
+               {
+                   double pstart=CmiWallTimer();
+                   contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[instance].endTimerCB , UpairCalcID1[instance].forwardTimerID);
+               }
+            #endif
         }
     }
     // else, if this is a PsiV loop (there is no forward path, only backward path computations to update PsiV)
