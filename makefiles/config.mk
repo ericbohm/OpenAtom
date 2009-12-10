@@ -76,3 +76,8 @@ $(libmath):    CXXFLAGS += -seq
     LDLIBS   += -ldrfftw -ldfftw
   endif
 
+#===============================================================================
+#------------- Variables to control how regression tests are set up --------------#
+# The location of the water (32M,10Ry) dataset that will be used in the tests
+w3210       = $(data)/water_32M_10Ry
+

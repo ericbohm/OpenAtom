@@ -56,7 +56,9 @@ pinysrcdirs   = $(abinitio_dirs:%=$(abinitio)/%) \
 testregr      = $(tests)/regression
 testunit      = $(tests)/unit
 
-
+# Directories usefule for regression tests
+molDbase      = $(data)/DATABASE
+regrInpDir    = $(w3210)/regression
 
 # List of modules and libraries to be built (yuck,,,)
 executable   := OpenAtom

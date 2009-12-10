@@ -103,7 +103,7 @@ ppn            = 4
 
 #-------------------------------------------------------------------------------
 # The location of the molecule database
-perfDatabase = $(data)/DATABASE
+perfDatabase = $(molDbase)
 # The location of the dataset to use for the scaling runs
 perfDataset = $(data)/water_32M_70Ry
 # The location of the input files within the dataset
