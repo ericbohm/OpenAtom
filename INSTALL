@@ -52,8 +52,21 @@ INSTALLATION
    and end of the build process.
 
 8. make test should run a minimal set of regression tests and report failures.
-   Note that this setup is still quite nascent and in development. Also, note
-   that it currently directly invokes the OpenAtom binary for simple sequential
-   runs. If your machine has a job queue or a headnode, this may not be 
-   desirable or possible.
+   To use it, you will have to obtain the water (32 molecules, 10Ry cutoff) 
+   dataset from our git repositories.
+
+   Authenticated access:
+   git clone charmgit:datasets/openatom/water_32M_10Ry
+
+   Place the dataset in the data/ directory of the openatom tree. Alternatively,
+   you can place this anywhere and modify the 'w3210' variable in your make config
+   file (config.mk) to point to the location.
+
+   Note:
+   - This test setup is still quite nascent and in development. 
+   - It currently directly invokes the OpenAtom binary for simple sequential runs.
+     If your machine has a job queue or a headnode, this may not be desirable or 
+     possible.
+   - The setup still is not ready to be used in any environment where job submission
+     is required.
 
