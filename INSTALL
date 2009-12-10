@@ -55,8 +55,11 @@ INSTALLATION
    To use it, you will have to obtain the water (32 molecules, 10Ry cutoff) 
    dataset from our git repositories.
 
-   Authenticated access:
+   Authenticated access: (assuming your ssh config defines charmgit)
    git clone charmgit:datasets/openatom/water_32M_10Ry
+
+   Anonymous access:
+   git clone git://charm.cs.illinois.edu/datasets/openatom/water_32M_10Ry.git
 
    Place the dataset in the data/ directory of the openatom tree. Alternatively,
    you can place this anywhere and modify the 'w3210' variable in your make config
