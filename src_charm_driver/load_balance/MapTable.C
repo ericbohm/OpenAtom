@@ -1891,6 +1891,167 @@ RhoGHartMapTable::RhoGHartMapTable(MapType2  *_map, PeList *_availprocs, int _nc
 
 }
 
+/* We receive a copy of the RhoRS and then act independently with the
+   bulk of our communication with VdWGS. Exclusion mapping will try to
+   put us on different processors from RhoRS. Our connection to RS is
+   more tenuous, so centroid mapping to RS is not as compelling. */
+
+VdWRSMapTable::VdWRSMapTable(MapType3  *_map, PeList *_availprocs, int _nchareRhoR, int _rhoRsubplanes, int _nchareVdW, int max_states, PeList *exclude): nchareRhoR(_nchareRhoR), rhoRsubplanes(_rhoRsubplanes)
+,nchareVdW(_nchareVdW) {
+  reverseMap=NULL;
+  maptable=_map;
+  availprocs=_availprocs;
+  int rvdwobjs_per_pe, rem;
+  int srcpe=0;
+  int numChares=nchareRhoR*rhoRsubplanes* nchareVdW;
+  int pesused=0;
+  if(availprocs->count()==1)
+    {
+      rvdwobjs_per_pe= numChares;
+      rem=0;
+    }
+  else
+    {
+      rvdwobjs_per_pe= numChares/(availprocs->count());
+      rem = numChares % (availprocs->count());
+      if(numChares<availprocs->count())
+	{
+	  rem=0;
+	  rvdwobjs_per_pe=1;
+	}
+      if(rem!=0)
+	rvdwobjs_per_pe += 1;
+    }
+
+  if(availprocs->count()==0)
+    availprocs->reset();
+  int destpe;
+  int nprocs=0, objs=0;
+  destpe=availprocs->findNext();
+  if(availprocs->count()==0)
+    availprocs->reset();
+  for(int chunk=0; chunk<nchareRhoR; chunk++)
+    {
+      for(int subplane=0; subplane<rhoRsubplanes; subplane++)
+	{
+	  for(int vdw=0; vdw<nchareVdW; vdw++)
+	    {
+	      if(rem!=0)
+		if(nprocs==rem)
+		  rvdwobjs_per_pe -= 1;
+#ifdef USE_INT_MAP
+	      maptable->set(chunk, subplane, vdw, destpe);
+#else
+	      maptable->put(inttriple(chunk, subplane,vdw))=destpe;
+#endif
+	      objs++;
+	      if(objs==rvdwobjs_per_pe)
+		{
+		  destpe=availprocs->findNext();
+		  if(availprocs->count()==0)
+		    availprocs->reset();
+		  objs=0;
+		  nprocs++;
+		}
+	    }
+	}
+    }
+  CkPrintf("Built VdWRS Map [%d, %d, %d]\n",nchareRhoR,rhoRsubplanes, nchareVdW); 
+#ifdef _MAP_DEBUG_
+  CkPrintf("VdWRSMap created on processor %d\n", CkMyPe());
+  dump();
+#endif
+
+}
+/**
+ * VdWG and VdWR are mutually all to all. They should be mapped such
+ * that they are relatively near but exclusive.  Meaning they should
+ * share no processors if there are enough to go around.  
+
+ * Given that VdWR is already placed we could map relative to it. But
+ * the cross communication within each of R and G could dominate so
+ * we'll start with a simple map and optimize it when we see how this
+ * new beast works.
+
+ */
+
+VdWGSMapTable::VdWGSMapTable(MapType2  *_map, PeList *_availprocs, int _nchareRhoG,  int _nchareVdW, PeList *exclude): nchareRhoG(_nchareRhoG), nchareVdW(_nchareVdW)
+{
+  reverseMap=NULL;
+  maptable=_map;
+  availprocs=_availprocs;
+  int rgsobjs_per_pe, rem;
+
+  if(availprocs->count()==0)
+    availprocs->reset();
+  PeList *avail= new PeList(*availprocs);
+  *avail-*exclude;
+  int numVdWObjs=nchareRhoG*nchareVdW;
+  if(avail->count()>numVdWObjs)
+    {
+      // try an exclusion
+      CkPrintf("RhoG excluding %d from avail %d\n",exclude->count(), availprocs->count());
+      *availprocs-*exclude;
+      availprocs->reindex();
+      // CkPrintf("avail now %d\n", availprocs->count());
+    }
+  else
+    {
+      CkPrintf("cannot use exclusion in rhog\n");
+      availprocs->reset();
+    }
+  delete avail;
+
+  if(availprocs->count()==1)
+    {
+      rgsobjs_per_pe= numVdWObjs;
+      rem=0;
+    }
+  else
+    {
+      rgsobjs_per_pe= numVdWObjs/(availprocs->count());
+      rem = numVdWObjs % (availprocs->count());
+      if(numVdWObjs<availprocs->count())
+	{
+	  rem=0;
+	  rgsobjs_per_pe=1;
+	}
+      if(rem!=0)
+	rgsobjs_per_pe += 1;
+    }
+  
+  int destpe=availprocs->findNext();
+  if(availprocs->count()==0)
+    availprocs->reset();
+
+  int thischunk=0;
+  for(int i=0; i<nchareRhoG; i++)
+    {
+      for(int j=0; j<nchareVdW; j++)
+	{
+
+#ifdef USE_INT_MAP
+	  maptable->set(i, j, destpe);
+#else
+	  maptable->put(intdual(i, j))=destpe;
+#endif
+	  thischunk++;
+	  if(thischunk>rgsobjs_per_pe)
+	    {
+	      exclude->mergeOne(destpe);
+	      destpe=availprocs->findNext();
+	      if(availprocs->count()==0)
+		availprocs->reset();
+	    }
+	}
+    }
+#ifdef _MAP_DEBUG_
+  CkPrintf("VdWGSMap created on processor %d\n", CkMyPe());
+  dump();
+#endif
+}
+
+
 
 void MapTable2::makeReverseMap()
 {

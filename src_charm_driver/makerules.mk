@@ -5,6 +5,7 @@ libdriver_src = \
                 CP_LargeSP_RhoGSpacePlane.C  CP_LargeSP_RhoRealSpacePlane.C \
                 CP_State_ParticlePlane.C CP_State_RealParticlePlane.C \
                 CP_Rho_RealSpacePlane.C CP_Rho_GSpacePlane.C CP_Rho_GHartExt.C CP_Rho_RHartExt.C \
+                CP_VanderWaalsR.C CP_VanderWaalsG.C \
                 ckPairCalculator.C pairCalculator.C \
                 ortho.C pcSectionManager.C \
                 StructureFactor.C StructFactorCache.C \

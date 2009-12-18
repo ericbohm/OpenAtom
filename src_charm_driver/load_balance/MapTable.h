@@ -403,6 +403,28 @@ class RhoRSMapTable  : public MapTable2
   RhoRSMapTable(){}
 };
 
+class VdWRSMapTable  : public MapTable3
+{
+ public:
+  int nchareRhoR;
+  int rhoRsubplanes;
+  int nchareVdW;
+  VdWRSMapTable(MapType3  *_map, PeList *_availprocs,
+	int _nchareRhoR, int _rhoRsubplanes, int _nchareVdW, int maxstates, PeList *exclude);
+  VdWRSMapTable(){}
+};
+
+class VdWGSMapTable  : public MapTable2
+{
+ public:
+  int nchareRhoG;
+  int nchareVdW;
+  VdWGSMapTable(MapType2  *_map, PeList *_availprocs,
+		int _nchareRhoG,  int _nchareVdW, PeList *exclude);
+  VdWGSMapTable(){}
+};
+
+
 
 class RhoRHartMapTable  : public MapTable3
 {

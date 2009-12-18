@@ -189,7 +189,9 @@ class CPcharmParaInfo {
 
    int nplane_rho_x;   // # of non-zero planes of rho gx
    int nchareRhoG;    // # of collections of lines in rhog-space
-   int nchareRhoGEext;  // # of collections of lines in rhog-space for eext
+   int nchareRhoGEext;  // # of collections of lines in rhog-space for
+			// eext
+   int nchareVdW;       // number of Van der Walls 
    double *lines_per_chareRhoG;  // lines in each collection (rhog-space)
    double *pts_per_chareRhoG;    // pts in each collection   (rhog-space)
 
@@ -291,6 +293,7 @@ class CPcharmParaInfo {
      nlines_max_eext = s.nlines_max_eext;
      nplane_rho_x    = s.nplane_rho_x;
      nchareRhoG      = s.nchareRhoG;
+     nchareVdW       = s.nchareVdW;
      nchareRhoGEext  = s.nchareRhoGEext;
      npts_per_chareRhoG   = new int[nchareRhoG];
      nlines_per_chareRhoG = new int[nchareRhoG];

@@ -83,13 +83,14 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> RPPmaptable;
 	readonly CkHashtableT<intdual, int> RhoGSmaptable;
 	readonly CkHashtableT<intdual, int> RhoRSmaptable;
+	readonly CkHashtableT<intdual, int> VdWGSmaptable;
+	readonly CkHashtableT<inttriple, int> VdWRSmaptable;
 	readonly CkHashtableT<intdual, int> RhoGHartmaptable;
 	readonly CkHashtableT<inttriple, int> RhoRHartmaptable;
 	readonly CkHashtableT<intdual, int> Orthomaptable;
 	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
-
 	readonly CkVec <MapType2> GSImaptable;
 	readonly CkVec <MapType2> RSImaptable;
 	readonly CkVec <MapType2> RPPImaptable;
@@ -101,6 +102,8 @@ mainmodule cpaimd {
 	readonly CkVec <MapType2> OrthoHelperImaptable;
 	readonly CkVec <MapType4> AsymScalcImaptable;
 	readonly CkVec <MapType4> SymScalcImaptable;
+	readonly CkVec <MapType2> VdWGSImaptable;
+	readonly CkVec <MapType3> VdWRSImaptable;
 
 
 	readonly Config config;
@@ -131,6 +134,10 @@ mainmodule cpaimd {
 
 	readonly CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 	readonly CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
+
+	readonly CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
+	readonly CkVec <CProxy_CP_VanderWaalsG>      UVdWGProxy;
+
 
 	readonly CkVec <UberCollection> UberAlles;
 	
@@ -304,38 +311,48 @@ mainmodule cpaimd {
                 entry void acceptVks(int size, complex inVks[size]);
                 entry void acceptAtmSFTot(int size, complex inSF[size]);
 	};
-
        array [1D] CP_LargeSP_RhoGSpacePlane {
 		entry CP_LargeSP_RhoGSpacePlane(UberCollection);
 		entry [nokeep] void init();
 		entry void acceptMDSg();
 		entry void acceptLSPRhoR();
-	}	
+	};	
 
        array [2D] CP_LargeSP_RhoRealSpacePlane {
 		entry CP_LargeSP_RhoRealSpacePlane(UberCollection);
 		entry [nokeep] void init();
 		entry void acceptLSPRhoG();
 		entry void acceptRhoR();
-	}	
-/** not implemented yet
-       array [3D] VanDerWaalsR {
-		entry VanderWaalsR();
-		entry [nokeep] void init();
-	}
+	};	
 
-       array [2D] VanDerWaalsG {
-		entry VanderWaalsG();
-		entry [nokeep] void init();
-	}
 
-*/
+       array [3D] CP_VanderWaalsR {
+		entry CP_VanderWaalsR(UberCollection);
+		entry [nokeep] void init();
+	};
+
+
+       array [2D] CP_VanderWaalsG {
+		entry CP_VanderWaalsG(UberCollection);
+		entry [nokeep] void init();
+	};
+
+
+
 	group RhoGSMap : CkArrayMap {
 		entry RhoGSMap(UberCollection);
 	};
 
 	group RhoRSMap : CkArrayMap {
 		entry RhoRSMap(UberCollection);
+	};
+
+	group VdWGSMap : CkArrayMap {
+		entry VdWGSMap(UberCollection);
+	};
+
+	group VdWRSMap : CkArrayMap {
+		entry VdWRSMap(UberCollection);
 	};
 
 	group RhoGHartMap : CkArrayMap {

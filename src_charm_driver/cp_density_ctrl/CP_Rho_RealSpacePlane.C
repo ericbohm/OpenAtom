@@ -1038,7 +1038,7 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
 
 	  //---------------------------
 	  // Send the message
-	  if(rhoRsubplanes==1){
+	  if(rhoRsubplanes==1){ // if subplanes is 1 we can use comlib
 	    switch(iopt){
 	    case 0 : rhoGProxy_com(ic,0).acceptRhoData(msg);      break;
 	    case 1 : rhoGProxyIGX_com(ic,0).acceptWhiteByrd(msg); break;

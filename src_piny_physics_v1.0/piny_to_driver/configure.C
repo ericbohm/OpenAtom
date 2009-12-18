@@ -339,7 +339,7 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 25;
+  num_dict[0] = 26;
   *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_rho")-1;
 
 //=================================================================================
@@ -514,8 +514,15 @@ void Config::set_config_dict_rho  (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"rhoGToRhoRMsgCombine");
     strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
-
 //----------------------------------------------------------------------------------
+
+  // 23)\nchareVdW{}
+    ind =  26;
+    strcpy((*dict)[ind].keyword,"nchareVdW");
+    strcpy((*dict)[ind].keyarg,"0");    
+    strcpy((*dict)[ind].error_mes," number >=0 and <=  N_v^2");
+  //-----------------------------------------------------------------------------
+
   }//end routine
 //===================================================================================
 
@@ -674,7 +681,16 @@ void Config::set_config_params_rho (DICT_WORD *dict, char *fun_key, char *input_
     ind =  25;
     parse_on_off(dict[ind].keyarg,&rhoGToRhoRMsgComb,&ierr);
     if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+  //-----------------------------------------------------------------------------
+  // 26)\nchareVdW{}
+    ind =   26;
+    sscanf(dict[ind].keyarg,"%d",&nchareVdW);
+    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(iflag==0 && dict[ind].iuset==0){nchareVdW=0;}
+  //-----------------------------------------------------------------------------
+
   }//end routine
+
 //===================================================================================
 
 

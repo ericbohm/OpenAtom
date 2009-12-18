@@ -112,6 +112,8 @@ CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
 CkVec <MapType2> RhoGSImaptable;
 CkVec <MapType2> RhoRSImaptable;
+CkVec <MapType2> VdWGSImaptable;
+CkVec <MapType3> VdWRSImaptable;
 CkVec <MapType2> RhoGHartImaptable;
 CkVec <MapType3> RhoRHartImaptable;
 //CkVec <MapType1> LSPRhoGSImaptable;
@@ -135,6 +137,8 @@ CkHashtableT<intdual, int> RPPmaptable;
 CkHashtableT<intdual, int> AsymScalcmaptable;
 CkHashtableT<intdual, int> SymScalcmaptable;
 #endif
+CkHashtableT<intdual, int> VdWGSmaptable;
+CkHashtableT<inttriple, int> VdWRSmaptable;
 CkHashtableT<intdual, int> RhoGSmaptable;
 CkHashtableT<intdual, int> RhoRSmaptable;
 CkHashtableT<intdual, int> RhoGHartmaptable;
@@ -189,6 +193,8 @@ CkVec <CProxy_eesCache>                   UeesCacheProxy;
 CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
+CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
+CkVec <CProxy_CP_VanderWaalsG>      UVdWGProxy;
 
 CkVec <UberCollection>			  UberAlles;
 
@@ -540,6 +546,9 @@ main::main(CkArgMsg *msg) {
     RPPImaptable.resize(config.numInstances);
     RhoGSImaptable.resize(config.numInstances);
     RhoRSImaptable.resize(config.numInstances);
+    VdWGSImaptable.resize(config.numInstances);
+    VdWRSImaptable.resize(config.numInstances);
+
     RhoGHartImaptable.resize(config.numInstances);
     RhoRHartImaptable.resize(config.numInstances);
     OrthoImaptable.resize(config.numInstances);
@@ -557,6 +566,8 @@ main::main(CkArgMsg *msg) {
     UrealSpacePlaneProxy.reserve(config.numInstances);
     UrhoRealProxy.reserve(config.numInstances);
     UrhoGProxy.reserve(config.numInstances);
+    UVdWRealProxy.reserve(config.numInstances);
+    UVdWGProxy.reserve(config.numInstances);
     UrhoRHartExtProxy.reserve(config.numInstances);
     UrhoGHartExtProxy.reserve(config.numInstances);
     UorthoProxy.reserve(config.numInstances);
@@ -2782,10 +2793,279 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   if(RhoAvail!=NULL)
     delete RhoAvail;
 
+  if(config.nchareVdW>0)
+    {
+      init_VdW_chares(sim, thisInstance);
+    }
+
   //===========================================================================
 }//end routine
 //============================================================================
 
+//============================================================================
+// Creating arrays CP_VanderWallsR, CP_VanderWallsG 
+// these are basically part of density, but init_rho_chares is already huge
+// so this is broken out for clarity.
+// PRE:this function assumes we should be making VdW so test before calling
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
+//============================================================================
+{//begin routine
+//============================================================================
+  int ngrid_eext_a    = sim->ngrid_eext_a;
+  int ngrid_eext_b    = sim->ngrid_eext_b;
+  int ngrid_eext_c    = sim->ngrid_eext_c;
+  int ees_eext_on     = sim->ees_eext_on;
+  int ees_nonlocal_on = sim->ees_nloc_on;
+  int natmTyp         = sim->natm_typ;
+  int nchareRhoG      = sim->nchareRhoG;
+  int nchareRhoR      = sim->sizeZ;
+  int rhoGHelpers     = config.rhoGHelpers;
+  int nchareHartAtmT  = config.nchareHartAtmT;
+  int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
+  int nchareRhoRHart  = ngrid_eext_c;
+  int nchareVdW       = config.nchareVdW;
+  //============================================================================
+  // Output to the screen
+
+  PRINT_LINE_STAR;
+  CkPrintf("Building VdWR, VdWG, Chares %d %d %d, %d %d\n",
+	   nchareRhoR,config.rhoRsubplanes, nchareVdW,  nchareRhoG,nchareVdW);
+  PRINT_LINE_DASH;printf("\n");
+
+  //============================================================================
+  // Nuke some procs from the list : reset, nuke, reset if you run out
+
+  
+  PeList *RhoAvail=NULL;
+  if(!config.loadMapFiles)
+  {
+      availGlobR->reset();
+      RhoAvail=new PeList(*availGlobR);
+  }
+  //------------------------------------------------------------------------
+  //subtract processors used by other nonscaling chares (rho and non
+  //local reduceZ)
+  excludePes= new PeList(0);   
+  if(config.excludePE0 && !config.loadMapFiles)
+      excludePes->appendOne(0);
+
+  if(config.useReductionExclusionMap && !config.loadMapFiles)
+    {
+      if( nchareRhoR*config.rhoRsubplanes+UpeUsedByNLZ[thisInstance.proxyOffset].size() <
+	  RhoAvail->count()){
+
+	CkPrintf("subtracting %d NLZ nodes from %d for RhoR Map\n",
+		 UpeUsedByNLZ[thisInstance.proxyOffset].size(),RhoAvail->count());
+	//       nlz.dump();
+	*RhoAvail-*excludePes; //unary minus
+	RhoAvail->reindex();
+	CkPrintf("Leaving %d for RhoR Map\n",RhoAvail->count());
+      }//endif
+
+      //------------------------------------------------------------------------
+      // subtract processors used by other nonscaling chares
+
+      if(ees_nonlocal_on==0){
+	if( nchareRhoR*config.rhoRsubplanes*nchareVdW+UpeUsedBySF[thisInstance.proxyOffset].size()<RhoAvail->count()){
+	  CkPrintf("subtracting %d SF nodes from %d for VdWR Map\n",
+		   UpeUsedBySF[thisInstance.proxyOffset].size(),RhoAvail->count());
+	  PeList sf(UpeUsedBySF[thisInstance.proxyOffset]);
+	  *RhoAvail-sf;
+	  RhoAvail->reindex();
+	}//endif
+      }//endif
+    }
+  if(!config.loadMapFiles && RhoAvail->count()>2 ) { RhoAvail->reindex(); }
+
+  // Now check if rhoR and rhoG leave us enough space to work with or
+  //if we need to do some co-mapping
+  int vdwRcharecount=config.rhoRsubplanes*nchareVdW*nchareRhoR;
+  int vdwGcharecount=nchareVdW*nchareRhoG;
+  int Rcharecount=config.rhoRsubplanes*nchareRhoR;
+  int Gcharecount=nchareRhoG;
+  if(vdwRcharecount+vdwGcharecount+Rcharecount+Gcharecount < RhoAvail->count())
+    {
+      // have more than enough processors to use exclusions full out
+      PeList toExclude;
+      // exclude rs map procs
+      // it would be faster to save the rhorsmap from before
+      for(int plane=0;plane<sim->nplane_rho_x;plane++)
+	for(int subplane=0;subplane<config.rhoRsubplanes;subplane++)
+	  {
+	    toExclude.mergeOne( RhoRSImaptable[thisInstance.getPO()].get(plane,subplane));
+	  }
+      // exclude gs map procs
+      for(int nchare=0;nchare< nchareRhoG;nchare++)
+	  {
+	    toExclude.mergeOne( RhoGSImaptable[thisInstance.getPO()].get(nchare,1));
+	  }
+      toExclude.reindex(); // make sane
+      *RhoAvail-toExclude;
+      RhoAvail->reindex();
+
+    }
+  else
+    { // we have more chares than processors
+      // At least try to put VdWRS on different chares from RhoRS
+      if(vdwRcharecount+Rcharecount < RhoAvail->count())
+	{
+	  // have more than enough processors to use RhoRS exclusions
+	  PeList toExclude;
+	  // exclude rs map procs
+	  // it would be faster to save the rhorsmap from before
+	  for(int plane=0;plane<sim->nplane_rho_x;plane++)
+	    for(int subplane=0;subplane<config.rhoRsubplanes;subplane++)
+	      {
+		toExclude.mergeOne( RhoRSImaptable[thisInstance.getPO()].get(plane,subplane));
+	      }
+	  toExclude.reindex(); // make sane
+	  *RhoAvail-toExclude;
+	  RhoAvail->reindex();
+
+	}
+    }
+  
+  //============================================================================
+  // Maps and options
+  //CkPrintf("VanderWallsR map for %d x %d x %d=%d chares, using %d
+  //procs\n",nchareRhoR, config.rhoRsubplanes, nchareVdW, nchareRhoR*config.rhoRsubplanes*nchareVdW, RhoAvail->count());
+
+  //---------------------------------------------------------------------------
+  // VdW RS 
+#ifdef USE_INT_MAP
+  VdWRSImaptable[thisInstance.getPO()].buildMap(nchareRhoR, config.rhoRsubplanes,nchareVdW);
+#endif
+
+  int success = 0;
+  if(config.loadMapFiles) {
+    int size[3];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
+    MapFile *mf = new MapFile("VdWRSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("VdWRSMap", &VdWRSImaptable[thisInstance.getPO()]);
+#else
+    success = mf->loadMap("VdWRSMap", &VdWRSmaptable);
+#endif
+    delete mf;
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    VdWRSMapTable VdWRStable(&VdWRSImaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, nchareVdW, config.nstates,  excludePes);
+#else
+    VdWRSMapTable VdWRStable(&VdWRSmaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, nchareVdW, config.nstates,  excludePes);
+#endif
+  }
+
+  CProxy_VdWRSMap vdwrsMap = CProxy_VdWRSMap::ckNew(thisInstance);
+  CkArrayOptions vdwrsOpts(nchareRhoR, config.rhoRsubplanes, nchareVdW);
+  //CkArrayOptions rhorsOpts;
+  vdwrsOpts.setMap(vdwrsMap);
+
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
+    MapFile *mf = new MapFile("VdWRSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&VdWRSImaptable[thisInstance.getPO()], thisInstance.getPO());
+#else
+    mf->dumpMap(&VdWRSmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
+    MapFile *mf = new MapFile("VdWRSMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&VdWRSImaptable[thisInstance.getPO()], thisInstance.getPO());
+#else
+    mf->dumpMapCoords(&VdWRSmaptable);
+#endif
+    delete mf;
+  }
+  CmiNetworkProgressAfter(0);
+  //---------------------------------------------------------------------------
+  // VdW GS 
+  // if there aren't enough free procs refresh the RhoAvail list;
+  if(!config.loadMapFiles && nchareRhoG*nchareVdW>RhoAvail->count()) 
+    {
+      CkPrintf("refreshing avail list count %d less than VdWg %d\n",RhoAvail->count(), nchareRhoG*nchareVdW);
+      RhoAvail->reset();
+    }
+#ifdef USE_INT_MAP
+  VdWGSImaptable[thisInstance.getPO()].buildMap(nchareRhoG, nchareVdW);
+#endif
+
+  success = 0;
+  if(config.loadMapFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    success = mf->loadMap("VdWGSMap", &VdWGSImaptable[thisInstance.getPO()]);
+#else
+    success = mf->loadMap("VdWGSMap", &VdWGSmaptable);
+#endif
+    delete mf;
+  }
+
+  if(success == 0) {
+#ifdef USE_INT_MAP
+    VdWGSMapTable VdWGStable(&VdWGSImaptable[thisInstance.getPO()], RhoAvail,nchareRhoG, nchareVdW, excludePes);
+#else
+    VdWGSMapTable VdWGStable(&VdWGSmaptable, RhoAvail,nchareRhoG, nchareVdW, excludePes);
+#endif
+  }
+
+  CProxy_VdWGSMap vdwgsMap = CProxy_VdWGSMap::ckNew(thisInstance);
+  CkArrayOptions vdwgsOpts(nchareRhoG,nchareVdW);
+  vdwgsOpts.setMap(vdwgsMap);
+
+  if(config.dumpMapFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMap(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
+#else
+    mf->dumpMap(&VdWGSmaptable);
+#endif
+    delete mf;
+  }
+  if(config.dumpMapCoordFiles) {
+    int size[2];
+    size[0] = nchareRhoG; size[1] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+#ifdef USE_INT_MAP
+    mf->dumpMapCoords(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
+#else
+    mf->dumpMapCoords(&VdWGSmaptable);
+#endif
+    delete mf;
+  }
+
+  // now that we have maps, Let There Be Chares!
+  UVdWRealProxy.push_back(CProxy_CP_VanderWaalsR::ckNew(thisInstance,
+					       vdwrsOpts));
+  UVdWRealProxy[thisInstance.proxyOffset].doneInserting();
+
+  CmiNetworkProgressAfter(0);
+
+  UVdWGProxy.push_back(CProxy_CP_VanderWaalsG::ckNew(thisInstance,
+					       vdwgsOpts));
+  UVdWGProxy[thisInstance.proxyOffset].doneInserting();
+
+  CmiNetworkProgressAfter(0);
+
+
+//============================================================================
+}//end routine
+//============================================================================
 
 
 //============================================================================
