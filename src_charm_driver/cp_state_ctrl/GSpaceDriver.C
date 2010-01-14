@@ -176,8 +176,10 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
  */
 void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 {
-	/// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
-	CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
+  /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
+
+  CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
+
 	///
 	isAtomIntegrationDone = true;
 	/// If GSpace has already called for an exit, check if we can exit again

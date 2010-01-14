@@ -52,14 +52,15 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     }//endif
     if (done_init==1)
       { // kick off post constructor inits
-
-	UrhoRealProxy[thisIndex].init();
-	UrhoGProxy[thisIndex].init();
-	UrhoGHartExtProxy[thisIndex].init();
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_eext_on)
-	{UrhoRHartExtProxy[thisIndex].init();}
-
-
+	UberCollection thisInstance(thisIndex);
+	if(thisInstance.idxU.y==0)
+	  {
+	    UrhoRealProxy[thisIndex].init();
+	    UrhoGProxy[thisIndex].init();
+	    UrhoGHartExtProxy[thisIndex].init();
+	    if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_eext_on)
+	      {UrhoRHartExtProxy[thisIndex].init();}
+	  }
       }
     if (done_init == 3){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
@@ -200,8 +201,16 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //============================================================================
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
   delete m;
-  CkPrintf("All done CP forces\n");
-  UatomsGrpProxy[thisIndex].startRealSpaceForces();
+  // only the 0th k-point is allowed to do this  
+  
+  UberCollection thisInstance(thisIndex);
+  if(thisInstance.idxU.y==0)
+    {
+      CkPrintf("All done CP forces\n");
+      UberCollection thisInstance(thisIndex);
+      UatomsGrpProxy[thisIndex].startRealSpaceForces();
+    }
+
 }
 //============================================================================
 

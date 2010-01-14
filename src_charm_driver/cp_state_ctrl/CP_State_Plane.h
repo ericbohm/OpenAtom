@@ -205,6 +205,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
         int countProduct;
 	int numCookies;
         int istate;
+	UberCollection RhoReductionDest;
 	bool vksDone;
 	RealStateSlab rs;
 	CkSectionInfo *cookie;
@@ -250,6 +251,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
        ~CP_Rho_RealSpacePlane();
 	void pup(PUP::er &);
 	void acceptDensity(CkReductionMsg *);
+	void handleDensityReduction();
         void launchEextRNlG();
 	void energyComputation();
 	void fftRhoRtoRhoG();
@@ -275,6 +277,7 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	void ResumeFromSync();
  	void sendPartlyFFTtoRhoGall();
         void acceptGradRhoVksAll(RhoRSFFTMsg *msg);
+
  private:
 	const UberCollection thisInstance;
 	int rhoKeeperId;
@@ -292,13 +295,15 @@ class CP_Rho_RealSpacePlane : public CBase_CP_Rho_RealSpacePlane {
 	double volumeFactor;        
 	double probScale;             
 	RhoRealSlab rho_rs; 
-        //Comlib multicast proxy
-	CProxySection_CP_State_RealSpacePlane realSpaceSectionProxy;
-        CProxySection_CP_State_RealSpacePlane realSpaceSectionCProxy;
+        //Comlib multicast proxies
+	CProxySection_CP_State_RealSpacePlane *realSpaceSectionProxyA;
+        CProxySection_CP_State_RealSpacePlane *realSpaceSectionCProxyA;
 	CProxy_CP_Rho_GSpacePlane rhoGProxy_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGX_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGY_com;
 	CProxy_CP_Rho_GSpacePlane rhoGProxyIGZ_com;
+	int redCount;
+	CkReductionMsg *RedMsg;
 	RTH_Runtime* run_thread;
 };
 //============================================================================

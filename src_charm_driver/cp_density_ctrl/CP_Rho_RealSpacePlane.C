@@ -115,7 +115,8 @@ CP_Rho_RealSpacePlane::CP_Rho_RealSpacePlane(int xdim, bool _useCommlib,
     FFTscale     = 1.0/((double)numFFT);  // these are based on the full size
     volumeFactor = vol*FFTscale;
     probScale    = 1.0/vol;
-
+    redCount =0;
+    RedMsg=NULL;
 //============================================================================
 // Compute number of messages to be received 
 
@@ -227,29 +228,37 @@ void CP_Rho_RealSpacePlane::init(){
 	    elems[j] = idx;
 	}//endfor
     }//endif
+    
+    // we need one RS proxy for each K-point until the cross proxies with
+    // reductions work correctly
+    UberCollection RhoReductionSource=thisInstance;
+    realSpaceSectionProxyA= new CProxySection_CP_State_RealSpacePlane[config.UberJmax];
+    realSpaceSectionCProxyA= new CProxySection_CP_State_RealSpacePlane[config.UberJmax];
+    for(int kp=0;kp<config.UberJmax;kp++)
+      {
+	
+	RhoReductionSource.idxU.y=kp; // not at the gamma point
+	RhoReductionSource.setPO();
+	realSpaceSectionProxyA[kp] = CProxySection_CP_State_RealSpacePlane::
+	  ckNew(UrealSpacePlaneProxy[RhoReductionSource.proxyOffset].ckGetArrayID(), elems, nstates);
 
-    realSpaceSectionProxy = CProxySection_CP_State_RealSpacePlane::
-        ckNew(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), elems, nstates);
+	realSpaceSectionCProxyA[kp] = CProxySection_CP_State_RealSpacePlane::
+	  ckNew(UrealSpacePlaneProxy[RhoReductionSource.proxyOffset].ckGetArrayID(), elems, nstates);
 
-    realSpaceSectionCProxy = CProxySection_CP_State_RealSpacePlane::
-        ckNew(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), elems, nstates);
+	realSpaceSectionProxyA[kp].ckDelegate
+	  (CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
+	mcastGrp->setSection(realSpaceSectionProxyA[kp]);
 
-    realSpaceSectionProxy.ckDelegate
-        (CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
-
-    mcastGrp->setSection(realSpaceSectionProxy);
 
 #ifdef USE_COMLIB
-    ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxy);
+	ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxyA[kp]);
 #endif
-
+	ProductMsg *dummyProductMessage = new (0) ProductMsg;    
+	// inform realspace element of this section proxy.
+	dummyProductMessage->subplane=thisIndex.y;
+	realSpaceSectionProxyA[kp].init(dummyProductMessage);
+      }
     delete [] elems;   
-
-    ProductMsg *dummyProductMessage = new (0) ProductMsg;    
-    // inform realspace element of this section proxy.
-    dummyProductMessage->subplane=thisIndex.y;
-    realSpaceSectionProxy.init(dummyProductMessage);
-
     rhoGProxy_com    = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGY_com = UrhoGProxy[thisInstance.proxyOffset];
@@ -317,8 +326,8 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
   rho_rs.pup(p);   // pup your data class
 
  // Pupping Proxies???
-  p|realSpaceSectionProxy;
-  p|realSpaceSectionCProxy;
+  PUParray(p,realSpaceSectionProxyA, config.UberJmax);
+  PUParray(p,realSpaceSectionCProxyA, config.UberJmax);
   if(p.isUnpacking()){
     rhoGProxy_com = UrhoGProxy[thisInstance.proxyOffset];
     rhoGProxyIGX_com = UrhoGProxy[thisInstance.proxyOffset];
@@ -352,6 +361,9 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
  * Here the density from all the states is added up. The data from all the
  * states is received via an array section reduction. Nothing happens in this
  * chare until the density arrives.
+ *
+ * If we're not at the gamma point, there will be UberJmax of these.
+ * Otherwise there will be only 1.
  */
 //============================================================================
 void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
@@ -367,6 +379,30 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
       CkAssert(isnan(((double*) msg->getData())[i])==0);
   }//endif
 #endif
+  redCount++;
+  if(redCount==1)
+    {
+      RedMsg=msg;
+    }
+  else if(redCount<config.UberJmax)
+    {
+      // there is one per k-point we'll sum them into the first
+      // message we receive 
+      double *indata=(double*) msg->getData();
+      double *outdata=(double*) RedMsg->getData();
+      int size=msg->getSize()/sizeof(double);
+      for(int i=0;i<size ;i++)
+	outdata[i]+=indata[i];
+      delete(msg);
+    }
+  if(redCount==config.UberJmax)
+    {
+      redCount=0;
+      handleDensityReduction();
+    }
+
+}
+void CP_Rho_RealSpacePlane::handleDensityReduction() {
 #ifdef _CP_SUBSTEP_TIMING_
   if(rhoKeeperId>0){
       double rhostart=CmiWallTimer();
@@ -393,13 +429,13 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
 //============================================================================
 // Unpack into spread out form and delete the message
 
-   double *realValues = (double *) msg->getData(); 
+   double *realValues = (double *) RedMsg->getData(); 
    double *density    = rho_rs.density;
-   CkAssert(msg->getSize() == nptsB * sizeof(double));
+   CkAssert(RedMsg->getSize() == nptsB * sizeof(double));
 
    rho_rs.uPackScaleGrow(density,realValues,probScale);
 
-   delete msg;
+   delete RedMsg;
 
 //============================================================================
 // If debugging, generate output!
@@ -2344,11 +2380,27 @@ void CP_Rho_RealSpacePlane::doMulticast(){
       if(config.useCommlibMulticast){ComlibBegin(realSpaceSectionCProxy);}
 #endif
        */
-      if(config.useCommlibMulticast){
-        realSpaceSectionCProxy.acceptProduct(msg);
-      }else{
-        realSpaceSectionProxy.acceptProduct(msg);
-      }//enddif
+       ProductMsg *loopm=msg;
+       for(int kp=0;kp<config.UberJmax;kp++)
+	 {
+	   if(config.useCommlibMulticast){
+	     realSpaceSectionCProxyA[kp].acceptProduct(loopm);
+	   }else{
+	     realSpaceSectionProxyA[kp].acceptProduct(loopm);
+
+	   }//enddif
+	   if(kp+1<config.UberJmax)
+	     {
+	       
+	       // copying a message is perilous
+	       loopm = new (dataSize, 0) ProductMsg;
+	       loopm->idx        = thisIndex.x;
+	       loopm->datalen    = dataSize;
+	       loopm->hops       = 0;
+	       loopm->subplane   = thisIndex.y;
+	       memcpy(loopm->data, msg->data, msg->datalen* sizeof(double));
+	     }
+	 } //endfor kp
       /*
 #ifdef OLD_COMMLIB
      if(config.useCommlibMulticast){mcastInstance.endIteration();}

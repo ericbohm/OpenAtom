@@ -67,6 +67,15 @@ class UberCollection {
   }
   UberCollection(unsigned char PO, unsigned char _x, unsigned char _y=0, unsigned char _z=0) : proxyOffset(PO), idxU(_x,_y,_z) {
   }
+  UberCollection(unsigned char _proxyOffset) :proxyOffset(_proxyOffset)
+    { // reverse map from the offset onto the index
+      idxU.x = proxyOffset % config.UberImax;
+      idxU.y = (proxyOffset % (config.UberImax * config.UberJmax)) / config.UberImax;
+      idxU.z = proxyOffset / (config.UberImax * config.UberJmax);
+      proxyOffset=calcPO();
+      CkAssert(_proxyOffset==proxyOffset);
+    }
+
   UberCollection() {}
   void pup(PUP::er &p)
       {
@@ -85,5 +94,8 @@ class UberCollection {
  
   inline unsigned char calcPO(){ return ((idxU.x*config.UberJmax + idxU.y) * config.UberKmax + idxU.z); }
   inline unsigned char getPO(){ return proxyOffset; }
+  inline unsigned char setPO(){ proxyOffset=calcPO(); return proxyOffset;}
+  inline unsigned char setPO(int inPO){ proxyOffset=inPO; return proxyOffset;}
+
 };
 #endif

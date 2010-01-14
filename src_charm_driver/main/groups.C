@@ -545,25 +545,33 @@ void AtomsGrp::atomsDone() {
 // Use the cool new data caching system to say we're done.
 
  if(1) { // localAtomBarrier
-
-   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-   int *indState     = eesData->gspStateInd;
-   int *indPlane     = eesData->gspPlaneInd;
-   int ngo           = eesData->nchareGSPProcT;
-
-   GSAtmMsg *msg = new  GSAtmMsg;
-   for(int i=0; i<ngo; i++){
-     int iadd = UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-     if(iadd!=1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
-                myid,iadd,indState[i],indPlane[i]);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-     }//endif
-     UgSpaceDriverProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
-   }//endfor
    
+   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
+							 //k-point
+							 //needs to be
+							 //handled
+     
+     UberCollection thisPoint=thisInstance;
+     thisPoint.idxU.y=kpoint; // not at the gamma point
+     thisPoint.setPO();
+     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
+     int *indState     = eesData->gspStateInd;
+     int *indPlane     = eesData->gspPlaneInd;
+     int ngo           = eesData->nchareGSPProcT;
+     
+     GSAtmMsg *msg = new  GSAtmMsg;
+     for(int i=0; i<ngo; i++){
+       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+       if(iadd!=1){
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
+		  myid,iadd,indState[i],indPlane[i]);
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkExit();
+       }//endif
+       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
+     }//endfor
+   }//endfor
 
  }
  /*

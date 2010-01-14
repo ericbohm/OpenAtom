@@ -462,63 +462,9 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Cpaimd-Charm-Driver input completed in %g\n",newtime-Timer);
     PRINT_LINE_STAR; CkPrintf("\n");
     Timer=newtime;
-
-//============================================================================
-// Set user trace events for projections optimizations
-
-     traceRegisterUserEvent("doRealFwFFT", doRealFwFFT_);
-
-     traceRegisterUserEvent("GspaceFwFFT", GspaceFwFFT_);
-
-     traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
-     traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
-     traceRegisterUserEvent("OrthoDGEMM1", OrthoDGEMM1_);
-     traceRegisterUserEvent("GradCorrGGA", GradCorrGGA_);
-     traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
-     traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
-     traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
-     traceRegisterUserEvent("WhiteByrdFFTZ", WhiteByrdFFTZ_);
-     traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
-     traceRegisterUserEvent("RhoRtoGFFT", RhoRtoGFFT_);
-     traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
-     traceRegisterUserEvent("OrthoDGEMM2", OrthoDGEMM2_);
-     traceRegisterUserEvent("ByrdanddoFwFFTGtoR",ByrdanddoFwFFTGtoR_);
-     traceRegisterUserEvent("eesHartExcG",eesHartExcG_);
-     traceRegisterUserEvent("eesEwaldG",eesEwaldG_);
-     traceRegisterUserEvent("eesAtmForcR",eesAtmForcR_);
-     traceRegisterUserEvent("eesAtmBspline",eesAtmBspline_);
-     traceRegisterUserEvent("eesZmatR",eesZmatR_);
-     traceRegisterUserEvent("eesEnergyAtmForcR",eesEnergyAtmForcR_);
-     traceRegisterUserEvent("eesProjG",eesProjG_);
-     traceRegisterUserEvent("doNlFFTGtoR",doNlFFTGtoR_);
-     traceRegisterUserEvent("doNlFFTRtoG",doNlFFTRtoG_);
-     traceRegisterUserEvent("eesPsiForcGspace",eesPsiForcGspace_);
-     traceRegisterUserEvent("enlMatrixCalc",enlMatrixCalc_);
-     traceRegisterUserEvent("enlAtmForcCalc",enlAtmForcCalc_);
-     traceRegisterUserEvent("enlForcCalc",enlForcCalc_);
-     traceRegisterUserEvent("doEextFFTRtoG",doEextFFTRtoG_);
-     traceRegisterUserEvent("doEextFFTGtoR",doEextFFTGtoR_);
-
-     traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
-     traceRegisterUserEvent("divRhoVksGspace",divRhoVksGspace_);
-     traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
-     traceRegisterUserEvent("DoFFTContribute", DoFFTContribute_);
-     traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
-     traceRegisterUserEvent("Scalcmap", Scalcmap_);
-     traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
-     traceRegisterUserEvent("doEextFFTGxtoRx", doEextFFTGxtoRx_);
-     traceRegisterUserEvent("doEextFFTRytoGy", doEextFFTRytoGy_);
-     traceRegisterUserEvent("doRhoFFTRytoGy", doRhoFFTRytoGy_);
-     traceRegisterUserEvent("doRhoFFTGxtoRx", doRhoFFTGxtoRx_);
-
-     traceRegisterUserEvent("GSProcnum", 10000);
-     traceRegisterUserEvent("RSProcnum", 20000);
-     traceRegisterUserEvent("SCProcnum", 30000);
-     traceRegisterUserEvent("GHartAtmForcCopy",GHartAtmForcCopy_);
-     traceRegisterUserEvent("GHartAtmForcSend",GHartAtmForcSend_);
-     Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
-     Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
-     Ortho_UE_error = traceRegisterUserEvent("Ortho error");
+    
+    // user event trace setup
+    setTraceUserEvents();
 
      /* choose whether ortho should use local callback */
      Ortho_use_local_cb = true;
@@ -617,23 +563,24 @@ main::main(CkArgMsg *msg) {
     //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
     //    }//endfor
 
+    // multiple instance mapping breaks if there isn't a topomanager
+    CkPrintf("Initializing TopoManager\n");
+    if(config.fakeTorus) {
+      topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
+				config.torusDimNZ, config.torusDimNT);
+    }
+    else {
+      topoMgr = new TopoManager();
+    }
+    CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
+             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
+             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
+             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
     if(config.torusMap==1) {
       PRINT_LINE_STAR; CkPrintf("\n");
       CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
       CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
       PRINT_LINE_STAR; CkPrintf("\n");
-      CkPrintf("Initializing TopoManager\n");
-      if(config.fakeTorus) {
-	  topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
-				    config.torusDimNZ, config.torusDimNT);
-      }
-      else {
-	  topoMgr = new TopoManager();
-      }
-      CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
-             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
-             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
-             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
     }
     CkPrintf("Initializing PeList\n");
     
@@ -1853,6 +1800,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       delete [] numRXEext;
       delete [] numRYEext;
     }      
+  else
+    { // direct to 0th proxy
+      UfftCacheProxy.push_back(UfftCacheProxy[0]);
+    }
 
   //============================================================================
   // Instantiate the Chares with placement determined by the maps
@@ -2371,7 +2322,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 
-void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
+int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
 {//begin routine
   //============================================================================
@@ -2380,7 +2331,6 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
    */    
   //============================================================================
   //  Chare array sizes and offsets 
-
   int ngrid_eext_a    = sim->ngrid_eext_a;
   int ngrid_eext_b    = sim->ngrid_eext_b;
   int ngrid_eext_c    = sim->ngrid_eext_c;
@@ -2393,6 +2343,36 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   int nchareHartAtmT  = config.nchareHartAtmT;
   int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
   int nchareRhoRHart  = ngrid_eext_c;
+
+
+  if(thisInstance.idxU.y>0)
+    { // the set of chares being created is for a non-zero kpoint
+      // all k-points use the same rho, therefore we do not make new
+      // chares, we simply direct the proxyoffset here to the one for
+      // the 0th kpoint and return
+      
+      
+      UberCollection zeroKpointInstance=thisInstance;
+      zeroKpointInstance.idxU.y=0;
+      int proxyOffset=zeroKpointInstance.setPO();
+      UrhoRealProxy.push_back(UrhoRealProxy[proxyOffset]);      
+      UrhoGProxy.push_back(UrhoGProxy[proxyOffset]);      
+      UrhoGHartExtProxy.push_back(UrhoGHartExtProxy[proxyOffset]);
+      if(ees_eext_on){
+	UrhoRHartExtProxy.push_back(UrhoRHartExtProxy[proxyOffset]);
+      }
+      UlsRhoGProxy.push_back(UlsRhoGProxy[proxyOffset]);
+      UlsRhoRealProxy.push_back(UlsRhoRealProxy[proxyOffset]);
+      if(config.nchareVdW>0)
+	{
+	  UVdWRealProxy.push_back(UVdWRealProxy[proxyOffset]);
+	  UVdWGProxy.push_back(UVdWGProxy[proxyOffset]);
+	}
+
+      return 1;
+    }
+
+
 
 
   //============================================================================
@@ -2797,7 +2777,7 @@ void init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     {
       init_VdW_chares(sim, thisInstance);
     }
-
+  return 1;
   //===========================================================================
 }//end routine
 //============================================================================
@@ -3090,9 +3070,23 @@ void control_physics_to_driver(UberCollection thisInstance){
     AtomNHC *atomsNHC = new AtomNHC[natm];
 
     PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
-    UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
+    if(thisInstance.idxU.y>0)
+      { // the set of chares being created is for a non-zero kpoint
+	// all k-points use the same atoms
+	// we simply direct the proxyoffset here to the one for
+	// the 0th kpoint
+	UberCollection zeroKpointInstance=thisInstance;
+	zeroKpointInstance.idxU.y=0;
+	int proxyOffset=zeroKpointInstance.setPO();
+	UatomsGrpProxy.push_back(UatomsGrpProxy[proxyOffset]);      
+
+      }
+    else
+      {
+	UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
                                            kT,atoms,atomsNHC,thisInstance));
+      }
     delete [] atoms;
     delete [] atomsNHC;
     delete PhysicsAtom;
@@ -3682,10 +3676,69 @@ void create_Rho_fft_numbers(int nchareR,int nchareRHart,int rhoRsubplanes,
 //============================================================================
 
 
+void setTraceUserEvents()
+{
+//============================================================================
+// Set user trace events for projections optimizations
+
+
+     traceRegisterUserEvent("doRealFwFFT", doRealFwFFT_);
+
+     traceRegisterUserEvent("GspaceFwFFT", GspaceFwFFT_);
+
+     traceRegisterUserEvent("fwFFTGtoR0", fwFFTGtoR0_);
+     traceRegisterUserEvent("fwFFTGtoRnot0", fwFFTGtoRnot0_);
+     traceRegisterUserEvent("OrthoDGEMM1", OrthoDGEMM1_);
+     traceRegisterUserEvent("GradCorrGGA", GradCorrGGA_);
+     traceRegisterUserEvent("WhiteByrdFFTX", WhiteByrdFFTX_);
+     traceRegisterUserEvent("doRealBwFFT", doRealBwFFT_);
+     traceRegisterUserEvent("WhiteByrdFFTY", WhiteByrdFFTY_);
+     traceRegisterUserEvent("WhiteByrdFFTZ", WhiteByrdFFTZ_);
+     traceRegisterUserEvent("PostByrdfwFFTGtoR", PostByrdfwFFTGtoR_);
+     traceRegisterUserEvent("RhoRtoGFFT", RhoRtoGFFT_);
+     traceRegisterUserEvent("BwFFTRtoG", BwFFTRtoG_);
+     traceRegisterUserEvent("OrthoDGEMM2", OrthoDGEMM2_);
+     traceRegisterUserEvent("ByrdanddoFwFFTGtoR",ByrdanddoFwFFTGtoR_);
+     traceRegisterUserEvent("eesHartExcG",eesHartExcG_);
+     traceRegisterUserEvent("eesEwaldG",eesEwaldG_);
+     traceRegisterUserEvent("eesAtmForcR",eesAtmForcR_);
+     traceRegisterUserEvent("eesAtmBspline",eesAtmBspline_);
+     traceRegisterUserEvent("eesZmatR",eesZmatR_);
+     traceRegisterUserEvent("eesEnergyAtmForcR",eesEnergyAtmForcR_);
+     traceRegisterUserEvent("eesProjG",eesProjG_);
+     traceRegisterUserEvent("doNlFFTGtoR",doNlFFTGtoR_);
+     traceRegisterUserEvent("doNlFFTRtoG",doNlFFTRtoG_);
+     traceRegisterUserEvent("eesPsiForcGspace",eesPsiForcGspace_);
+     traceRegisterUserEvent("enlMatrixCalc",enlMatrixCalc_);
+     traceRegisterUserEvent("enlAtmForcCalc",enlAtmForcCalc_);
+     traceRegisterUserEvent("enlForcCalc",enlForcCalc_);
+     traceRegisterUserEvent("doEextFFTRtoG",doEextFFTRtoG_);
+     traceRegisterUserEvent("doEextFFTGtoR",doEextFFTGtoR_);
+
+     traceRegisterUserEvent("HartExcVksG",HartExcVksG_);
+     traceRegisterUserEvent("divRhoVksGspace",divRhoVksGspace_);
+     traceRegisterUserEvent("GspaceBwFFT", GspaceBwFFT_);
+     traceRegisterUserEvent("DoFFTContribute", DoFFTContribute_);
+     traceRegisterUserEvent("IntegrateModForces", IntegrateModForces_);
+     traceRegisterUserEvent("Scalcmap", Scalcmap_);
+     traceRegisterUserEvent("AcceptStructFact", AcceptStructFact_);
+     traceRegisterUserEvent("doEextFFTGxtoRx", doEextFFTGxtoRx_);
+     traceRegisterUserEvent("doEextFFTRytoGy", doEextFFTRytoGy_);
+     traceRegisterUserEvent("doRhoFFTRytoGy", doRhoFFTRytoGy_);
+     traceRegisterUserEvent("doRhoFFTGxtoRx", doRhoFFTGxtoRx_);
+
+     traceRegisterUserEvent("GSProcnum", 10000);
+     traceRegisterUserEvent("RSProcnum", 20000);
+     traceRegisterUserEvent("SCProcnum", 30000);
+     traceRegisterUserEvent("GHartAtmForcCopy",GHartAtmForcCopy_);
+     traceRegisterUserEvent("GHartAtmForcSend",GHartAtmForcSend_);
+     Ortho_UE_step2 = traceRegisterUserEvent("Ortho step 2");
+     Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
+     Ortho_UE_error = traceRegisterUserEvent("Ortho error");
+
+}
 //============================================================================
 #include "CPcharmParaInfo.def.h"
 #include "cpaimd.def.h"
 
 //============================================================================
-
-

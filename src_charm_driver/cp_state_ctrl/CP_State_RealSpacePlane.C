@@ -137,7 +137,9 @@ CP_State_RealSpacePlane::CP_State_RealSpacePlane( int gSpaceUnits,
     initRealStateSlab(&rs, ngrida, ngridb, ngridc, gSpaceUnits, 
                        realSpaceUnits, thisIndex.x, thisIndex.y);
 
-
+    RhoReductionDest=thisInstance;
+    if(config.UberJmax>1) RhoReductionDest.idxU.y=0; // not at the gamma point
+    RhoReductionDest.setPO();
     setMigratable(false);
     cookie= new CkSectionInfo[rhoRsubplanes];
     iteration = 0;
@@ -421,7 +423,7 @@ void CP_State_RealSpacePlane::doReduction(){
     int dataSize = subSize*ngrida;
     if(subplane < subRem){dataSize += ngrida;}
     CkCallback cb(CkIndex_CP_Rho_RealSpacePlane::acceptDensity(0),
-                  CkArrayIndex2D(thisIndex.y,subplane),UrhoRealProxy[thisInstance.proxyOffset].ckGetArrayID());
+                  CkArrayIndex2D(thisIndex.y,subplane),UrhoRealProxy[RhoReductionDest.proxyOffset].ckGetArrayID());
     mcastGrp->contribute(dataSize*sizeof(double),&(data[off]),
                          sumFastDoubleType,cookie[subplane],cb);
     off += dataSize;

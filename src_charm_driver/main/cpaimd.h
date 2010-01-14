@@ -816,7 +816,7 @@ void lst_sort_clean(int , int *, int *);
 void init_state_chares(int,int,int,int,CPcharmParaInfo *, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
-void init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
+int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
 void init_VdW_chares(CPcharmParaInfo*, UberCollection thisInstance);
 void control_physics_to_driver(UberCollection thisInstance);
 void get_grp_params(int natm_nl, int numSfGrps, int indexSfGrp, int planeIndex,
@@ -826,7 +826,7 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 int gsprocNum(CPcharmParaInfo *sim,int state, int plane, int numInst);
 bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn);
 void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *, int *);
-
+void setTraceUserEvents();
 //============================================================================
 
 
