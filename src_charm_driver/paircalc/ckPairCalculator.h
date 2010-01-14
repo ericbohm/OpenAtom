@@ -29,7 +29,7 @@
 // If the machine is capable of RDMA...
 #ifdef CMK_DIRECT
     // Enable GSpace-PairCalc RDMA
-	#define PC_USE_RDMA
+	//#define PC_USE_RDMA
 	#ifdef PC_USE_RDMA
 		#include "cmidirect.h"
         // Turn RDMA on for the message data collator
