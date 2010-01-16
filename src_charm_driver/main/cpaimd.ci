@@ -41,7 +41,7 @@ module groups
 	// The global energies are stored here.
 	group EnergyGroup {
 		entry EnergyGroup(UberCollection);
-		entry void updateEnergiesFromGS(EnergyStruct es);
+		entry void updateEnergiesFromGS(EnergyStruct es, UberCollection);
 		entry void energyDone(CkReductionMsg *);
 	};
 };

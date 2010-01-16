@@ -125,7 +125,8 @@ class EnergyGroup : public Group {
     EnergyGroup(UberCollection thisInstance);
     int iteration_gsp;
     int iteration_atm;
-    void updateEnergiesFromGS(EnergyStruct &);
+    int kpointEnergyDoneCount;
+    void updateEnergiesFromGS(EnergyStruct &, UberCollection);
     void energyDone(CkReductionMsg *);
     void energyDone();
     inline EnergyStruct getEnergyStruct(){return estruct;}

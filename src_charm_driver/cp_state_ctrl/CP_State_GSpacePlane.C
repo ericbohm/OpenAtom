@@ -159,7 +159,7 @@ void cleanExit(void *param, void *msg)
 void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 //============================================================================
 // Unpack
-
+//  CkPrintf("{%d} GSP [%d,%d] psiCgOvlap\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
@@ -1873,7 +1873,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 void CP_State_GSpacePlane::doLambda() {
 //==============================================================================
 // (I) If you have got it all : Rescale it and resume
-
+  // CkPrintf("{%d} GSP [%d,%d] doLambda\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
   CkAssert(countLambda==AllLambdaExpected);
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   complex *force = gs.packedForceData;
@@ -1956,7 +1956,7 @@ void CP_State_GSpacePlane::doLambda() {
 void CP_State_GSpacePlane::computeCgOverlap() {
 //=========================================================================
 // Flow of control check and local variables
-
+//  CkPrintf("{%d} GSP [%d,%d] computeCgOverlap\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
   if(!acceptedLambda){
      CkPrintf("GSpace[%d,%d] Flow of Control Error : Attempting to Cg ovlap without lambda correction\n",thisIndex.x,thisIndex.y);
      CkAbort("Error: Attempting to compute cg overlap without lambda correction\n");
@@ -3588,6 +3588,11 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 #endif
 #endif
 
+  if(thisInstance.idxU.y>0)
+    { // you get no rho
+      isub+=5;
+    }
+
   int myid = CkMyPe();
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
   CkPrintf("ecount %d %d %d\n",ecount,NUM_ENERGIES-isub,myid);
@@ -3608,7 +3613,7 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 #ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
     CkPrintf("Bcasting to energygrp %d\n",myid);
 #endif
-    UegroupProxy[thisInstance.proxyOffset].updateEnergiesFromGS(estruct); // broadcast the electronic energies
+    UegroupProxy[thisInstance.proxyOffset].updateEnergiesFromGS(estruct,thisInstance); // broadcast the electronic energies
                                                //  so that all procs have them
     total_energy        = 0.0;
     ecount              = 0;

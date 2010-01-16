@@ -302,12 +302,23 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
     mf->dumpMap(maptable);
   #endif
   } else { // not instance 0
-    int x, y, z, t, destpe;
-    for(int state=0; state<nstates; state++)
-      for(int plane=0; plane<nchareG; plane++) {
-	topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
-	destpe =  topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
-	maptable->set(state, plane, destpe);
+    if(config.torusMap)
+      {
+	int x, y, z, t, destpe;
+	for(int state=0; state<nstates; state++)
+	  for(int plane=0; plane<nchareG; plane++) {
+	    topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
+	    destpe =  topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
+	    maptable->set(state, plane, destpe);
+	  }
+      }
+    else
+      {
+	CkPrintf("WARNING: using co-mapping for instances because I'm too lazy to partition the processors in the non topo case\n");
+	for(int state=0; state<nstates; state++)
+	  for(int plane=0; plane<nchareG; plane++) {
+	    maptable->set(state,plane,_frommap->get(state, plane));
+	  }
       }
   }
 }
@@ -951,12 +962,23 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
     dump();
   #endif
   } else { // not instance 0
-    int x, y, z, t, destpe;
-    for(int state=0; state<nstates; state++)
-      for(int plane=0; plane<sizeZ; plane++) {
-	topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
-	destpe = topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
-	maptable->set(state, plane, destpe);
+    if(config.torusMap==1)
+      {
+	int x, y, z, t, destpe;
+	for(int state=0; state<nstates; state++)
+	  for(int plane=0; plane<sizeZ; plane++) {
+	    topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
+	    destpe = topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
+	    maptable->set(state, plane, destpe);
+	  }
+      }
+    else
+      {
+	CkPrintf("WARNING: using co-mapping for instances because I'm too lazy to partition the processors in the non topo case\n");
+	for(int state=0; state<nstates; state++)
+	  for(int plane=0; plane<sizeZ; plane++) {
+	    maptable->set(state,plane,_frommap->get(state, plane));
+	  }
       }
   }
 }

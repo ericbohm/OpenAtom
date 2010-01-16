@@ -741,7 +741,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInstance) {
     iteration_gsp = 0;
     iteration_atm = 0;
-
+    kpointEnergyDoneCount=0;
     //non local
     estruct.enl = 0;
 
@@ -788,17 +788,33 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
  * CP_StateGspacePlane(0,0) calls this to replicate the energies everywhere for
  * consistency and tolerance checking.
  */
-void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
+void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) {
 //==========================================================================
 
+  if(config.UberJmax>1)
+    {// need to sum enl and eke across kpoints
+      estruct.enl          += es.enl;
+      estruct.eke          += es.eke;
+      estruct.fictEke      += es.fictEke;
+      estruct.fmagPsi      += es.fmagPsi;
+    }
+  else
+    {
       estruct.enl          = es.enl;
       estruct.eke          = es.eke;
+      estruct.fictEke      = es.fictEke;
+      estruct.fmagPsi      = es.fmagPsi;
+    }
+  // these other stuff comes from rho and we only have one of them for
+  // all kpoints
       estruct.eext         = es.eext;
       estruct.ehart        = es.ehart;
       estruct.eewald_recip = es.eewald_recip;
       estruct.egga         = es.egga;
       estruct.eexc         = es.eexc;
-      estruct.fictEke      = es.fictEke;
+      // these are gspace things that I don't know what to do with in
+      // the kpoint>1 case
+   
       estruct.totalElecEnergy  = es.totalElecEnergy;
       estruct.fmagPsi      = es.fmagPsi;
       estruct.iteration_gsp= es.iteration_gsp;
@@ -828,7 +844,12 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es) {
   void EnergyGroup::energyDone(CkReductionMsg *msg) {
 //==========================================================================
    delete msg;
-   energyDone();
+   // need to receive one of these for each k-point
+   if(++kpointEnergyDoneCount==config.UberJmax)
+     {
+       kpointEnergyDoneCount=0;
+       energyDone();
+     }
 }
 //==========================================================================
 
@@ -846,28 +867,36 @@ void EnergyGroup::energyDone(){
 
  int myid          = CkMyPe();
  if(1) { // localAtomBarrier
-
-   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-   int *indState     = eesData->gspStateInd;
-   int *indPlane     = eesData->gspPlaneInd;
-   int ngo           = eesData->nchareGSPProcT;
-
-   GSAtmMsg *msg = new  GSAtmMsg;
-   for(int i=0; i<ngo; i++){
-     int iadd = UgSpacePlaneProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-     if(iadd!=1){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
-                myid,iadd,indState[i],indPlane[i]);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
-     }//endif
-     UgSpaceDriverProxy[thisInstance.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
+   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
+							 //k-point
+							 //needs to be
+							 //handled
+     
+     UberCollection thisPoint=thisInstance;
+     thisPoint.idxU.y=kpoint; // not at the gamma point
+     thisPoint.setPO();
+     
+     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
+     int *indState     = eesData->gspStateInd;
+     int *indPlane     = eesData->gspPlaneInd;
+     int ngo           = eesData->nchareGSPProcT;
+     GSAtmMsg *msg = new  GSAtmMsg;
+     for(int i=0; i<ngo; i++){
+       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+       if(iadd!=1){
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
+		  myid,iadd,indState[i],indPlane[i]);
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkExit();
+       }//endif
+       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
+     }//endfor
    }//endfor
-
- }
+   }
  /*
   else{
+
 
    if(myid==0){
       GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;

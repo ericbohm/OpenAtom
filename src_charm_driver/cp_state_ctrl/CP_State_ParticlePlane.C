@@ -227,7 +227,7 @@ void CP_State_ParticlePlane::initKVectors()
 	if(!used || plane==0)
 	  {
 	    red_pl[state]=plane;
-	    usedProc[thisstateplaneproc]++;
+	    (usedProc[thisstateplaneproc])++;
 	    plane=-1;
 	  }
 	plane--;

@@ -1742,8 +1742,24 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   if(firstInstance) CkPrintf("created sfcache proxy\n");
   UsfCompProxy.push_back(CProxy_StructureFactor::ckNew());
   if(firstInstance) CkPrintf("created sfcomp proxy\n");
-  UeesCacheProxy.push_back(CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
-					     nstates,nchareRhoG, thisInstance));
+
+  if(thisInstance.idxU.y>0)
+    { // the set of chares being created is for a non-zero kpoint
+      // all k-points use the same atoms and energies
+      // we simply direct the proxyoffset here to the one for
+      // the 0th kpoint
+      
+      UberCollection zeroKpointInstance=thisInstance;
+      zeroKpointInstance.idxU.y=0;
+      int proxyOffset=zeroKpointInstance.setPO();
+      UeesCacheProxy.push_back(UeesCacheProxy[proxyOffset]);
+    }
+  else
+    {
+      UeesCacheProxy.push_back(CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
+							nstates,nchareRhoG, thisInstance));
+    }
+
   if(firstInstance) CkPrintf("created eescache proxy\n");
 
   int nchareRRhoTot  = nchareR*(config.rhoRsubplanes);
@@ -3070,19 +3086,21 @@ void control_physics_to_driver(UberCollection thisInstance){
     AtomNHC *atomsNHC = new AtomNHC[natm];
 
     PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
+    // Make  groups for the atoms and energies 
     if(thisInstance.idxU.y>0)
       { // the set of chares being created is for a non-zero kpoint
-	// all k-points use the same atoms
+	// all k-points use the same atoms and energies
 	// we simply direct the proxyoffset here to the one for
 	// the 0th kpoint
 	UberCollection zeroKpointInstance=thisInstance;
 	zeroKpointInstance.idxU.y=0;
 	int proxyOffset=zeroKpointInstance.setPO();
 	UatomsGrpProxy.push_back(UatomsGrpProxy[proxyOffset]);      
-
+	UegroupProxy.push_back(UegroupProxy[proxyOffset]);
       }
     else
       {
+	UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
 	UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
                                            kT,atoms,atomsNHC,thisInstance));
@@ -3091,10 +3109,6 @@ void control_physics_to_driver(UberCollection thisInstance){
     delete [] atomsNHC;
     delete PhysicsAtom;
 
-//=====================================================================
-// Make a group for the energies
-
-    UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
 
 //----------------------------------------------------------------------------
   }//end routine

@@ -50,7 +50,6 @@ extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
-extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 
 extern ComlibInstanceHandle commRealInstance;
@@ -524,13 +523,20 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
          int max     = (thisIndex.y < rem ? thisIndex.y : rem);
          int ist     = div*thisIndex.y + max;
          int iend    = ist + div + add;
-          for(int ns=ist;ns<iend;ns++){
-           //           CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
-           //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
-           CkAssert(ns<config.nstates);
-           //           CkAssert(thisIndex.x<32);
-           UgSpaceDriverProxy[thisInstance.proxyOffset](ns,thisIndex.x).startNonLocalEes(myTime);
-         }//endfor
+	 for(int kpoint=0;kpoint < config.UberJmax;kpoint++)
+	   {
+	     UberCollection destKpointInstance=thisInstance;
+	     destKpointInstance.idxU.y=kpoint;
+	     int proxyOffset=destKpointInstance.setPO();
+	     for(int ns=ist;ns<iend;ns++){
+	    
+	       //           CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
+	       //                    thisIndex.x, thisIndex.y, ns, thisIndex.x);
+	       CkAssert(ns<config.nstates);
+	       //           CkAssert(thisIndex.x<32);
+	       UgSpaceDriverProxy[proxyOffset](ns,thisIndex.x).startNonLocalEes(myTime);
+	     }//endfor
+	   }//endfor
        }//endif
 
   }//endif : launch the non-local ees
@@ -703,12 +709,18 @@ void CP_Rho_RealSpacePlane::launchNLRealFFT(){
         int max     = (thisIndex.y < rem ? thisIndex.y : rem);
         int ist     = div*thisIndex.y + max;
         int iend    = ist + div + add;
-        for(int ns=ist;ns<iend;ns++){
-          CkAssert(ns<config.nstates);
-          UrealParticlePlaneProxy[thisInstance.proxyOffset](ns,thisIndex.x).launchFFTControl(myTime);
-	  if(ns%4)
-	    CmiNetworkProgress();
-        }//endfor
+	 for(int kpoint=0;kpoint < config.UberJmax;kpoint++)
+	   {
+	     UberCollection destKpointInstance=thisInstance;
+	     destKpointInstance.idxU.y=kpoint;
+	     int proxyOffset=destKpointInstance.setPO();
+	     for(int ns=ist;ns<iend;ns++){
+	       CkAssert(ns<config.nstates);
+	       UrealParticlePlaneProxy[proxyOffset](ns,thisIndex.x).launchFFTControl(myTime);
+	       if(ns%4)
+		 CmiNetworkProgress();
+	     }//endfor
+	   }//endfor
     }//endif
   }//endif
 

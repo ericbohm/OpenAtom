@@ -195,6 +195,11 @@ void CP_Rho_GSpacePlane::init()
     CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
     //make section proxy
     if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
+      // haven't written support for kpoint rhog nl launch yet
+      // not that hard to do, but also probably not worth doing unless
+      // we clearly need this feature to work.
+      CkAssert(config.UberJmax<=1);  
+
       if(config.nchareRhoG<config.nchareG)
 	{
 	  // just divvy them up as well as we can
