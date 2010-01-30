@@ -26,7 +26,7 @@
 // #define TEST_ALIGN
 
 #ifdef CMK_DIRECT
-#define PC_USE_RDMA 1
+//#define PC_USE_RDMA 1
 #ifdef PC_USE_RDMA
 #include "cmidirect.h"
 #endif
