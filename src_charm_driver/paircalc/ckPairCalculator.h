@@ -22,10 +22,6 @@
 #include "NodeMulticast.h"
 
 
-// Debugging flag for Verbose output
-// #define _PAIRCALC_DEBUG_
-// #define TEST_ALIGN
-
 // If the machine is capable of RDMA...
 #ifdef CMK_DIRECT
     // Enable GSpace-PairCalc RDMA
@@ -42,64 +38,48 @@
 #endif
 
 
+/* If the machine is a BGL, split the GEMMs to intersperse them with CmiNetworkProgress calls
+ *
+ * To set split values, use the config parameters: gemmSplitFWk, gemmSplitFWm, etc ... 
+ * 16 for happier align, factor of 6 good for BG/L?
+ */
 #ifdef CMK_BLUEGENEL
-
-#define ALIGN16(x)        (int)((~15)&((x)+15))
-#define BUNDLE_USER_EVENT
-#define PC_FWD_DGEMM_SPLIT 1
-#define PC_BWD_DGEMM_SPLIT 1
-// to set split values, use the config parameters: gemmSplitFWk,
-// gemmSplitFWm, etc ... 16 for happier align, factor of 6 good for BG/L?
-
+    #define ALIGN16(x)        (int)((~15)&((x)+15))
+    #define BUNDLE_USER_EVENT
+    #define PC_FWD_DGEMM_SPLIT 1
+    #define PC_BWD_DGEMM_SPLIT 1
 #else
-
-#define PC_FWD_DGEMM_SPLIT 0
-#define PC_BWD_DGEMM_SPLIT 0
-
+    #define PC_FWD_DGEMM_SPLIT 0
+    #define PC_BWD_DGEMM_SPLIT 0
 #endif
 
-// flags to control semantic for matrix contents
-#define NORMALPC   0  // standard
-#define KEEPORTHO  1  // retain orthoT
-#define PSIV       2  // multiply new psiV by retained orthoT
+
+// Define the GEMM macros that paircalc will use to invoke the appropriate matrix multiplys
+#ifdef FORTRANUNDERSCORE
+    #define ZGEMM zgemm_
+    #define DGEMM dgemm_
+    #define DCOPY dcopy_
+    #define ZTODO ztodo_
+#else
+    #define ZGEMM zgemm
+    #define DGEMM dgemm
+    #define DCOPY dcopy
+    #define ZTODO ztodo
+#endif
+
+
+// Flags to control semantic for matrix contents along different paths thro the PairCalcs
+#define NORMALPC   0  ///< standard
+#define KEEPORTHO  1  ///< retain orthoT
+#define PSIV       2  ///< multiply new psiV by retained orthoT
+
 
 enum redtypes {section=0, machine=1, sparsecontiguous=2};
 PUPbytes(redtypes);
 
-#ifdef FORTRANUNDERSCORE
-#define ZGEMM zgemm_
-#define DGEMM dgemm_
-#define DCOPY dcopy_
-#define ZTODO ztodo_
-#else
-#define ZGEMM zgemm
-#define DGEMM dgemm
-#define DCOPY dcopy
-#define ZTODO ztodo
-#endif
-
 extern ComlibInstanceHandle mcastInstanceCP;
-#define _PAIRCALC_USE_DGEMM_
 
-#ifdef _PAIRCALC_USE_BLAS_
-extern "C" complex ZTODO( const int *N,  complex *X, const int *incX, complex *Y, const int *incY);
-#endif
-
-#ifdef _PAIRCALC_USE_DGEMM_
-// extern "C" void DGEMM(char *,char *, int *,int *, int *,double *,double *,int *, double *,int *,double *,double *,int *);
-extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *,
-                        int *, double *, int *, double *, double *, int * );}
-#endif
-
-#ifdef _PAIRCALC_USE_ZGEMM_
-extern "C" void ZGEMM(char *,char *, int *,int *, int *,complex *,complex *,int *,
-                       const complex *,int *,complex *,complex *,int *);
-
-extern "C" void DCOPY(int*,double *,int*, double *,int *);
-#endif
-
-typedef void (*FuncType) (complex a, complex b);
-PUPmarshallBytes(FuncType);
+extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}
 
 
 #include "MessageDataCollator.h"
