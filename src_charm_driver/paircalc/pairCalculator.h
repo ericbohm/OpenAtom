@@ -12,6 +12,8 @@
 #ifdef CMK_BLUEGENEL
 #define _PAIRCALC_DO_NOT_DELEGATE_ 1
 #endif
+// Do not use comlib for multicasts within paircalc
+#define _PC_COMMLIB_MULTI_ 0
 
 //============================================================================
 

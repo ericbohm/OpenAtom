@@ -1,12 +1,8 @@
-/** \file ckPairCalculator.h
- *
- */
+#ifndef CK_PAIR_CALCULATOR_H
+#define CK_PAIR_CALCULATOR_H
 
-#ifndef _ckPairCalculator_h_
-#define _ckPairCalculator_h_
 #undef  OLD_COMMLIB
 #define OLD_COMMLIB 1
-#define _PC_COMMLIB_MULTI_ 0
 #include "debug_flags.h"
 #include "pairutil.h"
 #include "ckmulticast.h"
@@ -489,4 +485,5 @@ CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs);
 CkReductionMsg *sumBlockGrain(int nMsg, CkReductionMsg **msgs);
 
 void manmult(int numrowsA, int numRowsB, int rowLength, double *A, double *B, double *C, double alpha);
-#endif
+#endif // CK_PAIR_CALCULATOR_H
+
