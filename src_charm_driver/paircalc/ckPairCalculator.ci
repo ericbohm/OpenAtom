@@ -92,7 +92,7 @@ module ckPairCalculator
 	
 	array [4D] PairCalculator 
 	{
- 		entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType>, bool, int, int, int, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc,  redtypes cpreduce, int orthoGrainSize, bool collectTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWbarrier, int gemmfwk, int gemmfwm, int gemmbw, bool expectOrthoT, int instance);
+		entry PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
    		entry void lbsync();
    		entry void bwbarrier(CkReductionMsg *msg);
 		entry void sendBWResult(sendBWsignalMsg *msg);

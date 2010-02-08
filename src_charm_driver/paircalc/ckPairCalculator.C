@@ -74,40 +74,41 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
-PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool _sym, int _grainSize, int _s, int _numChunks, CkArrayID _cb_aid, int _cb_ep, int _cb_ep_tol, int _conserveMemory, bool _lbpaircalc,  redtypes _cpreduce, int _orthoGrainSize, bool _collectTiles, bool _PCstreamBWout, bool _PCdelayBWSend, bool _gSpaceSum, int _gpriority, bool _phantomSym, bool _useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool _expectOrthoT, int _instance)
+PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg)
 {
 #ifdef _PAIRCALC_DEBUG_PLACE_
   CkPrintf("{%d} [PAIRCALC] [%d,%d,%d,%d,%d] inited on pe %d \n", _instance,thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z,_sym, CkMyPe());
 #endif
 
 
-  this->conserveMemory=_conserveMemory;
-  this->symmetric = _sym;
-  this->grainSize = _grainSize;
-  this->numStates = _s;
-  instance=_instance;
+  this->conserveMemory = cfg.conserveMemory;
+  this->symmetric      = cfg.isSymmetric;
+  this->grainSize      = cfg.grainSize;
+  this->numStates      = cfg.numStates;
+  instance             = cfg.instance;
   int remainder=numStates%grainSize;
   grainSizeX=(numStates- thisIndex.x == grainSize+remainder) ? grainSize+remainder: grainSize;
   grainSizeY=(numStates- thisIndex.y == grainSize+remainder) ? grainSize+remainder: grainSize;
 
-  this->numChunks = _numChunks;
+  this->numChunks      = cfg.numChunks;
   this->numPoints = -1;
-  this->cb_aid = _cb_aid;
-  this->cb_ep = _cb_ep;
-  this->cb_ep_tol = _cb_ep_tol;
-  useBWBarrier=_useBWBarrier;
-  PCstreamBWout=_PCstreamBWout;
-  PCdelayBWSend=_PCdelayBWSend;
-  orthoGrainSize=_orthoGrainSize;
+  this->cb_aid         = cfg.gSpaceAID;
+  this->cb_ep          = cfg.gSpaceEP;
+  this->cb_ep_tol      = cfg.PsiVEP;
+  useBWBarrier         = cfg.isBWbarriered;
+  PCstreamBWout        = cfg.isBWstreaming;
+  PCdelayBWSend        = cfg.isBWdelayed;
+  orthoGrainSize       = cfg.orthoGrainSize;
   orthoGrainSizeRemX=grainSizeX%orthoGrainSize;
   orthoGrainSizeRemY=grainSizeY%orthoGrainSize;
-  collectAllTiles=_collectTiles;
-  gSpaceSum=_gSpaceSum;
-  gpriority=_gpriority;
-  phantomSym=_phantomSym;
-  gemmSplitFWk=_gemmSplitFWk;
-  gemmSplitFWm=_gemmSplitFWm;
-  gemmSplitBW=_gemmSplitBW;
+  collectAllTiles      = cfg.areTilesCollected;
+  gSpaceSum            = cfg.isSummationInGSpace;
+  gpriority            = cfg.resultMsgPriority;
+  phantomSym           = cfg.arePhantomsOn;
+  gemmSplitFWk         = cfg.gemmSplitFWk;
+  gemmSplitFWk         = cfg.gemmSplitFWm;
+  gemmSplitBW          = cfg.gemmSplitBW;
+  lbpaircalc           = cfg.isLBon;
   existsLeft=false;
   existsRight=false;
   existsOut=false;
@@ -119,8 +120,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
   numRecLeft = 0;
   streamCaughtR=0;
   streamCaughtL=0;
-  lbpaircalc=_lbpaircalc;
-  expectOrthoT=_expectOrthoT;
+  expectOrthoT= (cfg.isDynamics && !cfg.isSymmetric);
   amPhantom=(phantomSym && (thisIndex.y<thisIndex.x) && symmetric ) ? true : false;
   /*  if(amPhantom)
     { // ye old switcheroo for the phantoms
@@ -141,7 +141,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
   // If I am a phantom chare, I expect to get only right matrix data
   if(amPhantom)
       numExpected = numExpectedY;
-  cpreduce=_cpreduce;
+  cpreduce= cfg.reduce;
   resumed=true;
 
   touchedTiles=NULL;

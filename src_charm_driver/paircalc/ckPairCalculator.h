@@ -69,6 +69,8 @@
 #define KEEPORTHO  1  ///< retain orthoT
 #define PSIV       2  ///< multiply new psiV by retained orthoT
 
+/// The type of data that is input from GSpace and operated on by the PairCalcs
+typedef double inputType;
 
 enum redtypes {section=0, machine=1, sparsecontiguous=2};
 PUPbytes(redtypes);
@@ -80,6 +82,7 @@ extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, i
 
 #include "MessageDataCollator.h"
 #include "paircalcMessages.h"
+#include "pcConfig.h"
 /// A shorter name for the namespace
 namespace pc = cp::paircalc;
 class paircalcInputMsg;
@@ -275,7 +278,7 @@ class PairCalculator: public CBase_PairCalculator
 {
 	public:
 		/// @entry (obviously)
-		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, bool sym, int grainSize, int s, int blkSize, CkArrayID final_callbackid, int final_callback_ep, int callback_ep_tol, int conserveMemory, bool lbpaircalc, redtypes reduce, int orthoGrainSize, bool _AllTiles, bool streambw, bool delaybw, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int _gemmSplitFWk, int _gemmSplitFWm, int _gemmSplitBW, bool expectOrthoT, int instance);
+		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
 		/// Constructor for migration
 		PairCalculator(CkMigrateMessage *);
 		/// Destructor (nothing needs to be done?)

@@ -60,7 +60,7 @@
 //*************************************************************************
 #include "pairCalculator.h"
 #include "InputDataHandler.h"
-
+#include "pcConfig.h"
 #include <algorithm>
 
 #ifdef USE_COMLIB
@@ -104,6 +104,39 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 
   if(machreduce)
     cpreduce=machine;
+
+  // Create a new paircalc config object
+  pc::pcConfig pcCfg;
+  // Stuff it with the actual configurations
+  pcCfg.isDynamics         = false;
+  pcCfg.isSymmetric        = sym;
+  pcCfg.arePhantomsOn      = phantomSym;
+
+  pcCfg.numPlanes          = numZ;
+  pcCfg.numStates          = s;
+  pcCfg.numChunks          = numChunks;
+
+  pcCfg.grainSize          = grainSize;
+  pcCfg.orthoGrainSize     = orthoGrainSize;
+
+  pcCfg.gSpaceAID          = cb_aid;
+  pcCfg.gSpaceEP           = cb_ep;
+  pcCfg.PsiVEP             = cb_ep_tol;
+  pcCfg.conserveMemory     = conserveMemory;
+  pcCfg.isLBon             = lbpaircalc;
+  pcCfg.reduce             = cpreduce;
+  pcCfg.areTilesCollected  = collectTiles;
+  pcCfg.isBWstreaming      = streamBWout;
+  pcCfg.isBWbarriered      = useBWBarrier;
+  pcCfg.isBWdelayed        = delayBWSend;
+  pcCfg.isSummationInGSpace= gSpaceSum;
+  pcCfg.resultMsgPriority  = gpriority;
+  pcCfg.instance           = instance;
+
+  pcCfg.gemmSplitFWk       = gemmSplitFWk;
+  pcCfg.gemmSplitFWm       = gemmSplitFWm;
+  pcCfg.gemmSplitBW        = gemmSplitBW;
+
   
   // If a chare mapping is not available, create an empty array
   if(!mapid) 
@@ -114,10 +147,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   else 
   {
     paircalcOpts.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier,
-						       gemmSplitFWk, gemmSplitFWm,
-						       gemmSplitBW,expectOrthoT, instance,
-						       paircalcOpts);
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, pcCfg, paircalcOpts);
   }
 
 #ifdef DEBUG_CP_PAIRCALC_CREATION
@@ -174,7 +204,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 					#endif
 					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
+						insert(inputHandlerProxy, pcCfg);
 				}
 				else
 				{
@@ -182,7 +212,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,sym,proc);
 					#endif
 					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
+						insert(inputHandlerProxy, pcCfg, proc);
 					proc++;
 					if (proc >= CkNumPes()) proc = 0;
 				}
@@ -206,16 +236,14 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
 							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
 						#endif
-						pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
+						pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg);
 					}
 					else
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
 							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,sym,proc);
 						#endif
-						pairCalculatorProxy(numX,s1,s2,c).
-							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
+						pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg, proc);
 						proc++;
 						if (proc >= CkNumPes()) proc = 0;
 					}
