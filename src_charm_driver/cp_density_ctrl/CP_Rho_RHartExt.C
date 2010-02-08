@@ -192,7 +192,7 @@ void CP_Rho_RHartExt::init(){
   rhoGHartProxy_com    = UrhoGHartExtProxy[thisInstance.proxyOffset];;
 #ifdef USE_COMLIB
   if (config.useRHartInsGHart){
-    ComlibAssociateProxy(&commRHartGHartIns,rhoGHartProxy_com);          
+    ComlibAssociateProxy(commRHartGHartIns,rhoGHartProxy_com);          
   }//endif
 #endif
 
@@ -675,7 +675,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 #ifdef OLD_COMMLIB
      if(config.useRHartInsGHart){commRHartGHartIns.beginIteration();}
 #else
-     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com);}
+     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com,0);}
 #endif
   }//endif
 #endif
@@ -735,7 +735,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 #ifdef OLD_COMMLIB
     if(config.useRHartInsGHart){commRHartGHartIns.endIteration();}
 #else
-     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com);}
+     if(config.useRHartInsGHart){ComlibBegin(rhoGHartProxy_com,1);}
 #endif
   }//endif
 #endif

@@ -298,7 +298,7 @@ void CP_State_RealParticlePlane::init(){
   gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
 #ifdef USE_COMLIB
   if (config.useMssInsGPP){
-     ComlibAssociateProxy(&mssPInstance,gPP_proxy);
+     ComlibAssociateProxy(mssPInstance,gPP_proxy);
   }//endif
 #endif
 
@@ -1119,7 +1119,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.beginIteration();}
 #else
-  //  if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset]);}
+//    if(config.useMssInsGPP){ComlibBegin(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
 #endif
 #endif
 
@@ -1146,7 +1146,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
 #ifdef OLD_COMMLIB
   if(config.useMssInsGPP){mssPInstance.endIteration();}
 #else
-  //  if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset]);}
+//    if(config.useMssInsGPP){ComlibEnd(UparticlePlaneProxy[thisInstance.proxyOffset], iterNL);}
 #endif
 #endif
 

@@ -21,7 +21,7 @@
 #include "ckhashtable.h"
 #include "load_balance/PeList.h"
 
-#define OLD_COMMLIB 1
+#define OLD_COMMLIB 0
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
 class IntMap2

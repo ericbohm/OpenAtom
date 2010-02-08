@@ -805,7 +805,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
 #ifdef USE_COMLIB
   if (config.useGssInsRealP){
-     ComlibAssociateProxy(&gssInstance,real_proxy);
+     ComlibAssociateProxy(gssInstance,real_proxy);
   }//endif
 #endif
   
@@ -1226,7 +1226,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.beginIteration();}
 #else
-  //  if (config.useGssInsRealP){ComlibBegin(real_proxy);}
+ // if (config.useGssInsRealP){ComlibBegin(real_proxy, 0);}
 #endif
 #endif
 
@@ -1263,7 +1263,7 @@ void CP_State_GSpacePlane::sendFFTData () {
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealP){gssInstance.endIteration();}
 #else
-  //  if (config.useGssInsRealP){ComlibEnd(real_proxy);}
+   //if (config.useGssInsRealP){ComlibEnd(real_proxy, 0);}
 #endif
 #endif
 

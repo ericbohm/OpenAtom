@@ -41,6 +41,10 @@
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 
+//#ifndef USE_COMLIB
+//#define USE_COMLIB 1
+//#endif
+
 //============================================================================
 extern CProxy_TimeKeeper                 TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane>    UrealSpacePlaneProxy;
@@ -248,9 +252,8 @@ void CP_Rho_RealSpacePlane::init(){
 	  (CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch());
 	mcastGrp->setSection(realSpaceSectionProxyA[kp]);
 
-
 #ifdef USE_COMLIB
-	ComlibAssociateProxy(&mcastInstance,realSpaceSectionCProxyA[kp]);
+	ComlibAssociateProxy(mcastInstance,realSpaceSectionCProxyA[kp]);
 #endif
 	ProductMsg *dummyProductMessage = new (0) ProductMsg;    
 	// inform realspace element of this section proxy.
@@ -265,13 +268,13 @@ void CP_Rho_RealSpacePlane::init(){
 
 #ifdef USE_COMLIB
     if (config.useRInsRhoGP) 
-	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+	ComlibAssociateProxy(commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
-	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+	ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);          
     if (config.useRInsIGYRhoGP) 
-	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+	ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);          
     if (config.useRInsIGZRhoGP) 
-	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+	ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);          
 #endif
 
 }
@@ -335,13 +338,13 @@ void CP_Rho_RealSpacePlane::pup(PUP::er &p){
 
 #ifdef USE_COMLIB
     if (config.useRInsRhoGP) 
-	ComlibAssociateProxy(&commRealInstance,rhoGProxy_com);          
+	ComlibAssociateProxy(commRealInstance,rhoGProxy_com);          
     if (config.useRInsIGXRhoGP) 
-	ComlibAssociateProxy(&commRealIGXInstance,rhoGProxyIGX_com);          
+	ComlibAssociateProxy(commRealIGXInstance,rhoGProxyIGX_com);          
     if (config.useRInsIGYRhoGP) 
-	ComlibAssociateProxy(&commRealIGYInstance,rhoGProxyIGY_com);          
+	ComlibAssociateProxy(commRealIGYInstance,rhoGProxyIGY_com);          
     if (config.useRInsIGZRhoGP) 
-	ComlibAssociateProxy(&commRealIGZInstance,rhoGProxyIGZ_com);          
+	ComlibAssociateProxy(commRealIGZInstance,rhoGProxyIGZ_com);          
 #endif
 
     }//endif
@@ -1038,10 +1041,10 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.beginIteration(); break;
       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.beginIteration(); break;
 #else
-      case 0 : if(config.useRInsRhoGP)    ComlibBegin(rhoGProxy_com);    break;
-      case 1 : if(config.useRInsIGXRhoGP) ComlibBegin(rhoGProxyIGX_com); break;
-      case 2 : if(config.useRInsIGYRhoGP) ComlibBegin(rhoGProxyIGY_com); break;
-      case 3 : if(config.useRInsIGZRhoGP) ComlibBegin(rhoGProxyIGZ_com); break;
+      case 0 : if(config.useRInsRhoGP)    ComlibBegin(rhoGProxy_com,0);    break;
+      case 1 : if(config.useRInsIGXRhoGP) ComlibBegin(rhoGProxyIGX_com,0); break;
+      case 2 : if(config.useRInsIGYRhoGP) ComlibBegin(rhoGProxyIGY_com,0); break;
+      case 3 : if(config.useRInsIGZRhoGP) ComlibBegin(rhoGProxyIGZ_com,0); break;
 #endif
        default: CkAbort("impossible iopt");break;
      }//end switch
@@ -1123,10 +1126,10 @@ void CP_Rho_RealSpacePlane::sendPartlyFFTtoRhoG(int iopt){
       case 2 : if(config.useRInsIGYRhoGP) commRealIGYInstance.endIteration(); break;
       case 3 : if(config.useRInsIGZRhoGP) commRealIGZInstance.endIteration(); break;
 #else
-      case 0 : if(config.useRInsRhoGP)    ComlibEnd(rhoGProxy_com);    break;
-      case 1 : if(config.useRInsIGXRhoGP) ComlibEnd(rhoGProxyIGX_com); break;
-      case 2 : if(config.useRInsIGYRhoGP) ComlibEnd(rhoGProxyIGY_com); break;
-      case 3 : if(config.useRInsIGZRhoGP) ComlibEnd(rhoGProxyIGZ_com); break;
+      case 0 : if(config.useRInsRhoGP)    ComlibEnd(rhoGProxy_com,0);    break;
+      case 1 : if(config.useRInsIGXRhoGP) ComlibEnd(rhoGProxyIGX_com,0); break;
+      case 2 : if(config.useRInsIGYRhoGP) ComlibEnd(rhoGProxyIGY_com,0); break;
+      case 3 : if(config.useRInsIGZRhoGP) ComlibEnd(rhoGProxyIGZ_com,0); break;
 #endif
       default: CkAbort("impossible iopt");break;
       }//end switch

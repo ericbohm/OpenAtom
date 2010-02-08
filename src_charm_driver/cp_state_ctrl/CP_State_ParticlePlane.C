@@ -177,7 +177,7 @@ void CP_State_ParticlePlane::initKVectors()
         realPP_proxy = UrealParticlePlaneProxy[thisInstance.proxyOffset];
         #ifdef USE_COMLIB
             if (config.useGssInsRealPP)
-                ComlibAssociateProxy(&gssPInstance,realPP_proxy);
+                ComlibAssociateProxy(gssPInstance,realPP_proxy);
         #endif
     }
 
@@ -1059,7 +1059,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.beginIteration();}
 #else
-  //  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy);}
+  if (config.useGssInsRealPP){ComlibBegin(realPP_proxy, iterNL);}
 #endif
 #endif
 
@@ -1096,7 +1096,7 @@ void CP_State_ParticlePlane::sendToEesRPP(){
 #ifdef OLD_COMMLIB
   if (config.useGssInsRealPP){gssPInstance.endIteration();}
 #else
-  //  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy);}
+  if (config.useGssInsRealPP){ComlibEnd(realPP_proxy, iterNL);}
 #endif    
 #endif
   sendDone = 1;

@@ -610,7 +610,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 #ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.beginIteration();}
 #else
-  //  if (config.useMssInsGP){ComlibBegin(gproxy);}
+    if (config.useMssInsGP){ComlibBegin(gproxy,0);}
 #endif
 #endif
 
@@ -637,7 +637,7 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 #ifdef OLD_COMMLIB
   if (config.useMssInsGP){mssInstance.endIteration();}
 #else
-  //  if (config.useMssInsGP){ComlibEnd(gproxy);}
+    if (config.useMssInsGP){ComlibEnd(gproxy,0);}
 #endif
 #endif
 
@@ -684,7 +684,7 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
     // do not delete nokeep message
 #ifdef USE_COMLIB
     if (config.useMssInsGP){
-      ComlibAssociateProxy(&mssInstance,gproxy);
+      ComlibAssociateProxy(mssInstance,gproxy);
     }//endif
 #endif
 
@@ -696,8 +696,8 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //============================================================================
 void CP_State_RealSpacePlane::ResumeFromSync(){
 #ifdef USE_COMLIB
-    if(config.useMssInsGP)
-	ComlibResetProxy(&gproxy);
+//    if(config.useMssInsGP)
+//	ComlibResetProxy(gproxy);
 #endif
 }
 //============================================================================

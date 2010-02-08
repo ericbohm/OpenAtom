@@ -615,7 +615,7 @@ void Ortho::makeSections()
             if( config.useCommlib && config.useOrthoDirect)
             {
                 #ifdef USE_COMLIB
-                    ComlibAssociateProxy(&orthoInstance,multiproxy);	  
+                    ComlibAssociateProxy(orthoInstance,multiproxy);	  
                 #endif
             }
             else

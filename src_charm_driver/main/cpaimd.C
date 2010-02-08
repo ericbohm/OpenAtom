@@ -51,6 +51,7 @@
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
+#include "OneTimeMulticastStrategy.h"
 #include "load_balance/PeList.h"
 #include "utility/MapFile.h"
 #include "TopoManager.h"
@@ -757,7 +758,7 @@ Per Instance startup BEGIN
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
-    if(config.numInstances>0)
+    if(config.numInstances>1)
 	CkPrintf("WARNING!!! Commlib does not work for multiple instances\n");
 
     init_commlib_strategies(sim->nchareRhoG, sim->sizeZ,nchareRhoRHart, thisInstance);
@@ -1067,14 +1068,16 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 	//  For rho(r) to rho(g)
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  CkArrayIndex2D idx2d(i,0);
-	  rhoGElements[i] = idx2d;
+	  //CkArrayIndex2D idx2d(i,0);
+	  CkArrayIndex1D idx1d(i);
+	  rhoGElements[i] = idx1d;
 	}//endfor
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  CkArrayIndex2D idx2d(i,0);
-	  rhoRealElements[i] = idx2d; 
+	  //CkArrayIndex2D idx2d(i,0);
+	  CkArrayIndex1D idx1d(i);
+	  rhoRealElements[i] = idx1d; 
 	}//endfor
 #ifdef OLD_COMMLIB
 	CharmStrategy *real_strat;
@@ -1094,12 +1097,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}//endfor
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}//endfor
 #ifdef OLD_COMMLIB
 	CharmStrategy *real_strat_igx;
@@ -1119,12 +1122,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 	//  For drho(r)/dy to igy*rho(g)
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}//endfor
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}//endfor
 #ifdef OLD_COMMLIB
 	CharmStrategy *real_strat_igy;
@@ -1145,12 +1148,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}//endfor
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}//endfor
 #ifdef OLD_COMMLIB        
 	CharmStrategy *real_strat_igz;
@@ -1171,12 +1174,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 	rhoGElements = new CkArrayIndexMax[numRhoGHart*nchareHartAtmT];
 	for (j= 0; j < nchareHartAtmT; j++) {
 	  for (i = 0; i < numRhoGHart; i++) {
-	    rhoGElements[i+j*numRhoGHart] = CkArrayIndex2D(i,j);
+	    rhoGElements[i+j*numRhoGHart] = CkArrayIndex1D(i+j*numRhoGHart);
 	  }//endfor
 	}
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}//endfor
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstrathart = new EachToManyMulticastStrategy
@@ -1197,12 +1200,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}//endfor
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}//endfor
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstrat0;
@@ -1222,12 +1225,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstrat1;
@@ -1248,12 +1251,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstrat2;
@@ -1274,12 +1277,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstrat3;
@@ -1300,12 +1303,12 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       {
 	rhoGElements = new CkArrayIndexMax[numRhoG];
 	for (i = 0; i < numRhoG; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numReal];
 	for(i = 0; i < numReal; i++) {
-	  rhoRealElements[i] = CkArrayIndex2D(i,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstratByrd;
@@ -1322,11 +1325,11 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       }
     //--------------------------------------------------------------
     // For rhogHart send to rhorHart SF atmtyp
-    if(config.useGHartInsRHart)
+    if(config.useGHartInsRHart && false)
       {
 	rhoGElements = new CkArrayIndexMax[numRhoGHart];
 	for (i = 0; i < numRhoGHart; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
@@ -1347,16 +1350,16 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       }
     //--------------------------------------------------------------
     // For rhogHart send to rhoRHart SF tot
-    if(config.useGHartInsRHart)
+    if(config.useGHartInsRHart && false)
       {
 	rhoGElements = new CkArrayIndexMax[numRhoGHart];
 	for (i = 0; i < numRhoGHart; i++) {
-	  rhoGElements[i] = CkArrayIndex2D(i,0);
+	  rhoGElements[i] = CkArrayIndex1D(i);
 	}
 
 	rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
 	for(i = 0; i < numRhoRhart; i++) {
-	  rhoRealElements[i] = CkArrayIndex3D(i,0,0);
+	  rhoRealElements[i] = CkArrayIndex1D(i);
 	}
 #ifdef OLD_COMMLIB
 	CharmStrategy *gstratEext1;
@@ -1372,15 +1375,15 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       }
     //--------------------------------------------------------------
     // For rhoRHart send to rhoGHart SF
-    if(config.useRHartInsGHart){
+    if(config.useRHartInsGHart && false){
       rhoGElements = new CkArrayIndexMax[numRhoGHart];
       for (i = 0; i < numRhoGHart; i++) {
-	rhoGElements[i] = CkArrayIndex2D(i,0);
+	rhoGElements[i] = CkArrayIndex1D(i);
       }//endfor
 
       rhoRealElements = new  CkArrayIndexMax[numRhoRhart];
       for(i = 0; i < numRhoRhart; i++) {
-	rhoRealElements[i] = CkArrayIndex3D(i,0,0);
+	rhoRealElements[i] = CkArrayIndex1D(i);
       }//endfor
 #ifdef OLD_COMMLIB
       CharmStrategy *real_strat_eext;
@@ -1402,34 +1405,40 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
     // Real state space to gspace state and particle plane comm.
 
 #ifdef USE_COMLIB
-    if (config.useCommlibMulticast) {
-      DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
-	(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
-        
-      RingMulticastStrategy *rstrat = new RingMulticastStrategy
-	(UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
-        
-      RingMulticastStrategy *r1strat = new RingMulticastStrategy
-	(UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
-
+if (config.useCommlibMulticast) {
 #ifdef OLD_COMMLIB
+      DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
+        (UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+
+      RingMulticastStrategy *rstrat = new RingMulticastStrategy
+        (UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+
+      RingMulticastStrategy *r1strat = new RingMulticastStrategy
+        (UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+
       MultiRingMulticast *mr1strat = new MultiRingMulticast
-	(UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
-#else
-      MultiRingMulticastStrategy *mr1strat = new MultiRingMulticastStrategy
-	();
-#endif 
+        (UparticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+
       DirectMulticastStrategy *ppdstrat = new DirectMulticastStrategy
-	(UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
- 
+        (UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+
       RingMulticastStrategy *pprstrat = new RingMulticastStrategy
-	(UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
-#ifdef OLD_COMMLIB 
+        (UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
       MultiRingMulticast *ppmr1strat = new MultiRingMulticast
-	(UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
+        (UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
 #else
-      MultiRingMulticastStrategy *ppmr1strat = new MultiRingMulticastStrategy
-	(1);
+      DirectMulticastStrategy *dstrat = new DirectMulticastStrategy();
+
+      OneTimeMulticastStrategy *rstrat = new OneTimeMulticastStrategy();
+
+      RingMulticastStrategy *r1strat = new RingMulticastStrategy();
+
+      RingMulticastStrategy *mr1strat = new RingMulticastStrategy();
+
+      DirectMulticastStrategy *ppdstrat = new DirectMulticastStrategy();
+
+      RingMulticastStrategy *pprstrat = new RingMulticastStrategy();
+      RingMulticastStrategy *ppmr1strat = new RingMulticastStrategy();
 #endif
 
       //multiring should be good on large runs, but not on BG/L
@@ -1444,13 +1453,11 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 	mcastInstanceRPP=ComlibRegister(pprstrat);
 	mcastInstancemRPP=ComlibRegister(ppmr1strat);
       }//endif
-	
-    }// end Sameer's new communication strategies 
 #endif
 
     //============================================================================
   }//end routine
-//============================================================================
+}//============================================================================
 
 
 //============================================================================
@@ -1511,10 +1518,12 @@ void init_ortho_chares(int nstates, UberCollection thisInstance) {
 #ifdef USE_COMLIB
 #ifdef OLD_COMMLIB
   CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
-#else
-  Strategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
-#endif
   orthoInstance=ComlibRegister(multistrat);
+#else
+  Strategy *multistrat = new DirectMulticastStrategy();
+  orthoInstance=ComlibRegister(multistrat);
+//  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
+#endif
 #endif
 
 
@@ -2152,7 +2161,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       // sets, so modulo insane commlib global state, it should be
       // safe to reuse these across ubers
       
-      CkPrintf("Making State streaming strats\n");
+      CkPrintf("Making State streaming strats useGssRP = %d, useMssGP = %d,  useGssRPP = %d,  useMssGPP = %d\n",(int)config.useGssInsRealP,(int)config.useMssInsGP,(int)config.useGssInsRealPP,(int)config.useMssInsGPP);
       //mstrat->enableShortArrayMessagePacking();
       //rspaceState to gspaceState : gspaceState to rspaceState 
 

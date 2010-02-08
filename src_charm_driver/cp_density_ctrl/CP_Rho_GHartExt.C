@@ -266,7 +266,7 @@ void CP_Rho_GHartExt::init(){
 
 #ifdef USE_COMLIB
   if(config.useGHartInsRhoRP){
-     ComlibAssociateProxy(&commGHartInstance,rhoRealProxy_com);
+     ComlibAssociateProxy(commGHartInstance,rhoRealProxy_com);
   }//endif
 #endif
 
@@ -277,8 +277,8 @@ void CP_Rho_GHartExt::init(){
       #ifdef USE_COMLIB
         if(config.useGHartInsRHart)
         {
-            ComlibAssociateProxy(&commGHartRHartIns0,rhoRHartProxy_com0);
-            ComlibAssociateProxy(&commGHartRHartIns1,rhoRHartProxy_com1);
+            ComlibAssociateProxy(commGHartRHartIns0,rhoRHartProxy_com0);
+            ComlibAssociateProxy(commGHartRHartIns1,rhoRHartProxy_com1);
         }//endif
       #endif
   }
@@ -572,7 +572,7 @@ void CP_Rho_GHartExt::sendVks() {
 #ifdef OLD_COMMLIB
     if(config.useGHartInsRhoRP){commGHartInstance.beginIteration();}
 #else
-    if(config.useGHartInsRhoRP){ComlibBegin(rhoRealProxy_com);}
+    if(config.useGHartInsRhoRP){ComlibBegin(rhoRealProxy_com,0);}
 #endif
    }//endif
 #endif
@@ -629,7 +629,7 @@ void CP_Rho_GHartExt::sendVks() {
 #ifdef OLD_COMMLIB
     if(config.useGHartInsRhoRP){commGHartInstance.endIteration();}
 #else
-    if(config.useGHartInsRhoRP){ComlibEnd(rhoRealProxy_com);}
+    if(config.useGHartInsRhoRP){ComlibEnd(rhoRealProxy_com,0);}
 #endif
   }//endif
 #endif
@@ -1003,8 +1003,8 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
     case 0 : if(config.useGHartInsRHart) commGHartRHartIns0.beginIteration();break;
     case 1 : if(config.useGHartInsRHart) commGHartRHartIns1.beginIteration();break;
 #else
-    case 0 : if(config.useGHartInsRHart) ComlibBegin(rhoRHartProxy_com0); break;
-    case 1 : if(config.useGHartInsRHart) ComlibBegin(rhoRHartProxy_com1);break;
+    case 0 : if(config.useGHartInsRHart) ComlibBegin(rhoRHartProxy_com0,1); break;
+    case 1 : if(config.useGHartInsRHart) ComlibBegin(rhoRHartProxy_com1,1);break;
 #endif
     }//endif
   }//endif
@@ -1072,8 +1072,8 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
      case 0 : if(config.useGHartInsRHart) commGHartRHartIns0.endIteration();break;
      case 1 : if(config.useGHartInsRHart) commGHartRHartIns1.endIteration();break;
 #else
-    case 0 : if(config.useGHartInsRHart) ComlibEnd(rhoRHartProxy_com0); break;
-    case 1 : if(config.useGHartInsRHart) ComlibEnd(rhoRHartProxy_com1);break;
+    case 0 : if(config.useGHartInsRHart) ComlibEnd(rhoRHartProxy_com0,1); break;
+    case 1 : if(config.useGHartInsRHart) ComlibEnd(rhoRHartProxy_com1,1);break;
 #endif
 
    }//end switch

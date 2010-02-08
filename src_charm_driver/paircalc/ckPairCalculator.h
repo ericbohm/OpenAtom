@@ -2,7 +2,7 @@
 #define CK_PAIR_CALCULATOR_H
 
 #undef  OLD_COMMLIB
-#define OLD_COMMLIB 1
+//#define OLD_COMMLIB 1
 #include "debug_flags.h"
 #include "pairutil.h"
 #include "ckmulticast.h"

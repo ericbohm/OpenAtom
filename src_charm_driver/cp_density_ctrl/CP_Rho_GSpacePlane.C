@@ -259,15 +259,15 @@ void CP_Rho_GSpacePlane::init()
 
 #ifdef USE_COMLIB 
     if(config.useGIns0RhoRP)
-       ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+       ComlibAssociateProxy(commGInstance0,rhoRealProxy0_com);
     if(config.useGIns1RhoRP)
-       ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+       ComlibAssociateProxy(commGInstance1,rhoRealProxy1_com);
     if(config.useGIns2RhoRP)
-       ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+       ComlibAssociateProxy(commGInstance2,rhoRealProxy2_com);
     if(config.useGIns3RhoRP)
-       ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+       ComlibAssociateProxy(commGInstance3,rhoRealProxy3_com);
     if(config.useGByrdInsRhoRBP)
-       ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
+       ComlibAssociateProxy(commGByrdInstance,rhoRealProxyByrd_com);
 #endif
 
 }
@@ -317,15 +317,15 @@ void CP_Rho_GSpacePlane::pup(PUP::er &p){
 
 #ifdef USE_COMLIB
       if(config.useGIns0RhoRP)
-	ComlibAssociateProxy(&commGInstance0,rhoRealProxy0_com);
+	ComlibAssociateProxy(commGInstance0,rhoRealProxy0_com);
       if(config.useGIns1RhoRP)
-	ComlibAssociateProxy(&commGInstance1,rhoRealProxy1_com);
+	ComlibAssociateProxy(commGInstance1,rhoRealProxy1_com);
       if(config.useGIns2RhoRP)
-	ComlibAssociateProxy(&commGInstance2,rhoRealProxy2_com);
+	ComlibAssociateProxy(commGInstance2,rhoRealProxy2_com);
       if(config.useGIns3RhoRP)
-	ComlibAssociateProxy(&commGInstance3,rhoRealProxy3_com);
+	ComlibAssociateProxy(commGInstance3,rhoRealProxy3_com);
       if(config.useGByrdInsRhoRBP)
-	ComlibAssociateProxy(&commGByrdInstance,rhoRealProxyByrd_com);
+	ComlibAssociateProxy(commGByrdInstance,rhoRealProxyByrd_com);
 #endif
 
    }//endif
@@ -704,10 +704,10 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.beginIteration();   break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.beginIteration();break;
 #else
-   case 1 :if(config.useGIns1RhoRP) ComlibBegin(rhoRealProxy1_com); break;
-   case 2 :if(config.useGIns2RhoRP) ComlibBegin(rhoRealProxy2_com); break;
-   case 3 :if(config.useGIns3RhoRP) ComlibBegin(rhoRealProxy3_com); break;
-   case 4 :if(config.useGByrdInsRhoRBP) ComlibBegin(rhoRealProxyByrd_com); break;
+   case 1 :if(config.useGIns1RhoRP) ComlibBegin(rhoRealProxy1_com,0); break;
+   case 2 :if(config.useGIns2RhoRP) ComlibBegin(rhoRealProxy2_com,0); break;
+   case 3 :if(config.useGIns3RhoRP) ComlibBegin(rhoRealProxy3_com,0); break;
+   case 4 :if(config.useGByrdInsRhoRBP) ComlibBegin(rhoRealProxyByrd_com,0); break;
 #endif
     default: CkAbort("impossible iopt"); break;
    }//end switc
@@ -780,10 +780,10 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
     case 3 : if(config.useGIns3RhoRP)     commGInstance3.endIteration();break;
     case 4 : if(config.useGByrdInsRhoRBP) commGByrdInstance.endIteration();break;
 #else
-   case 1 :if(config.useGIns1RhoRP) ComlibEnd(rhoRealProxy1_com); break;
-   case 2 :if(config.useGIns2RhoRP) ComlibEnd(rhoRealProxy2_com); break;
-   case 3 :if(config.useGIns3RhoRP) ComlibEnd(rhoRealProxy3_com); break;
-   case 4 :if(config.useGByrdInsRhoRBP) ComlibEnd(rhoRealProxyByrd_com); break;
+   case 1 :if(config.useGIns1RhoRP) ComlibEnd(rhoRealProxy1_com,0); break;
+   case 2 :if(config.useGIns2RhoRP) ComlibEnd(rhoRealProxy2_com,0); break;
+   case 3 :if(config.useGIns3RhoRP) ComlibEnd(rhoRealProxy3_com,0); break;
+   case 4 :if(config.useGByrdInsRhoRBP) ComlibEnd(rhoRealProxyByrd_com,0); break;
 #endif
     default: CkAbort("impossible iopt"); break;
    }//end switc
@@ -1171,16 +1171,18 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 void CP_Rho_GSpacePlane::ResumeFromSync(){
 
 #ifdef USE_COMLIB
+/*
   if (config.useGIns0RhoRP) 
-    ComlibResetProxy(&rhoRealProxy0_com);
+    ComlibResetProxy(rhoRealProxy0_com);
   if (config.useGIns1RhoRP) 
-    ComlibResetProxy(&rhoRealProxy1_com);
+    ComlibResetProxy(rhoRealProxy1_com);
   if (config.useGIns2RhoRP)
-    ComlibResetProxy(&rhoRealProxy2_com);
+    ComlibResetProxy(rhoRealProxy2_com);
   if (config.useGIns3RhoRP) 
-    ComlibResetProxy(&rhoRealProxy3_com);
+    ComlibResetProxy(rhoRealProxy3_com);
   if (config.useGByrdInsRhoRBP) 
-    ComlibResetProxy(&rhoRealProxyByrd_com);
+    ComlibResetProxy(rhoRealProxyByrd_com);
+*/
 #endif
 
 }

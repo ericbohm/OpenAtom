@@ -126,10 +126,10 @@ void resetProxy()
         if(useComlib && _PC_COMMLIB_MULTI_)
           {
 #ifdef USE_COMLIB
-            if(existsRproxy)
+            /*if(existsRproxy)
             	ComlibResetSectionProxy(&sectionGettingRight[chunk]);
             if(existsLproxy)
-            	ComlibResetSectionProxy(&sectionGettingLeft[chunk]);
+            	ComlibResetSectionProxy(&sectionGettingLeft[chunk]);*/
 #endif
           }
         else
