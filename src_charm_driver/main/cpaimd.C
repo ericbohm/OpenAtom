@@ -1405,7 +1405,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
     // Real state space to gspace state and particle plane comm.
 
 #ifdef USE_COMLIB
-if (config.useCommlibMulticast) {
+  if (config.useCommlibMulticast) {
 #ifdef OLD_COMMLIB
       DirectMulticastStrategy *dstrat = new DirectMulticastStrategy
         (UrealSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(),1);
@@ -1453,11 +1453,12 @@ if (config.useCommlibMulticast) {
 	mcastInstanceRPP=ComlibRegister(pprstrat);
 	mcastInstancemRPP=ComlibRegister(ppmr1strat);
       }//endif
+  }
 #endif
 
-    //============================================================================
-  }//end routine
-}//============================================================================
+//============================================================================
+}//end routine
+//============================================================================
 
 
 //============================================================================
