@@ -828,7 +828,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   availGlobG->reset();
   bool maptype=true;
   int achunks=config.numChunksAsym;
-  bool cp_need_orthoT= (sim->cp_min_opt==1) ? false: true;
   if(config.phantomSym)
     { // evil trickery to use asym map code for phantom sym
       maptype=false;
@@ -995,8 +994,44 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID1[thisInstance.proxyOffset].beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
+
+    // Create a new paircalc config object
+    pc::pcConfig pcCfg;
+    // Stuff it with the actual configurations
+    pcCfg.isDynamics         = (sim->cp_min_opt==1)? false: true;
+
+    pcCfg.numPlanes          = config.nchareG;
+    pcCfg.numStates          = nstates;
+    pcCfg.grainSize          = config.sGrainSize;
+    pcCfg.orthoGrainSize     = config.orthoGrainSize;
+
+    pcCfg.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
+    pcCfg.PsiVEP             = gsp_ep_tol;
+    pcCfg.conserveMemory     = config.conserveMemory;
+    pcCfg.isLBon             = config.lbpaircalc;
+
+    pcCfg.areTilesCollected  = config.PCCollectTiles;
+    pcCfg.isBWstreaming      = config.PCstreamBWout;
+    pcCfg.isBWbarriered      = config.useBWBarrier;
+    pcCfg.isBWdelayed        = config.PCdelayBWSend;
+    pcCfg.isInputMulticast   = !config.usePairDirectSend;
+    pcCfg.isOutputReduced    = config.gSpaceSum;
+    pcCfg.instance           = thisInstance.proxyOffset;
+
+    pcCfg.gemmSplitFWk       = config.gemmSplitFWk;
+    pcCfg.gemmSplitFWm       = config.gemmSplitFWm;
+    pcCfg.gemmSplitBW        = config.gemmSplitBW;
+
+    // Configurations specific to the symmetric PC instance
+    pcCfg.isSymmetric        = true;
+    pcCfg.arePhantomsOn      = config.phantomSym;
+    pcCfg.numChunks          = config.numChunksSym;
+    pcCfg.isDoublePackOn    = doublePack;
+    pcCfg.gSpaceEP           = gsp_ep;
+    pcCfg.resultMsgPriority  = config.gsfftpriority;
+
     // CkPrintf("creating PC instance %d\n",thisInstance.proxyOffset);
-    createPairCalculator(true, nstates, config.sGrainSize, config.nchareG, &(UpairCalcID1[thisInstance.proxyOffset]), gsp_ep, gsp_ep_tol, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_sym_id, doublePack, config.conserveMemory,config.lbpaircalc, config.psipriority, mCastGrpIds, config.numChunksSym, config.orthoGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.gsfftpriority, config.phantomSym, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW,false, thisInstance.proxyOffset);
+    createPairCalculator(pcCfg, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
 
     CkArrayIndex2D myindex(0, 0);
     if(config.gSpaceSum)
@@ -1015,7 +1050,15 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(false, nstates,  config.sGrainSize, config.nchareG, &(UpairCalcID2[thisInstance.proxyOffset]), gsp_ep, 0, UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID(), 1, &scalc_asym_id, myPack, config.conserveMemory,config.lbpaircalc, config.lambdapriority, mCastGrpIdsA, config.numChunksAsym, config.lambdaGrainSize,  config.PCCollectTiles, config.PCstreamBWout, config.PCdelayBWSend, config.PCstreamFWblock, config.usePairDirectSend, config.gSpaceSum, config.lambdapriority+2, false, config.useBWBarrier, config.gemmSplitFWk, config.gemmSplitFWm, config.gemmSplitBW, cp_need_orthoT,thisInstance.proxyOffset);
+    // Configurations specific to the asymmetric PC instance
+    pcCfg.isSymmetric        = false;
+    pcCfg.arePhantomsOn      = false;
+    pcCfg.numChunks          = config.numChunksAsym;
+    pcCfg.isDoublePackOn    = myPack;
+    pcCfg.gSpaceEP           = gsp_ep;
+    pcCfg.resultMsgPriority  = config.lambdapriority+2;
+
+    createPairCalculator(pcCfg, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, mCastGrpIdsA);
     
 
 //============================================================================ 

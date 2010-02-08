@@ -43,6 +43,8 @@ class pcConfig
         bool isLBon; ///< @note: Originally,  lbpaircalc
         /// What mechanism should be used for reductions
         redtypes reduce;
+        /// Is double-packing on?
+        bool isDoublePackOn;
 
         /// Should this instance collect result fragments and send them out together in the BW path?
         bool areTilesCollected; ///< @note: Originally, _AllTiles
@@ -52,8 +54,10 @@ class pcConfig
         bool isBWbarriered; ///< @note: Originally, useBWBarrier
         /// Should this instance tweak the priority of the msgs to GSpace carrying the results?
         bool isBWdelayed; ///< @note: Originally, delaybw
+        /// Will the input data be multicast to PC sections or sent directly (p2p)
+        bool isInputMulticast; ///< @note: Originally, usePairDirectSend
         /// Should the results be reduced or delivered directly to GSpace?
-        bool isSummationInGSpace; ///< @note: Originally, gSpaceSum
+        bool isOutputReduced; ///< @note: Originally, gSpaceSum
         /// If isBWdelayed, what priority should this instance use for the result msgs
         int resultMsgPriority; ///< @note: Originally,  gpriority
         /// The proxyOffset value of thisInstance of OpenAtom computations

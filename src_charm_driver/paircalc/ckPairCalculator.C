@@ -102,7 +102,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
   orthoGrainSizeRemX=grainSizeX%orthoGrainSize;
   orthoGrainSizeRemY=grainSizeY%orthoGrainSize;
   collectAllTiles      = cfg.areTilesCollected;
-  gSpaceSum            = cfg.isSummationInGSpace;
+  gSpaceSum            = cfg.isOutputReduced;
   gpriority            = cfg.resultMsgPriority;
   phantomSym           = cfg.arePhantomsOn;
   gemmSplitFWk         = cfg.gemmSplitFWk;
