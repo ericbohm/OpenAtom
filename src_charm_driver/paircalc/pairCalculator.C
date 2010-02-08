@@ -70,7 +70,7 @@ extern ComlibInstanceHandle gSymInstance;
 #endif
 
 
-void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId)
+void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId)
 {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
@@ -82,16 +82,7 @@ void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag,
   CkArrayOptions paircalcOpts,handlerOpts;
   CProxy_PairCalculator pairCalculatorProxy;
   CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
-  pcCfg.reduce = section;
 
-#ifdef CONVERSE_VERSION_ELAN
-  bool machreduce=(pcCfg.numStates/pcCfg.grainSize * pcCfg.numPlanes* pcCfg.numChunks>=CkNumNodes()) ? true: false;
-#else
-  bool machreduce=false;
-#endif
-
-  if(machreduce)
-    pcCfg.reduce = machine;
 
   // If a chare mapping is not available, create an empty array
   if(!mapid) 
@@ -106,7 +97,7 @@ void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag,
   }
 
 #ifdef DEBUG_CP_PAIRCALC_CREATION
-	CkPrintf("createPairCalculator: Creating empty PairCalculator and InputDataHandler chare arrays for %d loop: asymm(0)/symm(1)\n",sym);
+	CkPrintf("createPairCalculator: Creating empty PairCalculator and InputDataHandler chare arrays for %d loop: asymm(0)/symm(1)\n",pcCfg.isSymmetric);
 #endif 
   /// Create an empty input handler chare array that will accept all incoming messages from GSpace
   handlerOpts.bindTo(pairCalculatorProxy);
@@ -134,7 +125,7 @@ void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag,
   // 
 
 #ifdef USE_COMLIB
-  if(sym)
+  if(pcCfg.isSymmetric)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
@@ -163,7 +154,7 @@ void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag,
 				else
 				{
 					#ifdef DEBUG_CP_PAIRCALC_CREATION
-						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,sym,proc);
+						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,pcCfg.isSymmetric,proc);
 					#endif
 					pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg, proc);
 					proc++;
@@ -194,7 +185,7 @@ void createPairCalculator(pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag,
 					else
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
-							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,sym,proc);
+							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,pcCfg.isSymmetric,proc);
 						#endif
 						pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg, proc);
 						proc++;

@@ -1009,6 +1009,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     pcCfg.PsiVEP             = gsp_ep_tol;
     pcCfg.conserveMemory     = config.conserveMemory;
     pcCfg.isLBon             = config.lbpaircalc;
+    pcCfg.reduce             = section;
 
     pcCfg.areTilesCollected  = config.PCCollectTiles;
     pcCfg.isBWstreaming      = config.PCstreamBWout;
@@ -1030,7 +1031,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     pcCfg.gSpaceEP           = gsp_ep;
     pcCfg.resultMsgPriority  = config.gsfftpriority;
 
-    // CkPrintf("creating PC instance %d\n",thisInstance.proxyOffset);
     createPairCalculator(pcCfg, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
 
     CkArrayIndex2D myindex(0, 0);
