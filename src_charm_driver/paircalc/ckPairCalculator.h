@@ -278,7 +278,7 @@ class PairCalculator: public CBase_PairCalculator
 {
 	public:
 		/// @entry (obviously)
-		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig cfg);
+		PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg);
 		/// Constructor for migration
 		PairCalculator(CkMigrateMessage *);
 		/// Destructor (nothing needs to be done?)
@@ -366,6 +366,8 @@ class PairCalculator: public CBase_PairCalculator
         void cleanupAfterBWPath(); 
 
 
+        /// A private copy of the input configurations
+        pc::pcConfig cfg;
 		/// A handle to the co-located chare array that handles data input 
 		CProxy_InputDataHandler<CollatorType,CollatorType> myMsgHandler;
 		/// Data collators for the left and right matrix blocks
