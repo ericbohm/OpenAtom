@@ -1011,10 +1011,10 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     pcCfg.isLBon             = config.lbpaircalc;
     pcCfg.reduce             = section;
 
-    pcCfg.areTilesCollected  = config.PCCollectTiles;
+    pcCfg.areBWTilesCollected= config.PCCollectTiles;
     pcCfg.isBWstreaming      = config.PCstreamBWout;
     pcCfg.isBWbarriered      = config.useBWBarrier;
-    pcCfg.isBWdelayed        = config.PCdelayBWSend;
+    pcCfg.shouldDelayBWsend  = config.PCdelayBWSend;
     pcCfg.isInputMulticast   = !config.usePairDirectSend;
     pcCfg.isOutputReduced    = config.gSpaceSum;
     pcCfg.instance           = thisInstance.proxyOffset;

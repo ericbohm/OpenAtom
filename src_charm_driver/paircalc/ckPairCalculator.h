@@ -296,7 +296,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// Forward path multiply driver. Prepares matrices, calls DGEMM, contributes results to Ortho subTiles and also passes relevant data to phantom PC chares
 		void multiplyForward(bool flag_dp);
 		/// @entry Simply redirects call to multiplyForward()
-		void multiplyForwardRDMA() { multiplyForward(symmetric); }
+		void multiplyForwardRDMA() { multiplyForward(cfg.isSymmetric); }
 		/// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
 		void contributeSubTiles(double *fullOutput);
 		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
@@ -374,23 +374,18 @@ class PairCalculator: public CBase_PairCalculator
 		CollatorType *leftCollator, *rightCollator;
 		/// Flags indicating if the left and right matrix blocks have been received
 		bool isLeftReady, isRightReady;
-		int instance; 							/// Instance number of this run in path-integral beads
 		int numRecd; 								///< number of messages received
 		int numRecdBW; 							///< number of messages received BW
 		int numRecdBWOT; 							///< number of messages received BW orthoT
 		int numExpected; 							///< number of messages expected all
 		int numExpectedX; 						///< number of messages expected x-axis
 		int numExpectedY; 						///< number of messages expected y-axis
-		int grainSize; 							///< number of states per chare
 		int grainSizeX; 							///< number of states per chare x-axis
 		int grainSizeY; 							///< number of states per chare y-axis
-		int orthoGrainSize; 						///< number of states per ortho tile lower-bound
 		int orthoGrainSizeRemX; 					///< sgrainSizeX % orthoGrainSize
 		int orthoGrainSizeRemY; 					///< sgrainSizeY % orthoGrainSize
 		int blkSize; 								///< number points in gspace plane
-		int numStates; 							///< total number of states
 		int numPoints; 							///< number of points in this chunk
-		int numChunks; 							///< number of blocks the stateplane is divided into
 
 		int streamCaughtR; 						///< number of rows caught so far R stream
 		int streamCaughtL; 						///< number of rows caught so far L stream
@@ -413,22 +408,12 @@ class PairCalculator: public CBase_PairCalculator
 		
 		int *touchedTiles; 						///< tracker to detect when tiles are full
 		
-		bool symmetric; 							///< if true, one triangle is missing
-		int conserveMemory; 						///< Tribool:: -1: dont conserve memory at all; 0: default; +1: conserve memory aggresively and free up matrices when not in use
-		bool lbpaircalc;
 		bool notOnDiagonal; 						///< being on or off diagonal changes many things
 		bool symmetricOnDiagonal; 				///< diagonal symmetric special case
 		
-		bool phantomSym; 							///< phantoms exist to balance the BW path otherdata work
-		
 		bool expectOrthoT; 						///< Is true only in asymmetric, dynamics scenario. For PC instances in the asymmetric chare array, orthoT should arrive before end of fwd path 
-		bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && symmetric && phantomsym
+		bool amPhantom; 							///< consolidate thisIndex.x<thisIndex.y && cfg.isSymmetric && phantomsym
 		
-		bool useBWBarrier;
-		
-		bool collectAllTiles; 					///< If true, don't stream compute on tiles in the backward path.
-		
-		redtypes cpreduce; 						///< which reducer we're using (defunct)
 		CkArrayID cb_aid; 						///< bw path callback array ID
 		int cb_ep; 								///< bw path callback entry point
 		int cb_ep_tol; 							///< bw path callback entry point for psiV tolerance
@@ -437,12 +422,6 @@ class PairCalculator: public CBase_PairCalculator
 		bool existsOut; 							///< outData allocated
 		bool existsNew; 							///< newData allocated
 		bool resumed; 							///< have resumed from load balancing
-		
-		bool PCstreamBWout; 						///< stream output from BW path
-		bool PCdelayBWSend; 						///< use priority to delay BW output
-		
-		bool gSpaceSum; 							///< sum in gspace instead of reduction
-		int gpriority; 							///< priority of msg to gspace
 		
 		complex *mynewData; 						///< results of bw multiply
 		complex *othernewData; 					///< results of sym off diagonal multiply,
