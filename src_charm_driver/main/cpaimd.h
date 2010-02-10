@@ -22,7 +22,6 @@
 #include "load_balance/PeList.h"
 
 #undef OLD_COMMLIB 
-#define USE_COMLIB 
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
 class IntMap2

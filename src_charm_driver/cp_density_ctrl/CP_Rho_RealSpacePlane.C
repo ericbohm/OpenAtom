@@ -60,7 +60,7 @@ extern ComlibInstanceHandle commRealInstance;
 extern ComlibInstanceHandle commRealIGXInstance;
 extern ComlibInstanceHandle commRealIGYInstance;
 extern ComlibInstanceHandle commRealIGZInstance;
-extern ComlibInstanceHandle mcastInstance;
+extern CkVec <ComlibInstanceHandle> mcastInstance;
 extern CkGroupID            mCastGrpId;
 
 extern Config    config;
@@ -253,7 +253,7 @@ void CP_Rho_RealSpacePlane::init(){
 	mcastGrp->setSection(realSpaceSectionProxyA[kp]);
 
 #ifdef USE_COMLIB
-	ComlibAssociateProxy(mcastInstance,realSpaceSectionCProxyA[kp]);
+	ComlibAssociateProxy(mcastInstance[kp],realSpaceSectionCProxyA[kp]);
 #endif
 	ProductMsg *dummyProductMessage = new (0) ProductMsg;    
 	// inform realspace element of this section proxy.

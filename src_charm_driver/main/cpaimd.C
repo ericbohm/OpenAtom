@@ -236,7 +236,7 @@ TopoManager *topoMgr=NULL;
 CkGroupID            mCastGrpId; 
 CkGroupID            orthomCastGrpId; 
 CkGroupID            orthoRedGrpId; 
-#ifdef USE_COMLIB
+//#ifdef USE_COMLIB
 ComlibInstanceHandle orthoInstance;
 ComlibInstanceHandle commGHartInstance;
 ComlibInstanceHandle commGInstance0;
@@ -252,7 +252,7 @@ ComlibInstanceHandle commRealIGZInstance;
 ComlibInstanceHandle gAsymInstance;
 ComlibInstanceHandle gSymInstance;
 
-ComlibInstanceHandle mcastInstance;
+CkVec <ComlibInstanceHandle> mcastInstance;
 ComlibInstanceHandle mcastInstancePP;
 ComlibInstanceHandle mcastInstanceRPP;
 ComlibInstanceHandle mcastInstancemRPP;
@@ -266,7 +266,7 @@ ComlibInstanceHandle mssPInstance;
 ComlibInstanceHandle commRHartGHartIns;
 ComlibInstanceHandle commGHartRHartIns0;
 ComlibInstanceHandle commGHartRHartIns1;
-#endif
+//#endif
 
 
 CkReduction::reducerType complexVectorAdderType;
@@ -528,6 +528,7 @@ main::main(CkArgMsg *msg) {
     UplaneUsedByNLZ.reserve(config.numInstances);
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
+    
 
     excludePes=NULL;
     mainProxy=thishandle;
@@ -1441,14 +1442,19 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
       RingMulticastStrategy *ppmr1strat = new RingMulticastStrategy();
 #endif
 
+      mcastInstance.reserve(config.UberJmax);
       //multiring should be good on large runs, but not on BG/L
       if(CkNumNodes()>64){
-	mcastInstance=ComlibRegister(dstrat);
+	for (int kp = 0; kp < config.UberJmax; kp++){
+	  mcastInstance.push_back(ComlibRegister(dstrat));
+	}
 	mcastInstancePP=ComlibRegister(mr1strat);
 	mcastInstanceRPP=ComlibRegister(ppdstrat);
 	mcastInstancemRPP=ComlibRegister(ppmr1strat);
       }else{
-	mcastInstance=ComlibRegister(rstrat);
+	for (int kp = 0; kp < config.UberJmax; kp++){
+	  mcastInstance.push_back(ComlibRegister(rstrat));
+	}
 	mcastInstancePP=ComlibRegister(r1strat);
 	mcastInstanceRPP=ComlibRegister(pprstrat);
 	mcastInstancemRPP=ComlibRegister(ppmr1strat);

@@ -175,9 +175,9 @@ void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool 
         #ifdef USE_COMLIB
             CkPrintf("NOTE: Rectangular Send In USE\n");
             if(isSymmetric)
-                ComlibAssociateProxy(&mcastInstanceCP,pcSection);
+                ComlibAssociateProxy(mcastInstanceCP,pcSection);
             else
-                ComlibAssociateProxy(&mcastInstanceACP,pcSection);
+                ComlibAssociateProxy(mcastInstanceACP,pcSection);
         #endif
     }
     else

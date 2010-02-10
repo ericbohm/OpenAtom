@@ -137,9 +137,9 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   // Setup the appropriate multicast strategy
 #ifdef CMK_BLUEGENEL
   //  CharmStrategy *multistrat = new RectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
-  CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
+  Strategy *multistrat = new DirectMulticastStrategy();
 #else
-  CharmStrategy *multistrat = new DirectMulticastStrategy(pairCalculatorProxy.ckGetArrayID());
+  Strategy *multistrat = new DirectMulticastStrategy();
 #endif
   
 #endif
@@ -439,7 +439,7 @@ void makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 			#ifndef _PAIRCALC_DO_NOT_DELEGATE_
 #ifdef USE_COMLIB
 				if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
-					ComlibAssociateProxy(&mcastInstanceCP,pcid->sectionGettingLeft[chunk]);
+					ComlibAssociateProxy(mcastInstanceCP,pcid->sectionGettingLeft[chunk]);
 				else
 #endif
 				{
@@ -506,7 +506,7 @@ void makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 				#ifndef _PAIRCALC_DO_NOT_DELEGATE_
 #ifdef USE_COMLIB
 					if(pcid->useComlib && _PC_COMMLIB_MULTI_)
-						ComlibAssociateProxy(&mcastInstanceCP, pcid->sectionGettingRight[c]);
+						ComlibAssociateProxy(mcastInstanceCP, pcid->sectionGettingRight[c]);
 					else
 #endif
 					{
