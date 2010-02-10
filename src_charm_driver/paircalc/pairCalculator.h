@@ -6,6 +6,7 @@
 #ifndef _pairCalculator_h
 #define _pairCalculator_h
 #include "ckPairCalculator.h"
+#include "pcConfig.h"
 
 
 /* delegated paircalc proxies perform like fermented dung on BG/L */
@@ -222,7 +223,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 };
 
 /// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(bool sym, int w, int grainSize, int numZ, PairCalcID* aid, int ep, int ep2, CkArrayID cbid, int flag, CkGroupID *mapid, int flag_dp, bool conserveMemory, bool lbpaircalc, int priority, CkVec <CkGroupID> mCastGrpId, int numChunks, int orthoGrainSize, bool collectTiles, bool streamBWout, bool delayBWSend, int streamFW, bool useDirectSend, bool gSpaceSum, int gpriority, bool phantomSym, bool useBWBarrier, int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW, bool expectOrthoT, int instance);
+void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, int flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId);
 
 
 /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section 

@@ -60,7 +60,6 @@
 //*************************************************************************
 #include "pairCalculator.h"
 #include "InputDataHandler.h"
-
 #include <algorithm>
 
 #ifdef USE_COMLIB
@@ -71,18 +70,7 @@ extern ComlibInstanceHandle gSymInstance;
 #endif
 
 
-void createPairCalculator(bool sym, int s, int grainSize, int numZ, 
-			  PairCalcID* pcid, int cb_ep,
-			  int cb_ep_tol, 
-			  CkArrayID cb_aid, int comlib_flag, CkGroupID *mapid,
-			  int flag_dp, bool conserveMemory, bool lbpaircalc,
-			  int priority, CkVec <CkGroupID> mCastGrpId,
-			  int numChunks, int orthoGrainSize, bool collectTiles,
-			  bool streamBWout, bool delayBWSend, int streamFW,
-			  bool useDirectSend, bool gSpaceSum, int gpriority,
-			  bool phantomSym, bool useBWBarrier,
-			  int gemmSplitFWk, int gemmSplitFWm, int gemmSplitBW,
-			  bool expectOrthoT, int instance)
+void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId)
 {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
@@ -94,17 +82,8 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   CkArrayOptions paircalcOpts,handlerOpts;
   CProxy_PairCalculator pairCalculatorProxy;
   CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
-  redtypes cpreduce=section;
 
-#ifdef CONVERSE_VERSION_ELAN
-  bool machreduce=(s/grainSize * numZ* numChunks>=CkNumNodes()) ? true: false;
-#else
-  bool machreduce=false;
-#endif
 
-  if(machreduce)
-    cpreduce=machine;
-  
   // If a chare mapping is not available, create an empty array
   if(!mapid) 
   {
@@ -114,14 +93,11 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   else 
   {
     paircalcOpts.setMap(*mapid);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier,
-						       gemmSplitFWk, gemmSplitFWm,
-						       gemmSplitBW,expectOrthoT, instance,
-						       paircalcOpts);
+    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, pcCfg, paircalcOpts);
   }
 
 #ifdef DEBUG_CP_PAIRCALC_CREATION
-	CkPrintf("createPairCalculator: Creating empty PairCalculator and InputDataHandler chare arrays for %d loop: asymm(0)/symm(1)\n",sym);
+	CkPrintf("createPairCalculator: Creating empty PairCalculator and InputDataHandler chare arrays for %d loop: asymm(0)/symm(1)\n",pcCfg.isSymmetric);
 #endif 
   /// Create an empty input handler chare array that will accept all incoming messages from GSpace
   handlerOpts.bindTo(pairCalculatorProxy);
@@ -129,7 +105,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 
   int proc = 0;
   // Initialize the PairCalcID instance
-  pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), grainSize, numChunks, s, sym, comlib_flag, flag_dp, conserveMemory, lbpaircalc,  priority, useDirectSend);
+  pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), pcCfg.grainSize, pcCfg.numChunks, pcCfg.numStates, pcCfg.isSymmetric, comlib_flag, pcCfg.isDoublePackOn, pcCfg.conserveMemory, pcCfg.isLBon, priority, !pcCfg.isInputMulticast);
   pcid->mCastGrpId=mCastGrpId;
 
 #ifdef USE_COMLIB
@@ -149,7 +125,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   // 
 
 #ifdef USE_COMLIB
-  if(sym)
+  if(pcCfg.isSymmetric)
     mcastInstanceCP=ComlibRegister(multistrat);
   else
     mcastInstanceACP=ComlibRegister(multistrat);
@@ -157,32 +133,30 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
 
   CkAssert(mapid);
   // If the symmetric loop PC instances are being created
-  if(sym)
-	for(int numX = 0; numX < numZ; numX ++)
+  if(pcCfg.isSymmetric)
+	for(int numX = 0; numX < pcCfg.numPlanes; numX ++)
 	{
-	  for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize) 
+	  for (int s1 = 0; s1 <= maxpcstateindex; s1 += pcCfg.grainSize) 
       {
       	// If phantomSym is turned on
-		int s2start=(phantomSym) ? 0 : s1;
-		for (int s2 = s2start; s2 <= maxpcstateindex; s2 += grainSize) 
+		int s2start=(pcCfg.arePhantomsOn) ? 0 : s1;
+		for (int s2 = s2start; s2 <= maxpcstateindex; s2 += pcCfg.grainSize) 
 		{
-			for (int c = 0; c < numChunks; c++) 
+			for (int c = 0; c < pcCfg.numChunks; c++) 
 			{
 				if(mapid) 
 				{
 					#ifdef DEBUG_CP_PAIRCALC_CREATION
-						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
+						CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,pcCfg.isSymmetric);
 					#endif
-					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance );
+					pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg);
 				}
 				else
 				{
 					#ifdef DEBUG_CP_PAIRCALC_CREATION
-						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,sym,proc);
+						CkPrintf("Inserting PC element [%d %d %d %d %d] at PE %d\n",numX,s1,s2,c,pcCfg.isSymmetric,proc);
 					#endif
-					pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc, cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance, proc);
+					pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg, proc);
 					proc++;
 					if (proc >= CkNumPes()) proc = 0;
 				}
@@ -193,29 +167,27 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   // else, if the asymmetric loop PC instances are being created
   else
   {
-	for(int numX = 0; numX < numZ; numX ++)
+	for(int numX = 0; numX < pcCfg.numPlanes; numX ++)
 	{
-		for (int s1 = 0; s1 <= maxpcstateindex; s1 += grainSize)
+		for (int s1 = 0; s1 <= maxpcstateindex; s1 += pcCfg.grainSize)
 		{
-			for (int s2 = 0; s2 <= maxpcstateindex; s2 += grainSize)
+			for (int s2 = 0; s2 <= maxpcstateindex; s2 += pcCfg.grainSize)
 			{
-				for (int c = 0; c < numChunks; c++)
+				for (int c = 0; c < pcCfg.numChunks; c++)
 				{
 					if(mapid)
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
-							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,sym);
+							CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,pcCfg.isSymmetric);
 						#endif
-						pairCalculatorProxy(numX,s1,s2,c).
-						insert(inputHandlerProxy, sym, grainSize, s, numChunks, cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,  cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum,  gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance);
+						pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg);
 					}
 					else
 					{
 						#ifdef DEBUG_CP_PAIRCALC_CREATION
-							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,sym,proc);
+							CkPrintf("Inserting PC element [%d %d %d %d %d] on PE %d\n",numX,s1,s2,c,pcCfg.isSymmetric,proc);
 						#endif
-						pairCalculatorProxy(numX,s1,s2,c).
-							insert(inputHandlerProxy, sym, grainSize, s, numChunks,  cb_aid, cb_ep, cb_ep_tol, conserveMemory, lbpaircalc,   cpreduce, orthoGrainSize, collectTiles, streamBWout, delayBWSend, gSpaceSum, gpriority, phantomSym, useBWBarrier, gemmSplitFWk, gemmSplitFWm, gemmSplitBW, expectOrthoT, instance,proc);
+						pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg, proc);
 						proc++;
 						if (proc >= CkNumPes()) proc = 0;
 					}
@@ -227,7 +199,7 @@ void createPairCalculator(bool sym, int s, int grainSize, int numZ,
   /// Notify the runtime that we're done inserting all the PC elements
   pairCalculatorProxy.doneInserting();
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("    Finished init {grain=%d, sym=%d, blk=%d, Z=%d, S=%d}\n", grainSize, sym, numChunks, numZ, s);
+  CkPrintf("    Finished init {grain=%d, sym=%d, blk=%d, Z=%d, S=%d}\n", pcCfg.grainSize, pcCfg.isSymmetric, pcCfg.numChunks, pcCfg.numPlanes, pcCfg.numStates);
 #endif
 }
 

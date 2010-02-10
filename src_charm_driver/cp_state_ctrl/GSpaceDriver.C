@@ -149,8 +149,9 @@ void GSpaceDriver::readyToExit()
 /// GSpace notifies me that the energy reduction is done by calling this method
 void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter) 				
 {
-	/// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
-	CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
+	/// Ensure the iterations are synced
+	if (myGSpaceObj->iteration != AtomsGrpIter)
+        CkAbort("GSpaceDriver::doneComputingEnergy: GSpace iteration and Atoms group iteration number are not in sync. Aborting...");
 	///
 	isEnergyReductionDone = true;
 	/// If GSpace has already called for an exit, check if we can exit again
