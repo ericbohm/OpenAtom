@@ -1161,9 +1161,9 @@ inline void PairCalculator::enqueueBWsend(bool unitcoef, int priority)
 
     /// Either reduce the results or sum them direct in GSpace
     if(cfg.isOutputReduced)
-        thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
-    else
         thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResult(sigmsg);
+    else
+        thisProxy(thisIndex.w,thisIndex.x, thisIndex.y,thisIndex.z).sendBWResultDirect(sigmsg);
 }
 
 
@@ -2215,9 +2215,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 		}
 	      // send orthoX in newData
 	      if(cfg.isOutputReduced)
-		sendBWResultColumnDirect(false, startGrain, endGrain);
-	      else
-		sendBWResultColumn(false, startGrain, endGrain);
+              sendBWResultColumn(false, startGrain, endGrain);
+          else
+              sendBWResultColumnDirect(false, startGrain, endGrain);
 	    }
 	  CkAssert(columnCount[index]<=numOrthoCol);
 	}
@@ -2233,9 +2233,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 
 	  //send orthoY in newdata
 	  if(cfg.isOutputReduced)
-	    sendBWResultColumnDirect(false, orthoYgrain, orthoYgrain+sizeY);
-	  else
-	    sendBWResultColumn(false, orthoYgrain, orthoYgrain+sizeY);
+          sendBWResultColumn(false, orthoYgrain, orthoYgrain+sizeY);
+      else
+          sendBWResultColumnDirect(false, orthoYgrain, orthoYgrain+sizeY);
 	}
       CkAssert(columnCount[orthoY]<=numOrthoCol);
     }
@@ -2276,9 +2276,9 @@ void PairCalculator::bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, 
 #endif
 	  //send orthoY in otherNewData
 	  if(cfg.isOutputReduced)
-	    sendBWResultColumnDirect(true, startGrain, endGrain);
-	  else
-	    sendBWResultColumn(true, startGrain, endGrain);
+          sendBWResultColumn(true, startGrain, endGrain);
+      else
+          sendBWResultColumnDirect(true, startGrain, endGrain);
 	}
       CkAssert(columnCountOther[index]<=numOrthoCol);
     }

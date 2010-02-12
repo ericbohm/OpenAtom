@@ -67,7 +67,7 @@ class pcConfig
         /// Will the input data be multicast to PC sections or sent directly (p2p)
         bool isInputMulticast; ///< @note: Originally, usePairDirectSend
         /// Should the results from each PC chare be reduced or delivered individually to GSpace?
-        bool isOutputReduced; ///< @note: Originally, gSpaceSum
+        bool isOutputReduced; ///< @note: Originally, !gSpaceSum
         /// If shouldDelayBWsend, what priority should this instance use for the result msgs
         int resultMsgPriority; ///< @note: Originally,  gpriority
         /// The proxyOffset value of thisInstance of OpenAtom computations

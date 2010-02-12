@@ -1018,7 +1018,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     pcCfg.isBWbarriered      = config.useBWBarrier;
     pcCfg.shouldDelayBWsend  = config.PCdelayBWSend;
     pcCfg.isInputMulticast   = !config.usePairDirectSend;
-    pcCfg.isOutputReduced    = config.gSpaceSum;
+    pcCfg.isOutputReduced    = !config.gSpaceSum;
     pcCfg.instance           = thisInstance.proxyOffset;
 
     pcCfg.gemmSplitFWk       = config.gemmSplitFWk;
