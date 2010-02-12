@@ -1033,17 +1033,17 @@ void CP_State_GSpacePlane::makePCproxies(){
   //need one proxy per chunk
   if(!config.gSpaceSum){
       for(int chunk=0;chunk<config.numChunksAsym;chunk++){
-	  lambdaproxy[chunk]=makeOneResultSection_asym(&gpairCalcID2, 
+	  lambdaproxy[chunk]=asymmPCmgr.makeOneResultSection_asym(&gpairCalcID2, 
                                                        thisIndex.x, thisIndex.y,chunk);
 	  if(AllLambdaExpected/config.numChunksAsym == 2)//additional col. red. in dynamics
-	    lambdaproxyother[chunk]=makeOneResultSection_asym_column(&gpairCalcID2, 
+	    lambdaproxyother[chunk]=asymmPCmgr.makeOneResultSection_asym_column(&gpairCalcID2, 
                                                         thisIndex.x, thisIndex.y,chunk);
       }//endfor chunk
       for(int chunk=0; chunk < config.numChunksSym ;chunk++){
-	  psiproxy[chunk]=makeOneResultSection_sym1(&gpairCalcID1, 
+	  psiproxy[chunk]=symmPCmgr.makeOneResultSection_sym1(&gpairCalcID1, 
                                                      thisIndex.x, thisIndex.y,chunk);
 	  if(AllPsiExpected / config.numChunksSym > 1)
-	    psiproxyother[chunk]=makeOneResultSection_sym2(&gpairCalcID1, 
+	    psiproxyother[chunk]=symmPCmgr.makeOneResultSection_sym2(&gpairCalcID1, 
                                                            thisIndex.x, thisIndex.y,chunk);
       }//endfor chunk
   }//endif not gspacesum
@@ -1630,9 +1630,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
   int toSend = numPoints;
-  startPairCalcLeft (&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendLeftData(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
   CmiNetworkProgress();
-  startPairCalcRight(&gpairCalcID2,toSend,force,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendRightData(&gpairCalcID2,toSend,force,thisIndex.x,thisIndex.y,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);
@@ -2637,10 +2637,10 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  startPairCalcLeft (&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+  symmPCmgr.sendLeftData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= gpairCalcID1.GrainSize)
-  	startPairCalcRight(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+      symmPCmgr.sendRightData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
@@ -3194,10 +3194,10 @@ void  CP_State_GSpacePlane::sendPsiV() {
   }//endif
 
   int numPoints = gs.numPoints;
-  startPairCalcLeft (&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+  symmPCmgr.sendLeftData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= gpairCalcID1.GrainSize)
-  	startPairCalcRight(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+      symmPCmgr.sendRightData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
 }// end routine

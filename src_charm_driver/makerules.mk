@@ -1,7 +1,7 @@
 # The relevant source files for this module
 libdriver_src = \
                 cpaimd.C InstanceController.C groups.C eesCache.C CLA_Matrix.C \
-                CP_State_GSpacePlane.C CP_State_RealSpacePlane.C GSpaceDriver.C \
+                CP_State_GSpacePlane.C CP_State_RealSpacePlane.C GSpaceDriver.C pcCommManager.C \
                 CP_LargeSP_RhoGSpacePlane.C  CP_LargeSP_RhoRealSpacePlane.C \
                 CP_State_ParticlePlane.C CP_State_RealParticlePlane.C \
                 CP_Rho_RealSpacePlane.C CP_Rho_GSpacePlane.C CP_Rho_GHartExt.C CP_Rho_RHartExt.C \
