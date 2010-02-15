@@ -9,26 +9,26 @@ namespace cp {
 void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 {
 	#ifdef DEBUG_CP_PAIRCALC_CREATION
-		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive left data \n", myS, myPlane, pcid->Symmetric);
+		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive left data \n", myS, myPlane, pcCfg.isSymmetric);
 	#endif
 
-	int grainSize = pcid->GrainSize;
-	int numChunks = pcid->numChunks;
+	int grainSize = pcCfg.grainSize;
+	int numChunks = pcCfg.numChunks;
 	/// Compute the max index along the state dimensions of the PC array 
-	int maxpcstateindex=(pcid->nstates/grainSize-1)*grainSize;
+	int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
 	/// Find the row index of the PC chare that handles this state
-	int s1 = (myS/grainSize) * grainSize;
+	int s1 = (myS/pcCfg.grainSize) * pcCfg.grainSize;
 	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 	/// If the PC is a symmetric instance, then include only the post-diagonal chares on the row s1, else, include all the PC chares on row s1
-	int sColMin = (pcid->Symmetric) ? s1 : 0;
+	int sColMin = (pcCfg.isSymmetric) ? s1 : 0;
 	
 	#ifdef DEBUG_CP_PAIRCALC_COMM
 		CkPrintf("GSpace[%d,%d] will send left matrix data to symm(%d) PC chares on: Row %d, Cols %d to %d\n", 
-															myS, myPlane, pcid->Symmetric,s1,sColMin,maxpcstateindex);
+															myS, myPlane, pcCfg.isSymmetric,s1,sColMin,maxpcstateindex);
 	#endif
 
 	/// If GSpace to PC comm is point to point direct msging
-	if(pcid->useDirectSend)
+	if(!pcCfg.isInputMulticast)
 	{
 		/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 		for(int s2 = sColMin; s2 <= maxpcstateindex; s2 += grainSize)
@@ -76,27 +76,27 @@ void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 void PCCommManager::makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 {
 	#ifdef DEBUG_CP_PAIRCALC_CREATION
-		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive right data \n", myS, myPlane, pcid->Symmetric);
+		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive right data \n", myS, myPlane, pcCfg.isSymmetric);
 	#endif
 	
-	int grainSize = pcid->GrainSize;
-	int numChunks =  pcid->numChunks;
+	int grainSize = pcCfg.grainSize;
+	int numChunks =  pcCfg.numChunks;
 	/// Compute the max index along the state dimensions of the PC array
-	int maxpcstateindex=(pcid->nstates/grainSize-1) * grainSize;
+	int maxpcstateindex=(pcCfg.numStates/grainSize-1) * grainSize;
 	int s2 = (myS/grainSize) * grainSize;
 	s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 	/// If the PC is a symmetric instance, then include only the pre-diagonal chares on the column s2 else, include all the PC chares on column s2
-	int sRowMax = (pcid->Symmetric) ? s2-grainSize : maxpcstateindex;
+	int sRowMax = (pcCfg.isSymmetric) ? s2-grainSize : maxpcstateindex;
     #ifdef DEBUG_CP_PAIRCALC_COMM
 		CkPrintf("GSpace[%d,%d] will send left matrix data to symm(%d) PC chares on: Col %d, Rows %d to %d\n", 
-															myS, myPlane, pcid->Symmetric,s2,0,sRowMax);
+															myS, myPlane, pcCfg.isSymmetric,s2,0,sRowMax);
 	#endif
     
 	// Accomodate the boundary case: PC chares on the top left [*,0,0,*] of the array shouldnt receive any right data. So dont build any proxies to them
 	if (sRowMax >=0)
 	{
 		/// If GSpace to PC comm is point to point direct msging
-		if(pcid->useDirectSend)
+		if(!pcCfg.isInputMulticast)
 		{
 			/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 			for(int s1 = 0; s1 <= sRowMax; s1 += grainSize)
@@ -151,7 +151,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
 		#endif
     #endif
 
-    bool flag_dp = pcid->isDoublePacked;
+    bool flag_dp = pcCfg.isDoublePackOn;
     /// If a destination array section doesnt exist, build one
     if(!pcid->existsLproxy)
     {
@@ -160,7 +160,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
     /// If a left matrix destination section exists, send the data as the left matrix block
     if(pcid->existsLproxy)
     {
-        int numChunks=pcid->numChunks;
+        int numChunks=pcCfg.numChunks;
         int chunksize =  n / numChunks;
         int outsize = chunksize;
 
@@ -170,12 +170,12 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
             if((numChunks > 1) && (chunk == (numChunks - 1)))
                 outsize= chunksize + (n % numChunks);
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-            if(pcid->Symmetric && myPlane==0)
-                dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcid->Symmetric);
-            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcid->Symmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
+            if(pcCfg.isSymmetric && myPlane==0)
+                dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcCfg.isSymmetric);
+            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcCfg.isSymmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
             #endif
             // If sending directly, use the vector of target PC chares
-            if( pcid->useDirectSend)
+            if( !pcCfg.isInputMulticast)
             {
                 CkArrayIndex4D idx;
                 for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
@@ -202,8 +202,8 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
                 *(int*)CkPriorityPtr(msg) = pcid->priority;
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-                if(pcid->Symmetric && myPlane==0)
-                    dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,myPlane,myS,0,chunk,pcid->Symmetric);
+                if(pcCfg.isSymmetric && myPlane==0)
+                    dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,myPlane,myS,0,chunk,pcCfg.isSymmetric);
                 #endif
                 #ifdef _NAN_CHECK_
                 for(int i=0;i<outsize ;i++)
@@ -218,7 +218,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
     }
 		/// else, if the destination section doesnt exist even after attempting to create one
 		else
-			CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcid->Symmetric);
+			CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcCfg.isSymmetric);
 }
 
 
@@ -238,7 +238,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
 		#endif
     #endif
 
-    bool flag_dp = pcid->isDoublePacked;
+    bool flag_dp = pcCfg.isDoublePackOn;
     /// If a destination array section doesnt exist, build one
     if(!pcid->existsRproxy)
         makeRightTree(pcid,myS,myPlane);
@@ -258,14 +258,14 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
                 CkAssert(fabs(im)>1.0e-300);
         }
         #endif
-        for(int chunk=0; chunk < pcid->numChunks; chunk++)
+        for(int chunk=0; chunk < pcCfg.numChunks; chunk++)
         {
-            int chunksize=n/pcid->numChunks;
+            int chunksize=n/pcCfg.numChunks;
             int outsize=chunksize;
             /// last chunk gets remainder
-            if(pcid->numChunks > 1 && chunk == pcid->numChunks - 1)
-                outsize+=n % pcid->numChunks;
-            if(pcid->useDirectSend)
+            if(pcCfg.numChunks > 1 && chunk == pcCfg.numChunks - 1)
+                outsize+=n % pcCfg.numChunks;
+            if(!pcCfg.isInputMulticast)
             {
                 CkArrayIndex4D idx;
                 for(int elem=0; elem<pcid->listGettingRight.size();elem++)
@@ -303,7 +303,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
     }
     /// else, if the destination section doesnt exist even after attempting to create one
     else
-        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send right block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcid->Symmetric);
+        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send right block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcCfg.isSymmetric);
 }
 
 
@@ -378,11 +378,11 @@ void PCCommManager::sendRightDataRDMA(PairCalcID* pcid, int n, complex* ptr, int
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
-  int s2=state/pcid->GrainSize*pcid->GrainSize;
+  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
+  int s2=state/pcCfg.grainSize*pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-  int nstates=pcid->nstates;
-  int GrainSize=pcid->GrainSize;
+  int nstates=pcCfg.numStates;
+  int GrainSize=pcCfg.grainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
 									       plane, plane, 1,
 									       0, maxpcstateindex, GrainSize,
@@ -406,12 +406,12 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
-  int GrainSize=pcid->GrainSize;
+  int GrainSize=pcCfg.grainSize;
   int s1=state / GrainSize * GrainSize; //column
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 
-  int nstates=pcid->nstates;
+  int nstates=pcCfg.numStates;
   // all nondiagonal elements
   // so we'll have to make this the tedious explicit way
 
@@ -445,11 +445,11 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(Pai
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
-  int s2=state/pcid->GrainSize*pcid->GrainSize;
+  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
+  int s2=state/pcCfg.grainSize*pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 
-  int GrainSize=pcid->GrainSize;
+  int GrainSize=pcCfg.grainSize;
   int s2range= (s2==0) ? 1 : GrainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
 									       plane, plane, 1,
@@ -474,12 +474,12 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId[plane]).ckLocalBranch();
-  int GrainSize=pcid->GrainSize;
+  int GrainSize=pcCfg.grainSize;
   int s1=state / GrainSize * GrainSize; //column
-  int maxpcstateindex=(pcid->nstates/pcid->GrainSize-1)*pcid->GrainSize;
+  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 
-  int nstates=pcid->nstates;
+  int nstates=pcCfg.numStates;
   int s2start=s1+GrainSize;
   s2start= (s2start>maxpcstateindex) ? maxpcstateindex : s2start;
   int s2range= (s2start==maxpcstateindex) ? 1 : GrainSize;
