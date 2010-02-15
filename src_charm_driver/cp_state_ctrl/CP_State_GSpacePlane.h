@@ -1,5 +1,5 @@
 #include "debug_flags.h"
-#include "charm++.h" /// @note: Needed for ckcomplex.h ?
+#include "charm++.h"
 #include "ckcomplex.h"
 #include "gStatePlane.decl.h"
 #include "pcCommManager.h"
@@ -100,7 +100,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         double ake_old;
         
         bool acceptedVPsi;
-        CP_State_GSpacePlane( int, int, int, int,int,int, UberCollection);
+        CP_State_GSpacePlane( int, int, int, int,int, int, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection);
         CP_State_GSpacePlane(CkMigrateMessage *m);
         ~CP_State_GSpacePlane();
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link

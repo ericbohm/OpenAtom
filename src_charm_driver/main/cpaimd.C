@@ -470,6 +470,72 @@ main::main(CkArgMsg *msg) {
      /* choose whether ortho should use local callback */
      Ortho_use_local_cb = true;
 
+    // Create a paircalc config object for the symmetric PC instance
+    pc::pcConfig cfgSymmPC;
+
+    // Stuff it with the actual configurations
+    cfgSymmPC.isDynamics         = (sim->cp_min_opt==1)? false: true;
+
+    cfgSymmPC.numPlanes          = config.nchareG;
+    cfgSymmPC.numStates          = nstates;
+    cfgSymmPC.grainSize          = config.sGrainSize;
+    cfgSymmPC.orthoGrainSize     = config.orthoGrainSize;
+
+    cfgSymmPC.conserveMemory     = config.conserveMemory;
+    cfgSymmPC.isLBon             = config.lbpaircalc;
+
+    cfgSymmPC.areBWTilesCollected= config.PCCollectTiles;
+    cfgSymmPC.isBWstreaming      = config.PCstreamBWout;
+    cfgSymmPC.isBWbarriered      = config.useBWBarrier;
+    cfgSymmPC.shouldDelayBWsend  = config.PCdelayBWSend;
+    cfgSymmPC.isInputMulticast   = !config.usePairDirectSend;
+    cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
+    cfgSymmPC.instance           = thisInstance.proxyOffset;
+
+    cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
+    cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;
+    cfgSymmPC.gemmSplitBW        = config.gemmSplitBW;
+
+    // Create a paircalc config object for the asymmetric PC instance
+    pc::pcConfig cfgAsymmPC = cfgSymmPC;
+
+    // Configurations specific to the symmetric PC instance
+    cfgSymmPC.isSymmetric        = true;
+    cfgSymmPC.arePhantomsOn      = config.phantomSym;
+    cfgSymmPC.numChunks          = config.numChunksSym;
+    cfgSymmPC.isDoublePackOn     = doublePack;
+    cfgSymmPC.resultMsgPriority  = config.gsfftpriority;
+
+    // Configurations specific to the asymmetric PC instance
+    cfgAsymmPC.isSymmetric        = false;
+    cfgAsymmPC.arePhantomsOn      = false;
+    cfgAsymmPC.numChunks          = config.numChunksAsym;
+    cfgAsymmPC.isDoublePackOn     = 0;
+    cfgAsymmPC.resultMsgPriority  = config.lambdapriority+2;
+
+    // Configure the GSpace entry methods that the PCs will callback
+    if(cfgSymmPC.isOutputReduced)
+    {
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
+    }
+    else
+    {
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_partialResultMsg;
+    }
+
+    if(cfgAsymmPC.isOutputReduced)
+    {
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
+        cfgAsymmPC.PsiVEP          = 0;
+    }
+    else
+    {
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
+        cfgAsymmPC.PsiVEP          = 0;
+    }
+
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
 
@@ -706,7 +772,7 @@ Per Instance startup BEGIN
 
 	    // and then we make the usual set of chares to which we pass
 	    // the Uber Index.
-	    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+	    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, cfgSymmPC, cfgAsymmPC, thisInstance);
 
 	    CmiNetworkProgressAfter(1);
 
@@ -742,7 +808,11 @@ Per Instance startup BEGIN
 	    //============================================================================ 
 	    // Initialize paircalculators for Psi and Lambda and ortho
 
-	    init_pair_calculators( nstates,doublePack,sim, boxSize, thisInstance);
+        // Initialize the cfg objects with the Gspace array ID
+        cfgSymmPC.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
+        cfgAsymmPC.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
+
+	    init_pair_calculators( nstates,doublePack,sim, boxSize, cfgSymmPC, cfgAsymmPC, thisInstance);
 	    CmiNetworkProgressAfter(1);
 
 	    //============================================================================ 
@@ -814,7 +884,7 @@ main::~main(){
  * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
  */
 //============================================================================    
-void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance)
+void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance)
 //============================================================================    
   {// begin routine
 //============================================================================    
@@ -972,18 +1042,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
   //-------------------------------------------------------------
   // Register the PCs
-  int gsp_ep;
-  int gsp_ep_tol;
-  if(config.gSpaceSum)
-    {
-      gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
-      gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_partialResultMsg;
-    }
-  else
-    {
-      gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
-      gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
-    }
     //    CkGroupID symMcast = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
 
     for(int i=0; i< nchareG ;i++)
@@ -997,49 +1055,9 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    // Create a new paircalc config object
-    pc::pcConfig pcCfg;
-    // Stuff it with the actual configurations
-    pcCfg.isDynamics         = (sim->cp_min_opt==1)? false: true;
-
-    pcCfg.numPlanes          = config.nchareG;
-    pcCfg.numStates          = nstates;
-    pcCfg.grainSize          = config.sGrainSize;
-    pcCfg.orthoGrainSize     = config.orthoGrainSize;
-
-    pcCfg.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
-    pcCfg.PsiVEP             = gsp_ep_tol;
-    pcCfg.conserveMemory     = config.conserveMemory;
-    pcCfg.isLBon             = config.lbpaircalc;
-
-    pcCfg.areBWTilesCollected= config.PCCollectTiles;
-    pcCfg.isBWstreaming      = config.PCstreamBWout;
-    pcCfg.isBWbarriered      = config.useBWBarrier;
-    pcCfg.shouldDelayBWsend  = config.PCdelayBWSend;
-    pcCfg.isInputMulticast   = !config.usePairDirectSend;
-    pcCfg.isOutputReduced    = !config.gSpaceSum;
-    pcCfg.instance           = thisInstance.proxyOffset;
-
-    pcCfg.gemmSplitFWk       = config.gemmSplitFWk;
-    pcCfg.gemmSplitFWm       = config.gemmSplitFWm;
-    pcCfg.gemmSplitBW        = config.gemmSplitBW;
-
-    // Configurations specific to the symmetric PC instance
-    pcCfg.isSymmetric        = true;
-    pcCfg.arePhantomsOn      = config.phantomSym;
-    pcCfg.numChunks          = config.numChunksSym;
-    pcCfg.isDoublePackOn    = doublePack;
-    pcCfg.gSpaceEP           = gsp_ep;
-    pcCfg.resultMsgPriority  = config.gsfftpriority;
-
-    createPairCalculator(pcCfg, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
+    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
 
     CkArrayIndex2D myindex(0, 0);
-    if(config.gSpaceSum)
-      gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
-    else
-      gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
-    int myPack=0;
     CkVec <CkGroupID> mCastGrpIdsA;
     for(int i=0; i< nchareG ;i++)
       mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
@@ -1051,15 +1069,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    // Configurations specific to the asymmetric PC instance
-    pcCfg.isSymmetric        = false;
-    pcCfg.arePhantomsOn      = false;
-    pcCfg.numChunks          = config.numChunksAsym;
-    pcCfg.isDoublePackOn    = myPack;
-    pcCfg.gSpaceEP           = gsp_ep;
-    pcCfg.resultMsgPriority  = config.lambdapriority+2;
-
-    createPairCalculator(pcCfg, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, mCastGrpIdsA);
+    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, mCastGrpIdsA);
     
 
 //============================================================================ 
@@ -1745,7 +1755,7 @@ void init_ortho_chares(int nstates, UberCollection thisInstance) {
 //============================================================================
 
 void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
-                       int doublePack, CPcharmParaInfo *sim, UberCollection thisInstance)
+                       int doublePack, CPcharmParaInfo *sim, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance)
 //============================================================================
    { //begin routine 
 //============================================================================
@@ -1973,9 +1983,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
   gSpaceOpts.setMap(gsMap);
-  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX,  1, 1, sGrainSize,  gforward, 
-		     gbackward, thisInstance, gSpaceOpts));
+  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, cfgSymmPC, cfgAsymmPC, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
 

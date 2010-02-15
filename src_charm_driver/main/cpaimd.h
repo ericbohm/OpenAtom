@@ -807,13 +807,16 @@ class VdWGSMap : public CkArrayMapTable2 {
  */
 //============================================================================
 class size2d; //forward decl to shup the compiler
+namespace cp { namespace paircalc { class pcConfig; } }
+namespace pc = cp::paircalc;
+
 void init_pair_calculators(int nstates, int doublePack, 
-                           CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance);
+                           CPcharmParaInfo *sim, int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
 void init_ortho_chares(int nstates, UberCollection thisInstance);
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
-void init_state_chares(int,int,int,int,CPcharmParaInfo *, UberCollection thisInstance);
+void init_state_chares(int,int,int,int,CPcharmParaInfo *, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
 int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);

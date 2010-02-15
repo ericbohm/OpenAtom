@@ -1,4 +1,5 @@
 #include "debug_flags.h"
+#include "paircalc/pcConfig.h"
 
 #ifndef PC_COMM_MANAGER_H
 #define PC_COMM_MANAGER_H
@@ -10,6 +11,9 @@ struct ckcomplex;
 typedef ckcomplex complex;
 
 namespace cp {
+    /// Namespace aliases
+    namespace pc = paircalc;
+
     namespace gspace {
 
 ///
@@ -17,7 +21,8 @@ class PCCommManager
 {
     public:
         /// Constructor
-        //PCCommManager(_cfg): pcCfg(_cfg) {}
+        PCCommManager(const pc::pcConfig &_cfg): pcCfg(_cfg) {}
+        PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
         static void makeLeftTree(PairCalcID* pid, int myS, int myZ);
         /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
@@ -46,7 +51,7 @@ class PCCommManager
         void sendRightDataRDMA (PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
 
         /// Input configurations for the paircalcs
-        //cp::paircalc::pcConfig pcCfg;
+        cp::paircalc::pcConfig pcCfg;
 };
 
 

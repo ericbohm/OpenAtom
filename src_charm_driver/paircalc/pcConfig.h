@@ -1,3 +1,5 @@
+#include "charm++.h"
+
 #ifndef PC_CONFIG_H
 #define PC_CONFIG_H
 
@@ -85,6 +87,6 @@ class pcConfig
 } // end namespace cp
 
 /// PUP this class as raw bytes (for now)
-PUPbytes(cp::paircalc::pcConfig);
+PUPbytes(cp::paircalc::pcConfig)
 
 #endif // PC_CONFIG_H
