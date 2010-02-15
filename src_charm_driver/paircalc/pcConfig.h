@@ -51,8 +51,6 @@ class pcConfig
         int conserveMemory;
         /// Should the paircalcs worry about load balancing
         bool isLBon; ///< @note: Originally,  lbpaircalc
-        /// What mechanism should be used for reductions @note: defunct
-        redtypes reduce;
         /// Is double-packing on?
         bool isDoublePackOn;
 

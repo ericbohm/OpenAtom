@@ -1011,7 +1011,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     pcCfg.PsiVEP             = gsp_ep_tol;
     pcCfg.conserveMemory     = config.conserveMemory;
     pcCfg.isLBon             = config.lbpaircalc;
-    pcCfg.reduce             = section;
 
     pcCfg.areBWTilesCollected= config.PCCollectTiles;
     pcCfg.isBWstreaming      = config.PCstreamBWout;

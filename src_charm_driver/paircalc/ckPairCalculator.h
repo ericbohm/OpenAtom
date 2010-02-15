@@ -72,9 +72,6 @@
 /// The type of data that is input from GSpace and operated on by the PairCalcs
 typedef double inputType;
 
-enum redtypes {section=0, machine=1, sparsecontiguous=2};
-PUPbytes(redtypes);
-
 extern ComlibInstanceHandle mcastInstanceCP;
 
 extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}
