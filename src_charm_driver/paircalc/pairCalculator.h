@@ -226,17 +226,9 @@ PairCalcID &operator=(const PairCalcID& pid) {
 void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, int flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId);
 
 
-/// Forward declaration of the handshake token
-struct RDMApair_GSP_PC;
-/// Send out RDMA setup requests to all the destination PC chares that will be getting left data 
-void sendLeftRDMARequest (PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
-/// Send out RDMA setup requests to all the destination PC chares that will be getting right data 
-void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
 /// 
 void isAtSyncPairCalc(PairCalcID* pcid);
 
-
-void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
 
 //@{
 /// Matrix read/write utils

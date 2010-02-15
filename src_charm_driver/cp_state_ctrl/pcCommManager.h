@@ -9,6 +9,8 @@ class PairCalcID;
 class CProxySection_PairCalculator;
 struct ckcomplex;
 typedef ckcomplex complex;
+/// Forward declaration of the handshake token
+struct RDMApair_GSP_PC;
 
 namespace cp {
     /// Namespace aliases
@@ -49,6 +51,13 @@ class PCCommManager
         void sendLeftDataRDMA  (PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
         /// Sends right matrix data via RDMA
         void sendRightDataRDMA (PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
+        /// Send RDMA setup requests to all the destination PC chares that will be getting left data
+        void sendLeftRDMARequest (PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
+        /// Send RDMA setup requests to all the destination PC chares that will be getting right data
+        void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
+        /// Send out a dummy mcast to prod CkMulticast into setting up the result reduction trees etc
+        void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
+
 
         /// Input configurations for the paircalcs
         cp::paircalc::pcConfig pcCfg;
