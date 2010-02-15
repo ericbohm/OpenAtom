@@ -86,8 +86,9 @@ module ckPairCalculator
 {
 
 	extern module paircalcMessages;
-	
 	extern module inputDataHandler;
+
+    include "paircalc/pcFwdDeclarations.h";
 	array [4D] InputDataHandler <CollatorType,CollatorType>;
 	
 	array [4D] PairCalculator 
