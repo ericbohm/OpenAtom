@@ -504,6 +504,7 @@ main::main(CkArgMsg *msg) {
     cfgSymmPC.arePhantomsOn      = config.phantomSym;
     cfgSymmPC.numChunks          = config.numChunksSym;
     cfgSymmPC.isDoublePackOn     = doublePack;
+    cfgSymmPC.inputMsgPriority   = config.psipriority;
     cfgSymmPC.resultMsgPriority  = config.gsfftpriority;
 
     // Configurations specific to the asymmetric PC instance
@@ -511,6 +512,7 @@ main::main(CkArgMsg *msg) {
     cfgAsymmPC.arePhantomsOn      = false;
     cfgAsymmPC.numChunks          = config.numChunksAsym;
     cfgAsymmPC.isDoublePackOn     = 0;
+    cfgAsymmPC.inputMsgPriority   = config.lambdapriority;
     cfgAsymmPC.resultMsgPriority  = config.lambdapriority+2;
 
     // Configure the GSpace entry methods that the PCs will callback

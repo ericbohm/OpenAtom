@@ -68,6 +68,8 @@ class pcConfig
         bool isInputMulticast; ///< @note: Originally, usePairDirectSend
         /// Should the results from each PC chare be reduced or delivered individually to GSpace?
         bool isOutputReduced; ///< @note: Originally, !gSpaceSum
+        /// The priority (set by GSpace) of the input messages
+        int inputMsgPriority; ///< Originally, PairCalcID::priority
         /// If shouldDelayBWsend, what priority should this instance use for the result msgs
         int resultMsgPriority; ///< @note: Originally,  gpriority
         /// The proxyOffset value of thisInstance of OpenAtom computations

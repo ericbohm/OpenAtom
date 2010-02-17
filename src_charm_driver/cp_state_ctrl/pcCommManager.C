@@ -181,7 +181,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
                 for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
                 {
                     paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
-                    *(int*)CkPriorityPtr(msg) = pcid->priority;
+                    *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                     idx=pcid->listGettingLeft[elem];
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
@@ -199,7 +199,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
             else
             {
                 paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
-                *(int*)CkPriorityPtr(msg) = pcid->priority;
+                *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                 if(pcCfg.isSymmetric && myPlane==0)
@@ -274,7 +274,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
                     paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-                    *(int*)CkPriorityPtr(msg) = pcid->priority;
+                    *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     #ifdef _NAN_CHECK_
                     for(int i=0;i<outsize ;i++)
                     {
@@ -289,7 +289,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
             {
                 paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-                *(int*)CkPriorityPtr(msg) = pcid->priority;
+                *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 #ifdef _NAN_CHECK_
                 for(int i=0;i<outsize ;i++)
                 {
