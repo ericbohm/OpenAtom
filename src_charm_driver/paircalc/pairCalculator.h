@@ -47,7 +47,7 @@ class PairCalcID
 		/// True if a proxy for the destination PC array section including a (portion of a) column exists
 		bool existsRproxy;
 
-		CkVec <CkGroupID> mCastGrpId;
+		CkGroupID mCastGrpId;
 		int priority;
 
 
@@ -120,7 +120,7 @@ class PairCalcID
 void resetProxy()
 {
     CkAbort("need to adjust for having plane instance of multicastmgr");
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId[0]).ckLocalBranch();       
+    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
     for(int chunk=0;chunk<numChunks;chunk++)
       {
 
@@ -223,7 +223,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 };
 
 /// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, int flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId);
+void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, int flag, CkGroupID *mapid, int priority, CkGroupID mCastGrpId);
 
 
 /// 

@@ -71,7 +71,7 @@ extern ComlibInstanceHandle gSymInstance;
 #endif
 
 
-void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkVec <CkGroupID> mCastGrpId)
+void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkGroupID mCastGrpId)
 {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);

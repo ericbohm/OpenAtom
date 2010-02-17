@@ -124,7 +124,6 @@ CkVec <MapType2> OrthoHelperImaptable;
 CkVec <MapType4> AsymScalcImaptable;
 CkVec <MapType4> SymScalcImaptable;
 
-CkVec <CkGroupID> mCastGrpIds;
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
@@ -1044,11 +1043,9 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
   //-------------------------------------------------------------
   // Register the PCs
-    //    CkGroupID symMcast = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
+    CkGroupID symmMcastMgrID  = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
+    CkGroupID asymmMcastMgrID = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
 
-    for(int i=0; i< nchareG ;i++)
-      mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
-    //mCastGrpIds.push_back(symMcast);
    //symmetric AKA Psi
 #ifdef _CP_SUBSTEP_TIMING_
     UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
@@ -1057,12 +1054,9 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
+    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, symmMcastMgrID);
 
     CkArrayIndex2D myindex(0, 0);
-    CkVec <CkGroupID> mCastGrpIdsA;
-    for(int i=0; i< nchareG ;i++)
-      mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
       //asymmetric AKA Lambda AKA Gamma
 #ifdef _CP_SUBSTEP_TIMING_
     UpairCalcID2[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Asym Forward");
@@ -1071,7 +1065,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, mCastGrpIdsA);
+    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, asymmMcastMgrID);
     
 
 //============================================================================ 
