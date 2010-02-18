@@ -1,5 +1,6 @@
 #include "pcSectionManager.h"
-#include "paircalc/pairCalculator.h" ///< @note: Just for the definition of PairCalcID. Eliminate
+#include "paircalc/pcConfig.h"
+#include "paircalc/pairCalculator.h" ///< required for the reorder_elem declarations
 
 #ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
@@ -34,21 +35,21 @@ void PCSectionManager::pup(PUP::er &p)
  * configured PC instances, we should make the section managers init themselves from an instance config object and not 
  * a global config object. But first, we need to implement the concept of a config class for an instance :)
  */
-void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const Config &cfg, CkGroupID oMCastGID, CkGroupID oRedGID)
+void PCSectionManager::init(const CkIndex2D orthoIdx, const pc::pcConfig &pcCfg, CkArrayID pcAID, CkGroupID oMCastGID, CkGroupID oRedGID)
 {
-    pcArrayID       = pcid.Aid;
-    isSymmetric     = pcid.Symmetric;
+    pcArrayID       = pcAID;
+    isSymmetric     = pcCfg.isSymmetric;
 
-    numPlanes       = cfg.nchareG;
-    numStates       = cfg.nstates;
-    numChunks       = (isSymmetric)? cfg.numChunksSym : cfg.numChunksAsym;
-    pcGrainSize     = cfg.sGrainSize;
-    orthoGrainSize  = cfg.orthoGrainSize;
+    numPlanes       = pcCfg.numPlanes;
+    numStates       = pcCfg.numStates;
+    numChunks       = pcCfg.numChunks;
+    pcGrainSize     = pcCfg.grainSize;
+    orthoGrainSize  = pcCfg.orthoGrainSize;
 
     orthoIndex      = orthoIdx;
     orthomCastGrpID = oMCastGID;
     orthoRedGrpID   = oRedGID;
-    msgPriority     = pcid.priority;
+    msgPriority     = pcCfg.inputMsgPriority;
 }
 
 

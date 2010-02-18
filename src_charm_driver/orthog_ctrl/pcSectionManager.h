@@ -1,12 +1,10 @@
 #include "paircalc/ckPairCalculator.h"
-#include "configure.h"
 
 #ifndef PC_SECTION_MANAGER_H
 #define PC_SECTION_MANAGER_H
 
 /// Forward declarations
 class Ortho; 
-class PairCalcID;
 
 
 namespace cp {
@@ -21,7 +19,7 @@ class PCSectionManager
         /// Constructor
         PCSectionManager() {}
         /// An initializer method that fills this with data
-        void init(const CkIndex2D orthoIdx, const PairCalcID &pcid, const Config &cfg, CkGroupID oMCastGID, CkGroupID oRedGID);
+        void init(const CkIndex2D orthoIdx, const pc::pcConfig &pcCfg, CkArrayID pcAID, CkGroupID oMCastGID, CkGroupID oRedGID);
         /// PUP serializer
         void pup(PUP::er &p);
         /// Creates a paircalc array section given the necessary info. Replaces initOneRedSect()

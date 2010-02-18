@@ -49,7 +49,6 @@
 #include "main/groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
-#include "paircalc/pairCalculator.h" ///< Just for the global PairCalcIDs used to init SectionMgrs
 
 #include "src_mathlib/mathlib.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
@@ -65,8 +64,6 @@ extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
-extern CkVec <PairCalcID> UpairCalcID1;
-extern CkVec <PairCalcID> UpairCalcID2;
 extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
@@ -584,7 +581,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::makeSections()
+void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID)
 {
     /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
      * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
@@ -627,8 +624,8 @@ void Ortho::makeSections()
     }
 
     // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
-    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
-    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    symmSectionMgr.init (thisIndex, cfgSymmPC , symAID , oMCastGID, oRedGID);
+    asymmSectionMgr.init(thisIndex, cfgAsymmPC, asymAID, oMCastGID, oRedGID);
     
     /// Once the PC - ortho channel is setup, the PC instance should notify the instance controller that its ready
     CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());

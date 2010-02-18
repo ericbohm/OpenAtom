@@ -127,7 +127,7 @@ class Ortho : public CBase_Ortho
                 int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
         /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
-        void makeSections();
+        void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
 
         /// Symmetric PCs contribute data that is summed via this reduction to deposit a portion of the S matrix with this ortho, triggering S->T
         void start_calc(CkReductionMsg *msg);

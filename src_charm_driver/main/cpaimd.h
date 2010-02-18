@@ -812,7 +812,7 @@ namespace pc = cp::paircalc;
 
 void init_pair_calculators(int nstates, int doublePack, 
                            CPcharmParaInfo *sim, int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
-void init_ortho_chares(int nstates, UberCollection thisInstance);
+void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);

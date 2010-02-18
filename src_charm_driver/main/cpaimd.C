@@ -1034,11 +1034,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   }
 
 
-  //============================================================================ 
-  // initialize Ortho  now that we have the PC maps
-  init_ortho_chares(nstates, thisInstance);
-  CmiNetworkProgressAfter(1);
-
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
   //-------------------------------------------------------------
@@ -1067,6 +1062,11 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
 
     createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, asymmMcastMgrID);
     
+
+  //============================================================================ 
+  // initialize Ortho  now that we have the PC maps
+  CmiNetworkProgressAfter(1);
+  init_ortho_chares(nstates, cfgSymmPC, cfgAsymmPC, thisInstance);
 
 //============================================================================ 
    }//end routine
@@ -1522,7 +1522,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void init_ortho_chares(int nstates, UberCollection thisInstance) {
+void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance) {
 //============================================================================
 
   PRINT_LINE_STAR;
@@ -1734,7 +1734,9 @@ void init_ortho_chares(int nstates, UberCollection thisInstance) {
   if(config.useOrthoHelpers)
     UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
     
-  UorthoProxy[thisInstance.proxyOffset].makeSections();
+  CkArrayID symAID = UpairCalcID1[thisInstance.proxyOffset].Aid;
+  CkArrayID asymAID= UpairCalcID2[thisInstance.proxyOffset].Aid;
+  UorthoProxy[thisInstance.proxyOffset].makeSections(cfgSymmPC, cfgAsymmPC, symAID, asymAID);
   delete avail;
   delete excludePes;
 //============================================================================

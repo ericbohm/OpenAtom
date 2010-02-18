@@ -2,7 +2,7 @@ module ortho
 {
 	class CLA_Matrix_interface;
 	class UberCollection;
-	class CProxySection_PairCalculator;
+	include "paircalc/pcFwdDeclarations.h";
     namespace cp {
         namespace ortho {
             class PCSectionManager;
@@ -25,7 +25,7 @@ module ortho
 		entry void resume();
 		entry void resumeV(CkReductionMsg *msg);
 		entry void maxCheck(CkReductionMsg *msg);
-		entry void makeSections();
+		entry void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
 		entry void start_calc(CkReductionMsg *msg);	
 		entry void orthoCookieinit(initCookieMsg *msg);
 		entry void do_iteration();
