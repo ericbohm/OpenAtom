@@ -48,7 +48,6 @@ class PairCalcID
 		bool existsRproxy;
 
 		CkGroupID mCastGrpId;
-		int priority;
 
 
 		/** Array section which receives left matrix block data from the owner of this object (a Gspace chare)
@@ -97,7 +96,7 @@ class PairCalcID
 		
 
 
-		void Init(CkArrayID aid, CkArrayID handlerID, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, int _priority,  bool _useDirectSend) {
+		void Init(CkArrayID aid, CkArrayID handlerID, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, bool _useDirectSend) {
 		  Aid = aid;
 		  ipHandlerID = handlerID;
 		  handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (handlerID);
@@ -112,7 +111,6 @@ class PairCalcID
 		  existsLproxy=false;
 		  isDoublePacked = _dp;
 		  lbpaircalc=_lbpaircalc;
-		  priority=_priority;
 		}
 
 
@@ -160,7 +158,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
   lbpaircalc=pid.lbpaircalc;
   existsLproxy=pid.existsLproxy;
   existsRproxy=pid.existsRproxy;
-  priority=pid.priority;
   mCastGrpId=pid.mCastGrpId;
 #ifdef _CP_SUBSTEP_TIMING_
     forwardTimerID=pid.forwardTimerID;
@@ -190,7 +187,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
     p|existsLproxy;
     p|existsRproxy;
     p|mCastGrpId;
-    p|priority;
 #ifdef _CP_SUBSTEP_TIMING_
     p|forwardTimerID;
     p|backwardTimerID;
@@ -223,7 +219,7 @@ PairCalcID &operator=(const PairCalcID& pid) {
 };
 
 /// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, int flag, CkGroupID *mapid, int priority, CkGroupID mCastGrpId);
+void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, CkGroupID *mapid);
 
 
 /// 

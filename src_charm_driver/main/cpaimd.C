@@ -489,6 +489,8 @@ main::main(CkArgMsg *msg) {
     cfgSymmPC.shouldDelayBWsend  = config.PCdelayBWSend;
     cfgSymmPC.isInputMulticast   = !config.usePairDirectSend;
     cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
+    cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
+
     cfgSymmPC.instance           = thisInstance.proxyOffset;
 
     cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
@@ -1038,9 +1040,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
   //-------------------------------------------------------------
   // Register the PCs
-    CkGroupID symmMcastMgrID  = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
-    CkGroupID asymmMcastMgrID = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
-
    //symmetric AKA Psi
 #ifdef _CP_SUBSTEP_TIMING_
     UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
@@ -1049,7 +1048,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, symmMcastMgrID);
+    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
 
     CkArrayIndex2D myindex(0, 0);
       //asymmetric AKA Lambda AKA Gamma
@@ -1060,7 +1059,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, asymmMcastMgrID);
+    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), &scalc_asym_id);
     
 
   //============================================================================ 

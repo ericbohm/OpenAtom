@@ -71,7 +71,7 @@ extern ComlibInstanceHandle gSymInstance;
 #endif
 
 
-void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib_flag, CkGroupID *mapid, int priority, CkGroupID mCastGrpId)
+void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, CkGroupID *mapid)
 {
 
   traceRegisterUserEvent("calcpairDGEMM", 210);
@@ -106,8 +106,8 @@ void createPairCalculator(const pc::pcConfig pcCfg, PairCalcID* pcid, int comlib
 
   int proc = 0;
   // Initialize the PairCalcID instance
-  pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), pcCfg.grainSize, pcCfg.numChunks, pcCfg.numStates, pcCfg.isSymmetric, comlib_flag, pcCfg.isDoublePackOn, pcCfg.conserveMemory, pcCfg.isLBon, priority, !pcCfg.isInputMulticast);
-  pcid->mCastGrpId=mCastGrpId;
+  pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), pcCfg.grainSize, pcCfg.numChunks, pcCfg.numStates, pcCfg.isSymmetric, 1, pcCfg.isDoublePackOn, pcCfg.conserveMemory, pcCfg.isLBon, !pcCfg.isInputMulticast);
+  pcid->mCastGrpId = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
 
 #ifdef USE_COMLIB
 

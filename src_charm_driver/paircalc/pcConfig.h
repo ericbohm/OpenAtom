@@ -72,6 +72,8 @@ class pcConfig
         //------------------- Input communication configs -----------------------------------------
         /// Will the input data be multicast to PC sections or sent directly (p2p)
         bool isInputMulticast; ///< @note: Originally, usePairDirectSend
+        /// The branching factor of the spanning trees that carry the input msgs
+        int inputSpanningTreeFactor; ///< config.PCSpanFactor
         /// The priority (set by GSpace) of the input messages
         int inputMsgPriority; ///< Originally, PairCalcID::priority
 
