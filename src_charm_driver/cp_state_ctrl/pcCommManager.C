@@ -6,6 +6,15 @@
 namespace cp {
     namespace gspace {
 
+PCCommManager::PCCommManager(const pc::pcConfig &_cfg):
+    pcCfg(_cfg),
+    sectionGettingLeft(0), sectionGettingRight(0),
+    existsLproxy(false), existsRproxy(false)
+{}
+
+
+
+
 void PCCommManager::createPCarray(PairCalcID* pcid, CkGroupID *mapid)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
@@ -36,12 +45,10 @@ void PCCommManager::createPCarray(PairCalcID* pcid, CkGroupID *mapid)
     inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
 
     int proc = 0;
-    // Initialize my set of array IDs
+    // Initialize my set of array / group IDs
     pcAID = pairCalculatorProxy.ckGetArrayID();
     ipHandlerAID = inputHandlerProxy.ckGetArrayID();
-    // Initialize the PairCalcID instance
-    pcid->Init(pcAID, ipHandlerAID);
-    pcid->mCastGrpId = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
+    mCastMgrGID = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
 
     #ifdef USE_COMLIB
         // Setup the appropriate multicast strategy
@@ -154,17 +161,17 @@ void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 	{
 		/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 		for(int s2 = sColMin; s2 <= maxpcstateindex; s2 += grainSize)
-			pcid->listGettingLeft.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
+			listGettingLeft.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
 	}
 	/// else, if communication is through section multicasts
 	else
 	{
 		/// Allocate one section proxy for each chunk
-		pcid->sectionGettingLeft=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
+		sectionGettingLeft=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
 		/// Build an array section for each chunk
 		for (int chunk = 0; chunk < numChunks; chunk++)
 		{
-			pcid->sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
+			sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
 																myPlane, myPlane, 1,
 																s1, s1, 1,
 																sColMin, maxpcstateindex, grainSize,
@@ -172,24 +179,24 @@ void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 			/// Delegate the multicast work to an appropriate library
 			#ifndef _PAIRCALC_DO_NOT_DELEGATE_
 #ifdef USE_COMLIB
-				if(pcid->useComlib && _PC_COMMLIB_MULTI_ )
-					ComlibAssociateProxy(mcastInstanceCP,pcid->sectionGettingLeft[chunk]);
+				if(_PC_COMMLIB_MULTI_ )
+					ComlibAssociateProxy(mcastInstanceCP,sectionGettingLeft[chunk]);
 				else
 #endif
 				{
-					CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
-					pcid->sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
+					CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+					sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
 				}
 			#endif
 		}
 	}
 	/// PC chares receiving data have been identified and memorized (either as an array section or a vector of IDs)
-	pcid->existsLproxy=true;
+	existsLproxy=true;
 	/** @todo: Removing this bit of code crashes the application. It seems necessary to get fresh proxies at 
 	 * this point, instead of simply creating them in the pcid object's Init() method. Perhaps, getting a proxy
 	 * to an empty chare array is not a robust operation. Or there could be some other issue. Look into this. 
 	 */
-	pcid->handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (ipHandlerAID);
+	handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (ipHandlerAID);
 }
 
 
@@ -222,17 +229,17 @@ void PCCommManager::makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 		{
 			/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 			for(int s1 = 0; s1 <= sRowMax; s1 += grainSize)
-				pcid->listGettingRight.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
+				listGettingRight.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
 		}
 		/// else, if communication is through section multicasts
 		else
 		{
 			/// Allocate one section proxy for each chunk
-			pcid->sectionGettingRight=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
+			sectionGettingRight=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
 			/// Build an array section for each chunk
 			for (int c = 0; c < numChunks; c++)
 			{
-				pcid->sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
+				sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
 																myPlane, myPlane, 1,
 																0, sRowMax, grainSize,
 																s2, s2, 1,
@@ -240,20 +247,21 @@ void PCCommManager::makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 				/// Delegate the multicast work to an appropriate library
 				#ifndef _PAIRCALC_DO_NOT_DELEGATE_
 #ifdef USE_COMLIB
-					if(pcid->useComlib && _PC_COMMLIB_MULTI_)
-						ComlibAssociateProxy(mcastInstanceCP, pcid->sectionGettingRight[c]);
+					if(_PC_COMMLIB_MULTI_)
+						ComlibAssociateProxy(mcastInstanceCP, sectionGettingRight[c]);
 					else
 #endif
 					{
-						CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
-						pcid->sectionGettingRight[c].ckSectionDelegate(mcastGrp);
+						CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+						sectionGettingRight[c].ckSectionDelegate(mcastGrp);
 					}
 				#endif
 			}
 		}
 		/// PC chares receiving data have been identified and memorized (either as an array section or a vector of IDs)
-		pcid->existsRproxy=true;
+		existsRproxy=true;
 	}
+	handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (ipHandlerAID);
 }
 
 
@@ -275,12 +283,12 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
 
     bool flag_dp = pcCfg.isDoublePackOn;
     /// If a destination array section doesnt exist, build one
-    if(!pcid->existsLproxy)
+    if(!existsLproxy)
     {
         makeLeftTree(pcid,myS,myPlane);
     }
     /// If a left matrix destination section exists, send the data as the left matrix block
-    if(pcid->existsLproxy)
+    if(existsLproxy)
     {
         int numChunks=pcCfg.numChunks;
         int chunksize =  n / numChunks;
@@ -300,12 +308,12 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
             if( !pcCfg.isInputMulticast)
             {
                 CkArrayIndex4D idx;
-                for(int elem=0; elem < pcid->listGettingLeft.size() ; elem++)
+                for(int elem=0; elem < listGettingLeft.size() ; elem++)
                 {
                     paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                     *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-                    idx=pcid->listGettingLeft[elem];
+                    idx=listGettingLeft[elem];
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
                     #ifdef _NAN_CHECK_
                     for(int i=0;i<outsize ;i++)
@@ -314,7 +322,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
                         CkAssert(finite(msg->points[i].im));
                     }
                     #endif
-                    pcid->handlerProxy(idx).acceptLeftData(msg);
+                    handlerProxy(idx).acceptLeftData(msg);
                 }
             }
             // else, use a typical multicast to the destination section
@@ -334,7 +342,7 @@ void PCCommManager::sendLeftDataMcast(PairCalcID* pcid, int n, complex* ptr, int
                     CkAssert(finite(msg->points[i].im));
                 }
                 #endif
-                pcid->sectionGettingLeft[chunk].acceptLeftData(msg);
+                sectionGettingLeft[chunk].acceptLeftData(msg);
             }
         }
     }
@@ -362,10 +370,10 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
 
     bool flag_dp = pcCfg.isDoublePackOn;
     /// If a destination array section doesnt exist, build one
-    if(!pcid->existsRproxy)
+    if(!existsRproxy)
         makeRightTree(pcid,myS,myPlane);
     /// If a right matrix destination section exists, send the data as the left matrix block
-    if(pcid->existsRproxy)
+    if(existsRproxy)
     {
         #ifdef _DEBUG_PAIRCALC_PARANOID_
         double re;
@@ -390,9 +398,9 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
             if(!pcCfg.isInputMulticast)
             {
                 CkArrayIndex4D idx;
-                for(int elem=0; elem<pcid->listGettingRight.size();elem++)
+                for(int elem=0; elem<listGettingRight.size();elem++)
                 {
-                    idx=pcid->listGettingRight[elem];
+                    idx=listGettingRight[elem];
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
                     paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -404,7 +412,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
                         CkAssert(finite(msg->points[i].im));
                     }
                     #endif
-                    pcid->handlerProxy(idx).acceptRightData(msg);
+                    handlerProxy(idx).acceptRightData(msg);
                 }
             }
             else
@@ -419,7 +427,7 @@ void PCCommManager::sendRightDataMcast(PairCalcID* pcid, int n, complex* ptr, in
                     CkAssert(finite(msg->points[i].im));
                 }
                 #endif
-                pcid->sectionGettingRight[chunk].acceptRightData(msg);
+                sectionGettingRight[chunk].acceptRightData(msg);
             }
         }
     }
@@ -439,13 +447,13 @@ void PCCommManager::sendLeftDataRDMA(PairCalcID* pcid, int n, complex* ptr, int 
 		if(!psiV)
 		{
 			/// Trigger an RDMA send for every rdma handle associated with all the PCs getting my data as left matrix
-			for (int i=0; i< pcid->leftDestinationHandles.size();i++)
-				if (pcid->leftDestinationHandles[i].handle >=0)
+			for (int i=0; i< leftDestinationHandles.size();i++)
+				if (leftDestinationHandles[i].handle >=0)
 				{
 					#ifdef DEBUG_CP_PAIRCALC_RDMA
 						CkPrintf("GSpace[%d,%d] Sending left data to PC via RDMA.\n",myS,myPlane);
 					#endif
-					CmiDirect_put( &(pcid->leftDestinationHandles[i]) );
+					CmiDirect_put( &(leftDestinationHandles[i]) );
 				}
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
@@ -465,13 +473,13 @@ void PCCommManager::sendRightDataRDMA(PairCalcID* pcid, int n, complex* ptr, int
 		if (!psiV)
 		{
 			/// Trigger an RDMA send for every rdma handle associated with all the PCs getting my data as right matrix
-			for (int i=0; i< pcid->rightDestinationHandles.size();i++)
-				if (pcid->rightDestinationHandles[i].handle >=0)
+			for (int i=0; i< rightDestinationHandles.size();i++)
+				if (rightDestinationHandles[i].handle >=0)
 				{
 					#ifdef DEBUG_CP_PAIRCALC_RDMA
 						CkPrintf("GSpace[%d,%d] Sending right data to PC via RDMA.\n",myS,myPlane);
 					#endif
-					CmiDirect_put( &(pcid->rightDestinationHandles[i]) );
+					CmiDirect_put( &(rightDestinationHandles[i]) );
 				}
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
@@ -483,7 +491,7 @@ void PCCommManager::sendRightDataRDMA(PairCalcID* pcid, int n, complex* ptr, int
 
 
 
-void PCCommManager::sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb)
+void PCCommManager::sendLeftRDMARequest(PairCalcID *pcid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to setup RDMA when RDMA is not enabled\n");
@@ -492,39 +500,39 @@ void PCCommManager::sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, 
 		CkPrintf("GSpace[%d,%d] Sending out RDMA setup requests to PCs getting left matrix data from me.\n",idTkn.gspIndex.x,idTkn.gspIndex.y);
 	#endif
 	/// If the destination PC chares are not known, determine them
-	if(!pid->existsLproxy)
-		makeLeftTree(pid,idTkn.gspIndex.x,idTkn.gspIndex.y);
+	if(!existsLproxy)
+		makeLeftTree(pcid,idTkn.gspIndex.x,idTkn.gspIndex.y);
 	/// If there exist any destination PC chares
-	if(pid->existsLproxy)
+	if(existsLproxy)
 	{
 		/// Verify
-		CkAssert(pid->numChunks > 0);
+		CkAssert(pcCfg.numChunks > 0);
 		/// Compute the size of the chunk of data to be sent out in terms of the number of doubles (as PC treats them) and not complex
-		int chunksize  = 2 * (totalsize / pid->numChunks);
+		int chunksize  = 2 * (totalsize / pcCfg.numChunks);
 
 		/// Send an RDMA setup request to each destination PC
-		for (int chunk=0; chunk < pid->numChunks; chunk++)
+		for (int chunk=0; chunk < pcCfg.numChunks; chunk++)
 		{
 			/// The last chunk gets the remainder of the points
-			if( (pid->numChunks > 1) && (chunk == pid->numChunks-1) )
-				chunksize += 2 * (totalsize % pid->numChunks);
+			if( (pcCfg.numChunks > 1) && (chunk == pcCfg.numChunks-1) )
+				chunksize += 2 * (totalsize % pcCfg.numChunks);
 			/// If the communication is through a direct p2p send
-			if(pid->useDirectSend)
+			if(!pcCfg.isInputMulticast)
 			{
 				CkArrayIndex4D idx;
-				for(int elem=0; elem < pid->listGettingLeft.size() ; elem++)
+				for(int elem=0; elem < listGettingLeft.size() ; elem++)
 				{
-					idx=pid->listGettingLeft[elem];
+					idx=listGettingLeft[elem];
 					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-					pid->handlerProxy(idx).setupRDMALeft(msg);
+					handlerProxy(idx).setupRDMALeft(msg);
 				}
 			}
 			/// else, if we're multicasting
 			else
 			{
 				RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-				pid->sectionGettingLeft[chunk].setupRDMALeft(msg);
+				sectionGettingLeft[chunk].setupRDMALeft(msg);
 			}
 		}
 	}
@@ -534,7 +542,7 @@ void PCCommManager::sendLeftRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, 
 
 
 
-void PCCommManager::sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb)
+void PCCommManager::sendRightRDMARequest(PairCalcID *pcid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to setup RDMA when RDMA is not enabled\n");
@@ -543,39 +551,39 @@ void PCCommManager::sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn,
 		CkPrintf("GSpace[%d,%d] Sending out RDMA setup requests to PCs getting right matrix data from me.\n",idTkn.gspIndex.x,idTkn.gspIndex.y);
 	#endif
 	/// If the destination PC chares are not known, determine them
-	if(!pid->existsRproxy)
-		makeRightTree(pid,idTkn.gspIndex.x,idTkn.gspIndex.y);
+	if(!existsRproxy)
+		makeRightTree(pcid,idTkn.gspIndex.x,idTkn.gspIndex.y);
 	/// If there exist any destination PC chares
-	if(pid->existsRproxy)
+	if(existsRproxy)
 	{
 		/// Verify
-		CkAssert(pid->numChunks > 0);
+		CkAssert(pcCfg.numChunks > 0);
 		/// Compute the size of the chunk of data to be sent out in terms of the number of doubles (as PC treats them) and not complex
-		int chunksize  = 2 * (totalsize / pid->numChunks);
+		int chunksize  = 2 * (totalsize / pcCfg.numChunks);
 
 		/// Send an RDMA setup request to each destination PC
-		for (int chunk=0; chunk < pid->numChunks; chunk++)
+		for (int chunk=0; chunk < pcCfg.numChunks; chunk++)
 		{
 			/// The last chunk gets the remainder of the points
-			if( (pid->numChunks > 1) && (chunk == pid->numChunks-1) )
-				chunksize += 2 * (totalsize % pid->numChunks);
+			if( (pcCfg.numChunks > 1) && (chunk == pcCfg.numChunks-1) )
+				chunksize += 2 * (totalsize % pcCfg.numChunks);
 			/// If the communication is through a direct p2p send
-			if(pid->useDirectSend)
+			if(!pcCfg.isInputMulticast)
 			{
 				CkArrayIndex4D idx;
-				for(int elem=0; elem < pid->listGettingRight.size() ; elem++)
+				for(int elem=0; elem < listGettingRight.size() ; elem++)
 				{
-					idx=pid->listGettingRight[elem];
+					idx=listGettingRight[elem];
 					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-					pid->handlerProxy(idx).setupRDMARight(msg);
+					handlerProxy(idx).setupRDMARight(msg);
 				}
 			}
 			/// else, if we're multicasting
 			else
 			{
 				RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-				pid->sectionGettingRight[chunk].setupRDMARight(msg);
+				sectionGettingRight[chunk].setupRDMARight(msg);
 			}
 		}
 	}
@@ -588,12 +596,12 @@ void PCCommManager::sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn,
 /**
  * send the multcast message to initialize the section tree and set the cookie
  */
-void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int GrainSize, CkGroupID mCastGrpId, bool lbsync, CkCallback synccb)
+void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int GrainSize, bool lbsync, CkCallback synccb)
 {
     int offset=state%GrainSize;
     int dest=state/GrainSize*GrainSize; //row or column
     initResultMsg *redMsg=new initResultMsg;
-    redMsg->mCastGrpId=mCastGrpId;
+    redMsg->mCastGrpId = mCastMgrGID;
     redMsg->dest=dest;
     redMsg->offset=offset;
     redMsg->lbsync=lbsync;
@@ -620,7 +628,7 @@ void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, int 
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   int s2=state/pcCfg.grainSize*pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
@@ -639,7 +647,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -648,7 +656,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
   int GrainSize=pcCfg.grainSize;
   int s1=state / GrainSize * GrainSize; //column
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
@@ -676,7 +684,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(Pai
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -687,7 +695,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(Pai
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   int s2=state/pcCfg.grainSize*pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
@@ -706,7 +714,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID
   bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -716,7 +724,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcid->mCastGrpId).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
   int GrainSize=pcCfg.grainSize;
   int s1=state / GrainSize * GrainSize; //column
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
@@ -741,7 +749,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(PairCalcID
   bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 

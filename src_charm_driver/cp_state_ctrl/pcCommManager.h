@@ -1,6 +1,7 @@
 #include "debug_flags.h"
 #include "paircalc/pcConfig.h"
 #include "paircalc/pcFwdDeclarations.h"
+#include "inputDataHandler.decl.h"
 
 #ifndef PC_COMM_MANAGER_H
 #define PC_COMM_MANAGER_H
@@ -20,7 +21,7 @@ class PCCommManager
 
     public:
         /// Constructor
-        PCCommManager(const pc::pcConfig &_cfg): pcCfg(_cfg) {}
+        PCCommManager(const pc::pcConfig &_cfg);
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
         void createPCarray(PairCalcID* pcid, CkGroupID *mapid);
@@ -41,6 +42,7 @@ class PCCommManager
         CProxySection_PairCalculator makeOneResultSection_sym2(PairCalcID* pcid, int state, int plane, int chunk);
         //@}
 
+
     private:
         /// Multicasts the left matrix data to the PC section
         void sendLeftDataMcast (PairCalcID* aid, int n, complex* ptr, int myS, int myZ, bool psiV);
@@ -55,7 +57,7 @@ class PCCommManager
         /// Send RDMA setup requests to all the destination PC chares that will be getting right data
         void sendRightRDMARequest(PairCalcID *pid, RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
         /// Send out a dummy mcast to prod CkMulticast into setting up the result reduction trees etc
-        void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  CkGroupID mCastGrpId, bool lbsync, CkCallback synccb);
+        void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  bool lbsync, CkCallback synccb);
 
 
         /// Input configurations for the paircalcs
@@ -64,6 +66,35 @@ class PCCommManager
 		CkArrayID pcAID;
 		/// The array ID of the PC's input handler chare array
 		CkArrayID ipHandlerAID;
+        /// The group ID of the multicast manager that will handle the multicasts to the PC array
+        CkGroupID mCastMgrGID;
+
+        /** Array section which receives left matrix block data
+         *
+         * symm instance: post-diagonal chares on row 's' that get data from this GSpace[s,p] chare
+         * asymm instance: all chares on row 's' that get data from this GSpace[s,p] chare
+         */
+        CProxySection_InputDataHandler<CollatorType,CollatorType> *sectionGettingLeft;
+
+        /** Array section which receives right matrix block data
+         *
+         * symm instance: pre-diagonal chares on column 's' that get data from this GSpace[s,p] chare
+         * asymm instance: all chares on column 's' that get data from this GSpace[s,p] chare
+         */
+        CProxySection_InputDataHandler<CollatorType,CollatorType> *sectionGettingRight;
+
+        /// A proxy to the PC input handler chare array
+        CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy;
+        /// A list of PC array elements which expect left matrix data from owning GSpace chare
+        CkVec <CkArrayIndex4D> listGettingLeft;
+        /// A list of PC array elements which expect right matrix data from owning GSpace chare
+        CkVec <CkArrayIndex4D> listGettingRight;
+        /// RDMA handles for each PC chare's input data handler that will receive data from the owner of this object (a GSpace[s,p] chare)
+        CkVec<rdmaHandleType> leftDestinationHandles, rightDestinationHandles;
+        /// True if a proxy for the destination PC array section including a (portion of a) row exists
+        bool existsLproxy;
+        /// True if a proxy for the destination PC array section including a (portion of a) column exists
+        bool existsRproxy;
 };
 
 
@@ -74,7 +105,7 @@ inline void PCCommManager::sendLeftData(PairCalcID* pcid, int n, complex* ptr, i
     #ifdef PC_USE_RDMA
         sendLeftDataRDMA(pcid,n,ptr,myS,myPlane,psiV);
     #else
-		sendLeftDataMcast(pcid,n,ptr,myS,myPlane,psiV);
+        sendLeftDataMcast(pcid,n,ptr,myS,myPlane,psiV);
     #endif
 }
 
@@ -86,7 +117,7 @@ inline void PCCommManager::sendRightData(PairCalcID* pcid, int n, complex* ptr, 
     #ifdef PC_USE_RDMA
         sendRightDataRDMA(pcid,n,ptr,myS,myPlane,psiV);
     #else
-		sendRightDataMcast(pcid,n,ptr,myS,myPlane,psiV);
+        sendRightDataMcast(pcid,n,ptr,myS,myPlane,psiV);
     #endif
 }
 

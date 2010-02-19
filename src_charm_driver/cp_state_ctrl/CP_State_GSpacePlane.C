@@ -631,8 +631,8 @@ void CP_State_GSpacePlane::setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID)
     msg->pcAsymAID        = asymmPCmgr.pcAID;
     msg->handlerSymAID    = symmPCmgr.ipHandlerAID;
     msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
-    msg->symMcastMgrGID   = symPCID.mCastGrpId;
-    msg->asymMcastMgrGID  = asymPCID.mCastGrpId;
+    msg->symMcastMgrGID   = symmPCmgr.mCastMgrGID;
+    msg->asymMcastMgrGID  = asymmPCmgr.mCastMgrGID;
     thisProxy.acceptPairCalcAIDs(msg);
 }
 
@@ -645,13 +645,13 @@ void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
     CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
     symmPCmgr.pcAID          = msg->pcSymAID;
     symmPCmgr.ipHandlerAID   = msg->handlerSymAID;
-    gpairCalcID1.mCastGrpId  = msg->symMcastMgrGID;
+    symmPCmgr.mCastMgrGID    = msg->symMcastMgrGID;
     asymmPCmgr.pcAID         = msg->pcAsymAID;
     asymmPCmgr.ipHandlerAID  = msg->handlerAsymAID;
-    gpairCalcID2.mCastGrpId  = msg->asymMcastMgrGID;
+    asymmPCmgr.mCastMgrGID   = msg->asymMcastMgrGID;
 
-	gpairCalcID1.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (symmPCmgr.ipHandlerAID);
-	gpairCalcID2.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (asymmPCmgr.ipHandlerAID);
+	symmPCmgr.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (symmPCmgr.ipHandlerAID);
+	asymmPCmgr.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (asymmPCmgr.ipHandlerAID);
 //============================================================================
 // Contribute to the reduction telling main we are done
 
@@ -1014,8 +1014,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 //Some PC initialization that needs to happen here to avoid
 //constructor race conditions
 
-  gpairCalcID1=UpairCalcID1[thisInstance.proxyOffset];
-  gpairCalcID2=UpairCalcID2[thisInstance.proxyOffset];
   makePCproxies();
 #ifdef PC_USE_RDMA
   /** Now that we have paircalcids, proxies, and allocated data, setup RDMA with a handshake to each PC.
