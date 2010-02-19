@@ -28,20 +28,6 @@ class PairCalcID
 		CkArrayID Aid;
 		/// The array ID of the PC's input handler chare array
 		CkArrayID ipHandlerID;
-		///@note: This doesnt seem to be getting used. There are no references to Gid
-		CkGroupID Gid;
-		int GrainSize;
-		int numChunks;
-		int nstates;
-		//@{
-		///@todo: (RV) These are repeated in here and in PC config data. Understand how they are necessary in the message
-		bool Symmetric;
-		bool useComlib;
-		bool useDirectSend;
-		bool isDoublePacked;
-		bool conserveMemory;
-		bool lbpaircalc;
-		//@}
 		/// True if a proxy for the destination PC array section including a (portion of a) row exists
 		bool existsLproxy;
 		/// True if a proxy for the destination PC array section including a (portion of a) column exists
@@ -96,66 +82,18 @@ class PairCalcID
 		
 
 
-		void Init(CkArrayID aid, CkArrayID handlerID, int grain, int _numChunks, int s, bool sym, bool _useComlib,  bool _dp, bool _conserveMemory, bool _lbpaircalc, bool _useDirectSend) {
+		void Init(CkArrayID aid, CkArrayID handlerID) {
 		  Aid = aid;
 		  ipHandlerID = handlerID;
 		  handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (handlerID);
-		  GrainSize = grain;
-		  numChunks = _numChunks;
-		  nstates = s;
-		  Symmetric = sym;
-		  useComlib = _useComlib;
-		  useDirectSend = _useDirectSend;
-		  conserveMemory = _conserveMemory;
 		  existsRproxy=false;
 		  existsLproxy=false;
-		  isDoublePacked = _dp;
-		  lbpaircalc=_lbpaircalc;
 		}
-
-
-
-void resetProxy()
-{
-    CkAbort("need to adjust for having plane instance of multicastmgr");
-    CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();       
-    for(int chunk=0;chunk<numChunks;chunk++)
-      {
-
-        if(useComlib && _PC_COMMLIB_MULTI_)
-          {
-#ifdef USE_COMLIB
-            /*if(existsRproxy)
-            	ComlibResetSectionProxy(&sectionGettingRight[chunk]);
-            if(existsLproxy)
-            	ComlibResetSectionProxy(&sectionGettingLeft[chunk]);*/
-#endif
-          }
-        else
-          {
-            if(existsRproxy)
-            	mcastGrp->resetSection(sectionGettingRight[chunk]);
-            if(existsLproxy)
-            	mcastGrp->resetSection(sectionGettingLeft[chunk]);
-          }
-      }
-}
-
 
 
 PairCalcID &operator=(const PairCalcID& pid) {
   Aid=pid.Aid;
   ipHandlerID = pid.ipHandlerID;
-  Gid=pid.Gid;    
-  GrainSize=pid.GrainSize;
-  numChunks=pid.numChunks;
-  nstates=pid.nstates;
-  Symmetric=pid.Symmetric;
-  useComlib=pid.useComlib;
-  useDirectSend=pid.useDirectSend;
-  isDoublePacked=pid.isDoublePacked;
-  conserveMemory=pid.conserveMemory;
-  lbpaircalc=pid.lbpaircalc;
   existsLproxy=pid.existsLproxy;
   existsRproxy=pid.existsRproxy;
   mCastGrpId=pid.mCastGrpId;
@@ -174,16 +112,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
   void pup(PUP::er &p) {
     p|Aid;
     p|ipHandlerID;
-    p|Gid;
-    p|GrainSize;
-    p|numChunks;
-    p|nstates;
-    p|Symmetric;
-    p|useComlib;
-    p|useDirectSend;
-    p|isDoublePacked;
-    p|conserveMemory;
-    p|lbpaircalc;
     p|existsLproxy;
     p|existsRproxy;
     p|mCastGrpId;
@@ -193,34 +121,9 @@ PairCalcID &operator=(const PairCalcID& pid) {
     p|beginTimerCB;
     p|endTimerCB;
 #endif
-    if(p.isUnpacking())
-      {
-	if(existsLproxy)
-	    sectionGettingLeft=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
-	if(existsRproxy)
-	    sectionGettingRight=new CProxySection_InputDataHandler<CollatorType,CollatorType>[numChunks];
-      }
-    if(existsLproxy)
-      {
-	if(useDirectSend)
-	  p|handlerProxy;
-	PUParray(p,sectionGettingLeft,numChunks);
-	if(useDirectSend)
-	  p|listGettingLeft;
-      }
-    if(existsRproxy)
-      {
-	PUParray(p,sectionGettingRight,numChunks);
-	if(useDirectSend) {
-	  p|listGettingRight; }
-      }
   }
 
 };
-
-/// Creates the PC chare array. Called separately for the symm / asymm instances
-void createPairCalculator(const cp::paircalc::pcConfig pcCfg, PairCalcID* aid, CkGroupID *mapid);
-
 
 /// 
 void isAtSyncPairCalc(PairCalcID* pcid);

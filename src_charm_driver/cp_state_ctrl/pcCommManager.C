@@ -37,7 +37,7 @@ void PCCommManager::createPCarray(const pc::pcConfig pcCfg, PairCalcID* pcid, Ck
 
     int proc = 0;
     // Initialize the PairCalcID instance
-    pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID(), pcCfg.grainSize, pcCfg.numChunks, pcCfg.numStates, pcCfg.isSymmetric, 1, pcCfg.isDoublePackOn, pcCfg.conserveMemory, pcCfg.isLBon, !pcCfg.isInputMulticast);
+    pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID());
     pcid->mCastGrpId = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
 
     #ifdef USE_COMLIB
@@ -49,7 +49,7 @@ void PCCommManager::createPCarray(const pc::pcConfig pcCfg, PairCalcID* pcid, Ck
             mcastInstanceACP=ComlibRegister(multistrat);
     #endif
 
-    int maxpcstateindex = (pcid->nstates / pcCfg.grainSize-1) * pcCfg.grainSize;
+    int maxpcstateindex = (pcCfg.numStates / pcCfg.grainSize-1) * pcCfg.grainSize;
     CkAssert(mapid);
     // If the symmetric loop PC instances are being created
     if(pcCfg.isSymmetric)

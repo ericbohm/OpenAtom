@@ -6,6 +6,7 @@
 #define PC_COMM_MANAGER_H
 
 // Forward declarations
+class CP_State_GSpacePlane;
 struct ckcomplex;
 typedef ckcomplex complex;
 
@@ -15,12 +16,15 @@ namespace cp {
 ///
 class PCCommManager
 {
+    friend class ::CP_State_GSpacePlane; ///< @note: Temporary until paircalc startup moves completely to GSpace
+
     public:
         /// Constructor
         PCCommManager(const pc::pcConfig &_cfg): pcCfg(_cfg) {}
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
-        /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
+        /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
         static void createPCarray(const pc::pcConfig pcCfg, PairCalcID* pcid, CkGroupID *mapid);
+        /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
         void makeLeftTree(PairCalcID* pid, int myS, int myZ);
         /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
         void makeRightTree(PairCalcID* pid, int myS, int myZ);

@@ -2642,7 +2642,7 @@ void CP_State_GSpacePlane::sendPsi() {
 #ifndef _CP_DEBUG_ORTHO_OFF_
   symmPCmgr.sendLeftData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
-  if(thisIndex.x >= gpairCalcID1.GrainSize)
+  if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
       symmPCmgr.sendRightData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
@@ -3199,7 +3199,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
   int numPoints = gs.numPoints;
   symmPCmgr.sendLeftData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
-  if(thisIndex.x >= gpairCalcID1.GrainSize)
+  if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
       symmPCmgr.sendRightData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
