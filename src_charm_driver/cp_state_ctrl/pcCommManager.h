@@ -60,6 +60,10 @@ class PCCommManager
 
         /// Input configurations for the paircalcs
         cp::paircalc::pcConfig pcCfg;
+		/// The array ID of the PC chare array instance I am managing
+		CkArrayID pcAID;
+		/// The array ID of the PC's input handler chare array
+		CkArrayID ipHandlerAID;
 };
 
 

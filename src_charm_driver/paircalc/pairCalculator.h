@@ -24,10 +24,6 @@
 class PairCalcID 
 {
 	public:
-		/// The array ID of this PC chare array instance
-		CkArrayID Aid;
-		/// The array ID of the PC's input handler chare array
-		CkArrayID ipHandlerID;
 		/// True if a proxy for the destination PC array section including a (portion of a) row exists
 		bool existsLproxy;
 		/// True if a proxy for the destination PC array section including a (portion of a) column exists
@@ -83,8 +79,6 @@ class PairCalcID
 
 
 		void Init(CkArrayID aid, CkArrayID handlerID) {
-		  Aid = aid;
-		  ipHandlerID = handlerID;
 		  handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (handlerID);
 		  existsRproxy=false;
 		  existsLproxy=false;
@@ -92,8 +86,6 @@ class PairCalcID
 
 
 PairCalcID &operator=(const PairCalcID& pid) {
-  Aid=pid.Aid;
-  ipHandlerID = pid.ipHandlerID;
   existsLproxy=pid.existsLproxy;
   existsRproxy=pid.existsRproxy;
   mCastGrpId=pid.mCastGrpId;
@@ -110,8 +102,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
 
 
   void pup(PUP::er &p) {
-    p|Aid;
-    p|ipHandlerID;
     p|existsLproxy;
     p|existsRproxy;
     p|mCastGrpId;
@@ -124,9 +114,6 @@ PairCalcID &operator=(const PairCalcID& pid) {
   }
 
 };
-
-/// 
-void isAtSyncPairCalc(PairCalcID* pcid);
 
 
 //@{

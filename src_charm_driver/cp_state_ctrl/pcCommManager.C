@@ -36,8 +36,11 @@ void PCCommManager::createPCarray(PairCalcID* pcid, CkGroupID *mapid)
     inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
 
     int proc = 0;
+    // Initialize my set of array IDs
+    pcAID = pairCalculatorProxy.ckGetArrayID();
+    ipHandlerAID = inputHandlerProxy.ckGetArrayID();
     // Initialize the PairCalcID instance
-    pcid->Init(pairCalculatorProxy.ckGetArrayID(), inputHandlerProxy.ckGetArrayID());
+    pcid->Init(pcAID, ipHandlerAID);
     pcid->mCastGrpId = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
 
     #ifdef USE_COMLIB
@@ -161,7 +164,7 @@ void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 		/// Build an array section for each chunk
 		for (int chunk = 0; chunk < numChunks; chunk++)
 		{
-			pcid->sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcid->ipHandlerID,
+			pcid->sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
 																myPlane, myPlane, 1,
 																s1, s1, 1,
 																sColMin, maxpcstateindex, grainSize,
@@ -186,7 +189,7 @@ void PCCommManager::makeLeftTree(PairCalcID* pcid, int myS, int myPlane)
 	 * this point, instead of simply creating them in the pcid object's Init() method. Perhaps, getting a proxy
 	 * to an empty chare array is not a robust operation. Or there could be some other issue. Look into this. 
 	 */
-	pcid->handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (pcid->ipHandlerID);
+	pcid->handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (ipHandlerAID);
 }
 
 
@@ -229,7 +232,7 @@ void PCCommManager::makeRightTree(PairCalcID* pcid, int myS, int myPlane)
 			/// Build an array section for each chunk
 			for (int c = 0; c < numChunks; c++)
 			{
-				pcid->sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcid->ipHandlerID,
+				pcid->sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
 																myPlane, myPlane, 1,
 																0, sRowMax, grainSize,
 																s2, s2, 1,
@@ -623,7 +626,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(PairCalcID
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
   int nstates=pcCfg.numStates;
   int GrainSize=pcCfg.grainSize;
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
 									       plane, plane, 1,
 									       0, maxpcstateindex, GrainSize,
 									       s2, s2, 1,
@@ -670,7 +673,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(Pai
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list_4D( elems, ecount, newListStart);
   CkAssert(order);
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,  elems, ecount);
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, state, GrainSize, pcid->mCastGrpId, false, CkCallback(CkCallback::ignore));
@@ -691,7 +694,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(PairCalcID
 
   int GrainSize=pcCfg.grainSize;
   int s2range= (s2==0) ? 1 : GrainSize;
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcid->Aid,
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
 									       plane, plane, 1,
 									       0, s2, s2range,
 									       s2, s2, 1,
@@ -725,7 +728,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(PairCalcID
   int s2range= (s2start==maxpcstateindex) ? 1 : GrainSize;
   CkAssert(s2start<nstates);
   CProxySection_PairCalculator sectProxy =
-      CProxySection_PairCalculator::ckNew(pcid->Aid,
+      CProxySection_PairCalculator::ckNew(pcAID,
 					  plane, plane, 1,
 					  s1, s1, 1,
 					  s2start, maxpcstateindex, s2range,

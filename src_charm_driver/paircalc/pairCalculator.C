@@ -183,20 +183,6 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 }
 
 
-/**
- * synchronize for migration
- */
-void isAtSyncPairCalc(PairCalcID* pcid){
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("     lbsync symm=%d\n", pcid->Symmetric);
-#endif
-  CkArrayID pairCalculatorID = (CkArrayID)pcid->Aid;
-  CProxy_PairCalculator pairCalculatorProxy(pairCalculatorID);
-  pairCalculatorProxy.lbsync();
-}
-
-
-
 
 #ifdef ROTATE_LIST
 bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart)

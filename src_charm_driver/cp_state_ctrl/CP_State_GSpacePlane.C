@@ -623,16 +623,14 @@ void CP_State_GSpacePlane::setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID)
     // initialize Ortho  now that we have the PC maps
     init_ortho_chares(nstates, symmPCmgr.pcCfg, asymmPCmgr.pcCfg, thisInstance);
 
-    CkArrayID symAID = symPCID.Aid;
-    CkArrayID asymAID= asymPCID.Aid;
-    UorthoProxy[thisInstance.proxyOffset].makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symAID, asymAID);
+    UorthoProxy[thisInstance.proxyOffset].makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
 
     pcSetupMsg *msg       = new pcSetupMsg();
     msg->gspAID           = thisProxy.ckGetArrayID();
-    msg->pcSymAID         = symAID;
-    msg->pcAsymAID        = asymAID;
-    msg->handlerSymAID    = symPCID.ipHandlerID;
-    msg->handlerAsymAID   = asymPCID.ipHandlerID;
+    msg->pcSymAID         = symmPCmgr.pcAID;
+    msg->pcAsymAID        = asymmPCmgr.pcAID;
+    msg->handlerSymAID    = symmPCmgr.ipHandlerAID;
+    msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
     msg->symMcastMgrGID   = symPCID.mCastGrpId;
     msg->asymMcastMgrGID  = asymPCID.mCastGrpId;
     thisProxy.acceptPairCalcAIDs(msg);
@@ -645,15 +643,15 @@ void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
 {
     CkPrintf("GSpace[%d,%d] Received pc AIDs\n",thisIndex.x, thisIndex.y);
     CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
-    gpairCalcID1.Aid         = msg->pcSymAID;
-    gpairCalcID1.ipHandlerID = msg->handlerSymAID;
+    symmPCmgr.pcAID          = msg->pcSymAID;
+    symmPCmgr.ipHandlerAID   = msg->handlerSymAID;
     gpairCalcID1.mCastGrpId  = msg->symMcastMgrGID;
-    gpairCalcID2.Aid         = msg->pcAsymAID;
-    gpairCalcID2.ipHandlerID = msg->handlerAsymAID;
+    asymmPCmgr.pcAID         = msg->pcAsymAID;
+    asymmPCmgr.ipHandlerAID  = msg->handlerAsymAID;
     gpairCalcID2.mCastGrpId  = msg->asymMcastMgrGID;
 
-	gpairCalcID1.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (gpairCalcID1.ipHandlerID);
-	gpairCalcID2.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (gpairCalcID2.ipHandlerID);
+	gpairCalcID1.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (symmPCmgr.ipHandlerAID);
+	gpairCalcID2.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (asymmPCmgr.ipHandlerAID);
 //============================================================================
 // Contribute to the reduction telling main we are done
 
