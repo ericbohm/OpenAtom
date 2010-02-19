@@ -1,21 +1,15 @@
 #include "debug_flags.h"
 #include "paircalc/pcConfig.h"
+#include "paircalc/pcFwdDeclarations.h"
 
 #ifndef PC_COMM_MANAGER_H
 #define PC_COMM_MANAGER_H
 
 // Forward declarations
-class PairCalcID;
-class CProxySection_PairCalculator;
 struct ckcomplex;
 typedef ckcomplex complex;
-/// Forward declaration of the handshake token
-struct RDMApair_GSP_PC;
 
 namespace cp {
-    /// Namespace aliases
-    namespace pc = paircalc;
-
     namespace gspace {
 
 ///
