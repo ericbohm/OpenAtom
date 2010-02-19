@@ -49,6 +49,7 @@
 #include "structure_factor/StructureFactor.h"
 #include "cp_state_ctrl/CP_State_ParticlePlane.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
+#include "cp_state_ctrl/pcCommManager.h"
 #include "MeshStreamingStrategy.h"
 #include "MultiRingMulticast.h"
 #include "OneTimeMulticastStrategy.h"
@@ -1048,7 +1049,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
+    cp::gspace::PCCommManager::createPCarray(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
 
     CkArrayIndex2D myindex(0, 0);
       //asymmetric AKA Lambda AKA Gamma
@@ -1059,7 +1060,7 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
-    createPairCalculator(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), &scalc_asym_id);
+    cp::gspace::PCCommManager::createPCarray(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), &scalc_asym_id);
     
 
   //============================================================================ 

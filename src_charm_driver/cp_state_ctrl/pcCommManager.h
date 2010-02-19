@@ -26,6 +26,7 @@ class PCCommManager
         PCCommManager(const pc::pcConfig &_cfg): pcCfg(_cfg) {}
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
+        static void createPCarray(const pc::pcConfig pcCfg, PairCalcID* pcid, CkGroupID *mapid);
         void makeLeftTree(PairCalcID* pid, int myS, int myZ);
         /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
         void makeRightTree(PairCalcID* pid, int myS, int myZ);
