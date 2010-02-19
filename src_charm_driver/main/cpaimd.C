@@ -1039,38 +1039,25 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
 
   CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
   CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
-  //-------------------------------------------------------------
-  // Register the PCs
-   //symmetric AKA Psi
 #ifdef _CP_SUBSTEP_TIMING_
+    //symmetric AKA Psi
     UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
     UpairCalcID1[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Sym Backward");
     UpairCalcID1[thisInstance.proxyOffset].beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
     UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-#endif
-
-    cp::gspace::PCCommManager::createPCarray(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
-
-    CkArrayIndex2D myindex(0, 0);
-      //asymmetric AKA Lambda AKA Gamma
-#ifdef _CP_SUBSTEP_TIMING_
+    //asymmetric AKA Lambda AKA Gamma
     UpairCalcID2[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Asym Forward");
     UpairCalcID2[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Asym Backward");
     UpairCalcID2[thisInstance.proxyOffset].beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
 
+    cp::gspace::PCCommManager::createPCarray(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
     cp::gspace::PCCommManager::createPCarray(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), &scalc_asym_id);
-    
-
-  //============================================================================ 
-  // initialize Ortho  now that we have the PC maps
-  CmiNetworkProgressAfter(1);
-  init_ortho_chares(nstates, cfgSymmPC, cfgAsymmPC, thisInstance);
-
-//============================================================================ 
-   }//end routine
-//============================================================================ 
+    // initialize Ortho  now that we have the PC maps
+    CmiNetworkProgressAfter(1);
+    init_ortho_chares(nstates, cfgSymmPC, cfgAsymmPC, thisInstance);
+}//end routine
 
 
 
