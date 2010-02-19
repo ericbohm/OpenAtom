@@ -291,6 +291,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   int gen_wave    = sim->gen_wave;
 //============================================================================
 
+  symmPCmgr.pcCfg.gSpaceAID  = thisProxy.ckGetArrayID();
+  asymmPCmgr.pcCfg.gSpaceAID = thisProxy.ckGetArrayID();
 
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;  
@@ -499,14 +501,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif
 
 
-
-//============================================================================
-// Contribute to the reduction telling main we are done
-
-  int constructed=1;
-  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
-	     CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
-
+  if (thisIndex.x == 0 && thisIndex.y == 0)
+      setupPCs(UpairCalcID1[thisInstance.proxyOffset], UpairCalcID2[thisInstance.proxyOffset]);
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -617,6 +613,56 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 //-------------------------------------------------------
    }// end routine : pup
 //============================================================================
+
+
+
+void CP_State_GSpacePlane::setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID)
+{
+    symmPCmgr.createPCarray (&symPCID , &symmPCmgr.pcCfg.mapperGID);
+    asymmPCmgr.createPCarray(&asymPCID, &asymmPCmgr.pcCfg.mapperGID);
+    // initialize Ortho  now that we have the PC maps
+    init_ortho_chares(nstates, symmPCmgr.pcCfg, asymmPCmgr.pcCfg, thisInstance);
+
+    CkArrayID symAID = symPCID.Aid;
+    CkArrayID asymAID= asymPCID.Aid;
+    UorthoProxy[thisInstance.proxyOffset].makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symAID, asymAID);
+
+    pcSetupMsg *msg       = new pcSetupMsg();
+    msg->gspAID           = thisProxy.ckGetArrayID();
+    msg->pcSymAID         = symAID;
+    msg->pcAsymAID        = asymAID;
+    msg->handlerSymAID    = symPCID.ipHandlerID;
+    msg->handlerAsymAID   = asymPCID.ipHandlerID;
+    msg->symMcastMgrGID   = symPCID.mCastGrpId;
+    msg->asymMcastMgrGID  = asymPCID.mCastGrpId;
+    thisProxy.acceptPairCalcAIDs(msg);
+}
+
+
+
+
+void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
+{
+    CkPrintf("GSpace[%d,%d] Received pc AIDs\n",thisIndex.x, thisIndex.y);
+    CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
+    gpairCalcID1.Aid         = msg->pcSymAID;
+    gpairCalcID1.ipHandlerID = msg->handlerSymAID;
+    gpairCalcID1.mCastGrpId  = msg->symMcastMgrGID;
+    gpairCalcID2.Aid         = msg->pcAsymAID;
+    gpairCalcID2.ipHandlerID = msg->handlerAsymAID;
+    gpairCalcID2.mCastGrpId  = msg->asymMcastMgrGID;
+
+	gpairCalcID1.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (gpairCalcID1.ipHandlerID);
+	gpairCalcID2.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (gpairCalcID2.ipHandlerID);
+//============================================================================
+// Contribute to the reduction telling main we are done
+
+  int constructed=1;
+  contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+	     CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+}
+
+
 
 
 //============================================================================

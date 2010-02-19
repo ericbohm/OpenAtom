@@ -773,6 +773,13 @@ Per Instance startup BEGIN
 	    control_physics_to_driver(thisInstance);
 	    
 	    //============================================================================ 
+	    // Initialize paircalculator maps for Psi and Lambda and ortho
+        CkGroupID symMapperGID, asymMapperGID;
+	    init_pair_calculators( nstates,doublePack,sim, boxSize, thisInstance, symMapperGID, asymMapperGID);
+        cfgSymmPC.mapperGID = symMapperGID;
+        cfgAsymmPC.mapperGID= asymMapperGID;
+
+	    //============================================================================ 
 
 	    // and then we make the usual set of chares to which we pass
 	    // the Uber Index.
@@ -808,16 +815,6 @@ Per Instance startup BEGIN
 	    UplaneUsedByNLZ.push_back(planeUsedByNLZ);
 	    // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
 	    // Create mapping classes for Paircalcular
-
-	    //============================================================================ 
-	    // Initialize paircalculators for Psi and Lambda and ortho
-
-        // Initialize the cfg objects with the Gspace array ID
-        cfgSymmPC.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
-        cfgAsymmPC.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
-
-	    init_pair_calculators( nstates,doublePack,sim, boxSize, cfgSymmPC, cfgAsymmPC, thisInstance);
-	    CmiNetworkProgressAfter(1);
 
 	    //============================================================================ 
 	    // Initialize the density chare arrays
@@ -888,7 +885,7 @@ main::~main(){
  * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
  */
 //============================================================================    
-void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance)
+void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance, CkGroupID &symMapperGID, CkGroupID &asymMapperGID)
 //============================================================================    
   {// begin routine
 //============================================================================    
@@ -1037,8 +1034,8 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
   }
 
 
-  CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
-  CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
+  symMapperGID  = scMap_sym.ckGetGroupID();
+  asymMapperGID = scMap_asym.ckGetGroupID();
 #ifdef _CP_SUBSTEP_TIMING_
     //symmetric AKA Psi
     UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
@@ -1051,12 +1048,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
     UpairCalcID2[thisInstance.proxyOffset].beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
     UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
 #endif
-
-    cp::gspace::PCCommManager::createPCarray(cfgSymmPC, &(UpairCalcID1[thisInstance.proxyOffset]), &scalc_sym_id);
-    cp::gspace::PCCommManager::createPCarray(cfgAsymmPC, &(UpairCalcID2[thisInstance.proxyOffset]), &scalc_asym_id);
-    // initialize Ortho  now that we have the PC maps
-    CmiNetworkProgressAfter(1);
-    init_ortho_chares(nstates, cfgSymmPC, cfgAsymmPC, thisInstance);
 }//end routine
 
 
@@ -1720,10 +1711,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
   UorthoProxy[thisInstance.proxyOffset].doneInserting();
   if(config.useOrthoHelpers)
     UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
-    
-  CkArrayID symAID = UpairCalcID1[thisInstance.proxyOffset].Aid;
-  CkArrayID asymAID= UpairCalcID2[thisInstance.proxyOffset].Aid;
-  UorthoProxy[thisInstance.proxyOffset].makeSections(cfgSymmPC, cfgAsymmPC, symAID, asymAID);
   delete avail;
   delete excludePes;
 //============================================================================

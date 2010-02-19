@@ -6,7 +6,7 @@
 namespace cp {
     namespace gspace {
 
-void PCCommManager::createPCarray(const pc::pcConfig pcCfg, PairCalcID* pcid, CkGroupID *mapid)
+void PCCommManager::createPCarray(PairCalcID* pcid, CkGroupID *mapid)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
     traceRegisterUserEvent("calcpairContrib", 220);

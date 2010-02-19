@@ -19,7 +19,18 @@ class GStateSlab;
 class RDMApair_GSP_PC;
 template <class tokenType> class RDMASetupConfirmationMsg;
 
- 
+
+
+class pcSetupMsg: public CMessage_pcSetupMsg
+{
+    public:
+        CkArrayID gspAID, pcSymAID, pcAsymAID, handlerSymAID, handlerAsymAID;
+        CkGroupID symMcastMgrGID, asymMcastMgrGID;
+};
+
+
+
+
 class GSIFFTMsg: public CMessage_GSIFFTMsg 
 {
     public:
@@ -106,6 +117,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
         void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
         void pup(PUP::er &);
+        void setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID);
+        void acceptPairCalcAIDs(pcSetupMsg *msg);
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();
         void launchOrthoT();
