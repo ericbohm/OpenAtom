@@ -5,9 +5,6 @@
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
 
-extern CkVec <PairCalcID> UpairCalcID1;
-extern CkVec <PairCalcID> UpairCalcID2;
-
 CkReduction::reducerType sumMatrixDoubleType;
 
 
@@ -600,13 +597,10 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
 
         // Start the forward path substep timer
         #ifdef _CP_SUBSTEP_TIMING_
-            if((UpairCalcID1[cfg.instance].forwardTimerID>0)||(UpairCalcID1[cfg.instance].forwardTimerID>0))
+            if(cfg.forwardTimerID > 0)
             {
                 double pstart=CmiWallTimer();
-                if(cfg.isSymmetric)
-                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[cfg.instance].beginTimerCB , UpairCalcID1[cfg.instance].forwardTimerID);
-                else
-                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[cfg.instance].beginTimerCB , UpairCalcID2[cfg.instance].forwardTimerID);
+                contribute(sizeof(double),&pstart,CkReduction::min_double, cfg.beginTimerCB , cfg.forwardTimerID);
             }
         #endif
 
@@ -633,10 +627,10 @@ void PairCalculator::launchComputations(paircalcInputMsg *aMsg)
             /// Do nothing for the phantom chare, non-psiv loops. Computation will be triggered only in the backward path
             // Just stop the forward path substep timer for the phantom chares
             #ifdef _CP_SUBSTEP_TIMING_
-               if(UpairCalcID1[cfg.instance].forwardTimerID>0)
+               if(cfg.forwardTimerID > 0)
                {
                    double pstart=CmiWallTimer();
-                   contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[cfg.instance].endTimerCB , UpairCalcID1[cfg.instance].forwardTimerID);
+                   contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
                }
             #endif
         }
@@ -939,15 +933,10 @@ PairCalculator::multiplyForward(bool flag_dp)
   // do the slicing and dicing to send bits to Ortho
   contributeSubTiles(outData);
 #ifdef _CP_SUBSTEP_TIMING_
-  if((UpairCalcID1[cfg.instance].forwardTimerID>0)||(UpairCalcID2[cfg.instance].forwardTimerID>0))
+  if(cfg.forwardTimerID > 0)
     {
       double pstart=CmiWallTimer();
-      if(cfg.isSymmetric)
-	contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[cfg.instance].endTimerCB , UpairCalcID1[cfg.instance].forwardTimerID);
-
-      else
-	contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[cfg.instance].endTimerCB , UpairCalcID2[cfg.instance].forwardTimerID);
-
+      contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
     }
 #endif
 
@@ -1251,14 +1240,11 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         CkPrintf("[%d,%d,%d,%d,%d]: MultiplyResult from orthoX %d orthoY %d size %d numRecdBW %d actionType %d amPhantom %d notOnDiagonal %d cfg.arePhantomsOn %d symmetricOnDiagonal %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, msg->orthoX, msg->orthoY, msg->size, numRecdBW, msg->actionType, amPhantom, notOnDiagonal, cfg.arePhantomsOn, symmetricOnDiagonal);
     #endif
     #ifdef _CP_SUBSTEP_TIMING_
-        if((UpairCalcID1[cfg.instance].backwardTimerID>0)||(UpairCalcID1[cfg.instance].backwardTimerID>0))
+        if(cfg.backwardTimerID>0)
             if(numRecdBW==0)
             {
                 double pstart=CmiWallTimer();
-                if(cfg.isSymmetric)
-                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID1[cfg.instance].beginTimerCB , UpairCalcID1[cfg.instance].backwardTimerID);
-                else
-                    contribute(sizeof(double),&pstart,CkReduction::min_double, UpairCalcID2[cfg.instance].beginTimerCB , UpairCalcID2[cfg.instance].backwardTimerID);
+                contribute(sizeof(double),&pstart,CkReduction::min_double, cfg.beginTimerCB , cfg.backwardTimerID);
             }
     #endif
 
@@ -1651,13 +1637,10 @@ void PairCalculator::cleanupAfterBWPath()
 
     #ifdef _CP_SUBSTEP_TIMING_
         /// End the timing for this sub-step.
-        if((UpairCalcID1[cfg.instance].backwardTimerID>0)||(UpairCalcID2[cfg.instance].backwardTimerID>0))
+        if(cfg.backwardTimerID > 0)
         {
             double pstart=CmiWallTimer();
-            if(cfg.isSymmetric)
-                contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID1[cfg.instance].endTimerCB , UpairCalcID1[cfg.instance].backwardTimerID);
-            else
-                contribute(sizeof(double),&pstart,CkReduction::max_double, UpairCalcID2[cfg.instance].endTimerCB , UpairCalcID2[cfg.instance].backwardTimerID);
+            contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.backwardTimerID);
         }
     #endif
 }

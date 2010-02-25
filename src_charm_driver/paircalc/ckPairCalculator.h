@@ -5,15 +5,14 @@
 //#define OLD_COMMLIB 1
 #include "debug_flags.h"
 #include "pairutil.h"
+
 #include "ckmulticast.h"
 #include "ckhashtable.h"
+
 #include "PipeBroadcastStrategy.h"
 #include "BroadcastStrategy.h"
 #include "DirectMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
-#ifdef CMK_BLUEGENEL
-//#include "RectMulticastStrategy.h"
-#endif
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
 

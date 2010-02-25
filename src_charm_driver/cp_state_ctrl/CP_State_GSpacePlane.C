@@ -84,8 +84,6 @@
 
 //============================================================================
 extern Config config;
-extern CkVec <PairCalcID> UpairCalcID1;
-extern CkVec <PairCalcID> UpairCalcID2;
 
 extern CProxy_main                    mainProxy;
 extern CProxy_InstanceController      instControllerProxy;
@@ -502,7 +500,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 
   if (thisIndex.x == 0 && thisIndex.y == 0)
-      setupPCs(UpairCalcID1[thisInstance.proxyOffset], UpairCalcID2[thisInstance.proxyOffset]);
+      setupPCs();
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -590,8 +588,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|cpuTimeNow;
 
   p|real_proxy;   
-  p|gpairCalcID1;
-  p|gpairCalcID2;
   gs.pup(p);
   p|gSpaceNumPoints;
   if (p.isUnpacking()) {
@@ -616,10 +612,10 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 
 
 
-void CP_State_GSpacePlane::setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID)
+void CP_State_GSpacePlane::setupPCs()
 {
-    symmPCmgr.createPCarray (&symPCID , &symmPCmgr.pcCfg.mapperGID);
-    asymmPCmgr.createPCarray(&asymPCID, &asymmPCmgr.pcCfg.mapperGID);
+    symmPCmgr.createPCarray ();
+    asymmPCmgr.createPCarray();
     // initialize Ortho  now that we have the PC maps
     init_ortho_chares(nstates, symmPCmgr.pcCfg, asymmPCmgr.pcCfg, thisInstance);
 
@@ -641,7 +637,6 @@ void CP_State_GSpacePlane::setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID)
 
 void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
 {
-    CkPrintf("GSpace[%d,%d] Received pc AIDs\n",thisIndex.x, thisIndex.y);
     CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
     symmPCmgr.pcAID          = msg->pcSymAID;
     symmPCmgr.ipHandlerAID   = msg->handlerSymAID;
@@ -650,8 +645,6 @@ void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
     asymmPCmgr.ipHandlerAID  = msg->handlerAsymAID;
     asymmPCmgr.mCastMgrGID   = msg->asymMcastMgrGID;
 
-	symmPCmgr.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (symmPCmgr.ipHandlerAID);
-	asymmPCmgr.handlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> (asymmPCmgr.ipHandlerAID);
 //============================================================================
 // Contribute to the reduction telling main we are done
 
@@ -1034,16 +1027,16 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   /// Send rdma requests to all asymmetric loop PCs who will get data from me
   handshakeToken.symmetric = false;
   handshakeToken.shouldSendLeft = true;
-  sendLeftRDMARequest (&gpairCalcID2,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  sendLeftRDMARequest (handshakeToken,gs.numPoints,rdmaConfirmCB);
   handshakeToken.shouldSendLeft = false;
-  sendRightRDMARequest(&gpairCalcID2,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  sendRightRDMARequest(handshakeToken,gs.numPoints,rdmaConfirmCB);
   
   /// Send rdma requests to all symmetric loop PCs who will get data from me
   handshakeToken.symmetric = true;
   handshakeToken.shouldSendLeft = true;
-  sendLeftRDMARequest (&gpairCalcID1,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  sendLeftRDMARequest (handshakeToken,gs.numPoints,rdmaConfirmCB);
   handshakeToken.shouldSendLeft = false;
-  sendRightRDMARequest(&gpairCalcID1,handshakeToken,gs.numPoints,rdmaConfirmCB);
+  sendRightRDMARequest(handshakeToken,gs.numPoints,rdmaConfirmCB);
   
 #else
 //============================================================================
@@ -1078,18 +1071,14 @@ void CP_State_GSpacePlane::makePCproxies(){
   //need one proxy per chunk
   if(!config.gSpaceSum){
       for(int chunk=0;chunk<config.numChunksAsym;chunk++){
-	  lambdaproxy[chunk]=asymmPCmgr.makeOneResultSection_asym(&gpairCalcID2, 
-                                                       thisIndex.x, thisIndex.y,chunk);
+	  lambdaproxy[chunk]=asymmPCmgr.makeOneResultSection_asym(thisIndex.x, thisIndex.y,chunk);
 	  if(AllLambdaExpected/config.numChunksAsym == 2)//additional col. red. in dynamics
-	    lambdaproxyother[chunk]=asymmPCmgr.makeOneResultSection_asym_column(&gpairCalcID2, 
-                                                        thisIndex.x, thisIndex.y,chunk);
+	    lambdaproxyother[chunk]=asymmPCmgr.makeOneResultSection_asym_column(thisIndex.x, thisIndex.y,chunk);
       }//endfor chunk
       for(int chunk=0; chunk < config.numChunksSym ;chunk++){
-	  psiproxy[chunk]=symmPCmgr.makeOneResultSection_sym1(&gpairCalcID1, 
-                                                     thisIndex.x, thisIndex.y,chunk);
+	  psiproxy[chunk]=symmPCmgr.makeOneResultSection_sym1(thisIndex.x, thisIndex.y,chunk);
 	  if(AllPsiExpected / config.numChunksSym > 1)
-	    psiproxyother[chunk]=symmPCmgr.makeOneResultSection_sym2(&gpairCalcID1, 
-                                                           thisIndex.x, thisIndex.y,chunk);
+	    psiproxyother[chunk]=symmPCmgr.makeOneResultSection_sym2(thisIndex.x, thisIndex.y,chunk);
       }//endfor chunk
   }//endif not gspacesum
 
@@ -1675,9 +1664,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
   int toSend = numPoints;
-  asymmPCmgr.sendLeftData(&gpairCalcID2,toSend,psi,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendLeftData(toSend,psi,thisIndex.x,thisIndex.y,false);
   CmiNetworkProgress();
-  asymmPCmgr.sendRightData(&gpairCalcID2,toSend,force,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendRightData(toSend,force,thisIndex.x,thisIndex.y,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);
@@ -2682,10 +2671,10 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  symmPCmgr.sendLeftData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+  symmPCmgr.sendLeftData(numPoints, psi, thisIndex.x, thisIndex.y, false);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
-      symmPCmgr.sendRightData(&gpairCalcID1, numPoints, psi, thisIndex.x, thisIndex.y, false);
+      symmPCmgr.sendRightData(numPoints, psi, thisIndex.x, thisIndex.y, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
@@ -3239,10 +3228,10 @@ void  CP_State_GSpacePlane::sendPsiV() {
   }//endif
 
   int numPoints = gs.numPoints;
-  symmPCmgr.sendLeftData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+  symmPCmgr.sendLeftData(numPoints,data,thisIndex.x,thisIndex.y,true);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
-      symmPCmgr.sendRightData(&gpairCalcID1,numPoints,data,thisIndex.x,thisIndex.y,true);
+      symmPCmgr.sendRightData(numPoints,data,thisIndex.x,thisIndex.y,true);
 
 //----------------------------------------------------------------------------
 }// end routine
@@ -3768,19 +3757,19 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 			thisIndex.x,thisIndex.y, gotHandles+1, numRDMAlinksSymm+numRDMAlinksAsymm, numRDMAlinksSymm, numRDMAlinksAsymm );
 	#endif
 	/// Determine which loop (symm/Asymm) this PC that has sent setup confirmation, belongs to
-	PairCalcID *pcid = 0;
+    cp::gspace::PCCommManager *pcMgr;
 	if (token.symmetric)
-		pcid = &gpairCalcID1;
+        pcMgr  = &symmPCmgr;
 	else
-		pcid = &gpairCalcID2;
+        pcMgr  = &asymmPCmgr;
 		
 	/// Compute the location and amount of data to be sent
-	int chunkSize= gs.numPoints / pcid->numChunks;
+	int chunkSize= gs.numPoints / pcMgr->pcCfg.numChunks;
 	int offset   = token.pcIndex.z * chunkSize;
 	int dataSize = chunkSize;
 	/// The last chunk of data should get whatever is remaining
-	if( (pcid->numChunks > 1) && (token.pcIndex.z == pcid->numChunks-1) )
-		dataSize += gs.numPoints % pcid->numChunks;
+	if( (pcMgr->pcCfg.numChunks > 1) && (token.pcIndex.z == pcMgr->pcCfg.numChunks-1) )
+		dataSize += gs.numPoints % pcMgr->pcCfg.numChunks;
 		
 	/// If the PC should be sent left matrix data ...
 	if (token.shouldSendLeft)
@@ -3788,7 +3777,7 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 		/// Stuff the location of the data to be sent into the handle
 		CmiDirect_assocLocalBuffer(&ourHandle,&(gs.packedPlaneData[offset]),dataSize*sizeof(complex));
 		/// Store the rdma handle in the appropriate array
-		pcid->leftDestinationHandles.push_back(ourHandle);
+		pcMgr->leftDestinationHandles.push_back(ourHandle);
 	}
 	/// ... else if the PC should be sent right matrix data
 	else
@@ -3799,7 +3788,7 @@ void CP_State_GSpacePlane::completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApa
 		else
 			CmiDirect_assocLocalBuffer(&ourHandle,&(gs.packedForceData[offset]),dataSize*sizeof(complex));
 		/// Store the rdma handle in the appropriate array
-		pcid->rightDestinationHandles.push_back(ourHandle);
+		pcMgr->rightDestinationHandles.push_back(ourHandle);
 	}
 	
 	#ifdef DEBUG_CP_PAIRCALC_RDMA

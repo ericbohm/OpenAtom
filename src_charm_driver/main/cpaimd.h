@@ -841,11 +841,5 @@ void setTraceUserEvents();
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
 
-/*#include "paircalc/pairCalculator.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
-#define CK_TEMPLATES_ONLY
-#include "cpaimd.def.h"
-#undef CK_TEMPLATES_ONLY*/
-
 #endif
 

@@ -106,9 +106,6 @@ mainmodule cpaimd {
 
 
 	readonly Config config;
-	readonly CkVec <PairCalcID> UpairCalcID1;
-	readonly CkVec <PairCalcID> UpairCalcID2;
-
 
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;

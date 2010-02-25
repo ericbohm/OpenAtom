@@ -57,7 +57,6 @@
 #include "utility/MapFile.h"
 #include "TopoManager.h"
 #include "TimeKeeper.h"
-#include "paircalc/pairCalculator.h" ///< Just for defining the readonly globals (UPairCalcID 1 & 2)
 //============================================================================
 #include "debug_flags.h"
 #include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
@@ -147,9 +146,6 @@ CkHashtableT<inttriple, int> RhoRHartmaptable;
 CkHashtableT<intdual, int> Orthomaptable;
 CkHashtableT<intdual, int> OrthoHelpermaptable;
 
-CkVec <PairCalcID> UpairCalcID1;
-CkVec <PairCalcID> UpairCalcID2;
-
 
 CProxy_main                       mainProxy;
 CProxy_CPcharmParaInfoGrp         scProxy;
@@ -234,7 +230,9 @@ TopoManager *topoMgr=NULL;
 // For using the multicast library :  Set some reduction clients
 
 CkGroupID            mCastGrpId; 
+/// MulticastMgr that handles Ortho --> PC mcasts
 CkGroupID            orthomCastGrpId; 
+/// MulticastMgr that handles PC --> Ortho redns
 CkGroupID            orthoRedGrpId; 
 //#ifdef USE_COMLIB
 ComlibInstanceHandle orthoInstance;
@@ -532,13 +530,26 @@ main::main(CkArgMsg *msg) {
     if(cfgAsymmPC.isOutputReduced)
     {
         cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
-        cfgAsymmPC.PsiVEP          = 0;
+        cfgAsymmPC.PsiVEP         = 0;
     }
     else
     {
         cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
-        cfgAsymmPC.PsiVEP          = 0;
+        cfgAsymmPC.PsiVEP         = 0;
     }
+
+#ifdef _CP_SUBSTEP_TIMING_
+    //symmetric AKA Psi
+    cfgSymmPC.forwardTimerID      = keeperRegister("Sym Forward");
+    cfgSymmPC.backwardTimerID     = keeperRegister("Sym Backward");
+    cfgSymmPC.beginTimerCB        = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgSymmPC.endTimerCB          = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+    //asymmetric AKA Lambda AKA Gamma
+    cfgAsymmPC.forwardTimerID     = keeperRegister("Asym Forward");
+    cfgAsymmPC.backwardTimerID    = keeperRegister("Asym Backward");
+    cfgAsymmPC.beginTimerCB       = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgAsymmPC.endTimerCB         = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+#endif
 
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
@@ -574,8 +585,6 @@ main::main(CkArgMsg *msg) {
     SymScalcImaptable.resize(config.numInstances);
 
     // bump all our proxy vecs to the right size
-    UpairCalcID2.resize(config.numInstances);
-    UpairCalcID1.resize(config.numInstances);
     UgSpacePlaneProxy.reserve(config.numInstances);
     UgSpaceDriverProxy.reserve(config.numInstances);
     UparticlePlaneProxy.reserve(config.numInstances);
@@ -1036,18 +1045,6 @@ void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, in
 
   symMapperGID  = scMap_sym.ckGetGroupID();
   asymMapperGID = scMap_asym.ckGetGroupID();
-#ifdef _CP_SUBSTEP_TIMING_
-    //symmetric AKA Psi
-    UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
-    UpairCalcID1[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Sym Backward");
-    UpairCalcID1[thisInstance.proxyOffset].beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-    //asymmetric AKA Lambda AKA Gamma
-    UpairCalcID2[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Asym Forward");
-    UpairCalcID2[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Asym Backward");
-    UpairCalcID2[thisInstance.proxyOffset].beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-#endif
 }//end routine
 
 

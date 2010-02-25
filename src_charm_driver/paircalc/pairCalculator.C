@@ -59,8 +59,6 @@
  */
 //*************************************************************************
 #include "pairCalculator.h"
-#include "InputDataHandler.h"
-#include "cp_state_ctrl/pcCommManager.h" 
 #include <algorithm>
 
 #ifdef USE_COMLIB
@@ -225,6 +223,4 @@ bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart)
   return(true);
 }
 #endif
-
-#include "RDMAMessages.def.h"
 

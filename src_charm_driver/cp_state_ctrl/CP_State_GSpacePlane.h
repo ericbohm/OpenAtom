@@ -5,7 +5,6 @@
 #include "pcCommManager.h"
 #include "uber/Uber.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
-#include "paircalc/pairCalculator.h"
 struct EnergyStruct; /// @warning: Forward declarations of structs seem to choke the ci parser. It doesnt recognize the keyword struct.
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
@@ -117,7 +116,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
         void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
         void pup(PUP::er &);
-        void setupPCs(PairCalcID &symPCID, PairCalcID &asymPCID);
+        void setupPCs();
         void acceptPairCalcAIDs(pcSetupMsg *msg);
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();
@@ -220,8 +219,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         CProxySection_PairCalculator *lambdaproxyother;
         CProxySection_PairCalculator *psiproxy;
         CProxySection_PairCalculator *psiproxyother;
-        PairCalcID gpairCalcID1;
-        PairCalcID gpairCalcID2;
         /// Manages communication with the symmetric paircalc array
         PCCommManager symmPCmgr;
         /// Manages communication with the asymmetric paircalc array

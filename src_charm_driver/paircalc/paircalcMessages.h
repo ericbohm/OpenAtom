@@ -1,5 +1,5 @@
 #include "paircalcMessages.decl.h"
-
+#include "ckcomplex.h"
 
 #ifndef PAIRCALC_MESSAGES_H
 #define PAIRCALC_MESSAGES_H

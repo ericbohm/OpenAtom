@@ -95,6 +95,18 @@ class pcConfig
         /// Should we tweak msg priority to delay msgs to GSpace carrying the results?
         bool shouldDelayBWsend; ///< @note: Originally, delaybw
 
+        //------------------- Timing / Tracing configs --------------------------------------------
+        #ifdef _CP_SUBSTEP_TIMING_
+        /// The timer ID for the forward path
+        int forwardTimerID;
+        /// The timer ID for the backward path
+        int backwardTimerID;
+        /// The callback that will start the substep timer
+        CkCallback beginTimerCB;
+        /// The callback that will stop the substep timer
+        CkCallback endTimerCB;
+        #endif
+
         /**{
          * BGL's painful NIC forces us to split long computations. Configure GEMM splitting here 
          * @note: PURELY for the BGL
