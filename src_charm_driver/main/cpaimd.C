@@ -56,6 +56,7 @@
 #include "utility/MapFile.h"
 #include "TopoManager.h"
 #include "TimeKeeper.h"
+#include "PIBeadAtoms.h"
 #include "paircalc/pairCalculator.h" ///< Just for defining the readonly globals (UPairCalcID 1 & 2)
 //============================================================================
 #include "debug_flags.h"
@@ -108,6 +109,7 @@ bool firstInstance = true;
 
 // INT_MAPs are the ones actually used so
 // these are being changed to CkVec's for beads
+CkVec <int> PIBImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -175,6 +177,7 @@ CProxy_InstanceController         instControllerProxy;
  *  one bead.
  */
 
+CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;

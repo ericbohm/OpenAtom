@@ -78,7 +78,7 @@ PUPmarshall(MapType2);
 #endif
 
 extern bool fakeTorus;
-
+extern CkVec <int> PIBImaptable;
 extern CkVec <MapType2> GSImaptable;
 extern CkVec <MapType2> RSImaptable;
 extern CkVec <MapType2> RPPImaptable;

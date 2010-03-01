@@ -48,6 +48,8 @@ class Config {
     int UberJmax;
     int UberKmax;
     int numInstances;
+
+    int nchareBeadAtoms;
   //==================================
 
   //==================================

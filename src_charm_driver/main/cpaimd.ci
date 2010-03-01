@@ -76,7 +76,7 @@ mainmodule cpaimd {
 	extern module structureFactor;
 	extern module structureFactorCache;
 	extern module groups;
-	
+		
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
@@ -91,6 +91,7 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
+	readonly CkVec <int> PIBImaptable;
 	readonly CkVec <MapType2> GSImaptable;
 	readonly CkVec <MapType2> RSImaptable;
 	readonly CkVec <MapType2> RPPImaptable;
@@ -113,6 +114,8 @@ mainmodule cpaimd {
 
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
+
+	readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;
 
 	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 	readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
@@ -219,6 +222,11 @@ mainmodule cpaimd {
 	mainchare main {
 		entry main();
 	};
+	array [1D] PIBeadAtoms {
+		entry PIBeadAtoms(UberCollection);
+		entry void acceptCoords();
+		entry void acceptForces();
+	};
 	array [1D] InstanceController {
 		entry InstanceController();
 		entry void printEnergyEexc(CkReductionMsg *msg);
@@ -227,7 +235,7 @@ mainmodule cpaimd {
   		entry void allDoneCPForces(CkReductionMsg *m);
   		entry void printEnergyEke(CkReductionMsg *m);
 		entry void doneInit(CkReductionMsg *msg);
-	}	
+	};
 
 
 	// This is where the real component lives when using ees for nonlocal
