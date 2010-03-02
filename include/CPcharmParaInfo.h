@@ -47,6 +47,8 @@ class RedundantCommPkg {
     num_recv = new int[nchareG];
     for(int i=0;i<nchareG;i++){num_send[i] = 0;}
     for(int i=0;i<nchareG;i++){num_recv[i] = 0;}
+    num_recv_tot = 0;
+    num_send_tot = 0;
 
     lst_send = new int *[nchareG];
     lst_recv = new int *[nchareG];
@@ -243,6 +245,7 @@ class CPcharmParaInfo {
      nspin        = s.nspin;
      iperd        = s.iperd;
      doublepack   = s.doublepack;
+     nkpoint      = s.nkpoint;
      fftopt       = s.fftopt;
      kx_max       = s.kx_max;
      ky_max       = s.ky_max;

@@ -68,17 +68,18 @@ class RHORHARTDATA {
 //============================================================================
 class GPPDATA {
  public:
+   int nkpoint;
    int index;
    int ngrid_a,ngrid_b,ngrid_c;   //fft grid size
    int n_interp;                  //interpolation order
    int natm;                      //number of non-local atoms
    int ncoef;                     //number of g-pts in this collection
    double *b_re, *b_im;           //lth: ncoef : ees g-space scaling factor
-   double *h_gspl;                //lth: ncoef : pseudo-spline lookup parameters 
-   int *ind_gspl; 
+   double **h_gspl;               //lth: ncoef : pseudo-spline lookup parameters 
+   int **ind_gspl; 
    GPPDATA(){};   
   ~GPPDATA(){};   
-   void init(int ,int , int *,int *,int *);
+  void init(int,int ,int , int *,int *,int *);
 };
 //============================================================================
 
@@ -125,18 +126,19 @@ class GCHAREPKG {
 //============================================================================
 class GSPDATA {
  public:
+   int nkpoint;
    int index;                     //plane index
    int ngrid_a,ngrid_b,ngrid_c;   //fft grid size
    int ncoef;                     //number of g-pts in this collection
    int numLines;
    int numRuns;                   //2x the number of z-lines in collection
    int *ka, *kb, *kc;             //lth: ncoef : g-space
-   double *g,*g2;
+   double **g,**g2;
    double *coef_mass;
    RunDescriptor *runs;           //lth:numruns : k's in fft order
    GSPDATA(){};   
   ~GSPDATA(){};   
-   void init(int);
+  void init(int,int);
    GCHAREPKG gCharePkg;
 };
 //============================================================================

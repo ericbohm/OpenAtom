@@ -1466,6 +1466,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   int Gstates_per_pe  = config.Gstates_per_pe;
   int sGrainSize      = config.sGrainSize; 
   int numChunks       = config.numChunks;
+  int nkpoint         = sim->nkpoint;
 
   //Need our maps and groups to exist before anyone tries to use them
 
@@ -1501,7 +1502,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   else
     {
       UeesCacheProxy.push_back(CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
-							nstates,nchareRhoG, thisInstance));
+							nstates,nchareRhoG, nkpoint, thisInstance));
     }
 
   if(firstInstance) CkPrintf("created eescache proxy\n");
@@ -1516,15 +1517,23 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   if(firstInstance)
     {
-      int *numRXState    = new int [nchareR];
-      int *numRYState    = new int [nchareR];
-      int *numRXNL       = new int [nchareR];
-      int *numRYNL       = new int [nchareR];
+      int *numRXState      = new int [nchareR];
+      int *numRYState      = new int [nchareR];
+      int *numRYStateLower = new int [nchareR];
+      int *numRXNL         = new int [nchareRPP];
+      int *numRYNL         = new int [nchareRPP];
+      int *numRYNLLower    = new int [nchareRPP];
+      int nplane_x_use     = sim->nplane_x;
+      if(!config.doublePack){nplane_x_use = (nplane_x_use+1)/2;}
       for(int i=0;i<nchareR;i++){
-	numRXState[i] = sim->sizeY;
-	numRYState[i] = sim->nplane_x;
-	numRXNL[i]    = ngridbNl;
-	numRYNL[i]    = sim->nplane_x;
+	numRXState[i]      = sim->sizeY;
+	numRYState[i]      = nplane_x_use;
+	numRYStateLower[i] = nplane_x_use - 1;
+      }//endif
+      for(int i=0;i<nchareRPP;i++){
+	numRXNL[i]         = ngridbNl;
+	numRYNL[i]         = nplane_x_use;
+	numRYNLLower[i]    = nplane_x_use - 1;
       }//endfor
       int *numRXRho      = new int [nchareRRhoTot];
       int *numRYRho      = new int [nchareRRhoTot];
@@ -1534,7 +1543,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       create_Rho_fft_numbers(nchareR,nchareRHart,config.rhoRsubplanes,
 			     sim->nplane_rho_x,sim->sizeY,ngridbEext,
 			     numRXRho,numRYRho,numRXEext,numRYEext,numSubGx);
-
       UfftCacheProxy.push_back(CProxy_FFTcache::ckNew(
 					     sim->sizeX,sim->sizeY,sim->sizeZ,
 					     ngridaEext,ngridbEext,ngridcEext,ees_eext_on,
@@ -1544,8 +1552,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 					     config.nchareG,nchareRPP, 
 					     nchareRhoG,    nchareR,    nchareRRhoTot,
 					     nchareGHart,   nchareRHart,nchareRHartTot,
-					     numGState,     numRXState, numRYState,
-					     numGNL,        numRXNL,    numRYNL,
+					     numGState,     numRXState, numRYState,numRYStateLower,
+					     numGNL,        numRXNL,    numRYNL, numRYNLLower,
 					     numGRho,       numRXRho,   numRYRho,
 					     numGEext,      numRXEext,  numRYEext,
 					     config.fftopt,config.fftprogresssplitReal,config.fftprogresssplit,
@@ -1553,8 +1561,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
       CkPrintf("created fftcache proxy\n");
       delete [] numRXState;
       delete [] numRYState;
+      delete [] numRYStateLower;
       delete [] numRXNL;
       delete [] numRYNL;
+      delete [] numRYNLLower;
       delete [] numRXRho;
       delete [] numRYRho;
       delete [] numRXEext;

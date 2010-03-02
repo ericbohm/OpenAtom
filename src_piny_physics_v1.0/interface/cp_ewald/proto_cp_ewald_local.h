@@ -30,6 +30,9 @@ void setkvec3d_res(int , double *,
 void setkvec3d_sm(int ,double ,int *,double *,int *, int *, int *, 
 		  int *, int *, double *, double *,int );
 
+void setkvec3d_sm_kpt(int ,double ,int *,double *,int *, int *, int *, 
+		  int *, int *, double *, double *,int );
+
 /*==========================================================================*/
 /*               Proto for radixme:                                         */ 
 
@@ -44,6 +47,7 @@ void countkvec3d(int *,double ,int *,double *,double *,double *,double *);
 /*               Proto for countkvec3d_sm:                                  */ 
 
 void countkvec3d_sm(int *, double , int *, double * , double *, double *);
+void countkvec3d_sm_kpt(int *, double , int *, double * , double *, double *);
 
 /*==========================================================================*/
 /*               Proto for makemap_cp:                                      */ 

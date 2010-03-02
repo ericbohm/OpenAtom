@@ -61,6 +61,8 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
   int iperd           = gencell->iperd;
+  int doublepack      = cpewald->doublepack;
+  int nkpoint         = cpcoeffs_info->nkpoint;
   
   double vol          = gencell->vol;
   double dt           = gentimeinfo->dt;
@@ -108,7 +110,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->ntemper        = ntemper;
    sim->pi_beads       = pi_beads;
    sim->nstates        = nstates;
-   sim->nkpoint        = 1;       // fixed in nkpoint version
+   sim->nkpoint        = nkpoint;
    sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
 
    sim->natm_typ       = natm_typ;
@@ -119,6 +121,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->vol            = vol;
 
    sim->iperd          = iperd;
+   sim->doublepack     = doublepack;
    sim->fftopt         = fftopt;
    sim->ncoef          = ncoef;
 
@@ -604,10 +607,9 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
 //========================================================================
 
   if(doublePack==0){
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("Fix parainfoinit.C (fetch_state_kvecs) for k-points\n");
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    EXIT(1);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("In the process of implementing k-points... hope it works!!\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
   }//endif
 
   if(nktot+1!=ncoef){
@@ -617,7 +619,11 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
     EXIT(1);
   }//endif
 
-  setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  if (doublePack==0){
+    setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  }else{
+    setkvec3d_sm_kpt(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
+  }//endif
 
 //========================================================================
   }//end routine

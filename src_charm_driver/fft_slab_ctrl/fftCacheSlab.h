@@ -407,9 +407,11 @@ class FFTcache: public Group {
     // Da Plans : Use the holder class to allow other fft libs
     //            All plans are double pack plans
 
-     RFFTplanHolder fwdXPlanState,  bwdXPlanState;  // state
-     FFTplanHolder  fwdYPlanState,  bwdYPlanState;     
-     FFTplanHolder  fwdZPlanState,  bwdZPlanState;
+     RFFTplanHolder fwdXPlanState,   bwdXPlanState;    // state
+     FFTplanHolder  fwdXPlanStateK,  bwdXPlanStateK;  // state for kpoints
+     FFTplanHolder  fwdYPlanState,   bwdYPlanState;
+     FFTplanHolder  fwdYPlanStateLower,  bwdYPlanStateLower; // state for kpoints     
+     FFTplanHolder  fwdZPlanState,   bwdZPlanState;
 
      RFFTplanHolder fwdXPlanRho,  bwdXPlanRho;      // density 
      FFTplanHolder  fwdYPlanRho,  bwdYPlanRho;     
@@ -418,9 +420,12 @@ class FFTcache: public Group {
 
      FFTplanHolder  fwdZPlanRhoHart;
 
-     RFFTplanHolder fwdXPlanNL, bwdXPlanNL;         // ees NL 
-     FFTplanHolder  fwdYPlanNL, bwdYPlanNL;  
-     FFTplanHolder  fwdZPlanNL, bwdZPlanNL;    
+     RFFTplanHolder fwdXPlanNL,  bwdXPlanNL;         // ees NL 
+     FFTplanHolder  fwdXPlanNLK, bwdXPlanNLK;       // ees NL for kpoints
+     FFTplanHolder  fwdYPlanNL,  bwdYPlanNL;
+     FFTplanHolder  fwdYPlanNLLower, bwdYPlanNLLower; // for kpoints
+     FFTplanHolder  fwdZPlanNL,  bwdZPlanNL;    
+ 
 
      RFFTplanHolder fwdXPlanEext,  bwdXPlanEext;    // ees Eext
      FFTplanHolder  fwdYPlanEext,  bwdYPlanEext;
@@ -438,8 +443,8 @@ class FFTcache: public Group {
                    int _nchareGNL,    int _nchareRNL, 
                    int _nchareGRho,   int _nchareRRho,  int _nchareRRhoTot,
                    int _nchareGEext,  int _nchareREext, int _nchareREextTot,
-                   int  *numGState,   int  *numRXState, int *numRYState,
-                   int  *numGNL,      int  *numRXNL,    int *numRYNL,
+                   int  *numGState,   int  *numRXState, int *numRYState,int *numRYStateLower,
+                   int  *numGNL,      int  *numRXNL,    int *numRYNL,int *numRYNLLower,
                    int  *numGRho,     int  *numRXRho,   int *numRYRho ,
                    int  *numGEext,    int  *numRXEext,  int *numRYEext ,
       	           int _fftopt,       int _nsplitR,     int _nsplitG,

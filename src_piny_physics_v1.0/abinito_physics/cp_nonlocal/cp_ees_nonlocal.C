@@ -164,7 +164,7 @@ void CPNONLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
-                                     double *h_gspl,int *ind_gspl)
+                                     double **h_gspl,int **ind_gspl)
 //==========================================================================
   { // begin routine 
 //==========================================================================
@@ -183,16 +183,26 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 
   double *hmati   = gencell->hmati;
   int nsplin_g    = cppseudo->nsplin_g;
+
+  int nkpoint     = cpcoeffs_info->nkpoint;
+
+  double *akpoint = cpewald->akpoint;
+  double *bkpoint = cpewald->bkpoint;
+  double *ckpoint = cpewald->ckpoint;
+
   double gmin_spl = cppseudo->gmin_spl;
   double dg_spl   = cppseudo->dg_spl;
 
 //==========================================================================
 // Spline look up stuff : never changes. Done starting with 0 convention
 
+//FIXKhere: h_gspl ind_gspl need to be k'd up.
+
+  for(int kp=0; kp<nkpoint; kp++){
   for(i=0;i<ncoef;i++){
-    aka = ((double)(ka[i]));
-    akb = ((double)(kb[i]));
-    akc = ((double)(kc[i]));
+    aka = ((double)(ka[i]))+akpoint[kp+1];
+    akb = ((double)(kb[i]))+bkpoint[kp+1];
+    akc = ((double)(kc[i]))+ckpoint[kp+1];
     xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
     yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
     zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -203,13 +213,13 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
     iii = MAX(iii,1);
     h0  = ((double)(iii-1))*dg_spl+gmin_spl;
     h   = g-h0;
-    h_gspl[i]   = h;
-    ind_gspl[i] = iii;
-    if(g==0.0){
-      h_gspl[i]   = 0.0;
-      ind_gspl[i] = 1;
+    h_gspl[kp][i]   = h;
+    ind_gspl[kp][i] = iii;
+    if(g<1.e-12){
+      h_gspl[kp][i]   = 0.0;
+      ind_gspl[kp][i] = 1;
     }//endif
-  }//endfor
+  }}//endfor: i,kp
 
 //--------------------------------------------------------------------------
   }//end routine
@@ -247,6 +257,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
   double atemp,btemp,ctemp;
   double mn_a_tmp,mn_b_tmp,mn_c_tmp;
   double x,y,z;
+
+  int doublePack = cpewald->doublepack;
 
   double *hmati  = gencell->hmati;
   int natm       = nonlocal->natm;
@@ -343,6 +355,10 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 //==========================================================================
 // II) Using current fraction, find the grid points on which M_n is non-zero 
 
+   int sizeA = ngrid_a;
+   if (doublePack==1){
+     sizeA = (ngrid_a+2);
+   }//endif
    for(j=1;j<=n_interp;j++){
 #ifdef CMK_BLUEGENEL
      if(j%100==0)
@@ -363,7 +379,7 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
        ib       = (ib<=ngrid_b ? ib:ib-ngrid_b);
        ic       = (ic<=ngrid_c ? ic:ic-ngrid_c);
        igrid_a[j][i] = ia-1;
-       igrid_b[j][i] = (ib - 1)*(ngrid_a+2);
+       igrid_b[j][i] = (ib - 1)*sizeA; 
        igrid_c[j][i] = (ic - 1);  // use to assign to planes
      }//endfor
    }//endfor
@@ -574,8 +590,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
 void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
                      int ihave_g0, int ind_g0, int iter_nl,
                      double *d_re, double *d_im, double *dyp_re, double *dyp_im,
-                     complex *projPsiG, int *ind_gspl, double *h_gspl,
-                     int istate,int ichare,int nfreq_cmi_update)
+                     complex *projPsiG, int **ind_gspl, double **h_gspl,
+                     int istate,int ichare,int kpt, int nfreq_cmi_update)
 //==========================================================================
    {//begin routine
 //==========================================================================
@@ -597,6 +613,8 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   int *lang_v         = cppseudo->nonlocal.lang_v;
   int *mang_v         = cppseudo->nonlocal.mang_v;
   int *ityp_v         = cppseudo->nonlocal.ityp_v;
+
+  int igamma_kpt_ind  = cpcoeffs_info->igamma_kpt_ind;
 
   double *vps0   = cppseudo->vps0;
   double *vps1   = cppseudo->vps1;
@@ -631,23 +649,32 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 // they cannot be cached without synchonizing.
 // The d_re,d_im are from the cache and only depend on g-plane index.
 
-  eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati,nfreq_cmi_update);
+  //FIXKhere: pass the k-index to Ylm calc.
+  eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati,kpt,nfreq_cmi_update);
 
-  int ii = (ihave_g0==1 ? ind_g0 : ncoef);
-  if(lang==0 && ihave_g0==1){
-    double vnow = gzvps0[iatm_typ];
-    dyp_re[ii] *= vnow;
-    dyp_im[ii]  = 0.0;
+  int ii = ncoef;
+  if(istate==0){
+    PRINTF("Hi : ichare %d igamma_kpt_ind %d kpt %d : %d %d\n",ichare,igamma_kpt_ind,kpt+1,ihave_g0,ind_g0);
   }//endif
-  if(lang!=0 && ihave_g0==1){
-    dyp_re[ii] = 0.0;
-    dyp_im[ii] = 0.0;
+  if(igamma_kpt_ind==kpt+1){//igamma_kpt_ind is piny style.
+    ii = (ihave_g0==1 ? ind_g0 : ncoef);
+    if(lang==0 && ihave_g0==1){
+      double vnow = gzvps0[iatm_typ];
+      dyp_re[ii] *= vnow;
+      dyp_im[ii]  = 0.0;
+    }//endif
+    if(lang!=0 && ihave_g0==1){
+      dyp_re[ii] = 0.0;
+      dyp_im[ii] = 0.0;
+    }//endif
   }//endif
+
+  //FIXKhere: pick up the k-index which should be passed in.
 
   int ind_off = (iatm_typ-1)*nsplin_g*(n_ang_max+1) + lang*nsplin_g;
   for(int i=0;i<ii;i++){
-    int ind_now = ind_off + ind_gspl[i];
-    double h    = h_gspl[i];
+    int ind_now = ind_off + ind_gspl[kpt][i];
+    double h    = h_gspl[kpt][i];
     double v0   = vps0[ind_now];
     double v1   = vps1[ind_now];
     double v2   = vps2[ind_now];
@@ -663,8 +690,8 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   CmiNetworkProgress();
 #endif
   for(int i=ii+1;i<ncoef;i++){
-    int ind_now = ind_off + ind_gspl[i];
-    double h    = h_gspl[i];
+    int ind_now = ind_off + ind_gspl[kpt][i];
+    double h    = h_gspl[kpt][i];
     double v0   = vps0[ind_now];
     double v1   = vps1[ind_now];
     double v2   = vps2[ind_now];
@@ -717,7 +744,7 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
 //==========================================================================
 void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
                      double *dy_re,double *dy_im, double *d_re, double *d_im,
-                     double *hmati,int nfreq_cmi_update)
+                     double *hmati,int kpt, int nfreq_cmi_update)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -726,6 +753,11 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
 
   int i;
   int m_ang_abs;
+
+  double akpoint = cpewald->akpoint[kpt+1];
+  double bkpoint = cpewald->bkpoint[kpt+1];
+  double ckpoint = cpewald->ckpoint[kpt+1];
+
   double sgn_m_ang;
   double y00;
   double y10;
@@ -761,6 +793,8 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
 //          | \int cos + i \int sin|^2 = |\int cos|^2 + |\int sin |^2       
 //          when the states are real as they are here.                      
 
+//FIXKhere: use the k-index and to fix up aka, akb, akc for l>=1.
+
   switch(lang){  
     //-----------------------------------------------------------
     case 0:
@@ -784,9 +818,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 0:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -811,9 +845,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // Case: l=1, m=1
         // ------------------------------------------------------
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -840,9 +874,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // Case: l=1, m=-1
         // ------------------------------------------------------
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -874,9 +908,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 0:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -901,9 +935,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 2:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -932,9 +966,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case -2:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -963,9 +997,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 1:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -993,9 +1027,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case -1:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1028,9 +1062,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 0:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1055,9 +1089,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 3:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1088,9 +1122,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case -3:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1121,9 +1155,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 2:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1153,9 +1187,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case -2:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1185,9 +1219,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case 1:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1215,9 +1249,9 @@ void CPNONLOCAL::eesYlmOnD(int lang,int mang,int ncoef,int *ka,int *kb,int *kc,
         // ------------------------------------------------------
         case -1:
           for(i=0;i<ncoef;i++){
-            aka = (double)(ka[i]);
-            akb = (double)(kb[i]);
-            akc = (double)(kc[i]);
+            aka = (double)(ka[i])+akpoint;
+            akb = (double)(kb[i])+bkpoint;
+            akc = (double)(kc[i])+ckpoint;
             xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
             yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
             zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
@@ -1374,6 +1408,129 @@ void CPNONLOCAL::eesZmatRchare(double *projPsiR, int iter_nl, double *zmat,
   }//end routine
 //==========================================================================
 
+//==========================================================================
+// COMPLEX version for k-points:
+// Invoked by all real space nl chares : Compute your part of the current zmat.
+//  zmat must be large enough so that all NL interations can be stored at the
+//  same time. Otherwise, we have to synchronize! zmat[natm_nl*nlcnt]
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+
+void CPNONLOCAL::eesZmatRchareC(complex *projPsiR, int iter_nl, complex *zmat, 
+                               int **igrid, double **mn,int *plane_index,
+                               int state,int plane){
+//==========================================================================
+  CP           *cp           = CP::get();
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+#include "../class_defs/allclass_strip_cp.h"
+#include "../class_defs/allclass_strip_gen.h"
+
+  double vol         = gencell->vol;
+
+  int n_ang_max  = cppseudo->n_ang_max;
+  int n_interp   = cppseudo->n_interp_ps;
+  int n_interp2  = n_interp*n_interp;
+
+  int *natm_typ_lang  = cppseudo->nonlocal.natm_typ_lang;
+  int *natm_lang      = cppseudo->nonlocal.natm_lang;
+  int *iatm_str_lang  = cppseudo->nonlocal.iatm_str_lang;
+  int **iatm_typ_lang = cppseudo->nonlocal.iatm_typ_lang;
+  int *lang_v         = cppseudo->nonlocal.lang_v;
+  int *mang_v         = cppseudo->nonlocal.mang_v;
+  int *ityp_v         = cppseudo->nonlocal.ityp_v;
+  double *vpsnorm     = cppseudo->vpsnorm; 
+
+  int ngrida          = cppseudo->nonlocal.ngrid_a;
+  int ngridb          = cppseudo->nonlocal.ngrid_b;
+
+  int lang            = lang_v[iter_nl];
+  int mang            = mang_v[iter_nl];
+  int ityp            = ityp_v[iter_nl];
+  int lang1           = lang+1;
+
+  int iatm_typ        = iatm_typ_lang[ityp][lang1]; // true atom type      
+  int natm            = natm_lang[iatm_typ];        // # atms of this type 
+  int iatm_str        = iatm_str_lang[iatm_typ];    // where atms begin    
+
+//==========================================================================
+// A little debugging for you
+
+#ifdef _CP_DEBUG_EES_NONLOCAL
+  if(state==4){
+    char myFileName[1000];
+    sprintf(myFileName, "proj_Rpsi_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+    int ic = 0;
+    for(int j=0;j<ngridb;j++){
+     for(int i=0;i<ngrida;i++){
+       fprintf(fp,"%d %g %g\n",i,projPsiR[ic].re,projPsiR[ic].im);
+       ic++;
+     }//endfor
+    }//endfor
+    fclose(fp);
+  }//endif : state=0
+#endif  
+
+//==========================================================================
+// The projPsiR should be FFT3D(projPsiG)
+// Mr. zmat should be passed in with the correct offset for interation counter.
+
+   int nroll = 5; // you can't check this without modifying the code below
+   int nrem  = (n_interp2 % nroll);
+   int jstrt = (n_interp2-nrem+1);
+   int jend  = (n_interp2-nrem);
+
+   // igrid has been changed for different real space packing under kpoints
+   bzero(zmat,sizeof(complex)*natm);
+   for(int jatm=0;jatm<natm;jatm++){ // atms of this type
+     int iatm   = iatm_str+jatm-1;   // non-local atom index
+     int jc     = plane_index[iatm]; // interpolation 
+     if(jc>0){
+       for(int j0=1,j1=2,j2=3,j3=4,j4=5;j0<=jend;
+           j0+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+         complex p0   = projPsiR[igrid[iatm][j0]]*mn[iatm][j0];  // projection operator
+         complex p1   = projPsiR[igrid[iatm][j1]]*mn[iatm][j1]; 
+         complex p2   = projPsiR[igrid[iatm][j2]]*mn[iatm][j2]; 
+         complex p3   = projPsiR[igrid[iatm][j3]]*mn[iatm][j3]; 
+         complex p4   = projPsiR[igrid[iatm][j4]]*mn[iatm][j4]; 
+         zmat[jatm] += (p0+p1+p2+p3+p4);         // add to zmatrix
+       }//endfor : B-spline interp to get Zmat contributions
+       for(int j=jstrt;j<=n_interp2;j++){
+         complex p   = projPsiR[igrid[iatm][j]]*mn[iatm][j]; // projection operator
+         zmat[jatm] += p;                                   // add to zmatrix
+       }//endfor : B-spline interp to get Zmat contributions
+#ifdef CMK_BLUEGENEL
+       CmiNetworkProgress();
+#endif
+     }//endif
+   }//endfor : atoms of this type
+
+//==========================================================================
+// zmat must now be reduced over all planes of the current state.
+// We malloc enough zmat memory to contain iterations. The msg should contain
+// the iteration counter. Really the FFTs guarantee you won't get into trouble 
+// but thats OK. Saftey first.
+
+//==========================================================================
+// A little debugging for you
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+  if(state==4){
+    char myFileName2[1000];
+    sprintf(myFileName2, "proj_zmat_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName2,"w");
+     for(int jatm=0;jatm<natm;jatm++){ // atms of this type
+       fprintf(fp,"%d %g\n",jatm,zmat[jatm]);
+     }//endfor
+    fclose(fp);
+  }//endif : state=0
+#endif  
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
 
 //==========================================================================
 // Every Real Space Chare array invokes me for each non-local loop iteration
@@ -1495,12 +1652,16 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
      int jc   = plane_index[iatm];  // interpolation ind to plane ind mapping
      if(jc>0){ // jc starts at 1 in piny-like fashion
        int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
+
        zmat[jatm] *= (2.0*vnormVol); 
+
        double fxx=0.0,fyy=0.0,fzz=0.0;
 #ifndef _CP_BRK_BETTER_
 #ifndef _UNROLL_OFF_
        for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
            j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+
+
          double pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
          double pz1 = projPsiR[igrid[iatm][j1]];     
          double pz2 = projPsiR[igrid[iatm][j2]];     
@@ -1569,12 +1730,14 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
            double q2  = zmat[jatm]*mn[iatm][j+2];  
            double q3  = zmat[jatm]*mn[iatm][j+3];  
            double q4  = zmat[jatm]*mn[iatm][j+4];  
+
            projPsiRScr[k]   += q0;               // add contrib into total
            projPsiRScr[k+1] += q1;
            projPsiRScr[k+2] += q2;
            projPsiRScr[k+3] += q3;
            projPsiRScr[k+4] += q4;
 	 }//endfor
+
          for(int j=jstrt,k=kstrt;j<sBreak[iatm][(ib+1)];j++,k++){
            double p = projPsiR[k];           // psi
            fxx      += (p*dmn_x[iatm][j]);
@@ -1631,6 +1794,270 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 
 
 //==========================================================================
+// Complex version:
+// Every Real Space Chare array invokes me for each non-local loop iteration
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, complex *zmat, 
+                int **igrid,double **mn,double **dmn_x,double **dmn_y,double **dmn_z,
+		complex *projPsiR, complex *projPsiRScr, int *plane_index, 
+		int *nBreak, int **sBreak,
+                int plane, int state, FastAtoms *atoms)
+//==========================================================================
+   {//Begin Routine 
+//==========================================================================
+  CP           *cp           = CP::get();
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+#include "../class_defs/allclass_strip_cp.h"
+#include "../class_defs/allclass_strip_gen.h"
+  PSNONLOCAL *nonlocal = &(cppseudo->nonlocal);
+
+  double vol     = gencell->vol;
+
+  double *vpsnorm = cppseudo->vpsnorm; 
+  double *occ     = cpcoeffs_info->occ_up;
+  double occ_now  = occ[state+1];
+
+  int n_ang_max   = cppseudo->n_ang_max;
+  int n_interp    = cppseudo->n_interp_ps;
+  int n_interp2   = n_interp*n_interp;
+
+  int ngrid_a         = nonlocal->ngrid_a;
+  int ngrid_b         = nonlocal->ngrid_b;
+  int ngrid_c         = nonlocal->ngrid_c;
+  int **iatm_typ_lang = nonlocal->iatm_typ_lang;
+  int *natm_typ_lang  = nonlocal->natm_typ_lang;
+  int *natm_lang      = nonlocal->natm_lang;
+  int *iatm_str_lang  = nonlocal->iatm_str_lang;
+  int *lang_v         = nonlocal->lang_v;
+  int *mang_v         = nonlocal->mang_v;
+  int *ityp_v         = nonlocal->ityp_v;
+  int *map_nl         = nonlocal->map_nl;
+
+  double *fx         = atoms->fx;
+  double *fy         = atoms->fy;
+  double *fz         = atoms->fz;
+
+  int lang           = lang_v[iter_nl];
+  int mang           = mang_v[iter_nl];
+  int ityp           = ityp_v[iter_nl];
+  int lang1          = lang+1;
+
+  int iatm_typ       = iatm_typ_lang[ityp][lang1]; // true atom type      
+  int natm           = natm_lang[iatm_typ];        // # atms of this type 
+  int iatm_str       = iatm_str_lang[iatm_typ];    // where atms begin    
+
+  int ind_now        = (iatm_typ-1)*(n_ang_max+1) + lang + 1;
+  double vnorm_now   = vpsnorm[ind_now];
+  double vnormVol    = vnorm_now/vol;
+
+  int nroll = 5; // you can't check this without modifying the code below
+  int nrem,jstrt,jend;
+
+//==========================================================================
+// Set up some debuggin stuff
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+   double *fxt = new double [natm];
+   double *fyt = new double [natm];
+   double *fzt = new double [natm];
+   for(int i =0;i<natm;i++){fxt[i]=0.;fyt[i]=0.;fzt[i]=0.;}
+#endif
+
+//==========================================================================
+// Compute cp_enl whether you are the reduction plane or not.
+// Its cheap, so why not? Then Piny code does not care what plane it is given.
+// When all non-local interations are done, the reduction plane, ONLY,
+// contributes to a reduction over all states to get the total 
+// non-local energy, ENL. 
+
+   nrem  = (natm % nroll);
+   jstrt = (natm-nrem);
+   jend  = (natm-nrem);
+
+   double cp_enl = 0.0; 
+   for(int j=0;j<jend;j+=nroll){
+     cp_enl += ( zmat[j].getMagSqr()     + zmat[(j+1)].getMagSqr()
+               + zmat[(j+2)].getMagSqr() + zmat[(j+3)].getMagSqr()
+               + zmat[(j+4)].getMagSqr() );
+   }//endfor
+   for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j].getMagSqr());}
+
+   cp_enl_tot[0] += (cp_enl*vnormVol*occ_now);
+
+
+#ifdef CMK_BLUEGENEL
+       CmiNetworkProgress();
+#endif
+
+//==========================================================================
+// Atom forces
+
+   nrem  = (n_interp2 % nroll);
+   jstrt = (n_interp2-nrem+1);
+   jend  = (n_interp2-nrem);
+
+   bzero(projPsiRScr,ngrid_a*ngrid_b*sizeof(complex));
+
+//#define _DEBUG_STUFF_   
+#ifdef  _DEBUG_STUFF_   
+    char myFileName[1000];
+    sprintf(myFileName, "Rproj_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+#define _UNROLL_OFF_
+#endif
+
+   for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
+     int iatm = iatm_str+jatm-1;    // index of atm in non-local atm list
+     int jc   = plane_index[iatm];  // interpolation ind to plane ind mapping
+     if(jc>0){ // jc starts at 1 in piny-like fashion
+       int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
+
+       zmat[jatm] *= (2.0*vnormVol); 
+
+       complex fxx=(0.0, 0.0), fyy=(0.0, 0.0),fzz=(0.0, 0.0);
+#ifndef _CP_BRK_BETTER_
+#ifndef _UNROLL_OFF_
+       for(int j=1,j1=2,j2=3,j3=4,j4=5;j<=jend;
+           j+=nroll,j1+=nroll,j2+=nroll,j3+=nroll,j4+=nroll){
+
+
+         complex pz0 = projPsiR[igrid[iatm][j]];   // ProjPsi
+         complex pz1 = projPsiR[igrid[iatm][j1]];     
+         complex pz2 = projPsiR[igrid[iatm][j2]];     
+         complex pz3 = projPsiR[igrid[iatm][j3]];     
+         complex pz4 = projPsiR[igrid[iatm][j4]];     
+         complex q0  = zmat[jatm]*mn[iatm][j];     // contrib of this atm to psi force
+         complex q1  = zmat[jatm]*mn[iatm][j1];
+         complex q2  = zmat[jatm]*mn[iatm][j2];
+         complex q3  = zmat[jatm]*mn[iatm][j3];
+         complex q4  = zmat[jatm]*mn[iatm][j4];
+         fxx       += (pz0*dmn_x[iatm][j]  + pz1*dmn_x[iatm][j1] // forces_x
+		       +pz2*dmn_x[iatm][j2] + pz3*dmn_x[iatm][j3]
+		       +pz4*dmn_x[iatm][j4]);
+         fyy       += (pz0*dmn_y[iatm][j]  + pz1*dmn_y[iatm][j1] // forces_y
+		       +pz2*dmn_y[iatm][j2] + pz3*dmn_y[iatm][j3]
+		       +pz4*dmn_y[iatm][j4]);
+         fzz       += (pz0*dmn_z[iatm][j]  + pz1*dmn_z[iatm][j1] // forces_z
+		       +pz2*dmn_z[iatm][j2] + pz3*dmn_z[iatm][j3]
+		       +pz4*dmn_z[iatm][j4]);
+
+         projPsiRScr[igrid[iatm][j]]  += q0;       // add contrib into total
+         projPsiRScr[igrid[iatm][j1]] += q1;  
+         projPsiRScr[igrid[iatm][j2]] += q2;  
+         projPsiRScr[igrid[iatm][j3]] += q3;  
+         projPsiRScr[igrid[iatm][j4]] += q4;  
+       }//endfor
+       for(int j=jstrt;j<=n_interp2;j++){
+#else //unroll is on
+       for(int j=1;j<=n_interp2;j++){
+#endif //unroll is off
+         complex pz = projPsiR[igrid[iatm][j]]; // psi
+         complex q  = zmat[jatm]*mn[iatm][j];  
+         fxx      += (pz*dmn_x[iatm][j]);
+         fyy      += (pz*dmn_y[iatm][j]);
+         fzz      += (pz*dmn_z[iatm][j]);
+         projPsiRScr[igrid[iatm][j]] += q;        // add contrib into total
+#ifdef  _DEBUG_STUFF_   
+         fprintf(fp,"%d %d %d %d %d %g %g %g %g %g %d\n",jatm,iatm,katm,jc,igrid[iatm][j],
+                                     pz,q,zmat[jatm],mn[iatm][j],projPsiRScr[igrid[iatm][j]], (ngrid_a+2)*ngrid_b);
+
+#endif
+       }//endfor
+#else
+       for(int ib=1;ib<=nBreak[iatm];ib++){
+         int koff = igrid[iatm][sBreak[iatm][ib]];
+         int joff = sBreak[iatm][ib];
+         int nn   = sBreak[iatm][(ib+1)]-joff;  
+         nrem     = (nn % nroll);
+         jend     = nn-nrem+joff-1;
+         jstrt    = jend+1;
+         int kstrt= jstrt-joff+koff;
+         for(int j=joff,k=koff;j<=jend;j+=5,k+=5){
+           complex p0 = projPsiR[k];           // psi
+           complex p1 = projPsiR[k+1];           // psi
+           complex p2 = projPsiR[k+2];           // psi
+           complex p3 = projPsiR[k+3];           // psi
+           complex p4 = projPsiR[k+4];           // psi
+           fxx      += (p0*dmn_x[iatm][j]   + p1*dmn_x[iatm][j+1] + p2*dmn_x[iatm][j+2] 
+			+p3*dmn_x[iatm][j+3] + p4*dmn_x[iatm][j+4]);
+           fyy      += (p0*dmn_y[iatm][j]   + p1*dmn_y[iatm][j+1] + p2*dmn_y[iatm][j+2] 
+			+p3*dmn_y[iatm][j+3] + p4*dmn_y[iatm][j+4]);
+           fzz      += (p0*dmn_z[iatm][j]   + p1*dmn_z[iatm][j+1] + p2*dmn_z[iatm][j+2] 
+			+p3*dmn_z[iatm][j+3] + p4*dmn_z[iatm][j+4]);
+           complex q0  = zmat[jatm]*mn[iatm][j];  
+           complex q1  = zmat[jatm]*mn[iatm][j+1];  
+           complex q2  = zmat[jatm]*mn[iatm][j+2];  
+           complex q3  = zmat[jatm]*mn[iatm][j+3];  
+           complex q4  = zmat[jatm]*mn[iatm][j+4];  
+
+	   //FIXKhere: be careful here because this guy is complex:
+	   // that factor of two is in there if it's real.
+
+           projPsiRScr[k]   += q0;               // add contrib into total
+           projPsiRScr[k+1] += q1;
+           projPsiRScr[k+2] += q2;
+           projPsiRScr[k+3] += q3;
+           projPsiRScr[k+4] += q4;
+	 }//endfor
+
+         for(int j=jstrt,k=kstrt;j<sBreak[iatm][(ib+1)];j++,k++){
+           complex p = projPsiR[k];           // psi
+           fxx      += (p*dmn_x[iatm][j]);
+           fyy      += (p*dmn_y[iatm][j]);
+           fzz      += (p*dmn_z[iatm][j]);
+           complex q  = zmat[jatm]*mn[iatm][j];  
+           projPsiRScr[k] += q;               // add contrib into total
+	 }//endfor
+       }//endfor
+#endif
+       fx[katm]  -= (fxx.re*zmat[jatm].re + fxx.im*zmat[jatm].im); // finish up
+       fy[katm]  -= (fyy.re*zmat[jatm].re + fyy.im*zmat[jatm].im);
+       fz[katm]  -= (fzz.re*zmat[jatm].re + fzz.im*zmat[jatm].im);
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+       for(int j=1;j<=n_interp2;j++){
+         complex pz  = projPsiR[igrid[iatm][j]]*zmat[jatm]; // projector*psi
+         fxt[jatm] -= pz*dmn_x[iatm][j];                   // forces 
+         fyt[jatm] -= pz*dmn_y[iatm][j];
+         fzt[jatm] -= pz*dmn_z[iatm][j];
+       }//endif
+#endif
+#ifdef CMK_BLUEGENEL
+       //       CmiNetworkProgress();
+#endif
+     }//endif : atom is interpolated on this plane
+   }//endfor : iatm
+
+//==========================================================================
+// output the debugging stuff
+
+#ifdef _CP_DEBUG_EES_NONLOCAL_
+    char myFileName[1000];
+    sprintf(myFileName, "fatm_Rproj_%d.out.%d.%d",state,plane,iter_nl);
+    FILE *fp = fopen(myFileName,"w");
+     for(int jatm=0;jatm<natm;jatm++){// loop over all atms of this type
+       int iatm  = iatm_str+jatm-1;    // index of atm in non-local atm list
+       int katm  = map_nl[(iatm+1)]-1; // index of atm in full atom list
+       fprintf(fp,"%d %.10g %.10g %.10g\n",katm,fxt[jatm],fyt[jatm],fzt[jatm]);
+     }//endfor
+    fclose(fp);
+    delete [] fxt;
+    delete [] fyt;
+    delete [] fzt;
+#endif  
+
+#ifdef  _DEBUG_STUFF_   
+    fclose(fp);
+#endif
+
+
+//--------------------------------------------------------------------------
+  }//end routine
+//=========================================================================
+
+
+//==========================================================================
 // Every G-Space Chare array invokes me for each non-local loop iteration
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1645,6 +2072,10 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 //==========================================================================
 // Setup some debugging stuff
 
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+  int doublePack = cpewald->doublepack;
+
 #ifdef _CP_DEBUG_EES_NONLOCAL_
   char myFileName[1000];
   sprintf(myFileName, "proj_fpsiG_%d.out.%d.%d",istate,ichare,iter_nl);
@@ -1657,7 +2088,7 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 
   if(ihave_g0==1){
     int ig           = ind_g0;
-    projPsiG[ig].im  = 0.0;
+    if(doublePack==1){projPsiG[ig].im  = 0.0;}
     dyp_im[ig]       = 0.0;
   }//endif
 
@@ -1684,7 +2115,8 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 //==========================================================================
 // Gx!=0 : Compute Psi forces : projPsiG is FFT3Dinv(projPsiR)
 
-  double wght = 2.0;
+  double wght = 1.0;
+  if(doublePack){wght = 2.0;}
   for(int ig=nkx0;ig<ncoef;ig++){ 
     fPsiG[ig].re    -= wght*(dyp_re[ig]*projPsiG[ig].re - dyp_im[ig]*projPsiG[ig].im);
     fPsiG[ig].im    += wght*(dyp_im[ig]*projPsiG[ig].re + dyp_re[ig]*projPsiG[ig].im);
@@ -1720,14 +2152,24 @@ void CPNONLOCAL::eesPsiForcGspace(int ncoef, int ihave_g0, int ind_g0,int nkx0,
 //  A generic routine to set kvectors and indices from runs
 //==============================================================================
 void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
-                        double *g, double *g2,int numRuns, RunDescriptor *runs, 
+                        int numRuns, RunDescriptor *runs, 
                         GCHAREPKG *gCharePkg, int checkFill, 
-                        int ngrid_a, int ngrid_b, int ngrid_c){
+   		        int ngrid_a, int ngrid_b, int ngrid_c,
+   		        double **g2, double **g){
 //======================================================================
 
   GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_gen.h"
   double *hmati   = gencell->hmati;
+  int doublePack  = cpewald->doublepack;
+  int nkpoint     = cpcoeffs_info->nkpoint;
+
+  double *akpoint = cpewald->akpoint;
+  double *bkpoint = cpewald->bkpoint;
+  double *ckpoint = cpewald->ckpoint;
+  double tpi = 2.0*M_PI;
 
 //======================================================================
 // Construct the k-vectors
@@ -1750,24 +2192,22 @@ void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
   }//endfor
 
   CkAssert(dataCovered == numPoints);
-
 //======================================================================
-// give me some g's
 
-  double tpi = 2.0*M_PI;
+  for(int kp=0; kp<nkpoint; kp++){
   for(int i=0;i<numPoints;i++){
-    double aka = ((double)(k_x[i]));
-    double akb = ((double)(k_y[i]));
-    double akc = ((double)(k_z[i]));
+    double aka = ((double)(k_x[i]))+akpoint[kp+1];
+    double akb = ((double)(k_y[i]))+bkpoint[kp+1];
+    double akc = ((double)(k_z[i]))+ckpoint[kp+1];
     double xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
     double yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
     double zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
-    g2[i]      = xk*xk+yk*yk+zk*zk;
-    g[i]       = sqrt(g2[i]);
-  }//endfor
+    g2[kp][i]  = xk*xk+yk*yk+zk*zk;
+    g[kp][i]   = sqrt(g2[kp][i]);
+  }}//endfor
 
 //======================================================================
-// Find pts with k_x==0 then check the layout : kx=0 first
+// Find pts with k_x==0 for doublePack case:
 
   int ihave_g000 =  0;
   int ind_g000   = -1;
@@ -1777,21 +2217,32 @@ void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
   int nkx0_red   = 0;
   int nkx0_zero  = 0;
   int kx0_strt   = 0;
-  for(int i=0;i<numPoints;i++){
-    if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
-    if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
-    if(k_x[i]==0){
-      if(ihave_kx0==0){kx0_strt=i;}
-      ihave_kx0=1;
-      nkx0++;
-    }//endif
-  }//endif
-  int kx0_end = kx0_strt + nkx0;
+  int kx0_end    = 0;
 
-  if(checkFill==1){
+  if(doublePack){
+    for(int i=0;i<numPoints;i++){
+      if(k_x[i]==0 && k_y[i]>0){nkx0_uni++;}
+      if(k_x[i]==0 && k_y[i]<0){nkx0_red++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]>=0){nkx0_uni++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]<0){nkx0_red++;}
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){nkx0_zero++;ihave_g000=1;ind_g000=i;}
+      if(k_x[i]==0){
+        if(ihave_kx0==0){kx0_strt=i;}
+        ihave_kx0=1;
+        nkx0++;
+      }//endif
+    }//endfor
+    kx0_end = kx0_strt + nkx0;
+  }else{
+    for(int i=0;i<numPoints;i++){
+      if(k_x[i]==0 && k_y[i]==0 && k_z[i]==0){ihave_g000=1;ind_g000=i;}
+    }//endfor
+  }//endif
+
+//======================================================================
+// Check the layout: then check the layout : kx=0 first (for doublePack)
+
+  if(checkFill==1 && doublePack){
    if(kx0_strt!=0){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     CkPrintf("kx=0 should be stored first | kx_srt !=0\n");
@@ -1833,7 +2284,7 @@ void CPNONLOCAL::genericSetKvector(int numPoints, int *k_x, int *k_y, int *k_z,
     }//endif
    }//endfor
 
-  }//endif : check the ordering : states only
+  }//endif : check the ordering : states only AND !doublePack
 
 //==============================================================================
 // Set the return values

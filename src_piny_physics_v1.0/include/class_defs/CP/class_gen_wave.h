@@ -55,6 +55,8 @@ static void read_occupation_numbers(double *occ_up,double *occ_dn,
                                     int nstate_up, int nstate_dn,int cp_lda_tmp,
                                     char *occupation_file,int *uniform_flag);
 
+static void read_coef_fetch_kpoints(int , char *kpt_file_name, int istart);
+
 //-------------------------------------------------------------------------
 #ifdef PUP_ON
  //pupping

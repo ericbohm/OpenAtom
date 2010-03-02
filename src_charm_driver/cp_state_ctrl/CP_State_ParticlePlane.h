@@ -84,6 +84,7 @@ class CP_State_ParticlePlane: public CBase_CP_State_ParticlePlane
         void registrationDone(CkReductionMsg *msg);
         void printEnl(CkReductionMsg *msg);
 	int istate_ind;
+        int ibead_ind,kpoint_ind, itemper_ind;
         int myChareG;
         int iteration;
         int iterNL;

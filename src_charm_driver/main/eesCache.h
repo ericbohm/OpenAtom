@@ -42,6 +42,7 @@ class eesCache: public Group {
    int nchareRHartProc;        // assigned to this proc counts once here.
    int nchareGSPProc;
    int nchareRhoGProc;
+   int nkpoint;
 
    // planes chares on proc : again ignore state index
    int *allowedGppChares;      // lth: nchareGPP   : 1/0 if chare is on/off proc
@@ -70,7 +71,7 @@ class eesCache: public Group {
   // Functions
    eesCache(){};
   ~eesCache(){};
-   eesCache(int , int , int ,int ,int,int, UberCollection thisInstance);
+   eesCache(int , int , int , int ,int ,int,int, UberCollection thisInstance);
 
    // Report into the cache
    void registerCacheGPP  (int ,int, int *,int *,int*);

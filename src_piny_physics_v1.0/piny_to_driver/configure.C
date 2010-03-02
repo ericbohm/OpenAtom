@@ -250,15 +250,15 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   }//endif
 
   numFFTPoints = nkf1 * nkf2 * nkf3;
-  low_x_size   = minx+1;
-  high_x_size  = maxx-1;
+  nRplane_x    = nkf1;
+  nGplane_x    = maxx-minx+1;
   numData      = nPacked;
 
 //===================================================================================
 // Set rhoG and stateG chare array sizes based on FFT stuff
 
-  int nplane_x     = minx+1;
-  int nplane_x_rho = 2*minx+1;
+  int nplane_x     = nGplane_x;
+  int nplane_x_rho = 2*nGplane_x-1;
   PRINTF("  nplane = %d and nplane_rho = %d for the current system\n",
          nplane_x,nplane_x_rho);
 
@@ -877,7 +877,7 @@ void Config::set_config_dict_state(int *num_dict ,DICT_WORD **dict){
     ind=16;
     strcpy((*dict)[ind].keyword,"doublePack");
     strcpy((*dict)[ind].keyarg,"on");    
-    strcpy((*dict)[ind].error_mes,"on/off");
+    strcpy((*dict)[ind].error_mes,"Deprecated keyword");
   //-----------------------------------------------------------------------------
   // 17)\useGssInsRealP{}
     ind=17;
@@ -998,8 +998,7 @@ void Config::set_config_params_state(DICT_WORD *dict, char *fun_key, char *input
   //-----------------------------------------------------------------------------
   // 16)\doublePack{}
     ind=16;
-    parse_on_off(dict[ind].keyarg,&doublePack,&ierr);
-    if(ierr==1){keyarg_barf(dict,input_name,fun_key,ind);}
+    if(dict[ind].iuset==1){keyarg_barf(dict,input_name,fun_key,ind);}
   //-----------------------------------------------------------------------------
   // 17)\useGssInsRealP{}
     ind=17;
@@ -2249,10 +2248,10 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     igo = dict_state[6].iuset;
 
     if(igo==0){ 
-      if(numPes>low_x_size){
+      if(numPes>nGplane_x){
          int i=1;
          double mypow=1;
-	 int targetNchare=low_x_size;
+	 int targetNchare=nGplane_x;
 	 // need a way to increase the targetNchare so that
 	 // nChareG * (nstates/sGrainSize)^2 * numChunks = numPes
 	 // without going overboard on the planes, grains, or chunks.
@@ -2260,17 +2259,17 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	 // variables yet.  
 
 	 // roughly speaking the desired nchare goes as sqrtpes)
-	 if(low_x_size<sqrtpes) targetNchare=sqrtpes / low_x_size * low_x_size;
+	 if(nGplane_x<sqrtpes) targetNchare=sqrtpes / nGplane_x * nGplane_x;
          while((mypow=pow(2.0, (double)i)) <= targetNchare){i++;}
 
-         gExpandFact = mypow / (double) low_x_size;
-         nchareG     = (int)( gExpandFact * (double) low_x_size);
+         gExpandFact = mypow / (double) nGplane_x;
+         nchareG     = (int)( gExpandFact * (double) nGplane_x);
          sprintf(dict_state[6].keyarg,"%g",gExpandFact);
       }//endif
     }//endif : gexpandfact not set
 
     
-    nchareG  = (int)(gExpandFact*(double)low_x_size);
+    nchareG  = (int)(gExpandFact*(double)nGplane_x);
     CkPrintf("  nchareG now %d based on gExpandFact %.5g\n\n", nchareG, gExpandFact);
 //=============================================================================
 // numChunks, numChunksSym, numChunksAsym, sgrainsize are not set
@@ -2572,7 +2571,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
 	}
       else
 	{
-	  int temp_rho  = (int) (gExpandFactRho*2.0*((double) low_x_size + 1.0));
+	  int temp_rho  = (int) (gExpandFactRho*2.0*((double) nGplane_x + 1.0));
 	  if(numPes>temp_rho){rhoGHelpers=numPes/temp_rho;}
 	}
       sprintf(dict_rho[10].keyarg,"%d",rhoGHelpers);
@@ -2893,10 +2892,6 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 //===================================================================================
 // Set a few parameters before you go home
 
-  if(minx<0){minx+=nx;}
-  n    = minx; 
-  minx = maxx; 
-  maxx = n;
   if(doublePack){nPacked=nktot+nplane0-1;}
 
 //----------------------------------------------------------------------------------
@@ -3005,9 +3000,8 @@ void Config::rangeExit(int param, const char *name, int iopt){
 
     if(doublePack!= 1){
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   Non-double Pack code is broken\n");
+      PRINTF("   Non-double Pack code is under development.\n");
       PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      EXIT(1);
     }//endif
 
 //===================================================================================

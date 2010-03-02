@@ -176,10 +176,37 @@ void set_wave_params(char *molsetname,char fun_key[],
     PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
   }//endif
 
+  /*-----------------------------------------------------------------------*/ 
+  /* 10) /num_kpoint{} */
+
+  index = 10;
+  sscanf(wave_dict[index].keyarg,"%d",&num);
+  cpcoeffs_info->nkpoint =num;
+  if(num <=0){
+    keyarg_barf(wave_dict,molsetname,fun_key,index);
+  }
+  /*-----------------------------------------------------------------------*/ 
+  /* 11) /num_kpoint_wave{} */
+
+  index = 11;
+  if(wave_dict[index].iuset==1){
+    sscanf(wave_dict[index].keyarg,"%d",&num);
+    cpcoeffs_info->nkpoint_wave =num;
+    if(num <=0){
+      keyarg_barf(wave_dict,molsetname,fun_key,index);
+    }
+  }else{
+    cpcoeffs_info->nkpoint_wave = cpcoeffs_info->nkpoint;
+  }/*endif*/
+
+  /*-----------------------------------------------------------------------*/ 
+  /* 12) /kpoint_file{} */
+
+   index=12;
+   cp_parse->kpt_file_name = (char *)cmalloc(MAXWORD*sizeof(char),"set_wave_params.C");
+   sscanf(wave_dict[index].keyarg,"%s",cp_parse->kpt_file_name);
+   cp_parse->kpt_file_name_set=wave_dict[index].iuset; /* 0 means use default occs */
+
 /*-----------------------------------------------------------------------*/ 
   }/*end routine*/
 /*==========================================================================*/
-
-
-
-

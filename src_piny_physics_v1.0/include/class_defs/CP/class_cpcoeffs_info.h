@@ -32,7 +32,18 @@ class CPCOEFFS_INFO {
   double ecut;                // Num: Energy cutoff large sparse grid    
   double ecut_dens_cp_box;    // Num: Energy cutoff cp_box               
   double *occ_up,*occ_dn;     // Lst: orbital occupation numbers     
-                              // Lth: nstate_up                     
+                              // Lth: nstate_up        
+             
+  int nkpoint;                // Num: Number of kpoints
+  int nkpoint_wave;           // Num: Number of kpoints wave
+
+  int igamma_kpt_ind;             // Num: cpewald igamma_kpt index;
+  int *igamma_kpt;            // Num array: is 1 if gamma pt 0 other
+
+  int doublepack;             // Num: 1 if only have gamma pt, 0 otherwise
+
+  double *wght_kpt;               // Double array: weights of kpoints.
+
  //---------------------------------------------------------------------------
  //con-destruct:
    CPCOEFFS_INFO(){
@@ -46,6 +57,7 @@ class CPCOEFFS_INFO {
     ncoef_l         = 0;                
     ncoef_l_dens_cp_box = 0;    
     uniform_flag    = 0;
+    doublepack      = 1;
    };
   ~CPCOEFFS_INFO(){};
 
@@ -64,6 +76,10 @@ class CPCOEFFS_INFO {
       p | ncoef;
       p | ncoef_l;
       p | ncoef_l_dens_cp_box;
+      p | nkpoint;
+      p | nkpoint_wave;
+      p | igamma_kpt_ind;
+      p | doublepack;
     //pupping dbles
       p | ecut_psi;
       p | ecut_mass;
@@ -73,6 +89,8 @@ class CPCOEFFS_INFO {
 
   // PUP Arrays
       if(cp_any_on==1){
+       pup1d_int(p,&igamma_kpt,nkpoint);
+       pup1d_dbl(p,&wght_kpt,nkpoint);
        pup1d_dbl(p,&occ_up,nstate_up);
        if(nstate_dn>0){pup1d_dbl(p,&occ_dn,nstate_dn);}
       }//endif
