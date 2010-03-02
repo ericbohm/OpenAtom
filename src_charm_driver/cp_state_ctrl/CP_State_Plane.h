@@ -194,6 +194,7 @@ class CP_State_RealSpacePlane : public CBase_CP_State_RealSpacePlane {
 	int forwardTimeKeep;
 	int backwardTimeKeep;
         int iplane_ind;
+        int ibead_ind,kpoint_ind, itemper_ind;
         int iteration;
         int rhoRsubplanes;
         int ngrida;
@@ -519,11 +520,6 @@ class CP_Rho_GHartExt:  public CBase_CP_Rho_GHartExt {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-
-
-
-
-
 class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
  public:
   // Variables
@@ -533,6 +529,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    int nChareG;           // G Space chares
    int Rstates_per_pe;    // Real Space topomap variable
    int myPlane;           // Real space plane number
+   int ibead_ind,kpoint_ind, itemper_ind;
 
    int rhoRTime;
    int numIterNl;         // # of non-local iterations per time step
@@ -561,9 +558,11 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    double cp_enl;         // Non-local energy
    double cp_enlTot;      // Reduced Non-local energy
    double *projPsiR;      // real/final form of projector (after gx,gy FFTs)
-   double *zmat;          // Non-local matrix
-   double *zmatScr;      // Non-local matrix
    complex *projPsiC;     // complex/intermediate form of projector (before gx,gy FFTs)
+   double *zmat;          // Non-local matrix for doublePack
+   double *zmatScr;       // Non-local matrix for doublePack
+   complex *zmatC;        // Non-local matrix complex for not doublePack
+   complex *zmatScrC;     // Non-local matrix complex for not doublePack
 
   //-----------
   // Proxies

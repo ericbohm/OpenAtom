@@ -65,6 +65,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
    int ka_max = 2*(sim->kx_max);
    int kb_max = 2*(sim->ky_max);
    int kc_max = 2*(sim->kz_max);
+
    get_rho_kvectors(ecut4,hmati,&kx,&ky,&kz,&nline_tot,&nPacked,ka_max,kb_max,kc_max);
 
 //===================================================================================
@@ -601,6 +602,7 @@ void make_rho_runs(CPcharmParaInfo *sim){
 // Pack up the stuff
 
     config.nchareRhoG            = nchareRhoG;
+
     sim->nplane_rho_x            = nplane_x;
     sim->nchareRhoG              = nchareRhoG;
     sim->nchareRhoGEext          = nchareRhoGEext;
@@ -921,12 +923,12 @@ void readStateIntoRuns(int nPacked, int ncoef,complex *arrCP, CkVec<RunDescripto
 // Read the state into the rundescriptor puppy dog
 	
     if(!config.doublePack){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
       CkPrintf("It is not consistent with new FFT logic due to input data order\n");
       CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkPrintf("Raz is on the job.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
 
     int nrun_tot       = 1;
@@ -1359,6 +1361,8 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           CkExit();
        }//endif
+    }else{
+          CkPrintf("We hope the sensible output for not doublePack works!\n"); 
     }//endif
 
 //===================================================================================
@@ -1563,7 +1567,7 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
 // Debug output
 
 #ifdef _CP_DEBUG_LINE_
-    if(iopt==1){
+    if(iopt==1 && doublePack==1){
       double norm = 0;
       for(int i=1;i<nPacked;i++){
         double wght_now = 2.0;
@@ -1582,18 +1586,30 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
       }//endif
       CkPrintf("state : %g %g\n",norm,normt);
     }//endif
+
+    if(iopt==1 && doublePack==0){
+      double norm = 0;
+      for(int i=1;i<nPacked;i++){
+        norm += arrCP[i].getMagSqr();
+      }//endfor
+      double normt = 0;
+      for(int i=1;i<nPacked;i++){
+        normt += arrCPt[i].getMagSqr();
+      }//endif
+      CkPrintf("state : %g %g\n",norm,normt);
+    }//endif
 #endif
 
 //===================================================================================
 // Fix !double pack
 
     if(!config.doublePack){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
       CkPrintf("It is not consistent with new FFT logic due to input data order\n");
       CkPrintf("If the data is just reordered all should be well, %s\n",fromFile);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkExit();
+      CkPrintf("Raz is on the job.\n");
+      CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
 
 //===================================================================================
@@ -1673,9 +1689,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
                       sizeX,sizeY,sizeZ);
     int nplane  = sim->nplane_x;
 
-    if(config.low_x_size != nplane && config.doublePack){
+    if(config.nGplane_x != nplane && config.doublePack){
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-       CkPrintf("Mismatch in allowed gspace planes %d %d\n",config.low_x_size,nplane);
+       CkPrintf("Mismatch in allowed gspace planes %d %d\n",config.nGplane_x,nplane);
        CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        CkExit();
     }//endif
@@ -1764,7 +1780,7 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     if(doublePack){yspaceNL=sizeXNL/2+1;}
     for(int igrp=0;igrp<nchareG;igrp++){
       for(int i=istrt_lgrp[igrp],j=0;i<iend_lgrp[igrp];i++,j++){
-        index_tran_upack[igrp][j] = kx_line[i] + ky_line[i]*yspace;
+        index_tran_upack[igrp][j]   = kx_line[i]   + ky_line[i]*yspace;
         index_tran_upackNL[igrp][j] = kx_lineNL[i] + ky_lineNL[i]*yspaceNL;
       }//endfor
     }//endfor
@@ -1816,23 +1832,28 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
     for(int i = 0; i < nchareG; i ++) {
       num_uni[i]=0;
       num_red[i]=0;
-      for(int j=0;j<npts_lgrp[i];j++){
-        int iii = j+index_output_off[i];
-        if(kx[iii]==0 && ky[iii]>0){num_uni[i]++;}
-        if(kx[iii]==0 && ky[iii]<0){num_red[i]++;}
-        if(kx[iii]==0 && ky[iii]==0 && kz[iii]>=0){num_uni[i]++;}
-        if(kx[iii]==0 && ky[iii]==0 && kz[iii]<0){num_red[i]++;}
+      if(doublePack==1){
+        for(int j=0;j<npts_lgrp[i];j++){
+          int iii = j+index_output_off[i];
+          if(kx[iii]==0 && ky[iii]>0){num_uni[i]++;}
+          if(kx[iii]==0 && ky[iii]<0){num_red[i]++;}
+          if(kx[iii]==0 && ky[iii]==0 && kz[iii]>=0){num_uni[i]++;}
+          if(kx[iii]==0 && ky[iii]==0 && kz[iii]<0){num_red[i]++;}
+        }//endfor
+        nk0_max=MAX(num_uni[i],nk0_max);
+        nk0_max=MAX(num_red[i],nk0_max);
       }//endif
-      nk0_max=MAX(num_uni[i],nk0_max);
-      nk0_max=MAX(num_red[i],nk0_max);
     }//endif
 
     // Find where my unique guys go and make a list so I can send them.
     // Make a list of where the unique guys arrive so I can receive them.
-    RedundantCommPkg *RCommPkg = new RedundantCommPkg [nchareG]; 
-    for(int i=0;i<nchareG;i++){RCommPkg[i].Init(nk0_max,nchareG);}
 
-    for(int i=0;i<nchareG;i++){
+    RedundantCommPkg *RCommPkg = new RedundantCommPkg [nchareG]; 
+    for(int i=0;i<nchareG;i++){RCommPkg[i].Init(nk0_max,nchareG);} // mallocs and zeros 
+
+    if(doublePack==1){
+
+     for(int i=0;i<nchareG;i++){
       int  *num_send = RCommPkg[i].num_send;
       int **lst_send = RCommPkg[i].lst_send;
       for(int j=0;j<nchareG;j++){
@@ -1851,9 +1872,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
   	  }//endfor
         }//endfor
       }//endfor
-    }//endfor
+     }//endfor
 
-    for(int i=0;i<nchareG;i++){
+     for(int i=0;i<nchareG;i++){
       int  *num_send   = RCommPkg[i].num_send;
       int  *num_recv   = RCommPkg[i].num_recv;
       int num_recv_tot = 0;
@@ -1864,9 +1885,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
       }//endif
       RCommPkg[i].num_recv_tot = num_recv_tot;
       RCommPkg[i].num_send_tot = num_send_tot;
-    }//endfor
+     }//endfor
 
-    for(int i=0;i<nchareG;i++){
+     for(int i=0;i<nchareG;i++){
       int  *num_send = RCommPkg[i].num_send;
       int **lst_send = RCommPkg[i].lst_send;
       for(int j=0;j<nchareG;j++){
@@ -1888,7 +1909,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
    	  }//endif
 	}//endfor
       }//endfor
-    }//endfor
+     }//endfor
+
+    }//endif :: Do redundancy when doublepack is off
 
 //============================================================================
 // Pack up the stuff, clean up the memory and exit
@@ -2169,23 +2192,16 @@ void sort_kxky(int n,int *kx,int *ky,int *index,int *ktemp,int sizeY){
   for(int i=0;i<n;i++){ktemp[i]=ky[i];}
   for(int i=0;i<n;i++){ky[i]=ktemp[index[i]];}
 
-  if(kx[0]<0){
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkPrintf("Double pack only in sort kxky\n");  
-    CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    CkExit();
-  }//endif
-
 //=============================================================================
 // Sort on ky for each kx
 
   int kmin = kx[0];
   int kmax = kx[(n-1)];
-  for(int i=kmin;i<=kmax;i++){ktemp[i]=0;}
-  for(int i=0;i<n;i++){ktemp[kx[i]]++;}
+  for(int i=0;i<=kmax-kmin;i++){ktemp[i]=0;}
+  for(int i=0;i<n;i++){ktemp[kx[i]-kmin]++;}
 
   int ioff=0;
-  for(int i=kmin;i<=kmax;i++){
+  for(int i=0;i<=kmax-kmin;i++){
     if(ktemp[i]>1){sort_commence(ktemp[i],&ky[ioff],&index[ioff]);}
     ioff += ktemp[i];
   }//endfor

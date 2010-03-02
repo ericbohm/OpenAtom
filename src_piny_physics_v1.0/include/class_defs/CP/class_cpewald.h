@@ -19,12 +19,9 @@ class CPEWALD {
                                    //      cutoff g-space cp_grid=ncoef_cp_l  
   int box_rat;                     // Box ratio for dual gridding 
                                     
-
-
   double dbox_rat;                 // Double value for box ratio 
   double gw_gmin,gw_gmax;
   double gw_gmin_dens_cp_box,gw_gmax_dens_cp_box;
-
 
   int *kmax_cp;                    // Lst: Int cutoff in a,b,c directions 
   int *kmax_cp_dens_cp_box;        // Lst: cutoff for the small box       
@@ -34,6 +31,19 @@ class CPEWALD {
                                    //  dual=2 kmax_cp has true values     
   int *nfft;
   int *nfft_dens;
+
+  int nkpoint;                    // Num: cpewald instance of nkpoint;
+  int igamma_kpt_ind;             // Num: cpewald igamma_kpt index;
+
+  int doublepack;                 // Flag: 1 if at gamma pt, 0 otherwise;
+
+  int *igamma_kpt;                // Num array: is 1 if gamma pt 0 other
+
+  double *wght_kpt;               // Double array: weights of kpoints.
+  double *akpoint;                // Double array: x comp of kpoint.
+  double *bkpoint;                // Double array: y comp of kpoint.
+  double *ckpoint;                // Double array: z comp of kpoint.
+
  //----------------
  //con-destruct:
    CPEWALD(){
@@ -41,6 +51,7 @@ class CPEWALD {
     nktot_lg          = 0;            
     nktot_dens_cp_box = 0;   
     box_rat           = 0;   
+    doublepack        = 0;
     kmax_cp = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
     kmax_cp_dens_cp_box = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
     nfft = (int *) cmalloc(3*sizeof(int),"CPEWALD constructor")-1;
@@ -58,6 +69,9 @@ class CPEWALD {
       p | nktot_lg;
       p | nktot_dens_cp_box;
       p | box_rat;          
+      p | nkpoint;
+      p | igamma_kpt_ind;
+      p | doublepack;
     //pupping dbles
       p | dbox_rat;
       p | gw_gmin;
@@ -70,6 +84,14 @@ class CPEWALD {
        pup1d_int(p,&kmax_cp_dens_cp_box,3);
        pup1d_int(p,&nfft,3);
        pup1d_int(p,&nfft_dens,3);
+       pup1d_int(p,&igamma_kpt,nkpoint);
+    }//endif
+    //pupping double array
+    if(cp_any_on==1){
+       pup1d_dbl(p,&wght_kpt,nkpoint);
+       pup1d_dbl(p,&akpoint,nkpoint);
+       pup1d_dbl(p,&bkpoint,nkpoint);
+       pup1d_dbl(p,&ckpoint,nkpoint);
     }//endif
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())

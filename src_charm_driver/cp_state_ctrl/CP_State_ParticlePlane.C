@@ -112,6 +112,9 @@ CP_State_ParticlePlane::CP_State_ParticlePlane(
 //============================================================================
 
   myChareG             = thisIndex.y;
+  ibead_ind            = thisInstance.idxU.x;
+  kpoint_ind           = thisInstance.idxU.y;
+  itemper_ind          = thisInstance.idxU.z;
   iteration            = 0;
   iterNL               = 0;
   countNLIFFT          = 0;
@@ -356,6 +359,7 @@ CP_State_ParticlePlane::~CP_State_ParticlePlane(){
 void CP_State_ParticlePlane::pup(PUP::er &p){
 	ArrayElement2D::pup(p);
 	p|istate_ind;
+        p|ibead_ind; p|kpoint_ind; p|itemper_ind;
 	p|registrationFlag;
         p|myChareG;
 	p|iteration;
@@ -431,13 +435,16 @@ void CP_State_ParticlePlane::pup(PUP::er &p){
 //============================================================================
 
 
+
+//============================================================================
 /**
  * Pushes all relevant computeZ() calls onto the runtime's queue. Computation for each atomindex  
  * is split into a computeZ call to increase the granularity of the computation and prevent it from 
  * blocking chares on the critical path as it would if it were a monolithic block of work.
  */ 
-void CP_State_ParticlePlane::launchComputeZs()
-{
+//============================================================================
+void CP_State_ParticlePlane::launchComputeZs(){
+//============================================================================
 	#ifdef _CP_DEBUG_STATE_GPP_VERBOSE_
 		CkPrintf("ParticlePlane[%d,%d] launching computeZs()\n",thisIndex.x,thisIndex.y);
 	#endif
@@ -454,7 +461,8 @@ void CP_State_ParticlePlane::launchComputeZs()
 			thisProxy(thisIndex.x,thisIndex.y).computeZ(pmsg);
 		}
 	}
-}
+}//end routine
+//============================================================================
 
 
 //============================================================================
@@ -928,8 +936,8 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 
    double *d_re   = eesData->GppData[myChareG]->b_re;    // precomputed stuff
    double *d_im   = eesData->GppData[myChareG]->b_im;
-   int *ind_gspl  = eesData->GppData[myChareG]->ind_gspl;
-   double *h_gspl = eesData->GppData[myChareG]->h_gspl;
+   int **ind_gspl = eesData->GppData[myChareG]->ind_gspl;
+   double **h_gspl= eesData->GppData[myChareG]->h_gspl;
    int *k_x       = eesData->GspData[myChareG]->ka;
    int *k_y       = eesData->GspData[myChareG]->kb;
    int *k_z       = eesData->GspData[myChareG]->kc;
@@ -952,8 +960,8 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 #endif    
 
    CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
-                              d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
-                              thisIndex.x,thisIndex.y,config.nfreq_cpnonlocal_eesfwd);
+                             d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
+                             thisIndex.x,thisIndex.y,kpoint_ind,config.nfreq_cpnonlocal_eesfwd);
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
 #endif

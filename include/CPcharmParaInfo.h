@@ -47,6 +47,8 @@ class RedundantCommPkg {
     num_recv = new int[nchareG];
     for(int i=0;i<nchareG;i++){num_send[i] = 0;}
     for(int i=0;i<nchareG;i++){num_recv[i] = 0;}
+    num_recv_tot = 0;
+    num_send_tot = 0;
 
     lst_send = new int *[nchareG];
     lst_recv = new int *[nchareG];
@@ -131,6 +133,8 @@ class CPcharmParaInfo {
 
    double vol,dt,tol_norb,tol_cp_min;
    double tol_cp_dyn;
+   int doublepack;
+   int nkpoint;
    int iperd;
    int fftopt;
    int kx_max,ky_max,kz_max; 
@@ -232,6 +236,8 @@ class CPcharmParaInfo {
      tol_cp_dyn   = s.tol_cp_dyn;
      dt           = s.dt;
      iperd        = s.iperd;
+     doublepack   = s.doublepack;
+     nkpoint      = s.nkpoint;
      fftopt       = s.fftopt;
      kx_max       = s.kx_max;
      ky_max       = s.ky_max;
@@ -531,6 +537,8 @@ class CPcharmParaInfo {
 #endif
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
       p|iperd;
+      p|doublepack;
+      p|nkpoint;
       p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal;
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;

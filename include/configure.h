@@ -34,8 +34,8 @@ class Config {
     int fftopt;           // fft type[fftw/essl]      (piny)
     int natm_nl;          // num of nonlocal atoms    (piny)
     int natm_typ;         // number of atm types      (piny)
-    int low_x_size;       // g-grid points along x    (piny)
-    int high_x_size;      // g-grid points along x    (piny)
+    int nGplane_x;        // g-grid points along x    (piny)
+    int nRplane_x;        // g-grid points along x    (piny)
     int numFFTPoints;     // size number of r-grid    (piny)
     int numData;          // size number of g-grid    (piny)
     int ees_eext_opt;     // ees eext option on/off   (piny)
@@ -219,7 +219,7 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int,int);
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int,int,int);
    void readStateInfo(int &, int &, int &, int &, int &, int &,
                       const char *, int,int,int,int,int);
    void simpleRangeCheck();

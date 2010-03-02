@@ -458,9 +458,11 @@ mainmodule cpaimd {
                    int numGState[nchareGState],   
                    int numRXState[nchareRState], 
                    int numRYState[nchareRState],
+                   int numRYStateLower[nchareRState],
                    int numGNL[nchareGNL],      
                    int numRXNL[nchareRNL],
                    int numRYNL[nchareRNL],
+                   int numRYNLLower[nchareRNL],
                    int numGRho[nchareGRho],    
                    int numRXRho[nchareRRhoTot],  
                    int numRYRho[nchareRRhoTot],
@@ -476,7 +478,7 @@ mainmodule cpaimd {
 	  * A place to hold the computed ees planewise data on each proc
 	  */	
 	group eesCache {
-		entry eesCache(int,int,int,int,int,int, UberCollection);
+		entry eesCache(int,int,int,int,int,int,int, UberCollection);
 	};
 };
 

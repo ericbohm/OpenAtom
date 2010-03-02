@@ -16,8 +16,8 @@
 //============================================================================
 
 void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_g,
-                  int *k_x, int *k_y, int *k_z, double *g2, double *eke_ret,
-                  int mydoublePack,int nkx0, int nfreq_cmi_update)
+                  int *k_x, int *k_y, int *k_z, double **g2, double *eke_ret,
+   	          int mydoublePack,int nkx0, int kpt, int nfreq_cmi_update)
 
 //============================================================================
   { /* Begin Function */
@@ -31,7 +31,11 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 #include "../class_defs/allclass_strip_cp.h"
 
    double ecut      = cpcoeffs_info->ecut_psi; // KS-state cutoff in Ryd
-   double *occ      = cpcoeffs_info->occ_up;   // Occupation numbers from file
+   double *occ      = cpcoeffs_info->occ_up;   // 
+					       // Occupation numbers from file
+   double *hmati   = gencell->hmati;
+   double tpi = 2.0*M_PI;
+
 //============================================================================
 // Debugging
 
@@ -44,15 +48,20 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
    if(istate==0 && ncoef>0){fp = fopen("force_old_s0.out", "a+");}
 #endif
 
+   if(mydoublePack==0&&nkx0!=0){
+     PRINTF("non-doublePack eke is broken!!\n");
+     EXIT(1);
+   }//endif
+
 //============================================================================
 // I. Forces and energy (kinetic energy contribution) : gx=0
 
    double occ_now = occ[istate+1];
    double eke = 0.0;
    for(int i = 0; i < nkx0; i++){
-     if(g2[i]<=ecut){
-       forces[i] -= (psi_g[i]*(g2[i])); 
-       eke       += (g2[i])*psi_g[i].getMagSqr();
+     if(g2[kpt][i]<=ecut){
+       forces[i] -= (psi_g[i]*(g2[kpt][i])); 
+       eke       += (g2[kpt][i])*psi_g[i].getMagSqr();
 #ifdef _CP_DEBUG_OLDFORCE_
        if(istate==0){
          fprintf(fp,"old force H+Ext+Exc+Eke+Enl : is=%d %d %d %d : %g %g\n",
@@ -76,9 +85,22 @@ void CPNONLOCAL::CP_eke_calc(int ncoef, int istate,complex *forces,complex *psi_
 
    double wght = 1.0;  if(mydoublePack==1){wght = 2.0;}
    for(int i = nkx0; i < ncoef; i++){
-     if(g2[i]<=ecut){
-       forces[i] -= (psi_g[i]*(wght*g2[i])); 
-       eke       += (wght*g2[i])*psi_g[i].getMagSqr();
+#ifdef _DEBUG_CACHE_
+     double aka = (double)(k_x[i]);
+     double akb = (double)(k_y[i]);
+     double akc = (double)(k_z[i]);
+     double xk  = (aka*hmati[1]+akb*hmati[2]+akc*hmati[3])*tpi;
+     double yk  = (aka*hmati[4]+akb*hmati[5]+akc*hmati[6])*tpi;
+     double zk  = (aka*hmati[7]+akb*hmati[8]+akc*hmati[9])*tpi;
+     double g2p = xk*xk+yk*yk+zk*zk;
+     if(fabs(g2p-g2[kpt][i])>1.e-10){
+       PRINTF("oops %g %g %d %d\n",g2p,g2[kpt][i],i,kpt);
+       EXIT(1);
+     }//endif
+#endif
+     if(g2[kpt][i]<=ecut){
+       forces[i] -= (psi_g[i]*(wght*g2[kpt][i])); 
+       eke       += (wght*g2[kpt][i])*psi_g[i].getMagSqr();
 #ifdef _CP_DEBUG_OLDFORCE_
        if(istate==0){
          fprintf(fp,"old force H+Ext+Exc+Eke+Enl : is=%d %d %d %d : %g %g\n",

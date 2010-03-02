@@ -327,7 +327,7 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
   int i;
   /*=======================================================================*/
   /* 0) Malloc the dictionary */
-  *num_wave_dict = 9;
+  *num_wave_dict = 12;
   *wave_dict      = (DICT_WORD *)cmalloc(*num_wave_dict*sizeof(DICT_WORD),"set_wave_dict")-1;  
   /*========================================================================*/
   /* I) Assign the users set flags 0 */
@@ -383,8 +383,21 @@ void set_wave_dict(DICT_WORD *wave_dict[],int *num_wave_dict,
   strcpy((*wave_dict)[9].keyword,"cp_occupation_file");
   sprintf((*wave_dict)[9].keyarg,"%s","junk");
   strcpy((*wave_dict)[9].error_mes,"an existing file of length nstate");
-
   /*-----------------------------------------------------------------------*/ 
+  /* 10) /num_kpoint{} */
+  strcpy((*wave_dict)[10].keyword,"num_kpoint");
+  strcpy((*wave_dict)[10].keyarg,"1");
+  strcpy((*wave_dict)[10].error_mes,"a number > 0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 11) /num_kpoint_wave{} */
+  strcpy((*wave_dict)[11].keyword,"num_kpoint_wave");
+  strcpy((*wave_dict)[11].keyarg,"1");
+  strcpy((*wave_dict)[11].error_mes,"a number > 0");
+  /*-----------------------------------------------------------------------*/ 
+  /* 12) /kpoint_file{} */
+  strcpy((*wave_dict)[12].keyword,"kpoint_file");
+  strcpy((*wave_dict)[12].keyarg,"pi_md.kpts");
+  strcpy((*wave_dict)[12].error_mes,"a file name");
 
 }  /*end routine*/
 /*==========================================================================*/
