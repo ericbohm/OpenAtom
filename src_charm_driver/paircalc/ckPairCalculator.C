@@ -2573,7 +2573,7 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 	}
 
     /// If we're done with all the paircalc work in this loop (iteration), then cleanup
-    if (numRecdBW == numOrtho)
+    if (numRecdBW == numOrtho || actionType == PSIV)
         cleanupAfterBWPath();
 }
 
@@ -2667,7 +2667,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
     }
 
     /// If we're done with all the paircalc work in this loop (iteration), then cleanup
-    if (numRecdBW == numOrtho)
+    if (numRecdBW == numOrtho || actionType == PSIV)
         cleanupAfterBWPath();
 }
 
