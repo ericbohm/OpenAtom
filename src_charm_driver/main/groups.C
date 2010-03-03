@@ -42,14 +42,6 @@ void IntegrationComplete(void *, void *);
 //#define _CP_DEBUG_ATMS_EXIT_
 
 //==============================================================================
-
-
-
-
-class GSAtmMsg: public CMessage_GSAtmMsg {
-};
-
-//==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 /** Constructor
@@ -556,7 +548,6 @@ void AtomsGrp::atomsDone() {
      int *indPlane     = eesData->gspPlaneInd;
      int ngo           = eesData->nchareGSPProcT;
      
-     GSAtmMsg *msg = new  GSAtmMsg;
      for(int i=0; i<ngo; i++){
        int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
        if(iadd!=1){
@@ -863,7 +854,6 @@ void EnergyGroup::energyDone(){
      int *indState     = eesData->gspStateInd;
      int *indPlane     = eesData->gspPlaneInd;
      int ngo           = eesData->nchareGSPProcT;
-     GSAtmMsg *msg = new  GSAtmMsg;
      for(int i=0; i<ngo; i++){
        int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
        if(iadd!=1){
