@@ -543,9 +543,6 @@ void AtomsGrp::atomsDone() {
 
 //==========================================================================
 // Use the cool new data caching system to say we're done.
-
- if(1) { // localAtomBarrier
-   
    for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
 							 //k-point
 							 //needs to be
@@ -572,19 +569,6 @@ void AtomsGrp::atomsDone() {
        UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
      }//endfor
    }//endfor
-
- }
- /*
-  else{
-
-   if(myid==0){
-      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      UgSpaceDriverProxy[thisInstance.proxyOffset].doneMovingAtoms(iteration);
-   }//endif
- }//endif
- */
 }//end routine
 
 
@@ -866,7 +850,6 @@ void EnergyGroup::energyDone(){
 // Use the cool new data caching system
 
  int myid          = CkMyPe();
- if(1) { // localAtomBarrier
    for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
 							 //k-point
 							 //needs to be
@@ -893,20 +876,6 @@ void EnergyGroup::energyDone(){
        UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
      }//endfor
    }//endfor
-   }
- /*
-  else{
-
-
-   if(myid==0){
-      GSAtmMsg *msg = new (8*sizeof(int)) GSAtmMsg;
-      CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-      *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
-      UgSpaceDriverProxy[thisInstance.proxyOffset].doneComputingEnergy(iteration_atm);
-   }//endif
- 
- }//endif
- */
 }//end routine
 
 
