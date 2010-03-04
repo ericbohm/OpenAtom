@@ -322,7 +322,7 @@ void Config::set_config_dict_fun  (int *num_dict  ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"charm_conf_map_def");
     strcpy((*dict)[ind].keyarg," ");
   //------------------------------------------------------------------------------
-  //  7)~charm_conf_nfreq_def[ ]
+  //  6)~charm_conf_nfreq_def[ ]
     ind = 7;
     strcpy((*dict)[ind].error_mes," ");
     strcpy((*dict)[ind].keyword,"charm_conf_nfreq_def");
@@ -1552,8 +1552,8 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
 //==================================================================================
 //  I) Malloc the dictionary                                              
 
-  num_dict[0] = 9;
- *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
+  num_dict[0] = 8;
+  *dict = (DICT_WORD *)cmalloc(num_dict[0]*sizeof(DICT_WORD),"set_config_dict_gen")-1;
 
 //=================================================================================
 //  II) Initialize the user set option(did the user set the key word      
@@ -1621,13 +1621,6 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
     strcpy((*dict)[ind].keyword,"atmOutput");
     strcpy((*dict)[ind].keyarg,"on");    
     strcpy((*dict)[ind].error_mes,"on/off");
-  //-----------------------------------------------------------------------------
-  // 9)\nchareBeadAtoms{}
-    ind=9;
-    strcpy((*dict)[ind].keyword,"nchareBeadAtoms");
-    strcpy((*dict)[ind].keyarg,"1");    
-    strcpy((*dict)[ind].error_mes,"a number > 1");
-
 
 //----------------------------------------------------------------------------------
   }//end routine
@@ -1691,10 +1684,6 @@ void Config::set_config_params_gen (DICT_WORD *dict, char *fun_key, char *input_
         PRINTF("   You are in danger! Your atmOutput is off! \n");
         PRINTF("   $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//
-  // 9)\nchareBeadAtoms{}
-    ind=9;
-    sscanf(dict[ind].keyarg,"%d",&nchareBeadAtoms);
-    if(nchareBeadAtoms<1){keyarg_barf(dict,input_name,fun_key,ind);}
  
 //----------------------------------------------------------------------------------
   }//end routine

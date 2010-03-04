@@ -813,6 +813,7 @@ void init_ortho_chares(int nstates, UberCollection thisInstance);
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
+void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance);
 void init_state_chares(int,int,int,int,CPcharmParaInfo *, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);

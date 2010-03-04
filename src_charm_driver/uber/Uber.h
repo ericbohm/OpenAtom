@@ -93,7 +93,7 @@ class UberCollection {
     return(idxU<obj.idxU); }
  
   inline unsigned char calcPO(){ return ((idxU.x*config.UberJmax + idxU.y) * config.UberKmax + idxU.z); }
-  inline unsigned char getPO(){ return proxyOffset; }
+  inline unsigned char getPO() const { return proxyOffset; }
   inline unsigned char setPO(){ proxyOffset=calcPO(); return proxyOffset;}
   inline unsigned char setPO(int inPO){ proxyOffset=inPO; return proxyOffset;}
 

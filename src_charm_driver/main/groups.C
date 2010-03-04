@@ -2,15 +2,19 @@
  *           Processor group class Functions : Atoms and parainfo
  */
 
+
 #include "groups.h"
 #include "eesCache.h"
 #include "cp_state_ctrl/CP_State_GSpacePlane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "utility/util.h"
 #include "CPcharmParaInfoGrp.h"
+#include "load_balance/IntMap.h"
 #include "charm++.h"
+
 #include <cmath>
-    using namespace std;
+
+using namespace std;
 //#include "CP_State_Plane.h"
 
 //----------------------------------------------------------------------------
@@ -22,6 +26,8 @@
 
 //----------------------------------------------------------------------------
 
+extern CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
+extern CkVec <IntMap2on2> GSImaptable;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern Config                      config;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
@@ -76,10 +82,13 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     eKineticNhc     = 0.0;
     potNhc          = 0.0;    
     countAtm        = 0;
-
+    acceptCountfu   = 0;
+    acceptCountX    = 0;
+    acceptCountu    = 0;
+    atomsCMrecv=atomsPIMDXrecv=false;
 //==============================================================================
 // Initial positions, forces, velocities 
-
+    numPIMDBeads    = config.UberImax;
     atoms           = new Atom[natm];
     atomsNHC        = new AtomNHC[natm];
     CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
@@ -93,13 +102,18 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
     fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
+    PIMD_CM_Atoms.natm = natm;
+    PIMD_CM_Atoms.x    = (double *)fftw_malloc(natm*sizeof(double));
+    PIMD_CM_Atoms.y    = (double *)fftw_malloc(natm*sizeof(double));
+    PIMD_CM_Atoms.z    = (double *)fftw_malloc(natm*sizeof(double));
+
     ftot           = (double *)fftw_malloc((3*natm+2)*sizeof(double));
 
     zeroforces();
     if(iextended_on==1 && cp_min_opt==0){
        zeronhc();
     }//endif
-
+    
 //==============================================================================
 // A copy of the atoms for fast routines
 
@@ -144,6 +158,12 @@ AtomsGrp::~AtomsGrp(){
      fftw_free(fastAtoms.fx);
      fftw_free(fastAtoms.fy);
      fftw_free(fastAtoms.fz);
+     fftw_free(PIMD_CM_Atoms.x);
+     fftw_free(PIMD_CM_Atoms.y);
+     fftw_free(PIMD_CM_Atoms.z);
+
+
+
      fftw_free(ftot);
 }
 //==============================================================================
@@ -214,6 +234,42 @@ void AtomsGrp::contributeforces(){
   }//end routine
 //==========================================================================
 
+void AtomsGrp::init()
+{
+  // you are bead root if you are the processor at the base of the
+  // GSP for your Instance, which we don't know until GSP is mapped
+  // hence the 2nd phase init since atomsgrp is made before GSP
+  const int offset=thisInstance.getPO();
+  amBeadRoot      = (CkMyPe()==GSImaptable[offset].get(0,0));
+  amZerothBead    = (thisInstance.idxU==0);
+  if(numPIMDBeads>1)
+    {
+            
+      // make lists of group IDs and their Commander PE
+      
+      CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
+      // this const stuff is only here because its in the signature
+      // for the section constructor.  Good luck initializing a
+      // dynamic const ** array without this approach.
+      const int **elems_c=  new const int*[numPIMDBeads];
+      const int *naelems_c= new int[numPIMDBeads];
+      int **elems=const_cast<int **>(elems);
+      int *naelems= const_cast<int *>(naelems_c);
+      for(int i=0;i<numPIMDBeads;i++)
+	{
+	  elems[i]= new int[1];
+	  UberCollection instance=thisInstance;
+	  naelems[i]=1;
+	  instance.idxU.x=0;
+	  int offset=instance.calcPO();
+	  elems[i][0]=GSImaptable[offset].get(0,0);
+	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
+	}
+      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads,atomsgrpids, elems_c, naelems_c);
+    }
+
+
+}
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -313,18 +369,42 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #endif
 
 //============================================================
+// Tuck things that can be tucked.
+
+
+  eg->estruct.eewald_real     = pot_ewd_rs_loc;  
+  eg->estruct.fmag_atm        = fmag;
+
+   if(numPIMDBeads>1)
+     {
+       send_PIMD_fx();
+     }
+   else
+    {
+      integrateAtoms();
+    }
+}
+
+
+void AtomsGrp::integrateAtoms()
+{
+
+//============================================================
 // Integrate the atoms
 
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
 #endif
+  EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
 
    double eKinetic_loc   = 0.0;
    double eKineticNhc_loc= 0.0;
    double potNhc_loc     = 0.0;
    int iwrite_atm        = 0;
    int myoutput_on       = 0;
-
+   int nproc = CkNumPes();
+   int myid          = CkMyPe();
    int div     = (natm / nproc);
    int rem     = (natm % nproc);
    int natmStr = div*myid;
@@ -403,12 +483,6 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #endif
    
 
-//============================================================
-// Tuck things that can be tucked.
-
-
-  eg->estruct.eewald_real     = pot_ewd_rs_loc;  
-  eg->estruct.fmag_atm        = fmag;
 
 //============================================================
 // Get ready for the next iteration : 
@@ -431,7 +505,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
     copySlowToFast();
     outputAtmEnergy();
 
-    i=0;
+    int i=0;
     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
@@ -610,7 +684,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
 //==========================================================================
 // pack atom positions : new for use : old for output
-
+  if(numPIMDBeads>1)
   for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
     atmData[(j)  ]=atoms[i].x;
     atmData[(j+1)]=atoms[i].y;
@@ -622,7 +696,21 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
     atmData[(j+7)]=atoms[i].vyold;
     atmData[(j+8)]=atoms[i].vzold;
   }//endfor
+  else
+    {
+      for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
+	atmData[(j)  ]=atoms[i].xu;
+	atmData[(j+1)]=atoms[i].yu;
+	atmData[(j+2)]=atoms[i].zu;
+	atmData[(j+3)]=atoms[i].xuold;
+	atmData[(j+4)]=atoms[i].yuold;
+	atmData[(j+5)]=atoms[i].zuold;
+	atmData[(j+6)]=atoms[i].vxuold;
+	atmData[(j+7)]=atoms[i].vyuold;
+	atmData[(j+8)]=atoms[i].vzuold;
+      }//endfor
 
+    }
 //==========================================================================
 // pack the 3 energies
 
@@ -659,7 +747,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
 //==========================================================================
 // unpack atom position and velocity
-
+  if(numPIMDBeads>1)
   for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
     atoms[i].x     = atmData[(j)  ];
     atoms[i].y     = atmData[(j+1)];
@@ -671,6 +759,19 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
     atoms[i].vyold = atmData[(j+7)];
     atoms[i].vzold = atmData[(j+8)];
   }//endfor
+  else
+    for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
+    atoms[i].xu     = atmData[(j)  ];
+    atoms[i].yu     = atmData[(j+1)];
+    atoms[i].zu     = atmData[(j+2)];
+    atoms[i].xuold  = atmData[(j+3)];
+    atoms[i].yuold  = atmData[(j+4)];
+    atoms[i].zuold  = atmData[(j+5)];
+    atoms[i].vxuold = atmData[(j+6)];
+    atoms[i].vyuold = atmData[(j+7)];
+    atoms[i].vzuold = atmData[(j+8)];
+    }//endfor
+  //endif
 
 //==========================================================================
 // unpack energy
@@ -722,15 +823,145 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
        }//endif
      }//endif
 
-     //everybody has to have received all the atoms before continuing : not just me
-     int i=0;
-     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
-     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+     if(numPIMDBeads>1)
+       {
+	 // transform PIMD U to X
+	 if(amBeadRoot)
+	   send_PIMD_u();
+	 if(amBeadRoot && amZerothBead)
+	   {
+	     BeadCMMsg *msg = new (natm,natm,natm) BeadCMMsg;
+	     for(int atomI=0;atomI<natm;atomI++)
+	       {
+		 msg->x[atomI]=atoms[atomI].xu;
+		 msg->y[atomI]=atoms[atomI].yu;
+		 msg->z[atomI]=atoms[atomI].zu;
+	       }
+	     CkAbort("make this into a message");
+	     proxyHeadBeads.accept_PIMD_CM(msg);
+	   }
+       }
+     else
+       {
+	 //everybody has to have received all the atoms before continuing : not just me
+	 int i=0;
+	 CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+	 contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+       }
   }//endif
 
 //-------------------------------------------------------------------------
   }//end routine
 //==========================================================================
+
+void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
+{
+  for(int atomnum=0; atomnum<natm; atomnum++)
+    {
+      PIMD_CM_Atoms.x[atomnum]=msg->x[atomnum];
+      PIMD_CM_Atoms.y[atomnum]=msg->y[atomnum];
+      PIMD_CM_Atoms.z[atomnum]=msg->z[atomnum];
+    }
+  delete msg;
+  atomsCMrecv=true;
+  if(atomsPIMDXrecv)
+    {
+      int i=0;
+      CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+      contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+      atomsCMrecv=atomsPIMDXrecv=false;
+    }
+
+}
+
+
+void AtomsGrp::send_PIMD_u()
+{
+  for(int atomnum=0;atomnum<natm;atomnum++)
+    {
+      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(atoms[atomnum].xu,atoms[atomnum].yu,atoms[atomnum].zu, PIBeadIndex);
+    }
+}
+
+void AtomsGrp::send_PIMD_fx()
+{ 
+  for(int atomnum=0;atomnum<natm;atomnum++)
+    {
+      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_Fx(atoms[atomnum].fx,atoms[atomnum].fy,atoms[atomnum].fz, PIBeadIndex);
+    }
+}
+
+// is broadcast to us
+void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
+{
+
+  atoms[atomI].fxu=_fxu;
+  atoms[atomI].fyu=_fyu;
+  atoms[atomI].fzu=_fzu;
+  fastAtoms.fxu[atomI]=_fxu;
+  fastAtoms.fyu[atomI]=_fyu;
+  fastAtoms.fzu[atomI]=_fzu;
+  acceptCountfu++;
+  if(acceptCountfu==natm)
+    {
+      integrateAtoms();
+      acceptCountfu=0;
+    }
+}
+
+void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI)
+{
+  
+  atoms[atomI].x=_x;
+  atoms[atomI].y=_y;
+  atoms[atomI].z=_z;
+  fastAtoms.x[atomI]=_x;
+  fastAtoms.y[atomI]=_y;
+  fastAtoms.z[atomI]=_z;
+  acceptCountX++;
+  if(acceptCountX==natm)
+    {
+      acceptCountX=0;
+      atomsPIMDXrecv=true;
+      if(atomsCMrecv)
+	{
+	  int i=0;
+	  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+	  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+	  atomsCMrecv=atomsPIMDXrecv=false;
+	}
+
+    }
+}
+
+
+// done during initialization in 1st iteration
+void AtomsGrp::send_PIMD_x()
+{
+  for(int atomnum=0;atomnum<natm;atomnum++)
+    {
+      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_x(atoms[atomnum].x,atoms[atomnum].y,atoms[atomnum].z, PIBeadIndex);
+    }
+}
+
+// done during initialization in 1st iteration
+void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI)
+{
+
+  atoms[atomI].xu=_xu;
+  atoms[atomI].yu=_yu;
+  atoms[atomI].zu=_zu;
+  fastAtoms.xu[atomI]=_xu;
+  fastAtoms.yu[atomI]=_yu;
+  fastAtoms.zu[atomI]=_zu;
+  acceptCountu++;
+  if(acceptCountu==natm)
+    {
+      integrateAtoms();
+      acceptCountu=0;
+    }
+}
+
 
 
 //==========================================================================

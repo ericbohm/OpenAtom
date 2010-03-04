@@ -25,6 +25,14 @@ module groups
 	{
 		double data[];
 	};
+
+	message BeadCMMsg 
+	{
+		double x[];
+		double y[];
+		double z[];
+	};
+
 	
 	message GSAtmMsg;
 
@@ -32,10 +40,16 @@ module groups
 		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
 			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
+		entry void init();
                 entry void startRealSpaceForces();  	
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
+		entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
+		entry void accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI);
+		entry void accept_PIMD_CM(BeadCMMsg *msg);
+		entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
+
 	};
 
 	// The global energies are stored here.
@@ -46,6 +60,21 @@ module groups
 	};
 };
 
+module PIBeadAtoms
+{
+	// Forward declarations
+	class UberCollection; 
+	class Atom;
+	class AtomNHC;
+	array [1D] PIBeadAtoms {
+		entry PIBeadAtoms(UberCollection, int);
+		entry void accept_PIMD_x(double x,double y, double z, int index );
+		entry void accept_PIMD_Fx(double Fx,double Fy, double Fz, int index);
+		entry void accept_PIMD_u(double xu,double yu, double zu, int index);
+	};
+
+
+};
 
 mainmodule cpaimd {	
 	readonly double Timer;
@@ -76,7 +105,8 @@ mainmodule cpaimd {
 	extern module structureFactor;
 	extern module structureFactorCache;
 	extern module groups;
-		
+	extern module PIBeadAtoms;		
+
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
@@ -221,11 +251,6 @@ mainmodule cpaimd {
 
 	mainchare main {
 		entry main();
-	};
-	array [1D] PIBeadAtoms {
-		entry PIBeadAtoms(UberCollection);
-		entry void acceptCoords();
-		entry void acceptForces();
 	};
 	array [1D] InstanceController {
 		entry InstanceController();

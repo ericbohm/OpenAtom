@@ -13,7 +13,7 @@
 #define _Configure_
 
 #include "dictionary.h"
-
+#include "stdio.h"
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -49,7 +49,6 @@ class Config {
     int UberKmax;
     int numInstances;
 
-    int nchareBeadAtoms;
   //==================================
 
   //==================================

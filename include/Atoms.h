@@ -23,48 +23,80 @@ class Atom {
   Atom() {}
   Atom(double x_, double y_, double z_, double q_, double m_) {
      x = x_;   y = y_;   z = z_;  q = q_; m = m_; 
+     xu =  yu = zu=0.0;
     vx = 0.0; vy = 0.0; vz = 0.0;
+    vxu = 0.0; vyu = 0.0; vzu = 0.0;
     fx = 0.0; fy = 0.0; fz = 0.0;
+    fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
+    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
   Atom(double x_, double y_, double z_,double q_, double m_,
        double vx_, double vy_, double vz_) {
      x =  x_;  y =  y_;  z =  z_;  q = q_; m = m_; 
+     xu =  yu = zu=0.0;
     vx = vx_; vy = vy_; vz = vz_; 
+    vxu = vx_; vyu = vy_; vzu = vz_; 
     fx = 0.0; fy = 0.0; fz = 0.0;
+    fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
+    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
   void Init(double x_, double y_, double z_, double q_, double m_) {
     x = x_; y = y_; z = z_; q = q_; m = m_; 
+     xu =  yu = zu=0.0;
     vx = 0.0; vy = 0.0; vz = 0.0;
+    vxu = 0.0; vyu = 0.0; vzu = 0.0;
     fx = 0.0; fy = 0.0; fz = 0.0;
+    fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
+    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end Init
   void Init(double x_, double y_, double z_, double q_, double m_,
             double vx_, double vy_, double vz_) {
      x =  x_;  y =  y_;  z =  z_;  q = q_; m = m_; 
+     xu =  yu = zu=0.0;
     vx = vx_; vy = vy_; vz = vz_; 
+    vxu = vx_; vyu = vy_; vzu = vz_; 
     fx = 0.0; fy = 0.0; fz = 0.0;
+    fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
+    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end Init
   Atom(Atom *a) { 
      x = a->x;   y = a->y;   z = a->z;  q = a->q; m = a->m; 
+     xu = a->xu;   yu = a->yu;   zu = a->zu;  mu = a->mu; 
      vx = a->vx; vy = a->vy; vz = a->vz;
+     vxu = a->vxu; vyu = a->vyu; vzu = a->vzu;
      fx = a->fx; fy = a->fy; fz = a->fz;
+     fxu = a->fxu; fyu = a->fyu; fzu = a->fzu;
      mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
+     mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
+
 
   double x, y, z, q, m;
   double fx,fy,fz;
   double vxold,vyold,vzold;
   double xold,yold,zold;
   double vx,vy,vz,mvx2,mvy2,mvz2;
+  double xcm, ycm, zcm;
+
+  double xu, yu, zu, mu;
+  double fxu,fyu,fzu;
+  double vxuold,vyuold,vzuold;
+  double xuold,yuold,zuold;
+  double vxu,vyu,vzu,mvxu2,mvyu2,mvzu2;
 
   void pup(PUP::er &p) {
      p|x;  p|y;  p|z;  p|q; p|m; 
      p|fx; p|fy; p|fz; 
      p|vx; p|vy; p|vz;
      p|mvx2; p|mvy2; p|mvz2;
+     p|xu;  p|yu;  p|zu; p|mu; 
+     p|fxu; p|fyu; p|fzu; 
+     p|vxu; p|vyu; p|vzu;
+     p|mvxu2; p|mvyu2; p|mvzu2;
   }//pup routine
 
 };//end Atom
@@ -80,12 +112,28 @@ class FastAtoms {
  public:
 
   int natm;
-  double *x,*y,*z,*q;  // no masses or velocities cause these are working vectors
+  double *xu,*yu,*zu,*q;  // no masses or velocities cause these are working vectors
+  double *fxu,*fyu,*fzu;
+  double *x,*y,*z;  // no masses or velocities cause these are working vectors
   double *fx,*fy,*fz;
   FastAtoms(){}
  ~FastAtoms(){}
   
 };//end FastAtom
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+class PIMD_CM {
+//============================================================================
+ public:
+  int natm;
+  double *x,*y,*z;
+  PIMD_CM(){x=NULL; y=NULL;z=NULL;}
+  ~PIMD_CM(){}
+  
+};//end PIMD_CM
 //============================================================================
 
 

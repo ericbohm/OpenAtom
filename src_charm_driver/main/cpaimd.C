@@ -491,6 +491,7 @@ main::main(CkArgMsg *msg) {
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 
     // bump all the INT_MAPs to the right size
+    PIBImaptable.resize(config.numInstances);
     GSImaptable.resize(config.numInstances);
     RSImaptable.resize(config.numInstances);
     RPPImaptable.resize(config.numInstances);
@@ -704,8 +705,13 @@ Per Instance startup BEGIN
 	    
 	    // we will need a different one of these per instance
 	    control_physics_to_driver(thisInstance);
+
+	    
 	    
 	    //============================================================================ 
+	    // handle Path Integrals
+	    if(config.UberImax>1)
+	      init_PIBeads(sim, thisInstance);
 
 	    // and then we make the usual set of chares to which we pass
 	    // the Uber Index.
@@ -759,6 +765,8 @@ Per Instance startup BEGIN
 	    CmiNetworkProgressAfter(1);
 	  } 
 	}
+      // now safe to init atom bead commanders
+      UatomsGrpProxy[thisInstance.getPO()].init();
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
@@ -1739,9 +1747,36 @@ void init_ortho_chares(int nstates, UberCollection thisInstance) {
   }//end routine 
 //============================================================================
 
+//============================================================================
+//Create the PIBeadAtoms array
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 
+void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
+{
+  
+  if(thisInstance.idxU.x>0)
+    { // the set of chares being created is for a non-zero PI all PI
+      // use the same PIBeadAtoms we simply direct the proxyoffset here to
+      // the one for the 0th bead.  
+      
+      UberCollection zeroBeadInstance=thisInstance;
+      zeroBeadInstance.idxU.x=0;
+      int proxyOffset=zeroBeadInstance.setPO();
+      UPIBeadAtomsProxy.push_back(UPIBeadAtomsProxy[proxyOffset]);
+    }
+  else
+    {
+      CkArrayOptions opts;
+      UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
 
+    }
 
+ //TODO: we should have a map for this array, the default scheme would
+ //result in these chares being within the 0th Bead partition which is
+ //not an optimal choice
+}
 //============================================================================
 //Create the array elements for the GSpace, Particle and Real Space planes
 //============================================================================
