@@ -248,13 +248,14 @@ void AtomsGrp::init()
       // make lists of group IDs and their Commander PE
       
       CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
-      // this const stuff is only here because its in the signature
-      // for the section constructor.  Good luck initializing a
-      // dynamic const ** array without this approach.
-      const int **elems_c=  new const int*[numPIMDBeads];
+      /*
+	const int **elems_c=  new const int*[numPIMDBeads];
       const int *naelems_c= new int[numPIMDBeads];
       int **elems=const_cast<int **>(elems);
       int *naelems= const_cast<int *>(naelems_c);
+      */
+      int **elems=new int*[numPIMDBeads];
+      int *naelems=new int[numPIMDBeads];
       for(int i=0;i<numPIMDBeads;i++)
 	{
 	  elems[i]= new int[1];
@@ -265,7 +266,7 @@ void AtomsGrp::init()
 	  elems[i][0]=GSImaptable[offset].get(0,0);
 	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
 	}
-      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads,atomsgrpids, elems_c, naelems_c);
+      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
     }
 
 
