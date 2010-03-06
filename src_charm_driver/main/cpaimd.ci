@@ -34,8 +34,6 @@ module groups
 	};
 
 	
-	message GSAtmMsg;
-
 	group AtomsGrp {
 		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
