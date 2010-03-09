@@ -133,7 +133,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 #ifdef _GLENN_STUFF_
   CkPrintf("exiting in printEnergyEexc\n");CkExit();
 #endif
-
+  delete msg;
 }
 //============================================================================
 
