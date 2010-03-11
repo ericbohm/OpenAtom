@@ -228,7 +228,7 @@ TopoManager *topoMgr=NULL;
 
 //============================================================================
 // For using the multicast library :  Set some reduction clients
-
+/// MulticastMgr that handles CLA_Matrix collectives
 CkGroupID            mCastGrpId; 
 /// MulticastMgr that handles Ortho --> PC mcasts
 CkGroupID            orthomCastGrpId; 
@@ -638,7 +638,6 @@ main::main(CkArgMsg *msg) {
       CkAssert( m > 0);
     }
 
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     //    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
     //    for(int i=0; i<nstates;i++){
     //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
@@ -1603,6 +1602,7 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
 
   CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
    UorthoProxy[thisInstance.proxyOffset](0, 0));
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
 
   make_multiplier(&matA1, &matB1, &matC1, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
    nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
