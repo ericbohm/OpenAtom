@@ -40,7 +40,7 @@ void PCCommManager::createPCarray()
     CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
 
     // Create an empty array but specify element locations using the map
-    paircalcOpts.setMap(pcCfg.mapperGID);
+    paircalcOpts.setMap(mapperGID);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, pcCfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION

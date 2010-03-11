@@ -69,6 +69,8 @@ class PCCommManager
 		CkArrayID ipHandlerAID;
         /// The group ID of the multicast manager that will handle the multicasts to the PC array
         CkGroupID mCastMgrGID;
+        /// The group ID of the mapper group
+        CkGroupID mapperGID;
 
         /** Array section which receives left matrix block data
          *

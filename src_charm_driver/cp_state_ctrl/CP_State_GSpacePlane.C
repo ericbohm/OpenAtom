@@ -270,6 +270,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
                                            int    s_grain,
 					   int   _gforward,
 					   int   _gbackward,
+                       const int boxSize,
+                       PeListFactory getPeList,
                        const pc::pcConfig &cfgSymmPC,
                        const pc::pcConfig &cfgAsymmPC,
 					   UberCollection _thisInstance
@@ -500,7 +502,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
 
   if (thisIndex.x == 0 && thisIndex.y == 0)
+  {
+      // Create maps for the symmetric (psi) and asymmetric (lambda) paircalc instances
+      createPCmaps(boxSize, getPeList, thisInstance);
+      // Instantiate the paircalc array
       setupPCs();
+  }
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================
@@ -609,6 +616,183 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 //-------------------------------------------------------
    }// end routine : pup
 //============================================================================
+
+
+#include "utility/MapFile.h"
+/**
+ * Create the maps for placing the paircalculator objects. Also perform other housekeeping chores like dumping the maps to files etc.
+ */
+void CP_State_GSpacePlane::createPCmaps(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
+{
+    PRINT_LINE_STAR;
+    PRINTF("Building Psi and Lambda Pair Calculators\n");
+    PRINT_LINE_DASH;printf("\n");
+
+    // Compute num PEs along the states dimension of GSpace
+    int pl = nstates / config.Gstates_per_pe;
+    // Compute num PEs along the planes dimension of GSpace
+    int pm = config.numPesPerInstance / pl;
+    // Compute the num of GSpace planes per PE
+    int planes_per_pe = config.nchareG / pm;
+
+    /// Get an appropriately constructed PeList from the supplied factory functor
+    PeList *availGlobG = getPeList();
+    //-------------------------------------------------------------
+    // Populate maptable for Symmetric Paircalculators
+    double Timer =CmiWallTimer();
+    availGlobG->reset();
+    bool maptype=true;
+    int achunks=config.numChunksAsym;
+    if(config.phantomSym)
+    { // evil trickery to use asym map code for phantom sym
+        maptype=false;
+        achunks=config.numChunksSym;
+    }
+    #ifdef USE_INT_MAP
+        SymScalcImaptable[thisInstance.getPO()].buildMap(config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, achunks, config.sGrainSize);
+    #endif
+    int success = 0;
+    if(config.loadMapFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = achunks;
+        MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            success = mf->loadMap("SymScalcMap", &SymScalcImaptable[thisInstance.getPO()]);
+        #else
+            success = mf->loadMap("SymScalcMap", &SymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    if(success == 0)
+    {
+        #ifdef USE_INT_MAP
+            SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable[thisInstance.getPO()], availGlobG, config.nstates, config.nchareG, config.sGrainSize, maptype, config.scalc_per_plane,
+                          planes_per_pe, achunks, config.numChunksSym, &GSImaptable[thisInstance.getPO()], config.useCuboidMap, config.useCentroidMap, boxSize);
+        #else
+            SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, availGlobG, config.nstates, config.nchareG, config.sGrainSize, maptype, config.scalc_per_plane,
+                          planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
+        #endif
+    }
+
+    CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue, thisInstance);
+    double newtime=CmiWallTimer();
+    CkPrintf("SymScalcMap %d x %d x %d x %d created in %g\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksSym, newtime-Timer);
+
+    if(config.dumpMapFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = achunks;
+        MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            mf->dumpMap(&SymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMap(&SymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    if(config.dumpMapCoordFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = achunks;
+        MapFile *mf = new MapFile("SymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            mf->dumpMapCoords(&SymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMapCoords(&SymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    //-------------------------------------------------------------
+    // Populate maptable for Asymmetric Paircalculators
+    Timer=CmiWallTimer();
+    availGlobG->reset();
+    #ifdef USE_INT_MAP
+        AsymScalcImaptable[thisInstance.getPO()].buildMap(config.nchareG, config.nstates/config.sGrainSize,config.nstates/config.sGrainSize, config.numChunksAsym, config.sGrainSize);
+    #endif
+    success = 0;
+    if(config.loadMapFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = config.numChunksAsym;
+        MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            success = mf->loadMap("AsymScalcMap", &AsymScalcImaptable[thisInstance.getPO()]);
+        #else
+            success = mf->loadMap("AsymScalcMap", &AsymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    if(success == 0)
+    {
+        #ifdef USE_INT_MAP
+            SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable[thisInstance.getPO()], availGlobG,config.nstates, config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane,
+                          planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable[thisInstance.getPO()], config.useCuboidMap, config.useCentroidMap, boxSize);
+        #else
+            SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlobG,config.nstates, config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane,
+                          planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap,boxSize);
+        #endif
+    }
+
+    CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse, thisInstance);
+    newtime=CmiWallTimer();
+    CkPrintf("AsymScalcMap %d x %d x %d x %d created in %g\n\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksAsym, newtime-Timer);
+    Timer=newtime;
+
+    if(config.dumpMapFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = config.numChunksAsym;
+        MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            mf->dumpMap(&AsymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMap(&AsymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    if(config.dumpMapCoordFiles)
+    {
+        int size[4];
+        size[0] = config.nchareG;
+        size[1] = config.nstates/config.sGrainSize;
+        size[2] = config.nstates/config.sGrainSize;
+        size[3] = config.numChunksAsym;
+        MapFile *mf = new MapFile("AsymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
+        #ifdef USE_INT_MAP
+            mf->dumpMapCoords(&AsymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMapCoords(&AsymScalcmaptable);
+        #endif
+        delete mf;
+    }
+
+    symmPCmgr.mapperGID  = scMap_sym.ckGetGroupID();
+    asymmPCmgr.mapperGID = scMap_asym.ckGetGroupID();
+
+    delete availGlobG;
+}
+
 
 
 

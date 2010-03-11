@@ -412,5 +412,48 @@ class PeList
 
 };
 
+
+/**
+ * Hacky solution to passing a PeList to GSpace(0,0) for use in paircalc mapping
+ * without actually having to pup the arrays in a PeList
+ *
+ * Written without any global knowledge of the mapping code
+ * I am puking as I write this, but let my disgust at myself exonerate me
+ */
+class PeListFactory
+{
+    public:
+        /// Default constructor
+        PeListFactory(): 
+            useDefault(true),
+            boxX(0), boxY(0), boxZ(0), order(0),
+            maxX(0), maxY(0), maxZ(0), maxT(0)
+        {}
+
+        /// Use this constructor when you want a PeList created using its boxy constructor
+        PeListFactory(int bxX, int bxY, int bxZ, int ordr, int mxX, int mxY, int mxZ, int mxT):
+            useDefault(false),
+            boxX(bxX), boxY(bxY), boxZ(bxZ), order(ordr),
+            maxX(mxX), maxY(mxY), maxZ(mxZ), maxT(mxT)
+        {}
+
+
+        /// Return an appropriately constructed PeList
+        PeList* operator() () const
+        {
+            if (useDefault)
+                return new PeList;
+            else
+                return new PeList(boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT);
+        }
+
+    private:
+        // Should I return a default PeList or a boxy PeList
+        bool useDefault;
+        // Parameters used to create a boxy PeList. Refer PeList code for more details
+        int boxX, boxY, boxZ, order, maxX, maxY, maxZ, maxT;
+};
+PUPbytes(PeListFactory)
+
 //@}
 #endif
