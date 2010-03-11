@@ -95,6 +95,9 @@ Ortho::~Ortho()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::collect_error(CkReductionMsg *msg) {
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::collect_error \n", thisIndex.x, thisIndex.y);
+    #endif
     CmiAssert(thisIndex.x == 0 && thisIndex.y == 0);
     //			end_t = CmiWallTimer();
     double error = *((double *) msg->getData());
@@ -136,6 +139,9 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::start_calc \n", thisIndex.x, thisIndex.y);
+    #endif
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int gen_wave   = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
 #ifdef _CP_SUBSTEP_TIMING_
@@ -600,6 +606,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
         {
             CProxySection_Ortho rproxy =   multiproxy;
             CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
+            CkAssert(mcastGrp != NULL);
             rproxy.ckSectionDelegate(mcastGrp);
             initCookieMsg *redMsg=new initCookieMsg;
             /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
@@ -618,6 +625,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
             else
             {
                 CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch(); 
+                CkAssert(mcastGrp != NULL);
                 multiproxy.ckSectionDelegate(mcastGrp);
             }
         }
@@ -778,6 +786,9 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  * currently A has T, B has S1, need to construct 3*I in C
  */
 void Ortho::do_iteration(void){
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::do_iteration \n", thisIndex.x, thisIndex.y);
+    #endif
   step = 1;
   memset(C, 0, m * n * sizeof(double));
   if(thisIndex.x == thisIndex.y){
