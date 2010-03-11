@@ -275,7 +275,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 					   UberCollection _thisInstance
 					   ) :
   forwardTimeKeep(_gforward),  backwardTimeKeep(_gbackward),
-  symmPCmgr(cfgSymmPC), asymmPCmgr(cfgAsymmPC),
+  symmPCmgr(thisIndex, cfgSymmPC), asymmPCmgr(thisIndex, cfgAsymmPC),
   thisInstance(_thisInstance)
 //============================================================================
    {//begin routine

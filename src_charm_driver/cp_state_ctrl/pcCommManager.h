@@ -20,7 +20,7 @@ class PCCommManager
 
     public:
         /// Constructor
-        PCCommManager(const pc::pcConfig &_cfg);
+        PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg);
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
         void createPCarray();
@@ -59,6 +59,8 @@ class PCCommManager
         void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  bool lbsync, CkCallback synccb);
 
 
+        /// The array index of the owner GSpace chare
+        CkIndex2D gspaceIndex;
         /// Input configurations for the paircalcs
         cp::paircalc::pcConfig pcCfg;
 		/// The array ID of the PC chare array instance I am managing
