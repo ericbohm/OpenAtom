@@ -25,9 +25,9 @@ class PCCommManager
         /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
         void createPCarray();
         /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section
-        void sendLeftData (int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendLeftData (int n, complex* ptr, bool psiV);
         /// Starts the forward path work (along with startPairCalcLeft()) in the asymmetric (Lambda) case
-        void sendRightData(int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendRightData(int n, complex* ptr, bool psiV);
 
         //@{
         /// Initialize an array section that is used to reduce the results from the PCs back to the GSP chares
@@ -40,17 +40,17 @@ class PCCommManager
 
     private:
         /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
-        void makeLeftTree(int myS, int myZ);
+        void makeLeftTree();
         /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
-        void makeRightTree(int myS, int myZ);
+        void makeRightTree();
         /// Multicasts the left matrix data to the PC section
-        void sendLeftDataMcast (int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendLeftDataMcast (int n, complex* ptr, bool psiV);
         /// Multicasts the right matrix data to the PC section
-        void sendRightDataMcast(int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendRightDataMcast(int n, complex* ptr, bool psiV);
         /// Sends left matrix data via RDMA
-        void sendLeftDataRDMA  (int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendLeftDataRDMA  (int n, complex* ptr, bool psiV);
         /// Sends right matrix data via RDMA
-        void sendRightDataRDMA (int n, complex* ptr, int myS, int myZ, bool psiV);
+        void sendRightDataRDMA (int n, complex* ptr, bool psiV);
         /// Send RDMA setup requests to all the destination PC chares that will be getting left data
         void sendLeftRDMARequest (RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
         /// Send RDMA setup requests to all the destination PC chares that will be getting right data
@@ -99,24 +99,24 @@ class PCCommManager
 
 
 
-inline void PCCommManager::sendLeftData(int n, complex* ptr, int myS, int myPlane, bool psiV)
+inline void PCCommManager::sendLeftData(int n, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
-        sendLeftDataRDMA(n,ptr,myS,myPlane,psiV);
+        sendLeftDataRDMA(n,ptr,psiV);
     #else
-        sendLeftDataMcast(n,ptr,myS,myPlane,psiV);
+        sendLeftDataMcast(n,ptr,psiV);
     #endif
 }
 
 
 
 
-inline void PCCommManager::sendRightData(int n, complex* ptr, int myS, int myPlane, bool psiV)
+inline void PCCommManager::sendRightData(int n, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
-        sendRightDataRDMA(n,ptr,myS,myPlane,psiV);
+        sendRightDataRDMA(n,ptr,psiV);
     #else
-        sendRightDataMcast(n,ptr,myS,myPlane,psiV);
+        sendRightDataMcast(n,ptr,psiV);
     #endif
 }
 

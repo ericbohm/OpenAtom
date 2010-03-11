@@ -1664,9 +1664,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
   int toSend = numPoints;
-  asymmPCmgr.sendLeftData(toSend,psi,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendLeftData(toSend,psi,false);
   CmiNetworkProgress();
-  asymmPCmgr.sendRightData(toSend,force,thisIndex.x,thisIndex.y,false);
+  asymmPCmgr.sendRightData(toSend,force,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);
@@ -2671,10 +2671,10 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  symmPCmgr.sendLeftData(numPoints, psi, thisIndex.x, thisIndex.y, false);
+  symmPCmgr.sendLeftData(numPoints, psi, false);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
-      symmPCmgr.sendRightData(numPoints, psi, thisIndex.x, thisIndex.y, false);
+      symmPCmgr.sendRightData(numPoints, psi, false);
 #else
   acceptedPsi=true;
   if((iteration==config.maxIter || exitFlag==1) && cp_min_opt==1 && config.stateOutput==0)
@@ -3228,10 +3228,10 @@ void  CP_State_GSpacePlane::sendPsiV() {
   }//endif
 
   int numPoints = gs.numPoints;
-  symmPCmgr.sendLeftData(numPoints,data,thisIndex.x,thisIndex.y,true);
+  symmPCmgr.sendLeftData(numPoints,data,true);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
-      symmPCmgr.sendRightData(numPoints,data,thisIndex.x,thisIndex.y,true);
+      symmPCmgr.sendRightData(numPoints,data,true);
 
 //----------------------------------------------------------------------------
 }// end routine

@@ -116,23 +116,23 @@ void PCCommManager::createPCarray()
 
 
 
-void PCCommManager::makeLeftTree(int myS, int myPlane)
+void PCCommManager::makeLeftTree()
 {
 	#ifdef DEBUG_CP_PAIRCALC_CREATION
-		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive left data \n", myS, myPlane, pcCfg.isSymmetric);
+		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive left data \n", gspaceIndex.x, gspaceIndex.y, pcCfg.isSymmetric);
 	#endif
 
 	/// Compute the max index along the state dimensions of the PC array 
 	int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
 	/// Find the row index of the PC chare that handles this state
-	int s1 = (myS/pcCfg.grainSize) * pcCfg.grainSize;
+	int s1 = (gspaceIndex.x/pcCfg.grainSize) * pcCfg.grainSize;
 	s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 	/// If the PC is a symmetric instance, then include only the post-diagonal chares on the row s1, else, include all the PC chares on row s1
 	int sColMin = (pcCfg.isSymmetric) ? s1 : 0;
 	
 	#ifdef DEBUG_CP_PAIRCALC_COMM
 		CkPrintf("GSpace[%d,%d] will send left matrix data to symm(%d) PC chares on: Row %d, Cols %d to %d\n", 
-															myS, myPlane, pcCfg.isSymmetric,s1,sColMin,maxpcstateindex);
+															gspaceIndex.x, gspaceIndex.y, pcCfg.isSymmetric,s1,sColMin,maxpcstateindex);
 	#endif
 
 	/// If GSpace to PC comm is point to point direct msging
@@ -140,7 +140,7 @@ void PCCommManager::makeLeftTree(int myS, int myPlane)
 	{
 		/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 		for(int s2 = sColMin; s2 <= maxpcstateindex; s2 += pcCfg.grainSize)
-			listGettingLeft.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
+			listGettingLeft.push_back(CkArrayIndex4D(gspaceIndex.y,s1,s2,0));
 	}
 	/// else, if communication is through section multicasts
 	else
@@ -151,7 +151,7 @@ void PCCommManager::makeLeftTree(int myS, int myPlane)
 		for (int chunk = 0; chunk < pcCfg.numChunks; chunk++)
 		{
 			sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
-																myPlane, myPlane, 1,
+																gspaceIndex.y, gspaceIndex.y, 1,
 																s1, s1, 1,
 																sColMin, maxpcstateindex, pcCfg.grainSize,
 																chunk, chunk, 1);
@@ -176,21 +176,21 @@ void PCCommManager::makeLeftTree(int myS, int myPlane)
 
 
 
-void PCCommManager::makeRightTree(int myS, int myPlane)
+void PCCommManager::makeRightTree()
 {
 	#ifdef DEBUG_CP_PAIRCALC_CREATION
-		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive right data \n", myS, myPlane, pcCfg.isSymmetric);
+		CkPrintf("GSpace[%d,%d] Making symm(%d) PC array section to receive right data \n", gspaceIndex.x, gspaceIndex.y, pcCfg.isSymmetric);
 	#endif
 	
 	/// Compute the max index along the state dimensions of the PC array
 	int maxpcstateindex=(pcCfg.numStates/ pcCfg.grainSize - 1) * pcCfg.grainSize;
-	int s2 = (myS / pcCfg.grainSize) * pcCfg.grainSize;
+	int s2 = (gspaceIndex.x / pcCfg.grainSize) * pcCfg.grainSize;
 	s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 	/// If the PC is a symmetric instance, then include only the pre-diagonal chares on the column s2 else, include all the PC chares on column s2
 	int sRowMax = (pcCfg.isSymmetric) ? s2 - pcCfg.grainSize : maxpcstateindex;
     #ifdef DEBUG_CP_PAIRCALC_COMM
 		CkPrintf("GSpace[%d,%d] will send left matrix data to symm(%d) PC chares on: Col %d, Rows %d to %d\n", 
-															myS, myPlane, pcCfg.isSymmetric,s2,0,sRowMax);
+															gspaceIndex.x, gspaceIndex.y, pcCfg.isSymmetric,s2,0,sRowMax);
 	#endif
     
 	// Accomodate the boundary case: PC chares on the top left [*,0,0,*] of the array shouldnt receive any right data. So dont build any proxies to them
@@ -201,7 +201,7 @@ void PCCommManager::makeRightTree(int myS, int myPlane)
 		{
 			/// simply create a list of PC chare array indices, with chunk=0 (as the comm list is the same for all chunks)
 			for(int s1 = 0; s1 <= sRowMax; s1 += pcCfg.grainSize)
-				listGettingRight.push_back(CkArrayIndex4D(myPlane,s1,s2,0));
+				listGettingRight.push_back(CkArrayIndex4D(gspaceIndex.y,s1,s2,0));
 		}
 		/// else, if communication is through section multicasts
 		else
@@ -212,7 +212,7 @@ void PCCommManager::makeRightTree(int myS, int myPlane)
 			for (int c = 0; c < pcCfg.numChunks; c++)
 			{
 				sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
-																myPlane, myPlane, 1,
+																gspaceIndex.y, gspaceIndex.y, 1,
 																0, sRowMax, pcCfg.grainSize,
 																s2, s2, 1,
 																c, c, 1);
@@ -239,16 +239,16 @@ void PCCommManager::makeRightTree(int myS, int myPlane)
 
 
 /** Deposits data as left matrix block with InputHandler chare array
- * For symmetric instances,  sends to the post-diagonal row of PCs that correspond to state myS (including the chare on the chare array diagonal)
- * For asymmetric instances, sends to the whole row of PCs that correspond to state myS
+ * For symmetric instances,  sends to the post-diagonal row of PCs that correspond to state gspaceIndex.x (including the chare on the chare array diagonal)
+ * For asymmetric instances, sends to the whole row of PCs that correspond to state gspaceIndex.x
  */
-void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane, bool psiV)
+void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
 		/// If RDMA is enabled, we should be here ONLY during PsiV updates
 		CkAssert(psiV);
 		#ifdef DEBUG_CP_PAIRCALC_RDMA
-			CkPrintf("GSpace[%d,%d] Using traditional channels (not RDMA) for psiV left data.\n",myS,myPlane);
+			CkPrintf("GSpace[%d,%d] Using traditional channels (not RDMA) for psiV left data.\n",gspaceIndex.x,gspaceIndex.y);
 		#endif
     #endif
 
@@ -256,7 +256,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane,
     /// If a destination array section doesnt exist, build one
     if(!existsLproxy)
     {
-        makeLeftTree(myS,myPlane);
+        makeLeftTree();
     }
     /// If a left matrix destination section exists, send the data as the left matrix block
     if(existsLproxy)
@@ -270,9 +270,9 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane,
             if((pcCfg.numChunks > 1) && (chunk == (pcCfg.numChunks - 1)))
                 outsize= chunksize + (n % pcCfg.numChunks);
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-            if(pcCfg.isSymmetric && myPlane==0)
-                dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,myPlane,myS,0,chunk,pcCfg.isSymmetric);
-            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",myPlane,myS, myS, chunk,pcCfg.isSymmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
+            if(pcCfg.isSymmetric && gspaceIndex.y==0)
+                dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
+            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",gspaceIndex.y,gspaceIndex.x, gspaceIndex.x, chunk,pcCfg.isSymmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
             #endif
             // If sending directly, use the vector of target PC chares
             if( !pcCfg.isInputMulticast)
@@ -280,7 +280,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane,
                 CkArrayIndex4D idx;
                 for(int elem=0; elem < listGettingLeft.size() ; elem++)
                 {
-                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                     *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                     idx=listGettingLeft[elem];
@@ -299,12 +299,12 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane,
             // else, use a typical multicast to the destination section
             else
             {
-                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                 *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-                if(pcCfg.isSymmetric && myPlane==0)
-                    dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,myPlane,myS,0,chunk,pcCfg.isSymmetric);
+                if(pcCfg.isSymmetric && gspaceIndex.y==0)
+                    dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
                 #endif
                 #ifdef _NAN_CHECK_
                 for(int i=0;i<outsize ;i++)
@@ -319,30 +319,30 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, int myS, int myPlane,
     }
     /// else, if the destination section doesnt exist even after attempting to create one
     else
-        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcCfg.isSymmetric);
+        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send left block data [%d,%d,%d,%d,%d] !!!\n",gspaceIndex.x,gspaceIndex.y,pcCfg.isSymmetric);
 }
 
 
 
 
 /** Deposits data as right matrix block with InputHandler chare array
- * For symmetric instances,  sends to the strictly pre-diagonal column of PCs that correspond to state myS
- * For asymmetric instances, sends to the whole row of PCs that correspond to state myS
+ * For symmetric instances,  sends to the strictly pre-diagonal column of PCs that correspond to state gspaceIndex.x
+ * For asymmetric instances, sends to the whole row of PCs that correspond to state gspaceIndex.x
  */
-void PCCommManager::sendRightDataMcast(int n, complex* ptr, int myS, int myPlane, bool psiV)
+void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
 		/// If RDMA is enabled, we should be here ONLY during PsiV updates
 		CkAssert(psiV);
 		#ifdef DEBUG_CP_PAIRCALC_RDMA
-			CkPrintf("GSpace[%d,%d] Using traditional channels (not RDMA) for psiV right data.\n",myS,myPlane);
+			CkPrintf("GSpace[%d,%d] Using traditional channels (not RDMA) for psiV right data.\n",gspaceIndex.x,gspaceIndex.y);
 		#endif
     #endif
 
     bool flag_dp = pcCfg.isDoublePackOn;
     /// If a destination array section doesnt exist, build one
     if(!existsRproxy)
-        makeRightTree(myS,myPlane);
+        makeRightTree();
     /// If a right matrix destination section exists, send the data as the left matrix block
     if(existsRproxy)
     {
@@ -373,7 +373,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, int myS, int myPlane
                 {
                     idx=listGettingRight[elem];
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
-                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                     *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     #ifdef _NAN_CHECK_
@@ -389,7 +389,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, int myS, int myPlane
             }
             else
             {
-                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, myS, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 #ifdef _NAN_CHECK_
@@ -405,13 +405,13 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, int myS, int myPlane
     }
     /// else, if the destination section doesnt exist even after attempting to create one
     else
-        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send right block data [%d,%d,%d,%d,%d] !!!\n",myS,myPlane,pcCfg.isSymmetric);
+        CkPrintf("GSpace[%d,%d] No destination symm(%d) PC array section to send right block data [%d,%d,%d,%d,%d] !!!\n",gspaceIndex.x,gspaceIndex.y,pcCfg.isSymmetric);
 }
 
 
 
 
-void PCCommManager::sendLeftDataRDMA(int n, complex* ptr, int myS, int myPlane, bool psiV)
+void PCCommManager::sendLeftDataRDMA(int n, complex* ptr, bool psiV)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to send data to paircalcs via RDMA when RDMA is not enabled\n");
@@ -423,21 +423,21 @@ void PCCommManager::sendLeftDataRDMA(int n, complex* ptr, int myS, int myPlane, 
 				if (leftDestinationHandles[i].handle >=0)
 				{
 					#ifdef DEBUG_CP_PAIRCALC_RDMA
-						CkPrintf("GSpace[%d,%d] Sending left data to PC via RDMA.\n",myS,myPlane);
+						CkPrintf("GSpace[%d,%d] Sending left data to PC via RDMA.\n",gspaceIndex.x,gspaceIndex.y);
 					#endif
 					CmiDirect_put( &(leftDestinationHandles[i]) );
 				}
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    sendLeftDataMcast(n, ptr, myS, myPlane, psiV);
+		    sendLeftDataMcast(n, ptr, psiV);
 	#endif // PC_USE_RDMA
 }
 
 
 
 
-void PCCommManager::sendRightDataRDMA(int n, complex* ptr, int myS, int myPlane, bool psiV)
+void PCCommManager::sendRightDataRDMA(int n, complex* ptr, bool psiV)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to send data to paircalcs via RDMA when RDMA is not enabled\n");
@@ -449,14 +449,14 @@ void PCCommManager::sendRightDataRDMA(int n, complex* ptr, int myS, int myPlane,
 				if (rightDestinationHandles[i].handle >=0)
 				{
 					#ifdef DEBUG_CP_PAIRCALC_RDMA
-						CkPrintf("GSpace[%d,%d] Sending right data to PC via RDMA.\n",myS,myPlane);
+						CkPrintf("GSpace[%d,%d] Sending right data to PC via RDMA.\n",gspaceIndex.x,gspaceIndex.y);
 					#endif
 					CmiDirect_put( &(rightDestinationHandles[i]) );
 				}
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    sendRightDataMcast(n, ptr, myS, myPlane, psiV);
+		    sendRightDataMcast(n, ptr, psiV);
 	#endif // PC_USE_RDMA
 }
 
@@ -473,7 +473,7 @@ void PCCommManager::sendLeftRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, Ck
 	#endif
 	/// If the destination PC chares are not known, determine them
 	if(!existsLproxy)
-		makeLeftTree(idTkn.gspIndex.x,idTkn.gspIndex.y);
+		makeLeftTree();
 	/// If there exist any destination PC chares
 	if(existsLproxy)
 	{
@@ -525,7 +525,7 @@ void PCCommManager::sendRightRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, C
 	#endif
 	/// If the destination PC chares are not known, determine them
 	if(!existsRproxy)
-		makeRightTree(idTkn.gspIndex.x,idTkn.gspIndex.y);
+		makeRightTree();
 	/// If there exist any destination PC chares
 	if(existsRproxy)
 	{
