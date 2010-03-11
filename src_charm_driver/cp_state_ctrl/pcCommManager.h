@@ -24,10 +24,6 @@ class PCCommManager
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
         void createPCarray();
-        /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
-        void makeLeftTree(int myS, int myZ);
-        /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
-        void makeRightTree(int myS, int myZ);
         /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section
         void sendLeftData (int n, complex* ptr, int myS, int myZ, bool psiV);
         /// Starts the forward path work (along with startPairCalcLeft()) in the asymmetric (Lambda) case
@@ -43,6 +39,10 @@ class PCCommManager
 
 
     private:
+        /// Creates multicast trees to the appropriate PC chare array sections used in the symmetric / asymmetric loops
+        void makeLeftTree(int myS, int myZ);
+        /// Creates a multicast tree that includes the PC chare arrays used in the asymmetric loop
+        void makeRightTree(int myS, int myZ);
         /// Multicasts the left matrix data to the PC section
         void sendLeftDataMcast (int n, complex* ptr, int myS, int myZ, bool psiV);
         /// Multicasts the right matrix data to the PC section
