@@ -570,10 +570,10 @@ void PCCommManager::sendRightRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, C
 /**
  * send the multcast message to initialize the section tree and set the cookie
  */
-void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, int state, int GrainSize, bool lbsync, CkCallback synccb)
+void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, bool lbsync, CkCallback synccb)
 {
-    int offset=state%GrainSize;
-    int dest=state/GrainSize*GrainSize; //row or column
+    int offset = gspaceIndex.x % pcCfg.grainSize;
+    int dest = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //row or column
     initResultMsg *redMsg=new initResultMsg;
     redMsg->mCastGrpId = mCastMgrGID;
     redMsg->dest=dest;
@@ -600,57 +600,54 @@ void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, int 
  *
  * Then return the section proxy.
  */
-CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(int state, int plane, int chunk)
+CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
-  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
-  int s2=state/pcCfg.grainSize*pcCfg.grainSize;
+  int maxpcstateindex = (pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
+  int s2 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
-  int nstates=pcCfg.numStates;
-  int GrainSize=pcCfg.grainSize;
+
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
-									       plane, plane, 1,
-									       0, maxpcstateindex, GrainSize,
+									       gspaceIndex.y, gspaceIndex.y, 1,
+									       0, maxpcstateindex, pcCfg.grainSize,
 									       s2, s2, 1,
 									       chunk, chunk,1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize;
+  int newListStart = gspaceIndex.x % pcCfg.grainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
-  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
 /**
  * initialize  plane and column wise section reduction for lambda->gspace
  */
-CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int state, int plane, int chunk)
+CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
-  int GrainSize=pcCfg.grainSize;
-  int s1=state / GrainSize * GrainSize; //column
-  int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
+  int s1 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //column
+  int maxpcstateindex = (pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 
-  int nstates=pcCfg.numStates;
   // all nondiagonal elements
   // so we'll have to make this the tedious explicit way
 
-  CkArrayIndex4D *elems= new CkArrayIndex4D[nstates/GrainSize];
+  CkArrayIndex4D *elems= new CkArrayIndex4D[pcCfg.numStates/ pcCfg.grainSize];
   int ecount=0;
-  for(int s2 =0; s2<=maxpcstateindex; s2+=GrainSize)
+  for(int s2 =0; s2<=maxpcstateindex; s2+=pcCfg.grainSize)
     {
       if(s1!=s2)
 	{
-	  CkArrayIndex4D idx4d(plane,s1,s2,chunk);
+	  CkArrayIndex4D idx4d(gspaceIndex.y,s1,s2,chunk);
 	  elems[ecount++]=idx4d;
 	}
     }
-  int newListStart=state%GrainSize;
+  int newListStart = gspaceIndex.x % pcCfg.grainSize;
   if(newListStart> ecount)
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list_4D( elems, ecount, newListStart);
@@ -658,7 +655,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -667,28 +664,27 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int
 /**
  * initialize  plane and row wise section reduction for psi->gspace
  */
-CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int state, int plane, int chunk)
+CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
-  int s2=state/pcCfg.grainSize*pcCfg.grainSize;
+  int s2 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 
-  int GrainSize=pcCfg.grainSize;
-  int s2range= (s2==0) ? 1 : GrainSize;
+  int s2range= (s2==0) ? 1 : pcCfg.grainSize;
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
-									       plane, plane, 1,
+									       gspaceIndex.y, gspaceIndex.y, 1,
 									       0, s2, s2range,
 									       s2, s2, 1,
 									       chunk, chunk, 1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize;
+  int newListStart = gspaceIndex.x % pcCfg.grainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 
@@ -696,34 +692,32 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int state,
 /**
  * initialize  plane and column wise section reduction for psi->gspace
  */
-CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int state, int plane, int chunk)
+CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
 {
   CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
-  int GrainSize=pcCfg.grainSize;
-  int s1=state / GrainSize * GrainSize; //column
+  int s1 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //column
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
 
-  int nstates=pcCfg.numStates;
-  int s2start=s1+GrainSize;
+  int s2start = s1 + pcCfg.grainSize;
   s2start= (s2start>maxpcstateindex) ? maxpcstateindex : s2start;
-  int s2range= (s2start==maxpcstateindex) ? 1 : GrainSize;
-  CkAssert(s2start<nstates);
+  int s2range= (s2start==maxpcstateindex) ? 1 : pcCfg.grainSize;
+  CkAssert(s2start<pcCfg.numStates);
   CProxySection_PairCalculator sectProxy =
       CProxySection_PairCalculator::ckNew(pcAID,
-					  plane, plane, 1,
+					  gspaceIndex.y, gspaceIndex.y, 1,
 					  s1, s1, 1,
 					  s2start, maxpcstateindex, s2range,
 					  chunk, chunk, 1);
 
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart=state%GrainSize;
+  int newListStart = gspaceIndex.x % pcCfg.grainSize;
   if(newListStart> sid._nElems)
     newListStart= newListStart % sid._nElems;
   bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
   CkAssert(order);
   sectProxy.ckSectionDelegate(mcastGrp);
-  setResultProxy(&sectProxy, state, GrainSize, false, CkCallback(CkCallback::ignore));
+  setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
 }
 

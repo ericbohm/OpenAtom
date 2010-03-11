@@ -31,10 +31,10 @@ class PCCommManager
 
         //@{
         /// Initialize an array section that is used to reduce the results from the PCs back to the GSP chares
-        CProxySection_PairCalculator makeOneResultSection_asym(int state, int plane, int chunk);
-        CProxySection_PairCalculator makeOneResultSection_asym_column(int state, int plane, int chunk);
-        CProxySection_PairCalculator makeOneResultSection_sym1(int state, int plane, int chunk);
-        CProxySection_PairCalculator makeOneResultSection_sym2(int state, int plane, int chunk);
+        CProxySection_PairCalculator makeOneResultSection_asym(int chunk);
+        CProxySection_PairCalculator makeOneResultSection_asym_column(int chunk);
+        CProxySection_PairCalculator makeOneResultSection_sym1(int chunk);
+        CProxySection_PairCalculator makeOneResultSection_sym2(int chunk);
         //@}
 
 
@@ -56,7 +56,7 @@ class PCCommManager
         /// Send RDMA setup requests to all the destination PC chares that will be getting right data
         void sendRightRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, CkCallback cb);
         /// Send out a dummy mcast to prod CkMulticast into setting up the result reduction trees etc
-        void setResultProxy(CProxySection_PairCalculator *sectProxy,int state, int GrainSize,  bool lbsync, CkCallback synccb);
+        void setResultProxy(CProxySection_PairCalculator *sectProxy, bool lbsync, CkCallback synccb);
 
 
         /// The array index of the owner GSpace chare

@@ -1071,14 +1071,14 @@ void CP_State_GSpacePlane::makePCproxies(){
   //need one proxy per chunk
   if(!config.gSpaceSum){
       for(int chunk=0;chunk<config.numChunksAsym;chunk++){
-	  lambdaproxy[chunk]=asymmPCmgr.makeOneResultSection_asym(thisIndex.x, thisIndex.y,chunk);
+	  lambdaproxy[chunk]=asymmPCmgr.makeOneResultSection_asym(chunk);
 	  if(AllLambdaExpected/config.numChunksAsym == 2)//additional col. red. in dynamics
-	    lambdaproxyother[chunk]=asymmPCmgr.makeOneResultSection_asym_column(thisIndex.x, thisIndex.y,chunk);
+	    lambdaproxyother[chunk]=asymmPCmgr.makeOneResultSection_asym_column(chunk);
       }//endfor chunk
       for(int chunk=0; chunk < config.numChunksSym ;chunk++){
-	  psiproxy[chunk]=symmPCmgr.makeOneResultSection_sym1(thisIndex.x, thisIndex.y,chunk);
+	  psiproxy[chunk]=symmPCmgr.makeOneResultSection_sym1(chunk);
 	  if(AllPsiExpected / config.numChunksSym > 1)
-	    psiproxyother[chunk]=symmPCmgr.makeOneResultSection_sym2(thisIndex.x, thisIndex.y,chunk);
+	    psiproxyother[chunk]=symmPCmgr.makeOneResultSection_sym2(chunk);
       }//endfor chunk
   }//endif not gspacesum
 
