@@ -810,7 +810,7 @@ class size2d; //forward decl to shup the compiler
 namespace cp { namespace paircalc { class pcConfig; } }
 namespace pc = cp::paircalc;
 
-void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance, CkGroupID &symMapperGID, CkGroupID &asymMapperGID);
+void createPCmaps(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance, CkGroupID &symMapperGID, CkGroupID &asymMapperGID);
 void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
