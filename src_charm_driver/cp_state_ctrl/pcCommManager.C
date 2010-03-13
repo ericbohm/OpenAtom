@@ -4,6 +4,7 @@
 #include "ckPairCalculator.decl.h"
 #include "paircalc/InputDataHandler.h"
 #include "paircalc/pairCalculator.h" //< Just for the reorder_elem declarations
+#include "utility/MapFile.h"
 
 #include "ckmulticast.h"
 #include "ckcomplex.h"
@@ -719,6 +720,96 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
+}
+
+
+
+
+/**
+ * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
+ */
+void PCCommManager::createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
+{
+    #ifndef USE_INT_MAP
+        CkAbort("USE_INT_MAP needs to be defined for correct mapping of paircalcs");
+    #endif
+    int instanceNum = thisInstance.getPO();
+    bool maptype = pcCfg.isSymmetric;
+    int achunks = config.numChunksAsym;
+    if(pcCfg.isSymmetric && pcCfg.arePhantomsOn)
+    { // evil trickery to use asym map code for phantom sym
+        maptype=false;
+        achunks=config.numChunksSym;
+    }
+
+    // Generate a map name
+    std::string mapName = pcCfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
+    // Use the appropriate map table
+    MapType4 &mapTable  = pcCfg.isSymmetric ? SymScalcImaptable[instanceNum] : AsymScalcImaptable[instanceNum];
+    /// Get an appropriately constructed PeList from the supplied factory functor
+    PeList *availGlobG = getPeList();
+    availGlobG->reset();
+
+    // Compute num PEs along the states dimension of GSpace
+    int pl = pcCfg.numStates / config.Gstates_per_pe;
+    // Compute num PEs along the planes dimension of GSpace
+    int pm = config.numPesPerInstance / pl;
+    // Compute the num of GSpace planes per PE
+    int planes_per_pe = pcCfg.numPlanes / pm;
+
+    int size[4];
+    size[0] = pcCfg.numPlanes;
+    size[1] = pcCfg.numStates/pcCfg.grainSize;
+    size[2] = pcCfg.numStates/pcCfg.grainSize;
+    size[3] = achunks;
+    //-------------------------------------------------------------
+    // Populate maptable for the PC array
+
+    // Start timing the map creation
+    double mapCreationTime = CmiWallTimer();
+
+    mapTable.buildMap(pcCfg.numPlanes, pcCfg.numStates/pcCfg.grainSize, pcCfg.numStates/pcCfg.grainSize, achunks, pcCfg.grainSize);
+
+    int success = 0;
+    if(config.loadMapFiles)
+    {
+        MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
+        success = mf->loadMap(mapName.c_str(), &mapTable);
+        delete mf;
+    }
+
+    // If loading the map from a file failed, create a maptable
+    if(success == 0)
+    {
+        SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, pcCfg.numStates, pcCfg.numPlanes, pcCfg.grainSize, maptype, config.scalc_per_plane,
+                        planes_per_pe, achunks, config.numChunksSym, &GSImaptable[instanceNum], config.useCuboidMap, config.useCentroidMap, boxSize);
+    }
+
+    /// Create a map group that will read and use this map table
+    CProxy_SCalcMap pcMapGrp = CProxy_SCalcMap::ckNew(pcCfg.isSymmetric, thisInstance);
+
+    mapCreationTime = CmiWallTimer() - mapCreationTime;
+    CkPrintf("PairCalculator[%dx%dx%dx%d,%d] map created in %g\n", size[0], size[1], size[2], pcCfg.numChunks, pcCfg.isSymmetric, mapCreationTime);
+
+    // If the user wants map dumps
+    if(config.dumpMapFiles)
+    {
+        MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
+        mf->dumpMap(&mapTable, instanceNum);
+        delete mf;
+    }
+
+    // If the user wants map coordinate dumps
+    if(config.dumpMapCoordFiles)
+    {
+        MapFile *mf = new MapFile((mapName+"_coord").c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
+        mf->dumpMapCoords(&mapTable, instanceNum);
+        delete mf;
+    }
+
+    // Record the group that will provide the procNum mapping function
+    mapperGID  = pcMapGrp.ckGetGroupID();
+    delete availGlobG;
 }
 
     } // end namespace gspace
