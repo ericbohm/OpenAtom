@@ -19,7 +19,7 @@
 
 
 // If the machine is capable of RDMA...
-#ifdef CMK_DIRECT
+#if CMK_DIRECT
     // Enable GSpace-PairCalc RDMA
 	//#define PC_USE_RDMA
 	#ifdef PC_USE_RDMA
