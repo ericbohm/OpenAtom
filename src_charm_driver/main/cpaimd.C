@@ -1472,14 +1472,9 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
     //-------------------------------------------------------------------------
     // Delegate collectives within the ortho array
     #ifdef USE_COMLIB
-        #ifdef OLD_COMMLIB
-            CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
-            orthoInstance=ComlibRegister(multistrat);
-        #else
-            Strategy *multistrat = new DirectMulticastStrategy();
-            orthoInstance=ComlibRegister(multistrat);
-            //  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
-        #endif
+        Strategy *multistrat = new DirectMulticastStrategy();
+        orthoInstance=ComlibRegister(multistrat);
+        //  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
     #endif
 
     // Set the root of array reductions within Ortho
