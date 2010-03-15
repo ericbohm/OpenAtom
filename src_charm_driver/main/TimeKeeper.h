@@ -48,9 +48,9 @@ extern "C" void HPM_Print(int,int);
 extern Config config;
 extern int TimeKeeperID;
 
-extern vector <string> TimeKeeperNames;
+extern std::vector <std::string> TimeKeeperNames;
 
-static int keeperRegister(string name)
+static int keeperRegister(std::string name)
 {
   if(config.useTimeKeeper)
     {
