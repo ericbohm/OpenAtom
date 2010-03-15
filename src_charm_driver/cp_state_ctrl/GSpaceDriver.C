@@ -2,14 +2,16 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 #include "GSpaceRTH.h"
+#include "main/TimeKeeper.h"
 
 extern int nstates;
 extern Config config;
-extern CProxy_CPcharmParaInfoGrp 				scProxy;
-extern CProxy_TimeKeeper 						TimeKeeperProxy;
+
+extern CProxy_CPcharmParaInfoGrp 		scProxy;
+extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
-extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
+extern CkVec <CProxy_StructureFactor> 		UsfCompProxy;
 extern CkVec <CProxy_Ortho>                     UorthoProxy;
 
 
@@ -23,8 +25,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 			waitingForAtoms(false),
 			isAtomIntegrationDone(false),
 			isEnergyReductionDone(false),
-            areNLForcesDone(false),
-            isPsiVupdateNeeded(false),
+			areNLForcesDone(false),
+			isPsiVupdateNeeded(false),
 			controlThread(0)
 {
 	#ifdef DEBUG_CP_GSPACE_CREATION
