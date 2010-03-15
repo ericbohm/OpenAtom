@@ -810,8 +810,6 @@ class size2d; //forward decl to shup the compiler
 namespace cp { namespace paircalc { class pcConfig; } }
 namespace pc = cp::paircalc;
 
-void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
-
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,

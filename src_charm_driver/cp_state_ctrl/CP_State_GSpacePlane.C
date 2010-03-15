@@ -48,6 +48,8 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 
+#include "orthog_ctrl/arrayBuilder.h"
+
 #include "utility/util.h"
 #include "main/groups.h"
 #include "main/eesCache.h"
@@ -510,6 +512,11 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       // Create maps for the symmetric (psi) and asymmetric (lambda) paircalc instances
       symmPCmgr.createMap(boxSize, getPeList, thisInstance);
       asymmPCmgr.createMap(boxSize, getPeList, thisInstance);
+      symmPCmgr.createPCarray ();
+      asymmPCmgr.createPCarray();
+      // initialize Ortho  now that we have the PC maps
+      cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
+
       // Instantiate the paircalc array
       setupPCs();
   }
@@ -626,15 +633,8 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 
 
 
-
-
 void CP_State_GSpacePlane::setupPCs()
 {
-    symmPCmgr.createPCarray ();
-    asymmPCmgr.createPCarray();
-    // initialize Ortho  now that we have the PC maps
-    init_ortho_chares(nstates, symmPCmgr.pcCfg, asymmPCmgr.pcCfg, thisInstance);
-
     UorthoProxy[thisInstance.proxyOffset].makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
 
     pcSetupMsg *msg       = new pcSetupMsg();
