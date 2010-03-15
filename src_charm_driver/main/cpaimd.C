@@ -1322,230 +1322,281 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 //============================================================================
 
 
-//============================================================================
 /**
- ** Create stuff for ortho which PC invokes by section reduction
+ * Create stuff for ortho which PC invokes by section reduction
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance) {
-//============================================================================
+void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance)
+{
 
-  PRINT_LINE_STAR;
-  PRINTF("Building Ortho Chares\n");
-  PRINT_LINE_DASH;printf("\n");
-  PeList *excludePes= new PeList(1);
-  excludePes->TheList[0]=config.numPes;
+    PRINT_LINE_STAR;
+    PRINTF("Building Ortho Chares\n");
+    PRINT_LINE_DASH;printf("\n");
 
-  int nOrtho= (nstates/config.orthoGrainSize);
-  nOrtho *= nOrtho;
-  double Timer=CmiWallTimer();
+    //-------------------------------------------------------------------------
+    // Create maps for placing the Ortho chare array elements
 
-  availGlobR->reset();
-#ifdef USE_INT_MAP
-  OrthoImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
-#endif
+    PeList *excludePes= new PeList(1);
+    excludePes->TheList[0]=config.numPes;
+    int nOrtho= (nstates/config.orthoGrainSize);
+    nOrtho *= nOrtho;
+    double Timer=CmiWallTimer();
 
-  int success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("OrthoMap", &OrthoImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("OrthoMap", &Orthomaptable);
-#endif
-    delete mf;
-  }
-  PeList *avail= new PeList();
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable[thisInstance.getPO()], avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
-#else
-    OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
-#endif
-  }
-  double newtime=CmiWallTimer();
-  CkPrintf("OrthoMap created in %g\n\n", newtime-Timer);
+    availGlobR->reset();
+    #ifdef USE_INT_MAP
+        OrthoImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+    #endif
 
-  //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
-  orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
-  CkArrayOptions orthoOpts;
-  orthoOpts.setMap(orthoMap);
+    int success = 0;
+    if(config.loadMapFiles)
+    {
+        int size[2];
+        size[0] = size[1] = nstates/config.orthoGrainSize;
+        MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        #ifdef USE_INT_MAP
+            success = mf->loadMap("OrthoMap", &OrthoImaptable[thisInstance.getPO()]);
+        #else
+            success = mf->loadMap("OrthoMap", &Orthomaptable);
+        #endif
+        delete mf;
+    }
+    PeList *avail= new PeList();
+    if(success == 0)
+    {
+        #ifdef USE_INT_MAP
+            OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable[thisInstance.getPO()], avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        #else
+            OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        #endif
+    }
 
-  UorthoProxy.push_back( CProxy_Ortho::ckNew(orthoOpts));
+    double newtime=CmiWallTimer();
+    CkPrintf("OrthoMap created in %g\n\n", newtime-Timer);
 
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
-  orthoInstance=ComlibRegister(multistrat);
-#else
-  Strategy *multistrat = new DirectMulticastStrategy();
-  orthoInstance=ComlibRegister(multistrat);
-//  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
-#endif
-#endif
-
-
-  CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), UorthoProxy[thisInstance.proxyOffset](0, 0));
-  UorthoProxy[thisInstance.proxyOffset].ckSetReductionClient(&ocb);
+    // If map files need to be dumped
+    if(config.dumpMapFiles)
+    {
+        int size[2];
+        size[0] = size[1] = nstates/config.orthoGrainSize;
+        MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        #ifdef USE_INT_MAP
+            mf->dumpMap(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMap(&Orthomaptable);
+        #endif
+        delete mf;
+    }
     
-  if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMap(&Orthomaptable);
-#endif
-    delete mf;
-  }
-  if(config.dumpMapCoordFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMapCoords(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMapCoords(&Orthomaptable);
-#endif
-    delete mf;
-  }
+    // If the map coordinates need to be dumped
+    if(config.dumpMapCoordFiles)
+    {
+        int size[2];
+        size[0] = size[1] = nstates/config.orthoGrainSize;
+        MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+        #ifdef USE_INT_MAP
+            mf->dumpMapCoords(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
+        #else
+            mf->dumpMapCoords(&Orthomaptable);
+        #endif
+        delete mf;
+    }
 
-  // extra triangle ortho elements are really a waste of our time
-  // and resources, but we don't have a triangular solver for
-  // inv_square, so we'll just make do.
+    // Create the ortho map group
+    orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
+    CkArrayOptions orthoOpts;
+    orthoOpts.setMap(orthoMap);
+    UorthoProxy.push_back( CProxy_Ortho::ckNew(orthoOpts));
 
-  // They need to exist solely so that the inv_sq method can work.
-  // So we need to copy their mirror elements data into them.
-  // then when complete they need to know not to call finishpaircalc.
-  // Because their redundant data has nowhere to go.
+    // Create maps for the Ortho helper chares
+    if(config.useOrthoHelpers)
+    {
+        #ifdef USE_INT_MAP
+            OrthoHelperImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+        #endif
+        double Timer=CmiWallTimer();
+        success = 0;
+        if(config.loadMapFiles)
+        {
+            int size[2];
+            size[0] = size[1] = nstates/config.orthoGrainSize;
+            MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+            #ifdef USE_INT_MAP
+                success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable[thisInstance.getPO()]);
+            #else
+                success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
+            #endif
+            delete mf;
+        }
 
-  // We've made use of them anyway to handle: lambda reduction, the
-  // gamma multiply, and communication balancing for phantoms, so they
-  // aren't completely horrible.
+        if(success == 0)
+        {
+            #ifdef USE_INT_MAP
+                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &OrthoImaptable[thisInstance.getPO()], avail, excludePes);
+            #else
+                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
+            #endif
+        }
+        double newtime=CmiWallTimer();
+        CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
+        CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(thisInstance);
+        CkArrayOptions orthoHOpts;
+        orthoHOpts.setMap(orthoHMap);
+        UorthoHelperProxy.push_back( CProxy_OrthoHelper::ckNew(orthoHOpts));
 
-  /* create matrix multiplication objects */
-  CLA_Matrix_interface matA1, matB1, matC1;
-  CLA_Matrix_interface matA2, matB2, matC2;
-  CLA_Matrix_interface matA3, matB3, matC3;
+        if(config.dumpMapFiles)
+        {
+            int size[2];
+            size[0] = size[1] = nstates/config.orthoGrainSize;
+            MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+            #ifdef USE_INT_MAP
+                mf->dumpMap(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
+            #else
+                mf->dumpMap(&OrthoHelpermaptable);
+            #endif
+            delete mf;
+        }
 
-  CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
-   UorthoProxy[thisInstance.proxyOffset](0, 0));
+        if(config.dumpMapCoordFiles)
+        {
+            int size[2];
+            size[0] = size[1] = nstates/config.orthoGrainSize;
+            MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+            #ifdef USE_INT_MAP
+                mf->dumpMapCoords(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
+            #else
+                mf->dumpMapCoords(&OrthoHelpermaptable);
+            #endif
+            delete mf;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    // Delegate collectives within the ortho array
+    #ifdef USE_COMLIB
+        #ifdef OLD_COMMLIB
+            CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
+            orthoInstance=ComlibRegister(multistrat);
+        #else
+            Strategy *multistrat = new DirectMulticastStrategy();
+            orthoInstance=ComlibRegister(multistrat);
+            //  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
+        #endif
+    #endif
+
+    // Set the root of array reductions within Ortho
+    CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), UorthoProxy[thisInstance.proxyOffset](0, 0));
+    UorthoProxy[thisInstance.proxyOffset].ckSetReductionClient(&ocb);
+
+    // Each multiplier calls ortho back to notify that its ready
+    CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(), UorthoProxy[thisInstance.proxyOffset](0, 0));
+    // The multicast group that will handle CLA_Matrix collectives 
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
 
-  make_multiplier(&matA1, &matB1, &matC1, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-  if(config.useOrthoHelpers)
+    /// Create multicast manager groups for Ortho to use
+    orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
+    orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
+
+    //-------------------------------------------------------------------------
+    // Create matrix multiplication objects
+
+    // extra triangle ortho elements are really a waste of our time
+    // and resources, but we don't have a triangular solver for
+    // inv_square, so we'll just make do.
+    // They need to exist solely so that the inv_sq method can work.
+    // So we need to copy their mirror elements data into them.
+    // then when complete they need to know not to call finishpaircalc.
+    // Because their redundant data has nowhere to go.
+    // We've made use of them anyway to handle: lambda reduction, the
+    // gamma multiply, and communication balancing for phantoms, so they
+    // aren't completely horrible.
+
+    CLA_Matrix_interface matA1, matB1, matC1;
+    CLA_Matrix_interface matA2, matB2, matC2;
+    CLA_Matrix_interface matA3, matB3, matC3;
+
+    make_multiplier(&matA1, &matB1, &matC1,
+                    UorthoProxy[thisInstance.proxyOffset],
+                    UorthoProxy[thisInstance.proxyOffset],
+                    UorthoProxy[thisInstance.proxyOffset],
+                    nstates, nstates, nstates,
+                    config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                    1, 1, 1,
+                    ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+                    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho
+                   );
+
+    if(config.useOrthoHelpers)
     {
-#ifdef USE_INT_MAP
-      OrthoHelperImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
-#endif
-      double Timer=CmiWallTimer();
-
-      success = 0;
-      if(config.loadMapFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable[thisInstance.getPO()]);
-#else
-	success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-
-      if(success == 0) {
-#ifdef USE_INT_MAP
-	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &OrthoImaptable[thisInstance.getPO()], avail, excludePes);
-#else
-	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
-#endif
-      }
-      double newtime=CmiWallTimer();
-      CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
-
-      CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(thisInstance);
-      CkArrayOptions orthoHOpts;
-      orthoHOpts.setMap(orthoHMap);
-
-      if(config.dumpMapFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	mf->dumpMap(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-	mf->dumpMap(&OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-      if(config.dumpMapCoordFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	mf->dumpMapCoords(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-	mf->dumpMapCoords(&OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-      UorthoHelperProxy.push_back( CProxy_OrthoHelper::ckNew(orthoHOpts));
-      make_multiplier(&matA2, &matB2, &matC2, UorthoHelperProxy[thisInstance.proxyOffset], UorthoHelperProxy[thisInstance.proxyOffset], UorthoHelperProxy[thisInstance.proxyOffset],
-		      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-		      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
-		      ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
+        make_multiplier(&matA2, &matB2, &matC2,
+                        UorthoHelperProxy[thisInstance.proxyOffset],
+                        UorthoHelperProxy[thisInstance.proxyOffset],
+                        UorthoHelperProxy[thisInstance.proxyOffset],
+                        nstates, nstates, nstates,
+                        config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                        1, 1, 1,
+                        ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+                        mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho
+                       );
     }
-  else  //no helpers
-  {
-    make_multiplier(&matA2, &matB2, &matC2, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-  }
-
-  make_multiplier(&matA3, &matB3, &matC3, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-
-  /// Create multicast manager groups for Ortho to use
-  orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
-  orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
-
-  int timekeep=keeperRegister("Ortho S to T");
-  int maxorthoindex=(nstates/config.orthoGrainSize-1);
-  int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
-  for (int s1 = 0; s1 <= maxorthostateindex; s1 += config.orthoGrainSize)
-    for (int s2 = 0; s2 <= maxorthostateindex; s2 += config.orthoGrainSize) {
-      int indX = s1 / config.orthoGrainSize;
-      int indY = s2 / config.orthoGrainSize;
-      indX = (indX>maxorthoindex) ? maxorthoindex : indX;
-      indY = (indY>maxorthoindex) ? maxorthoindex : indY;
-
-      UorthoProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep, thisInstance, orthomCastGrpId, orthoRedGrpId);
-      if(config.useOrthoHelpers)
-      {
-	UorthoHelperProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-		   matA2, matB2, matC2, thisInstance);
-      }
+    else
+    {
+        make_multiplier(&matA2, &matB2, &matC2,
+                        UorthoProxy[thisInstance.proxyOffset],
+                        UorthoProxy[thisInstance.proxyOffset],
+                        UorthoProxy[thisInstance.proxyOffset],
+                        nstates, nstates, nstates,
+                        config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                        1, 1, 1,
+                        ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+                        mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho
+                       );
     }
-  UorthoProxy[thisInstance.proxyOffset].doneInserting();
-  if(config.useOrthoHelpers)
-    UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
-  delete avail;
-  delete excludePes;
-//============================================================================
-  }//end routine 
-//============================================================================
+
+    make_multiplier(&matA3, &matB3, &matC3,
+                    UorthoProxy[thisInstance.proxyOffset],
+                    UorthoProxy[thisInstance.proxyOffset],
+                    UorthoProxy[thisInstance.proxyOffset],
+                    nstates, nstates, nstates,
+                    config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                    1, 1, 1,
+                    ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
+                    mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho
+                   );
+
+    // Register with the time keeper
+    int timekeep=keeperRegister("Ortho S to T");
+    int maxorthoindex=(nstates/config.orthoGrainSize-1);
+    int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
+    // Insert each element of the Ortho array
+    for (int s1 = 0; s1 <= maxorthostateindex; s1 += config.orthoGrainSize)
+        for (int s2 = 0; s2 <= maxorthostateindex; s2 += config.orthoGrainSize)
+        {
+            int indX = s1 / config.orthoGrainSize;
+            int indY = s2 / config.orthoGrainSize;
+            indX = (indX>maxorthoindex) ? maxorthoindex : indX;
+            indY = (indY>maxorthoindex) ? maxorthoindex : indY;
+            UorthoProxy[thisInstance.proxyOffset](indX, indY).insert(
+                                                          config.orthoGrainSize, config.orthoGrainSize,
+                                                          matA1, matB1, matC1,
+                                                          matA2, matB2, matC2,
+                                                          matA3, matB3, matC3,
+                                                          timekeep, thisInstance,
+                                                          orthomCastGrpId, orthoRedGrpId); 
+            if(config.useOrthoHelpers)
+            {
+                UorthoHelperProxy[thisInstance.proxyOffset](indX, indY).insert(
+                                                          config.orthoGrainSize, config.orthoGrainSize,
+                                                          matA2, matB2, matC2,
+                                                          thisInstance);
+            }
+        }
+    // Notify that you're done inserting the elements
+    UorthoProxy[thisInstance.proxyOffset].doneInserting();
+    if(config.useOrthoHelpers)
+        UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
+
+    delete avail;
+    delete excludePes;
+}
 
 
 
