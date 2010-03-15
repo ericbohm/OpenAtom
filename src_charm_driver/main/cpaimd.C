@@ -1354,8 +1354,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
             success = mf->loadMap("OrthoMap", &OrthoImaptable[thisInstance.getPO()]);
-        #else
-            success = mf->loadMap("OrthoMap", &Orthomaptable);
         #endif
         delete mf;
     }
@@ -1364,8 +1362,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
     {
         #ifdef USE_INT_MAP
             OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable[thisInstance.getPO()], avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
-        #else
-            OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
         #endif
     }
 
@@ -1380,8 +1376,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
             mf->dumpMap(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-        #else
-            mf->dumpMap(&Orthomaptable);
         #endif
         delete mf;
     }
@@ -1394,8 +1388,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
         MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
             mf->dumpMapCoords(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-        #else
-            mf->dumpMapCoords(&Orthomaptable);
         #endif
         delete mf;
     }
@@ -1421,8 +1413,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
                 success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable[thisInstance.getPO()]);
-            #else
-                success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
             #endif
             delete mf;
         }
@@ -1431,8 +1421,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
         {
             #ifdef USE_INT_MAP
                 OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &OrthoImaptable[thisInstance.getPO()], avail, excludePes);
-            #else
-                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
             #endif
         }
         double newtime=CmiWallTimer();
@@ -1449,8 +1437,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
                 mf->dumpMap(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-            #else
-                mf->dumpMap(&OrthoHelpermaptable);
             #endif
             delete mf;
         }
@@ -1462,8 +1448,6 @@ void init_ortho_chares(int nstates, const pc::pcConfig &cfgSymmPC, const pc::pcC
             MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
                 mf->dumpMapCoords(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-            #else
-                mf->dumpMapCoords(&OrthoHelpermaptable);
             #endif
             delete mf;
         }
