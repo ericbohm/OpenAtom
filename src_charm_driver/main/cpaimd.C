@@ -554,7 +554,7 @@ main::main(CkArgMsg *msg) {
 
     planes_per_pe=m;
     if(planes_per_pe <= 0) {
-      CkPrintf("Choose a Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 and config.nchareG [%d] / pm [%d] {where pm = config.numInstances [%d]/ pl [%d] }  > 0\n", 
+      CkPrintf("Choose a smaller Gstates_per_pe than %d such that { (no. of processors [%d] / no. of Instances [%d]) / (no. of states [%d] / Gstates_per_pe [%d]) } is > 0 and config.nchareG [%d] / pm [%d] {where pm = config.numPesPerInstance [%d]/ pl [%d] }  > 0\n", 
 	l, config.numPes, config.numInstances, nstates, l, config.nchareG, pm, config.numPesPerInstance, pl);
       CkAssert( m > 0);
     }
