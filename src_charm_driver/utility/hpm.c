@@ -20,9 +20,9 @@
 /*    HPM_Print();  print counter values and labels         */
 /*----------------------------------------------------------*/
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <spi/kernel_interface.h>
 #include <common/bgp_personality.h>
