@@ -26,6 +26,7 @@
 #define _UBER_H
 
 #include "configure.h"
+#include "pup.h"
 
 extern Config config;
 
