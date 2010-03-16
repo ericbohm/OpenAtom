@@ -41,8 +41,6 @@
 #include "InstanceController.h"
 #include "paircalc/ckPairCalculator.h"
 #include "groups.h"
-#include "orthog_ctrl/orthoHelper.h"
-#include "orthog_ctrl/ortho.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "eesCache.h"
 #include "structure_factor/StructFactorCache.h"
