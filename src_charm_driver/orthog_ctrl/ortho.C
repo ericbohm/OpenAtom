@@ -70,7 +70,6 @@ extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
 extern CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 extern ComlibInstanceHandle orthoInstance;
-extern CkVec <CProxy_Ortho> UorthoProxy;
 //============================================================================
 
 
@@ -949,14 +948,6 @@ void Ortho::pup(PUP::er &p){
     p(C, m * n);
     p(tmp_arr, m * n);
   }
-
-
-void OrthoHelper::sendMatrix()
-{
-  if(trigger!=NULL)
-    delete trigger;
-  UorthoProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).recvStep2(C, m*n);
-}
 
 #include "ortho.def.h"
 

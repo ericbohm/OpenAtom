@@ -119,7 +119,6 @@ mainmodule cpaimd {
 	readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 	readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
 	readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
-	readonly CkVec <CProxy_Ortho> UorthoProxy;
 	readonly CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 	readonly CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
 	readonly CkVec <CProxy_EnergyGroup> UegroupProxy;

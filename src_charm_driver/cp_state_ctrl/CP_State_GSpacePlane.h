@@ -23,7 +23,7 @@ template <class tokenType> class RDMASetupConfirmationMsg;
 class pcSetupMsg: public CMessage_pcSetupMsg
 {
     public:
-        CkArrayID gspAID, pcSymAID, pcAsymAID, handlerSymAID, handlerAsymAID;
+        CkArrayID gspAID, pcSymAID, pcAsymAID, handlerSymAID, handlerAsymAID, orthoAID;
         CkGroupID symMcastMgrGID, asymMcastMgrGID;
 };
 
@@ -95,6 +95,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
 		int cleanExitCalled;
 		///
 		bool doneDoingIFFT;
+        /// A proxy for the my ortho chare array so I can interact with it
+        CProxy_Ortho myOrtho;
 
         int halfStepEvolve;
         int redPlane;

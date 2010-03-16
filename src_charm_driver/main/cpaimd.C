@@ -179,7 +179,6 @@ CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-CkVec <CProxy_Ortho>                      UorthoProxy;
 CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
@@ -591,7 +590,6 @@ main::main(CkArgMsg *msg) {
     UVdWGProxy.reserve(config.numInstances);
     UrhoRHartExtProxy.reserve(config.numInstances);
     UrhoGHartExtProxy.reserve(config.numInstances);
-    UorthoProxy.reserve(config.numInstances);
     UatomsGrpProxy.reserve(config.numInstances);
     UegroupProxy.reserve(config.numInstances);
     UfftCacheProxy.reserve(config.numInstances);

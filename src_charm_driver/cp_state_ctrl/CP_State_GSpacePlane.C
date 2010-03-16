@@ -94,7 +94,6 @@ extern CProxy_CPcharmParaInfoGrp      scProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
-extern CkVec <CProxy_Ortho>                   UorthoProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
 extern CkVec <CProxy_StructureFactor>         UsfCompProxy;
@@ -514,8 +513,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       asymmPCmgr.createMap(boxSize, getPeList, thisInstance);
       symmPCmgr.createPCarray ();
       asymmPCmgr.createPCarray();
-      // initialize Ortho  now that we have the PC maps
-      cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
+      // Spawn the ortho array and store a handle to the array
+      CkArrayID orthoAID = cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
+      myOrtho = CProxy_Ortho(orthoAID);
+      CkAssert(myOrtho.ckGetArrayID() == orthoAID);
 
       // Instantiate the paircalc array
       setupPCs();
@@ -635,7 +636,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 
 void CP_State_GSpacePlane::setupPCs()
 {
-    UorthoProxy[thisInstance.proxyOffset].makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
+    myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
 
     pcSetupMsg *msg       = new pcSetupMsg();
     msg->gspAID           = thisProxy.ckGetArrayID();
@@ -645,6 +646,7 @@ void CP_State_GSpacePlane::setupPCs()
     msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
     msg->symMcastMgrGID   = symmPCmgr.mCastMgrGID;
     msg->asymMcastMgrGID  = asymmPCmgr.mCastMgrGID;
+    msg->orthoAID         = myOrtho.ckGetArrayID();
     thisProxy.acceptPairCalcAIDs(msg);
 }
 
@@ -660,6 +662,8 @@ void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
     asymmPCmgr.pcAID         = msg->pcAsymAID;
     asymmPCmgr.ipHandlerAID  = msg->handlerAsymAID;
     asymmPCmgr.mCastMgrGID   = msg->asymMcastMgrGID;
+
+    myOrtho                  = CProxy_Ortho(msg->orthoAID);
 
 //============================================================================
 // Contribute to the reduction telling main we are done
@@ -2992,7 +2996,7 @@ void CP_State_GSpacePlane::launchOrthoT(){
 //=============================================================================
   CkPrintf("[%d,%d] launchOrthoT \n",thisIndex.x, thisIndex.y);
   if(thisIndex.x==0 && thisIndex.y==0)
-    UorthoProxy[thisInstance.proxyOffset].sendOrthoTtoAsymm();
+    myOrtho.sendOrthoTtoAsymm();
 //----------------------------------------------------------------------------
   }//end routine
 //==============================================================================

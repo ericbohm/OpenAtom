@@ -93,8 +93,9 @@ class OrthoHelper : public CBase_OrthoHelper
   OrthoHelper(){}
   OrthoHelper(int _m, int _n, CLA_Matrix_interface matA2,
 	      CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
-	      UberCollection _instance):
-    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), thisInstance(_instance)    {
+	      CkCallback _orthoCB):
+    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), uponCompletion(_orthoCB)
+    {
       C= new double[m*n];
       A=NULL;
       B=NULL;
@@ -121,7 +122,13 @@ class OrthoHelper : public CBase_OrthoHelper
       // DO NOT DELETE MSG we're using that memory in A and B
     }
 
-  void sendMatrix();
+  void sendMatrix()
+    {
+        if(trigger!=NULL)
+            delete trigger;
+        uponCompletion.send(m*n, C);
+    }
+
 
   virtual void pup(PUP::er &p){
 //    CBase_Ortho::pup(p);
@@ -141,7 +148,8 @@ class OrthoHelper : public CBase_OrthoHelper
   double *A, *B, *C;
   OrthoHelperMsg *trigger;
   CLA_Matrix_interface matA, matB, matC;
-  const UberCollection thisInstance;
+  /// Callback to the owner ortho chare array to be used at the end of my work (step 2)
+  CkCallback uponCompletion;
 };
 
 class OrthoHelperMap : public CkArrayMapTable2 {

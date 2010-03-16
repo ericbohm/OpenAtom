@@ -10,7 +10,7 @@ namespace cp {
 class ArrayBuilder
 {
     public:
-        static void build(int nstates, PeListFactory getPeList, UberCollection thisInstance);
+        static CkArrayID build(int nstates, PeListFactory getPeList, UberCollection thisInstance);
 };
 
     } // end namespace ortho

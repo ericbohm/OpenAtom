@@ -138,7 +138,7 @@ class Ortho : public CBase_Ortho
         /// Triggers step 2, and optionally step 3 (if ortho helpers are being used)
         void step_2();
         /// Receives the results of the call to OrthoHelper from step_2 
-        void recvStep2(double *step2result, int size);
+        void recvStep2(CkDataMsg *msg); //double *step2result, int size);
         /// Triggers step 3 in the S->T process
         void step_3();
         /// Computes square of the residuals and contributes to a reduction rooted at Ortho(0,0)::collect_error()
@@ -248,15 +248,17 @@ class Ortho : public CBase_Ortho
 
 
 
+#include "ckcallback-ccs.h" ///< For definition of CkDataMsg
 
 /** 
  * Result of 0.5 * S3 * S2 arrives from helper
  */
-inline void Ortho::recvStep2(double *step2result, int size)
+inline void Ortho::recvStep2(CkDataMsg *msg)//double *step2result, int size)
 {
     // copy our data into the tmp_arr  
-    CmiMemcpy(tmp_arr, step2result, m * n * sizeof(double));
+    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(double));
     step2done=true;
+    delete msg;
     //End of iteration check
     if(step3done)
         tolerance_check();

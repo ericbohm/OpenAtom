@@ -11,6 +11,7 @@ module ortho
 
 	message orthoMtrigger;
 	message initCookieMsg;
+    class CkDataMsg; // Just a forward declaration
 
 	array [2D] Ortho{
 		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
@@ -32,7 +33,7 @@ module ortho
 		entry [nokeep] void do_iteration(orthoMtrigger *msg);
 		entry void step_2();
 		entry void step_3();	
-		entry void recvStep2(double result[size], int size);
+		entry void recvStep2(CkDataMsg *msg); //double result[size], int size);
 		entry void collect_results();
 		entry [nokeep] void collect_results(orthoMtrigger *msg);
 		entry void print_results();
@@ -52,7 +53,7 @@ module ortho
 
 
 	array [2D] OrthoHelper {
-		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, UberCollection);
+		entry void OrthoHelper(int m, int n, CLA_Matrix_interface matA2,CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, CkCallback);
 		entry OrthoHelper();
 		entry void recvAB(OrthoHelperMsg *msg);
 	};

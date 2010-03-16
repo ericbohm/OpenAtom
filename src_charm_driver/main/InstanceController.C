@@ -17,7 +17,6 @@ extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CkVec <CProxy_Ortho>                      UorthoProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
