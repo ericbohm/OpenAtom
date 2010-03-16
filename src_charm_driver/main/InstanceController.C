@@ -23,7 +23,6 @@ extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
-extern CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 extern CProxy_TimeKeeper                 TimeKeeperProxy;
 
 extern CkVec <UberCollection>         UberAlles;

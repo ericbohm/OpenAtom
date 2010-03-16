@@ -123,7 +123,8 @@ class Ortho : public CBase_Ortho
         Ortho(int m, int n, 
                 CLA_Matrix_interface matA1, CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
                 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
-                CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, 
+                CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+                CkArrayID step2Helper,
                 int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
         /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
@@ -224,6 +225,8 @@ class Ortho : public CBase_Ortho
         PCSectionManager asymmSectionMgr;
         /// Group IDs for the multicast manager groups
         CkGroupID oMCastGID, oRedGID;
+        /// The proxy of the step 2 helper chare array
+        CProxy_OrthoHelper step2Helper;
         bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
         double *A, *B, *C, *tmp_arr;
         int step;

@@ -68,7 +68,6 @@ extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
-extern CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 extern ComlibInstanceHandle orthoInstance;
 //============================================================================
 
@@ -709,9 +708,11 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
  CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
+ CkArrayID _step2Helper,
  int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
     thisInstance(_instance), 
-    oMCastGID(_oMCastGID), oRedGID(_oRedGID)
+    oMCastGID(_oMCastGID), oRedGID(_oRedGID),
+    step2Helper(_step2Helper)
 {
 
 /* do basic initialization */
@@ -826,7 +827,7 @@ void Ortho::step_2(void){
     // Send our data to the helper and await results which will arrive in recvStep2
     OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
     omsg->init(m*n, B,C,0.5, 0.5, 0.5);
-    UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
+    step2Helper(thisIndex.x,thisIndex.y).recvAB(omsg);
       step_3();
     }
   else

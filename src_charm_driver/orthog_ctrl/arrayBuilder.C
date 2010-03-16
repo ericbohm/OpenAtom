@@ -7,7 +7,6 @@
 #include "ckmulticast.h"
 
 CProxy_OrthoMap                   orthoMap;
-extern CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 
 namespace cp {
     namespace ortho {
@@ -26,6 +25,10 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     CkGroupID orthoMcastGID;
     /// MulticastMgr that handles PC --> Ortho redns
     CkGroupID orthoRedGID;
+    /// The step 2 helper chare array proxy
+    CProxy_OrthoHelper orthoHelperProxy;
+    /// The step 2 helper chare AID to pass to ortho
+    CkArrayID helperAID;
 
     PeList *availGlobR = getPeList();
 
@@ -125,7 +128,8 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(thisInstance);
         CkArrayOptions orthoHOpts;
         orthoHOpts.setMap(orthoHMap);
-        UorthoHelperProxy.push_back( CProxy_OrthoHelper::ckNew(orthoHOpts));
+        orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
+        helperAID = orthoHelperProxy.ckGetArrayID();
 
         if(config.dumpMapFiles)
         {
@@ -201,9 +205,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     if(config.useOrthoHelpers)
     {
         make_multiplier(&matA2, &matB2, &matC2,
-                        UorthoHelperProxy[thisInstance.proxyOffset],
-                        UorthoHelperProxy[thisInstance.proxyOffset],
-                        UorthoHelperProxy[thisInstance.proxyOffset],
+                        orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
                         nstates, nstates, nstates,
                         config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
                         1, 1, 1,
@@ -244,17 +246,20 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
             int indY = s2 / config.orthoGrainSize;
             indX = (indX>maxorthoindex) ? maxorthoindex : indX;
             indY = (indY>maxorthoindex) ? maxorthoindex : indY;
+
             orthoProxy(indX, indY).insert(
                                                           config.orthoGrainSize, config.orthoGrainSize,
                                                           matA1, matB1, matC1,
                                                           matA2, matB2, matC2,
                                                           matA3, matB3, matC3,
+                                                          helperAID,
                                                           timekeep, thisInstance,
                                                           orthoMcastGID, orthoRedGID);
+
             if(config.useOrthoHelpers)
             {
                 CkCallback endOfStep2CB(CkIndex_Ortho::recvStep2(NULL), CkArrayIndex2D(indX,indY), orthoProxy);
-                UorthoHelperProxy[thisInstance.proxyOffset](indX, indY).insert(
+                orthoHelperProxy(indX, indY).insert(
                                                           config.orthoGrainSize, config.orthoGrainSize,
                                                           matA2, matB2, matC2,
                                                           endOfStep2CB);
@@ -263,7 +268,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     // Notify that you're done inserting the elements
     orthoProxy.doneInserting();
     if(config.useOrthoHelpers)
-        UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
+        orthoHelperProxy.doneInserting();
 
     delete avail;
     delete excludePes;

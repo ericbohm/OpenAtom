@@ -185,7 +185,6 @@ CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 CkVec <CProxy_StructureFactor>            UsfCompProxy;
 CkVec <CProxy_eesCache>                   UeesCacheProxy;
-CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
 CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
@@ -596,7 +595,6 @@ main::main(CkArgMsg *msg) {
     UsfCacheProxy.reserve(config.numInstances);
     UsfCompProxy.reserve(config.numInstances);
     UeesCacheProxy.reserve(config.numInstances);
-    UorthoHelperProxy.reserve(config.numInstances);
     UplaneUsedByNLZ.reserve(config.numInstances);
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);

@@ -19,6 +19,7 @@ module ortho
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
 		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+         CkArrayID step2Helper,
          int timekeep, UberCollection, CkGroupID oMCastGID, CkGroupID oRedGID
          	);
 		entry Ortho();
