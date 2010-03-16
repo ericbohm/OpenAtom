@@ -101,7 +101,6 @@ using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
-extern CkVec <MapType2> OrthoImaptable;
 extern CkHashtableT <intdual, int> Orthomaptable;
 extern bool fakeTorus;
 extern int numPes;
@@ -324,88 +323,5 @@ inline double Ortho::array_diag_max(int sizem, int sizen, double *array)
     return max_ret;
 }//end routine
 
-
-
-
-
-/**
- * provide procnum mapping for Ortho
- * this old class is now defunct: Abhinav
- *
- * class OrthoMap : public CkArrayMap {
- *  public:
- *   OrthoMap(int NN,int _nOrtho, int _stride):N(NN), nOrtho(_nOrtho), stride(_stride)
-    {
-      offset=0;
-      if(nOrtho<CkNumPes())
-        offset=1;  //skip proc 0
-    }
-#ifndef TOPO_ORTHO
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
-    }
-#else
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
-    }
-#endif
-  private:
- *   int N;
- *   int nOrtho;
- *   int offset;
- *   int stride;
- * };
- **/
-
-/*
- * new centroid based ortho map
- * actual map creation in MapTable.C
- */
-class OrthoMap : public CkArrayMapTable2 {
-  public:
-    OrthoMap(UberCollection _instance)
-    {
-      thisInstance=_instance;
-#ifdef USE_INT_MAP
-      maptable= &OrthoImaptable[thisInstance.getPO()];
-#else
-      maptable= &Orthomaptable;
-#endif
-    }
-
-    ~OrthoMap() { }
-    
-    void pup(PUP::er &p)
-    {
-      CkArrayMapTable2::pup(p);
-#ifdef USE_INT_MAP
-      maptable= &OrthoImaptable[thisInstance.getPO()];
-#else
-      maptable= &Orthomaptable;
-#endif
-    }
-    
-    inline int procNum(int, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      int proc;
-#ifdef USE_INT_MAP
-      proc=maptable->get(index[0],index[1]);
-#else
-      proc=maptable->get(intdual(index[0],index[1]));
-#endif
-      CkAssert(proc>=0);
-      if(numPes != CkNumPes())
-	return(proc%CkNumPes());
-      else
-	return(proc);
-	
-
-    }
-};
-
 #endif // #ifndef _ortho_h_
+

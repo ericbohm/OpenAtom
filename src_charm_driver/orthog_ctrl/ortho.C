@@ -950,5 +950,6 @@ void Ortho::pup(PUP::er &p){
     p(tmp_arr, m * n);
   }
 
+#include "orthoMap.h"
 #include "ortho.def.h"
 
