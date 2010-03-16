@@ -6,8 +6,6 @@
 
 #include "ckmulticast.h"
 
-CProxy_OrthoMap                   orthoMap;
-
 namespace cp {
     namespace ortho {
 
@@ -93,7 +91,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     }
 
     // Create the ortho map group
-    orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);

@@ -63,7 +63,6 @@ mainmodule cpaimd {
 	readonly bool fakeTorus;
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
 	initproc registersumFastDouble(void);	
-	readonly  CProxy_OrthoMap orthoMap;
 	
 	extern module CPcharmParaInfo;
 	extern module gSpaceDriver;

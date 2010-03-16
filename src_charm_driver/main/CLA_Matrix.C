@@ -35,7 +35,6 @@ extern CkReduction::reducerType sumFastDoubleType;
 #include "main/cpaimd.h"
 #include "load_balance/MapTable.h"
 #include "orthog_ctrl/ortho.h"
-extern CProxy_OrthoMap orthoMap;
 
 /******************************************************************************/
 /* helper functions */
