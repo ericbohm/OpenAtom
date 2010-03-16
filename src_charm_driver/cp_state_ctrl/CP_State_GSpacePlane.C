@@ -511,15 +511,27 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       // Create maps for the symmetric (psi) and asymmetric (lambda) paircalc instances
       symmPCmgr.createMap(boxSize, getPeList, thisInstance);
       asymmPCmgr.createMap(boxSize, getPeList, thisInstance);
+      // Instantiate the paircalc array
       symmPCmgr.createPCarray ();
       asymmPCmgr.createPCarray();
       // Spawn the ortho array and store a handle to the array
       CkArrayID orthoAID = cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
       myOrtho = CProxy_Ortho(orthoAID);
       CkAssert(myOrtho.ckGetArrayID() == orthoAID);
+      // Ask ortho to setup its communication sections of paircalcs
+      myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
 
-      // Instantiate the paircalc array
-      setupPCs();
+      /// Share the required array IDs with other chares in this GSpace array
+      pcSetupMsg *msg       = new pcSetupMsg();
+      msg->gspAID           = thisProxy.ckGetArrayID();
+      msg->pcSymAID         = symmPCmgr.pcAID;
+      msg->pcAsymAID        = asymmPCmgr.pcAID;
+      msg->handlerSymAID    = symmPCmgr.ipHandlerAID;
+      msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
+      msg->symMcastMgrGID   = symmPCmgr.mCastMgrGID;
+      msg->asymMcastMgrGID  = asymmPCmgr.mCastMgrGID;
+      msg->orthoAID         = myOrtho.ckGetArrayID();
+      thisProxy.acceptPairCalcAIDs(msg);
   }
 //---------------------------------------------------------------------------
    }//end routine
@@ -629,26 +641,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 //-------------------------------------------------------
    }// end routine : pup
 //============================================================================
-
-
-
-
-
-void CP_State_GSpacePlane::setupPCs()
-{
-    myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
-
-    pcSetupMsg *msg       = new pcSetupMsg();
-    msg->gspAID           = thisProxy.ckGetArrayID();
-    msg->pcSymAID         = symmPCmgr.pcAID;
-    msg->pcAsymAID        = asymmPCmgr.pcAID;
-    msg->handlerSymAID    = symmPCmgr.ipHandlerAID;
-    msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
-    msg->symMcastMgrGID   = symmPCmgr.mCastMgrGID;
-    msg->asymMcastMgrGID  = asymmPCmgr.mCastMgrGID;
-    msg->orthoAID         = myOrtho.ckGetArrayID();
-    thisProxy.acceptPairCalcAIDs(msg);
-}
 
 
 

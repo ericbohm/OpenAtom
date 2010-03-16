@@ -120,7 +120,6 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void pup(PUP::er &);
         void createSymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
         void createAsymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
-        void setupPCs();
         void acceptPairCalcAIDs(pcSetupMsg *msg);
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();
