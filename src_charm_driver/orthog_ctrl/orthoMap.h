@@ -3,17 +3,17 @@
 #ifndef ORTHO_MAP_H
 #define ORTHO_MAP_H
 
-extern CkVec <MapType2> OrthoImaptable;
+#define USE_INT_MAP
 
 /// Centroid based ortho map (actual map creation in MapTable.C)
 class OrthoMap : public CkArrayMapTable2
 {
     public:
-        OrthoMap(UberCollection _instance)
+        OrthoMap(MapType2 map, UberCollection _instance)
         {
             thisInstance=_instance;
             #ifdef USE_INT_MAP
-                maptable= &OrthoImaptable[thisInstance.getPO()];
+                maptable = new MapType2(map);
             #else
                 maptable= &Orthomaptable;
             #endif
@@ -25,7 +25,7 @@ class OrthoMap : public CkArrayMapTable2
         {
             CkArrayMapTable2::pup(p);
             #ifdef USE_INT_MAP
-                maptable= &OrthoImaptable[thisInstance.getPO()];
+                p|*maptable;
             #else
                 maptable= &Orthomaptable;
             #endif

@@ -43,7 +43,8 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
 
     availGlobR->reset();
     #ifdef USE_INT_MAP
-        OrthoImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+        MapType2 orthoMapTable;
+        orthoMapTable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
     #endif
 
     int success = 0;
@@ -53,7 +54,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         size[0] = size[1] = nstates/config.orthoGrainSize;
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
-            success = mf->loadMap("OrthoMap", &OrthoImaptable[thisInstance.getPO()]);
+            success = mf->loadMap("OrthoMap", &orthoMapTable);
         #endif
         delete mf;
     }
@@ -61,7 +62,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     if(success == 0)
     {
         #ifdef USE_INT_MAP
-            OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable[thisInstance.getPO()], avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+            OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
         #endif
     }
 
@@ -75,7 +76,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         size[0] = size[1] = nstates/config.orthoGrainSize;
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
-            mf->dumpMap(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
+            mf->dumpMap(&orthoMapTable, thisInstance.getPO());
         #endif
         delete mf;
     }
@@ -87,13 +88,13 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         size[0] = size[1] = nstates/config.orthoGrainSize;
         MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         #ifdef USE_INT_MAP
-            mf->dumpMapCoords(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
+            mf->dumpMapCoords(&orthoMapTable, thisInstance.getPO());
         #endif
         delete mf;
     }
 
     // Create the ortho map group
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable, thisInstance);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
@@ -120,7 +121,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         if(success == 0)
         {
             #ifdef USE_INT_MAP
-                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &OrthoImaptable[thisInstance.getPO()], avail, excludePes);
+                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &orthoMapTable, avail, excludePes);
             #endif
         }
         double newtime=CmiWallTimer();
