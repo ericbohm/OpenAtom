@@ -62,12 +62,7 @@ extern int nstates;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
-extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
-extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
-extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
-extern CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
 extern ComlibInstanceHandle orthoInstance;
 //============================================================================
 
@@ -322,24 +317,8 @@ void Ortho::collect_results(void){
 // Load balance controller
 
 
-    if (numGlobalIter <= config.maxIter+1){
-
-      if ((config.lbgspace || config.lbpaircalc ||config.lbdensity) &&
-          (numGlobalIter== FIRST_BALANCE_STEP||(numGlobalIter % LOAD_BALANCE_STEP) == 0)){
-           CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",
-               thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
-	   AtSync();
-   	   if(thisIndex.x==0 && thisIndex.y==0){
-	     UrhoRealProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	     UrhoGProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	     UrhoGHartExtProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	   }//endif
-       }else{
+    if (numGlobalIter <= config.maxIter+1)
  	  resume();
-       }//endif
-
-    }//endif : we are still going
-
 //----------------------------------------------------------------------
   }//end routine
 //=======================================================================
