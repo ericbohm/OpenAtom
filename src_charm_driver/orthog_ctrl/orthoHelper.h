@@ -33,7 +33,7 @@
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
 
-#include "main/CLA_Matrix.h"
+#include "CLA_Matrix.h"
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -2,7 +2,7 @@
 #include "orthoMap.h"
 
 #include "main/TimeKeeper.h"
-#include "main/CLA_Matrix.h"
+#include "CLA_Matrix.h"
 #include "utility/MapFile.h"
 #include "ortho.decl.h"
 

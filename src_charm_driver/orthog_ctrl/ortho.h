@@ -89,8 +89,8 @@
 #include "debug_flags.h"
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
+#include "CLA_Matrix.h"
 #include "uber/Uber.h"
-#include "main/CLA_Matrix.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
