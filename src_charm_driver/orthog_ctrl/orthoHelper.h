@@ -35,8 +35,6 @@
 
 #include "main/CLA_Matrix.h"
 
-extern CkHashtableT <intdual, int> OrthoHelpermaptable;
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

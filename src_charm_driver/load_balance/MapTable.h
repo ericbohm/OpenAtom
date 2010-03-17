@@ -25,6 +25,8 @@
 #define _MAPTABLE_H_
 #include "debug_flags.h"
 
+class PeList;
+
 class inttriple {
  private:
     int x, y, z;

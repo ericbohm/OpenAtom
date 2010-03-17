@@ -44,9 +44,14 @@
 #include "ortho.h"
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
+#include "timeKeeper.decl.h"
+#include "instanceController.decl.h"
+
 #include "charm++.h"
 #include "utility/util.h"
 #include "main/groups.h"
+#include "main/CPcharmParaInfoGrp.h"
+
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
 

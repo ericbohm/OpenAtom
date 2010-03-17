@@ -17,6 +17,10 @@
 // Do not use comlib for multicasts within paircalc
 #define _PC_COMMLIB_MULTI_ 0
 
+extern CkVec <MapType4> AsymScalcImaptable;
+extern CkVec <MapType4> SymScalcImaptable;
+extern CkVec <MapType2> GSImaptable;
+
 namespace cp {
     namespace gspace {
 
@@ -731,9 +735,6 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
  */
 void PCCommManager::createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
 {
-    #ifndef USE_INT_MAP
-        CkAbort("USE_INT_MAP needs to be defined for correct mapping of paircalcs");
-    #endif
     int instanceNum = thisInstance.getPO();
     bool maptype = pcCfg.isSymmetric;
     int achunks = config.numChunksAsym;

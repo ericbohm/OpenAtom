@@ -8,6 +8,8 @@
 
 #include "ckmulticast.h"
 
+extern CkVec <MapType4> AsymScalcImaptable;
+
 namespace cp {
     namespace ortho {
 

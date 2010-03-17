@@ -2,10 +2,13 @@
  *
  */
 
+#include "TopoManager.h"
+#include "MapFile.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "MapFile.h"
+
 extern TopoManager *topoMgr;
 
 MapFile::~MapFile()

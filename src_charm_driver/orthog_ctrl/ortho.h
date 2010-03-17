@@ -91,7 +91,6 @@
 #include "pcSectionManager.h"
 #include "uber/Uber.h"
 #include "main/CLA_Matrix.h"
-#include "main/cpaimd.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -101,7 +100,6 @@ using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
-extern CkHashtableT <intdual, int> Orthomaptable;
 extern bool fakeTorus;
 extern int numPes;
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
