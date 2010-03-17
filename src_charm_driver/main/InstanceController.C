@@ -212,3 +212,5 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
 }
 //============================================================================
 
+#include "instanceController.def.h"
+

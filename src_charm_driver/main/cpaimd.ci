@@ -17,10 +17,10 @@ module CPcharmParaInfo
 module groups
 {
 	// Forward declarations
-	class UberCollection; 
 	class Atom;
 	class AtomNHC;
-	
+    include "uber/Uber.h";
+
 	message AtomMsg 
 	{
 		double data[];
@@ -38,6 +38,7 @@ module groups
                 entry void acceptAtoms(AtomMsg *);
 	};
 
+    include "main/energy.h";
 	// The global energies are stored here.
 	group EnergyGroup {
 		entry EnergyGroup(UberCollection);
@@ -45,6 +46,37 @@ module groups
 		entry void energyDone(CkReductionMsg *);
 	};
 };
+
+
+
+
+module timeKeeper
+{
+	group TimeKeeper {
+		entry TimeKeeper();
+		entry void init();
+	        entry void collectStart(CkReductionMsg *m);
+	        entry void collectEnd(CkReductionMsg *m);
+	};
+};
+
+
+
+
+module instanceController
+{
+	array [1D] InstanceController {
+        entry InstanceController();
+        entry void printEnergyEexc(CkReductionMsg *msg);
+        entry void printEnergyHart(CkReductionMsg *msg);
+        entry void printFictEke(CkReductionMsg *msg);
+        entry void allDoneCPForces(CkReductionMsg *m);
+        entry void printEnergyEke(CkReductionMsg *m);
+        entry void doneInit(CkReductionMsg *msg);
+    }
+};
+
+
 
 
 mainmodule cpaimd {	
@@ -74,6 +106,8 @@ mainmodule cpaimd {
 	extern module structureFactor;
 	extern module structureFactorCache;
 	extern module groups;
+    extern module timeKeeper;
+    extern module instanceController;
 	
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
@@ -210,16 +244,6 @@ mainmodule cpaimd {
 	mainchare main {
 		entry main();
 	};
-	array [1D] InstanceController {
-		entry InstanceController();
-		entry void printEnergyEexc(CkReductionMsg *msg);
-		entry void printEnergyHart(CkReductionMsg *msg);
-	  	entry void printFictEke(CkReductionMsg *msg);
-  		entry void allDoneCPForces(CkReductionMsg *m);
-  		entry void printEnergyEke(CkReductionMsg *m);
-		entry void doneInit(CkReductionMsg *msg);
-	}	
-
 
 	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
@@ -406,11 +430,5 @@ mainmodule cpaimd {
 	group eesCache {
 		entry eesCache(int,int,int,int,int,int, UberCollection);
 	};
-	
-	group TimeKeeper {
-		entry TimeKeeper();
-		entry void init();
-	        entry void collectStart(CkReductionMsg *m);	  
-	        entry void collectEnd(CkReductionMsg *m);	  
-	};
 };
+
