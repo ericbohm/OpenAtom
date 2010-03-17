@@ -60,6 +60,15 @@ module RDMAMessages
 
 
 
+module pcMaps
+{
+	group SCalcMap: CkArrayMap {
+		entry SCalcMap(bool, UberCollection);
+	};
+};
+
+
+
 module inputDataHandler 
 {
 	extern module RDMAMessages;

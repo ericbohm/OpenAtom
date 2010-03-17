@@ -4,6 +4,7 @@
 #include "ckPairCalculator.decl.h"
 #include "paircalc/InputDataHandler.h"
 #include "paircalc/pairCalculator.h" //< Just for the reorder_elem declarations
+#include "paircalc/pcMaps.h"
 #include "utility/MapFile.h"
 
 #include "ckmulticast.h"
@@ -816,4 +817,5 @@ void PCCommManager::createMap(const int boxSize, PeListFactory getPeList, UberCo
 } // end namespace cp
 
 #include "RDMAMessages.def.h"
+#include "pcMaps.def.h"
 

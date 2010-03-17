@@ -390,11 +390,9 @@ mainmodule cpaimd {
 	group RSMap : CkArrayMap {
 		entry RSMap(UberCollection);
 	};
-	
-	group SCalcMap: CkArrayMap {
-		entry SCalcMap(bool, UberCollection);
-	};
 
+    extern module pcMaps; // Just so that this module gets registered
+	
 	/** 
 	  * A place to hold the fftw plans or sizes for essl.
 	  * Preallocated space for ffts some of which retain their data  

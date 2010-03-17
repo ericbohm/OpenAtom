@@ -386,69 +386,6 @@ class RPPMap: public CkArrayMapTable2 {
 
 
 //============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-//============================================================================
-/** \brief Class used for instantiation of pair-calculator group objects.
- *
- *
- */
-//============================================================================
-
-class SCalcMap : public CkArrayMapTable4 {
-  bool symmetric;
- public:
-    SCalcMap(bool _symmetric, UberCollection _instance): symmetric(_symmetric)
-      {
-	thisInstance=_instance;
-#ifdef USE_INT_MAP
-	if(symmetric)
-	  maptable= &SymScalcImaptable[thisInstance.getPO()];
-	else
-	  maptable= &AsymScalcImaptable[thisInstance.getPO()];
-#else
-	if(symmetric)
-	  maptable= &SymScalcmaptable;
-	else
-	  maptable= &AsymScalcmaptable;
-#endif
-    }
-    void pup(PUP::er &p)
-	{
-	    CkArrayMapTable4::pup(p);
-	    p|symmetric;
-#ifdef USE_INT_MAP
-	    if(symmetric)
-	      maptable= &SymScalcImaptable[thisInstance.getPO()];
-	    else
-	      maptable= &AsymScalcImaptable[thisInstance.getPO()];
-#else
-	    if(symmetric)
-	      maptable= &SymScalcmaptable;
-	    else
-	      maptable= &AsymScalcmaptable;
-#endif
-	}
-    //  int procNum(int, const CkArrayIndex &);
-  inline int procNum(int, const CkArrayIndex &iIndex){
-    int proc;
-    
-#ifdef USE_INT_MAP
-    short *sindex=(short *) iIndex.data();
-    proc=maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]);
-#else
-    int *index=(int *) iIndex.data();
-    proc=maptable->get(intdual(index[0], index[1]));
-#endif
-    CkAssert(proc>=0);
-    if(numPes!=CkNumPes())
-      return(proc%CkNumPes());
-    else
-      return(proc);
-  }
-
-};
-//============================================================================
 /**
  * provide procnum mapping for RhoR
  */
