@@ -6,12 +6,14 @@
 #define USE_INT_MAP
 
 /// Centroid based ortho map (actual map creation in MapTable.C)
-class OrthoMap : public CkArrayMapTable2
+class OrthoMap : public CkArrayMap
 {
+    private:
+        MapType2 *maptable;
+
     public:
-        OrthoMap(MapType2 map, UberCollection _instance)
+        OrthoMap(MapType2 map)
         {
-            thisInstance=_instance;
             #ifdef USE_INT_MAP
                 maptable = new MapType2(map);
             #else
@@ -23,7 +25,7 @@ class OrthoMap : public CkArrayMapTable2
 
         void pup(PUP::er &p)
         {
-            CkArrayMapTable2::pup(p);
+            CkArrayMap::pup(p);
             #ifdef USE_INT_MAP
                 p|*maptable;
             #else
@@ -52,11 +54,14 @@ class OrthoMap : public CkArrayMapTable2
 
 
 /// Map group for placing OrthoHelper chares
-class OrthoHelperMap : public CkArrayMapTable2 {
+class OrthoHelperMap : public CkArrayMap
+{
+    private:
+        MapType2 *maptable;
+
     public:
-        OrthoHelperMap(MapType2 map, UberCollection _instance)
+        OrthoHelperMap(MapType2 map)
         {
-            thisInstance=_instance;
             #ifdef USE_INT_MAP
                 maptable = new MapType2(map);
             #else
@@ -68,7 +73,7 @@ class OrthoHelperMap : public CkArrayMapTable2 {
 
         void pup(PUP::er &p)
         {
-            CkArrayMapTable2::pup(p);
+            CkArrayMap::pup(p);
             #ifdef USE_INT_MAP
                 p|*maptable;
             #else

@@ -63,12 +63,12 @@ module ortho
 
     include "main/cpaimd.h"; // Just for the definition of MapType2. Yuck...
 	group OrthoMap : CkArrayMap {
-		entry OrthoMap(MapType2, UberCollection);
+		entry OrthoMap(MapType2);
 	};
 
 
 
 	group OrthoHelperMap : CkArrayMap {
-		entry OrthoHelperMap(MapType2, UberCollection);
+		entry OrthoHelperMap(MapType2);
 	};
 };

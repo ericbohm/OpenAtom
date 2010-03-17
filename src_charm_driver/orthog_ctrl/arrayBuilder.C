@@ -96,7 +96,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     }
 
     // Create the ortho map group
-    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable, thisInstance);
+    CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
     CkArrayOptions orthoOpts;
     orthoOpts.setMap(orthoMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
@@ -128,7 +128,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         }
         double newtime=CmiWallTimer();
         CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
-        CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(helperMapTable, thisInstance);
+        CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(helperMapTable);
         CkArrayOptions orthoHOpts;
         orthoHOpts.setMap(orthoHMap);
         orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
