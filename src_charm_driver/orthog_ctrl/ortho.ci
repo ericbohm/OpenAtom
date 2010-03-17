@@ -69,6 +69,6 @@ module ortho
 
 
 	group OrthoHelperMap : CkArrayMap {
-		entry OrthoHelperMap(UberCollection);
+		entry OrthoHelperMap(MapType2, UberCollection);
 	};
 };

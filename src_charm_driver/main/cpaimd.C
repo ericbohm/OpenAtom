@@ -117,7 +117,6 @@ CkVec <MapType2> RhoGHartImaptable;
 CkVec <MapType3> RhoRHartImaptable;
 //CkVec <MapType1> LSPRhoGSImaptable;
 CkVec <MapType2> LSPRhoRSImaptable;
-CkVec <MapType2> OrthoHelperImaptable;
 CkVec <MapType4> AsymScalcImaptable;
 CkVec <MapType4> SymScalcImaptable;
 
@@ -569,7 +568,6 @@ main::main(CkArgMsg *msg) {
 
     RhoGHartImaptable.resize(config.numInstances);
     RhoRHartImaptable.resize(config.numInstances);
-    OrthoHelperImaptable.resize(config.numInstances);
     AsymScalcImaptable.resize(config.numInstances);
     SymScalcImaptable.resize(config.numInstances);
 

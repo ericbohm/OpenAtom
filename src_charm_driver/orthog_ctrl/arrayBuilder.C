@@ -29,6 +29,8 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     CProxy_OrthoHelper orthoHelperProxy;
     /// The step 2 helper chare AID to pass to ortho
     CkArrayID helperAID;
+    /// The step 2 helper map logic object
+    MapType2 helperMapTable;
 
     PeList *availGlobR = getPeList();
 
@@ -103,7 +105,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
     if(config.useOrthoHelpers)
     {
         #ifdef USE_INT_MAP
-            OrthoHelperImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+            helperMapTable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
         #endif
         double Timer=CmiWallTimer();
         success = 0;
@@ -113,7 +115,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
             size[0] = size[1] = nstates/config.orthoGrainSize;
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
-                success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable[thisInstance.getPO()]);
+                success = mf->loadMap("OrthoHelperMap", &helperMapTable);
             #endif
             delete mf;
         }
@@ -121,12 +123,12 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         if(success == 0)
         {
             #ifdef USE_INT_MAP
-                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &orthoMapTable, avail, excludePes);
+                OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, nstates, config.orthoGrainSize, &orthoMapTable, avail, excludePes);
             #endif
         }
         double newtime=CmiWallTimer();
         CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
-        CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(thisInstance);
+        CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(helperMapTable, thisInstance);
         CkArrayOptions orthoHOpts;
         orthoHOpts.setMap(orthoHMap);
         orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
@@ -138,7 +140,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
             size[0] = size[1] = nstates/config.orthoGrainSize;
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
-                mf->dumpMap(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
+                mf->dumpMap(&helperMapTable, thisInstance.getPO());
             #endif
             delete mf;
         }
@@ -149,7 +151,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
             size[0] = size[1] = nstates/config.orthoGrainSize;
             MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             #ifdef USE_INT_MAP
-                mf->dumpMapCoords(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
+                mf->dumpMapCoords(&helperMapTable, thisInstance.getPO());
             #endif
             delete mf;
         }
