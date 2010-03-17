@@ -40,13 +40,8 @@ typedef IntMap3 MapType3;
 class MapType2 : public IntMap2on2 {
  public:
   int getCentroid (int);
-  /*void pup(PUP::er &p)
-  {
-    CkPrintf("PUP of TypeMap2\n");
-    IntMap2on2::pup(p);
-  }*/
+  void pup(PUP::er &p) { IntMap2on2::pup(p); }
 };
-PUPmarshall(MapType2);
 
 #endif
 

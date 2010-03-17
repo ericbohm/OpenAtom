@@ -327,6 +327,25 @@ class IntMap2on2 {
   int keyYmax;
  public:
     IntMap2on2(){keyXmax=0; keyYmax=0; Map=NULL;}
+    /// Copy constructor
+    IntMap2on2(const IntMap2on2 &obj): keyXmax(0), keyYmax(0), Map(0)
+    {
+        if (obj.keyXmax >= 0 && obj.keyYmax >= 0)
+        {
+            keyXmax = obj.keyXmax;
+            keyYmax = obj.keyYmax;
+            int *mapbuf=new int[keyXmax*keyYmax];
+            if (obj.Map != NULL)
+                memcpy(mapbuf, obj.Map[0], keyXmax * keyYmax * sizeof(int));
+            else
+                memset(mapbuf, -1, keyXmax * keyYmax * sizeof(int));
+            Map = new int*[keyXmax];
+            for(int x=0;x<keyXmax;x++)
+                Map[x]  =  mapbuf +  keyYmax * x;
+        }
+    }
+
+
     ~IntMap2on2(){
       if(Map!=NULL)
 	{
@@ -372,34 +391,34 @@ class IntMap2on2 {
 	
       }
     void pup(PUP::er &p)
-      {
-	  p|keyXmax;
-	  p|keyYmax;
-	  CkAssert(keyXmax>=0);
-	  CkAssert(keyYmax>=0);
-	  CkAssert(keyXmax<10000000);
-	  CkAssert(keyYmax<10000000);
-	  int *mapbuf=NULL;
-	  if(keyXmax>0)
-	    {
-	      CkAssert(keyYmax>0);
-	      if(p.isUnpacking())
-		{
-		  Map=new int*[keyXmax];
-	
-		  mapbuf=new int[keyXmax*keyYmax];
-		}
-	      for(int x=0;x<keyXmax;x++)
-	      {
-		  if(keyYmax>0)
-		  {
-		      if(p.isUnpacking())
-			Map[x] = mapbuf + keyYmax * x;
-		      PUParray(p,Map[x], keyYmax);
-		  }
-	      }
-	    }
-      }
+    {
+        p|keyXmax;
+        p|keyYmax;
+        CkAssert(keyXmax>=0);
+        CkAssert(keyYmax>=0);
+        CkAssert(keyXmax<10000000);
+        CkAssert(keyYmax<10000000);
+        int *mapbuf=NULL;
+        if(keyXmax>0)
+        {
+            CkAssert(keyYmax>0);
+            if(p.isUnpacking())
+            {
+                Map=new int*[keyXmax];
+                mapbuf=new int[keyXmax*keyYmax];
+            }
+            for(int x=0;x<keyXmax;x++)
+            {
+                if(keyYmax>0)
+                {
+                    if(p.isUnpacking())
+                        Map[x] = mapbuf + keyYmax * x;
+                    PUParray(p,Map[x], keyYmax);
+                }
+            }
+        }
+    }
+
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
     int getCentroid(int torusMap);
