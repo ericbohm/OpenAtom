@@ -1,4 +1,5 @@
-#include "main/cpaimd.h"
+#include "load_balance/IntMap.h"
+#include "charm++.h"
 
 #ifndef ORTHO_MAP_H
 #define ORTHO_MAP_H
@@ -52,6 +53,7 @@ class OrthoMap : public CkArrayMap
 
 
 
+extern bool fakeTorus; ///< readonly defined in cpaimd.C
 
 /// Map group for placing OrthoHelper chares
 class OrthoHelperMap : public CkArrayMap

@@ -37,12 +37,6 @@ typedef IntMap2 IntMap4;
 #include "load_balance/IntMap.h"
 typedef IntMap4 MapType4;
 typedef IntMap3 MapType3;
-class MapType2 : public IntMap2on2 {
- public:
-  int getCentroid (int);
-  void pup(PUP::er &p) { IntMap2on2::pup(p); }
-};
-
 #endif
 
 #include "load_balance/MapTable.h"

@@ -61,7 +61,7 @@ module ortho
 
 
 
-    include "main/cpaimd.h"; // Just for the definition of MapType2. Yuck...
+    include "load_balance/IntMap.h";
 	group OrthoMap : CkArrayMap {
 		entry OrthoMap(MapType2);
 	};
