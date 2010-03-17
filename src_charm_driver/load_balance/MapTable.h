@@ -18,6 +18,9 @@
  *
  */
 //@{
+
+#include "load_balance/IntMap.h"
+
 #ifndef _MAPTABLE_H_
 #define _MAPTABLE_H_
 #include "debug_flags.h"

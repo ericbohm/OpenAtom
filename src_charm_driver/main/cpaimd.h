@@ -35,8 +35,6 @@ class IntMap2
 typedef IntMap2 IntMap4;
 #else
 #include "load_balance/IntMap.h"
-typedef IntMap4 MapType4;
-typedef IntMap3 MapType3;
 #endif
 
 #include "load_balance/MapTable.h"

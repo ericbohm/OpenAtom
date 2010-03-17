@@ -513,10 +513,16 @@ class IntMap2on1 {
       }
 };
 
+
+
 class MapType2 : public IntMap2on2 {
  public:
   int getCentroid (int);
   void pup(PUP::er &p) { IntMap2on2::pup(p); }
 };
 
+typedef IntMap4 MapType4;
+typedef IntMap3 MapType3;
+
 #endif
+
