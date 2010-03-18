@@ -105,55 +105,59 @@ class IntMap4 {
     }
       }
     void pup(PUP::er &p)
-      {
-	  p|keyWmax;
-	  p|keyXmax;
-	  p|keyYmax;
-	  p|keyZmax;
-	  p|keyStep;
-	  int ***mappointpointbuf = NULL;
-	  int **mappointbuf = NULL;
-	  int *mapbuf= NULL;
-	  if(keyWmax>0)
-	    {
-	      CkAssert(keyXmax>0);
-	      CkAssert(keyYmax>0);
-	      CkAssert(keyZmax>0);
-	      if(p.isUnpacking())
-		{
-		  Map=new int***[keyWmax];
-		  mappointpointbuf = new int**[keyWmax*keyXmax];
-		  mappointbuf = new int*[keyWmax*keyXmax*keyYmax];
-		  mapbuf= new int[keyWmax*keyXmax*keyYmax*keyZmax];
-		}
-	      for(int w=0;w<keyWmax;w++)
-		{
-		  if(keyXmax>0){
-		    if(p.isUnpacking())
-		      Map[w]=   mappointpointbuf + (w*keyXmax);
-		    for(int x=0;x<keyXmax;x++)
-		      {
-			if(keyYmax>0)
-			  {
-			    if(p.isUnpacking())
-			      Map[w][x]= mappointbuf + (w*keyXmax+x)*keyYmax;
-			    for(int y=0;y<keyYmax;y++)
-			      {
-				if(keyZmax>0){
-				  if(p.isUnpacking())
-				    Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
-				  PUParray(p,Map[w][x][y],keyZmax);
-				}
-			      }
-			  }
-		      }
-		    if( p.isUnpacking() && (stepTable == 0) )
-                stepTable= new int[keyXmax*keyStep];
-		    PUParray(p,stepTable,keyXmax*keyStep);
-		  }
-		}
-	    }
-      }
+    {
+        p|keyWmax;
+        p|keyXmax;
+        p|keyYmax;
+        p|keyZmax;
+        p|keyStep;
+        int ***mappointpointbuf = NULL;
+        int **mappointbuf = NULL;
+        int *mapbuf= NULL;
+        if(keyWmax>0)
+        {
+            CkAssert(keyXmax>0);
+            CkAssert(keyYmax>0);
+            CkAssert(keyZmax>0);
+            if(p.isUnpacking())
+            {
+                Map=new int***[keyWmax];
+                mappointpointbuf = new int**[keyWmax*keyXmax];
+                mappointbuf = new int*[keyWmax*keyXmax*keyYmax];
+                mapbuf= new int[keyWmax*keyXmax*keyYmax*keyZmax];
+            }
+            for(int w=0;w<keyWmax;w++)
+            {
+                if(keyXmax>0)
+                {
+                    if(p.isUnpacking())
+                        Map[w]=   mappointpointbuf + (w*keyXmax);
+                    for(int x=0;x<keyXmax;x++)
+                    {
+                        if(keyYmax>0)
+                        {
+                            if(p.isUnpacking())
+                                Map[w][x]= mappointbuf + (w*keyXmax+x)*keyYmax;
+                            for(int y=0;y<keyYmax;y++)
+                            {
+                                if(keyZmax>0)
+                                {
+                                    if(p.isUnpacking())
+                                        Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
+                                    PUParray(p,Map[w][x][y],keyZmax);
+                                }
+                            }
+                        }
+                    }
+                    if( p.isUnpacking() && (stepTable == 0) )
+                        stepTable= new int[keyXmax*keyStep];
+                    PUParray(p,stepTable,keyXmax*keyStep);
+                }
+            }
+        }
+    }
+
+
     inline int getWmax(){return(keyWmax);}
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
