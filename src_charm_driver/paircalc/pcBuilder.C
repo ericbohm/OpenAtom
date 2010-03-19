@@ -99,7 +99,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
     }
 
     /// Create a map group that will read and use this map table
-    CProxy_SCalcMap pcMapGrp = CProxy_SCalcMap::ckNew(cfg.isSymmetric, thisInstance);
+    CProxy_SCalcMap pcMapGrp = CProxy_SCalcMap::ckNew(mapTable);
 
     mapCreationTime = CmiWallTimer() - mapCreationTime;
     CkPrintf("PairCalculator[%dx%dx%dx%d,%d] map created in %g\n", size[0], size[1], size[2], cfg.numChunks, cfg.isSymmetric, mapCreationTime);

@@ -62,8 +62,9 @@ module RDMAMessages
 
 module pcMaps
 {
+    include "load_balance/IntMap.h";
 	group SCalcMap: CkArrayMap {
-		entry SCalcMap(bool, UberCollection);
+		entry SCalcMap(const MapType4 _mtable);
 	};
 };
 
