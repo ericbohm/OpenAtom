@@ -23,8 +23,9 @@ template <class tokenType> class RDMASetupConfirmationMsg;
 class pcSetupMsg: public CMessage_pcSetupMsg
 {
     public:
-        CkArrayID gspAID, pcSymAID, pcAsymAID, handlerSymAID, handlerAsymAID, orthoAID;
-        CkGroupID symMcastMgrGID, asymMcastMgrGID;
+        CkArrayID gspAID;
+        pc::InstanceIDs symmIDs, asymmIDs;
+        CkArrayID orthoAID;
 };
 
 

@@ -1,5 +1,6 @@
 #include "debug_flags.h"
 #include "paircalc/pcConfig.h"
+#include "paircalc/pcInstanceIDs.h"
 #include "paircalc/pcFwdDeclarations.h"
 #include "load_balance/PeList.h"
 #include "uber/Uber.h"
@@ -67,14 +68,8 @@ class PCCommManager
         CkIndex2D gspaceIndex;
         /// Input configurations for the paircalcs
         cp::paircalc::pcConfig pcCfg;
-		/// The array ID of the PC chare array instance I am managing
-		CkArrayID pcAID;
-		/// The array ID of the PC's input handler chare array
-		CkArrayID ipHandlerAID;
-        /// The group ID of the multicast manager that will handle the multicasts to the PC array
-        CkGroupID mCastMgrGID;
-        /// The group ID of the mapper group
-        CkGroupID mapperGID;
+        /// Handles to the paircalc array and related entities that I will be managing comm with
+        cp::paircalc::InstanceIDs pcHandle;
 
         /** Array section which receives left matrix block data
          *

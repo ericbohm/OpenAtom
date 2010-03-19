@@ -519,18 +519,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       myOrtho = CProxy_Ortho(orthoAID);
       CkAssert(myOrtho.ckGetArrayID() == orthoAID);
       // Ask ortho to setup its communication sections of paircalcs
-      myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcAID, asymmPCmgr.pcAID);
+      myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcHandle.pcAID, asymmPCmgr.pcHandle.pcAID);
 
       /// Share the required array IDs with other chares in this GSpace array
-      pcSetupMsg *msg       = new pcSetupMsg();
-      msg->gspAID           = thisProxy.ckGetArrayID();
-      msg->pcSymAID         = symmPCmgr.pcAID;
-      msg->pcAsymAID        = asymmPCmgr.pcAID;
-      msg->handlerSymAID    = symmPCmgr.ipHandlerAID;
-      msg->handlerAsymAID   = asymmPCmgr.ipHandlerAID;
-      msg->symMcastMgrGID   = symmPCmgr.mCastMgrGID;
-      msg->asymMcastMgrGID  = asymmPCmgr.mCastMgrGID;
-      msg->orthoAID         = myOrtho.ckGetArrayID();
+      pcSetupMsg *msg = new pcSetupMsg();
+      msg->gspAID     = thisProxy.ckGetArrayID();
+      msg->symmIDs    = symmPCmgr.pcHandle;
+      msg->asymmIDs   = asymmPCmgr.pcHandle;
+      msg->orthoAID   = myOrtho.ckGetArrayID();
       thisProxy.acceptPairCalcAIDs(msg);
   }
 //---------------------------------------------------------------------------
@@ -648,14 +644,9 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
 {
     CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
-    symmPCmgr.pcAID          = msg->pcSymAID;
-    symmPCmgr.ipHandlerAID   = msg->handlerSymAID;
-    symmPCmgr.mCastMgrGID    = msg->symMcastMgrGID;
-    asymmPCmgr.pcAID         = msg->pcAsymAID;
-    asymmPCmgr.ipHandlerAID  = msg->handlerAsymAID;
-    asymmPCmgr.mCastMgrGID   = msg->asymMcastMgrGID;
-
-    myOrtho                  = CProxy_Ortho(msg->orthoAID);
+    symmPCmgr.pcHandle  = msg->symmIDs;
+    asymmPCmgr.pcHandle = msg->asymmIDs;
+    myOrtho             = CProxy_Ortho(msg->orthoAID);
 
 //============================================================================
 // Contribute to the reduction telling main we are done

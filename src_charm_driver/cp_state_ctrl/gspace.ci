@@ -67,7 +67,6 @@ module gStatePlane
 	class RDMApair_GSP_PC;
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
-    message pcSetupMsg;
 	message RSFFTMsg     { complex data[]; };
 	message GSIFFTMsg    { complex data[]; };
 	message GSRedPsiMsg  { complex data[]; };
@@ -80,6 +79,8 @@ module gStatePlane
 		int k_z[];
 	};
 
+    include "paircalc/pcInstanceIDs.h";
+    message pcSetupMsg;
 
 	class UberCollection;
     include "paircalc/pcFwdDeclarations.h";

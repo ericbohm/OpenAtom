@@ -46,7 +46,7 @@ void PCCommManager::createPCarray()
     CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
 
     // Create an empty array but specify element locations using the map
-    paircalcOpts.setMap(mapperGID);
+    paircalcOpts.setMap(pcHandle.mapperGID);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, pcCfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION
@@ -58,9 +58,9 @@ void PCCommManager::createPCarray()
 
     int proc = 0;
     // Initialize my set of array / group IDs
-    pcAID = pairCalculatorProxy.ckGetArrayID();
-    ipHandlerAID = inputHandlerProxy.ckGetArrayID();
-    mCastMgrGID = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
+    pcHandle.pcAID = pairCalculatorProxy.ckGetArrayID();
+    pcHandle.handlerAID = inputHandlerProxy.ckGetArrayID();
+    pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
 
     #ifdef USE_COMLIB
         // Setup the appropriate multicast strategy
@@ -156,7 +156,7 @@ void PCCommManager::makeLeftTree()
 		/// Build an array section for each chunk
 		for (int chunk = 0; chunk < pcCfg.numChunks; chunk++)
 		{
-			sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
+			sectionGettingLeft[chunk] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcHandle.handlerAID,
 																gspaceIndex.y, gspaceIndex.y, 1,
 																s1, s1, 1,
 																sColMin, maxpcstateindex, pcCfg.grainSize,
@@ -169,7 +169,7 @@ void PCCommManager::makeLeftTree()
 				else
 #endif
 				{
-					CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+					CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
 					sectionGettingLeft[chunk].ckSectionDelegate(mcastGrp);
 				}
 			#endif
@@ -217,7 +217,7 @@ void PCCommManager::makeRightTree()
 			/// Build an array section for each chunk
 			for (int c = 0; c < pcCfg.numChunks; c++)
 			{
-				sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(ipHandlerAID,
+				sectionGettingRight[c] = CProxySection_InputDataHandler<CollatorType,CollatorType>::ckNew(pcHandle.handlerAID,
 																gspaceIndex.y, gspaceIndex.y, 1,
 																0, sRowMax, pcCfg.grainSize,
 																s2, s2, 1,
@@ -230,7 +230,7 @@ void PCCommManager::makeRightTree()
 					else
 #endif
 					{
-						CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+						CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
 						sectionGettingRight[c].ckSectionDelegate(mcastGrp);
 					}
 				#endif
@@ -298,7 +298,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
                         CkAssert(finite(msg->points[i].im));
                     }
                     #endif
-                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(ipHandlerAID);
+                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(pcHandle.handlerAID);
                     handlerProxy(idx).acceptLeftData(msg);
                 }
             }
@@ -389,7 +389,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
                         CkAssert(finite(msg->points[i].im));
                     }
                     #endif
-                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(ipHandlerAID);
+                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(pcHandle.handlerAID);
                     handlerProxy(idx).acceptRightData(msg);
                 }
             }
@@ -503,7 +503,7 @@ void PCCommManager::sendLeftRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, Ck
 					idx=listGettingLeft[elem];
 					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(ipHandlerAID);
+                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(pcHandle.handlerAID);
 					handlerProxy(idx).setupRDMALeft(msg);
 				}
 			}
@@ -555,7 +555,7 @@ void PCCommManager::sendRightRDMARequest(RDMApair_GSP_PC idTkn, int totalsize, C
 					idx=listGettingRight[elem];
 					reinterpret_cast<short*> (idx.data() )[3]=chunk;
 					RDMASetupRequestMsg<RDMApair_GSP_PC> *msg = new RDMASetupRequestMsg<RDMApair_GSP_PC> (idTkn,idTkn.gspIndex.x,CkMyPe(),chunksize,cb);
-                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(ipHandlerAID);
+                    CProxy_InputDataHandler<CollatorType,CollatorType> handlerProxy(pcHandle.handlerAID);
 					handlerProxy(idx).setupRDMARight(msg);
 				}
 			}
@@ -581,7 +581,7 @@ void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, bool
     int offset = gspaceIndex.x % pcCfg.grainSize;
     int dest = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //row or column
     initResultMsg *redMsg=new initResultMsg;
-    redMsg->mCastGrpId = mCastMgrGID;
+    redMsg->mCastGrpId = pcHandle.mCastMgrGID;
     redMsg->dest=dest;
     redMsg->offset=offset;
     redMsg->lbsync=lbsync;
@@ -608,12 +608,12 @@ void PCCommManager::setResultProxy(CProxySection_PairCalculator *sectProxy, bool
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
   int maxpcstateindex = (pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
   int s2 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcHandle.pcAID,
 									       gspaceIndex.y, gspaceIndex.y, 1,
 									       0, maxpcstateindex, pcCfg.grainSize,
 									       s2, s2, 1,
@@ -635,7 +635,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(int chunk)
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
   int s1 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //column
   int maxpcstateindex = (pcCfg.numStates/pcCfg.grainSize-1) * pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
@@ -658,7 +658,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int
     newListStart= newListStart % ecount;
   bool order=reorder_elem_list_4D( elems, ecount, newListStart);
   CkAssert(order);
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,  elems, ecount);
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcHandle.pcAID,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
@@ -672,13 +672,13 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   int s2 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize;
   s2 = (s2>maxpcstateindex) ? maxpcstateindex :s2;
 
   int s2range= (s2==0) ? 1 : pcCfg.grainSize;
-  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcAID,
+  CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcHandle.pcAID,
 									       gspaceIndex.y, gspaceIndex.y, 1,
 									       0, s2, s2range,
 									       s2, s2, 1,
@@ -700,7 +700,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int chunk)
  */
 CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
 {
-  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastMgrGID).ckLocalBranch();
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(pcHandle.mCastMgrGID).ckLocalBranch();
   int s1 = gspaceIndex.x / pcCfg.grainSize * pcCfg.grainSize; //column
   int maxpcstateindex=(pcCfg.numStates/pcCfg.grainSize-1)*pcCfg.grainSize;
   s1 = (s1>maxpcstateindex) ? maxpcstateindex :s1;
@@ -710,7 +710,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
   int s2range= (s2start==maxpcstateindex) ? 1 : pcCfg.grainSize;
   CkAssert(s2start<pcCfg.numStates);
   CProxySection_PairCalculator sectProxy =
-      CProxySection_PairCalculator::ckNew(pcAID,
+      CProxySection_PairCalculator::ckNew(pcHandle.pcAID,
 					  gspaceIndex.y, gspaceIndex.y, 1,
 					  s1, s1, 1,
 					  s2start, maxpcstateindex, s2range,
@@ -810,7 +810,7 @@ void PCCommManager::createMap(const int boxSize, PeListFactory getPeList, UberCo
     }
 
     // Record the group that will provide the procNum mapping function
-    mapperGID  = pcMapGrp.ckGetGroupID();
+    pcHandle.mapperGID  = pcMapGrp.ckGetGroupID();
     delete availGlobG;
 }
 
