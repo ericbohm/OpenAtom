@@ -117,8 +117,6 @@ CkVec <MapType2> RhoGHartImaptable;
 CkVec <MapType3> RhoRHartImaptable;
 //CkVec <MapType1> LSPRhoGSImaptable;
 CkVec <MapType2> LSPRhoRSImaptable;
-CkVec <MapType4> AsymScalcImaptable;
-CkVec <MapType4> SymScalcImaptable;
 
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
@@ -568,8 +566,6 @@ main::main(CkArgMsg *msg) {
 
     RhoGHartImaptable.resize(config.numInstances);
     RhoRHartImaptable.resize(config.numInstances);
-    AsymScalcImaptable.resize(config.numInstances);
-    SymScalcImaptable.resize(config.numInstances);
 
     // bump all our proxy vecs to the right size
     UgSpacePlaneProxy.reserve(config.numInstances);

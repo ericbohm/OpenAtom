@@ -6,8 +6,6 @@
 
 #include "ckmulticast.h"
 
-extern CkVec <MapType4> AsymScalcImaptable;
-extern CkVec <MapType4> SymScalcImaptable;
 extern CkVec <MapType2> GSImaptable;
 
 namespace cp {
@@ -57,8 +55,6 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
 
     // Generate a map name
     std::string mapName = cfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
-    // Use the appropriate map table
-    MapType4 &mapTable  = cfg.isSymmetric ? SymScalcImaptable[instanceNum] : AsymScalcImaptable[instanceNum];
     /// Get an appropriately constructed PeList from the supplied factory functor
     PeList *availGlobG = getPeList();
     availGlobG->reset();
@@ -81,6 +77,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
     // Start timing the map creation
     double mapCreationTime = CmiWallTimer();
 
+    MapType4 mapTable;
     mapTable.buildMap(cfg.numPlanes, cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize, achunks, cfg.grainSize);
 
     int success = 0;

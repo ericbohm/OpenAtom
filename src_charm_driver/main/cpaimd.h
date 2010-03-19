@@ -75,8 +75,6 @@ extern CkVec <MapType2> RhoGSImaptable;
 extern CkVec <MapType2> RhoRSImaptable;
 extern CkVec <MapType2> RhoGHartImaptable;
 extern CkVec <MapType3> RhoRHartImaptable;
-extern CkVec <MapType4> AsymScalcImaptable;
-extern CkVec <MapType4> SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;

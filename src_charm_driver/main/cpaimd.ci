@@ -130,8 +130,6 @@ mainmodule cpaimd {
 	readonly CkVec <MapType2> RhoRSImaptable;
 	readonly CkVec <MapType2> RhoGHartImaptable;
 	readonly CkVec <MapType3> RhoRHartImaptable;
-	readonly CkVec <MapType4> AsymScalcImaptable;
-	readonly CkVec <MapType4> SymScalcImaptable;
 	readonly CkVec <MapType2> VdWGSImaptable;
 	readonly CkVec <MapType3> VdWRSImaptable;
 
