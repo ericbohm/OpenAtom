@@ -49,6 +49,7 @@
 #include "CP_State_ParticlePlane.h"
 
 #include "orthog_ctrl/arrayBuilder.h"
+#include "paircalc/pcBuilder.h"
 
 #include "utility/util.h"
 #include "main/groups.h"
@@ -508,16 +509,16 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       PRINTF("Building Psi and Lambda Pair Calculators\n");
       PRINT_LINE_DASH;printf("\n");
 
-      // Create maps for the symmetric (psi) and asymmetric (lambda) paircalc instances
-      symmPCmgr.createMap(boxSize, getPeList, thisInstance);
-      asymmPCmgr.createMap(boxSize, getPeList, thisInstance);
-      // Instantiate the paircalc array
-      symmPCmgr.createPCarray ();
-      asymmPCmgr.createPCarray();
-      // Spawn the ortho array and store a handle to the array
-      CkArrayID orthoAID = cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
+      // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
+      cp::paircalc::Builder symmBuilder(symmPCmgr.pcCfg), asymmBuilder(asymmPCmgr.pcCfg);
+      symmPCmgr.pcHandle  = symmBuilder.build (boxSize, getPeList, thisInstance);
+      asymmPCmgr.pcHandle = asymmBuilder.build(boxSize, getPeList, thisInstance);
+
+      // Spawn the ortho array and its world of chares/classes (CLA_Matric, OrthoHelper etc.)
+      CkGroupID orthoAID  = cp::ortho::ArrayBuilder::build(nstates, getPeList, thisInstance);
       myOrtho = CProxy_Ortho(orthoAID);
       CkAssert(myOrtho.ckGetArrayID() == orthoAID);
+
       // Ask ortho to setup its communication sections of paircalcs
       myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcHandle.pcAID, asymmPCmgr.pcHandle.pcAID);
 

@@ -2,8 +2,6 @@
 #include "paircalc/pcConfig.h"
 #include "paircalc/pcInstanceIDs.h"
 #include "paircalc/pcFwdDeclarations.h"
-#include "load_balance/PeList.h"
-#include "uber/Uber.h"
 
 #ifndef PC_COMM_MANAGER_H
 #define PC_COMM_MANAGER_H
@@ -25,10 +23,6 @@ class PCCommManager
         /// Constructor
         PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg);
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
-        /// Create the mapping required to instantiate a PC array
-        void createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
-        /// Create a paircalc array using info in the supplied pcConfig object. Originally createPairCalculator()
-        void createPCarray();
         /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section
         void sendLeftData (int n, complex* ptr, bool psiV);
         /// Starts the forward path work (along with startPairCalcLeft()) in the asymmetric (Lambda) case

@@ -4,8 +4,6 @@
 #include "ckPairCalculator.decl.h"
 #include "paircalc/InputDataHandler.h"
 #include "paircalc/pairCalculator.h" //< Just for the reorder_elem declarations
-#include "paircalc/pcMaps.h"
-#include "utility/MapFile.h"
 
 #include "ckmulticast.h"
 #include "ckcomplex.h"
@@ -17,10 +15,6 @@
 // Do not use comlib for multicasts within paircalc
 #define _PC_COMMLIB_MULTI_ 0
 
-extern CkVec <MapType4> AsymScalcImaptable;
-extern CkVec <MapType4> SymScalcImaptable;
-extern CkVec <MapType2> GSImaptable;
-
 namespace cp {
     namespace gspace {
 
@@ -29,95 +23,6 @@ PCCommManager::PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg
     sectionGettingLeft(0), sectionGettingRight(0),
     existsLproxy(false), existsRproxy(false)
 {}
-
-
-
-
-void PCCommManager::createPCarray()
-{
-    traceRegisterUserEvent("calcpairDGEMM", 210);
-    traceRegisterUserEvent("calcpairContrib", 220);
-    traceRegisterUserEvent("multiplyResultDGEMM1", 230);
-    traceRegisterUserEvent("multiplyResultDGEMM2", 240);
-    traceRegisterUserEvent("multiplyResultDGEMM1R", 250);
-
-    CkArrayOptions paircalcOpts,handlerOpts;
-    CProxy_PairCalculator pairCalculatorProxy;
-    CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
-
-    // Create an empty array but specify element locations using the map
-    paircalcOpts.setMap(pcHandle.mapperGID);
-    pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, pcCfg, paircalcOpts);
-
-    #ifdef DEBUG_CP_PAIRCALC_CREATION
-        CkPrintf("createPairCalculator: Creating empty PairCalculator and InputDataHandler chare arrays for %d loop: asymm(0)/symm(1)\n",pcCfg.isSymmetric);
-    #endif
-    /// Create an empty input handler chare array that will accept all incoming messages from GSpace
-    handlerOpts.bindTo(pairCalculatorProxy);
-    inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
-
-    int proc = 0;
-    // Initialize my set of array / group IDs
-    pcHandle.pcAID = pairCalculatorProxy.ckGetArrayID();
-    pcHandle.handlerAID = inputHandlerProxy.ckGetArrayID();
-    pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(pcCfg.inputSpanningTreeFactor);
-
-    #ifdef USE_COMLIB
-        // Setup the appropriate multicast strategy
-        Strategy *multistrat = new DirectMulticastStrategy();
-        if(pcCfg.isSymmetric)
-            mcastInstanceCP=ComlibRegister(multistrat);
-        else
-            mcastInstanceACP=ComlibRegister(multistrat);
-    #endif
-
-    int maxpcstateindex = (pcCfg.numStates / pcCfg.grainSize - 1) * pcCfg.grainSize;
-    // If the symmetric loop PC instances are being created
-    if(pcCfg.isSymmetric)
-        for(int numX = 0; numX < pcCfg.numPlanes; numX ++)
-        {
-            for (int s1 = 0; s1 <= maxpcstateindex; s1 += pcCfg.grainSize)
-            {
-                // If phantomSym is turned on
-                int s2start=(pcCfg.arePhantomsOn) ? 0 : s1;
-                for (int s2 = s2start; s2 <= maxpcstateindex; s2 += pcCfg.grainSize)
-                {
-                    for (int c = 0; c < pcCfg.numChunks; c++)
-                    {
-                        #ifdef DEBUG_CP_PAIRCALC_CREATION
-                            CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,pcCfg.isSymmetric);
-                        #endif
-                        pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg);
-                    }
-                }
-            }
-        }
-    // else, if the asymmetric loop PC instances are being created
-    else
-    {
-        for(int numX = 0; numX < pcCfg.numPlanes; numX ++)
-        {
-            for (int s1 = 0; s1 <= maxpcstateindex; s1 += pcCfg.grainSize)
-            {
-                for (int s2 = 0; s2 <= maxpcstateindex; s2 += pcCfg.grainSize)
-                {
-                    for (int c = 0; c < pcCfg.numChunks; c++)
-                    {
-                        #ifdef DEBUG_CP_PAIRCALC_CREATION
-                            CkPrintf("Inserting PC element [%d %d %d %d %d]\n",numX,s1,s2,c,pcCfg.isSymmetric);
-                        #endif
-                        pairCalculatorProxy(numX,s1,s2,c).insert(inputHandlerProxy, pcCfg);
-                    }
-                }
-            }
-        }
-    }
-    /// Notify the runtime that we're done inserting all the PC elements
-    pairCalculatorProxy.doneInserting();
-    #ifdef _PAIRCALC_DEBUG_
-        CkPrintf("    Finished init {grain=%d, sym=%d, blk=%d, Z=%d, S=%d}\n", pcCfg.grainSize, pcCfg.isSymmetric, pcCfg.numChunks, pcCfg.numPlanes, pcCfg.numStates);
-    #endif
-}
 
 
 
@@ -727,96 +632,8 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
   return sectProxy;
 }
 
-
-
-
-/**
- * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
- */
-void PCCommManager::createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
-{
-    int instanceNum = thisInstance.getPO();
-    bool maptype = pcCfg.isSymmetric;
-    int achunks = config.numChunksAsym;
-    if(pcCfg.isSymmetric && pcCfg.arePhantomsOn)
-    { // evil trickery to use asym map code for phantom sym
-        maptype=false;
-        achunks=config.numChunksSym;
-    }
-
-    // Generate a map name
-    std::string mapName = pcCfg.isSymmetric ? "SymScalcMap" : "AsymScalcMap";
-    // Use the appropriate map table
-    MapType4 &mapTable  = pcCfg.isSymmetric ? SymScalcImaptable[instanceNum] : AsymScalcImaptable[instanceNum];
-    /// Get an appropriately constructed PeList from the supplied factory functor
-    PeList *availGlobG = getPeList();
-    availGlobG->reset();
-
-    // Compute num PEs along the states dimension of GSpace
-    int pl = pcCfg.numStates / config.Gstates_per_pe;
-    // Compute num PEs along the planes dimension of GSpace
-    int pm = config.numPesPerInstance / pl;
-    // Compute the num of GSpace planes per PE
-    int planes_per_pe = pcCfg.numPlanes / pm;
-
-    int size[4];
-    size[0] = pcCfg.numPlanes;
-    size[1] = pcCfg.numStates/pcCfg.grainSize;
-    size[2] = pcCfg.numStates/pcCfg.grainSize;
-    size[3] = achunks;
-    //-------------------------------------------------------------
-    // Populate maptable for the PC array
-
-    // Start timing the map creation
-    double mapCreationTime = CmiWallTimer();
-
-    mapTable.buildMap(pcCfg.numPlanes, pcCfg.numStates/pcCfg.grainSize, pcCfg.numStates/pcCfg.grainSize, achunks, pcCfg.grainSize);
-
-    int success = 0;
-    if(config.loadMapFiles)
-    {
-        MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
-        success = mf->loadMap(mapName.c_str(), &mapTable);
-        delete mf;
-    }
-
-    // If loading the map from a file failed, create a maptable
-    if(success == 0)
-    {
-        SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, pcCfg.numStates, pcCfg.numPlanes, pcCfg.grainSize, maptype, config.scalc_per_plane,
-                        planes_per_pe, achunks, config.numChunksSym, &GSImaptable[instanceNum], config.useCuboidMap, config.useCentroidMap, boxSize);
-    }
-
-    /// Create a map group that will read and use this map table
-    CProxy_SCalcMap pcMapGrp = CProxy_SCalcMap::ckNew(pcCfg.isSymmetric, thisInstance);
-
-    mapCreationTime = CmiWallTimer() - mapCreationTime;
-    CkPrintf("PairCalculator[%dx%dx%dx%d,%d] map created in %g\n", size[0], size[1], size[2], pcCfg.numChunks, pcCfg.isSymmetric, mapCreationTime);
-
-    // If the user wants map dumps
-    if(config.dumpMapFiles)
-    {
-        MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
-        mf->dumpMap(&mapTable, instanceNum);
-        delete mf;
-    }
-
-    // If the user wants map coordinate dumps
-    if(config.dumpMapCoordFiles)
-    {
-        MapFile *mf = new MapFile((mapName+"_coord").c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, pcCfg.grainSize);
-        mf->dumpMapCoords(&mapTable, instanceNum);
-        delete mf;
-    }
-
-    // Record the group that will provide the procNum mapping function
-    pcHandle.mapperGID  = pcMapGrp.ckGetGroupID();
-    delete availGlobG;
-}
-
     } // end namespace gspace
 } // end namespace cp
 
 #include "RDMAMessages.def.h"
-#include "pcMaps.def.h"
 
