@@ -59,6 +59,43 @@ class IntMap4 {
 	for(int s=0;s<keyXmax*keyStep;s++)
 	  stepTable[s]=s/keyStep;
       }
+
+    IntMap4(const IntMap4 &obj)
+           : keyWmax(obj.keyWmax), keyXmax(obj.keyXmax), keyYmax(obj.keyYmax), keyZmax(obj.keyZmax),
+             keyStep(obj.keyStep), Map(0), stepTable(0)
+    {
+        if (keyWmax > 0 && keyXmax > 0 && keyYmax > 0 && keyZmax > 0)
+        {
+            Map                     = new int***[keyWmax];
+            int ***mappointpointbuf = new int** [keyWmax*keyXmax];
+            int **mappointbuf       = new int*  [keyWmax*keyXmax*keyYmax];
+            int *mapbuf             = new int   [keyWmax*keyXmax*keyYmax*keyZmax];
+
+            for(int w=0; w<keyWmax; w++)
+            {
+                Map[w] = mappointpointbuf + (w*keyXmax);
+                for(int x=0; x<keyXmax; x++)
+                {
+                    Map[w][x] = mappointbuf + (w*keyXmax+x) * keyYmax;
+                    for(int y=0; y<keyYmax; y++)
+                    {
+                        Map[w][x][y] = mapbuf + ((w*keyXmax+x)*keyYmax+y) * keyZmax;
+                        for (int z=0; z<keyZmax; z++)
+                            Map[w][x][y][z] = obj.Map[w][x][y][z];
+                    }
+                }
+            }
+        }
+        if (keyXmax > 0 && keyStep > 0)
+        {
+            stepTable= new int [keyXmax*keyStep];
+            for(int s=0; s<keyXmax*keyStep; s++)
+                stepTable[s] = s/keyStep;
+        }
+    }
+
+
+
     ~IntMap4(){
       if(Map!=NULL)
 	{
@@ -332,12 +369,10 @@ class IntMap2on2 {
  public:
     IntMap2on2(){keyXmax=0; keyYmax=0; Map=NULL;}
     /// Copy constructor
-    IntMap2on2(const IntMap2on2 &obj): keyXmax(0), keyYmax(0), Map(0)
+    IntMap2on2(const IntMap2on2 &obj): keyXmax(obj.keyXmax), keyYmax(obj.keyYmax), Map(0)
     {
         if (obj.keyXmax >= 0 && obj.keyYmax >= 0)
         {
-            keyXmax = obj.keyXmax;
-            keyYmax = obj.keyYmax;
             int *mapbuf=new int[keyXmax*keyYmax];
             if (obj.Map != NULL)
                 memcpy(mapbuf, obj.Map[0], keyXmax * keyYmax * sizeof(int));
