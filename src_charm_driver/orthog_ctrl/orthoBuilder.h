@@ -1,20 +1,21 @@
 #include "load_balance/PeList.h"
 #include "uber/Uber.h"
 
-#ifndef ORTHO_ARRAY_BUILDER_H
-#define ORTHO_ARRAY_BUILDER_H
+#ifndef ORTHO_BUILDER_H
+#define ORTHO_BUILDER_H
 
 namespace cp {
     namespace ortho {
 
-class ArrayBuilder
+class Builder
 {
     public:
+        /// Construct an ortho world given the configs
         static CkArrayID build(int nstates, PeListFactory getPeList, UberCollection thisInstance);
 };
 
     } // end namespace ortho
 } // end namespace cp
 
-#endif // ORTHO_ARRAY_BUILDER_H
+#endif // ORTHO_BUILDER_H
 

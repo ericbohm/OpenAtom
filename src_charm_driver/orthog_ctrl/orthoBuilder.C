@@ -1,4 +1,4 @@
-#include "arrayBuilder.h"
+#include "orthoBuilder.h"
 #include "orthoMap.h"
 
 #include "main/TimeKeeper.h"
@@ -16,7 +16,7 @@ namespace cp {
 /**
  * Create the map objects and also all the chare arrays needed for an Ortho instance
  */
-CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollection thisInstance)
+CkArrayID Builder::build(int nstates, PeListFactory getPeList, UberCollection thisInstance)
 {
     CkPrintf("Building Ortho Chares\n");
 
@@ -76,7 +76,7 @@ CkArrayID ArrayBuilder::build(int nstates, PeListFactory getPeList, UberCollecti
         mf->dumpMap(&orthoMapTable, thisInstance.getPO());
         delete mf;
     }
-    
+
     // If the map coordinates need to be dumped
     if(config.dumpMapCoordFiles)
     {
