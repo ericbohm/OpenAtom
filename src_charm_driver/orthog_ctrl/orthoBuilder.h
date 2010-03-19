@@ -1,4 +1,5 @@
 #include "load_balance/PeList.h"
+#include "paircalc/pcInstanceIDs.h"
 #include "uber/Uber.h"
 
 #ifndef ORTHO_BUILDER_H
@@ -11,7 +12,7 @@ class Builder
 {
     public:
         /// Construct an ortho world given the configs
-        static CkArrayID build(int nstates, PeListFactory getPeList, UberCollection thisInstance);
+        static CkArrayID build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance);
 };
 
     } // end namespace ortho

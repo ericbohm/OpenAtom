@@ -30,6 +30,9 @@ class SCalcMap : public CkArrayMap
             else
                 return(proc);
         }
+
+        /// Let local code access the paircalc maptable I store. (for use by Ortho mapping code)
+        MapType4* getMapTable() { return &maptable; }
 };
 
 #endif // PC_MAPS_H

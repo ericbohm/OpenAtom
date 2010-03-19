@@ -1,14 +1,13 @@
 #include "orthoBuilder.h"
 #include "orthoMap.h"
-
-#include "main/TimeKeeper.h"
 #include "CLA_Matrix.h"
+
+#include "paircalc/pcMaps.h"
+#include "main/TimeKeeper.h"
 #include "utility/MapFile.h"
 #include "ortho.decl.h"
 
 #include "ckmulticast.h"
-
-extern CkVec <MapType4> AsymScalcImaptable;
 
 namespace cp {
     namespace ortho {
@@ -16,7 +15,7 @@ namespace cp {
 /**
  * Create the map objects and also all the chare arrays needed for an Ortho instance
  */
-CkArrayID Builder::build(int nstates, PeListFactory getPeList, UberCollection thisInstance)
+CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance)
 {
     CkPrintf("Building Ortho Chares\n");
 
@@ -61,7 +60,9 @@ CkArrayID Builder::build(int nstates, PeListFactory getPeList, UberCollection th
     PeList *avail= new PeList();
     if(success == 0)
     {
-        OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
+        MapType4 *maptable = asymmMap->getMapTable();
+        OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, nstates, config.orthoGrainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
     }
 
     double newtime=CmiWallTimer();
