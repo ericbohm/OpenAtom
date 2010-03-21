@@ -6,13 +6,12 @@
 
 #include "ckmulticast.h"
 
-extern CkVec <MapType2> GSImaptable;
 extern Config config;
 
 namespace cp {
     namespace paircalc {
 
-InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList)
+InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
     traceRegisterUserEvent("calcpairContrib", 220);
@@ -20,7 +19,7 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList)
     traceRegisterUserEvent("multiplyResultDGEMM2", 240);
     traceRegisterUserEvent("multiplyResultDGEMM1R", 250);
 
-    createMap(boxSize, getPeList);
+    createMap(boxSize, getPeList, gSpaceMap);
     createPairCalcs();
 
     pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(cfg.inputSpanningTreeFactor);
@@ -43,7 +42,7 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList)
 /**
  * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
  */
-void Builder::createMap(const int boxSize, PeListFactory getPeList)
+void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
 {
     bool maptype = cfg.isSymmetric;
     int achunks = config.numChunksAsym;
@@ -92,7 +91,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList)
     if(success == 0)
     {
         SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, cfg.numStates, cfg.numPlanes, cfg.grainSize, maptype, config.scalc_per_plane,
-                        planes_per_pe, achunks, config.numChunksSym, &GSImaptable[cfg.instance], config.useCuboidMap, config.useCentroidMap, boxSize);
+                        planes_per_pe, achunks, config.numChunksSym, gSpaceMap, config.useCuboidMap, config.useCentroidMap, boxSize);
     }
 
     /// Create a map group that will read and use this map table

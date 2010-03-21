@@ -511,8 +511,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
       // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
       cp::paircalc::Builder symmBuilder(symmPCmgr.pcCfg), asymmBuilder(asymmPCmgr.pcCfg);
-      symmPCmgr.pcHandle  = symmBuilder.build (boxSize, getPeList);
-      asymmPCmgr.pcHandle = asymmBuilder.build(boxSize, getPeList);
+      symmPCmgr.pcHandle  = symmBuilder.build (boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
+      asymmPCmgr.pcHandle = asymmBuilder.build(boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
 
       // Spawn the ortho array and its world of chares/classes (CLA_Matric, OrthoHelper etc.)
       CkGroupID orthoAID  = cp::ortho::Builder::build(nstates, asymmPCmgr.pcHandle, getPeList, thisInstance);

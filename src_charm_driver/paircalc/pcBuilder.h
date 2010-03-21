@@ -8,6 +8,8 @@
 #ifndef PC_BUILDER_H
 #define PC_BUILDER_H
 
+class MapType2;
+
 namespace cp {
     namespace paircalc {
 
@@ -18,11 +20,11 @@ class Builder
         /// Always charge a builder with creating one paircalc array
         Builder(const pcConfig &_cfg): cfg(_cfg) {}
         /// Trigger the creation of a pc array with the given configs, within the given pes/boxes etc
-        InstanceIDs build(const int boxSize, PeListFactory getPeList);
+        InstanceIDs build(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap);
 
     private:
         /// Create the mapping required to instantiate a PC array
-        void createMap(const int boxSize, PeListFactory getPeList);
+        void createMap(const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap);
         /// Create a paircalc array using info in the supplied pcConfig object
         void createPairCalcs();
 
