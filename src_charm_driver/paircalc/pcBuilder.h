@@ -2,7 +2,6 @@
 #include "pcConfig.h"
 #include "pcInstanceIDs.h"
 #include "load_balance/PeList.h"
-#include "uber/Uber.h"
 
 #include "charm++.h"
 
@@ -19,11 +18,11 @@ class Builder
         /// Always charge a builder with creating one paircalc array
         Builder(const pcConfig &_cfg): cfg(_cfg) {}
         /// Trigger the creation of a pc array with the given configs, within the given pes/boxes etc
-        InstanceIDs build(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
+        InstanceIDs build(const int boxSize, PeListFactory getPeList);
 
     private:
         /// Create the mapping required to instantiate a PC array
-        void createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
+        void createMap(const int boxSize, PeListFactory getPeList);
         /// Create a paircalc array using info in the supplied pcConfig object
         void createPairCalcs();
 

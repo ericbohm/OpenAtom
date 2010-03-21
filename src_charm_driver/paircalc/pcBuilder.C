@@ -7,11 +7,12 @@
 #include "ckmulticast.h"
 
 extern CkVec <MapType2> GSImaptable;
+extern Config config;
 
 namespace cp {
     namespace paircalc {
 
-InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
+InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList)
 {
     traceRegisterUserEvent("calcpairDGEMM", 210);
     traceRegisterUserEvent("calcpairContrib", 220);
@@ -19,7 +20,7 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, UberColle
     traceRegisterUserEvent("multiplyResultDGEMM2", 240);
     traceRegisterUserEvent("multiplyResultDGEMM1R", 250);
 
-    createMap(boxSize, getPeList, thisInstance);
+    createMap(boxSize, getPeList);
     createPairCalcs();
 
     pcHandle.mCastMgrGID = CProxy_CkMulticastMgr::ckNew(cfg.inputSpanningTreeFactor);
@@ -42,9 +43,8 @@ InstanceIDs Builder::build(const int boxSize, PeListFactory getPeList, UberColle
 /**
  * Create the map for placing the paircalculator chare array elements. Also perform other housekeeping chores like dumping the maps to files etc.
  */
-void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance)
+void Builder::createMap(const int boxSize, PeListFactory getPeList)
 {
-    int instanceNum = thisInstance.getPO();
     bool maptype = cfg.isSymmetric;
     int achunks = config.numChunksAsym;
     if(cfg.isSymmetric && cfg.arePhantomsOn)
@@ -92,7 +92,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
     if(success == 0)
     {
         SCalcMapTable symTable = SCalcMapTable(&mapTable, availGlobG, cfg.numStates, cfg.numPlanes, cfg.grainSize, maptype, config.scalc_per_plane,
-                        planes_per_pe, achunks, config.numChunksSym, &GSImaptable[instanceNum], config.useCuboidMap, config.useCentroidMap, boxSize);
+                        planes_per_pe, achunks, config.numChunksSym, &GSImaptable[cfg.instance], config.useCuboidMap, config.useCentroidMap, boxSize);
     }
 
     /// Create a map group that will read and use this map table
@@ -105,7 +105,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
     if(config.dumpMapFiles)
     {
         MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
-        mf->dumpMap(&mapTable, instanceNum);
+        mf->dumpMap(&mapTable, cfg.instance);
         delete mf;
     }
 
@@ -113,7 +113,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, UberCollecti
     if(config.dumpMapCoordFiles)
     {
         MapFile *mf = new MapFile((mapName+"_coord").c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
-        mf->dumpMapCoords(&mapTable, instanceNum);
+        mf->dumpMapCoords(&mapTable, cfg.instance);
         delete mf;
     }
 
