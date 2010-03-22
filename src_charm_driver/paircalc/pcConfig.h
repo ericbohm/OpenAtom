@@ -113,12 +113,56 @@ class pcConfig
         int gemmSplitFWm;
         int gemmSplitBW;
         ///}
+
+
+
+        void pup(PUP::er &p)
+        {
+            p|isDynamics;
+            p|isSymmetric;
+            p|arePhantomsOn;
+            // Vars that indicate problem size / decomposition
+            p|numPlanes;
+            p|numStates;
+            p|numChunks;
+            p|grainSize;
+            p|orthoGrainSize;
+            // Instance, Array, Group identification etc.
+            p|instanceIndex;
+            p|gSpaceAID;
+            p|gSpaceEP;
+            p|PsiVEP;
+            // Configure the PC array behavior
+            p|conserveMemory;
+            p|isLBon;
+            p|isDoublePackOn;
+            // Input communication configs
+            p|isInputMulticast;
+            p|inputSpanningTreeFactor;
+            p|inputMsgPriority;
+            // Output communication configs
+            p|isOutputReduced;
+            p|resultMsgPriority;
+            // Backward path configs
+            p|areBWTilesCollected;
+            p|isBWstreaming;
+            p|isBWbarriered;
+            p|shouldDelayBWsend;
+            // Timing / Tracing configs
+            #ifdef _CP_SUBSTEP_TIMING_
+            p|forwardTimerID;
+            p|backwardTimerID;
+            p|beginTimerCB;
+            p|endTimerCB;
+            #endif
+            p|gemmSplitFWk;
+            p|gemmSplitFWm;
+            p|gemmSplitBW;
+        }
 };
 
     } // end namespace paircalc
 } // end namespace cp
 
-/// PUP this class as raw bytes (for now)
-PUPbytes(cp::paircalc::pcConfig)
-
 #endif // PC_CONFIG_H
+
