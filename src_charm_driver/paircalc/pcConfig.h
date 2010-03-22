@@ -47,7 +47,7 @@ class pcConfig
 
         //------------------- Instance, Array, Group identification etc. --------------------------
         /// The proxyOffset value of thisInstance of OpenAtom computations
-        int instance;
+        int instanceIndex;
         /// The array ID of the GSpace chare array this instance talks to
         CkArrayID gSpaceAID; ///< @note: Originally, final_callbackid
         /// The entry point to which this instance should send results to

@@ -104,7 +104,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gS
     if(config.dumpMapFiles)
     {
         MapFile *mf = new MapFile(mapName.c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
-        mf->dumpMap(&mapTable, cfg.instance);
+        mf->dumpMap(&mapTable, cfg.instanceIndex);
         delete mf;
     }
 
@@ -112,7 +112,7 @@ void Builder::createMap(const int boxSize, PeListFactory getPeList, MapType2 *gS
     if(config.dumpMapCoordFiles)
     {
         MapFile *mf = new MapFile((mapName+"_coord").c_str(), 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, cfg.grainSize);
-        mf->dumpMapCoords(&mapTable, cfg.instance);
+        mf->dumpMapCoords(&mapTable, cfg.instanceIndex);
         delete mf;
     }
 

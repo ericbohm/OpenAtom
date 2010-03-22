@@ -477,7 +477,7 @@ main::main(CkArgMsg *msg) {
     cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
     cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
 
-    cfgSymmPC.instance           = thisInstance.proxyOffset;
+    cfgSymmPC.instanceIndex      = thisInstance.proxyOffset;
 
     cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
     cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;

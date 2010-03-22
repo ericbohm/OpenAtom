@@ -397,7 +397,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
     } array, *ap;
 
 
-      contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb, cfg.instance);
+      contribute(sizeof(int), &numRecd , CkReduction::sum_int, msg->synccb, cfg.instanceIndex);
       numRecd=0;
   }
 
