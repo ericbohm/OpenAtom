@@ -595,6 +595,10 @@ main::main(CkArgMsg *msg) {
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
+
+    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim

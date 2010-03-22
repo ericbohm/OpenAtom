@@ -48,6 +48,8 @@ class pcConfig
         //------------------- Instance, Array, Group identification etc. --------------------------
         /// The proxyOffset value of thisInstance of OpenAtom computations
         int instanceIndex;
+        /// Callback to trigger at the end of a paircalc array's init
+        CkCallback uponSetupCompletion;
         /// The array ID of the GSpace chare array this instance talks to
         CkArrayID gSpaceAID; ///< @note: Originally, final_callbackid
         /// The entry point to which this instance should send results to
@@ -129,6 +131,7 @@ class pcConfig
             p|orthoGrainSize;
             // Instance, Array, Group identification etc.
             p|instanceIndex;
+            p|uponSetupCompletion;
             p|gSpaceAID;
             p|gSpaceEP;
             p|PsiVEP;
