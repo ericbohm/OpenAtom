@@ -3,6 +3,7 @@ module ortho
 	class CLA_Matrix_interface;
 	class UberCollection;
 	include "paircalc/pcFwdDeclarations.h";
+    include "orthog_ctrl/orthoConfig.h";
     namespace cp {
         namespace ortho {
             class PCSectionManager;
@@ -19,6 +20,7 @@ module ortho
 		 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2,
 		 CLA_Matrix_interface matC2, CLA_Matrix_interface matA3,
 		 CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+         cp::ortho::orthoConfig &_cfg,
          CkArrayID step2Helper,
          int timekeep, UberCollection, CkGroupID oMCastGID, CkGroupID oRedGID
          	);

@@ -688,9 +688,11 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
  CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
+ orthoConfig &_cfg,
  CkArrayID _step2Helper,
  int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
-    thisInstance(_instance), 
+    thisInstance(_instance),
+    cfg(_cfg),
     oMCastGID(_oMCastGID), oRedGID(_oRedGID),
     step2Helper(_step2Helper)
 {

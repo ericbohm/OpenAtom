@@ -238,6 +238,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
                                                           matA1, matB1, matC1,
                                                           matA2, matB2, matC2,
                                                           matA3, matB3, matC3,
+                                                          cfg,
                                                           helperAID,
                                                           timekeep, thisInstance,
                                                           orthoMcastGID, orthoRedGID);

@@ -87,6 +87,7 @@
  ******************************************************************************/
 
 #include "debug_flags.h"
+#include "orthoConfig.h"
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
 #include "CLA_Matrix.h"
@@ -121,6 +122,7 @@ class Ortho : public CBase_Ortho
                 CLA_Matrix_interface matA1, CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
                 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
                 CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+                orthoConfig &_cfg,
                 CkArrayID step2Helper,
                 int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
@@ -204,6 +206,7 @@ class Ortho : public CBase_Ortho
     
     private:
         const UberCollection thisInstance;
+        orthoConfig cfg;
         int timeKeep;
         double *orthoT; // only used on [0,0]
         double *ortho; //only used on [0,0]
