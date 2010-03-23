@@ -36,7 +36,6 @@ class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
   CkCallback cb;
   CkGroupID mCastGrpId;
-  CkCallback synccb;
   bool lbsync;
   int orthoX;
   int orthoY;

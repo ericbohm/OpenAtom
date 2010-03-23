@@ -45,7 +45,6 @@
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
 #include "timeKeeper.decl.h"
-#include "instanceController.decl.h"
 
 #include "charm++.h"
 #include "utility/util.h"
@@ -65,7 +64,6 @@
 extern Config config;
 extern int nstates;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
 extern ComlibInstanceHandle orthoInstance;
@@ -617,17 +615,15 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
     symmSectionMgr.init (thisIndex, cfgSymmPC , symAID , oMCastGID, oRedGID);
     asymmSectionMgr.init(thisIndex, cfgAsymmPC, asymAID, oMCastGID, oRedGID);
     
-    /// Once the PC - ortho channel is setup, the PC instance should notify the instance controller that its ready
-    CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
     /// Symmetric PC sections should trigger S -> T computations in Ortho via this method
     CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));
     /// Asymmetric sections should simply drop off lambda at this method
     CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
 
     /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
-    symmSectionMgr.setupArraySection(orthoCB,doneInitCB,config.phantomSym,config.useOrthoDirect);
+    symmSectionMgr.setupArraySection(orthoCB,config.phantomSym,config.useOrthoDirect);
     /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
-    asymmSectionMgr.setupArraySection(orthoLambdaCB, doneInitCB, config.phantomSym, config.useOrthoDirect);
+    asymmSectionMgr.setupArraySection(orthoLambdaCB, config.phantomSym, config.useOrthoDirect);
 }
 
 

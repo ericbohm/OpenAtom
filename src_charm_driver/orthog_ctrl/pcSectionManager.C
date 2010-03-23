@@ -131,7 +131,7 @@ void PCSectionManager::createPCsection(const int s1, const int s2)
  *  - a mirror non-phantom section if the user turns off phantoms 
  *
  */
-void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool arePhantomsOn, bool useComlibForOrthoToPC)
+void PCSectionManager::setupArraySection(CkCallback cb, bool arePhantomsOn, bool useComlibForOrthoToPC)
 {
     int s1, s2;
     /// Find the states indices of the paircalcs this ortho *should* be talking to. 
@@ -164,7 +164,6 @@ void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool 
         gredMsg->cb=cb;
         gredMsg->mCastGrpId= orthoRedGrpID;
         gredMsg->lbsync=false;
-        gredMsg->synccb=synccb;
         gredMsg->orthoX=orthoIndex.x;
         gredMsg->orthoY=orthoIndex.y;
         pcSection.initGRed(gredMsg);

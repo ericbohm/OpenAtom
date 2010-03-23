@@ -23,7 +23,7 @@ class PCSectionManager
         /// PUP serializer
         void pup(PUP::er &p);
         /// Creates a paircalc array section given the necessary info. Replaces initOneRedSect()
-        void setupArraySection(CkCallback cb, CkCallback synccb, bool arePhantomsOn, bool useComlibForOrthoToPC);
+        void setupArraySection(CkCallback cb, bool arePhantomsOn, bool useComlibForOrthoToPC);
         /// Sends out the results to the paircalc section. Replaces finishPairCalcSection()
         void sendResults(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority);
         /// Used to send OrthoT to the asymm instance. Replaces sendMatrix()
