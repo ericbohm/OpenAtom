@@ -516,8 +516,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
       // Spawn the ortho array and its world of chares/classes (CLA_Matric, OrthoHelper etc.)
       cp::ortho::orthoConfig orthoCfg;
+      orthoCfg.numStates = nstates;
+      orthoCfg.grainSize = asymmPCmgr.pcCfg.orthoGrainSize;
       cp::ortho::Builder orthoBuilder(orthoCfg);
-      CkGroupID orthoAID  = orthoBuilder.build(nstates, asymmPCmgr.pcHandle, getPeList, thisInstance);
+      CkGroupID orthoAID  = orthoBuilder.build(asymmPCmgr.pcHandle, getPeList, thisInstance);
       myOrtho = CProxy_Ortho(orthoAID);
       CkAssert(myOrtho.ckGetArrayID() == orthoAID);
 

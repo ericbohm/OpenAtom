@@ -15,7 +15,7 @@ namespace cp {
 /**
  * Create the map objects and also all the chare arrays needed for an Ortho instance
  */
-CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance)
+CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance)
 {
     CkPrintf("Building Ortho Chares\n");
 
@@ -40,19 +40,19 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
 
     PeList *excludePes= new PeList(1);
     excludePes->TheList[0]=config.numPes;
-    int nOrtho= (nstates/config.orthoGrainSize);
+    int nOrtho= (cfg.numStates/cfg.grainSize);
     nOrtho *= nOrtho;
     double Timer=CmiWallTimer();
 
     availGlobR->reset();
     MapType2 orthoMapTable;
-    orthoMapTable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+    orthoMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
 
     int success = 0;
     if(config.loadMapFiles)
     {
         int size[2];
-        size[0] = size[1] = nstates/config.orthoGrainSize;
+        size[0] = size[1] = cfg.numStates/cfg.grainSize;
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         success = mf->loadMap("OrthoMap", &orthoMapTable);
         delete mf;
@@ -62,7 +62,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     {
         SCalcMap *asymmMap = CProxy_SCalcMap(asymmHandle.mapperGID).ckLocalBranch();
         MapType4 *maptable = asymmMap->getMapTable();
-        OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, nstates, config.orthoGrainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
+        OrthoMapTable Otable = OrthoMapTable(&orthoMapTable, avail, cfg.numStates, cfg.grainSize, maptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
     }
 
     double newtime=CmiWallTimer();
@@ -72,7 +72,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     if(config.dumpMapFiles)
     {
         int size[2];
-        size[0] = size[1] = nstates/config.orthoGrainSize;
+        size[0] = size[1] = cfg.numStates/cfg.grainSize;
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         mf->dumpMap(&orthoMapTable, thisInstance.getPO());
         delete mf;
@@ -82,7 +82,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     if(config.dumpMapCoordFiles)
     {
         int size[2];
-        size[0] = size[1] = nstates/config.orthoGrainSize;
+        size[0] = size[1] = cfg.numStates/cfg.grainSize;
         MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
         mf->dumpMapCoords(&orthoMapTable, thisInstance.getPO());
         delete mf;
@@ -97,13 +97,13 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     // Create maps for the Ortho helper chares
     if(config.useOrthoHelpers)
     {
-        helperMapTable.buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
+        helperMapTable.buildMap(cfg.numStates/cfg.grainSize, cfg.numStates/cfg.grainSize);
         double Timer=CmiWallTimer();
         success = 0;
         if(config.loadMapFiles)
         {
             int size[2];
-            size[0] = size[1] = nstates/config.orthoGrainSize;
+            size[0] = size[1] = cfg.numStates/cfg.grainSize;
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             success = mf->loadMap("OrthoHelperMap", &helperMapTable);
             delete mf;
@@ -111,7 +111,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
 
         if(success == 0)
         {
-            OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, nstates, config.orthoGrainSize, &orthoMapTable, avail, excludePes);
+            OrthoHelperMapTable OHtable = OrthoHelperMapTable(&helperMapTable, cfg.numStates, cfg.grainSize, &orthoMapTable, avail, excludePes);
         }
         double newtime=CmiWallTimer();
         CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
@@ -124,7 +124,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
         if(config.dumpMapFiles)
         {
             int size[2];
-            size[0] = size[1] = nstates/config.orthoGrainSize;
+            size[0] = size[1] = cfg.numStates/cfg.grainSize;
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             mf->dumpMap(&helperMapTable, thisInstance.getPO());
             delete mf;
@@ -133,7 +133,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
         if(config.dumpMapCoordFiles)
         {
             int size[2];
-            size[0] = size[1] = nstates/config.orthoGrainSize;
+            size[0] = size[1] = cfg.numStates/cfg.grainSize;
             MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
             mf->dumpMapCoords(&helperMapTable, thisInstance.getPO());
             delete mf;
@@ -181,8 +181,8 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
 
     make_multiplier(&matA1, &matB1, &matC1,
                     orthoProxy, orthoProxy, orthoProxy,
-                    nstates, nstates, nstates,
-                    config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                    cfg.numStates, cfg.numStates, cfg.numStates,
+                    cfg.grainSize, cfg.grainSize, cfg.grainSize,
                     1, 1, 1,
                     ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
                     mCastGID, MM_ALG_2D, config.gemmSplitOrtho
@@ -192,8 +192,8 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     {
         make_multiplier(&matA2, &matB2, &matC2,
                         orthoHelperProxy, orthoHelperProxy, orthoHelperProxy,
-                        nstates, nstates, nstates,
-                        config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                        cfg.numStates, cfg.numStates, cfg.numStates,
+                        cfg.grainSize, cfg.grainSize, cfg.grainSize,
                         1, 1, 1,
                         ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
                         mCastGID, MM_ALG_2D, config.gemmSplitOrtho
@@ -203,8 +203,8 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
     {
         make_multiplier(&matA2, &matB2, &matC2,
                         orthoProxy, orthoProxy, orthoProxy,
-                        nstates, nstates, nstates,
-                        config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                        cfg.numStates, cfg.numStates, cfg.numStates,
+                        cfg.grainSize, cfg.grainSize, cfg.grainSize,
                         1, 1, 1,
                         ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
                         mCastGID, MM_ALG_2D, config.gemmSplitOrtho
@@ -213,8 +213,8 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
 
     make_multiplier(&matA3, &matB3, &matC3,
                     orthoProxy, orthoProxy, orthoProxy,
-                    nstates, nstates, nstates,
-                    config.orthoGrainSize, config.orthoGrainSize, config.orthoGrainSize,
+                    cfg.numStates, cfg.numStates, cfg.numStates,
+                    cfg.grainSize, cfg.grainSize, cfg.grainSize,
                     1, 1, 1,
                     ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
                     mCastGID, MM_ALG_2D, config.gemmSplitOrtho
@@ -222,19 +222,19 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
 
     // Register with the time keeper
     int timekeep=keeperRegister("Ortho S to T");
-    int maxorthoindex=(nstates/config.orthoGrainSize-1);
-    int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
+    int maxorthoindex=(cfg.numStates/cfg.grainSize-1);
+    int maxorthostateindex=(cfg.numStates/cfg.grainSize-1) * cfg.grainSize;
     // Insert each element of the Ortho array
-    for (int s1 = 0; s1 <= maxorthostateindex; s1 += config.orthoGrainSize)
-        for (int s2 = 0; s2 <= maxorthostateindex; s2 += config.orthoGrainSize)
+    for (int s1 = 0; s1 <= maxorthostateindex; s1 += cfg.grainSize)
+        for (int s2 = 0; s2 <= maxorthostateindex; s2 += cfg.grainSize)
         {
-            int indX = s1 / config.orthoGrainSize;
-            int indY = s2 / config.orthoGrainSize;
+            int indX = s1 / cfg.grainSize;
+            int indY = s2 / cfg.grainSize;
             indX = (indX>maxorthoindex) ? maxorthoindex : indX;
             indY = (indY>maxorthoindex) ? maxorthoindex : indY;
 
             orthoProxy(indX, indY).insert(
-                                                          config.orthoGrainSize, config.orthoGrainSize,
+                                                          cfg.grainSize, cfg.grainSize,
                                                           matA1, matB1, matC1,
                                                           matA2, matB2, matC2,
                                                           matA3, matB3, matC3,
@@ -247,7 +247,7 @@ CkArrayID Builder::build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, Pe
             {
                 CkCallback endOfStep2CB(CkIndex_Ortho::recvStep2(NULL), CkArrayIndex2D(indX,indY), orthoProxy);
                 orthoHelperProxy(indX, indY).insert(
-                                                          config.orthoGrainSize, config.orthoGrainSize,
+                                                          cfg.grainSize, cfg.grainSize,
                                                           matA2, matB2, matC2,
                                                           endOfStep2CB);
             }
