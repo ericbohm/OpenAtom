@@ -12,7 +12,7 @@ class Builder
 {
     public:
         /// Construct an ortho world given the configs
-        static CkArrayID build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance);
+        CkArrayID build(int nstates, cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance);
 };
 
     } // end namespace ortho

@@ -515,7 +515,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
       asymmPCmgr.pcHandle = asymmBuilder.build(boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
 
       // Spawn the ortho array and its world of chares/classes (CLA_Matric, OrthoHelper etc.)
-      CkGroupID orthoAID  = cp::ortho::Builder::build(nstates, asymmPCmgr.pcHandle, getPeList, thisInstance);
+      cp::ortho::Builder orthoBuilder;
+      CkGroupID orthoAID  = orthoBuilder.build(nstates, asymmPCmgr.pcHandle, getPeList, thisInstance);
       myOrtho = CProxy_Ortho(orthoAID);
       CkAssert(myOrtho.ckGetArrayID() == orthoAID);
 
