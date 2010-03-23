@@ -9,18 +9,21 @@ namespace cp {
 class orthoConfig
 {
     public:
+        //-------------------- Vars that indicate problem size / decomposition --------------------
         /// The number of states in the simulation (the dimension of the input square matrix)
         int numStates;
         /// The block size for parallelization
         int grainSize;
 
+        //------------------- Instance, Array, Group identification etc. --------------------------
+        int instanceIndex;
+        /// Callback to notify bubble owner (GSpace) that a tolerance update is needed
+        CkCallback uponToleranceFailure;
+
         /// Is an OrthoHelper chare array available to perform the step 2 computations
         bool isStep2HelperOn;
         /// Pander to the BGL NIC and split the GEMMs in ortho
         int gemmSplit;
-
-        /// Callback to notify bubble owner (GSpace) that a tolerance update is needed
-        CkCallback uponToleranceFailure;
 
 
 
@@ -28,8 +31,10 @@ class orthoConfig
         {
             p|numStates;
             p|grainSize;
-            p|isStep2HelperOn;
+            p|instanceIndex;
             p|uponToleranceFailure;
+            p|isStep2HelperOn;
+            p|gemmSplit;
         }
 };
 

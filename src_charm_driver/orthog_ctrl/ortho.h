@@ -91,7 +91,6 @@
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
 #include "CLA_Matrix.h"
-#include "uber/Uber.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -124,7 +123,7 @@ class Ortho : public CBase_Ortho
                 CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
                 orthoConfig &_cfg,
                 CkArrayID step2Helper,
-                int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
+                int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
         /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
         void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
@@ -205,7 +204,6 @@ class Ortho : public CBase_Ortho
         bool step3done;
     
     private:
-        const UberCollection thisInstance;
         orthoConfig cfg;
         int timeKeep;
         double *orthoT; // only used on [0,0]

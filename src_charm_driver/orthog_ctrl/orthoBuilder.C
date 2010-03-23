@@ -15,7 +15,7 @@ namespace cp {
 /**
  * Create the map objects and also all the chare arrays needed for an Ortho instance
  */
-CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList, UberCollection thisInstance)
+CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory getPeList)
 {
     CkPrintf("Building Ortho Chares\n");
 
@@ -74,7 +74,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
         int size[2];
         size[0] = size[1] = cfg.numStates/cfg.grainSize;
         MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-        mf->dumpMap(&orthoMapTable, thisInstance.getPO());
+        mf->dumpMap(&orthoMapTable, cfg.instanceIndex);
         delete mf;
     }
 
@@ -84,7 +84,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
         int size[2];
         size[0] = size[1] = cfg.numStates/cfg.grainSize;
         MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-        mf->dumpMapCoords(&orthoMapTable, thisInstance.getPO());
+        mf->dumpMapCoords(&orthoMapTable, cfg.instanceIndex);
         delete mf;
     }
 
@@ -126,7 +126,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
             int size[2];
             size[0] = size[1] = cfg.numStates/cfg.grainSize;
             MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-            mf->dumpMap(&helperMapTable, thisInstance.getPO());
+            mf->dumpMap(&helperMapTable, cfg.instanceIndex);
             delete mf;
         }
 
@@ -135,7 +135,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
             int size[2];
             size[0] = size[1] = cfg.numStates/cfg.grainSize;
             MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-            mf->dumpMapCoords(&helperMapTable, thisInstance.getPO());
+            mf->dumpMapCoords(&helperMapTable, cfg.instanceIndex);
             delete mf;
         }
     }
@@ -240,7 +240,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
                                                           matA3, matB3, matC3,
                                                           cfg,
                                                           helperAID,
-                                                          timekeep, thisInstance,
+                                                          timekeep,
                                                           orthoMcastGID, orthoRedGID);
 
             if(config.useOrthoHelpers)

@@ -154,7 +154,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	PRINT_LINE_DASH;
         int iii = numGlobalIter;
         if(gen_wave==0){iii+=1;}
-	CkPrintf("{%d} Iteration %d done\n",thisInstance.proxyOffset,iii);
+	CkPrintf("{%d} Iteration %d done\n",cfg.instanceIndex,iii);
 	PRINT_LINE_STAR; CkPrintf("\n");
 	PRINT_LINE_STAR;
       }else{
@@ -163,9 +163,9 @@ void Ortho::start_calc(CkReductionMsg *msg){
 	  PRINT_LINE_STAR;
 	}//endif
         if(numGlobalIter<config.maxIter){
-  	  CkPrintf("{%d} Beginning Iteration %d \n",thisInstance.proxyOffset, numGlobalIter);
+  	  CkPrintf("{%d} Beginning Iteration %d \n",cfg.instanceIndex, numGlobalIter);
 	}else{
-  	  CkPrintf("{%d} Completing Iteration %d \n", thisInstance.proxyOffset,numGlobalIter-1);
+  	  CkPrintf("{%d} Completing Iteration %d \n", cfg.instanceIndex,numGlobalIter-1);
 	}//endif
 	PRINT_LINE_DASH;
       }//endif
@@ -255,7 +255,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   // do tolerance check on smat, do_iteration will be called by reduction root
   if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("{%d} doing tolerance check on SMAT \n",thisInstance.proxyOffset);
+      CkPrintf("{%d} doing tolerance check on SMAT \n",cfg.instanceIndex);
     }//endif
     double max =array_diag_max(m,n,S);
     contribute(sizeof(double),&max, CkReduction::max_double, 
@@ -304,9 +304,9 @@ void Ortho::collect_results(void){
         }else{
 	  if(numGlobalIter>0){
 	    CkPrintf("{%d}Iteration time (ORTHO) : %g\n", 
-		     thisInstance.proxyOffset,
+		     cfg.instanceIndex,
                wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("{%d} Ortho S->T iterations: %d\n",thisInstance.proxyOffset,iterations);
+	    CkPrintf("{%d} Ortho S->T iterations: %d\n",cfg.instanceIndex,iterations);
 	  }//endif
         }//endif
     }//endif
@@ -444,7 +444,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
 
-  CkPrintf("{%d} SMAT tol    = %g\n", thisInstance.proxyOffset,tolMax);
+  CkPrintf("{%d} SMAT tol    = %g\n", cfg.instanceIndex,tolMax);
   if(tolMax < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
@@ -452,7 +452,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       CkPrintf("recalculating PsiV due to tolerance failure \n");
-      UgSpaceDriverProxy[thisInstance.proxyOffset].needUpdatedPsiV();  //GspaceDriver will trigger our resume
+      UgSpaceDriverProxy[cfg.instanceIndex].needUpdatedPsiV();  //GspaceDriver will trigger our resume
   }//endif
 
 //============================================================================
@@ -689,8 +689,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
  orthoConfig &_cfg,
  CkArrayID _step2Helper,
- int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
-    thisInstance(_instance),
+ int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
     cfg(_cfg),
     oMCastGID(_oMCastGID), oRedGID(_oRedGID),
     step2Helper(_step2Helper)
