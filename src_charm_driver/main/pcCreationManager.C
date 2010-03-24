@@ -1,14 +1,13 @@
 #include "pcCreationManager.h"
-#include "pcBuilder.h"
+#include "paircalc/pcBuilder.h"
 #include "orthog_ctrl/orthoBuilder.h"
-#include "orthog_ctrl/orthoConfig.h"
 #include "load_balance/IntMap.h"
 #include "ortho.decl.h"
 
 namespace cp {
-    namespace paircalc {
+    namespace startup {
 
-CreationManager::CreationManager(const pcConfig &_symmCfg, const pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg):
+PCCreationManager::PCCreationManager(const paircalc::pcConfig &_symmCfg, const paircalc::pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg):
     symmCfg(_symmCfg), asymmCfg(_asymmCfg), orthoCfg(_orthoCfg)
 {
     if (symmCfg.orthoGrainSize != asymmCfg.orthoGrainSize)
@@ -18,7 +17,7 @@ CreationManager::CreationManager(const pcConfig &_symmCfg, const pcConfig &_asym
 
 
 
-void CreationManager::build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
+void PCCreationManager::build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap)
 {
     /// Create the message that will hold the handles to created chares
     pcSetupMsg *msg = new pcSetupMsg();
@@ -45,6 +44,6 @@ void CreationManager::build(CkCallback cb, const int boxSize, PeListFactory getP
     cb.send(msg);
 }
 
-    } // end namespace paircalc
+    } // end namespace startup
 } // end namespace cp
 

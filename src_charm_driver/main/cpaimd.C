@@ -39,7 +39,7 @@
 //============================================================================
 #include "cpaimd.h"
 #include "InstanceController.h"
-#include "paircalc/pcCreationManager.h"
+#include "pcCreationManager.h"
 #include "paircalc/ckPairCalculator.h"
 #include "groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
@@ -787,7 +787,7 @@ Per Instance startup BEGIN
         cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
         cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
 
-        cp::paircalc::CreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
+        cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
         pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
 
         //============================================================================
