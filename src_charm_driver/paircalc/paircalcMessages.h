@@ -1,9 +1,9 @@
 #include "paircalcMessages.decl.h"
+#include "pcInstanceIDs.h"
 #include "ckcomplex.h"
 
 #ifndef PAIRCALC_MESSAGES_H
 #define PAIRCALC_MESSAGES_H
-
 
 class RDMAHandleMsg : public CMessage_RDMAHandleMsg
 {
@@ -279,5 +279,15 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
   friend class CMessage_entireResultMsg2;
 };
 
+
+
+/// paircalc::CreationManager returns relevant chare array handles via this msg
+class pcSetupMsg: public CMessage_pcSetupMsg
+{
+    public:
+        CkArrayID gspAID;
+        cp::paircalc::InstanceIDs symmIDs, asymmIDs;
+        CkArrayID orthoAID;
+};
 
 #endif // PAIRCALC_MESSAGES_H

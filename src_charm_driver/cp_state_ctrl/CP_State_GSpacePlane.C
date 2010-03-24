@@ -48,9 +48,8 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 
-#include "orthog_ctrl/orthoBuilder.h"
-#include "paircalc/pcBuilder.h"
-
+#include "paircalc/pcCreationManager.h"
+#include "paircalc/paircalcMessages.h"
 #include "utility/util.h"
 #include "main/groups.h"
 #include "main/eesCache.h"
@@ -505,35 +504,10 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 
   if (thisIndex.x == 0 && thisIndex.y == 0)
   {
-      PRINT_LINE_STAR;
-      PRINTF("Building Psi and Lambda Pair Calculators\n");
-      PRINT_LINE_DASH;printf("\n");
-
-      // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
-      cp::paircalc::Builder symmBuilder(symmPCmgr.pcCfg), asymmBuilder(asymmPCmgr.pcCfg);
-      symmPCmgr.pcHandle  = symmBuilder.build (boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
-      asymmPCmgr.pcHandle = asymmBuilder.build(boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
-
-      // Spawn the ortho array and its world of chares/classes (CLA_Matric, OrthoHelper etc.)
-      cp::ortho::orthoConfig orthoCfg;
-      orthoCfg.numStates = nstates;
-      orthoCfg.grainSize = asymmPCmgr.pcCfg.orthoGrainSize;
-      orthoCfg.instanceIndex = thisInstance.getPO();
-      cp::ortho::Builder orthoBuilder(orthoCfg);
-      CkGroupID orthoAID  = orthoBuilder.build(asymmPCmgr.pcHandle, getPeList);
-      myOrtho = CProxy_Ortho(orthoAID);
-      CkAssert(myOrtho.ckGetArrayID() == orthoAID);
-
-      // Ask ortho to setup its communication sections of paircalcs
-      myOrtho.makeSections(symmPCmgr.pcCfg, asymmPCmgr.pcCfg, symmPCmgr.pcHandle.pcAID, asymmPCmgr.pcHandle.pcAID);
-
-      /// Share the required array IDs with other chares in this GSpace array
-      pcSetupMsg *msg = new pcSetupMsg();
-      msg->gspAID     = thisProxy.ckGetArrayID();
-      msg->symmIDs    = symmPCmgr.pcHandle;
-      msg->asymmIDs   = asymmPCmgr.pcHandle;
-      msg->orthoAID   = myOrtho.ckGetArrayID();
-      thisProxy.acceptPairCalcAIDs(msg);
+      // Initialize a paircalc/ortho bubble
+      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), thisProxy);
+      cp::paircalc::CreationManager pcCreator(symmPCmgr.pcCfg, asymmPCmgr.pcCfg);
+      pcCreator.build(pcHandleCB, boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
   }
 //---------------------------------------------------------------------------
    }//end routine
@@ -649,7 +623,6 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 
 void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
 {
-    CkAssert(thisProxy.ckGetArrayID() == msg->gspAID);
     symmPCmgr.pcHandle  = msg->symmIDs;
     asymmPCmgr.pcHandle = msg->asymmIDs;
     myOrtho             = CProxy_Ortho(msg->orthoAID);

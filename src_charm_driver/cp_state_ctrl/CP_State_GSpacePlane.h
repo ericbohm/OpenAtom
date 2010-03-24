@@ -20,17 +20,6 @@ template <class tokenType> class RDMASetupConfirmationMsg;
 
 
 
-class pcSetupMsg: public CMessage_pcSetupMsg
-{
-    public:
-        CkArrayID gspAID;
-        pc::InstanceIDs symmIDs, asymmIDs;
-        CkArrayID orthoAID;
-};
-
-
-
-
 class GSIFFTMsg: public CMessage_GSIFFTMsg 
 {
     public:
