@@ -63,14 +63,6 @@ module timeKeeper
 
 
 
-module startupMessages
-{
-    message pcSetupMsg;
-};
-
-
-
-
 module instanceController
 {
 	array [1D] InstanceController {

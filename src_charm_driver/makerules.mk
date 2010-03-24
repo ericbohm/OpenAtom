@@ -13,7 +13,7 @@ libdriver_src = \
                 MapTable.C PeList.C \
                 util.C MapFile.C para_grp_parse.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
-libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci cpaimd.ci 
+libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci startupMessages.ci cpaimd.ci 
 
 
 # Specify the list of directories whose contents should be stripped from prerequisite lists 
