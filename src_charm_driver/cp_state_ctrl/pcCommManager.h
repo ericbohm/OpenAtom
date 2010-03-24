@@ -21,7 +21,7 @@ class PCCommManager
 
     public:
         /// Constructor
-        PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg);
+        PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg, const pc::InstanceIDs _pcHandle);
         PCCommManager() {} ///< @warning: Just to appease charm migration constructors. pffouggh...
         /// Starts the forward path work (Psi, Lambda and PsiV cases) by multicasting an entry method call to the appropriate PC chare array section
         void sendLeftData (int n, complex* ptr, bool psiV);

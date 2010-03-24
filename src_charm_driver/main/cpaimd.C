@@ -773,7 +773,7 @@ Per Instance startup BEGIN
 
 	    // and then we make the usual set of chares to which we pass
 	    // the Uber Index.
-	    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, boxSize, cfgSymmPC, cfgAsymmPC, thisInstance);
+	    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
 
 	    CmiNetworkProgressAfter(1);
 
@@ -1330,7 +1330,7 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 //============================================================================
 
 void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
-                       int doublePack, CPcharmParaInfo *sim, const int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance)
+                       int doublePack, CPcharmParaInfo *sim, UberCollection thisInstance)
 //============================================================================
    { //begin routine 
 //============================================================================
@@ -1558,7 +1558,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
   gSpaceOpts.setMap(gsMap);
-  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, boxSize, peList4PCmapping, cfgSymmPC, cfgAsymmPC, thisInstance, gSpaceOpts));
+  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
 

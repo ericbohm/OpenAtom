@@ -733,7 +733,7 @@ namespace pc = cp::paircalc;
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
 void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
-                       int doublePack, CPcharmParaInfo *sim, const int boxSize, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection thisInstance);
+                       int doublePack, CPcharmParaInfo *sim, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
 int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);

@@ -1,5 +1,6 @@
 #include "paircalcMessages.decl.h"
 #include "pcInstanceIDs.h"
+#include "pcConfig.h"
 #include "ckcomplex.h"
 
 #ifndef PAIRCALC_MESSAGES_H
@@ -286,6 +287,7 @@ class pcSetupMsg: public CMessage_pcSetupMsg
 {
     public:
         CkArrayID gspAID;
+        cp::paircalc::pcConfig symmCfg, asymmCfg;
         cp::paircalc::InstanceIDs symmIDs, asymmIDs;
         CkArrayID orthoAID;
 };

@@ -22,7 +22,8 @@ void CreationManager::build(CkCallback cb, const int boxSize, PeListFactory getP
 {
     /// Create the message that will hold the handles to created chares
     pcSetupMsg *msg = new pcSetupMsg();
-    //msg->gspAID     = thisProxy.ckGetArrayID();
+    msg->symmCfg    = symmCfg;
+    msg->asymmCfg   = asymmCfg;
 
     // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
     CkPrintf("\n\nCreating the symmetric (psi) and asymmetric (lambda) paircalculators\n");

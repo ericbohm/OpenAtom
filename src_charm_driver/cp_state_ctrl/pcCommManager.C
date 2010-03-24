@@ -18,8 +18,8 @@
 namespace cp {
     namespace gspace {
 
-PCCommManager::PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg):
-    gspaceIndex(gspaceIdx), pcCfg(_cfg),
+PCCommManager::PCCommManager(const CkIndex2D gspaceIdx, const pc::pcConfig &_cfg, const pc::InstanceIDs _pcHandle):
+    gspaceIndex(gspaceIdx), pcCfg(_cfg), pcHandle(_pcHandle),
     sectionGettingLeft(0), sectionGettingRight(0),
     existsLproxy(false), existsRproxy(false)
 {}

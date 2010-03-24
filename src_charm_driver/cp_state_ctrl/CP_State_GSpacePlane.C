@@ -270,14 +270,9 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
                                            int    s_grain,
 					   int   _gforward,
 					   int   _gbackward,
-                       const int boxSize,
-                       PeListFactory getPeList,
-                       const pc::pcConfig &cfgSymmPC,
-                       const pc::pcConfig &cfgAsymmPC,
 					   UberCollection _thisInstance
 					   ) :
   forwardTimeKeep(_gforward),  backwardTimeKeep(_gbackward),
-  symmPCmgr(thisIndex, cfgSymmPC), asymmPCmgr(thisIndex, cfgAsymmPC),
   thisInstance(_thisInstance)
 //============================================================================
    {//begin routine
@@ -290,9 +285,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
 //============================================================================
-
-  symmPCmgr.pcCfg.gSpaceAID  = thisProxy.ckGetArrayID();
-  asymmPCmgr.pcCfg.gSpaceAID = thisProxy.ckGetArrayID();
 
   istate_ind           = thisIndex.x;
   iplane_ind           = thisIndex.y;  
@@ -615,9 +607,9 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
 
 void CP_State_GSpacePlane::acceptPairCalcAIDs(pcSetupMsg *msg)
 {
-    symmPCmgr.pcHandle  = msg->symmIDs;
-    asymmPCmgr.pcHandle = msg->asymmIDs;
-    myOrtho             = CProxy_Ortho(msg->orthoAID);
+    symmPCmgr  = PCCommManager(thisIndex, msg->symmCfg, msg->symmIDs);
+    asymmPCmgr = PCCommManager(thisIndex, msg->asymmCfg, msg->asymmIDs);
+    myOrtho    = CProxy_Ortho(msg->orthoAID);
 
 //============================================================================
 // Contribute to the reduction telling main we are done

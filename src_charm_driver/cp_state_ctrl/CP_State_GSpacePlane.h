@@ -102,7 +102,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         double ake_old;
         
         bool acceptedVPsi;
-        CP_State_GSpacePlane( int, int, int, int,int, int, const int boxSize, PeListFactory getPeList, const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, UberCollection);
+        CP_State_GSpacePlane( int, int, int, int,int, int, UberCollection);
         CP_State_GSpacePlane(CkMigrateMessage *m);
         ~CP_State_GSpacePlane();
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
