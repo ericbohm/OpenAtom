@@ -39,6 +39,7 @@
 //============================================================================
 #include "cpaimd.h"
 #include "InstanceController.h"
+#include "paircalc/pcCreationManager.h"
 #include "paircalc/ckPairCalculator.h"
 #include "groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
@@ -776,6 +777,20 @@ Per Instance startup BEGIN
 
 	    CmiNetworkProgressAfter(1);
 
+        //============================================================================
+        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
+        CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+        cp::ortho::orthoConfig orthoCfg;
+        orthoCfg.numStates     = config.nstates;
+        orthoCfg.grainSize     = config.orthoGrainSize;
+        orthoCfg.instanceIndex = thisInstance.getPO();
+        cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+        cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+
+        cp::paircalc::CreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
+        pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
+
+        //============================================================================
 	    int *usedProc= new int[config.numPesPerInstance];
 	    memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
 	    int charperpe = nstates/(config.numPesPerInstance);

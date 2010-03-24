@@ -8,8 +8,8 @@
 namespace cp {
     namespace paircalc {
 
-CreationManager::CreationManager(const pcConfig &_symmCfg, const pcConfig &_asymmCfg):
-    symmCfg(_symmCfg), asymmCfg(_asymmCfg)
+CreationManager::CreationManager(const pcConfig &_symmCfg, const pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg):
+    symmCfg(_symmCfg), asymmCfg(_asymmCfg), orthoCfg(_orthoCfg)
 {
     if (symmCfg.orthoGrainSize != asymmCfg.orthoGrainSize)
         CkAbort("Ortho grain size mismatch in supllied configs\n");
@@ -32,10 +32,6 @@ void CreationManager::build(CkCallback cb, const int boxSize, PeListFactory getP
 
     // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
     CkPrintf("Creating the ortho array\n");
-    cp::ortho::orthoConfig orthoCfg;
-    orthoCfg.numStates = asymmCfg.numStates;
-    orthoCfg.grainSize = asymmCfg.orthoGrainSize;
-    orthoCfg.instanceIndex = asymmCfg.instanceIndex;
     cp::ortho::Builder orthoBuilder(orthoCfg);
     msg->orthoAID = orthoBuilder.build(msg->asymmIDs, getPeList);
 

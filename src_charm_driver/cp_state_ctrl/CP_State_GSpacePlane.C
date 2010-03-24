@@ -48,7 +48,6 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 
-#include "paircalc/pcCreationManager.h"
 #include "paircalc/paircalcMessages.h"
 #include "utility/util.h"
 #include "main/groups.h"
@@ -502,13 +501,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   }//endif
 
 
-  if (thisIndex.x == 0 && thisIndex.y == 0)
-  {
-      // Initialize a paircalc/ortho bubble
-      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), thisProxy);
-      cp::paircalc::CreationManager pcCreator(symmPCmgr.pcCfg, asymmPCmgr.pcCfg);
-      pcCreator.build(pcHandleCB, boxSize, getPeList, &GSImaptable[thisInstance.getPO()]);
-  }
 //---------------------------------------------------------------------------
    }//end routine
 //============================================================================

@@ -1,4 +1,5 @@
 #include "pcConfig.h"
+#include "orthog_ctrl/orthoConfig.h"
 #include "paircalcMessages.h"
 #include "load_balance/PeList.h"
 
@@ -19,11 +20,14 @@ namespace cp {
 class CreationManager
 {
     public:
-        CreationManager(const pcConfig &_symmCfg, const pcConfig &_asymmCfg);
+        CreationManager(const pcConfig &_symmCfg, const pcConfig &_asymmCfg, const ortho::orthoConfig &_orthoCfg);
         void build(CkCallback cb, const int boxSize, PeListFactory getPeList, MapType2 *gSpaceMap);
 
     private:
+        /// The configs for the symmetric and asymmetric paircalc instances
         pcConfig symmCfg, asymmCfg;
+        /// The configurations for the ortho instance shared by the two pc arrays
+        ortho::orthoConfig orthoCfg;
 
 };
 
