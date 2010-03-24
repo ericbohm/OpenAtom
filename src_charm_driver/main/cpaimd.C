@@ -784,6 +784,7 @@ Per Instance startup BEGIN
         orthoCfg.numStates     = config.nstates;
         orthoCfg.grainSize     = config.orthoGrainSize;
         orthoCfg.instanceIndex = thisInstance.getPO();
+        orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
         cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
         cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
 

@@ -64,7 +64,6 @@
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
 extern ComlibInstanceHandle orthoInstance;
 //============================================================================
 
@@ -452,7 +451,9 @@ void Ortho::maxCheck(CkReductionMsg *msg){
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       CkPrintf("recalculating PsiV due to tolerance failure \n");
-      UgSpaceDriverProxy[cfg.instanceIndex].needUpdatedPsiV();  //GspaceDriver will trigger our resume
+      // Use the callback to trigger tolerance failure events.
+      cfg.uponToleranceFailure.send();
+      // Simply suspend all work. We'll be resumed (by GSpaceDriver) when tolerance updates are done.
   }//endif
 
 //============================================================================
