@@ -1,3 +1,4 @@
+#include "debug_flags.h"
 #include "startupMessages.h"
 #include "paircalc/pcConfig.h"
 #include "orthog_ctrl/orthoConfig.h"

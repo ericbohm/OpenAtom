@@ -1,3 +1,4 @@
+#include "debug_flags.h"
 #include "MessageDataCollator.h"
 
 #ifndef PC_FWD_DECLARATIONS_H

@@ -1,3 +1,4 @@
+#include "debug_flags.h"
 #include "orthoConfig.h"
 #include "paircalc/pcInstanceIDs.h"
 #include "load_balance/PeList.h"

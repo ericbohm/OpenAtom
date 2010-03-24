@@ -1,3 +1,4 @@
+#include "debug_flags.h"
 #include "charm++.h"
 
 #ifndef PC_CONFIG_H

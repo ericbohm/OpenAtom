@@ -1,3 +1,4 @@
+#include "debug_flags.h"
 #include "pcMaps.decl.h"
 #include "charm++.h"
 
