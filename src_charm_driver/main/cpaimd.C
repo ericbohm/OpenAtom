@@ -3395,6 +3395,7 @@ void setTraceUserEvents()
 //============================================================================
 #include "CPcharmParaInfo.def.h"
 #include "timeKeeper.def.h"
+#include "startupMessages.def.h"
 #include "cpaimd.def.h"
 
 //============================================================================

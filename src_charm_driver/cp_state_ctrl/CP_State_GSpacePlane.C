@@ -48,7 +48,7 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 
-#include "paircalc/paircalcMessages.h"
+#include "main/startupMessages.h"
 #include "utility/util.h"
 #include "main/groups.h"
 #include "main/eesCache.h"

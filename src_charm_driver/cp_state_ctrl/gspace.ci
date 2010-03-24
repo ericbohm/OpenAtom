@@ -65,6 +65,7 @@ module gStatePlane
     extern module paircalcMessages;
 	extern module RDMAMessages;
 	class RDMApair_GSP_PC;
+    class pcSetupMsg;
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
 	message RSFFTMsg     { complex data[]; };

@@ -1,6 +1,6 @@
+#include "startupMessages.h"
 #include "paircalc/pcConfig.h"
 #include "orthog_ctrl/orthoConfig.h"
-#include "paircalc/paircalcMessages.h"
 #include "load_balance/PeList.h"
 
 #ifndef PC_CREATION_MANAGER_H

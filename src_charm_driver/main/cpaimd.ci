@@ -63,6 +63,14 @@ module timeKeeper
 
 
 
+module startupMessages
+{
+    message pcSetupMsg;
+};
+
+
+
+
 module instanceController
 {
 	array [1D] InstanceController {
@@ -107,6 +115,7 @@ mainmodule cpaimd {
 	extern module structureFactorCache;
 	extern module groups;
     extern module timeKeeper;
+    extern module startupMessages;
     extern module instanceController;
 	
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
