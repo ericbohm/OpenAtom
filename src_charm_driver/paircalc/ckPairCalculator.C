@@ -2953,7 +2953,7 @@ void manmult(int numRowsA, int numRowsB, int rowLength, double *A, double *B, do
 }
 
 
-#include "paircalcMessages.def.h"
+#include "pcMessages.def.h"
 #include "InputDataHandler.h"
 #include "inputDataHandler.def.h"
 #include "ckPairCalculator.def.h"

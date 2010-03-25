@@ -1,6 +1,6 @@
 #include "pcCommManager.h"
 
-#include "paircalc/paircalcMessages.h"
+#include "paircalc/pcMessages.h"
 #include "ckPairCalculator.decl.h"
 #include "paircalc/InputDataHandler.h"
 

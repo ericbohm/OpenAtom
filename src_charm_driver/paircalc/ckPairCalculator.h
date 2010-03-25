@@ -75,7 +75,7 @@ extern ComlibInstanceHandle mcastInstanceCP;
 extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}
 
 #include "MessageDataCollator.h"
-#include "paircalcMessages.h"
+#include "pcMessages.h"
 #include "pcConfig.h"
 #include "ckPairCalculator.decl.h"
 

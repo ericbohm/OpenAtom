@@ -62,7 +62,7 @@ module gParticlePlane
 
 module gStatePlane
 {
-    extern module paircalcMessages;
+    extern module pcMessages;
 	extern module RDMAMessages;
 	class RDMApair_GSP_PC;
     class pcSetupMsg;

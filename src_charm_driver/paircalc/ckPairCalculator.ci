@@ -2,7 +2,7 @@
  *
  */
 
-module paircalcMessages {
+module pcMessages {
 	readonly ComlibInstanceHandle mcastInstanceCP;
 	readonly ComlibInstanceHandle mcastInstanceACP;
 
@@ -95,7 +95,7 @@ module inputDataHandler
 module ckPairCalculator 
 {
 
-	extern module paircalcMessages;
+	extern module pcMessages;
 	extern module inputDataHandler;
 
     include "paircalc/pcFwdDeclarations.h";

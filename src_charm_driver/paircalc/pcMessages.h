@@ -1,8 +1,8 @@
-#include "paircalcMessages.decl.h"
+#include "pcMessages.decl.h"
 #include "ckcomplex.h"
 
-#ifndef PAIRCALC_MESSAGES_H
-#define PAIRCALC_MESSAGES_H
+#ifndef PC_MESSAGES_H
+#define PC_MESSAGES_H
 
 class RDMAHandleMsg : public CMessage_RDMAHandleMsg
 {
@@ -278,5 +278,5 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
   friend class CMessage_entireResultMsg2;
 };
 
-#endif // PAIRCALC_MESSAGES_H
+#endif // PC_MESSAGES_H
 
