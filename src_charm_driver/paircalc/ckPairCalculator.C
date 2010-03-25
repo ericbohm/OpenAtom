@@ -1,5 +1,5 @@
 #include "ckPairCalculator.h"
-#include "pairCalculator.h"
+#include "utility/matrix2file.h"
 #include <sstream> 
 
 ComlibInstanceHandle mcastInstanceCP;

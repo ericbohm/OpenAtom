@@ -1,8 +1,5 @@
-#include "charm++.h"
-
-#ifndef _pairCalculator_h
-#define _pairCalculator_h
-
+#ifndef MATRIX_2_FILE_H
+#define MATRIX_2_FILE_H
 
 //@{
 /// Matrix read/write utils
@@ -14,5 +11,5 @@ void dumpMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 //@}
 
-#endif
+#endif // MATRIX_2_FILE_H
 

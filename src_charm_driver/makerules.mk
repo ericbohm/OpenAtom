@@ -6,12 +6,12 @@ libdriver_src = \
                 CP_State_ParticlePlane.C CP_State_RealParticlePlane.C \
                 CP_Rho_RealSpacePlane.C CP_Rho_GSpacePlane.C CP_Rho_GHartExt.C CP_Rho_RHartExt.C \
                 CP_VanderWaalsR.C CP_VanderWaalsG.C \
-                ckPairCalculator.C pairCalculator.C pcBuilder.C \
+                ckPairCalculator.C pcBuilder.C \
                 ortho.C pcSectionManager.C orthoBuilder.C \
                 StructureFactor.C StructFactorCache.C \
                 fftCache.C stateSlab.C rhoSlab.C \
                 MapTable.C PeList.C \
-                util.C MapFile.C para_grp_parse.C
+                util.C MapFile.C para_grp_parse.C matrix2file.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
 libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci startupMessages.ci cpaimd.ci 
 
