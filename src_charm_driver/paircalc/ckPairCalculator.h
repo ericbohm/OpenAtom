@@ -4,7 +4,6 @@
 #undef  OLD_COMMLIB
 //#define OLD_COMMLIB 1
 #include "debug_flags.h"
-#include "pairutil.h"
 
 #include "ckmulticast.h"
 #include "ckhashtable.h"
