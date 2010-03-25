@@ -3,10 +3,11 @@
 #include "paircalc/paircalcMessages.h"
 #include "ckPairCalculator.decl.h"
 #include "paircalc/InputDataHandler.h"
-#include "paircalc/pairCalculator.h" //< Just for the reorder_elem declarations
 
 #include "ckmulticast.h"
 #include "ckcomplex.h"
+
+#include <algorithm>
 
 // Delegated paircalc proxies perform like fermented dung on BG/L
 #ifdef CMK_BLUEGENEL
@@ -524,11 +525,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym(int chunk)
 									       s2, s2, 1,
 									       chunk, chunk,1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart = gspaceIndex.x % pcCfg.grainSize;
-  if(newListStart> sid._nElems)
-    newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
-  CkAssert(order);
+  std::random_shuffle(sid._elems, sid._elems + sid._nElems);
   sectProxy.ckSectionDelegate(mcastGrp);
   //initialize proxy
   setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
@@ -558,11 +555,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_asym_column(int
 	  elems[ecount++]=idx4d;
 	}
     }
-  int newListStart = gspaceIndex.x % pcCfg.grainSize;
-  if(newListStart> ecount)
-    newListStart= newListStart % ecount;
-  bool order=reorder_elem_list_4D( elems, ecount, newListStart);
-  CkAssert(order);
+  std::random_shuffle(elems, elems + ecount);
   CProxySection_PairCalculator sectProxy = CProxySection_PairCalculator::ckNew(pcHandle.pcAID,  elems, ecount);
   delete [] elems;
   sectProxy.ckSectionDelegate(mcastGrp);
@@ -589,11 +582,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym1(int chunk)
 									       s2, s2, 1,
 									       chunk, chunk, 1);
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart = gspaceIndex.x % pcCfg.grainSize;
-  if(newListStart> sid._nElems)
-    newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
-  CkAssert(order);
+  std::random_shuffle(sid._elems, sid._elems + sid._nElems);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;
@@ -622,11 +611,7 @@ CProxySection_PairCalculator PCCommManager::makeOneResultSection_sym2(int chunk)
 					  chunk, chunk, 1);
 
   CkSectionID sid=sectProxy.ckGetSectionID();
-  int newListStart = gspaceIndex.x % pcCfg.grainSize;
-  if(newListStart> sid._nElems)
-    newListStart= newListStart % sid._nElems;
-  bool order=reorder_elem_list_max( sid._elems, sid._nElems, newListStart);
-  CkAssert(order);
+  std::random_shuffle(sid._elems, sid._elems + sid._nElems);
   sectProxy.ckSectionDelegate(mcastGrp);
   setResultProxy(&sectProxy, false, CkCallback(CkCallback::ignore));
   return sectProxy;

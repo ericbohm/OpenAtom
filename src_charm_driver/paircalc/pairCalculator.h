@@ -14,12 +14,5 @@ void dumpMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
 void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);
 //@}
 
-//@{
-///
-bool reorder_elem_list(CkArrayIndexMax *elems, int numelems, int newstart);
-bool reorder_elem_list_4D(CkArrayIndex4D *elems, int numelems, int newstart);
-bool reorder_elem_list_max(CkArrayIndexMax *elems, int numelems, int newstart);
-//@}
-
 #endif
 

@@ -1,6 +1,7 @@
 #include "pcSectionManager.h"
 #include "paircalc/pcConfig.h"
-#include "paircalc/pairCalculator.h" ///< required for the reorder_elem declarations
+
+#include <algorithm>
 
 #ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
@@ -81,11 +82,7 @@ void PCSectionManager::createPCsection(const int s1, const int s2)
     orthoIndexY-=s2;
     int orthoArrIndex=orthoIndexX*numOrthoCol+orthoIndexY;
     
-    int newListStart=orthoArrIndex;
-    if(newListStart> ecount)
-        newListStart= newListStart % ecount;
-    bool order=reorder_elem_list_4D( elems, ecount, newListStart);
-    CkAssert(order);
+    std::random_shuffle(elems, elems + ecount);
 
     /// Create and save this paircalc section
     pcSection = CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);
