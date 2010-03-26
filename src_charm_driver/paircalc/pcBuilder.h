@@ -13,7 +13,7 @@ class MapType2;
 namespace cp {
     namespace paircalc {
 
-/// A class that orchestrates the mapping and creation of one paircalc array and accompanying classes
+/// A class that orchestrates the mapping and creation of one paircalc array and accompanying chares like InputDataHandler etc.
 class Builder
 {
     public:

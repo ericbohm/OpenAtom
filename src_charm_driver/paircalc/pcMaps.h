@@ -5,7 +5,7 @@
 #ifndef PC_MAPS_H
 #define PC_MAPS_H
 
-/// Class used for instantiation of pair-calculator group objects.
+/// Paircalc's map group that provides procNum() to place paircalc chares as determined by the map logic
 class SCalcMap : public CkArrayMap
 {
     private:

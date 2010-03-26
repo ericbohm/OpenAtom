@@ -7,6 +7,10 @@
 namespace cp {
     namespace ortho {
 
+/**
+ * Configuration settings for the ortho world. Most of these are invariant
+ * post-instantiation.
+ */
 class orthoConfig
 {
     public:

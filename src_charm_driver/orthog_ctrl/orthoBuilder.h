@@ -9,6 +9,7 @@
 namespace cp {
     namespace ortho {
 
+/// A class that orchestrates the mapping and creation of one ortho array and accompanying chares like OrthoHelper, CLA_Matrix etc.
 class Builder
 {
     public:

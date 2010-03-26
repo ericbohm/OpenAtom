@@ -14,7 +14,17 @@ typedef ckcomplex complex;
 namespace cp {
     namespace gspace {
 
-///
+/**
+ * Manages communication with a single paircalc array
+ *
+ * It needs a handle to an already created paircalc instance and the config settings for that instance
+ * Given this info, and the index of its owner (GSpace) chare, it creates appropriate mcast/redn sections
+ * and manages these communications. GSpace simply delegates the data sends to the appropriate comm manager
+ * instances in every iteration.
+ *
+ * @todo: This class also manages the RDMA setup requests, although it could also assume the responsibility
+ * for processing the ack msg that arrives in GSpace to complete an RDMA handshake.
+ */
 class PCCommManager
 {
     friend class ::CP_State_GSpacePlane; ///< @note: Temporary until paircalc startup moves completely to GSpace
