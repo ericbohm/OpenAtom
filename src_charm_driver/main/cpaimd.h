@@ -10,16 +10,18 @@
 //============================================================================
 //#define _NAN_CHECK_
 
+#include "debug_flags.h"
+
 #ifndef _CPAIMD_H
 #define _CPAIMD_H
 //#define MAP_DEBUG 1
 #include "CPcharmParaInfoGrp.h"
+#include "load_balance/PeList.h"
 #include "uber/Uber.h"
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
-#include "load_balance/PeList.h"
 
 #undef OLD_COMMLIB 
 #define USE_INT_MAP

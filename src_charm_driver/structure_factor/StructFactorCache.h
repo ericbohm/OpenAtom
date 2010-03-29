@@ -5,10 +5,6 @@
 #ifndef _StructFactorCache_h_
 #define _StructFactorCache_h_
 
-void *fftw_malloc(size_t );
-void fftw_free(void *);
-
-
 class PlaneAtom {
  public:
   int plane;

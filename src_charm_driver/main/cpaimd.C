@@ -25,43 +25,38 @@
  *
  */
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================ 
+#include "cpaimd.h"
+#include "InstanceController.h"
+#include "pcCreationManager.h"
+#include "groups.h"
+#include "eesCache.h"
+
+#include "cp_state_ctrl/CP_State_Plane.h"
+#include "cp_state_ctrl/CP_State_ParticlePlane.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "structure_factor/StructFactorCache.h"
+#include "structure_factor/StructureFactor.h"
+#include "load_balance/PeList.h"
+#include "utility/MapFile.h"
+#include "utility/util.h"
+
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
+
+#include "MeshStreamingStrategy.h"
+#include "MultiRingMulticast.h"
+#include "OneTimeMulticastStrategy.h"
+#include "TopoManager.h"
+#include "TimeKeeper.h"
+
+#include "charm++.h"
+
 #include <cmath>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "charm++.h"
-#include "ckarray.h"
-#include "utility/util.h"
-//============================================================================
-#include "cpaimd.h"
-#include "InstanceController.h"
-#include "pcCreationManager.h"
-#include "paircalc/ckPairCalculator.h"
-#include "groups.h"
-#include "fft_slab_ctrl/fftCacheSlab.h"
-#include "eesCache.h"
-#include "structure_factor/StructFactorCache.h"
-#include "structure_factor/StructureFactor.h"
-#include "cp_state_ctrl/CP_State_ParticlePlane.h"
-#include "cp_state_ctrl/CP_State_Plane.h"
-#include "cp_state_ctrl/pcCommManager.h"
-#include "MeshStreamingStrategy.h"
-#include "MultiRingMulticast.h"
-#include "OneTimeMulticastStrategy.h"
-#include "load_balance/PeList.h"
-#include "utility/MapFile.h"
-#include "TopoManager.h"
-#include "TimeKeeper.h"
-//============================================================================
-#include "debug_flags.h"
-#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
-#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
-#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
-//============================================================================
 
 int TimeKeeperID=0;
 vector <string> TimeKeeperNames;
