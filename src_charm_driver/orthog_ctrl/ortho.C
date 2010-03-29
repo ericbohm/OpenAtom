@@ -442,7 +442,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
   delete msg;
 
   CkPrintf("{%d} SMAT tol    = %g\n", cfg.instanceIndex,tolMax);
-  if(tolMax < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
+  if(tolMax < cfg.maxTolerance){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
   }else{

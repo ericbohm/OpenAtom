@@ -24,6 +24,8 @@ class orthoConfig
 
         //------------------- Instance, Array, Group identification etc. --------------------------
         int instanceIndex;
+        /// The tolerance threshold for the S->T iterations in Ortho at which to trigger a PsiV update
+        double maxTolerance;
         /// Callback to notify bubble owner (GSpace) that a tolerance update is needed
         CkCallback uponToleranceFailure;
 
@@ -36,9 +38,11 @@ class orthoConfig
 
         void pup(PUP::er &p)
         {
+            p|isDynamics;
             p|numStates;
             p|grainSize;
             p|instanceIndex;
+            p|maxTolerance;
             p|uponToleranceFailure;
             p|isStep2HelperOn;
             p|gemmSplit;
