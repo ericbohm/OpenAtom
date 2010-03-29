@@ -16,6 +16,8 @@ class orthoConfig
     public:
         /// Is this a minimization or dynamics run
         bool isDynamics; ///< @note: This could turn into an enum as more run modes are introduced
+        /// If, this is a minimization run, is it for generating the system wave functions?
+        bool isGenWave; ///< @todo: Used in ortho only for shifting step number by 1. Eliminate
         //-------------------- Vars that indicate problem size / decomposition --------------------
         /// The number of states in the simulation (the dimension of the input square matrix)
         int numStates;
@@ -39,6 +41,7 @@ class orthoConfig
         void pup(PUP::er &p)
         {
             p|isDynamics;
+            p|isGenWave;
             p|numStates;
             p|grainSize;
             p|instanceIndex;

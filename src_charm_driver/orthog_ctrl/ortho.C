@@ -49,7 +49,6 @@
 #include "charm++.h"
 #include "utility/util.h"
 #include "main/groups.h"
-#include "main/CPcharmParaInfoGrp.h"
 
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
@@ -63,7 +62,6 @@
 
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
 extern ComlibInstanceHandle orthoInstance;
 //============================================================================
 
@@ -136,7 +134,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
     #ifdef VERBOSE_ORTHO
         CkPrintf("[%d,%d] Ortho::start_calc \n", thisIndex.x, thisIndex.y);
     #endif
-  int gen_wave   = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
 #ifdef _CP_SUBSTEP_TIMING_
   if(timeKeep>0)
     {
@@ -151,7 +148,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
       if(!cfg.isDynamics){
 	PRINT_LINE_DASH;
         int iii = numGlobalIter;
-        if(gen_wave==0){iii+=1;}
+        if(!cfg.isGenWave){iii+=1;}
 	CkPrintf("{%d} Iteration %d done\n",cfg.instanceIndex,iii);
 	PRINT_LINE_STAR; CkPrintf("\n");
 	PRINT_LINE_STAR;
@@ -277,10 +274,8 @@ void Ortho::collect_results(void){
 //============================================================================
 // Output Timings and debug information then increment iteration counter
 
-    int gen_wave    = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
-
     int iprintout   = config.maxIter;
-    if(!cfg.isDynamics && gen_wave==0){iprintout-=1;}
+    if(!cfg.isDynamics && !cfg.isGenWave){iprintout-=1;}
 
     int itime       = numGlobalIter;
     if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}

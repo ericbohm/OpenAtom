@@ -782,6 +782,7 @@ Per Instance startup BEGIN
         CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
         cp::ortho::orthoConfig orthoCfg;
         orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
+        orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
         orthoCfg.numStates     = config.nstates;
         orthoCfg.grainSize     = config.orthoGrainSize;
         orthoCfg.instanceIndex = thisInstance.getPO();
