@@ -33,11 +33,7 @@
 #ifndef   	ORTHOHELPER_H_
 # define   	ORTHOHELPER_H_
 
-#include "main/CLA_Matrix.h"
-
-extern CkVec <MapType2> OrthoHelperImaptable;
-extern CkHashtableT <intdual, int> OrthoHelpermaptable;
-extern bool fakeTorus;
+#include "CLA_Matrix.h"
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -93,8 +89,9 @@ class OrthoHelper : public CBase_OrthoHelper
   OrthoHelper(){}
   OrthoHelper(int _m, int _n, CLA_Matrix_interface matA2,
 	      CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
-	      UberCollection _instance):
-    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), thisInstance(_instance)    {
+	      CkCallback _orthoCB):
+    m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), uponCompletion(_orthoCB)
+    {
       C= new double[m*n];
       A=NULL;
       B=NULL;
@@ -121,7 +118,13 @@ class OrthoHelper : public CBase_OrthoHelper
       // DO NOT DELETE MSG we're using that memory in A and B
     }
 
-  void sendMatrix();
+  void sendMatrix()
+    {
+        if(trigger!=NULL)
+            delete trigger;
+        uponCompletion.send(m*n, C);
+    }
+
 
   virtual void pup(PUP::er &p){
 //    CBase_Ortho::pup(p);
@@ -141,48 +144,8 @@ class OrthoHelper : public CBase_OrthoHelper
   double *A, *B, *C;
   OrthoHelperMsg *trigger;
   CLA_Matrix_interface matA, matB, matC;
-  const UberCollection thisInstance;
-};
-
-class OrthoHelperMap : public CkArrayMapTable2 {
-  public:
-    OrthoHelperMap(UberCollection _instance)
-    {
-      thisInstance=_instance;
-#ifdef USE_INT_MAP
-      maptable= &OrthoHelperImaptable[thisInstance.getPO()];
-#else
-      maptable= &OrthoHelpermaptable;
-#endif
-    }
-
-    ~OrthoHelperMap() { }
-    
-    void pup(PUP::er &p)
-    {
-      CkArrayMapTable2::pup(p);
-#ifdef USE_INT_MAP
-      maptable= &OrthoHelperImaptable[thisInstance.getPO()];
-#else
-      maptable= &OrthoHelpermaptable;
-#endif
-    }
-    
-    inline int procNum(int, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      int proc;
-#ifdef USE_INT_MAP
-      proc=maptable->get(index[0],index[1]);
-#else
-      proc=maptable->get(intdual(index[0],index[1]));
-#endif
-      if(fakeTorus)
-	return(proc%CkNumPes());
-      else
-	return(proc);
-
-    }
+  /// Callback to the owner ortho chare array to be used at the end of my work (step 2)
+  CkCallback uponCompletion;
 };
 
 #endif 	    /* !ORTHOHELPER_H_ */

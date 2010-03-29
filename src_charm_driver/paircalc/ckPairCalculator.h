@@ -4,16 +4,14 @@
 #undef  OLD_COMMLIB
 //#define OLD_COMMLIB 1
 #include "debug_flags.h"
-#include "pairutil.h"
+
 #include "ckmulticast.h"
 #include "ckhashtable.h"
+
 #include "PipeBroadcastStrategy.h"
 #include "BroadcastStrategy.h"
 #include "DirectMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
-#ifdef CMK_BLUEGENEL
-//#include "RectMulticastStrategy.h"
-#endif
 #include "MultiRingMulticast.h"
 #include "NodeMulticast.h"
 
@@ -72,23 +70,13 @@
 /// The type of data that is input from GSpace and operated on by the PairCalcs
 typedef double inputType;
 
-enum redtypes {section=0, machine=1, sparsecontiguous=2};
-PUPbytes(redtypes);
-
 extern ComlibInstanceHandle mcastInstanceCP;
 
 extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}
 
-
 #include "MessageDataCollator.h"
-#include "paircalcMessages.h"
+#include "pcMessages.h"
 #include "pcConfig.h"
-/// A shorter name for the namespace
-namespace pc = cp::paircalc;
-class paircalcInputMsg;
-/// Typedefs for the collator types
-typedef pc::MessageDataCollator<paircalcInputMsg,double> CollatorType;
-struct RDMApair_GSP_PC;
 #include "ckPairCalculator.decl.h"
 
 
@@ -264,6 +252,32 @@ struct RDMApair_GSP_PC;
  *
  *
  *
+ * Data from GSP travels to the PairCalculators via an InputDataHandler chare 
+ * array of the same dimensions as, and bound to, the PairCalculator array. 
+ * Appropriate sections/lists of this input handler array for multicasting 
+ * the data from GSP to are built in makeLeftTree() and makeRightTree().
+ *
+ * Each iteration of the GSP-PC-Ortho-PC-GSP loop is started by GSP calling
+ * startPairCalcLeft() and startPairCalcRight(). These are simply #defines
+ * that turn into the appropriate function: sendLeftData() and sendRightData()
+ * or their RDMA equivalents. The input handler chares then collate all the
+ * incoming data and then wake their corresponding PC chares once all the data
+ * is available. The PCs then do their thing and the result is returned via 
+ * the callback set in the create routine (which happens to be Ortho).
+ *
+ * The backward path is triggered by:
+ * finishPairCalcSection(PairCalcID, datasize, data *)
+ * Its result is returned via the callback entry point passed in
+ * during creation
+ *
+ * The results of the backward path are returned in a set of section
+ * reductions.  The reduction contributes its slice of its matrix of
+ * doubles with the offset=thisIndex.z.  The client then returns the
+ * sum of each slice to the GSP element that created the section with
+ * the offset so it can be copied into the correct place in the points
+ * array.
+ *
+ *
  * NOTE: The magic number 2 appears in 2 contexts.  Either we have
  * twice as many inputs in the non diagonal elements of the matrix.
  * Or in the case of transforming our arrays of complex into arrays of
@@ -273,6 +287,25 @@ struct RDMApair_GSP_PC;
  * unoptimized cold.  The latter issue crops up everywhere we have to
  * do allocation or manipulations of the input.  Could arguably be
  * abstracted away by absorbing it into a size field.
+ *
+ *
+ * After the main::main proc 0 phase the array sections used to populate
+ * and return data from the paircalculator are called.
+ * The forward path section reduction (to and from ortho) is initialized
+ * via initOneRedSect() the backward path is initialized via the
+ * appropriate makeOneResultSection_X() call.  In each case the call
+ * should be made by each GSP or Ortho object.  That way each one has its
+ * own proxy and the section tree will only include relevant processors.
+ *
+ * The chunk decomposition changes the setup substantially.  In chunk
+ * decomposition we send a piece of the nonzero points of gspace to
+ * the paircalculators.  It is not a multicast.  Each GSP[P,S] will
+ * send its ith chunk to PC[P,0,0,i].  Once nstate chunks arrive at a
+ * PC the multiply can proceed.
+ *
+ * In the hybrid case this becomes a multicast of chunks to the
+ * appropriate state decomposition destination as before.
+ *
  */
 class PairCalculator: public CBase_PairCalculator 
 {

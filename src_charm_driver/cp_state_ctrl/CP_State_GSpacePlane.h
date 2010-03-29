@@ -1,13 +1,14 @@
 #include "debug_flags.h"
-#include "charm++.h" /// @note: Needed for ckcomplex.h ?
+#include "charm++.h"
 #include "ckcomplex.h"
 #include "gStatePlane.decl.h"
+#include "pcCommManager.h"
 #include "uber/Uber.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
-#include "paircalc/pairCalculator.h"
 struct EnergyStruct; /// @warning: Forward declarations of structs seem to choke the ci parser. It doesnt recognize the keyword struct.
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
+using namespace cp::gspace; ///< @note: Should be temporary until GSpace chares live within namespace gspace
 
 #ifndef CP_STATE_GSPACE_PLANE_H
 #define CP_STATE_GSPACE_PLANE_H
@@ -17,7 +18,8 @@ class GStateSlab;
 class RDMApair_GSP_PC;
 template <class tokenType> class RDMASetupConfirmationMsg;
 
- 
+
+
 class GSIFFTMsg: public CMessage_GSIFFTMsg 
 {
     public:
@@ -83,6 +85,8 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
 		int cleanExitCalled;
 		///
 		bool doneDoingIFFT;
+        /// A proxy for the my ortho chare array so I can interact with it
+        CProxy_Ortho myOrtho;
 
         int halfStepEvolve;
         int redPlane;
@@ -98,12 +102,15 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         double ake_old;
         
         bool acceptedVPsi;
-        CP_State_GSpacePlane( int, int, int, int,int,int, UberCollection);
+        CP_State_GSpacePlane( int, int, int, int,int, int, UberCollection);
         CP_State_GSpacePlane(CkMigrateMessage *m);
         ~CP_State_GSpacePlane();
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
         void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
         void pup(PUP::er &);
+        void createSymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
+        void createAsymPCmap(const int boxSize, PeListFactory getPeList, UberCollection thisInstance);
+        void acceptPairCalcAIDs(pcSetupMsg *msg);
         void initGSpace(int, complex *,int ,complex *,int,int,int,int,int,int,int);
         void launchAtoms();
         void launchOrthoT();
@@ -205,8 +212,10 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         CProxySection_PairCalculator *lambdaproxyother;
         CProxySection_PairCalculator *psiproxy;
         CProxySection_PairCalculator *psiproxyother;
-        PairCalcID gpairCalcID1;
-        PairCalcID gpairCalcID2;
+        /// Manages communication with the symmetric paircalc array
+        PCCommManager symmPCmgr;
+        /// Manages communication with the asymmetric paircalc array
+        PCCommManager asymmPCmgr;
         #ifdef _CP_GS_DEBUG_COMPARE_VKS_
             complex *savedvksBf;
             complex *savedforceBf;

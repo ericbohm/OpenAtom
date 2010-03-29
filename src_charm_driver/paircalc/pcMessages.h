@@ -1,9 +1,8 @@
-#include "paircalcMessages.decl.h"
+#include "pcMessages.decl.h"
+#include "ckcomplex.h"
 
-
-#ifndef PAIRCALC_MESSAGES_H
-#define PAIRCALC_MESSAGES_H
-
+#ifndef PC_MESSAGES_H
+#define PC_MESSAGES_H
 
 class RDMAHandleMsg : public CMessage_RDMAHandleMsg
 {
@@ -36,7 +35,6 @@ class initGRedMsg : public CkMcastBaseMsg, public CMessage_initGRedMsg {
  public:
   CkCallback cb;
   CkGroupID mCastGrpId;
-  CkCallback synccb;
   bool lbsync;
   int orthoX;
   int orthoY;
@@ -280,5 +278,5 @@ class entireResultMsg2 : public CMessage_entireResultMsg2 {
   friend class CMessage_entireResultMsg2;
 };
 
+#endif // PC_MESSAGES_H
 
-#endif // PAIRCALC_MESSAGES_H

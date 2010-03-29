@@ -1,3 +1,23 @@
+#include "charm++.h"
+
+#ifndef TimeKeeper_h
+#define TimeKeeper_h
+
+/*
+ * HPM will instrument one step using BG/P UPC performance counters.
+ * To use it, build libhpm.a in src_charm_driver/utilities/
+ * copy it someplace in your lib search path and add -lhpm to link line
+ * Also add -L/bgsys/drivers/ppcfloor/runtime -lSPI.cna to link line.
+ * DO NOT use /soft/apps/UPC/lib/libhpm.a it uses MPI and will 
+ * cause you a lot of grief.
+ */
+#ifdef USE_HPM
+extern "C" void HPM_Init(int);        
+extern "C" void HPM_Start(char *label,int);
+extern "C" void HPM_Stop(char *label,int);
+extern "C" void HPM_Print(int,int);       
+#endif
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -21,9 +41,6 @@
  *  /soft/apps/UPC/lib/libhpm.a it uses MPI and will cause you a lot of grief.
  */
 
-#ifndef TimeKeeper_h
-#define TimeKeeper_h
-
 #include <vector>
 #include <string>
 #include "TopoManager.h"
@@ -37,9 +54,9 @@ extern "C" void HPM_Print(int,int);
 
 extern Config config;
 extern int TimeKeeperID;
-extern vector <string> TimeKeeperNames;
+extern std::vector <std::string> TimeKeeperNames;
 
-static int keeperRegister(string name)
+static int keeperRegister(std::string name)
 {
   if(config.useTimeKeeper)
     {

@@ -1,68 +1,51 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 /** \file cpaimd.C
  *                         cpaimd-charm-driver
- *    Software developed by the Parallel Programing Laboratory, UIUC.
- *    in collaboration with IBM and NYU.
- *   
  *    This file contains cpaimd-charm-driver main. It creates and 
  *    initializes all the arrays and libraries. 
  */      
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 
 /** \mainpage
- *  OpenAtom <A HREF="http://ccharm.cs.uiuc.edu/OpenAtom">Webpage</A>.
+ * OpenAtom <A HREF="http://charm.cs.illinois.edu/OpenAtom">Webpage</A>.
  *
+ * Car-Parrinello Ab-Initio Molecular Dynamics software
+ *                 developed by the
+ *        Parallel Programing Laboratory, UIUC
+ *               in collaboration with
+ *                   IBM and NYU
  */
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================ 
+#include "cpaimd.h"
+#include "InstanceController.h"
+#include "pcCreationManager.h"
+#include "groups.h"
+#include "eesCache.h"
+
+#include "cp_state_ctrl/CP_State_Plane.h"
+#include "cp_state_ctrl/CP_State_ParticlePlane.h"
+#include "fft_slab_ctrl/fftCacheSlab.h"
+#include "structure_factor/StructFactorCache.h"
+#include "structure_factor/StructureFactor.h"
+#include "load_balance/PeList.h"
+#include "utility/MapFile.h"
+#include "utility/util.h"
+
+#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
+#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
+
+#include "MeshStreamingStrategy.h"
+#include "MultiRingMulticast.h"
+#include "OneTimeMulticastStrategy.h"
+#include "TopoManager.h"
+#include "TimeKeeper.h"
+
+#include "charm++.h"
+
 #include <cmath>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "charm++.h"
-#include "ckarray.h"
-#include "utility/util.h"
-//============================================================================
-#include "cpaimd.h"
-#include "InstanceController.h"
-#include "paircalc/ckPairCalculator.h"
-#include "groups.h"
-#include "orthog_ctrl/orthoHelper.h"
-#include "orthog_ctrl/ortho.h"
-#include "fft_slab_ctrl/fftCacheSlab.h"
-#include "eesCache.h"
-#include "structure_factor/StructFactorCache.h"
-#include "structure_factor/StructureFactor.h"
-#include "cp_state_ctrl/CP_State_ParticlePlane.h"
-#include "cp_state_ctrl/CP_State_Plane.h"
-#include "MeshStreamingStrategy.h"
-#include "MultiRingMulticast.h"
-#include "OneTimeMulticastStrategy.h"
-#include "load_balance/PeList.h"
-#include "utility/MapFile.h"
-#include "TopoManager.h"
-#include "TimeKeeper.h"
-#include "paircalc/pairCalculator.h" ///< Just for defining the readonly globals (UPairCalcID 1 & 2)
-//============================================================================
-#include "debug_flags.h"
-#include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
-#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
-#include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
-//============================================================================
 
 int TimeKeeperID=0;
 vector <string> TimeKeeperNames;
@@ -119,12 +102,7 @@ CkVec <MapType2> RhoGHartImaptable;
 CkVec <MapType3> RhoRHartImaptable;
 //CkVec <MapType1> LSPRhoGSImaptable;
 CkVec <MapType2> LSPRhoRSImaptable;
-CkVec <MapType2> OrthoImaptable;
-CkVec <MapType2> OrthoHelperImaptable;
-CkVec <MapType4> AsymScalcImaptable;
-CkVec <MapType4> SymScalcImaptable;
 
-CkVec <CkGroupID> mCastGrpIds;
 #ifndef USE_INT_MAP
 CkHashtableT<intdual, int> GSmaptable(10000,0.25);
 CkHashtableT<intdual, int> RSmaptable(10000,0.25);
@@ -147,15 +125,11 @@ CkHashtableT<inttriple, int> RhoRHartmaptable;
 CkHashtableT<intdual, int> Orthomaptable;
 CkHashtableT<intdual, int> OrthoHelpermaptable;
 
-CkVec <PairCalcID> UpairCalcID1;
-CkVec <PairCalcID> UpairCalcID2;
-
 
 CProxy_main                       mainProxy;
 CProxy_CPcharmParaInfoGrp         scProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
-CProxy_OrthoMap                   orthoMap;
 CProxy_InstanceController         instControllerProxy;
 
 //============================================================================
@@ -184,14 +158,12 @@ CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-CkVec <CProxy_Ortho>                      UorthoProxy;
 CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 CkVec <CProxy_StructureFactor>            UsfCompProxy;
 CkVec <CProxy_eesCache>                   UeesCacheProxy;
-CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 CkVec <CProxy_CP_LargeSP_RhoGSpacePlane>      UlsRhoGProxy;
 CkVec <CProxy_CP_LargeSP_RhoRealSpacePlane>      UlsRhoRealProxy;
 CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
@@ -224,6 +196,7 @@ CkVec < CkVec <int> > UplaneUsedByNLZ;
 PeList *availGlobR=NULL;
 PeList *availGlobG=NULL;
 PeList *excludePes=NULL;
+PeListFactory peList4PCmapping;
 int boxSize;
 TopoManager *topoMgr=NULL;
 
@@ -231,11 +204,6 @@ TopoManager *topoMgr=NULL;
 
 
 //============================================================================
-// For using the multicast library :  Set some reduction clients
-
-CkGroupID            mCastGrpId; 
-CkGroupID            orthomCastGrpId; 
-CkGroupID            orthoRedGrpId; 
 //#ifdef USE_COMLIB
 ComlibInstanceHandle orthoInstance;
 ComlibInstanceHandle commGHartInstance;
@@ -269,6 +237,8 @@ ComlibInstanceHandle commGHartRHartIns1;
 //#endif
 
 
+/// Multicast manager group that handles many mcast/redns in the code. Grep for info
+CkGroupID            mCastGrpId;
 CkReduction::reducerType complexVectorAdderType;
 //============================================================================
 
@@ -285,12 +255,11 @@ const char OpenAtomRevision[] = INQUOTES(OPENATOM_REVISION);
 
 
 //============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 /** The Main of CPAIMD. It calls all the init functions.
  *
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 main::main(CkArgMsg *msg) {
   topoMgr = NULL;
 //============================================================================
@@ -470,6 +439,89 @@ main::main(CkArgMsg *msg) {
      /* choose whether ortho should use local callback */
      Ortho_use_local_cb = true;
 
+    // Create a paircalc config object for the symmetric PC instance
+    pc::pcConfig cfgSymmPC;
+
+    // Stuff it with the actual configurations
+    cfgSymmPC.isDynamics         = (sim->cp_min_opt==1)? false: true;
+
+    cfgSymmPC.numPlanes          = config.nchareG;
+    cfgSymmPC.numStates          = nstates;
+    cfgSymmPC.grainSize          = config.sGrainSize;
+    cfgSymmPC.orthoGrainSize     = config.orthoGrainSize;
+
+    cfgSymmPC.conserveMemory     = config.conserveMemory;
+    cfgSymmPC.isLBon             = config.lbpaircalc;
+
+    cfgSymmPC.areBWTilesCollected= config.PCCollectTiles;
+    cfgSymmPC.isBWstreaming      = config.PCstreamBWout;
+    cfgSymmPC.isBWbarriered      = config.useBWBarrier;
+    cfgSymmPC.shouldDelayBWsend  = config.PCdelayBWSend;
+    cfgSymmPC.isInputMulticast   = !config.usePairDirectSend;
+    cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
+    cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
+
+    cfgSymmPC.instanceIndex      = thisInstance.proxyOffset;
+
+    cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
+    cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;
+    cfgSymmPC.gemmSplitBW        = config.gemmSplitBW;
+
+    // Create a paircalc config object for the asymmetric PC instance
+    pc::pcConfig cfgAsymmPC = cfgSymmPC;
+
+    // Configurations specific to the symmetric PC instance
+    cfgSymmPC.isSymmetric        = true;
+    cfgSymmPC.arePhantomsOn      = config.phantomSym;
+    cfgSymmPC.numChunks          = config.numChunksSym;
+    cfgSymmPC.isDoublePackOn     = doublePack;
+    cfgSymmPC.inputMsgPriority   = config.psipriority;
+    cfgSymmPC.resultMsgPriority  = config.gsfftpriority;
+
+    // Configurations specific to the asymmetric PC instance
+    cfgAsymmPC.isSymmetric        = false;
+    cfgAsymmPC.arePhantomsOn      = false;
+    cfgAsymmPC.numChunks          = config.numChunksAsym;
+    cfgAsymmPC.isDoublePackOn     = 0;
+    cfgAsymmPC.inputMsgPriority   = config.lambdapriority;
+    cfgAsymmPC.resultMsgPriority  = config.lambdapriority+2;
+
+    // Configure the GSpace entry methods that the PCs will callback
+    if(cfgSymmPC.isOutputReduced)
+    {
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
+    }
+    else
+    {
+        cfgSymmPC.gSpaceEP        = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
+        cfgSymmPC.PsiVEP          = CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_partialResultMsg;
+    }
+
+    if(cfgAsymmPC.isOutputReduced)
+    {
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
+        cfgAsymmPC.PsiVEP         = 0;
+    }
+    else
+    {
+        cfgAsymmPC.gSpaceEP       = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
+        cfgAsymmPC.PsiVEP         = 0;
+    }
+
+#ifdef _CP_SUBSTEP_TIMING_
+    //symmetric AKA Psi
+    cfgSymmPC.forwardTimerID      = keeperRegister("Sym Forward");
+    cfgSymmPC.backwardTimerID     = keeperRegister("Sym Backward");
+    cfgSymmPC.beginTimerCB        = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgSymmPC.endTimerCB          = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+    //asymmetric AKA Lambda AKA Gamma
+    cfgAsymmPC.forwardTimerID     = keeperRegister("Asym Forward");
+    cfgAsymmPC.backwardTimerID    = keeperRegister("Asym Backward");
+    cfgAsymmPC.beginTimerCB       = CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
+    cfgAsymmPC.endTimerCB         = CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
+#endif
+
 //============================================================================    
 // Compute structure factor grp parameters and static map for chare arrays
 
@@ -498,14 +550,8 @@ main::main(CkArgMsg *msg) {
 
     RhoGHartImaptable.resize(config.numInstances);
     RhoRHartImaptable.resize(config.numInstances);
-    OrthoImaptable.resize(config.numInstances);
-    OrthoHelperImaptable.resize(config.numInstances);
-    AsymScalcImaptable.resize(config.numInstances);
-    SymScalcImaptable.resize(config.numInstances);
 
     // bump all our proxy vecs to the right size
-    UpairCalcID2.resize(config.numInstances);
-    UpairCalcID1.resize(config.numInstances);
     UgSpacePlaneProxy.reserve(config.numInstances);
     UgSpaceDriverProxy.reserve(config.numInstances);
     UparticlePlaneProxy.reserve(config.numInstances);
@@ -517,14 +563,12 @@ main::main(CkArgMsg *msg) {
     UVdWGProxy.reserve(config.numInstances);
     UrhoRHartExtProxy.reserve(config.numInstances);
     UrhoGHartExtProxy.reserve(config.numInstances);
-    UorthoProxy.reserve(config.numInstances);
     UatomsGrpProxy.reserve(config.numInstances);
     UegroupProxy.reserve(config.numInstances);
     UfftCacheProxy.reserve(config.numInstances);
     UsfCacheProxy.reserve(config.numInstances);
     UsfCompProxy.reserve(config.numInstances);
     UeesCacheProxy.reserve(config.numInstances);
-    UorthoHelperProxy.reserve(config.numInstances);
     UplaneUsedByNLZ.reserve(config.numInstances);
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
@@ -535,6 +579,10 @@ main::main(CkArgMsg *msg) {
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
+
+    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
@@ -559,7 +607,6 @@ main::main(CkArgMsg *msg) {
       CkAssert( m > 0);
     }
 
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     //    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
     //    for(int i=0; i<nstates;i++){
     //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
@@ -641,6 +688,7 @@ main::main(CkArgMsg *msg) {
 	  {
 	    CkPrintf("Using %d, %d, %d dimensions for box %d mapping order %d\n", bx, by, bz, boxSize, order);
 	    gfoo = new PeList(bx, by, bz, order, x1, y1, z1, dimNT);	// heap it
+        peList4PCmapping = PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
 	  }
 	  else
 	  {
@@ -668,7 +716,9 @@ main::main(CkArgMsg *msg) {
 
     // TODO timekeeper registerees will need to distinguish by instance
     // timekeeper itself doesn't care.
-    TimeKeeperProxy = CProxy_TimeKeeper::ckNew();    
+    TimeKeeperProxy = CProxy_TimeKeeper::ckNew();
+    // Create a multicast manager group that will handle many mcast/redns
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
 
     /*
 ===============================================================================
@@ -710,6 +760,24 @@ Per Instance startup BEGIN
 
 	    CmiNetworkProgressAfter(1);
 
+        //============================================================================
+        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
+        CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+        cp::ortho::orthoConfig orthoCfg;
+        orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
+        orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
+        orthoCfg.numStates     = config.nstates;
+        orthoCfg.grainSize     = config.orthoGrainSize;
+        orthoCfg.instanceIndex = thisInstance.getPO();
+        orthoCfg.maxTolerance  = sim->tol_norb;
+        orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
+        cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+        cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+
+        cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
+        pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
+
+        //============================================================================
 	    int *usedProc= new int[config.numPesPerInstance];
 	    memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
 	    int charperpe = nstates/(config.numPesPerInstance);
@@ -738,12 +806,6 @@ Per Instance startup BEGIN
 	    UplaneUsedByNLZ.push_back(planeUsedByNLZ);
 	    // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
 	    // Create mapping classes for Paircalcular
-
-	    //============================================================================ 
-	    // Initialize paircalculators for Psi and Lambda and ortho
-
-	    init_pair_calculators( nstates,doublePack,sim, boxSize, thisInstance);
-	    CmiNetworkProgressAfter(1);
 
 	    //============================================================================ 
 	    // Initialize the density chare arrays
@@ -805,268 +867,6 @@ main::~main(){
     }//endif
 }//end routine
 //============================================================================    
-
-
-//============================================================================    
-//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================    
-/**
- * Initialize paircalc1 Psi (sym) and paircalc2 Lambda (asym)
- */
-//============================================================================    
-void init_pair_calculators(int nstates, int doublePack, CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance)
-//============================================================================    
-  {// begin routine
-//============================================================================    
-
-  PRINT_LINE_STAR;
-  PRINTF("Building Psi and Lambda Pair Calculators\n");
-  PRINT_LINE_DASH;printf("\n");
-
-//============================================================================    
-  //-------------------------------------------------------------
-  // Populate maptable for Symmetric Paircalculators
-  Timer =CmiWallTimer();
-  availGlobG->reset();
-  bool maptype=true;
-  int achunks=config.numChunksAsym;
-  if(config.phantomSym)
-    { // evil trickery to use asym map code for phantom sym
-      maptype=false;
-      achunks=config.numChunksSym; 
-      
-    }//endif
-#ifdef USE_INT_MAP
-  SymScalcImaptable[thisInstance.getPO()].buildMap(config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, achunks, config.sGrainSize);
-#endif
-
-  int success = 0;
-  if(config.loadMapFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("SymScalcMap", &SymScalcImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("SymScalcMap", &SymScalcmaptable);
-#endif
-    delete mf;
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    SCalcMapTable symTable = SCalcMapTable(&SymScalcImaptable[thisInstance.getPO()], 
-					 availGlobG, config.nstates,
-                   config.nchareG, config.sGrainSize, maptype, 
-		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSImaptable[thisInstance.getPO()], config.useCuboidMap, config.useCentroidMap, boxSize);
-#else
-    SCalcMapTable symTable = SCalcMapTable(&SymScalcmaptable, 
-					 availGlobG, config.nstates,
-                   config.nchareG, config.sGrainSize, maptype,
-		 config.scalc_per_plane, planes_per_pe, achunks, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap, boxSize);
-#endif
-  }
-
-  CProxy_SCalcMap scMap_sym = CProxy_SCalcMap::ckNew(CmiTrue, thisInstance);
-
-  double newtime=CmiWallTimer();
-  CkPrintf("SymScalcMap %d x %d x %d x %d created in %g\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksSym, newtime-Timer);
-  
-  if(config.dumpMapFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&SymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMap(&SymScalcmaptable);
-#endif
-    delete mf;
-  }
-  if(config.dumpMapCoordFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = achunks;
-    MapFile *mf = new MapFile("SymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    mf->dumpMapCoords(&SymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMapCoords(&SymScalcmaptable);
-#endif
-    delete mf;
-  }
-
-  //-------------------------------------------------------------
-  // Populate maptable for Asymmetric Paircalculators
-  Timer=CmiWallTimer();
-  availGlobG->reset();
-#ifdef USE_INT_MAP
-  AsymScalcImaptable[thisInstance.getPO()].buildMap(config.nchareG, config.nstates/config.sGrainSize,config.nstates/config.sGrainSize, config.numChunksAsym, config.sGrainSize);
-#endif
-
-  success = 0;
-  if(config.loadMapFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("AsymScalcMap", &AsymScalcImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("AsymScalcMap", &AsymScalcmaptable);
-#endif
-    delete mf;
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    SCalcMapTable asymTable = SCalcMapTable(&AsymScalcImaptable[thisInstance.getPO()], availGlobG,config.nstates,
-  	           config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane, 
-                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSImaptable[thisInstance.getPO()], config.useCuboidMap, config.useCentroidMap, boxSize);
-#else
-    SCalcMapTable asymTable = SCalcMapTable(&AsymScalcmaptable, availGlobG,config.nstates,
-  	           config.nchareG, config.sGrainSize, CmiFalse, config.scalc_per_plane, 
-                   planes_per_pe, config.numChunksAsym, config.numChunksSym, &GSmaptable, config.useCuboidMap, config.useCentroidMap,boxSize);
-#endif
-  }
-
-  CProxy_SCalcMap scMap_asym = CProxy_SCalcMap::ckNew(CmiFalse, thisInstance);
-  newtime=CmiWallTimer();
-  CkPrintf("AsymScalcMap %d x %d x %d x %d created in %g\n\n",config.nchareG, config.nstates/config.sGrainSize, config.nstates/config.sGrainSize, config.numChunksAsym, newtime-Timer);
-  Timer=newtime;
-
-  if(config.dumpMapFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&AsymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMap(&AsymScalcmaptable);
-#endif
-    delete mf;
-  }
-  if(config.dumpMapCoordFiles) {
-    int size[4];
-    size[0] = config.nchareG; size[1] = config.nstates/config.sGrainSize;
-    size[2] = config.nstates/config.sGrainSize; size[3] = config.numChunksAsym;
-    MapFile *mf = new MapFile("AsymScalcMap_coord", 4, size, config.numPes, "TXYZ", 2, 1, 1, 1, config.sGrainSize);
-#ifdef USE_INT_MAP
-    mf->dumpMapCoords(&AsymScalcImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMapCoords(&AsymScalcmaptable);
-#endif
-    delete mf;
-  }
-
-
-  //============================================================================ 
-  // initialize Ortho  now that we have the PC maps
-  init_ortho_chares(nstates, thisInstance);
-  CmiNetworkProgressAfter(1);
-
-  CkGroupID scalc_sym_id  = scMap_sym.ckGetGroupID();
-  CkGroupID scalc_asym_id = scMap_asym.ckGetGroupID();
-  //-------------------------------------------------------------
-  // Register the PCs
-  int gsp_ep;
-  int gsp_ep_tol;
-  if(config.gSpaceSum)
-    {
-      gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_partialResultMsg;
-      gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_partialResultMsg;
-    }
-  else
-    {
-      gsp_ep =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsi_CkReductionMsg;
-      gsp_ep_tol =  CkIndex_CP_State_GSpacePlane::__idx_acceptNewPsiV_CkReductionMsg;
-    }
-    //    CkGroupID symMcast = CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor);
-
-    for(int i=0; i< nchareG ;i++)
-      mCastGrpIds.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
-    //mCastGrpIds.push_back(symMcast);
-   //symmetric AKA Psi
-#ifdef _CP_SUBSTEP_TIMING_
-    UpairCalcID1[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Sym Forward");
-    UpairCalcID1[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Sym Backward");
-    UpairCalcID1[thisInstance.proxyOffset].beginTimerCB=  CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    UpairCalcID1[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-#endif
-
-    // Create a new paircalc config object
-    pc::pcConfig pcCfg;
-    // Stuff it with the actual configurations
-    pcCfg.isDynamics         = (sim->cp_min_opt==1)? false: true;
-
-    pcCfg.numPlanes          = config.nchareG;
-    pcCfg.numStates          = nstates;
-    pcCfg.grainSize          = config.sGrainSize;
-    pcCfg.orthoGrainSize     = config.orthoGrainSize;
-
-    pcCfg.gSpaceAID          = UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID();
-    pcCfg.PsiVEP             = gsp_ep_tol;
-    pcCfg.conserveMemory     = config.conserveMemory;
-    pcCfg.isLBon             = config.lbpaircalc;
-    pcCfg.reduce             = section;
-
-    pcCfg.areBWTilesCollected= config.PCCollectTiles;
-    pcCfg.isBWstreaming      = config.PCstreamBWout;
-    pcCfg.isBWbarriered      = config.useBWBarrier;
-    pcCfg.shouldDelayBWsend  = config.PCdelayBWSend;
-    pcCfg.isInputMulticast   = !config.usePairDirectSend;
-    pcCfg.isOutputReduced    = !config.gSpaceSum;
-    pcCfg.instance           = thisInstance.proxyOffset;
-
-    pcCfg.gemmSplitFWk       = config.gemmSplitFWk;
-    pcCfg.gemmSplitFWm       = config.gemmSplitFWm;
-    pcCfg.gemmSplitBW        = config.gemmSplitBW;
-
-    // Configurations specific to the symmetric PC instance
-    pcCfg.isSymmetric        = true;
-    pcCfg.arePhantomsOn      = config.phantomSym;
-    pcCfg.numChunks          = config.numChunksSym;
-    pcCfg.isDoublePackOn    = doublePack;
-    pcCfg.gSpaceEP           = gsp_ep;
-    pcCfg.resultMsgPriority  = config.gsfftpriority;
-
-    createPairCalculator(pcCfg, &(UpairCalcID1[thisInstance.proxyOffset]), 1, &scalc_sym_id, config.psipriority, mCastGrpIds);
-
-    CkArrayIndex2D myindex(0, 0);
-    if(config.gSpaceSum)
-      gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_partialResultMsg;
-    else
-      gsp_ep = CkIndex_CP_State_GSpacePlane::__idx_acceptLambda_CkReductionMsg;
-    int myPack=0;
-    CkVec <CkGroupID> mCastGrpIdsA;
-    for(int i=0; i< nchareG ;i++)
-      mCastGrpIdsA.push_back(CProxy_CkMulticastMgr::ckNew(config.PCSpanFactor));
-      //asymmetric AKA Lambda AKA Gamma
-#ifdef _CP_SUBSTEP_TIMING_
-    UpairCalcID2[thisInstance.proxyOffset].forwardTimerID=keeperRegister("Asym Forward");
-    UpairCalcID2[thisInstance.proxyOffset].backwardTimerID=keeperRegister("Asym Backward");
-    UpairCalcID2[thisInstance.proxyOffset].beginTimerCB= CkCallback(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
-    UpairCalcID2[thisInstance.proxyOffset].endTimerCB=  CkCallback(CkIndex_TimeKeeper::collectEnd(NULL),0,TimeKeeperProxy);
-#endif
-
-    // Configurations specific to the asymmetric PC instance
-    pcCfg.isSymmetric        = false;
-    pcCfg.arePhantomsOn      = false;
-    pcCfg.numChunks          = config.numChunksAsym;
-    pcCfg.isDoublePackOn    = myPack;
-    pcCfg.gSpaceEP           = gsp_ep;
-    pcCfg.resultMsgPriority  = config.lambdapriority+2;
-
-    createPairCalculator(pcCfg, &(UpairCalcID2[thisInstance.proxyOffset]), 1, &scalc_asym_id, config.lambdapriority, mCastGrpIdsA);
-    
-
-//============================================================================ 
-   }//end routine
-//============================================================================ 
-
 
 
 //============================================================================ 
@@ -1511,235 +1311,6 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 
 
 //============================================================================
-/**
- ** Create stuff for ortho which PC invokes by section reduction
- */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void init_ortho_chares(int nstates, UberCollection thisInstance) {
-//============================================================================
-
-  PRINT_LINE_STAR;
-  PRINTF("Building Ortho Chares\n");
-  PRINT_LINE_DASH;printf("\n");
-  PeList *excludePes= new PeList(1);
-  excludePes->TheList[0]=config.numPes;
-
-  int nOrtho= (nstates/config.orthoGrainSize);
-  nOrtho *= nOrtho;
-  double Timer=CmiWallTimer();
-
-  availGlobR->reset();
-#ifdef USE_INT_MAP
-  OrthoImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
-#endif
-
-  int success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("OrthoMap", &OrthoImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("OrthoMap", &Orthomaptable);
-#endif
-    delete mf;
-  }
-  PeList *avail= new PeList();
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    OrthoMapTable Otable = OrthoMapTable(&OrthoImaptable[thisInstance.getPO()], avail, nstates, config.orthoGrainSize, &AsymScalcImaptable[thisInstance.getPO()], config.nchareG, config.numChunks, config.sGrainSize, excludePes);
-#else
-    OrthoMapTable Otable = OrthoMapTable(&Orthomaptable, avail, nstates, config.orthoGrainSize, &AsymScalcmaptable, config.nchareG, config.numChunks, config.sGrainSize, excludePes);
-#endif
-  }
-  double newtime=CmiWallTimer();
-  CkPrintf("OrthoMap created in %g\n\n", newtime-Timer);
-
-  //CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(chunks, nOrtho, stride);
-  orthoMap = CProxy_OrthoMap::ckNew(thisInstance);
-  CkArrayOptions orthoOpts;
-  orthoOpts.setMap(orthoMap);
-
-  UorthoProxy.push_back( CProxy_Ortho::ckNew(orthoOpts));
-
-#ifdef USE_COMLIB
-#ifdef OLD_COMMLIB
-  CharmStrategy *multistrat = new DirectMulticastStrategy(UorthoProxy[thisInstance.proxyOffset].ckGetArrayID());
-  orthoInstance=ComlibRegister(multistrat);
-#else
-  Strategy *multistrat = new DirectMulticastStrategy();
-  orthoInstance=ComlibRegister(multistrat);
-//  ComlibAssociateProxy(orthoInstance, UorthoProxy[thisInstance.proxyOffset]);
-#endif
-#endif
-
-
-  CkCallback ocb= CkCallback(CkIndex_Ortho::collect_error(NULL), UorthoProxy[thisInstance.proxyOffset](0, 0));
-  UorthoProxy[thisInstance.proxyOffset].ckSetReductionClient(&ocb);
-    
-  if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMap(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMap(&Orthomaptable);
-#endif
-    delete mf;
-  }
-  if(config.dumpMapCoordFiles) {
-    int size[2];
-    size[0] = size[1] = nstates/config.orthoGrainSize;
-    MapFile *mf = new MapFile("OrthoMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    mf->dumpMapCoords(&OrthoImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-    mf->dumpMapCoords(&Orthomaptable);
-#endif
-    delete mf;
-  }
-
-  // extra triangle ortho elements are really a waste of our time
-  // and resources, but we don't have a triangular solver for
-  // inv_square, so we'll just make do.
-
-  // They need to exist solely so that the inv_sq method can work.
-  // So we need to copy their mirror elements data into them.
-  // then when complete they need to know not to call finishpaircalc.
-  // Because their redundant data has nowhere to go.
-
-  // We've made use of them anyway to handle: lambda reduction, the
-  // gamma multiply, and communication balancing for phantoms, so they
-  // aren't completely horrible.
-
-  /* create matrix multiplication objects */
-  CLA_Matrix_interface matA1, matB1, matC1;
-  CLA_Matrix_interface matA2, matB2, matC2;
-  CLA_Matrix_interface matA3, matB3, matC3;
-
-  CkCallback ortho_ready_cb = CkCallback(CkIndex_Ortho::all_ready(),
-   UorthoProxy[thisInstance.proxyOffset](0, 0));
-
-  make_multiplier(&matA1, &matB1, &matC1, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-  if(config.useOrthoHelpers)
-    {
-#ifdef USE_INT_MAP
-      OrthoHelperImaptable[thisInstance.getPO()].buildMap(nstates/config.orthoGrainSize, nstates/config.orthoGrainSize);
-#endif
-      double Timer=CmiWallTimer();
-
-      success = 0;
-      if(config.loadMapFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	success = mf->loadMap("OrthoHelperMap", &OrthoHelperImaptable[thisInstance.getPO()]);
-#else
-	success = mf->loadMap("OrthoHelperMap", &OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-
-      if(success == 0) {
-#ifdef USE_INT_MAP
-	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable[thisInstance.getPO()], nstates, config.orthoGrainSize, &OrthoImaptable[thisInstance.getPO()], avail, excludePes);
-#else
-	OrthoHelperMapTable OHtable = OrthoHelperMapTable(&OrthoHelperImaptable, nstates, config.orthoGrainSize, &Orthomaptable, avail, excludePes);
-#endif
-      }
-      double newtime=CmiWallTimer();
-      CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
-
-      CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(thisInstance);
-      CkArrayOptions orthoHOpts;
-      orthoHOpts.setMap(orthoHMap);
-
-      if(config.dumpMapFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	mf->dumpMap(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-	mf->dumpMap(&OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-      if(config.dumpMapCoordFiles) {
-	int size[2];
-	size[0] = size[1] = nstates/config.orthoGrainSize;
-	MapFile *mf = new MapFile("OrthoHelperMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-	mf->dumpMapCoords(&OrthoHelperImaptable[thisInstance.getPO()], thisInstance.getPO());
-#else
-	mf->dumpMapCoords(&OrthoHelpermaptable);
-#endif
-	delete mf;
-      }
-      UorthoHelperProxy.push_back( CProxy_OrthoHelper::ckNew(orthoHOpts));
-      make_multiplier(&matA2, &matB2, &matC2, UorthoHelperProxy[thisInstance.proxyOffset], UorthoHelperProxy[thisInstance.proxyOffset], UorthoHelperProxy[thisInstance.proxyOffset],
-		      nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-		      config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, 
-		      ortho_ready_cb,	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-    }
-  else  //no helpers
-  {
-    make_multiplier(&matA2, &matB2, &matC2, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-	nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-	config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-	mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-  }
-
-  make_multiplier(&matA3, &matB3, &matC3, UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset], UorthoProxy[thisInstance.proxyOffset],
-   nstates, nstates, nstates, config.orthoGrainSize, config.orthoGrainSize,
-   config.orthoGrainSize, 1, 1, 1, ortho_ready_cb, ortho_ready_cb, ortho_ready_cb,
-   mCastGrpId, MM_ALG_2D, config.gemmSplitOrtho);
-
-  /// Create multicast manager groups for Ortho to use
-  orthomCastGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoMcastSpanFactor));
-  orthoRedGrpId=(CProxy_CkMulticastMgr::ckNew(config.OrthoRedSpanFactor));
-
-  int timekeep=keeperRegister("Ortho S to T");
-  int maxorthoindex=(nstates/config.orthoGrainSize-1);
-  int maxorthostateindex=(nstates/config.orthoGrainSize-1) * config.orthoGrainSize;
-  for (int s1 = 0; s1 <= maxorthostateindex; s1 += config.orthoGrainSize)
-    for (int s2 = 0; s2 <= maxorthostateindex; s2 += config.orthoGrainSize) {
-      int indX = s1 / config.orthoGrainSize;
-      int indY = s2 / config.orthoGrainSize;
-      indX = (indX>maxorthoindex) ? maxorthoindex : indX;
-      indY = (indY>maxorthoindex) ? maxorthoindex : indY;
-
-      UorthoProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-      matA1, matB1, matC1, matA2, matB2, matC2, matA3, matB3, matC3,timekeep, thisInstance, orthomCastGrpId, orthoRedGrpId);
-      if(config.useOrthoHelpers)
-      {
-	UorthoHelperProxy[thisInstance.proxyOffset](indX, indY).insert(config.orthoGrainSize, config.orthoGrainSize,
-		   matA2, matB2, matC2, thisInstance);
-      }
-    }
-  UorthoProxy[thisInstance.proxyOffset].doneInserting();
-  if(config.useOrthoHelpers)
-    UorthoHelperProxy[thisInstance.proxyOffset].doneInserting();
-    
-  UorthoProxy[thisInstance.proxyOffset].makeSections();
-  delete avail;
-  delete excludePes;
-//============================================================================
-  }//end routine 
-//============================================================================
-
-
-
-
-//============================================================================
 //Create the array elements for the GSpace, Particle and Real Space planes
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1974,9 +1545,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
   gSpaceOpts.setMap(gsMap);
-  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(
-                     sizeX,  1, 1, sGrainSize,  gforward, 
-		     gbackward, thisInstance, gSpaceOpts));
+  UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
 
@@ -3812,6 +3381,8 @@ void setTraceUserEvents()
 }
 //============================================================================
 #include "CPcharmParaInfo.def.h"
+#include "timeKeeper.def.h"
+#include "startupMessages.def.h"
 #include "cpaimd.def.h"
 
 //============================================================================

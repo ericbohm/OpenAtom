@@ -44,12 +44,14 @@
 #include "ortho.h"
 #include "orthoHelper.h"
 #include "gSpaceDriver.decl.h"
+#include "timeKeeper.decl.h"
+
 #include "charm++.h"
 #include "utility/util.h"
 #include "main/groups.h"
+
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
-#include "paircalc/pairCalculator.h" ///< Just for the global PairCalcIDs used to init SectionMgrs
 
 #include "src_mathlib/mathlib.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
@@ -59,21 +61,8 @@
 //============================================================================
 
 extern Config config;
-extern int nstates;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_InstanceController      instControllerProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
-extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
-extern CkVec<CProxy_GSpaceDriver> UgSpaceDriverProxy;
-extern CkVec <PairCalcID> UpairCalcID1;
-extern CkVec <PairCalcID> UpairCalcID2;
-extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
-extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
-extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
-extern CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
-extern CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 extern ComlibInstanceHandle orthoInstance;
-extern CkVec <CProxy_Ortho> UorthoProxy;
 //============================================================================
 
 
@@ -98,10 +87,13 @@ Ortho::~Ortho()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::collect_error(CkReductionMsg *msg) {
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::collect_error \n", thisIndex.x, thisIndex.y);
+    #endif
     CmiAssert(thisIndex.x == 0 && thisIndex.y == 0);
     //			end_t = CmiWallTimer();
     double error = *((double *) msg->getData());
-    error = sqrt(error / (nstates * nstates));
+    error = sqrt(error / (cfg.numStates * cfg.numStates));
     //			CkPrintf("%d\t%f\t%g\n", iterations, end_t - start_t, error);
     if(error > invsqr_tolerance && iterations < invsqr_max_iter){
       //				start_t = CmiWallTimer();
@@ -139,8 +131,9 @@ void Ortho::collect_error(CkReductionMsg *msg) {
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void Ortho::start_calc(CkReductionMsg *msg){
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-  int gen_wave   = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::start_calc \n", thisIndex.x, thisIndex.y);
+    #endif
 #ifdef _CP_SUBSTEP_TIMING_
   if(timeKeep>0)
     {
@@ -152,22 +145,22 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
   if(thisIndex.x==0 && thisIndex.y==0)
     {
-      if(cp_min_opt==1){
+      if(!cfg.isDynamics){
 	PRINT_LINE_DASH;
         int iii = numGlobalIter;
-        if(gen_wave==0){iii+=1;}
-	CkPrintf("{%d} Iteration %d done\n",thisInstance.proxyOffset,iii);
+        if(!cfg.isGenWave){iii+=1;}
+	CkPrintf("{%d} Iteration %d done\n",cfg.instanceIndex,iii);
 	PRINT_LINE_STAR; CkPrintf("\n");
-	PRINT_LINE_STAR; 
+	PRINT_LINE_STAR;
       }else{
 	if(numGlobalIter>0){
 	  PRINT_LINE_STAR; CkPrintf("\n");
 	  PRINT_LINE_STAR;
 	}//endif
         if(numGlobalIter<config.maxIter){
-  	  CkPrintf("{%d} Beginning Iteration %d \n",thisInstance.proxyOffset, numGlobalIter);
+  	  CkPrintf("{%d} Beginning Iteration %d \n",cfg.instanceIndex, numGlobalIter);
 	}else{
-  	  CkPrintf("{%d} Completing Iteration %d \n", thisInstance.proxyOffset,numGlobalIter-1);
+  	  CkPrintf("{%d} Completing Iteration %d \n", cfg.instanceIndex,numGlobalIter-1);
 	}//endif
 	PRINT_LINE_DASH;
       }//endif
@@ -221,7 +214,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }
 
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("smat",(double *)S, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("smat",(double *)S, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 
@@ -229,7 +222,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   if(savedsmat==NULL)
     { // load it
       savedsmat= new double[m*n];
-      loadMatrixDouble("smat",(double *)savedsmat, m, n,numGlobalIter, thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
+      loadMatrixDouble("smat",(double *)savedsmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -255,9 +248,9 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }//endfor
   }//endif
   // do tolerance check on smat, do_iteration will be called by reduction root
-  if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
+  if(cfg.isDynamics && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("{%d} doing tolerance check on SMAT \n",thisInstance.proxyOffset);
+      CkPrintf("{%d} doing tolerance check on SMAT \n",cfg.instanceIndex);
     }//endif
     double max =array_diag_max(m,n,S);
     contribute(sizeof(double),&max, CkReduction::max_double, 
@@ -281,11 +274,8 @@ void Ortho::collect_results(void){
 //============================================================================
 // Output Timings and debug information then increment iteration counter
 
-    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-    int gen_wave    = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
-
     int iprintout   = config.maxIter;
-    if(cp_min_opt==1 && gen_wave==0){iprintout-=1;}
+    if(!cfg.isDynamics && !cfg.isGenWave){iprintout-=1;}
 
     int itime       = numGlobalIter;
     if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
@@ -306,9 +296,9 @@ void Ortho::collect_results(void){
         }else{
 	  if(numGlobalIter>0){
 	    CkPrintf("{%d}Iteration time (ORTHO) : %g\n", 
-		     thisInstance.proxyOffset,
+		     cfg.instanceIndex,
                wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("{%d} Ortho S->T iterations: %d\n",thisInstance.proxyOffset,iterations); 
+	    CkPrintf("{%d} Ortho S->T iterations: %d\n",cfg.instanceIndex,iterations);
 	  }//endif
         }//endif
     }//endif
@@ -321,24 +311,8 @@ void Ortho::collect_results(void){
 // Load balance controller
 
 
-    if (numGlobalIter <= config.maxIter+1){
-
-      if ((config.lbgspace || config.lbpaircalc ||config.lbdensity) &&
-          (numGlobalIter== FIRST_BALANCE_STEP||(numGlobalIter % LOAD_BALANCE_STEP) == 0)){
-           CkPrintf("[%d %d] ortho calling atsync with paircalc %d gspace %d iter %d\n",
-               thisIndex.x, thisIndex.y,config.lbpaircalc, config.lbgspace, numGlobalIter);
-	   AtSync();
-   	   if(thisIndex.x==0 && thisIndex.y==0){
-	     UrhoRealProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	     UrhoGProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	     UrhoGHartExtProxy[thisInstance.proxyOffset].isAtSync(numGlobalIter);
-	   }//endif
-       }else{
+    if (numGlobalIter <= config.maxIter+1)
  	  resume();
-       }//endif
-
-    }//endif : we are still going
-
 //----------------------------------------------------------------------
   }//end routine
 //=======================================================================
@@ -358,7 +332,7 @@ void Ortho::resume(){
 	{
 	  actionType=1;  //keepOrtho
 	}
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
+      if(cfg.isDynamics){
 	// copy orthoT for use in gamma computation
 	//	CkPrintf("O [%d %d] making copy of orthoT m %d n %d\n",thisIndex.x,thisIndex.y,m,n);
 	if(orthoT==NULL) //allocate if null
@@ -369,14 +343,14 @@ void Ortho::resume(){
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((pc.y < pc.x) || ((pc.y==pc.x)&&()))   //we have the answer scalc wants
 #ifdef _CP_ORTHO_DUMP_TMAT_
-    dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   if(savedtmat==NULL)
     { // load it
       savedtmat= new double[m*n];
-      loadMatrixDouble("tmat",(double *)savedtmat, m, n, numGlobalIter, thisIndex.x * orthoGrainSize,thisIndex.y*orthoGrainSize,0,false);     
+      loadMatrixDouble("tmat",(double *)savedtmat, m, n, numGlobalIter, thisIndex.x * orthoGrainSize,thisIndex.y*orthoGrainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -415,7 +389,7 @@ void Ortho::resume(){
 	// we have a transposed copy of what scalc wants
     symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
 #ifdef _CP_ORTHO_DUMP_TMAT_
-	dumpMatrixDouble("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+	dumpMatrixDouble("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
       }
@@ -430,7 +404,7 @@ void Ortho::resume(){
       }
 #endif
     /* this should be triggered by psi after sym fw path is done */
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt && !config.PCCollectTiles)
+  if(cfg.isDynamics && !config.PCCollectTiles)
     {
       sendOrthoTtoAsymm();
     }
@@ -462,15 +436,17 @@ void Ortho::maxCheck(CkReductionMsg *msg){
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
 
-  CkPrintf("{%d} SMAT tol    = %g\n", thisInstance.proxyOffset,tolMax);
-  if(tolMax < scProxy.ckLocalBranch()->cpcharmParaInfo->tol_norb){
+  CkPrintf("{%d} SMAT tol    = %g\n", cfg.instanceIndex,tolMax);
+  if(tolMax < cfg.maxTolerance){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
   }else{
       // smat is outside of the tolerance range  need new PsiV
       toleranceCheckOrthoT=true;
       CkPrintf("recalculating PsiV due to tolerance failure \n");
-      UgSpaceDriverProxy[thisInstance.proxyOffset].needUpdatedPsiV();  //GspaceDriver will trigger our resume
+      // Use the callback to trigger tolerance failure events.
+      cfg.uponToleranceFailure.send();
+      // Simply suspend all work. We'll be resumed (by GSpaceDriver) when tolerance updates are done.
   }//endif
 
 //============================================================================
@@ -503,14 +479,14 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   int lambdaCount = msg->getSize()/sizeof(double);
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
-    dumpMatrixDouble("lmat",lambda, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 #ifdef _CP_ORTHO_DEBUG_COMPARE_LMAT_
   if(savedlmat==NULL)
     { // load it
       savedlmat= new double[m*n];
-      loadMatrixDouble("lmat",(double *)savedlmat, m, n,numGlobalIter, thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
+      loadMatrixDouble("lmat",(double *)savedlmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -525,7 +501,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 #endif
 
   // revise this to do a matmul replacing multiplyforgamma
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
+  if(cfg.isDynamics){
 
     if(toleranceCheckOrthoT)
       {// replace orthoT with the identity matrix
@@ -584,7 +560,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void Ortho::makeSections()
+void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID)
 {
     /** For runs using a large numPE, Orthos chares are typically mapped onto a small fraction of the cores
      * However, array broadcasts in charm++ involve all PEs (due to some legacy quirk present because of any-time 
@@ -596,13 +572,14 @@ void Ortho::makeSections()
     if( (thisIndex.x==0 && thisIndex.y==0) && (config.useOrthoSection || config.useOrthoSectionRed))
     {
         /// Create an array section that includes the whole Ortho chare array
-        int numOrtho=config.nstates/config.orthoGrainSize;
+        int numOrtho = cfg.numStates / cfg.grainSize;
         multiproxy = CProxySection_Ortho::ckNew(thisProxy.ckGetArrayID(), 0, numOrtho-1,1, 0, numOrtho-1, 1);
         /// If reductions are being delegated to a comm library
         if(config.useOrthoSectionRed)
         {
             CProxySection_Ortho rproxy =   multiproxy;
             CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oRedGID).ckLocalBranch();
+            CkAssert(mcastGrp != NULL);
             rproxy.ckSectionDelegate(mcastGrp);
             initCookieMsg *redMsg=new initCookieMsg;
             /// Ask the rest of the section (the whole array) to init their CkSectionInfo cookies that identify the mgr etc
@@ -620,27 +597,26 @@ void Ortho::makeSections()
             }
             else
             {
-                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch(); 
+                CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(oMCastGID).ckLocalBranch();
+                CkAssert(mcastGrp != NULL);
                 multiproxy.ckSectionDelegate(mcastGrp);
             }
         }
     }
 
     // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
-    symmSectionMgr.init (thisIndex, UpairCalcID1[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
-    asymmSectionMgr.init(thisIndex, UpairCalcID2[thisInstance.proxyOffset], config, oMCastGID, oRedGID);
+    symmSectionMgr.init (thisIndex, cfgSymmPC , symAID , oMCastGID, oRedGID);
+    asymmSectionMgr.init(thisIndex, cfgAsymmPC, asymAID, oMCastGID, oRedGID);
     
-    /// Once the PC - ortho channel is setup, the PC instance should notify the instance controller that its ready
-    CkCallback doneInitCB(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
     /// Symmetric PC sections should trigger S -> T computations in Ortho via this method
     CkCallback orthoCB(CkIndex_Ortho::start_calc(NULL), thisProxy(thisIndex.x, thisIndex.y));
     /// Asymmetric sections should simply drop off lambda at this method
     CkCallback orthoLambdaCB(CkIndex_Ortho::acceptSectionLambda(NULL), thisProxy(thisIndex.x, thisIndex.y));
 
     /// Setup the symmetric instance paircalc array section for communication with the symm PC chares
-    symmSectionMgr.setupArraySection(orthoCB,doneInitCB,config.phantomSym,config.useOrthoDirect);
+    symmSectionMgr.setupArraySection(orthoCB,config.phantomSym,config.useOrthoDirect);
     /// Setup the asymmetric instance paircalc array section for gather/scatter of lambda data from/to the asymm PC chares
-    asymmSectionMgr.setupArraySection(orthoLambdaCB, doneInitCB, config.phantomSym, config.useOrthoDirect);
+    asymmSectionMgr.setupArraySection(orthoLambdaCB, config.phantomSym, config.useOrthoDirect);
 }
 
 
@@ -654,7 +630,7 @@ void Ortho::gamma_done(){
 //thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
 
 #ifdef _CP_ORTHO_DUMP_GMAT_
-    dumpMatrixDouble("gmat",(double *)B, m, n, numGlobalIter, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("gmat",(double *)B, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 
@@ -664,7 +640,7 @@ void Ortho::gamma_done(){
   if(savedgmat==NULL)
     { // load it
       savedgmat= new double[m*n];
-      loadMatrixDouble("gmat",(double *)savedgmat, m, n,numGlobalIter,thisIndex.x*config.orthoGrainSize,thisIndex.y*config.orthoGrainSize,0,false);     
+      loadMatrixDouble("gmat",(double *)savedgmat, m, n,numGlobalIter,thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -705,9 +681,12 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matA2, CLA_Matrix_interface _matB2,
  CLA_Matrix_interface _matC2, CLA_Matrix_interface _matA3,
  CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
- int timekeep, UberCollection _instance, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
-    thisInstance(_instance), 
-    oMCastGID(_oMCastGID), oRedGID(_oRedGID)
+ orthoConfig &_cfg,
+ CkArrayID _step2Helper,
+ int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
+    cfg(_cfg),
+    oMCastGID(_oMCastGID), oRedGID(_oRedGID),
+    step2Helper(_step2Helper)
 {
 
 /* do basic initialization */
@@ -723,8 +702,8 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   this->matA2 = _matA2; this->matB2 = _matB2; this->matC2 = _matC2;
   this->matA3 = _matA3; this->matB3 = _matB3; this->matC3 = _matC3;
   timeKeep=timekeep;
-  int borderOrtho= config.nstates / config.orthoGrainSize-1;
-  int remOrtho = config.nstates%config.orthoGrainSize;
+  int borderOrtho = cfg.numStates / cfg.grainSize - 1;
+  int remOrtho = cfg.numStates%cfg.grainSize;
   if(thisIndex.x==borderOrtho)
     this->m = _m + remOrtho;
   else
@@ -781,6 +760,9 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  * currently A has T, B has S1, need to construct 3*I in C
  */
 void Ortho::do_iteration(void){
+    #ifdef VERBOSE_ORTHO
+        CkPrintf("[%d,%d] Ortho::do_iteration \n", thisIndex.x, thisIndex.y);
+    #endif
   step = 1;
   memset(C, 0, m * n * sizeof(double));
   if(thisIndex.x == thisIndex.y){
@@ -788,9 +770,9 @@ void Ortho::do_iteration(void){
       C[i * n + i] = 3;
   }
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step1:A:",(double *)A, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    dumpMatrixDouble("step1:B:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    dumpMatrixDouble("step1:C:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step1:A:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrixDouble("step1:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrixDouble("step1:C:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
   matA1.multiply(-1, 1, A, Ortho::step_2_cb, (void*) this,
@@ -819,15 +801,15 @@ void Ortho::step_2(void){
     // Send our data to the helper and await results which will arrive in recvStep2
     OrthoHelperMsg *omsg= new (m*n, m*n, 0) OrthoHelperMsg;
     omsg->init(m*n, B,C,0.5, 0.5, 0.5);
-    UorthoHelperProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).recvAB(omsg);
+    step2Helper(thisIndex.x,thisIndex.y).recvAB(omsg);
       step_3();
     }
   else
     {
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step2:A:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    dumpMatrixDouble("step2:B:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    //    dumpMatrixDouble("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step2:A:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrixDouble("step2:B:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    //    dumpMatrixDouble("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
       matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
@@ -849,9 +831,9 @@ void Ortho::step_3(){
   step = 3;
   CmiMemcpy(B, A, m * n * sizeof(double));
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step3:A:",(double *)C, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    dumpMatrixDouble("step3:B:",(double *)B, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
-    dumpMatrixDouble("step3:C:",(double *)A, m, n, iterations, thisIndex.x * config.orthoGrainSize, thisIndex.y * config.orthoGrainSize, 0, false);     
+    dumpMatrixDouble("step3:A:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrixDouble("step3:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrixDouble("step3:C:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
   matA3.multiply(0.5, 0, C, Ortho::tol_cb, (void*) this,
@@ -891,7 +873,7 @@ void Ortho::tolerance_check(){
   if(config.useOrthoSectionRed)
     {
       CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
-      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();               
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();
       mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
     }
   else
@@ -920,14 +902,14 @@ void Ortho::pup(PUP::er &p){
     p | step3done;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
       { 
-	ortho = new double[nstates * nstates];
-	orthoT = new double[nstates * nstates];
+	ortho = new double[cfg.numStates * cfg.numStates];
+	orthoT = new double[cfg.numStates * cfg.numStates];
 	wallTimeArr = new double[config.maxIter];
       }
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-	p(ortho,nstates*nstates);
-	p(orthoT,nstates*nstates);
+	p(ortho,cfg.numStates*cfg.numStates);
+	p(orthoT,cfg.numStates*cfg.numStates);
 	p(wallTimeArr,config.maxIter);
       }
     if(p.isUnpacking()){
@@ -942,13 +924,6 @@ void Ortho::pup(PUP::er &p){
     p(tmp_arr, m * n);
   }
 
-
-void OrthoHelper::sendMatrix()
-{
-  if(trigger!=NULL)
-    delete trigger;
-  UorthoProxy[thisInstance.proxyOffset](thisIndex.x, thisIndex.y).recvStep2(C, m*n);
-}
-
+#include "orthoMap.h"
 #include "ortho.def.h"
 

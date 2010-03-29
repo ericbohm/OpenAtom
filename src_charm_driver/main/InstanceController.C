@@ -17,14 +17,12 @@ extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CkVec <CProxy_Ortho>                      UorthoProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
-extern CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 extern CProxy_TimeKeeper                 TimeKeeperProxy;
 
 extern CkVec <UberCollection>         UberAlles;
@@ -213,4 +211,6 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
 
 }
 //============================================================================
+
+#include "instanceController.def.h"
 

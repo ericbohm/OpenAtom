@@ -59,6 +59,43 @@ class IntMap4 {
 	for(int s=0;s<keyXmax*keyStep;s++)
 	  stepTable[s]=s/keyStep;
       }
+
+    IntMap4(const IntMap4 &obj)
+           : keyWmax(obj.keyWmax), keyXmax(obj.keyXmax), keyYmax(obj.keyYmax), keyZmax(obj.keyZmax),
+             keyStep(obj.keyStep), Map(0), stepTable(0)
+    {
+        if (keyWmax > 0 && keyXmax > 0 && keyYmax > 0 && keyZmax > 0)
+        {
+            Map                     = new int***[keyWmax];
+            int ***mappointpointbuf = new int** [keyWmax*keyXmax];
+            int **mappointbuf       = new int*  [keyWmax*keyXmax*keyYmax];
+            int *mapbuf             = new int   [keyWmax*keyXmax*keyYmax*keyZmax];
+
+            for(int w=0; w<keyWmax; w++)
+            {
+                Map[w] = mappointpointbuf + (w*keyXmax);
+                for(int x=0; x<keyXmax; x++)
+                {
+                    Map[w][x] = mappointbuf + (w*keyXmax+x) * keyYmax;
+                    for(int y=0; y<keyYmax; y++)
+                    {
+                        Map[w][x][y] = mapbuf + ((w*keyXmax+x)*keyYmax+y) * keyZmax;
+                        for (int z=0; z<keyZmax; z++)
+                            Map[w][x][y][z] = obj.Map[w][x][y][z];
+                    }
+                }
+            }
+        }
+        if (keyXmax > 0 && keyStep > 0)
+        {
+            stepTable= new int [keyXmax*keyStep];
+            for(int s=0; s<keyXmax*keyStep; s++)
+                stepTable[s] = s/keyStep;
+        }
+    }
+
+
+
     ~IntMap4(){
       if(Map!=NULL)
 	{
@@ -105,55 +142,59 @@ class IntMap4 {
     }
       }
     void pup(PUP::er &p)
-      {
-	  p|keyWmax;
-	  p|keyXmax;
-	  p|keyYmax;
-	  p|keyZmax;
-	  p|keyStep;
-	  int ***mappointpointbuf = NULL;
-	  int **mappointbuf = NULL;
-	  int *mapbuf= NULL;
-	  if(keyWmax>0)
-	    {
-	      CkAssert(keyXmax>0);
-	      CkAssert(keyYmax>0);
-	      CkAssert(keyZmax>0);
-	      if(p.isUnpacking())
-		{
-		  Map=new int***[keyWmax];
-		  mappointpointbuf = new int**[keyWmax*keyXmax];
-		  mappointbuf = new int*[keyWmax*keyXmax*keyYmax];
-		  mapbuf= new int[keyWmax*keyXmax*keyYmax*keyZmax];
-		}
-	      for(int w=0;w<keyWmax;w++)
-		{
-		  if(keyXmax>0){
-		    if(p.isUnpacking())
-		      Map[w]=   mappointpointbuf + (w*keyXmax);
-		    for(int x=0;x<keyXmax;x++)
-		      {
-			if(keyYmax>0)
-			  {
-			    if(p.isUnpacking())
-			      Map[w][x]= mappointbuf + (w*keyXmax+x)*keyYmax;
-			    for(int y=0;y<keyYmax;y++)
-			      {
-				if(keyZmax>0){
-				  if(p.isUnpacking())
-				    Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
-				  PUParray(p,Map[w][x][y],keyZmax);
-				}
-			      }
-			  }
-		      }
-		    if( p.isUnpacking() && (stepTable == 0) )
-                stepTable= new int[keyXmax*keyStep];
-		    PUParray(p,stepTable,keyXmax*keyStep);
-		  }
-		}
-	    }
-      }
+    {
+        p|keyWmax;
+        p|keyXmax;
+        p|keyYmax;
+        p|keyZmax;
+        p|keyStep;
+        int ***mappointpointbuf = NULL;
+        int **mappointbuf = NULL;
+        int *mapbuf= NULL;
+        if(keyWmax>0)
+        {
+            CkAssert(keyXmax>0);
+            CkAssert(keyYmax>0);
+            CkAssert(keyZmax>0);
+            if(p.isUnpacking())
+            {
+                Map=new int***[keyWmax];
+                mappointpointbuf = new int**[keyWmax*keyXmax];
+                mappointbuf = new int*[keyWmax*keyXmax*keyYmax];
+                mapbuf= new int[keyWmax*keyXmax*keyYmax*keyZmax];
+            }
+            for(int w=0;w<keyWmax;w++)
+            {
+                if(keyXmax>0)
+                {
+                    if(p.isUnpacking())
+                        Map[w]=   mappointpointbuf + (w*keyXmax);
+                    for(int x=0;x<keyXmax;x++)
+                    {
+                        if(keyYmax>0)
+                        {
+                            if(p.isUnpacking())
+                                Map[w][x]= mappointbuf + (w*keyXmax+x)*keyYmax;
+                            for(int y=0;y<keyYmax;y++)
+                            {
+                                if(keyZmax>0)
+                                {
+                                    if(p.isUnpacking())
+                                        Map[w][x][y]= mapbuf + ((w*keyXmax+x)*keyYmax+y)*keyZmax;
+                                    PUParray(p,Map[w][x][y],keyZmax);
+                                }
+                            }
+                        }
+                    }
+                    if( p.isUnpacking() && (stepTable == 0) )
+                        stepTable= new int[keyXmax*keyStep];
+                    PUParray(p,stepTable,keyXmax*keyStep);
+                }
+            }
+        }
+    }
+
+
     inline int getWmax(){return(keyWmax);}
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
@@ -327,6 +368,23 @@ class IntMap2on2 {
   int keyYmax;
  public:
     IntMap2on2(){keyXmax=0; keyYmax=0; Map=NULL;}
+    /// Copy constructor
+    IntMap2on2(const IntMap2on2 &obj): keyXmax(obj.keyXmax), keyYmax(obj.keyYmax), Map(0)
+    {
+        if (obj.keyXmax >= 0 && obj.keyYmax >= 0)
+        {
+            int *mapbuf=new int[keyXmax*keyYmax];
+            if (obj.Map != NULL)
+                memcpy(mapbuf, obj.Map[0], keyXmax * keyYmax * sizeof(int));
+            else
+                memset(mapbuf, -1, keyXmax * keyYmax * sizeof(int));
+            Map = new int*[keyXmax];
+            for(int x=0;x<keyXmax;x++)
+                Map[x]  =  mapbuf +  keyYmax * x;
+        }
+    }
+
+
     ~IntMap2on2(){
       if(Map!=NULL)
 	{
@@ -372,34 +430,34 @@ class IntMap2on2 {
 	
       }
     void pup(PUP::er &p)
-      {
-	  p|keyXmax;
-	  p|keyYmax;
-	  CkAssert(keyXmax>=0);
-	  CkAssert(keyYmax>=0);
-	  CkAssert(keyXmax<10000000);
-	  CkAssert(keyYmax<10000000);
-	  int *mapbuf=NULL;
-	  if(keyXmax>0)
-	    {
-	      CkAssert(keyYmax>0);
-	      if(p.isUnpacking())
-		{
-		  Map=new int*[keyXmax];
-	
-		  mapbuf=new int[keyXmax*keyYmax];
-		}
-	      for(int x=0;x<keyXmax;x++)
-	      {
-		  if(keyYmax>0)
-		  {
-		      if(p.isUnpacking())
-			Map[x] = mapbuf + keyYmax * x;
-		      PUParray(p,Map[x], keyYmax);
-		  }
-	      }
-	    }
-      }
+    {
+        p|keyXmax;
+        p|keyYmax;
+        CkAssert(keyXmax>=0);
+        CkAssert(keyYmax>=0);
+        CkAssert(keyXmax<10000000);
+        CkAssert(keyYmax<10000000);
+        int *mapbuf=NULL;
+        if(keyXmax>0)
+        {
+            CkAssert(keyYmax>0);
+            if(p.isUnpacking())
+            {
+                Map=new int*[keyXmax];
+                mapbuf=new int[keyXmax*keyYmax];
+            }
+            for(int x=0;x<keyXmax;x++)
+            {
+                if(keyYmax>0)
+                {
+                    if(p.isUnpacking())
+                        Map[x] = mapbuf + keyYmax * x;
+                    PUParray(p,Map[x], keyYmax);
+                }
+            }
+        }
+    }
+
     inline int getXmax(){return(keyXmax);}
     inline int getYmax(){return(keyYmax);}
     int getCentroid(int torusMap);
@@ -494,4 +552,16 @@ class IntMap2on1 {
       }
 };
 
+
+
+class MapType2 : public IntMap2on2 {
+ public:
+  int getCentroid (int);
+  void pup(PUP::er &p) { IntMap2on2::pup(p); }
+};
+
+typedef IntMap4 MapType4;
+typedef IntMap3 MapType3;
+
 #endif
+

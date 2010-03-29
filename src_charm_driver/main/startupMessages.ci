@@ -1,0 +1,6 @@
+// Module containing messages that used during application startup
+module startupMessages
+{
+    message pcSetupMsg;
+};
+

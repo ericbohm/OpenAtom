@@ -63,23 +63,23 @@ endif
 %.d: %.C
 	$(info-dep)
 	@g++ -MM -MG $(CPPFLAGS) $(INCDIRS:%=-I%) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) $(DEPSTRIPDIRS) \
-	| sed 's|$*.o[ :]*|$*.o $@ : |g' > $@
+	| sed 's|$*\.o[ :]*|$*.o $@ : |g' > $@
 
 %.d: %.cpp
 	$(info-dep)
 	@g++ -MM -MG $(CPPFLAGS) $(INCDIRS:%=-I%) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) $(DEPSTRIPDIRS) \
-	| sed 's|$*.o[ :]*|$*.o $@ : |g' > $@
+	| sed 's|$*\.o[ :]*|$*.o $@ : |g' > $@
 
 %.d: %.cxx
 	$(info-dep)
 	@g++ -MM -MG $(CPPFLAGS) $(INCDIRS:%=-I%) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) $(DEPSTRIPDIRS) \
-	| sed 's|$*.o[ :]*|$*.o $@ : |g' > $@
+	| sed 's|$*\.o[ :]*|$*.o $@ : |g' > $@
 
 # Rule to generate dependency information for C source files
 %.d: %.c
 	$(info-dep)
 	@g++ -MM -MG $(CPPFLAGS) $(INCDIRS:%=-I%) -I$(CHARMINC) $< | perl $(CHARMBIN)/dep.pl $(CHARMINC) $(DEPSTRIPDIRS) \
-	| sed 's|$*.o[ :]*|$*.o $@ : |g' > $@
+	| sed 's|$*\.o[ :]*|$*.o $@ : |g' > $@
 
 # Rule to generate dependency info for charm++ interface (ci) definition files
 # @note: Need to handle pathological cases like multi-line module declarations 

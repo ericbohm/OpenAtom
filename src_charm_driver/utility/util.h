@@ -11,6 +11,7 @@
 //===================================================================================
 
 #include "converse.h"
+#include "ckcomplex.h"
 
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -29,7 +30,6 @@ class CPcharmParaInfo; //forward decl
 #include <rfftw.h>
 #endif
 #include <charm++.h>
-#include <paircalc/pairutil.h>
 
 #define CAREFUL 1
 

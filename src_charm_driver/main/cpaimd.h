@@ -10,16 +10,18 @@
 //============================================================================
 //#define _NAN_CHECK_
 
+#include "debug_flags.h"
+
 #ifndef _CPAIMD_H
 #define _CPAIMD_H
 //#define MAP_DEBUG 1
 #include "CPcharmParaInfoGrp.h"
+#include "load_balance/PeList.h"
 #include "uber/Uber.h"
 #include "EachToManyMulticastStrategy.h"
 #include "RingMulticastStrategy.h"
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
-#include "load_balance/PeList.h"
 
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
@@ -35,19 +37,6 @@ class IntMap2
 typedef IntMap2 IntMap4;
 #else
 #include "load_balance/IntMap.h"
-typedef IntMap4 MapType4;
-typedef IntMap3 MapType3;
-class MapType2 : public IntMap2on2 {
- public:
-  int getCentroid (int);
-  /*void pup(PUP::er &p)
-  {
-    CkPrintf("PUP of TypeMap2\n");
-    IntMap2on2::pup(p);
-  }*/
-};
-PUPmarshall(MapType2);
-
 #endif
 
 #include "load_balance/MapTable.h"
@@ -88,10 +77,6 @@ extern CkVec <MapType2> RhoGSImaptable;
 extern CkVec <MapType2> RhoRSImaptable;
 extern CkVec <MapType2> RhoGHartImaptable;
 extern CkVec <MapType3> RhoRHartImaptable;
-extern CkVec <MapType2> OrthoImaptable;
-extern CkVec <MapType2> OrthoHelperImaptable;
-extern CkVec <MapType4> AsymScalcImaptable;
-extern CkVec <MapType4> SymScalcImaptable;
 
 extern CkHashtableT <intdual, int> GSmaptable;
 extern CkHashtableT <intdual, int> RSmaptable;
@@ -400,69 +385,6 @@ class RPPMap: public CkArrayMapTable2 {
 //============================================================================
 
 
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-//============================================================================
-/** \brief Class used for instantiation of pair-calculator group objects.
- *
- *
- */
-//============================================================================
-
-class SCalcMap : public CkArrayMapTable4 {
-  bool symmetric;
- public:
-    SCalcMap(bool _symmetric, UberCollection _instance): symmetric(_symmetric)
-      {
-	thisInstance=_instance;
-#ifdef USE_INT_MAP
-	if(symmetric)
-	  maptable= &SymScalcImaptable[thisInstance.getPO()];
-	else
-	  maptable= &AsymScalcImaptable[thisInstance.getPO()];
-#else
-	if(symmetric)
-	  maptable= &SymScalcmaptable;
-	else
-	  maptable= &AsymScalcmaptable;
-#endif
-    }
-    void pup(PUP::er &p)
-	{
-	    CkArrayMapTable4::pup(p);
-	    p|symmetric;
-#ifdef USE_INT_MAP
-	    if(symmetric)
-	      maptable= &SymScalcImaptable[thisInstance.getPO()];
-	    else
-	      maptable= &AsymScalcImaptable[thisInstance.getPO()];
-#else
-	    if(symmetric)
-	      maptable= &SymScalcmaptable;
-	    else
-	      maptable= &AsymScalcmaptable;
-#endif
-	}
-    //  int procNum(int, const CkArrayIndex &);
-  inline int procNum(int, const CkArrayIndex &iIndex){
-    int proc;
-    
-#ifdef USE_INT_MAP
-    short *sindex=(short *) iIndex.data();
-    proc=maptable->get(sindex[0], sindex[1], sindex[2], sindex[3]);
-#else
-    int *index=(int *) iIndex.data();
-    proc=maptable->get(intdual(index[0], index[1]));
-#endif
-    CkAssert(proc>=0);
-    if(numPes!=CkNumPes())
-      return(proc%CkNumPes());
-    else
-      return(proc);
-  }
-
-};
 //============================================================================
 /**
  * provide procnum mapping for RhoR
@@ -807,13 +729,13 @@ class VdWGSMap : public CkArrayMapTable2 {
  */
 //============================================================================
 class size2d; //forward decl to shup the compiler
-void init_pair_calculators(int nstates, int doublePack, 
-                           CPcharmParaInfo *sim, int boxSize, UberCollection thisInstance);
-void init_ortho_chares(int nstates, UberCollection thisInstance);
+namespace cp { namespace paircalc { class pcConfig; } }
+namespace pc = cp::paircalc;
 
 void init_commlib_strategies(int, int,int, UberCollection thisInstance);
 void lst_sort_clean(int , int *, int *);
-void init_state_chares(int,int,int,int,CPcharmParaInfo *, UberCollection thisInstance);
+void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
+                       int doublePack, CPcharmParaInfo *sim, UberCollection thisInstance);
 void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
                        int doublePack, PeList *exclusion, CPcharmParaInfo *sim, UberCollection thisInstance);
 int init_rho_chares(CPcharmParaInfo*, UberCollection thisInstance);
@@ -837,12 +759,6 @@ void setTraceUserEvents();
 #include "energy.h"
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
-
-/*#include "paircalc/pairCalculator.h"
-#include "../../src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
-#define CK_TEMPLATES_ONLY
-#include "cpaimd.def.h"
-#undef CK_TEMPLATES_ONLY*/
 
 #endif
 

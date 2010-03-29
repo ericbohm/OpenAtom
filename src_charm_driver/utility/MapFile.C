@@ -2,10 +2,13 @@
  *
  */
 
+#include "TopoManager.h"
+#include "MapFile.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "MapFile.h"
+
 extern TopoManager *topoMgr;
 
 MapFile::~MapFile()
@@ -206,11 +209,7 @@ int MapFile::loadMap(const char *filename, MapType2 *map)
     for(int j=0; j<sizeDim[1]; j++)
     {
       fscanf(fp, "%d%d%d\n", &x, &y, &pe);
-#ifdef USE_INT_MAP
       map->set(x, y, pe);
-#else
-      map->put(intdual(x, y))=destpe;
-#endif
     }
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
@@ -229,13 +228,7 @@ int MapFile::loadMap(const char *filename, MapType3 *map)
       for(int k=0; k<sizeDim[2]; k++)
 	{	
 	  fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe);
-#ifdef USE_INT_MAP
-          map->set(x, y, z, pe);
-#else
-	  CkArrayIndex3D idx3d(x, y, z);
-	  CmiMemcpy(intidx, idx3d.index, 3*sizeof(int));
-	  map->put(inttriple(intidx[0], intidx[1], intidx[2]))=destpe;
-#endif
+      map->set(x, y, z, pe);
 	}
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
@@ -256,13 +249,7 @@ int MapFile::loadMap(const char *filename, MapType4 *map)
 	for(int l=0; l<sizeDim[3]; l++)
 	{	
 	  fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe);
-#ifdef USE_INT_MAP
-          map->set(x, y, z, w, pe);
-#else
-	  CkArrayIndex4D idx4d(x, y, z, w);
-	  CmiMemcpy(intidx, idx4d.index, 2*sizeof(int));
-	  map->put(intdual(intidx[0], intidx[1]))=destpe;
-#endif
+      map->set(x, y, z, w, pe);
 	}
   fclose(fp);
   CkPrintf("%s loaded from file ----\n", filename);
