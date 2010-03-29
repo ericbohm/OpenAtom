@@ -1,5 +1,6 @@
 #include "debug_flags.h"
 #include "MessageDataCollator.h"
+#include "ckcomplex.h"
 
 #ifndef PC_FWD_DECLARATIONS_H
 #define PC_FWD_DECLARATIONS_H
@@ -14,7 +15,7 @@ class paircalcInputMsg;
 // A template message collator
 template <class msgType, typename dataType> class MessageDataCollator;
 /// The type of the input msg collator
-typedef pc::MessageDataCollator<paircalcInputMsg,double> CollatorType;
+typedef pc::MessageDataCollator<paircalcInputMsg,complex> CollatorType;
 
 class PairCalcID; ///< @note: Should be temporary
 

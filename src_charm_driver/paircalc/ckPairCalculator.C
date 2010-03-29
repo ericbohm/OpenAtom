@@ -462,7 +462,7 @@ void PairCalculator::ResumeFromSync() {
 
 void PairCalculator::acceptLeftData(paircalcInputMsg *msg) 
 {
-    const double *data = msg->data();
+    complex *data = msg->data();
     const int numRows  = msg->numRows();
     const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer
@@ -472,7 +472,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 	/// Check data validity
 	#ifdef _NAN_CHECK_
 		for(int i=0; i < numRows*numCols; i++)
-			CkAssert(finite(data[i]));
+			CkAssert( finite(data[i].re) && finite(data[i].im) );
 	#endif
     /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
@@ -482,10 +482,10 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 
 	/// Set member data pertinent to the left block
     msgLeft      = msg;
-	inDataLeft   = const_cast<double*> (data);
+	inDataLeft   = reinterpret_cast<double*> (data);
 	existsLeft   = true;
 	numRecd     += numRows;
-	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
+	numPoints    = numCols;
 	isLeftReady  = true;
 
 	/// If all data is ready 
@@ -522,7 +522,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 
 void PairCalculator::acceptRightData(paircalcInputMsg *msg) 
 {
-    const double *data = msg->data();
+    complex *data = msg->data();
     const int numRows  = msg->numRows();
     const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer
@@ -532,7 +532,7 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 	/// Check data validity
 	#ifdef _NAN_CHECK_
 		for(int i=0; i < numRows*numCols; i++)
-			CkAssert(finite(data[i]));
+			CkAssert( finite(data[i].re) && finite(data[i].im) );
 	#endif
     /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
@@ -542,10 +542,10 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 
 	/// Set member data pertinent to the right block
     msgRight     = msg;
-	inDataRight  = const_cast<double*> (data);
+	inDataRight  = reinterpret_cast<double*> (data);
 	existsRight  = true;
 	numRecd     += numRows;
-	numPoints    = numCols/2;  ///< @note: GSpace sends a complex for each point, but PC treats them as 2 doubles.
+	numPoints    = numCols;
 	isRightReady = true;
 
 	/// If all data is ready 
