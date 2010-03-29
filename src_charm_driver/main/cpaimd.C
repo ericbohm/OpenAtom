@@ -1,28 +1,17 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 /** \file cpaimd.C
  *                         cpaimd-charm-driver
- *    Software developed by the Parallel Programing Laboratory, UIUC.
- *    in collaboration with IBM and NYU.
- *   
  *    This file contains cpaimd-charm-driver main. It creates and 
  *    initializes all the arrays and libraries. 
  */      
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 
 /** \mainpage
- *  OpenAtom <A HREF="http://ccharm.cs.uiuc.edu/OpenAtom">Webpage</A>.
+ * OpenAtom <A HREF="http://charm.cs.illinois.edu/OpenAtom">Webpage</A>.
  *
+ * Car-Parrinello Ab-Initio Molecular Dynamics software
+ *                 developed by the
+ *        Parallel Programing Laboratory, UIUC
+ *               in collaboration with
+ *                   IBM and NYU
  */
 
 #include "cpaimd.h"
@@ -266,12 +255,11 @@ const char OpenAtomRevision[] = INQUOTES(OPENATOM_REVISION);
 
 
 //============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 /** The Main of CPAIMD. It calls all the init functions.
  *
  */
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
 main::main(CkArgMsg *msg) {
   topoMgr = NULL;
 //============================================================================
