@@ -136,7 +136,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
     #ifdef VERBOSE_ORTHO
         CkPrintf("[%d,%d] Ortho::start_calc \n", thisIndex.x, thisIndex.y);
     #endif
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int gen_wave   = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
 #ifdef _CP_SUBSTEP_TIMING_
   if(timeKeep>0)
@@ -149,7 +148,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 
   if(thisIndex.x==0 && thisIndex.y==0)
     {
-      if(cp_min_opt==1){
+      if(!cfg.isDynamics){
 	PRINT_LINE_DASH;
         int iii = numGlobalIter;
         if(gen_wave==0){iii+=1;}
@@ -252,7 +251,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }//endfor
   }//endif
   // do tolerance check on smat, do_iteration will be called by reduction root
-  if(cp_min_opt==0 && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
+  if(cfg.isDynamics && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
       CkPrintf("{%d} doing tolerance check on SMAT \n",cfg.instanceIndex);
     }//endif
@@ -278,11 +277,10 @@ void Ortho::collect_results(void){
 //============================================================================
 // Output Timings and debug information then increment iteration counter
 
-    int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
     int gen_wave    = scProxy.ckLocalBranch()->cpcharmParaInfo->gen_wave;
 
     int iprintout   = config.maxIter;
-    if(cp_min_opt==1 && gen_wave==0){iprintout-=1;}
+    if(!cfg.isDynamics && gen_wave==0){iprintout-=1;}
 
     int itime       = numGlobalIter;
     if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
@@ -339,7 +337,7 @@ void Ortho::resume(){
 	{
 	  actionType=1;  //keepOrtho
 	}
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt!=1){
+      if(cfg.isDynamics){
 	// copy orthoT for use in gamma computation
 	//	CkPrintf("O [%d %d] making copy of orthoT m %d n %d\n",thisIndex.x,thisIndex.y,m,n);
 	if(orthoT==NULL) //allocate if null
@@ -411,7 +409,7 @@ void Ortho::resume(){
       }
 #endif
     /* this should be triggered by psi after sym fw path is done */
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt && !config.PCCollectTiles)
+  if(cfg.isDynamics && !config.PCCollectTiles)
     {
       sendOrthoTtoAsymm();
     }
@@ -508,7 +506,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 #endif
 
   // revise this to do a matmul replacing multiplyforgamma
-  if(!scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt){
+  if(cfg.isDynamics){
 
     if(toleranceCheckOrthoT)
       {// replace orthoT with the identity matrix

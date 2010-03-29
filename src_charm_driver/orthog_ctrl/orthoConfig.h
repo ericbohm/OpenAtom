@@ -14,6 +14,8 @@ namespace cp {
 class orthoConfig
 {
     public:
+        /// Is this a minimization or dynamics run
+        bool isDynamics; ///< @note: This could turn into an enum as more run modes are introduced
         //-------------------- Vars that indicate problem size / decomposition --------------------
         /// The number of states in the simulation (the dimension of the input square matrix)
         int numStates;
