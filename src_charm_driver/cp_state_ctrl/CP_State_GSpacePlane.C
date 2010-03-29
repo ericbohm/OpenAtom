@@ -1629,10 +1629,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
-  int toSend = numPoints;
-  asymmPCmgr.sendLeftData(toSend,psi,false);
+  asymmPCmgr.sendLeftData(numPoints,psi,false);
   CmiNetworkProgress();
-  asymmPCmgr.sendRightData(toSend,force,false);
+  asymmPCmgr.sendRightData(numPoints,force,false);
 #else
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);

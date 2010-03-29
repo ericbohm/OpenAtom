@@ -154,7 +154,7 @@ void PCCommManager::makeRightTree()
  * For symmetric instances,  sends to the post-diagonal row of PCs that correspond to state gspaceIndex.x (including the chare on the chare array diagonal)
  * For asymmetric instances, sends to the whole row of PCs that correspond to state gspaceIndex.x
  */
-void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
+void PCCommManager::sendLeftDataMcast(int numPoints, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
 		/// If RDMA is enabled, we should be here ONLY during PsiV updates
@@ -173,18 +173,18 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
     /// If a left matrix destination section exists, send the data as the left matrix block
     if(existsLproxy)
     {
-        int chunksize =  n / pcCfg.numChunks;
+        int chunksize =  numPoints / pcCfg.numChunks;
         int outsize = chunksize;
 
         for(int chunk=0; chunk < pcCfg.numChunks ; chunk++)
         {
             // last chunk gets remainder
             if((pcCfg.numChunks > 1) && (chunk == (pcCfg.numChunks - 1)))
-                outsize= chunksize + (n % pcCfg.numChunks);
+                outsize= chunksize + (numPoints % pcCfg.numChunks);
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
             if(pcCfg.isSymmetric && gspaceIndex.y==0)
-                dumpMatrixDouble("gspPts",(double *)ptr, 1, n*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
-            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",gspaceIndex.y,gspaceIndex.x, gspaceIndex.x, chunk,pcCfg.isSymmetric, chunk,chunksize,outsize,n,chunk*chunksize,ptr[chunk*chunksize].re);
+                dumpMatrixDouble("gspPts",(double *)ptr, 1, numPoints*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
+            CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",gspaceIndex.y,gspaceIndex.x, gspaceIndex.x, chunk,pcCfg.isSymmetric, chunk,chunksize, outsize, numPoints, chunk*chunksize, ptr[chunk*chunksize].re);
             #endif
             // If sending directly, use the vector of target PC chares
             if( !pcCfg.isInputMulticast)
@@ -192,7 +192,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
                 CkArrayIndex4D idx;
                 for(int elem=0; elem < listGettingLeft.size() ; elem++)
                 {
-                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, numPoints);
                     *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                     idx=listGettingLeft[elem];
@@ -211,7 +211,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
             // else, use a typical multicast to the destination section
             else
             {
-                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, true, flag_dp, &(ptr[chunk * chunksize]), psiV, numPoints);
                 *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
@@ -241,7 +241,7 @@ void PCCommManager::sendLeftDataMcast(int n, complex* ptr, bool psiV)
  * For symmetric instances,  sends to the strictly pre-diagonal column of PCs that correspond to state gspaceIndex.x
  * For asymmetric instances, sends to the whole row of PCs that correspond to state gspaceIndex.x
  */
-void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
+void PCCommManager::sendRightDataMcast(int numPoints, complex* ptr, bool psiV)
 {
     #ifdef PC_USE_RDMA
 		/// If RDMA is enabled, we should be here ONLY during PsiV updates
@@ -261,7 +261,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
         #ifdef _DEBUG_PAIRCALC_PARANOID_
         double re;
         double im;
-        for(int i=0;i<n;i++)
+        for(int i=0;i<numPoints;i++)
         {
             re=ptr[i].re;
             im=ptr[i].im;
@@ -273,11 +273,11 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
         #endif
         for(int chunk=0; chunk < pcCfg.numChunks; chunk++)
         {
-            int chunksize=n/pcCfg.numChunks;
-            int outsize=chunksize;
+            int chunksize = numPoints / pcCfg.numChunks;
+            int outsize   = chunksize;
             /// last chunk gets remainder
             if(pcCfg.numChunks > 1 && chunk == pcCfg.numChunks - 1)
-                outsize+=n % pcCfg.numChunks;
+                outsize += numPoints % pcCfg.numChunks;
             if(!pcCfg.isInputMulticast)
             {
                 CkArrayIndex4D idx;
@@ -285,7 +285,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
                 {
                     idx=listGettingRight[elem];
                     reinterpret_cast<short*> (idx.data() )[3]=chunk;
-                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                    paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, numPoints);
                     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                     *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                     #ifdef _NAN_CHECK_
@@ -301,7 +301,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
             }
             else
             {
-                paircalcInputMsg *msg=new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, n);
+                paircalcInputMsg *msg = new (outsize, 8* sizeof(int)) paircalcInputMsg(outsize, gspaceIndex.x, false, flag_dp, &(ptr[chunk * chunksize]), psiV, numPoints);
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 *(int*)CkPriorityPtr(msg) = pcCfg.inputMsgPriority;
                 #ifdef _NAN_CHECK_
@@ -323,7 +323,7 @@ void PCCommManager::sendRightDataMcast(int n, complex* ptr, bool psiV)
 
 
 
-void PCCommManager::sendLeftDataRDMA(int n, complex* ptr, bool psiV)
+void PCCommManager::sendLeftDataRDMA(int numPoints, complex* ptr, bool psiV)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to send data to paircalcs via RDMA when RDMA is not enabled\n");
@@ -342,14 +342,14 @@ void PCCommManager::sendLeftDataRDMA(int n, complex* ptr, bool psiV)
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    sendLeftDataMcast(n, ptr, psiV);
+		    sendLeftDataMcast(numPoints, ptr, psiV);
 	#endif // PC_USE_RDMA
 }
 
 
 
 
-void PCCommManager::sendRightDataRDMA(int n, complex* ptr, bool psiV)
+void PCCommManager::sendRightDataRDMA(int numPoints, complex* ptr, bool psiV)
 {
 	#ifndef PC_USE_RDMA
 		CkAbort("GSpace[,] Trying to send data to paircalcs via RDMA when RDMA is not enabled\n");
@@ -368,7 +368,7 @@ void PCCommManager::sendRightDataRDMA(int n, complex* ptr, bool psiV)
 		}
 		/// else, if it is a PsiV update step, send the data via traditional messaging
 		else
-		    sendRightDataMcast(n, ptr, psiV);
+		    sendRightDataMcast(numPoints, ptr, psiV);
 	#endif // PC_USE_RDMA
 }
 
