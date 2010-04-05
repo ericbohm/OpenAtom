@@ -43,14 +43,14 @@
 
 #include "ortho.h"
 #include "orthoHelper.h"
-#include "gSpaceDriver.decl.h"
+//#include "gSpaceDriver.decl.h"
 #include "timeKeeper.decl.h"
 
 #include "charm++.h"
 #include "utility/util.h"
-#include "main/groups.h"
+//#include "main/groups.h"
 
-#include "fft_slab_ctrl/fftCacheSlab.h"
+//#include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
 
 #include "src_mathlib/mathlib.h"
