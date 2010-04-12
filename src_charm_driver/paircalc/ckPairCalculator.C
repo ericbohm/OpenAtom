@@ -823,11 +823,9 @@ void PairCalculator::multiplyForward(bool flag_dp)
     // Matrix Dimensions: op(A) = [m,k] op(B) = [k,n] C = [m,n]
     char transformT = 'T';           // Transpose matrix A
     char transform  = 'N';           // Retain matrix B as it is
-    int doubleN     = 2 * numPoints; //
     int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
-    int k_in        = doubleN;       // Columns of op(A) = Rows of op(B)
+    int k_in        = 2 * numPoints; // Columns of op(A) = Rows of op(B)
     int n_in        = numExpectedX;  // Columns of op(B) = Columns of C
-    int ldc         = numExpectedY;  // leading dimension of C
     double alpha    = double(1.0);   // Scale B.A by this scalar factor
     double beta     = double(0.0);   // Scale initial value of C by this factor
 
@@ -842,9 +840,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
     else
     {
         matrixA = inDataLeft;
-        // these are redundant, numExpectedX==numExpectedY
-        m_in    = numExpectedX;
-        ldc     = numExpectedX;
+        m_in    = numExpectedX; //< redundant, as numExpectedX==numExpectedY
     }
 
 
@@ -865,14 +861,14 @@ void PairCalculator::multiplyForward(bool flag_dp)
             CkAssert((unsigned int)outData%16==0);
         #endif
         #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, ldc);
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, m_in);
         #endif
 
         // Invoke the first split gemm, but with beta=0 so that outData is overwritten (and bracket it in projections)
         #ifndef CMK_OPTIMIZE
             double StartTime=CmiWallTimer();
         #endif
-        DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
+        DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &m_in);
         CmiNetworkProgress();
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -889,13 +885,13 @@ void PairCalculator::multiplyForward(bool flag_dp)
                 CkAssert((unsigned int)outData%16==0);
             #endif
             #ifdef PRINT_DGEMM_PARAMS
-                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, ldc);
+                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, m_in);
             #endif
 
             #ifndef CMK_OPTIMIZE
                 StartTime=CmiWallTimer();
             #endif
-            DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
+            DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &m_in);
             CmiNetworkProgress();
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -904,22 +900,20 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
     // without dgemm splitting
     #else
-        int lda=doubleN;   //leading dimension A
-        int ldb=doubleN;   //leading dimension B
         #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
             dumpMatrixDouble("fwlmdata", inDataLeft, numExpectedX, numPoints*2, thisIndex.x, 0);
             if(inDataRight!=NULL)
                 dumpMatrixDouble("fwrmdata", inDataRight, numExpectedY, numPoints*2, thisIndex.y, 0);
         #endif
         #ifdef PRINT_DGEMM_PARAMS
-            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, ldc);
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, m_in);
         #endif
 
         // Invoke the DGEMM (and bracket it in projections)
         #ifndef CMK_OPTIMIZE
             double StartTime=CmiWallTimer();
         #endif
-        DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
+        DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, inDataLeft, &k_in, &beta, outData, &m_in);
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
         #endif
