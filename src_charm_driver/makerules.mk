@@ -24,7 +24,9 @@ DEPSTRIPDIRS +=
 # VPATH with a long list of directories hurting the build times that we hope to improve
 fileTypes     = $(sort $(suffix $(libdriver_src) $(libdriver_intf)) )
 $(foreach suf, $(fileTypes), $(eval vpath %$(suf) $(alldriverdirs) $(STANDARD_INC)) )
-
+# Explicitly add the driver dir to the vpath for headers so that decl files including such headers
+# can have their dependencies located by make
+vpath %.h $(driver)
 
 # The primary target for this module
 $(libdriver): $(libdriver_obj)
