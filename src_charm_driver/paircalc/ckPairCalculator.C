@@ -803,175 +803,161 @@ PairCalculator::sendTiles(bool flag_dp)
  * what we want on the borders.  In non borders numExpectedX==numExpectedY.
  *
  */
-void
-PairCalculator::multiplyForward(bool flag_dp)
+void PairCalculator::multiplyForward(bool flag_dp)
 {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-#endif
-  if(!existsOut){
-    CkAssert(outData==NULL);
-    existsOut=true;
-    outData = new double[grainSizeX * grainSizeY];
-    bzero(outData, sizeof(double)* grainSizeX * grainSizeY);
-#ifdef _PAIRCALC_DEBUG_
-    CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
-#endif
-  }
-  char transform='N';
-  int doubleN=2*numPoints;
-  char transformT='T';
-  // A is right B is left C= alpha*right  x left;
-  int m_in=numExpectedY;  //rows of op(A) rows of C
-  int n_in=numExpectedX;  // columns of op(B) columns of C
-  int k_in=doubleN;       // columns of op(A) rows of op (B)
-  //int ldc=numExpectedX;   //leading dimension C
-  int ldc=numExpectedY;   //leading dimension C
-  double alpha=double(1.0);//multiplicative identity
-  if (flag_dp)  // scaling factor for psi
-    alpha=2.0;
-  double beta=double(0.0); // C is unset
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
-
-
-  double *matrixA;
-  if(!symmetricOnDiagonal)
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
+    #endif
+    if(!existsOut)
     {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataRight\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-#endif
-      matrixA=inDataRight;
-    }
-  else  //  symmetric diagonal
-    {
-#ifdef _PAIRCALC_DEBUG_
-      CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-#endif
-      matrixA=inDataLeft;
-      // these are redundant, numExpectedX==numExpectedY
-      m_in=numExpectedX;  // columns of op(B) columns of C
-      ldc=numExpectedX;   //leading dimension C
+        CkAssert(outData==NULL);
+        existsOut=true;
+        outData = new double[grainSizeX * grainSizeY];
+        bzero(outData, sizeof(double)* grainSizeX * grainSizeY);
+        #ifdef _PAIRCALC_DEBUG_
+            CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
+        #endif
     }
 
-#if PC_FWD_DGEMM_SPLIT > 0
-  double betap = 1.0;
-  int Ksplit_m = gemmSplitFWk;
-  int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
-  int Krem     = (k_in % Ksplit);
-  int Kloop    = k_in/Ksplit-1;
-#ifdef TEST_ALIGN
-  CkAssert((unsigned int)matrixA%16==0);
-  CkAssert((unsigned int)inDataLeft %16==0);
-  CkAssert((unsigned int)outData%16==0);
-#endif
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, ldc);
-#endif
-  DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
-  CmiNetworkProgress();
+    char transform='N';
+    int doubleN=2*numPoints;
+    char transformT='T';
+    // A is right B is left C= alpha*right  x left;
+    int m_in=numExpectedY;  //rows of op(A) rows of C
+    int n_in=numExpectedX;  // columns of op(B) columns of C
+    int k_in=doubleN;       // columns of op(A) rows of op (B)
+    //int ldc=numExpectedX;   //leading dimension C
+    int ldc=numExpectedY;   //leading dimension C
+    double alpha=double(1.0);//multiplicative identity
+    if (flag_dp)  // scaling factor for psi
+        alpha=2.0;
+    double beta=double(0.0); // C is unset
 
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
+    #ifndef CMK_OPTIMIZE
+        double StartTime=CmiWallTimer();
+    #endif
 
-  for(int i=1;i<=Kloop;i++){
-    int off = i*Ksplit;
-    int KsplitU = (i==Kloop ? Ksplit+Krem : Ksplit);
-    // if(i==Kloop){Ksplit+=Krem;}
-
-#ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
-#endif
-#ifdef TEST_ALIGN
-    CkAssert((unsigned int)&(matrixA[off])%16==0);
-    CkAssert((unsigned int)&(inDataLeft[off]) %16==0);
-    CkAssert((unsigned int)outData%16==0);
-#endif
-
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, ldc);
-#endif
-    DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
-    CmiNetworkProgress();
-
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-
-  }//endfor
-
-#else  // not split
-
-  int lda=doubleN;   //leading dimension A
-  int ldb=doubleN;   //leading dimension B
-
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-  dumpMatrixDouble("fwlmdata", inDataLeft, numExpectedX, numPoints*2, thisIndex.x, 0);
-  if(inDataRight!=NULL)
-    dumpMatrixDouble("fwrmdata", inDataRight, numExpectedY, numPoints*2, thisIndex.y, 0);
-#endif
-  CkAssert(matrixA!=NULL);
-  CkAssert(inDataLeft!=NULL);
-  CkAssert(outData!=NULL);
-
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, ldc);
-#endif
-
-    DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha,
-	  matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
-
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(210, StartTime, CmiWallTimer());
-#endif
-#endif  // SPLIT
-
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-  dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
-#endif
-
-
-#ifndef CMK_OPTIMIZE
-  StartTime=CmiWallTimer();
-#endif
-
-  // do the slicing and dicing to send bits to Ortho
-  contributeSubTiles(outData);
-#ifdef _CP_SUBSTEP_TIMING_
-  if(cfg.forwardTimerID > 0)
+    double *matrixA;
+    if(!symmetricOnDiagonal)
     {
-      double pstart=CmiWallTimer();
-      contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
+        #ifdef _PAIRCALC_DEBUG_
+            CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataRight\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
+        #endif
+        matrixA=inDataRight;
     }
-#endif
-
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(220, StartTime, CmiWallTimer());
-#endif
-  if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal) //mirror our data to the phantom
+    else  //  symmetric diagonal
     {
-      CkAssert(existsRight);
-      //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-      paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,(complex*)inDataRight,false,blkSize,numExpectedY);
-      bool prioPhan=false;
-      if(prioPhan)
-	{
-	  CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
-	  *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
-	}
-      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
+        #ifdef _PAIRCALC_DEBUG_
+            CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
+        #endif
+        matrixA=inDataLeft;
+        // these are redundant, numExpectedX==numExpectedY
+        m_in=numExpectedX;  // columns of op(B) columns of C
+        ldc=numExpectedX;   //leading dimension C
     }
 
-	  /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T, 
-	   * call bwMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
-	   * 
-	   * @note: This if condition originally lived in acceptPairData(). Has been shoveled here 
-	   * to reduce branching over there.
-	   */
-	  if(expectOrthoT && numRecdBWOT==numOrtho)
-	      thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
+    #if PC_FWD_DGEMM_SPLIT > 0
+        double betap = 1.0;
+        int Ksplit_m = gemmSplitFWk;
+        int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
+        int Krem     = (k_in % Ksplit);
+        int Kloop    = k_in/Ksplit-1;
+        #ifdef TEST_ALIGN
+            CkAssert((unsigned int)matrixA%16==0);
+            CkAssert((unsigned int)inDataLeft %16==0);
+            CkAssert((unsigned int)outData%16==0);
+        #endif
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, ldc);
+        #endif
+        DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
+        CmiNetworkProgress();
+        #ifndef CMK_OPTIMIZE
+            traceUserBracketEvent(210, StartTime, CmiWallTimer());
+        #endif
+        for(int i=1;i<=Kloop;i++)
+        {
+            int off = i*Ksplit;
+            int KsplitU = (i==Kloop ? Ksplit+Krem : Ksplit);
+            // if(i==Kloop){Ksplit+=Krem;}
+            #ifndef CMK_OPTIMIZE
+                StartTime=CmiWallTimer();
+            #endif
+            #ifdef TEST_ALIGN
+                CkAssert((unsigned int)&(matrixA[off])%16==0);
+                CkAssert((unsigned int)&(inDataLeft[off]) %16==0);
+                CkAssert((unsigned int)outData%16==0);
+            #endif
+            #ifdef PRINT_DGEMM_PARAMS
+                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, ldc);
+            #endif
+            DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
+            CmiNetworkProgress();
+            #ifndef CMK_OPTIMIZE
+                traceUserBracketEvent(210, StartTime, CmiWallTimer());
+            #endif
+        }//endfor
+    #else  // not split
+        int lda=doubleN;   //leading dimension A
+        int ldb=doubleN;   //leading dimension B
+        #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+            dumpMatrixDouble("fwlmdata", inDataLeft, numExpectedX, numPoints*2, thisIndex.x, 0);
+            if(inDataRight!=NULL)
+                dumpMatrixDouble("fwrmdata", inDataRight, numExpectedY, numPoints*2, thisIndex.y, 0);
+        #endif
+        CkAssert(matrixA!=NULL);
+        CkAssert(inDataLeft!=NULL);
+        CkAssert(outData!=NULL);
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, ldc);
+        #endif
+        DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
+        #ifndef CMK_OPTIMIZE
+            traceUserBracketEvent(210, StartTime, CmiWallTimer());
+        #endif
+    #endif  // SPLIT
+
+    #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+        dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
+    #endif
+    #ifndef CMK_OPTIMIZE
+        StartTime=CmiWallTimer();
+    #endif
+
+    // do the slicing and dicing to send bits to Ortho
+    contributeSubTiles(outData);
+    #ifdef _CP_SUBSTEP_TIMING_
+        if(cfg.forwardTimerID > 0)
+        {
+            double pstart=CmiWallTimer();
+            contribute(sizeof(double),&pstart,CkReduction::max_double, cfg.endTimerCB , cfg.forwardTimerID);
+        }
+    #endif
+    #ifndef CMK_OPTIMIZE
+        traceUserBracketEvent(220, StartTime, CmiWallTimer());
+    #endif
+    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal) //mirror our data to the phantom
+    {
+        CkAssert(existsRight);
+        //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
+        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,(complex*)inDataRight,false,blkSize,numExpectedY);
+        bool prioPhan=false;
+        if(prioPhan)
+        {
+            CkSetQueueing(msg2phantom, CK_QUEUEING_IFIFO);
+            *(int*)CkPriorityPtr(msg2phantom) = 1; // just make it slower than non prioritized
+        }
+        thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).acceptRightData(msg2phantom);
+    }
+
+    /** If this is an asymmetric loop, dynamics case AND Ortho has already sent T,
+     * call bwMultiplyDynOrthoT() as we must also multiply orthoT by Fpsi
+	 *
+	 * @note: This if condition originally lived in acceptPairData(). Has been shoveled here
+	 * to reduce branching over there.
+	 */
+    if(expectOrthoT && numRecdBWOT==numOrtho)
+        thisProxy(thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z).bwMultiplyDynOrthoT();
 }
 
 
