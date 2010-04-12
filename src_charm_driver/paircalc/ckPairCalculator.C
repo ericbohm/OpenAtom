@@ -811,57 +811,54 @@ void PairCalculator::multiplyForward(bool flag_dp)
     if(!existsOut)
     {
         CkAssert(outData==NULL);
-        existsOut=true;
         outData = new double[grainSizeX * grainSizeY];
         bzero(outData, sizeof(double)* grainSizeX * grainSizeY);
+        existsOut=true;
         #ifdef _PAIRCALC_DEBUG_
             CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
         #endif
     }
 
-    char transform='N';
-    int doubleN=2*numPoints;
-    char transformT='T';
-    // A is right B is left C= alpha*right  x left;
-    int m_in=numExpectedY;  //rows of op(A) rows of C
-    int n_in=numExpectedX;  // columns of op(B) columns of C
-    int k_in=doubleN;       // columns of op(A) rows of op (B)
-    //int ldc=numExpectedX;   //leading dimension C
-    int ldc=numExpectedY;   //leading dimension C
-    double alpha=double(1.0);//multiplicative identity
-    if (flag_dp)  // scaling factor for psi
-        alpha=2.0;
-    double beta=double(0.0); // C is unset
+    // C = beta * C + alpha * op(B) . op(A)   (A = right; B = left)
+    // Matrix Dimensions: op(A) = [m,k] op(B) = [k,n] C = [m,n]
+    char transformT = 'T';           // Transpose matrix A
+    char transform  = 'N';           // Retain matrix B as it is
+    int doubleN     = 2 * numPoints; //
+    int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
+    int k_in        = doubleN;       // Columns of op(A) = Rows of op(B)
+    int n_in        = numExpectedX;  // Columns of op(B) = Columns of C
+    int ldc         = numExpectedY;  // leading dimension of C
+    double alpha    = double(1.0);   // Scale B.A by this scalar factor
+    double beta     = double(0.0);   // Scale initial value of C by this factor
 
-    #ifndef CMK_OPTIMIZE
-        double StartTime=CmiWallTimer();
-    #endif
+    // Double packing entails an extra scaling factor for psi
+    if (flag_dp)
+        alpha = 2.0;
 
     double *matrixA;
+    // Symm PC chares on the array diagonal only get a leftData. For these A = inDataLeft
     if(!symmetricOnDiagonal)
+        matrixA = inDataRight;
+    else
     {
-        #ifdef _PAIRCALC_DEBUG_
-            CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataRight\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-        #endif
-        matrixA=inDataRight;
-    }
-    else  //  symmetric diagonal
-    {
-        #ifdef _PAIRCALC_DEBUG_
-            CkPrintf("[%d,%d,%d,%d,%d] matrixA is inDataLeft\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
-        #endif
-        matrixA=inDataLeft;
+        matrixA = inDataLeft;
         // these are redundant, numExpectedX==numExpectedY
-        m_in=numExpectedX;  // columns of op(B) columns of C
-        ldc=numExpectedX;   //leading dimension C
+        m_in    = numExpectedX;
+        ldc     = numExpectedX;
     }
 
+
+    // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
+        // Results of each smaller gemm must be accumulated in C, not overwritten
         double betap = 1.0;
+        // Determine the num of rows of output (C) to compute in each smaller gemm
         int Ksplit_m = gemmSplitFWk;
-        int Ksplit   = ( (k_in > Ksplit_m) ? Ksplit_m : k_in);
-        int Krem     = (k_in % Ksplit);
+        int Ksplit   = (k_in > Ksplit_m) ? Ksplit_m : k_in;
+        // Calculate the number of gemms that will be required to compute the whole output
+        int Krem     = k_in % Ksplit;
         int Kloop    = k_in/Ksplit-1;
+
         #ifdef TEST_ALIGN
             CkAssert((unsigned int)matrixA%16==0);
             CkAssert((unsigned int)inDataLeft %16==0);
@@ -870,19 +867,22 @@ void PairCalculator::multiplyForward(bool flag_dp)
         #ifdef PRINT_DGEMM_PARAMS
             CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, ldc);
         #endif
+
+        // Invoke the first split gemm, but with beta=0 so that outData is overwritten (and bracket it in projections)
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
+        #endif
         DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
         CmiNetworkProgress();
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
         #endif
+
+        // Call each split gemm until all the output is accumulated (beta=1)
         for(int i=1;i<=Kloop;i++)
         {
-            int off = i*Ksplit;
-            int KsplitU = (i==Kloop ? Ksplit+Krem : Ksplit);
-            // if(i==Kloop){Ksplit+=Krem;}
-            #ifndef CMK_OPTIMIZE
-                StartTime=CmiWallTimer();
-            #endif
+            int off     = i * Ksplit;
+            int KsplitU = (i==Kloop) ? Ksplit+Krem : Ksplit;
             #ifdef TEST_ALIGN
                 CkAssert((unsigned int)&(matrixA[off])%16==0);
                 CkAssert((unsigned int)&(inDataLeft[off]) %16==0);
@@ -891,13 +891,19 @@ void PairCalculator::multiplyForward(bool flag_dp)
             #ifdef PRINT_DGEMM_PARAMS
                 CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, ldc);
             #endif
+
+            #ifndef CMK_OPTIMIZE
+                StartTime=CmiWallTimer();
+            #endif
             DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
             CmiNetworkProgress();
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(210, StartTime, CmiWallTimer());
             #endif
-        }//endfor
-    #else  // not split
+        } //endfor
+
+    // without dgemm splitting
+    #else
         int lda=doubleN;   //leading dimension A
         int ldb=doubleN;   //leading dimension B
         #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
@@ -905,17 +911,21 @@ void PairCalculator::multiplyForward(bool flag_dp)
             if(inDataRight!=NULL)
                 dumpMatrixDouble("fwrmdata", inDataRight, numExpectedY, numPoints*2, thisIndex.y, 0);
         #endif
-        CkAssert(matrixA!=NULL);
-        CkAssert(inDataLeft!=NULL);
-        CkAssert(outData!=NULL);
         #ifdef PRINT_DGEMM_PARAMS
             CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, ldc);
+        #endif
+
+        // Invoke the DGEMM (and bracket it in projections)
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
         #endif
         DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
         #endif
-    #endif  // SPLIT
+
+    #endif  // gemm splitting
+
 
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
         dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
@@ -924,7 +934,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
         StartTime=CmiWallTimer();
     #endif
 
-    // do the slicing and dicing to send bits to Ortho
+    // Do the slicing and dicing, and contribute the appropriate bits to the redn that reaches Ortho
     contributeSubTiles(outData);
     #ifdef _CP_SUBSTEP_TIMING_
         if(cfg.forwardTimerID > 0)
@@ -936,10 +946,11 @@ void PairCalculator::multiplyForward(bool flag_dp)
     #ifndef CMK_OPTIMIZE
         traceUserBracketEvent(220, StartTime, CmiWallTimer());
     #endif
-    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal) //mirror our data to the phantom
+
+    // Mirror our input data to the phantoms so that they can use it in the bw path
+    if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
     {
         CkAssert(existsRight);
-        //      CkPrintf("[%d,%d,%d,%d,%d] fw sending phantom\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
         paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,(complex*)inDataRight,false,blkSize,numExpectedY);
         bool prioPhan=false;
         if(prioPhan)
