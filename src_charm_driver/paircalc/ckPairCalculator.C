@@ -968,98 +968,81 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
 
 
-void
-PairCalculator::contributeSubTiles(double *fullOutput)
+void PairCalculator::contributeSubTiles(double *fullOutput)
 {
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric);
-#endif
-  // Done:
-  // necessary changes:
-  // 1: border tiles are not uniform size
-  // 2: offset calculation must handle non-uniformity
-  // solutions, use sGrainSize for all row skips
-  // use orthoGrainSizeX or orthoGrainSizeY as needed for row and column
-  // iteration
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric);
+    #endif
+    /**
+     * Done:
+     * necessary changes:
+     * 1: border tiles are not uniform size
+     * 2: offset calculation must handle non-uniformity
+     * solutions, use sGrainSize for all row skips
+     * use orthoGrainSizeX or orthoGrainSizeY as needed for row and column iteration
+     */
 
-  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
+    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
+    #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+        dumpMatrixDouble("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
+    #endif
+    double *outTile;
+    bool reuseTile = false;
+    bool borderX   = orthoGrainSizeRemX != 0;
+    bool borderY   = orthoGrainSizeRemY != 0;
+    bool borderXY  = borderX && borderY;
 
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-  dumpMatrixDouble("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
-#endif
-  double *outTile;
-  bool reuseTile = false;
-  bool borderX = orthoGrainSizeRemX != 0;
-  bool borderY = orthoGrainSizeRemY != 0;
-  bool borderXY = borderX && borderY;
-
-  // remainder logic happens if you are a border sGrain
-  if(! borderX && ! borderY)
+    // remainder logic happens if you are a border sGrain
+    if(! borderX && ! borderY)
     { // only do once to cut down on new/delete
-      reuseTile = true;
-      outTile  = new double[cfg.orthoGrainSize * cfg.orthoGrainSize];
-      bzero(outTile,sizeof(double)*cfg.orthoGrainSize * cfg.orthoGrainSize);
+        reuseTile = true;
+        outTile  = new double[cfg.orthoGrainSize * cfg.orthoGrainSize];
+        bzero(outTile,sizeof(double)*cfg.orthoGrainSize * cfg.orthoGrainSize);
     }
-  // forward multiply ldc
-  int bigGindex=grainSizeY;
+    // forward multiply ldc
+    int bigGindex=grainSizeY;
 
-  for(int orthoX = 0; orthoX < numOrthoCol ; orthoX++)
+    for(int orthoX = 0; orthoX < numOrthoCol ; orthoX++)
     {
-      // advance tilestart to new column
-      // only the size of tiles in last column is affected
-      int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? cfg.orthoGrainSize + orthoGrainSizeRemX : cfg.orthoGrainSize;
-      int orthoXoff=cfg.orthoGrainSize*bigGindex*orthoX;
-      for(int orthoY=0; orthoY<numOrthoRow; orthoY++)
+        // advance tilestart to new column
+        // only the size of tiles in last column is affected
+        int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? cfg.orthoGrainSize + orthoGrainSizeRemX : cfg.orthoGrainSize;
+        int orthoXoff=cfg.orthoGrainSize*bigGindex*orthoX;
+        for(int orthoY=0; orthoY<numOrthoRow; orthoY++)
+        {
+            int orthoYoff=orthoY*cfg.orthoGrainSize;
+            int tileStart=orthoYoff+orthoXoff;
+            // only the last row is affected
+            int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemY : cfg.orthoGrainSize;
+            int tileSize=orthoGrainSizeX*orthoGrainSizeY;
+            int bigOindex=orthoGrainSizeY;
+            int ocopySize=bigOindex*sizeof(double);
+            int orthoIndex=orthoX*numOrthoCol+orthoY;
+            if(! reuseTile)
+            {
+                outTile=new double[tileSize];
+                bzero(outTile,sizeof(double)*tileSize);
+            }
+            // copy into submatrix, contribute
+            // we need to stride by cfg.grainSize and copy by orthoGrainSize
+            int itileStart=tileStart;
+            CkAssert(orthoIndex<numOrtho);
+            for(int ystart=0; ystart<tileSize; ystart+=bigOindex, itileStart+=bigGindex)
+                CmiMemcpy(&(outTile[ystart]),&(fullOutput[itileStart]),ocopySize);
 
-	{
+            #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
+                char filename[80];
+                snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
+                dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
+            #endif
 
-	  int orthoYoff=orthoY*cfg.orthoGrainSize;
-	  int tileStart=orthoYoff+orthoXoff;
-	  // only the last row is affected
-
-	  int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemY : cfg.orthoGrainSize;
-	  int tileSize=orthoGrainSizeX*orthoGrainSizeY;
-	  int bigOindex=orthoGrainSizeY;
-	  int ocopySize=bigOindex*sizeof(double);
-	  int orthoIndex=orthoX*numOrthoCol+orthoY;
-
-
-	  //	  CkPrintf("[%d,%d,%d,%d,%d]: orthoX %d orthoY %d tileStart %d ogx %d ogy %d grainSizeX %d outx %d outy %d ogxrem %d ogyrem %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,orthoX, orthoY,tileStart, orthoGrainSizeX, orthoGrainSizeY,grainSizeX,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize, orthoGrainSizeRemX, orthoGrainSizeRemY);
-	  if(! reuseTile)
-	    {
-	      outTile=new double[tileSize];
-	      bzero(outTile,sizeof(double)*tileSize);
-	    }
-	  // copy into submatrix, contribute
-	  // we need to stride by cfg.grainSize and copy by orthoGrainSize
-
-	  int itileStart=tileStart;
-	  CkAssert(orthoIndex<numOrtho);
-	  //	  CkAssert(tileSize*8==bigOindex*ocopySize);
-	  //	  CkPrintf("itileStart %d + bigGindex %d * (tileSize %d/ bigOindex %d)== %d  grainSizeX %d * grainSizeY %d == %d\n",itileStart,bigGindex,tileSize,bigOindex, itileStart+bigGindex*(tileSize/bigOindex),grainSizeX,grainSizeY,grainSizeX*grainSizeY);
-	  //	  int count=0;
-	  //	  int copiedsofar=0;
-	  for(int ystart=0; ystart<tileSize; ystart+=bigOindex, itileStart+=bigGindex){
-
-	    //	    CkPrintf("count %d ystart %d, itileStart %d tileSize %d itileEnd %d ocopySize %d copiedsofar %d\n",count++, ystart,itileStart, tileSize, itileStart+ocopySize/8,ocopySize,copiedsofar);
-	    CmiMemcpy(&(outTile[ystart]),&(fullOutput[itileStart]),ocopySize);
-	    //	    copiedsofar+=ocopySize/8;
-	    //	    CkAssert(itileStart+ocopySize/8<=grainSizeX*grainSizeY);
-
-	  }
-#ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-	  char filename[80];
-	  snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
-	  dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
-#endif
-	  mcastGrp->contribute(tileSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
-	  if(! reuseTile)
-	    delete [] outTile;
-	}
+            mcastGrp->contribute(tileSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+            if(! reuseTile)
+                delete [] outTile;
+        }
     }
-  if(reuseTile)
-    delete [] outTile;
-
+    if(reuseTile)
+        delete [] outTile;
 }
 
 
