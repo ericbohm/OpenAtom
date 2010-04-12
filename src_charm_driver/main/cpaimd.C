@@ -448,6 +448,7 @@ main::main(CkArgMsg *msg) {
 
     // Stuff it with the actual configurations
     cfgSymmPC.isDynamics         = (sim->cp_min_opt==1)? false: true;
+    cfgSymmPC.useComplexMath     = false;
 
     cfgSymmPC.numPlanes          = config.nchareG;
     cfgSymmPC.numStates          = nstates;

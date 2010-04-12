@@ -26,6 +26,8 @@ class pcConfig
         bool isSymmetric;
         /// If this is a symmetric instance, should it use phantom chares to balance the BW path
         bool arePhantomsOn; ///< @note: Originally, phantomSym
+        /// Should the actual matrix multiplies be handled as real math or complex math
+        bool useComplexMath;
 
 
         //-------------------- Vars that indicate problem size / decomposition --------------------
@@ -124,6 +126,7 @@ class pcConfig
             p|isDynamics;
             p|isSymmetric;
             p|arePhantomsOn;
+            p|useComplexMath;
             // Vars that indicate problem size / decomposition
             p|numPlanes;
             p|numStates;
