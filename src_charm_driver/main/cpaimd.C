@@ -1460,7 +1460,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   else
     {
       UeesCacheProxy.push_back(CProxy_eesCache::ckNew(nchareRPP,nchareG,nchareRHart,nchareGHart,
-							nstates,nchareRhoG, nkpoint, thisInstance));
+						      nstates,nchareRhoG,nkpoint,thisInstance));
     }
 
   if(firstInstance) CkPrintf("created eescache proxy\n");
