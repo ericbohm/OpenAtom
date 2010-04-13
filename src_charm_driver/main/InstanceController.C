@@ -17,7 +17,6 @@ extern CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CkVec <CProxy_Ortho>                      UorthoProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
@@ -41,7 +40,6 @@ InstanceController::InstanceController() {
 	  instance.setPO();
 	  elems.push_back(CkArrayIndex1D(instance.proxyOffset));
 	}
-
       CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
       sectProxy.ckSectionDelegate(mcastGrp);
@@ -159,7 +157,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 #ifdef _GLENN_STUFF_
   CkPrintf("exiting in printEnergyEexc\n");CkExit();
 #endif
-
+  delete msg;
 }
 //============================================================================
 
@@ -257,4 +255,6 @@ void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
 }
 //============================================================================
+
+#include "instanceController.def.h"
 

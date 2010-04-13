@@ -62,9 +62,10 @@ module gParticlePlane
 
 module gStatePlane
 {
-    extern module paircalcMessages;
+    extern module pcMessages;
 	extern module RDMAMessages;
 	class RDMApair_GSP_PC;
+    class pcSetupMsg;
 	message RDMASetupRequestMsg<RDMApair_GSP_PC>;
 	message RDMASetupConfirmationMsg<RDMApair_GSP_PC>;
 	message RSFFTMsg     { complex data[]; };
@@ -79,12 +80,14 @@ module gStatePlane
 		int k_z[];
 	};
 
-
 	class UberCollection;
+    include "paircalc/pcFwdDeclarations.h";
+    include "load_balance/PeList.h";
 
 	array [2D]  CP_State_GSpacePlane 
 	{
 		entry CP_State_GSpacePlane(int sizeX, int numG, int numR, int s_grain, int timekeepf, int timekeepb, UberCollection);
+        entry void acceptPairCalcAIDs(pcSetupMsg *msg);
 		entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
 		entry void acceptIFFT(GSIFFTMsg *);
 		entry [local] void doIFFT();

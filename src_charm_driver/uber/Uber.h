@@ -26,6 +26,7 @@
 #define _UBER_H
 
 #include "configure.h"
+#include "pup.h"
 
 extern Config config;
 
@@ -72,8 +73,7 @@ class UberCollection {
       idxU.x = proxyOffset % config.UberImax;
       idxU.y = (proxyOffset % (config.UberImax * config.UberJmax)) / config.UberImax;
       idxU.z = proxyOffset / (config.UberImax * config.UberJmax);
-      proxyOffset=calcPO();
-      CkAssert(_proxyOffset==proxyOffset);
+      //CkAssert(calcPO() == _proxyOffset); ///< @note: Commented out just to avoid including extra headers for CkAssert
     }
 
   UberCollection() {}

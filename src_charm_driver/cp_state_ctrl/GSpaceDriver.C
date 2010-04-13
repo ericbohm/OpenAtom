@@ -2,15 +2,16 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_ParticlePlane.h"
 #include "GSpaceRTH.h"
+#include "main/TimeKeeper.h"
 
 extern int nstates;
 extern Config config;
-extern CProxy_CPcharmParaInfoGrp 				scProxy;
-extern CProxy_TimeKeeper 						TimeKeeperProxy;
+
+extern CProxy_CPcharmParaInfoGrp 		scProxy;
+extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
 extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
-extern CkVec <CProxy_Ortho>                     UorthoProxy;
 
 
 /// Constructor
@@ -23,8 +24,8 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 			waitingForAtoms(false),
 			isAtomIntegrationDone(false),
 			isEnergyReductionDone(false),
-            areNLForcesDone(false),
-            isPsiVupdateNeeded(false),
+			areNLForcesDone(false),
+			isPsiVupdateNeeded(false),
 			controlThread(0)
 {
 	#ifdef DEBUG_CP_GSPACE_CREATION
@@ -270,14 +271,13 @@ void GSpaceDriver::allDoneNLForces(CkReductionMsg *msg)
 
 
 
-
 /// Ortho notifies us that GSpace needs a tolerance update (velocity rotation)
 void GSpaceDriver::needUpdatedPsiV()
 {
     isPsiVupdateNeeded = true;
     // Once all driver chares are notified, restart Ortho's backward path
     int foo=1;
-    contribute(sizeof(int), &foo, CkReduction::min_int,CkCallback(CkIndex_Ortho::resumeV(NULL), UorthoProxy[thisInstance.proxyOffset]));
+    contribute( sizeof(int), &foo, CkReduction::min_int, CkCallback(CkIndex_Ortho::resumeV(NULL), myGSpaceObj->myOrtho) );
 }
 
 

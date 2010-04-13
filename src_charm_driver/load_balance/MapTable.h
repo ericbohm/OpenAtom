@@ -18,9 +18,14 @@
  *
  */
 //@{
+
+#include "load_balance/IntMap.h"
+
 #ifndef _MAPTABLE_H_
 #define _MAPTABLE_H_
 #include "debug_flags.h"
+
+class PeList;
 
 class inttriple {
  private:
@@ -85,13 +90,6 @@ class intdual {
 };
 
 
-#ifndef USE_INT_MAP
-//typedef CkHashtableT <intdual, int > MapType2;
-typedef CkHashtableT <intdual, int > MapType4;
-typedef CkHashtableT <inttriple, int > MapType3;
-#else
-#endif
-
 
 /**
  * Abstract base class.
@@ -104,23 +102,7 @@ class MapTable2
   PeList *availprocs;
   void dump()
     {
-#ifndef USE_INT_MAP
-      CkHashtableIterator *it=maptable->iterator();
-      it->seekStart();
-      CkPrintf("Map dump\n");
-      intdual *key;
-      while(it->hasNext())
-	{
-	  it->next((void **) &key);
-	  int proc =maptable->get(key[0]);
-#ifdef _MAP_VERBOSE_
-	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
-#endif
-	}
-      delete it;
-#else
       maptable->dump();
-#endif
     }
 
  protected:
@@ -162,23 +144,7 @@ class MapTable3
   PeList *availprocs;
   void dump()
     {
-#ifndef USE_INT_MAP
-      CkHashtableIterator *it=maptable->iterator();
-      it->seekStart();
-      CkPrintf("Map dump\n");
-      inttriple *key;
-      while(it->hasNext())
-	{
-	  it->next((void **) &key);
-	  int proc =maptable->get(key[0]);
-#ifdef _MAP_VERBOSE_
-	  CkPrintf("%d %d %d %d\n", key[0].getx(), key[0].gety(), key[0].getz(),proc);
-#endif
-	}
-      delete it;
-#else
       maptable->dump();
-#endif
     }
 
  protected:
@@ -225,23 +191,7 @@ class MapTable4
   PeList *availprocs;
   void dump()
     {
-#ifndef USE_INT_MAP
-      CkHashtableIterator *it=maptable->iterator();
-      it->seekStart();
-      CkPrintf("Map dump\n");
-      intdual *key;
-      while(it->hasNext())
-	{
-	  it->next((void **) &key);
-	  int proc =maptable->get(key[0]);
-#ifdef _MAP_VERBOSE_
-	  CkPrintf("%d %d %d\n", key[0].getx(), key[0].gety(),proc);
-#endif
-	}
-      delete it;
-#else
       maptable->dump();
-#endif
     }
 
  protected:
@@ -319,24 +269,7 @@ class SCalcMapTable : public MapTable4
 
   void dump()
     {
-#ifndef USE_INT_MAP
-      CkHashtableIterator *it=maptable->iterator();
-      it->seekStart();
-      CkPrintf("Map dump\n");
-      intdual *key;
-      while(it->hasNext())
-	{
-	  it->next((void **) &key);
-	  int proc =maptable->get(key[0]);
-	  short *four=(short*) key;
-#ifdef _MAP_VERBOSE_
-	  CkPrintf("%d %d %d %d %d\n", four[0], four[1], four[2], four[3],proc);
-#endif
-	}
-      delete it;
-#else
       maptable->dump();
-#endif
     }
   void sortByCentroid(PeList *avail, int plane, int stateX, int stateY, int grainsize, MapType2 *gsmap);
   

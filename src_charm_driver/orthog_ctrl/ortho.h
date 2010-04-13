@@ -87,11 +87,10 @@
  ******************************************************************************/
 
 #include "debug_flags.h"
+#include "orthoConfig.h"
 #include "ortho.decl.h"
 #include "pcSectionManager.h"
-#include "uber/Uber.h"
-#include "main/CLA_Matrix.h"
-#include "main/cpaimd.h"
+#include "CLA_Matrix.h"
 using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within namespace ortho
 
 #ifndef _ortho_h_
@@ -101,8 +100,6 @@ using namespace cp::ortho; ///< @todo: Temporary, till Ortho classes live within
 #define INVSQR_TOLERANCE	1.0e-15
 #define INVSQR_MAX_ITER		10
 
-extern CkVec <MapType2> OrthoImaptable;
-extern CkHashtableT <intdual, int> Orthomaptable;
 extern bool fakeTorus;
 extern int numPes;
 class initCookieMsg : public CkMcastBaseMsg, public CMessage_initCookieMsg {
@@ -123,11 +120,13 @@ class Ortho : public CBase_Ortho
         Ortho(int m, int n, 
                 CLA_Matrix_interface matA1, CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,
                 CLA_Matrix_interface matA2, CLA_Matrix_interface matB2, CLA_Matrix_interface matC2, 
-                CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3, 
-                int timeKeep, UberCollection , CkGroupID _oMCastGID, CkGroupID _oRedGID);
+                CLA_Matrix_interface matA3, CLA_Matrix_interface matB3, CLA_Matrix_interface matC3,
+                orthoConfig &_cfg,
+                CkArrayID step2Helper,
+                int timeKeep, CkGroupID _oMCastGID, CkGroupID _oRedGID);
 
         /// Trigger the creation of appropriate sections of paircalcs to talk to. Also setup internal comm sections
-        void makeSections();
+        void makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgAsymmPC, CkArrayID symAID, CkArrayID asymAID);
 
         /// Symmetric PCs contribute data that is summed via this reduction to deposit a portion of the S matrix with this ortho, triggering S->T
         void start_calc(CkReductionMsg *msg);
@@ -138,7 +137,7 @@ class Ortho : public CBase_Ortho
         /// Triggers step 2, and optionally step 3 (if ortho helpers are being used)
         void step_2();
         /// Receives the results of the call to OrthoHelper from step_2 
-        void recvStep2(double *step2result, int size);
+        void recvStep2(CkDataMsg *msg); //double *step2result, int size);
         /// Triggers step 3 in the S->T process
         void step_3();
         /// Computes square of the residuals and contributes to a reduction rooted at Ortho(0,0)::collect_error()
@@ -205,7 +204,7 @@ class Ortho : public CBase_Ortho
         bool step3done;
     
     private:
-        const UberCollection thisInstance;
+        orthoConfig cfg;
         int timeKeep;
         double *orthoT; // only used on [0,0]
         double *ortho; //only used on [0,0]
@@ -224,6 +223,8 @@ class Ortho : public CBase_Ortho
         PCSectionManager asymmSectionMgr;
         /// Group IDs for the multicast manager groups
         CkGroupID oMCastGID, oRedGID;
+        /// The proxy of the step 2 helper chare array
+        CProxy_OrthoHelper step2Helper;
         bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
         double *A, *B, *C, *tmp_arr;
         int step;
@@ -248,15 +249,17 @@ class Ortho : public CBase_Ortho
 
 
 
+#include "ckcallback-ccs.h" ///< For definition of CkDataMsg
 
 /** 
  * Result of 0.5 * S3 * S2 arrives from helper
  */
-inline void Ortho::recvStep2(double *step2result, int size)
+inline void Ortho::recvStep2(CkDataMsg *msg)//double *step2result, int size)
 {
     // copy our data into the tmp_arr  
-    CmiMemcpy(tmp_arr, step2result, m * n * sizeof(double));
+    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(double));
     step2done=true;
+    delete msg;
     //End of iteration check
     if(step3done)
         tolerance_check();
@@ -319,88 +322,5 @@ inline double Ortho::array_diag_max(int sizem, int sizen, double *array)
     return max_ret;
 }//end routine
 
-
-
-
-
-/**
- * provide procnum mapping for Ortho
- * this old class is now defunct: Abhinav
- *
- * class OrthoMap : public CkArrayMap {
- *  public:
- *   OrthoMap(int NN,int _nOrtho, int _stride):N(NN), nOrtho(_nOrtho), stride(_stride)
-    {
-      offset=0;
-      if(nOrtho<CkNumPes())
-        offset=1;  //skip proc 0
-    }
-#ifndef TOPO_ORTHO
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
-    }
-#else
-    virtual int procNum(int arrayHdl, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      return (stride*(N * index[0] + index[1]) + offset) % CkNumPes();
-    }
-#endif
-  private:
- *   int N;
- *   int nOrtho;
- *   int offset;
- *   int stride;
- * };
- **/
-
-/*
- * new centroid based ortho map
- * actual map creation in MapTable.C
- */
-class OrthoMap : public CkArrayMapTable2 {
-  public:
-    OrthoMap(UberCollection _instance)
-    {
-      thisInstance=_instance;
-#ifdef USE_INT_MAP
-      maptable= &OrthoImaptable[thisInstance.getPO()];
-#else
-      maptable= &Orthomaptable;
-#endif
-    }
-
-    ~OrthoMap() { }
-    
-    void pup(PUP::er &p)
-    {
-      CkArrayMapTable2::pup(p);
-#ifdef USE_INT_MAP
-      maptable= &OrthoImaptable[thisInstance.getPO()];
-#else
-      maptable= &Orthomaptable;
-#endif
-    }
-    
-    inline int procNum(int, const CkArrayIndex &iIndex)
-    {
-      int *index=(int *) iIndex.data();
-      int proc;
-#ifdef USE_INT_MAP
-      proc=maptable->get(index[0],index[1]);
-#else
-      proc=maptable->get(intdual(index[0],index[1]));
-#endif
-      CkAssert(proc>=0);
-      if(numPes != CkNumPes())
-	return(proc%CkNumPes());
-      else
-	return(proc);
-	
-
-    }
-};
-
 #endif // #ifndef _ortho_h_
+

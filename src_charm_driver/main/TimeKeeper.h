@@ -1,9 +1,5 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
+#include "charm++.h"
+
 #ifndef TimeKeeper_h
 #define TimeKeeper_h
 
@@ -27,30 +23,40 @@ extern "C" void HPM_Print(int,int);
 //============================================================================
 /** \file TimeKeeper.h
  *
- *  A place to collect substep times.  Each participating chare will
- *  register with the timekeeper on processor 0.  Giving its name and
- *  getting the next available timekeeper id.
- *
- *  Also handles performance counters and projections start/stop.
+ *  A place to collect substep times.  Each participating chare will register
+ *  with the timekeeper on processor 0.  Giving its name and getting the next
+ *  available timekeeper id.  Also handles performance counters and projections
+ *  start/stop.
  *  
- *  Then at the beginning of its notional step every chare will
- *  contribute its start time to a minimum reduction.
+ *  Then at the beginning of its notional step every chare will contribute its
+ *  start time to a minimum reduction.  At the end of its notional step each
+ *  chare will contribute its end time to a maximum reduction.  The timekeeper
+ *  will print out the delta time and name for each substep when it has the min
+ *  and max.
  *
- *  At the end of its notional step each chare will contribute its end
- *  time to a maximum reduction.
- *
- *  The timekeeper will print out the delta time and name for each substep
- *  when it has the min and max.
+ *  HPM will instrument one step using BG/P UPC performance counters.  To use
+ *  it, build libhpm.a in src_charm_driver/utilities/ copy it someplace in your
+ *  lib search path and add -lhpm to link line Also add
+ *  -L/bgsys/drivers/ppcfloor/runtime -lSPI.cna to link line.  DO NOT use
+ *  /soft/apps/UPC/lib/libhpm.a it uses MPI and will cause you a lot of grief.
  */
 
 #include <vector>
 #include <string>
+#include "TopoManager.h"
+
+#ifdef USE_HPM
+extern "C" void HPM_Init(int);        
+extern "C" void HPM_Start(char *label,int);
+extern "C" void HPM_Stop(char *label,int);
+extern "C" void HPM_Print(int,int);       
+#endif
+
 extern Config config;
 extern int TimeKeeperID;
+extern std::vector <std::string> TimeKeeperNames;
 
-extern vector <string> TimeKeeperNames;
-
-static int keeperRegister(string name)
+static int keeperRegister(std::string name)
 {
   if(config.useTimeKeeper)
     {

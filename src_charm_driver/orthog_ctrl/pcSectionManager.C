@@ -1,5 +1,7 @@
 #include "pcSectionManager.h"
-#include "paircalc/pairCalculator.h" ///< @note: Just for the definition of PairCalcID. Eliminate
+#include "paircalc/pcConfig.h"
+
+#include <algorithm>
 
 #ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
@@ -34,21 +36,21 @@ void PCSectionManager::pup(PUP::er &p)
  * configured PC instances, we should make the section managers init themselves from an instance config object and not 
  * a global config object. But first, we need to implement the concept of a config class for an instance :)
  */
-void PCSectionManager::init(const CkIndex2D orthoIdx, const PairCalcID &pcid,const Config &cfg, CkGroupID oMCastGID, CkGroupID oRedGID)
+void PCSectionManager::init(const CkIndex2D orthoIdx, const pc::pcConfig &pcCfg, CkArrayID pcAID, CkGroupID oMCastGID, CkGroupID oRedGID)
 {
-    pcArrayID       = pcid.Aid;
-    isSymmetric     = pcid.Symmetric;
+    pcArrayID       = pcAID;
+    isSymmetric     = pcCfg.isSymmetric;
 
-    numPlanes       = cfg.nchareG;
-    numStates       = cfg.nstates;
-    numChunks       = (isSymmetric)? cfg.numChunksSym : cfg.numChunksAsym;
-    pcGrainSize     = cfg.sGrainSize;
-    orthoGrainSize  = cfg.orthoGrainSize;
+    numPlanes       = pcCfg.numPlanes;
+    numStates       = pcCfg.numStates;
+    numChunks       = pcCfg.numChunks;
+    pcGrainSize     = pcCfg.grainSize;
+    orthoGrainSize  = pcCfg.orthoGrainSize;
 
     orthoIndex      = orthoIdx;
     orthomCastGrpID = oMCastGID;
     orthoRedGrpID   = oRedGID;
-    msgPriority     = pcid.priority;
+    msgPriority     = pcCfg.inputMsgPriority;
 }
 
 
@@ -80,11 +82,7 @@ void PCSectionManager::createPCsection(const int s1, const int s2)
     orthoIndexY-=s2;
     int orthoArrIndex=orthoIndexX*numOrthoCol+orthoIndexY;
     
-    int newListStart=orthoArrIndex;
-    if(newListStart> ecount)
-        newListStart= newListStart % ecount;
-    bool order=reorder_elem_list_4D( elems, ecount, newListStart);
-    CkAssert(order);
+    std::random_shuffle(elems, elems + ecount);
 
     /// Create and save this paircalc section
     pcSection = CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);
@@ -130,7 +128,7 @@ void PCSectionManager::createPCsection(const int s1, const int s2)
  *  - a mirror non-phantom section if the user turns off phantoms 
  *
  */
-void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool arePhantomsOn, bool useComlibForOrthoToPC)
+void PCSectionManager::setupArraySection(CkCallback cb, bool arePhantomsOn, bool useComlibForOrthoToPC)
 {
     int s1, s2;
     /// Find the states indices of the paircalcs this ortho *should* be talking to. 
@@ -163,7 +161,6 @@ void PCSectionManager::setupArraySection(CkCallback cb, CkCallback synccb, bool 
         gredMsg->cb=cb;
         gredMsg->mCastGrpId= orthoRedGrpID;
         gredMsg->lbsync=false;
-        gredMsg->synccb=synccb;
         gredMsg->orthoX=orthoIndex.x;
         gredMsg->orthoY=orthoIndex.y;
         pcSection.initGRed(gredMsg);

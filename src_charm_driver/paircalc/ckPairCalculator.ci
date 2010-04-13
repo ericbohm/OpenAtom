@@ -2,7 +2,7 @@
  *
  */
 
-module paircalcMessages {
+module pcMessages {
 	readonly ComlibInstanceHandle mcastInstanceCP;
 	readonly ComlibInstanceHandle mcastInstanceACP;
 
@@ -60,6 +60,16 @@ module RDMAMessages
 
 
 
+module pcMaps
+{
+    include "load_balance/IntMap.h";
+	group SCalcMap: CkArrayMap {
+		entry SCalcMap(const MapType4 _mtable);
+	};
+};
+
+
+
 module inputDataHandler 
 {
 	extern module RDMAMessages;
@@ -85,9 +95,10 @@ module inputDataHandler
 module ckPairCalculator 
 {
 
-	extern module paircalcMessages;
-	
+	extern module pcMessages;
 	extern module inputDataHandler;
+
+    include "paircalc/pcFwdDeclarations.h";
 	array [4D] InputDataHandler <CollatorType,CollatorType>;
 	
 	array [4D] PairCalculator 

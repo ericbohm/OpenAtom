@@ -11,7 +11,6 @@
 
 #include "../../include/debug_flags.h"
 #include "charm++.h"
-#include "main/cpaimd.h"
 #include "load_balance/MapTable.h"
 
 class MapFile

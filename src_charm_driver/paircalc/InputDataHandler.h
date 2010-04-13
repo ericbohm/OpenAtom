@@ -1,7 +1,7 @@
-class CProxy_PairCalculator; 	///< Forward declaration required before including the decl.h file
 #include "debug_flags.h"
 #include "inputDataHandler.decl.h"
 #include "RDMAMessages.h"
+#include "ckPairCalculator.h"
 
 
 #ifndef INPUT_DATA_HANDLER_H

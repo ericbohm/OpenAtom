@@ -17,10 +17,10 @@ module CPcharmParaInfo
 module groups
 {
 	// Forward declarations
-	class UberCollection; 
 	class Atom;
 	class AtomNHC;
-	
+    include "uber/Uber.h";
+
 	message AtomMsg 
 	{
 		double data[];
@@ -49,6 +49,7 @@ module groups
 
 	};
 
+    include "main/energy.h";
 	// The global energies are stored here.
 	group EnergyGroup {
 		entry EnergyGroup(UberCollection);
@@ -73,6 +74,39 @@ module PIBeadAtoms
 
 };
 
+
+
+module timeKeeper
+{
+	group TimeKeeper {
+		entry TimeKeeper();
+		entry void init();
+	        entry void collectStart(CkReductionMsg *m);
+	        entry void collectEnd(CkReductionMsg *m);
+	};
+};
+
+
+
+
+module instanceController
+{
+	array [1D] InstanceController {
+        entry InstanceController();
+        entry void printEnergyEexc(CkReductionMsg *msg);
+        entry void printEnergyHart(CkReductionMsg *msg);
+        entry void printFictEke(CkReductionMsg *msg);
+        entry void allDoneCPForces(CkReductionMsg *m);
+        entry void printEnergyEke(CkReductionMsg *m);
+	entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
+        entry [nokeep] void initCookie(ICCookieMsg *msg);
+        entry void doneInit(CkReductionMsg *msg);
+    }
+};
+
+
+
+
 mainmodule cpaimd {	
 	readonly double Timer;
 	readonly int nstates;
@@ -88,9 +122,7 @@ mainmodule cpaimd {
 	readonly int planes_per_pe;
 	readonly bool fakeTorus;
 	readonly CProxy_TimeKeeper TimeKeeperProxy;
-	readonly CkVec <CkGroupID> mCastGrpIds;
 	initproc registersumFastDouble(void);	
-	readonly  CProxy_OrthoMap orthoMap;
 	
 	extern module CPcharmParaInfo;
 	extern module gSpaceDriver;
@@ -103,6 +135,9 @@ mainmodule cpaimd {
 	extern module structureFactorCache;
 	extern module groups;
 	extern module PIBeadAtoms;		
+	extern module timeKeeper;
+	extern module startupMessages;
+	extern module instanceController;
 
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
@@ -126,18 +161,11 @@ mainmodule cpaimd {
 	readonly CkVec <MapType2> RhoRSImaptable;
 	readonly CkVec <MapType2> RhoGHartImaptable;
 	readonly CkVec <MapType3> RhoRHartImaptable;
-	readonly CkVec <MapType2> OrthoImaptable;
-	readonly CkVec <MapType2> OrthoHelperImaptable;
-	readonly CkVec <MapType4> AsymScalcImaptable;
-	readonly CkVec <MapType4> SymScalcImaptable;
 	readonly CkVec <MapType2> VdWGSImaptable;
 	readonly CkVec <MapType3> VdWRSImaptable;
 
 
 	readonly Config config;
-	readonly CkVec <PairCalcID> UpairCalcID1;
-	readonly CkVec <PairCalcID> UpairCalcID2;
-
 
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
@@ -153,8 +181,6 @@ mainmodule cpaimd {
 	readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 	readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
 	readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
-	readonly CkVec <CProxy_Ortho> UorthoProxy;
-	readonly CkVec <CProxy_OrthoHelper> UorthoHelperProxy;
 	readonly CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
 	readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
 	readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
@@ -250,18 +276,6 @@ mainmodule cpaimd {
 	mainchare main {
 		entry main();
 	};
-	array [1D] InstanceController {
-		entry InstanceController();
-		entry void printEnergyEexc(CkReductionMsg *msg);
-		entry void printEnergyHart(CkReductionMsg *msg);
-	  	entry void printFictEke(CkReductionMsg *msg);
-  		entry void allDoneCPForces(CkReductionMsg *m);
-  		entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
-	        entry [nokeep] void initCookie(ICCookieMsg *msg);
-  		entry void printEnergyEke(CkReductionMsg *m);
-		entry void doneInit(CkReductionMsg *msg);
-	};
-
 
 	// This is where the real component lives when using ees for nonlocal
 	array [2D] CP_State_RealParticlePlane {
@@ -408,11 +422,9 @@ mainmodule cpaimd {
 	group RSMap : CkArrayMap {
 		entry RSMap(UberCollection);
 	};
-	
-	group SCalcMap: CkArrayMap {
-		entry SCalcMap(bool, UberCollection);
-	};
 
+    extern module pcMaps; // Just so that this module gets registered
+	
 	/** 
 	  * A place to hold the fftw plans or sizes for essl.
 	  * Preallocated space for ffts some of which retain their data  
@@ -448,11 +460,5 @@ mainmodule cpaimd {
 	group eesCache {
 		entry eesCache(int,int,int,int,int,int, UberCollection);
 	};
-	
-	group TimeKeeper {
-		entry TimeKeeper();
-		entry void init();
-	        entry void collectStart(CkReductionMsg *m);	  
-	        entry void collectEnd(CkReductionMsg *m);	  
-	};
 };
+

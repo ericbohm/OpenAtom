@@ -13,7 +13,8 @@
 #define _Configure_
 
 #include "dictionary.h"
-#include "stdio.h"
+#include "pup.h"
+
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -262,7 +263,7 @@ class Config {
 //===================================================================================
 
 #ifndef _COOL_CONVERSION_ON_
-PUPbytes(Config);
+PUPbytes(Config)
 #endif
 
 //===================================================================================
