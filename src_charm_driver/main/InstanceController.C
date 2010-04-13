@@ -25,10 +25,30 @@ extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_StructureFactor>            UsfCompProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
-extern CProxy_TimeKeeper                 TimeKeeperProxy;
+extern CProxy_TimeKeeper                         TimeKeeperProxy;
+extern CkGroupID                                 mCastGrpId;
+extern CkVec <UberCollection>                    UberAlles;
+InstanceController::InstanceController() {
+  done_init=0;Timer=CmiWallTimer(); numKpointforces=0;
+  UberCollection instance=UberCollection(thisIndex);
+  if(config.UberJmax>1 && instance.idxU.y==0)
+    {
+      // make section for k-points
+      CkVec <CkArrayIndex1D> elems;
+      for(int kp =0; kp<config.UberJmax; kp++)
+	{
+	  instance.idxU.y=kp;
+	  instance.setPO();
+	  elems.push_back(CkArrayIndex1D(instance.proxyOffset));
+	}
 
-extern CkVec <UberCollection>         UberAlles;
-
+      CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+      sectProxy.ckSectionDelegate(mcastGrp);
+      ICCookieMsg *cookieme=new () ICCookieMsg;
+      sectProxy.initCookie(cookieme);
+    }
+}
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -96,6 +116,12 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     done_init++;
 }
 //============================================================================
+void InstanceController::initCookie(ICCookieMsg *msg)
+{
+    CkGetSectionInfo(allKPcookie, msg);
+    //    delete msg; nokeep
+}
+
 
 void InstanceController::printEnergyHart(CkReductionMsg *msg){
   //  double ehart = 0, eext = 0.0, ewd = 0.0;
@@ -201,16 +227,34 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //============================================================================
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
   delete m;
-  // only the 0th k-point is allowed to do this  
+  // only the 0th instance of each k-point is allowed to do this 
   
   UberCollection thisInstance(thisIndex);
-  if(thisInstance.idxU.y==0)
+  if(config.UberJmax>1)
     {
-      CkPrintf("All done CP forces\n");
-      UberCollection thisInstance(thisIndex);
+      // contribute to the section which includes all k-points of this
+      // bead
+      long unsigned int foo(1);
+      UberCollection instance=thisInstance;
+      instance.idxU.y=0;
+      int offset=instance.calcPO();
+
+      CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
+      CkCallback cb(CkIndex_InstanceController::allDoneCPForcesAllKPoint(NULL),CkArrayIndex1D(offset),thisProxy);
+      mcastGrp->contribute(sizeof(long unsigned int),&foo,CkReduction::sum_int,  allKPcookie, cb);
+    }
+  else
+    {
+      CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
     }
 
+}
+
+void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
+  UberCollection thisInstance(thisIndex);
+      CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
+      UatomsGrpProxy[thisIndex].startRealSpaceForces();
 }
 //============================================================================
 

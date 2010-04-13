@@ -533,7 +533,7 @@ main::main(CkArgMsg *msg) {
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
     
-
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     excludePes=NULL;
     mainProxy=thishandle;
     // make one controller chare per instance
@@ -563,7 +563,7 @@ main::main(CkArgMsg *msg) {
       CkAssert( m > 0);
     }
 
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
+
     //    if(pm==0){CkAbort("Choose a larger Gstates_per_pe\n");}
     //    for(int i=0; i<nstates;i++){
     //      peUsedByNLZ.push_back(((i % config.Gstates_per_pe)*planes_per_pe)%nchareG);
@@ -1755,12 +1755,12 @@ void init_ortho_chares(int nstates, UberCollection thisInstance) {
 
 void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
 {
-  
+
   if(thisInstance.idxU.x>0)
     { // the set of chares being created is for a non-zero PI all PI
       // use the same PIBeadAtoms we simply direct the proxyoffset here to
       // the one for the 0th bead.  
-      
+      CkPrintf("Constructing PIMD Bead proxies for non zero instances\n");
       UberCollection zeroBeadInstance=thisInstance;
       zeroBeadInstance.idxU.x=0;
       int proxyOffset=zeroBeadInstance.setPO();
@@ -1768,7 +1768,8 @@ void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
   else
     {
-      CkArrayOptions opts;
+      CkPrintf("Constructing PIMD Bead array\n");
+      CkArrayOptions opts(sim->natm_tot);
       UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
 
     }

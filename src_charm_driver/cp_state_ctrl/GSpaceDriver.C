@@ -81,7 +81,8 @@ void GSpaceDriver::pup(PUP::er &p)
  */ 
 void GSpaceDriver::init()
 {
-	/// If EES nonlocals are off, each state=0 driver chare creates a structure factor array section
+	/// If EES nonlocals are off, each state=0 driver chare
+	/// creates a structure factor array section
 	if(thisIndex.x==0 && ees_nonlocal==0)
 	{
 		/// numDups must be less than the number of states because thats the maximum number of times you can duplicate a plane
@@ -149,19 +150,27 @@ void GSpaceDriver::readyToExit()
 /// GSpace notifies me that the energy reduction is done by calling this method
 void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter) 				
 {
+
+  
 	/// Ensure the iterations are synced
-	if (myGSpaceObj->iteration != AtomsGrpIter)
-        CkAbort("GSpaceDriver::doneComputingEnergy: GSpace iteration and Atoms group iteration number are not in sync. Aborting...");
+  /*	if (myGSpaceObj->iteration != AtomsGrpIter)
+	  {
+	    CkPrintf("{%d}[%d,%d] GSpaceDriver::doneComputingEnergy: GSpace iteration %d and Atoms group iteration number %d are not in sync.\n ", myGSpaceObj->thisInstance.proxyOffset, myGSpaceObj->thisIndex.x, myGSpaceObj->thisIndex.y, myGSpaceObj->iteration, AtomsGrpIter);
+	    CkAbort("GSpaceDriver::doneComputingEnergy: GSpace iteration and Atoms group iteration number are not in sync. Aborting...");
+	  }
+  */
 	///
 	isEnergyReductionDone = true;
 	/// If GSpace has already called for an exit, check if we can exit again
-	if (myGSpaceObj->cleanExitCalled==1)
-		readyToExit();
 	/// If we were waiting for the energy (and the atoms have been moved) resume the driver logic
 	if (waitingForEnergy) 
 	{
-		waitingForEnergy = false; 
-		if (!waitingForAtoms) resumeControl(); 
+	  waitingForEnergy = false; 
+	  if (!waitingForAtoms) {
+	    if (myGSpaceObj->cleanExitCalled==1)
+	      readyToExit();
+	    resumeControl(); 
+	  }
 	} 
 }
 
@@ -178,20 +187,19 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
 void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 {
   /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
-
   CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
 
-	///
-	isAtomIntegrationDone = true;
-	/// If GSpace has already called for an exit, check if we can exit again
-	if (myGSpaceObj->cleanExitCalled==1)
-		readyToExit();
-	/// If we were waiting for the atom integration (and the energy computation was done) resume the driver logic
-	if (waitingForAtoms) 
-	{
-		waitingForAtoms = false; 
-		if (!waitingForEnergy) resumeControl(); 
-	} 
+  ///
+  isAtomIntegrationDone = true;
+  /// If GSpace has already called for an exit, check if we can exit again
+  if (myGSpaceObj->cleanExitCalled==1)
+    readyToExit();
+  /// If we were waiting for the atom integration (and the energy computation was done) resume the driver logic
+  if (waitingForAtoms) 
+    {
+      waitingForAtoms = false; 
+      if (!waitingForEnergy) resumeControl(); 
+    } 
 }
 
 

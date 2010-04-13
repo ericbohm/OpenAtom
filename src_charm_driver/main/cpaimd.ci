@@ -33,7 +33,6 @@ module groups
 		double z[];
 	};
 
-	
 	group AtomsGrp {
 		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
@@ -246,6 +245,7 @@ mainmodule cpaimd {
 
 	message NLFFTMsg {complex data[];};
 
+	message ICCookieMsg;	
 
 	mainchare main {
 		entry main();
@@ -256,6 +256,8 @@ mainmodule cpaimd {
 		entry void printEnergyHart(CkReductionMsg *msg);
 	  	entry void printFictEke(CkReductionMsg *msg);
   		entry void allDoneCPForces(CkReductionMsg *m);
+  		entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
+	        entry [nokeep] void initCookie(ICCookieMsg *msg);
   		entry void printEnergyEke(CkReductionMsg *m);
 		entry void doneInit(CkReductionMsg *msg);
 	};

@@ -2159,7 +2159,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       CkPrintf("  Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
 
-    UberImax = 2;
+    UberImax = 1;
     UberJmax = 1;
     UberKmax = 1;
 

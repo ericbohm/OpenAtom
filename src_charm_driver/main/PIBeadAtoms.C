@@ -18,6 +18,7 @@ extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 
 PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads) :thisInstance(_thisInstance), numBeads(_numBeads)
 {
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::PIBeadAtoms \n",thisInstance.proxyOffset,thisIndex);
   x= new double[numBeads];
   y= new double[numBeads];
   z= new double[numBeads];
@@ -40,7 +41,7 @@ void PIBeadAtoms::accept_PIMD_Fx(double _Fx, double _Fy, double _Fz, int PIBeadI
   fy[PIBeadIndex]=_Fy;
   fz[PIBeadIndex]=_Fz;
   acceptCount_Fx++;
-
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx \n",thisInstance.proxyOffset,thisIndex);
   if(acceptCount_Fx==numBeads)
     {
       compute_PIMD_Fu();
@@ -50,13 +51,16 @@ void PIBeadAtoms::accept_PIMD_Fx(double _Fx, double _Fy, double _Fz, int PIBeadI
       {
 	  instance.idxU.x=bead;
 	  int proxyOffset=instance.setPO();
-	  UatomsGrpProxy[proxyOffset][bead].accept_PIMD_fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
+	  int atomdest=0;
+	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
       }
     }
 }
 
 void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex)
 {
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u \n",thisInstance.proxyOffset,thisIndex);
+
   xu[PIBeadIndex]=_xu;
   yu[PIBeadIndex]=_yu;
   zu[PIBeadIndex]=_zu;
@@ -71,12 +75,14 @@ void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIn
 	{
 	    instance.idxU.x=bead;
 	    int proxyOffset=instance.setPO();
-	    UatomsGrpProxy[proxyOffset][bead].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
+	    int atomdest=0;
+	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
 	}
     }
 }
 void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex )
 {
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x \n",thisInstance.proxyOffset,thisIndex);
   x[PIBeadIndex]=_x;
   y[PIBeadIndex]=_y;
   z[PIBeadIndex]=_z;
@@ -90,7 +96,8 @@ void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex
 	{
 	    instance.idxU.x=bead;
 	    int proxyOffset=instance.setPO();
-	    UatomsGrpProxy[proxyOffset][bead].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
+	    int atomdest=0;
+	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
 	}
 
     }
