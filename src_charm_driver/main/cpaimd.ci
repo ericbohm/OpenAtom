@@ -91,6 +91,8 @@ module timeKeeper
 
 module instanceController
 {
+	message ICCookieMsg;	
+
 	array [1D] InstanceController {
         entry InstanceController();
         entry void printEnergyEexc(CkReductionMsg *msg);
@@ -271,7 +273,6 @@ mainmodule cpaimd {
 
 	message NLFFTMsg {complex data[];};
 
-	message ICCookieMsg;	
 
 	mainchare main {
 		entry main();
