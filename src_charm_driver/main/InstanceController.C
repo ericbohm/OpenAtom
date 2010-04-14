@@ -53,8 +53,10 @@ InstanceController::InstanceController() {
 void InstanceController::doneInit(CkReductionMsg *msg){
 //============================================================================
   CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
-  //  CkAssert(msg->getUserFlag()==thisIndex);  new paircalc startup
-  //  violates this assertion, Ram needs to fix this
+  // This assert should be a formality.
+  // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
+  // to provide instance info to the pc/ortho bubble. @todo: remove this assert
+  CkAssert(msg->getUserFlag()==thisIndex);
   delete msg;
     double newtime=CmiWallTimer();
     CkAssert(done_init<5);

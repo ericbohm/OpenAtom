@@ -463,8 +463,6 @@ main::main(CkArgMsg *msg) {
     cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
     cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
 
-    cfgSymmPC.instanceIndex      = thisInstance.proxyOffset;
-
     cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
     cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;
     cfgSymmPC.gemmSplitBW        = config.gemmSplitBW;
@@ -766,13 +764,9 @@ Per Instance startup BEGIN
 	    CmiNetworkProgressAfter(1);
 
         //============================================================================
-        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho
-        //and related frills)
-    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
-	    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-	    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
-        CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+        // Create an ortho config object from available info
         cp::ortho::orthoConfig orthoCfg;
         orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
         orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
@@ -781,9 +775,20 @@ Per Instance startup BEGIN
         orthoCfg.instanceIndex = thisInstance.getPO();
         orthoCfg.maxTolerance  = sim->tol_norb;
         orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
-        cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
-        cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
 
+        // Fill in the paircalc configs that are instance dependent
+        cfgSymmPC.gSpaceAID            = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+        cfgAsymmPC.gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+        cfgSymmPC.instanceIndex        = thisInstance.getPO();
+        cfgAsymmPC.instanceIndex       = thisInstance.getPO();
+        // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+        cfgSymmPC.uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+        cfgAsymmPC.uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+
+        // Identify who is the owner for this bubble
+        CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+
+        // Delegate the actual construction/initialization to a creation manager
         cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
         pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
 
