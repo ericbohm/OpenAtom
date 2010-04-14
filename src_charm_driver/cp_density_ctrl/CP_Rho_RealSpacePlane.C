@@ -375,12 +375,10 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
   }//endif
 #endif
   redCount++;
-  if(redCount==1)
-    {
-      RedMsg=msg;
-    }
-  else if(redCount<config.UberJmax)
-    {
+  if(redCount==1){
+    RedMsg=msg; // This guy is deleted in the next routine
+  }else{
+   if(redCount<=config.UberJmax){
       // there is one per k-point we'll sum them into the first
       // message we receive 
       double *indata=(double*) msg->getData();
@@ -389,15 +387,26 @@ void CP_Rho_RealSpacePlane::acceptDensity(CkReductionMsg *msg) {
       for(int i=0;i<size ;i++)
 	outdata[i]+=indata[i];
       delete(msg);
-    }
-  if(redCount==config.UberJmax)
-    {
+   }//endif
+  }//endif
+
+  if(redCount==config.UberJmax){
       redCount=0;
       handleDensityReduction();
-    }
+  }//endif
 
-}
+//--------------------------------------------------------------------------
+   }//end routine
+//============================================================================
+
+
+//============================================================================
+//  Handle the memory cleanup and setting of flags when density has
+//  all arrived
+//============================================================================
 void CP_Rho_RealSpacePlane::handleDensityReduction() {
+//============================================================================
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(rhoKeeperId>0){
       double rhostart=CmiWallTimer();
