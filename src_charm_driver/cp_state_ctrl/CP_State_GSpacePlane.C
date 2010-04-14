@@ -654,8 +654,14 @@ void CP_State_GSpacePlane::readFile() {
   if(gen_wave==0){
     sprintf(fname, "%s.s%d.k%d.b%d.t%d/state%d.out",config.dataPath,ispin_ind,kpoint_ind,ibead_ind,itemper_ind,
                                                     ind_state+1);
+    if(ind_state==0){
+      CkPrintf("Reading state 0 of kpoint %d\n",kpoint_ind);
+    }
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
+    if(ind_state==0){
+      CkPrintf("Completed Reading state 0 of kpoint %d\n",kpoint_ind);
+    }//endif
 
 #define _DEBUG_KPT_CODE_
 #ifdef _DEBUG_KPT_CODE_
@@ -1545,9 +1551,14 @@ void CP_State_GSpacePlane::launchAtoms() {
 #define _DEBUG_KPT_AT_GAMMA_
 #ifdef _DEBUG_KPT_AT_GAMMA_
 
-    int i=0;
-    contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
-    cleanExitCalled = 1;
+   int istate        = gs.istate_ind;
+   if(istate==0 && iplane_ind==0){
+     CkPrintf("I am state %d and plane %d of kpt %d : %d\n",istate,iplane_ind,kpoint_ind,config.UberJmax);
+   }//endif
+
+   cleanExitCalled = 1;
+   contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  
+       CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int ncoef         = gs.numPoints;
