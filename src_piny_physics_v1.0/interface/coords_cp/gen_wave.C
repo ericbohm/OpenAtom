@@ -1352,21 +1352,23 @@ void GEN_WAVE::read_coef_fetch_kpoints(int kpt_file_name_set,
 
     }/*endfor : kpoint*/
 
-#ifdef CHECK_KPT_VALS
     for(i=1;i<=nkpoint-1;i++){
      for(j=i+1;j<=nkpoint;j++){
       if((akpoint[i]==akpoint[j])&&
          (bkpoint[i]==bkpoint[j])&&
          (ckpoint[i]==ckpoint[j])){
-           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-           PRINTF("The k-points must be all be different \n");
+           PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+           PRINTF("The k-points should be all be different \n");
            PRINTF("The %dth k-point is the same as the %dth\n",i,j);
-           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
-         fflush(stdout);EXIT(1);
+           PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");
+         fflush(stdout);
+#define  _CHECK_KPT_VALS_EXIT_OFF_
+#ifdef _CHECK_KPT_VALS_EXIT_
+         EXIT(1);
+#endif
        }/*endif*/
       }/*endfor*/
      }/*endfor*/
-#endif
 
 /*==========================================================================*/
 /* III) Locate the gamma point if it exists : make 4 arrays for 4 structures */
@@ -1386,6 +1388,11 @@ void GEN_WAVE::read_coef_fetch_kpoints(int kpt_file_name_set,
   doublepack = 0;
 #ifndef _DEBUG_KPT_AT_GAMMA_
   if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}
+#else
+  PRINTF("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+  PRINTF("In gen_wave.C, setting doublePack=0 by hand\n");
+  PRINTF("to debug the code\n");
+  PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
 #endif
 
   if(doublepack==0 && cp->cppseudo.ees_nonloc_on==0){

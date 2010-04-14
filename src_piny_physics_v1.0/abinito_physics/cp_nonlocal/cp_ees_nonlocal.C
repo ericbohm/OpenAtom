@@ -653,9 +653,9 @@ void CPNONLOCAL::eesProjGchare(int ncoef, complex *psi,int *ka,int *kb, int *kc,
   eesYlmOnD(lang,mang,ncoef,ka,kb,kc,dyp_re,dyp_im,d_re,d_im,hmati,kpt,nfreq_cmi_update);
 
   int ii = ncoef;
-  if(istate==0){
-    PRINTF("Hi : ichare %d igamma_kpt_ind %d kpt %d : %d %d\n",ichare,igamma_kpt_ind,kpt+1,ihave_g0,ind_g0);
-  }//endif
+//  if(istate==0){
+//    PRINTF("Hi : ichare %d igamma_kpt_ind %d kpt %d : %d %d\n",ichare,igamma_kpt_ind,kpt+1,ihave_g0,ind_g0);
+//  }//endif
   if(igamma_kpt_ind==kpt+1){//igamma_kpt_ind is piny style.
     ii = (ihave_g0==1 ? ind_g0 : ncoef);
     if(lang==0 && ihave_g0==1){
@@ -1541,7 +1541,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
                 int **igrid,double **mn,double **dmn_x,double **dmn_y,double **dmn_z,
 		double *projPsiR, double *projPsiRScr, int *plane_index, 
 		int *nBreak, int **sBreak,
-                int plane, int state, FastAtoms *atoms)
+		int plane, int state, int kpt, FastAtoms *atoms)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -1553,9 +1553,12 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
 
   double vol     = gencell->vol;
 
-  double *vpsnorm = cppseudo->vpsnorm; 
-  double *occ     = cpcoeffs_info->occ_up;
-  double occ_now  = occ[state+1];
+  double *vpsnorm     = cppseudo->vpsnorm; 
+  double *occ         = cpcoeffs_info->occ_up;
+  double *wght_kpt    = cpcoeffs_info->wght_kpt;
+  double occ_now      = occ[state+1];
+  double wght_kpt_now = wght_kpt[kpt+1];
+  double wght_now     = occ_now*wght_kpt_now;
 
   int n_ang_max   = cppseudo->n_ang_max;
   int n_interp    = cppseudo->n_interp_ps;
@@ -1622,7 +1625,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
    }//endfor
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j]*zmat[j]);}
 
-   cp_enl_tot[0] += (cp_enl*vnormVol*occ_now);
+   cp_enl_tot[0] += (cp_enl*vnormVol*wght_now);
 
 #ifdef CMK_BLUEGENEL
        CmiNetworkProgress();
@@ -1653,7 +1656,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchare(int iter_nl, double *cp_enl_tot, double 
      if(jc>0){ // jc starts at 1 in piny-like fashion
        int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
 
-       zmat[jatm] *= (2.0*vnormVol); 
+       zmat[jatm] *= (2.0*vnormVol*wght_now); 
 
        double fxx=0.0,fyy=0.0,fzz=0.0;
 #ifndef _CP_BRK_BETTER_
@@ -1803,7 +1806,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
                 int **igrid,double **mn,double **dmn_x,double **dmn_y,double **dmn_z,
 		complex *projPsiR, complex *projPsiRScr, int *plane_index, 
 		int *nBreak, int **sBreak,
-                int plane, int state, FastAtoms *atoms)
+                int plane, int state, int kpt, FastAtoms *atoms)
 //==========================================================================
    {//Begin Routine 
 //==========================================================================
@@ -1815,9 +1818,12 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
 
   double vol     = gencell->vol;
 
-  double *vpsnorm = cppseudo->vpsnorm; 
-  double *occ     = cpcoeffs_info->occ_up;
-  double occ_now  = occ[state+1];
+  double *vpsnorm     = cppseudo->vpsnorm; 
+  double *occ         = cpcoeffs_info->occ_up;
+  double *wght_kpt    = cpcoeffs_info->wght_kpt;
+  double occ_now      = occ[state+1];
+  double wght_kpt_now = wght_kpt[kpt+1];
+  double wght_now     = occ_now*wght_kpt_now;
 
   int n_ang_max   = cppseudo->n_ang_max;
   int n_interp    = cppseudo->n_interp_ps;
@@ -1884,7 +1890,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
    }//endfor
    for(int j=jstrt;j<natm;j++){cp_enl += (zmat[j].getMagSqr());}
 
-   cp_enl_tot[0] += (cp_enl*vnormVol*occ_now);
+   cp_enl_tot[0] += (cp_enl*vnormVol*wght_now);
 
 
 #ifdef CMK_BLUEGENEL
@@ -1914,7 +1920,7 @@ void CPNONLOCAL::eesEnergyAtmForcRchareC(int iter_nl, double *cp_enl_tot, comple
      if(jc>0){ // jc starts at 1 in piny-like fashion
        int katm    = map_nl[(iatm+1)]-1;  // index of atm in full atom list
 
-       zmat[jatm] *= (2.0*vnormVol); 
+       zmat[jatm] *= (2.0*vnormVol*wght_now); 
 
        complex fxx=(0.0, 0.0), fyy=(0.0, 0.0),fzz=(0.0, 0.0);
 #ifndef _CP_BRK_BETTER_

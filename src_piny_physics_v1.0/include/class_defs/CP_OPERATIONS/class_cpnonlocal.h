@@ -73,12 +73,12 @@ static void eesZmatRchareC(complex *, int , complex *,
 static void eesEnergyAtmForcRchare(int , double *, double *, 
                                    int **,double **,double **,double **,double **,
                                    double *, double *, int *, int *,int **,
-                                   int , int , FastAtoms *);
+                                   int , int , int, FastAtoms *);
 
 static void eesEnergyAtmForcRchareC(int, double *, complex *, 
                 int **, double **, double **, double **,double **,
-		complex *, complex *, int *, 
-                int *, int **, int, int, FastAtoms *);
+		complex *, complex *, int *, int *, int **, 
+	        int, int, int, FastAtoms *);
 
 static void eesPsiForcGspace(int, int , int ,int, complex *,complex *, double *,double *,
                              int *,int *, int *,int , int, int, int nfreq_cmi_update = 100);

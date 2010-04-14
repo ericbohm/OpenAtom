@@ -7,6 +7,7 @@
 #include "../include/proto_defs/proto_cp_ewald_local.h"
 #include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 
+
 //========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //========================================================================
@@ -48,15 +49,14 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int nstates         = cpcoeffs_info->nstate_up;
   int ntime           = gentimeinfo->ntime;
   int ibinary_opt     = cpopts->iread_coef_binary;
+  int cp_lsda         = cpopts->cp_lsda;
+  int cp_lda          = cpopts->cp_lda;
   int cp_norb_rot_kescal = cpopts->cp_norb_rot_kescal;
   int ibinary_write_opt= cpopts->iwrite_coef_binary;
   int natm_tot        = (mdatoms->mdclatoms_info.natm_tot);
   int natm_nl         = (cppseudo->nonlocal.natm);
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
-
-  int cp_lsda         = cpopts->cp_lsda;
-  int cp_lda          = cpopts->cp_lda;
 
   int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
@@ -101,6 +101,13 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
      EXIT(1);
    }//endif
 
+   if(cp_lda+cp_lsda!=1 || cp_lda<0 || cp_lsda<0 || cp_lda > 1 || cp_lsda>1){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Messed up cp_lda or cp_lsda definitions %d %d\n",cp_lda,cp_lsda);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+   }//endif
+
    int gen_wave=0;
    if(istart_typ_cp ==0){gen_wave=1;}
 
@@ -119,6 +126,11 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->nlIters        = nlIters;
    sim->dt             = dt;
    sim->vol            = vol;
+
+   sim->nkpoint        = nkpoint;
+   sim->pi_beads       = pi_beads;
+   sim->nspin          = (cp_lsda==1 ? 2: 1);
+   sim->ntemper        = 1;  // for now this is hard coded
 
    sim->iperd          = iperd;
    sim->doublepack     = doublepack;

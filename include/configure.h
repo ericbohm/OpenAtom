@@ -48,6 +48,7 @@ class Config {
     int UberImax;
     int UberJmax;
     int UberKmax;
+    int UberLmax;
     int UberMmax;
     int numInstances;
     int temperCycle;

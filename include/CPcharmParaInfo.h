@@ -245,7 +245,6 @@ class CPcharmParaInfo {
      nspin        = s.nspin;
      iperd        = s.iperd;
      doublepack   = s.doublepack;
-     nkpoint      = s.nkpoint;
      fftopt       = s.fftopt;
      kx_max       = s.kx_max;
      ky_max       = s.ky_max;

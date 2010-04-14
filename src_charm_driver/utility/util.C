@@ -921,7 +921,8 @@ void readStateIntoRuns(int nPacked, int ncoef,complex *arrCP, CkVec<RunDescripto
 
 //===================================================================================
 // Read the state into the rundescriptor puppy dog
-	
+
+#ifdef _INPUT_FOR_KPTS_MESSES_UP_
     if(!config.doublePack){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
@@ -930,6 +931,7 @@ void readStateIntoRuns(int nPacked, int ncoef,complex *arrCP, CkVec<RunDescripto
       CkPrintf("Raz is on the job.\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
+#endif
 
     int nrun_tot       = 1;
     int run_length_sum = 0;
@@ -1350,7 +1352,6 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
 
 //===================================================================================
 // Add the bottom half of plane zero because the code likes to have it.
-// Eventually add reordering for non-doublePack case.
 
     if(config.doublePack){
        int n_ret;
@@ -1361,9 +1362,9 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
           CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
           CkExit();
        }//endif
-    }else{
-          CkPrintf("We hope the sensible output for not doublePack works!\n"); 
     }//endif
+
+   // We are hoping here that the sensible input for !doublePack works corrrectly
 
 //===================================================================================
 // Process the state data
@@ -1603,6 +1604,7 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
 //===================================================================================
 // Fix !double pack
 
+#ifdef _INPUT_FOR_KPTS_MESSES_UP_
     if(!config.doublePack){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
       CkPrintf("The rundescriptor needs some love for the non-double pack\n"); 
@@ -1611,6 +1613,7 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
       CkPrintf("Raz is on the job.\n");
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
+#endif
 
 //===================================================================================
 // A little output to the screen!

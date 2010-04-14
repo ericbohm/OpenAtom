@@ -325,6 +325,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   ibead_ind            = thisInstance.idxU.x;
   kpoint_ind           = thisInstance.idxU.y;
   itemper_ind          = thisInstance.idxU.z;
+  ispin_ind            = 0;                   //needs to be updated 
   initialized          = false;
   iteration            = 0;
   nrotation            = 0;
@@ -568,7 +569,7 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   //control flags and functions reference by thread are public
   p|istate_ind;
   p|iplane_ind;
-  p|ibead_ind; p|kpoint_ind; p|itemper_ind;
+  p|ibead_ind; p|kpoint_ind; p|itemper_ind; p|ispin_ind;
   p|registrationFlag;
   p|initialized;
   p|istart_typ_cp;
@@ -698,6 +699,7 @@ void CP_State_GSpacePlane::readFile() {
   int ngridaNL      = sim->ngrid_nloc_a;
   int ngridbNL      = sim->ngrid_nloc_b;
   int ngridcNL      = sim->ngrid_nloc_c;
+  int nkpoint       = sim->nkpoint;
 
 //============================================================================
 // Set the file name using the config path and state number
@@ -728,8 +730,16 @@ void CP_State_GSpacePlane::readFile() {
             config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-    double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
-    CkPrintf("phase = %g\n",phase);
+
+#define _DEBUG_KPT_CODE_
+#ifdef _DEBUG_KPT_CODE_
+    if(ind_state==0){
+      CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      CkPrintf("Adding a phase to the states to debug kpt code!!\n");
+      CkPrintf("in routine CP_State_GspacePlane.C\n");
+      CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
+    }//endif
+    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
     for(int i=0;i<numData;i++){
       double re = cos(phase); double im = sin(phase);
       double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
@@ -737,6 +747,7 @@ void CP_State_GSpacePlane::readFile() {
       complexPoints[i].re = ore;
       complexPoints[i].im = oim;
     }//endfor
+#endif
   }else{
     kx -= 1;  ky -= 1; kz -=1;
     PhysicsParamTransfer::fetch_state_kvecs(kx,ky,kz,ncoef,config.doublePack);
@@ -1686,7 +1697,7 @@ void CP_State_GSpacePlane::launchAtoms() {
 
     FILE* fp;
     char junk[1000];
-    sprintf(junk,"forces.%d.out",thisIndex.x);
+    sprintf(junk,"forces.k%d.%d.out",kpoint_ind,thisIndex.x);
     fp=fopen(junk,"a");
     for(int i=0; i<gs.numPoints; i++){
       fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
@@ -1902,7 +1913,6 @@ void  CP_State_GSpacePlane::sendLambda() {
       contribute(sizeof(double),&gend,CkReduction::max_double, cb , backwardTimeKeep);
   }//endif
 #endif
-
 
 //-----------------------------------------------------------------------------
    }// end routine 
@@ -2476,13 +2486,13 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      fftw_free(tk_y); tk_y  = NULL;
      fftw_free(tk_z); tk_z  = NULL;
 	if((iteration==config.maxIter || exitFlag==1)&& cp_min_opt==1)
-		UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
-	else
-	{
-		int i=0;
-		contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-	}
-  }//endif
+	  UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).readyToExit();
+	else{
+   	  int i=0;
+	  contribute(sizeof(int),&i,CkReduction::sum_int,
+          CkCallback(CkIndex_GSpaceDriver::allDoneWritingPsi(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+	}//endif
+    }//endif
 
 //============================================================================
   }//end routine
@@ -3736,17 +3746,18 @@ void CP_State_GSpacePlane::doNewPsiV(){
    }//endfor
  }//endif
 
-	//=============================================================================
-	/// II) A Barrier for debugging
-	#ifdef BARRIER_CP_GSPACE_PSIV
-		int wehaveours=1;
-		contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
-		CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
-	// III) Back to the threaded loop
-	#else
-		UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
-	#endif
+//=============================================================================
+/// II) A Barrier for debugging
 
+#ifdef BARRIER_CP_GSPACE_PSIV
+	int wehaveours=1;
+	contribute(sizeof(int),&wehaveours,CkReduction::sum_int,
+	CkCallback(CkIndex_GSpaceDriver::allDonePsiV(NULL),UgSpaceDriverProxy[thisInstance.proxyOffset]));
+#else
+	UgSpaceDriverProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).resumeControl();
+#endif
+
+//------------------------------------------------------------------------------
    }//end routine
 //==============================================================================
 
