@@ -48,6 +48,7 @@ class Config {
     int UberImax;
     int UberJmax;
     int UberKmax;
+    int UberLmax;
     int UberMmax;
     int numInstances;
 
@@ -219,9 +220,9 @@ class Config {
   //----------------------------------
    Config(){};
   ~Config(){};
-   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int,int,int);
-   void readStateInfo(int &, int &, int &, int &, int &, int &,
-                      const char *, int,int,int,int,int);
+   void readConfig(char*, int, int, int, int, int, int, int, int, int, int, int, int,int,int,int,int,
+                   int,int,int,int);
+   void readStateInfo(int &, int &, int &, int &, int &, int &,const char *, int,int,int,int,int);
    void simpleRangeCheck();
    void rangeExit(int, const char *, int);
    void Finale(int, int, int, int, int, int);

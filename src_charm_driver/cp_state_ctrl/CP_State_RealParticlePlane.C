@@ -954,11 +954,11 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg){
    if(config.doublePack){
      CPNONLOCAL::eesEnergyAtmForcRchare(iterNL,&cp_enl_now,zmat,igrid,mn,dmn_x,dmn_y,dmn_z,
    		      projPsiR,projPsiRScr,plane_index,nBreakJ,sBreakJ,
-                      myPlane,thisIndex.x,fastAtoms);
+		      myPlane,thisIndex.x,kpoint_ind,fastAtoms);
    }else{
      CPNONLOCAL::eesEnergyAtmForcRchareC(iterNL,&cp_enl_now,zmatC,igrid,mn,dmn_x,dmn_y,dmn_z,
    		      projPsiC,projPsiCScr,plane_index,nBreakJ,sBreakJ,
-                      myPlane,thisIndex.x,fastAtoms);
+		      myPlane,thisIndex.x,kpoint_ind,fastAtoms);
    }//endif
    cp_enl += cp_enl_now;
 

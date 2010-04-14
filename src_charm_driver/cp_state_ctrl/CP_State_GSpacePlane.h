@@ -81,7 +81,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
 		int istate_ind;
 		/// My plane index
 		int iplane_ind;
-                int ibead_ind,kpoint_ind, itemper_ind;
+                int ibead_ind,kpoint_ind, itemper_ind,ispin_ind;
 		///
 		int iteration;
 		///

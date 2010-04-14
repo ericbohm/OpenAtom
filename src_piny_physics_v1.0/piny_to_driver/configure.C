@@ -32,7 +32,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                         int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
                         int numPes_in, int natm_typ_in,int ees_eext_opt_in,
                         int gen_wave_in,int ncoef, int cp_min_opt, int nchareRhoRHart,
-                        int doublePack_in)
+                        int doublePack_in,int pi_beads, int nkpoint, int ntemper, int nspin)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -56,6 +56,45 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   fun_key = (char *)cmalloc(PINY_MAXWORD*sizeof(char),"Config::readConfig");
   fname   = (char *)cmalloc(1024*sizeof(char),"Config::readConfig");
+
+//===================================================================================
+// set the Uber parameters
+
+  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now 
+  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now 
+  UberKmax = ntemper;  //ntemper must be 1 for now
+  UberLmax = nspin;    //nspin   spin not yet in here
+
+  // Warn the folks when dicey things are going down
+  if(pi_beads>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, pi_beads > 1 = %d\n",pi_beads);
+    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+  }//endif
+
+  if(nkpoint>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, nkpoint > 1 = %d\n",nkpoint);
+    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+  }//endif
+
+  if(nspin>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, nspin > 1 = %d\n",nspin);
+    PRINTF("    This is not yet supported in any way, shape or form\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+    EXIT(1);
+  }//endif
+
+  if(ntemper>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, ntemper > 1 = %d\n",ntemper);
+    PRINTF("    This is not yet supported in any way, shape or form\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+    EXIT(1);
+  }//endif
 
 //===================================================================================
 // Tell everyone you are busy 
@@ -153,7 +192,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   int sizex,sizey,sizez,nPacked,minx,maxx;
 
   if(gen_wave==0){
-    sprintf (fname, "%s/state1.out", dataPath);
+    sprintf (fname, "%s.s0.k0.b0.t0/state1.out", dataPath);
     PRINTF("  Opening state file : %s\n",fname);
   }//endif
 
@@ -161,19 +200,46 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                 nkf1,nkf2,nkf3,ncoef);
 
   if(gen_wave==0){
-    sprintf (fname, "%s/state1.out", dataPath);
+    sprintf (fname, "%s.s0.k0.b0.t0/state1.out", dataPath);
     PRINTF("  Closing state file : %s\n\n",fname);
   }//endif
 
-  sprintf (fname, "%s/ChkDirExistOAtom", dataPathOut);
-  FILE *fpck = fopen(fname,"w");
-  if(fpck==NULL){
-    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("   Output directory, %s , is not present\n",dataPathOut);
-    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    EXIT(1);
-  }//endif
-  fclose(fpck);
+
+  //----------------------------------------------
+  //Check for the output directories
+  for(int ispin = 0;ispin < nspin   ;ispin++){
+  for(int kpt   = 0;kpt   < nkpoint ;kpt++  ){
+  for(int ip    = 0;ip    < pi_beads;ip++   ){
+  for(int it    = 0;it    < ntemper ;it++   ){
+    sprintf (fname, "%s.s%d.k%d.b%d.t%d/ChkDirExistOAtom",dataPathOut,ispin,kpt,ip,it);
+    FILE *fpck = fopen(fname,"w");
+    if(fpck==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Output directory, %s.s%d.k%d.b%d.t%d, is not present\n",
+                 dataPathOut,ispin,kpt,ip,it);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    fclose(fpck);
+  }}}}//endfor
+  
+  //----------------------------------------------
+  //Check for the input directories
+  for(int ispin = 0;ispin < nspin   ;ispin++){
+  for(int kpt   = 0;kpt   < nkpoint ;kpt++  ){
+  for(int ip    = 0;ip    < pi_beads;ip++   ){
+  for(int it    = 0;it    < ntemper ;it++   ){
+    sprintf (fname, "%s.s%d.k%d.b%d.t%d/ChkDirExistOAtom",dataPath,ispin,kpt,ip,it);
+    FILE *fpck = fopen(fname,"w");
+    if(fpck==NULL){
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Input directory, %s.s%d.k%d.b%d.t%d, is not present\n",
+                 dataPath,ispin,kpt,ip,it);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    fclose(fpck);
+  }}}}//endfor
   
 
   if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
@@ -207,7 +273,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Improve user parameters and/or try to optimize unset parameters
 
-  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, nchareRhoRHart, nplane_x_rho, natm_typ);
+  guesstimateParmsConfig(sizez,dict_gen,dict_rho,dict_state,dict_pc,dict_nl,dict_map, 
+                         nchareRhoRHart, nplane_x_rho, natm_typ);
 
 //===================================================================================
 // Final consistency checks
@@ -2938,9 +3005,10 @@ void Config::rangeExit(int param, const char *name, int iopt){
 #endif
 
     if(doublePack!= 1){
-      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   Non-double Pack code is under development.\n");
-      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("\n  $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+      PRINTF("     Non-double Pack code is under development!!\n");
+      PRINTF("     Put on your debug shoes and boogy\n");
+      PRINTF("  $$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
 
 //===================================================================================

@@ -274,7 +274,7 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
       }//endif
       free(cp_parse.occupation_file);
    //----------------------------------------------------------------------
-        cpgen_wave->read_coef_fetch_kpoints(cp_parse.kpt_file_name_set, 
+      cpgen_wave->read_coef_fetch_kpoints(cp_parse.kpt_file_name_set, 
                     cp_parse.kpt_file_name, cp_parse.istart_cp);
       free(cp_parse.kpt_file_name);
 

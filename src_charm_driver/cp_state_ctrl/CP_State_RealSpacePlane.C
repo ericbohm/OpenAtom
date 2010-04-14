@@ -322,8 +322,13 @@ void CP_State_RealSpacePlane::doFFT(){
 
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
-  double *occ = cpcoeffs_info->occ_up;
-  double occ_now=occ[istate+1];
+  double *occ      = cpcoeffs_info->occ_up;
+  double *wght_kpt = cpcoeffs_info->wght_kpt;
+
+  double occ_now      = occ[istate+1];
+  double wght_kpt_now = wght_kpt[kpoint_ind+1];
+
+  double wght_rho = occ_now*wght_kpt_now;
 
 //============================================================================
 // Perform the FFT and get psi^2 which we can store in cache tmpData because
@@ -379,7 +384,7 @@ void CP_State_RealSpacePlane::doFFT(){
     if(config.doublePack){
       for(int i=0,i2=0;i<ngridb;i++,i2+=2){
         for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-          data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)]*occ_now;
+          data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)]*wght_rho;
         }//endfor
       }//endfor
     }else{
@@ -389,7 +394,7 @@ void CP_State_RealSpacePlane::doFFT(){
 	  // We need the K-POINT WEIGHT when UBERs are working
 	  // Uber index j (?) is the k-point index.
 	  //***********************************************
-          data[j] = (planeArr[j].getMagSqr())*occ_now;
+          data[j] = (planeArr[j].getMagSqr())*wght_rho;
         }//endfor
       }//endfor
     }//endif
@@ -543,6 +548,17 @@ void CP_State_RealSpacePlane::doReduction(){
 //============================================================================
 void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
 //============================================================================
+
+  CP           *cp           = CP::get();
+#include "../class_defs/allclass_strip_cp.h"
+  double *occ      = cpcoeffs_info->occ_up;
+  double *wght_kpt = cpcoeffs_info->wght_kpt;
+
+  double occ_now      = occ[istate+1];
+  double wght_kpt_now = wght_kpt[kpoint_ind+1];
+
+  double wght_rho = occ_now*wght_kpt_now;
+
 //============================================================================
 // Do not delete msg. Its a nokeep.
 //============================================================================
@@ -592,7 +608,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
     int off = (subSize*myindex + subMax)*(ngrida+2);
     for(int i=0,i2=off;i<myNgridb;i++,i2+=2){
       for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        psiVks[(j+i2)] *= vks_tmp[j];
+        psiVks[(j+i2)] *= vks_tmp[j]*wght_rho;
       }//endfor
     }//endfor
   }else{
@@ -600,7 +616,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
     int off = (subSize*myindex + subMax)*(ngrida);
     for(int i=0;i<myNgridb;i++){
       for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-        psiVks[(j+off)] = psiVks[(j+off)]*vks_tmp[j];
+        psiVks[(j+off)] = psiVks[(j+off)]*(vks_tmp[j]*wght_rho);
       }//endfor
     }//endfor
   }//endif

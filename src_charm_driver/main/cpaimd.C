@@ -417,7 +417,8 @@ main::main(CkArgMsg *msg) {
     numPes=CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
-                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,sim->doublepack);
+                      ees_eext_opt,sim->gen_wave,sim->ncoef,sim->cp_min_opt,sim->ngrid_eext_c,
+                      sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
     fakeTorus        = config.fakeTorus>0;
     CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
     if(fakeTorus)
