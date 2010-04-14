@@ -379,20 +379,22 @@ void CP_State_RealSpacePlane::doFFT(){
 
     double *data = fftcache->tmpDataR;
 
+  if(istate==0 && iplane_ind==0){
+    CkPrintf("I, state 0 plane 0 of kpt %d am sending to rho with wght %g\n",kpoint_ind, wght_rho);
+  }//endif
+
     if(config.doublePack){
       for(int i=0,i2=0;i<ngridb;i++,i2+=2){
         for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-          data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)]*wght_rho;
+          data[j] = planeArrR[(j+i2)]*planeArrR[(j+i2)];
+          data[j] *= wght_rho;
         }//endfor
       }//endfor
     }else{
       for(int i=0;i<ngridb;i++){
         for(int j=i*ngrida;j<(i+1)*ngrida;j++){
-	  //***********************************************
-	  // We need the K-POINT WEIGHT when UBERs are working
-	  // Uber index j (?) is the k-point index.
-	  //***********************************************
-          data[j] = (planeArr[j].getMagSqr())*wght_rho;
+	    data[j] = (planeArr[j].getMagSqr());
+            data[j] *= wght_rho;
         }//endfor
       }//endfor
     }//endif
@@ -556,6 +558,7 @@ void CP_State_RealSpacePlane::acceptProduct(ProductMsg *msg) {
   double wght_kpt_now = wght_kpt[kpoint_ind+1];
 
   double wght_rho = occ_now*wght_kpt_now;
+ 
 
 //============================================================================
 // Do not delete msg. Its a nokeep.
