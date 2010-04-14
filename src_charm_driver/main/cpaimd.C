@@ -583,9 +583,6 @@ main::main(CkArgMsg *msg) {
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
 
-    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
-    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
@@ -769,7 +766,12 @@ Per Instance startup BEGIN
 	    CmiNetworkProgressAfter(1);
 
         //============================================================================
-        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
+        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho
+        //and related frills)
+    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+	    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+	    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+
         CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
         cp::ortho::orthoConfig orthoCfg;
         orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
