@@ -103,6 +103,9 @@ module instanceController
 	entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
         entry [nokeep] void initCookie(ICCookieMsg *msg);
         entry void doneInit(CkReductionMsg *msg);
+        entry void cleanExit(CkReductionMsg *m);
+        entry void cleanExitAll(CkReductionMsg *m);
+
     }
 };
 

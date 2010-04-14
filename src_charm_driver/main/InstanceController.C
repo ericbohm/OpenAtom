@@ -253,8 +253,37 @@ void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
   UberCollection thisInstance(thisIndex);
       CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
+
+
+}
+
+//============================================================================
+
+// When the simulation is done on each instance, make a clean exit  
+// this gets called by each instance
+void InstanceController::cleanExit(CkReductionMsg *m)
+{
+  CkPrintf("{%d} called cleanExit\n",thisIndex);
+  delete m;
+  int exited=1;
+  contribute(sizeof(int), &exited, CkReduction::sum_int, 
+	     CkCallback(CkIndex_InstanceController::cleanExitAll(NULL),CkArrayIndex1D(0),thisProxy), 0);
 }
 //============================================================================
+
+// When the simulation is done, make a clean exit  
+// this gets called on the 0th element when everyone calls cleanExit
+void InstanceController::cleanExitAll(CkReductionMsg *m)
+{
+  delete m;  
+  CkPrintf("********************************************************************************\n");
+  CkPrintf("\n"); CkPrintf("\n");
+  CkPrintf("********************************************************************************\n");
+  CkPrintf("         Open Atom Simulation Complete                \n");
+  CkPrintf("********************************************************************************\n");
+  CkExit();
+}
+
 
 #include "instanceController.def.h"
 

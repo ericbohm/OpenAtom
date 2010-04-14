@@ -12,7 +12,7 @@ extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
 extern CkVec <CProxy_StructureFactor> 			UsfCompProxy;
-
+extern CProxy_InstanceController      instControllerProxy;
 
 /// Constructor
 GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance): 
@@ -124,9 +124,6 @@ void GSpaceDriver::startControl()
 
 
 
-// Forward declaration
-void cleanExit(void *param, void *msg);
-
 /// GSpace notifies me that its ready to exit by calling this method
 void GSpaceDriver::readyToExit()
 {
@@ -141,7 +138,7 @@ void GSpaceDriver::readyToExit()
 			#endif
 		#endif
 		int i=0;
-		contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(cleanExit,NULL));
+		contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 	}
 }
 
