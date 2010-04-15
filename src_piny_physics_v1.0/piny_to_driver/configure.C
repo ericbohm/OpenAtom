@@ -2162,6 +2162,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     UberImax = 1;
     UberJmax = 1;
     UberKmax = 1;
+    UberMmax = 1;
 
     // TODO get the number of instances.  This is a Glenn item as most
     // of the instance stuff will be on the piny side and determining
@@ -2171,7 +2172,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     // in default case we have only 1 instance, so we just use the 0,0,0th
     // because it is simple.
 
-    numInstances = UberImax * UberJmax * UberKmax; // numIntegrals * numKpoints * numTempers;
+    numInstances = UberImax * UberJmax * UberKmax * UberMmax; // numIntegrals * numKpoints * numTempers * numSpin;
     numPesPerInstance = numPes / numInstances;
     numPesPerInstance = (numPesPerInstance>0) ? numPesPerInstance : 1;
 
