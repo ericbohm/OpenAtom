@@ -27,6 +27,7 @@ extern CkVec <CProxy_OrthoHelper>                UorthoHelperProxy;
 extern CProxy_TimeKeeper                         TimeKeeperProxy;
 extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
+extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 InstanceController::InstanceController() {
   done_init=0;Timer=CmiWallTimer(); numKpointforces=0;
   UberCollection instance=UberCollection(thisIndex);
@@ -176,8 +177,11 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 #ifdef _CP_DEBUG_SFNL_OFF_
   CkPrintf("ENL         = OFF FOR DEBUGGING\n");
 #endif
-  CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, d);
+  UberCollection thisInstance(thisIndex);
+  ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
+  //  CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, d);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
+
 }
 //============================================================================
 

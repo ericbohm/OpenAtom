@@ -10,7 +10,7 @@ libdriver_src = \
                 ortho.C pcSectionManager.C orthoBuilder.C \
                 StructureFactor.C StructFactorCache.C \
                 fftCache.C stateSlab.C rhoSlab.C \
-                MapTable.C PeList.C \
+                MapTable.C PeList.C ENL_EKE_Collector.C \
                 util.C MapFile.C para_grp_parse.C matrix2file.C PIBeadAtoms.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
 libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci startupMessages.ci cpaimd.ci 

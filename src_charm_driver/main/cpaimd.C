@@ -16,6 +16,7 @@
 
 #include "cpaimd.h"
 #include "InstanceController.h"
+#include "ENL_EKE_Collector.h"
 #include "pcCreationManager.h"
 #include "groups.h"
 #include "eesCache.h"
@@ -132,6 +133,7 @@ CProxy_CPcharmParaInfoGrp         scProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
+CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
 
 //============================================================================
 /** Uber proxies for all the things which change per step 
@@ -580,6 +582,12 @@ main::main(CkArgMsg *msg) {
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
+
+    // make one collector per uberKmax
+    CkArrayOptions enlopts(config.UberKmax);
+    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax, enlopts);
+    ENLEKECollectorProxy.doneInserting();
+
 
 //============================================================================    
 // Create the multicast/reduction manager for array sections
