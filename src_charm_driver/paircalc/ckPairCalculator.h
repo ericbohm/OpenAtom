@@ -7,6 +7,7 @@
 
 #include "ckmulticast.h"
 #include "ckhashtable.h"
+#include "ckcomplex.h"
 
 #include "PipeBroadcastStrategy.h"
 #include "BroadcastStrategy.h"
@@ -68,7 +69,7 @@
 #define PSIV       2  ///< multiply new psiV by retained orthoT
 
 /// The type of data that is input from GSpace and operated on by the PairCalcs
-typedef double inputType;
+typedef complex inputType;
 
 extern ComlibInstanceHandle mcastInstanceCP;
 
@@ -331,7 +332,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// @entry Simply redirects call to multiplyForward()
 		void multiplyForwardRDMA() { multiplyForward(cfg.isSymmetric); }
 		/// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
-		void contributeSubTiles(double *fullOutput);
+		void contributeSubTiles(inputType *fullOutput);
 		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
 		void sendTiles(bool flag_dp);
 		/// Receive data from ortho chares and copy into matrix

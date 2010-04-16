@@ -69,6 +69,35 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 }
 
 
+
+// A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated
+class gemmDelegator
+{
+    public:
+        /// Construct a gemm delegate functor
+        gemmDelegator(bool useZgemm = false): useComplex(useZgemm)
+        {
+            CkAssert(sizeof(complex)/sizeof(double) == 2);
+        }
+
+        /// Use it just like a GEMM call
+        inline void operator() (char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
+        {
+            if (useComplex)
+                //ZGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+                CkAbort("zgemm is not yet available");
+            else
+            {
+                DGEMM(opA, opB, m, n, k, alpha, reinterpret_cast<double*>(A), lda, reinterpret_cast<double*>(B), ldb, beta, reinterpret_cast<double*>(C), ldc);
+            }
+        }
+
+    private:
+        bool useComplex;
+};
+
+
+
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
 PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg): cfg(_cfg)
@@ -267,11 +296,11 @@ PairCalculator::pup(PUP::er &p)
 	  outData=NULL;
       /// @todo: Fix this to allocate or grab a msgLeft and msgRight. inDataLeft/Right is no longer allocated directly
       if(existsLeft)
-	  inDataLeft = new double[2*numExpectedX*numPoints];
+	  inDataLeft = reinterpret_cast<double*> ( new inputType[numExpectedX*numPoints] );
       else
 	  inDataLeft=NULL;
       if(existsRight)
-	  inDataRight = new double[2*numExpectedY*numPoints];
+	  inDataRight = reinterpret_cast<double*> ( new inputType[numExpectedY*numPoints] );
       else
 	  inDataRight=NULL;
       orthoCookies= new CkSectionInfo[numOrtho*2];
@@ -784,30 +813,39 @@ PairCalculator::sendTiles(bool flag_dp)
 
 
 /**
- * Forward path multiply.
+ * Forward path multiply. Essentially does a simple GEMM on the input matrices.
  *
- *   * (numExpectedX X numPoints) X (numPoints X numExpectedY) = (numExpectedX X numExpectedY)
+ * We get a left and right matrix each of dimension [numExpectedX/Y, numPoints]
+ * We multiply them to get the S matrix of dimension [numExpectedX, numExpectedY]
+ *
+ * GEMM performs: C = alpha * op(A).op(B) + beta * C
+ * where the matrix dimensions are:
+ *  op(A) = [m,k]
+ *  op(B) = [k,n]
+ *     C  = [m,n]
+ * with
+ *      m = numExpectedX
+ *      k = numPoints
+ *      n = numExpectedY
+ *
+ * [numExpectedX, numExpectedY] = [numExpectedX, numPoints] X [numPoints, numExpectedY]
  * To make this work, we transpose the first matrix (A).
- In C++ it appears to be:
- * (ydima X ydimb) = (ydima X xdima) X (xdimb X ydimb)
- * Which would be wrong, this works because we're using fortran
- * BLAS, which has a transposed perspective (column major), so the
- * actual multiplication is:
  *
- * (xdima X xdimb) = (xdima X ydima) X (ydimb X xdimb)
+ * In C++ it appears to be:         [ydima, ydimb] = [ydima, xdima] X [xdimb, ydimb]
+ * which would be wrong, this works because we're using fortran BLAS,
+ * which has a transposed perspective (column major).
+ * So the actual multiplication is: [xdima, xdimb] = [xdima, ydima] X [ydimb, xdimb]
  *
- * Since xdima==xdimb==numExpected==cfg.grainSize this gives us the
- * solution matrix we want in one step.
- *
- * In the border case it gives numExpectedX x numExpectedY which is
- * what we want on the borders.  In non borders numExpectedX==numExpectedY.
- *
+ * Since xdima == xdimb == numExpected == cfg.grainSize, this gives us the solution matrix we want in one step.
+ * In the border case it gives numExpectedX x numExpectedY which is what we want on the borders.
  */
 void PairCalculator::multiplyForward(bool flag_dp)
 {
     #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d] PairCalculator::multiplyForward() Starting forward path computations.\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
     #endif
+
+    // Allocate space for the fw path results if needed
     if(!existsOut)
     {
         CkAssert(outData==NULL);
@@ -819,30 +857,47 @@ void PairCalculator::multiplyForward(bool flag_dp)
         #endif
     }
 
-    // C = beta * C + alpha * op(B) . op(A)   (A = right; B = left)
-    // Matrix Dimensions: op(A) = [m,k] op(B) = [k,n] C = [m,n]
+    // Configure the inputs to the GEMM describing the matrix dimensions and operations
     char transformT = 'T';           // Transpose matrix A
     char transform  = 'N';           // Retain matrix B as it is
     int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
-    int k_in        = 2 * numPoints; // Columns of op(A) = Rows of op(B)
+    int k_in        = numPoints;     // Columns of op(A) = Rows of op(B)
     int n_in        = numExpectedX;  // Columns of op(B) = Columns of C
     double alpha    = double(1.0);   // Scale B.A by this scalar factor
     double beta     = double(0.0);   // Scale initial value of C by this factor
 
-    // Double packing entails an extra scaling factor for psi
-    if (flag_dp)
-        alpha = 2.0;
-
-    double *matrixA;
-    // Symm PC chares on the array diagonal only get a leftData. For these A = inDataLeft
+    // Get handles to the input and output matrices
+    inputType *matrixC = reinterpret_cast<inputType*> (outData);
+    inputType *matrixB = msgLeft->data();
+    inputType *matrixA;
     if(!symmetricOnDiagonal)
-        matrixA = inDataRight;
+        matrixA = msgRight->data();
     else
     {
-        matrixA = inDataLeft;
-        m_in    = numExpectedX; //< redundant, as numExpectedX==numExpectedY
+        // Symm PC chares on the array diagonal only get a left matrix. For these B serves as A too
+        matrixA = matrixB;
+        // Redundant, as numExpectedX == numExpectedY (except for the border chares?)
+        m_in    = numExpectedX;
+    }
+    #ifdef TEST_ALIGN
+        CkAssert((unsigned int)matrixA%16==0);
+        CkAssert((unsigned int)matrixB%16==0);
+        CkAssert((unsigned int)matrixC%16==0);
+    #endif
+
+    // If we're sending the work to dgemm
+    if (!cfg.useComplexMath)
+    {
+        // Treat each complex as 2 doubles
+        k_in *= 2;
+        // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
+        if (flag_dp)
+            alpha = 2.0;
     }
 
+
+    // Create a gemm delegator which will call the appropriate gemm
+    gemmDelegator myGEMM;
 
     // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
@@ -855,11 +910,6 @@ void PairCalculator::multiplyForward(bool flag_dp)
         int Krem     = k_in % Ksplit;
         int Kloop    = k_in/Ksplit-1;
 
-        #ifdef TEST_ALIGN
-            CkAssert((unsigned int)matrixA%16==0);
-            CkAssert((unsigned int)inDataLeft %16==0);
-            CkAssert((unsigned int)outData%16==0);
-        #endif
         #ifdef PRINT_DGEMM_PARAMS
             CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, Ksplit, alpha, beta, k_in, k_in, m_in);
         #endif
@@ -868,7 +918,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
         #ifndef CMK_OPTIMIZE
             double StartTime=CmiWallTimer();
         #endif
-        DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &m_in);
+        myGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
         CmiNetworkProgress();
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -881,8 +931,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
             int KsplitU = (i==Kloop) ? Ksplit+Krem : Ksplit;
             #ifdef TEST_ALIGN
                 CkAssert((unsigned int)&(matrixA[off])%16==0);
-                CkAssert((unsigned int)&(inDataLeft[off]) %16==0);
-                CkAssert((unsigned int)outData%16==0);
+                CkAssert((unsigned int)&(matrixB[off]) %16==0);
+                CkAssert((unsigned int)matrixC%16==0);
             #endif
             #ifdef PRINT_DGEMM_PARAMS
                 CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, KsplitU, alpha, beta, k_in, k_in, m_in);
@@ -891,7 +941,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
             #ifndef CMK_OPTIMIZE
                 StartTime=CmiWallTimer();
             #endif
-            DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &m_in);
+            myGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &matrixB[off], &k_in, &betap, matrixC, &m_in);
             CmiNetworkProgress();
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(210, StartTime, CmiWallTimer());
@@ -901,9 +951,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
     // without dgemm splitting
     #else
         #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-            dumpMatrixDouble("fwlmdata", inDataLeft, numExpectedX, numPoints*2, thisIndex.x, 0);
-            if(inDataRight!=NULL)
-                dumpMatrixDouble("fwrmdata", inDataRight, numExpectedY, numPoints*2, thisIndex.y, 0);
+            dumpMatrixDouble("fwlmdata", matrixB, numExpectedX, numPoints*2, thisIndex.x, 0);
+            dumpMatrixDouble("fwrmdata", matrixA, numExpectedY, numPoints*2, thisIndex.y, 0);
         #endif
         #ifdef PRINT_DGEMM_PARAMS
             CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, m_in);
@@ -913,7 +962,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
         #ifndef CMK_OPTIMIZE
             double StartTime=CmiWallTimer();
         #endif
-        DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, inDataLeft, &k_in, &beta, outData, &m_in);
+        myGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha, matrixA, &k_in, matrixB, &k_in, &beta, matrixC, &m_in);
         #ifndef CMK_OPTIMIZE
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
         #endif
@@ -922,14 +971,14 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
 
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-        dumpMatrixDouble("fwgmodata",outData,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
+        dumpMatrixDouble("fwgmodata",matrixC,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
     #endif
     #ifndef CMK_OPTIMIZE
         StartTime=CmiWallTimer();
     #endif
 
     // Do the slicing and dicing, and contribute the appropriate bits to the redn that reaches Ortho
-    contributeSubTiles(outData);
+    contributeSubTiles(matrixC);
     #ifdef _CP_SUBSTEP_TIMING_
         if(cfg.forwardTimerID > 0)
         {
@@ -945,7 +994,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
     if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
     {
         CkAssert(existsRight);
-        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,(complex*)inDataRight,false,blkSize,numExpectedY);
+        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,flag_dp,msgRight->data(),false,blkSize,numExpectedY);
         bool prioPhan=false;
         if(prioPhan)
         {
@@ -968,7 +1017,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
 
 
-void PairCalculator::contributeSubTiles(double *fullOutput)
+void PairCalculator::contributeSubTiles(inputType *fullOutput)
 {
     #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric);
@@ -1028,7 +1077,7 @@ void PairCalculator::contributeSubTiles(double *fullOutput)
             int itileStart=tileStart;
             CkAssert(orthoIndex<numOrtho);
             for(int ystart=0; ystart<tileSize; ystart+=bigOindex, itileStart+=bigGindex)
-                CmiMemcpy(&(outTile[ystart]),&(fullOutput[itileStart]),ocopySize);
+                CmiMemcpy(&(outTile[ystart]),&(reinterpret_cast<double*>(fullOutput)[itileStart]),ocopySize);
 
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                 char filename[80];
