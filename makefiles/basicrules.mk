@@ -25,7 +25,6 @@ v ?= 0
 
 ifeq ($(strip $v),0)
   info-dep = @echo Generating dependencies for $(<F)
-  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp = @echo Compiling $(<F)
   info-c   = @echo Compiling $(<F)
   info-f   = @echo Compiling $(<F)
@@ -35,7 +34,6 @@ ifeq ($(strip $v),0)
 else 
 ifeq ($(strip $v),1)
   info-dep = @echo Generating dependencies for $(<F)
-  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp = @echo Compiling $(<F) with options $(CXXFLAGS)
   info-c   = @echo Compiling $(<F) with options $(CFLAGS)
   info-f   = @echo Compiling $(<F) with options $(FFLAGS)
@@ -45,7 +43,6 @@ ifeq ($(strip $v),1)
 else 
 ifeq ($(strip $v),2)
   info-dep = @echo Generating dependencies for $(<F)
-  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp =
   info-c   =
   info-f   =
@@ -82,11 +79,9 @@ endif
 	| sed 's|$*\.o[ :]*|$*.o $@ : |g' > $@
 
 # Rule to generate dependency info for charm++ interface (ci) definition files
-# @note: Need to handle pathological cases like multi-line module declarations 
 %.di: %.ci
 	$(info-dep)
-	@grep -oE "(extern[ ]+)?module[ ]+\w+" $< | \
-	awk ' function printExternDeps(nExt,module,externs) { if (nExt>0) { printf "%s.decl.h: ",module; for (i=0;i<nExt;i++) printf "%s.decl.h ",externs[i]; printf "\n\n" } }   { if ($$1 ~ /extern/) { externs[nExt++] = $$3 } else { printExternDeps(nExt,modules[cnt-1],externs); nExt=0; modules[cnt++] = $$2 } }    END { printExternDeps(nExt,modules[cnt-1],externs); for (i=0;i<cnt;i++) printf "%s.decl.h %s.def.h ",modules[i],modules[i]; printf ": $<\n\t$$(info-ci)\n\t$q$(CXX) -c $$<\n\n" }' > $@
+	@$(CXX) -gendeps $< > $@
 
 
 # Pattern rules copied from the built-in make rules

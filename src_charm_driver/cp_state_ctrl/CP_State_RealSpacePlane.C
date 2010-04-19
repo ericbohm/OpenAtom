@@ -674,13 +674,17 @@ void CP_State_RealSpacePlane::init(ProductMsg *msg){
 //============================================================================
 // Do not delete msg. Its a nokeep.
 //============================================================================
+
     gproxy = UgSpacePlaneProxy[thisInstance.proxyOffset];
     numCookies++;
     // based on where this came from, put it in the cookie vector
     CkGetSectionInfo(cookie[msg->subplane], msg);
     if(numCookies == config.rhoRsubplanes)
-      contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
-	       CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+      {
+	//	CkPrintf("{%d} RSP [%d,%d] contributing numCookies %d = config.rhoRsubplanes %d\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y,numCookies, config.rhoRsubplanes);  
+	contribute(sizeof(int), &numCookies, CkReduction::sum_int, 
+		   CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+      }
     // do not delete nokeep message
 #ifdef USE_COMLIB
     if (config.useMssInsGP){

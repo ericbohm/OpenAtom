@@ -47,7 +47,7 @@
 #include "charm++.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
-
+extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 //=========================================================================
 extern CProxy_main                               mainProxy;
 extern CProxy_InstanceController                 instControllerProxy;
@@ -84,8 +84,9 @@ void CP_State_ParticlePlane::CP_State_ParticlePlane::printEnl(CkReductionMsg *ms
 
   double d = ((double *)msg->getData())[0];
   delete msg;
-
-  CkPrintf("{%d} ENL         = %5.8lf\n", thisInstance.proxyOffset, d);   // tell the world
+  
+  ENLEKECollectorProxy[thisInstance.idxU.z].acceptENL(d);
+  //  CkPrintf("{%d} ENL         = %5.8lf\n", thisInstance.proxyOffset, d);   // tell the world
   //  CkAbort("fix CP_StateParticlePlane printEnl to be instance aware");
   UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  //store it
 }

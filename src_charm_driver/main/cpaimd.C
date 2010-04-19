@@ -16,6 +16,7 @@
 
 #include "cpaimd.h"
 #include "InstanceController.h"
+#include "ENL_EKE_Collector.h"
 #include "pcCreationManager.h"
 #include "groups.h"
 #include "eesCache.h"
@@ -27,8 +28,8 @@
 #include "structure_factor/StructureFactor.h"
 #include "load_balance/PeList.h"
 #include "utility/MapFile.h"
+#include "PIBeadAtoms.h"
 #include "utility/util.h"
-
 #include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
@@ -91,6 +92,7 @@ bool firstInstance = true;
 
 // INT_MAPs are the ones actually used so
 // these are being changed to CkVec's for beads
+CkVec <int> PIBImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -131,6 +133,7 @@ CProxy_CPcharmParaInfoGrp         scProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
+CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
 
 //============================================================================
 /** Uber proxies for all the things which change per step 
@@ -149,6 +152,7 @@ CProxy_InstanceController         instControllerProxy;
  *  one bead.
  */
 
+CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
@@ -461,8 +465,6 @@ main::main(CkArgMsg *msg) {
     cfgSymmPC.isOutputReduced    = !config.gSpaceSum;
     cfgSymmPC.inputSpanningTreeFactor = config.PCSpanFactor;
 
-    cfgSymmPC.instanceIndex      = thisInstance.proxyOffset;
-
     cfgSymmPC.gemmSplitFWk       = config.gemmSplitFWk;
     cfgSymmPC.gemmSplitFWm       = config.gemmSplitFWm;
     cfgSymmPC.gemmSplitBW        = config.gemmSplitBW;
@@ -540,6 +542,7 @@ main::main(CkArgMsg *msg) {
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 
     // bump all the INT_MAPs to the right size
+    PIBImaptable.resize(config.numInstances);
     GSImaptable.resize(config.numInstances);
     RSImaptable.resize(config.numInstances);
     RPPImaptable.resize(config.numInstances);
@@ -573,16 +576,19 @@ main::main(CkArgMsg *msg) {
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
     
-
+    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     excludePes=NULL;
     mainProxy=thishandle;
     // make one controller chare per instance
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
 
-    // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
-    cfgSymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
-    cfgAsymmPC.uponSetupCompletion= CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy.ckGetArrayID());
+    // make one collector per uberKmax
+    CkArrayOptions enlopts(config.UberKmax);
+    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, enlopts);
+    ENLEKECollectorProxy.doneInserting();
+
+
 //============================================================================    
 // Create the multicast/reduction manager for array sections
 // Create the parainfo group from sim
@@ -737,87 +743,108 @@ Per Instance startup BEGIN
 	{
 	for(int temper=0; temper< config.UberKmax; temper++)
 	  {
-	    // for each new instance we need a new Uber Index
-	    CkVec  <int>  peUsedBySF;
-	    CkVec  <int>  peUsedByNLZ;
-	    CkVec  <int>  planeUsedByNLZ;
+	    for(int spin=0; spin< config.UberMmax; spin++) {
+	      // for each new instance we need a new Uber Index
+	      CkVec  <int>  peUsedBySF;
+	      CkVec  <int>  peUsedByNLZ;
+	      CkVec  <int>  planeUsedByNLZ;
 
-	    UberIndex thisInstanceIndex(integral,kpoint,temper);
-	    thisInstance=UberCollection(thisInstanceIndex);
-	    UberAlles.push_back(thisInstance);
-	    //============================================================================    
-	    // Transfer parameters from physics to driver
-	    //    read in atoms : create atoms group 
+	      UberIndex thisInstanceIndex(integral,kpoint,temper);
+	      thisInstance=UberCollection(thisInstanceIndex);
+	      UberAlles.push_back(thisInstance);
+	      //============================================================================    
+	      // Transfer parameters from physics to driver
+	      //    read in atoms : create atoms group 
 	    
-	    // we will need a different one of these per instance
-	    control_physics_to_driver(thisInstance);
+	      // we will need a different one of these per instance
+	      control_physics_to_driver(thisInstance);
+
 	    
-	    //============================================================================ 
+	    
+	      //============================================================================ 
+	      // handle Path Integrals
+	      if(config.UberImax>1)
+		init_PIBeads(sim, thisInstance);
 
-	    // and then we make the usual set of chares to which we pass
-	    // the Uber Index.
-	    init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
+	      // and then we make the usual set of chares to which we pass
+	      // the Uber Index.
+	      init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
 
-	    CmiNetworkProgressAfter(1);
+	      CmiNetworkProgressAfter(1);
 
-        //============================================================================
-        // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
-        CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
-        cp::ortho::orthoConfig orthoCfg;
-        orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
-        orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
-        orthoCfg.numStates     = config.nstates;
-        orthoCfg.grainSize     = config.orthoGrainSize;
-        orthoCfg.instanceIndex = thisInstance.getPO();
-        orthoCfg.maxTolerance  = sim->tol_norb;
-        orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
-        cfgSymmPC.gSpaceAID    = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
-        cfgAsymmPC.gSpaceAID   = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+	      //============================================================================
+	      // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
 
-        cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
-        pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
+	      // Create an ortho config object from available info
+	      cp::ortho::orthoConfig orthoCfg;
+	      orthoCfg.isDynamics    = (sim->cp_min_opt==1)? false: true;
+	      orthoCfg.isGenWave     = (sim->gen_wave==1)? true: false;
+	      orthoCfg.numStates     = config.nstates;
+	      orthoCfg.grainSize     = config.orthoGrainSize;
+	      orthoCfg.instanceIndex = thisInstance.getPO();
+	      orthoCfg.maxTolerance  = sim->tol_norb;
+	      orthoCfg.uponToleranceFailure = CkCallback(CkIndex_GSpaceDriver::needUpdatedPsiV(), UgSpaceDriverProxy[thisInstance.getPO()]);
 
-        //============================================================================
-	    int *usedProc= new int[config.numPesPerInstance];
-	    memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
-	    int charperpe = nstates/(config.numPesPerInstance);
-	    if(nstates % config.numPesPerInstance != 0)  charperpe++;
-	    if(charperpe<1) charperpe=1;
-	    for(int state=0; state<nstates; state++) {
-	      int plane = nchareG-1;
-	      while(plane >= 0) {
-		bool used = false;
-		int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane) % config.numPesPerInstance;
-		if(usedProc[thisstateplaneproc]>charperpe) {
-		  used=true;
+	      // Fill in the paircalc configs that are instance dependent
+	      cfgSymmPC.gSpaceAID            = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+	      cfgAsymmPC.gSpaceAID           = UgSpacePlaneProxy[thisInstance.getPO()].ckGetArrayID();
+	      cfgSymmPC.instanceIndex        = thisInstance.getPO();
+	      cfgAsymmPC.instanceIndex       = thisInstance.getPO();
+	      // Init the post-init callbacks that the paircalcs will trigger (after ortho<-->PC comm setup)
+	      cfgSymmPC.uponSetupCompletion  = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+	      cfgAsymmPC.uponSetupCompletion = CkCallback(CkIndex_InstanceController::doneInit(NULL),CkArrayIndex1D(thisInstance.getPO()),instControllerProxy.ckGetArrayID());
+
+	      // Identify who is the owner for this bubble
+	      CkCallback pcHandleCB(CkIndex_CP_State_GSpacePlane::acceptPairCalcAIDs(0), UgSpacePlaneProxy[thisInstance.getPO()]);
+
+	      // Delegate the actual construction/initialization to a creation manager
+	      cp::startup::PCCreationManager pcCreator(cfgSymmPC, cfgAsymmPC, orthoCfg);
+	      pcCreator.build(pcHandleCB, boxSize, peList4PCmapping, &GSImaptable[thisInstance.getPO()]);
+
+	      //============================================================================
+	      int *usedProc= new int[config.numPesPerInstance];
+	      memset(usedProc, 0, sizeof(int)*config.numPesPerInstance);
+	      int charperpe = nstates/(config.numPesPerInstance);
+	      if(nstates % config.numPesPerInstance != 0)  charperpe++;
+	      if(charperpe<1) charperpe=1;
+	      for(int state=0; state<nstates; state++) {
+		int plane = nchareG-1;
+		while(plane >= 0) {
+		  bool used = false;
+		  int thisstateplaneproc = GSImaptable[thisInstance.getPO()].get(state,plane) % config.numPesPerInstance;
+		  if(usedProc[thisstateplaneproc]>charperpe) {
+		    used=true;
+		  }
+		  if(!used || plane==0) {
+		    peUsedByNLZ.push_back(thisstateplaneproc);
+		    planeUsedByNLZ.push_back(plane);
+		    usedProc[thisstateplaneproc]++;
+		    plane=-1;
+		  }
+		  plane--;
 		}
-		if(!used || plane==0) {
-		  peUsedByNLZ.push_back(thisstateplaneproc);
-		  planeUsedByNLZ.push_back(plane);
-		  usedProc[thisstateplaneproc]++;
-		  plane=-1;
-		}
-		plane--;
 	      }
-	    }
-	    peUsedByNLZ.quickSort();
-	    delete [] usedProc;
-	    UpeUsedByNLZ.push_back(peUsedByNLZ);	   
-	    UplaneUsedByNLZ.push_back(planeUsedByNLZ);
-	    // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
-	    // Create mapping classes for Paircalcular
+	      peUsedByNLZ.quickSort();
+	      delete [] usedProc;
+	      UpeUsedByNLZ.push_back(peUsedByNLZ);	   
+	      UplaneUsedByNLZ.push_back(planeUsedByNLZ);
+	      // CkPrintf("UplaneUsedByNLZ length now %d\n",UplaneUsedByNLZ.length());
+	      // Create mapping classes for Paircalcular
 
-	    //============================================================================ 
-	    // Initialize the density chare arrays
-	    init_rho_chares(sim, thisInstance);
-	    CmiNetworkProgressAfter(1);
-	    //============================================================================ 
-	    // Initialize commlib strategies for later association and delegation
-	    if(sim->ees_nloc_on)
-	      init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
-	    CmiNetworkProgressAfter(1);
+	      //============================================================================ 
+	      // Initialize the density chare arrays
+	      init_rho_chares(sim, thisInstance);
+	      CmiNetworkProgressAfter(1);
+	      //============================================================================ 
+	      // Initialize commlib strategies for later association and delegation
+	      if(sim->ees_nloc_on)
+		init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
+	      CmiNetworkProgressAfter(1);
+	    }
 	  } 
 	}
+      // now safe to init atom bead commanders
+      UatomsGrpProxy[thisInstance.getPO()].init();
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
@@ -1311,6 +1338,39 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 
 
 //============================================================================
+//============================================================================
+//Create the PIBeadAtoms array
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+
+void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
+{
+
+  if(thisInstance.idxU.x>0)
+    { // the set of chares being created is for a non-zero PI all PI
+      // use the same PIBeadAtoms we simply direct the proxyoffset here to
+      // the one for the 0th bead.  
+      CkPrintf("Constructing PIMD Bead proxies for non zero instances\n");
+      UberCollection zeroBeadInstance=thisInstance;
+      zeroBeadInstance.idxU.x=0;
+      int proxyOffset=zeroBeadInstance.setPO();
+      UPIBeadAtomsProxy.push_back(UPIBeadAtomsProxy[proxyOffset]);
+    }
+  else
+    {
+      CkPrintf("Constructing PIMD Bead array\n");
+      CkArrayOptions opts(sim->natm_tot);
+      UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
+
+    }
+
+ //TODO: we should have a map for this array, the default scheme would
+ //result in these chares being within the 0th Bead partition which is
+ //not an optimal choice
+}
+//============================================================================
+
 //Create the array elements for the GSpace, Particle and Real Space planes
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2715,13 +2775,15 @@ void control_physics_to_driver(UberCollection thisInstance){
 
     PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
     // Make  groups for the atoms and energies 
-    if(thisInstance.idxU.y>0)
+    if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
       { // the set of chares being created is for a non-zero kpoint
 	// all k-points use the same atoms and energies
 	// we simply direct the proxyoffset here to the one for
 	// the 0th kpoint
+	// same holds true for spin
 	UberCollection zeroKpointInstance=thisInstance;
 	zeroKpointInstance.idxU.y=0;
+	zeroKpointInstance.idxU.s=0;
 	int proxyOffset=zeroKpointInstance.setPO();
 	UatomsGrpProxy.push_back(UatomsGrpProxy[proxyOffset]);      
 	UegroupProxy.push_back(UegroupProxy[proxyOffset]);

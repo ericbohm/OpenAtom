@@ -48,7 +48,9 @@ class Config {
     int UberImax;
     int UberJmax;
     int UberKmax;
+    int UberMmax;
     int numInstances;
+
   //==================================
 
   //==================================

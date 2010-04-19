@@ -10,8 +10,8 @@ libdriver_src = \
                 ortho.C pcSectionManager.C orthoBuilder.C \
                 StructureFactor.C StructFactorCache.C \
                 fftCache.C stateSlab.C rhoSlab.C \
-                MapTable.C PeList.C \
-                util.C MapFile.C para_grp_parse.C matrix2file.C
+                MapTable.C PeList.C ENL_EKE_Collector.C \
+                util.C MapFile.C para_grp_parse.C matrix2file.C PIBeadAtoms.C
 libdriver_obj = $(addsuffix .o, $(basename $(libdriver_src)) )
 libdriver_intf= ckPairCalculator.ci ortho.ci gspace.ci CLA_Matrix.ci structureFactor.ci startupMessages.ci cpaimd.ci 
 
@@ -24,7 +24,9 @@ DEPSTRIPDIRS +=
 # VPATH with a long list of directories hurting the build times that we hope to improve
 fileTypes     = $(sort $(suffix $(libdriver_src) $(libdriver_intf)) )
 $(foreach suf, $(fileTypes), $(eval vpath %$(suf) $(alldriverdirs) $(STANDARD_INC)) )
-
+# Explicitly add the driver dir to the vpath for headers so that decl files including such headers
+# can have their dependencies located by make
+vpath %.h $(driver)
 
 # The primary target for this module
 $(libdriver): $(libdriver_obj)
