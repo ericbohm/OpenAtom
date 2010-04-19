@@ -1,0 +1,74 @@
+/** \file pairCalcTest.ci
+ *
+ */
+
+mainmodule pairCalcTest {
+
+	extern module instanceController;
+	extern module CPcharmParaInfo;
+	extern module timeKeeper;
+	extern module startupMessages;
+	extern module CLA_Matrix; 
+	extern module ortho;
+	extern module gStatePlane;
+	extern module ckPairCalculator;
+	extern module startupMessages;
+	extern module inputDataHandler;
+	extern module pcMaps;
+	extern module pcMessages;
+	extern module RDMAMessages;
+	
+	readonly Config config;
+	
+	readonly int TimeKeeperID;
+	//readonly vector<string> TimeKeeperNames;
+	readonly CProxy_TimeKeeper TimeKeeperProxy;
+	readonly CProxy_CPcharmParaInfoGrp scProxy;
+
+	//readonly CPcharmParaInfo *sim;
+
+	//readonly TopoManager *topoMgr;
+
+	readonly int numPes;
+	readonly bool fakeTorus;
+
+	readonly int cp_min_opt;
+
+	mainchare pairCalcTestMain {
+		entry pairCalcTestMain(CkArgMsg *);
+		entry void startTest();
+		entry void startTest2();
+		entry void finishPsi();
+		entry void finishLambda();
+		entry void done();
+	};
+};
+
+module instanceController
+{
+	array [1D] InstanceController {
+        entry InstanceController();
+        entry void doneInit(CkReductionMsg *msg);
+    }
+};
+
+module CPcharmParaInfo
+{
+        class CPcharmParaInfo;
+	// The physics configuration, both input, and derived, is kept here.
+	// This data is effectively readonly.
+	group CPcharmParaInfoGrp 
+	{
+		entry CPcharmParaInfoGrp(CPcharmParaInfo &s);
+	};
+};
+
+module timeKeeper
+{
+	group TimeKeeper {
+		entry TimeKeeper();
+		entry void init();
+	        entry void collectStart(CkReductionMsg *m);
+	        entry void collectEnd(CkReductionMsg *m);
+	};
+};
