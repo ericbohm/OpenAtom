@@ -8,6 +8,8 @@
 struct EnergyStruct; /// @warning: Forward declarations of structs seem to choke the ci parser. It doesnt recognize the keyword struct.
 #include "paircalc/ckPairCalculator.h"
 #include "cpaimd.decl.h"
+#include "utility/matrix2file.h"
+
 using namespace cp::gspace; ///< @note: Should be temporary until GSpace chares live within namespace gspace
 
 #ifndef CP_STATE_GSPACE_PLANE_H

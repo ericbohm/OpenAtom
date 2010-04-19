@@ -1,6 +1,8 @@
 #ifndef MATRIX_2_FILE_H
 #define MATRIX_2_FILE_H
 
+#include "debug_flags.h"
+
 //@{
 /// Matrix read/write utils
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric);

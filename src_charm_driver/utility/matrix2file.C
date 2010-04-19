@@ -9,6 +9,9 @@ void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim
   strncat(fmt,"_%d_%d_%d_%d_%d.out",999);
   sprintf(filename,fmt, w, x, y, z, symmetric);
   FILE *loutfile = fopen(filename, "w");
+#ifdef PAIRCALC_TEST_DUMP
+  fprintf(loutfile,"%d\n",ydim);
+#endif
   for(int i=0;i<xdim;i++)
     for(int j=0;j<ydim;j++)
       fprintf(loutfile,"%d %d %.12g\n",x+i,y+j,matrix[i*ydim+j]);

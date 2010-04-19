@@ -117,6 +117,14 @@
 //#define _CP_DEBUG_UPDATE_OFF_
 //#define DEBUG_CP_GSPACE_CREATION
 //#define DEBUG_CP_GSPACE_PSIV
+
+//#define PAIRCALC_TEST_DUMP
+
+//If paircalc test will be run, lambda and psi dumps must be activated
+#ifdef PAIRCALC_TEST_DUMP
+#define _CP_GS_DUMP_LAMBDA_
+#define _CP_GS_DUMP_PSI_
+#endif
 /** @note: Only one of these barriers is guaranteed to work at any given time. 
  * Turning on multiple barriers might beat the already convoluted RTH code in GSpaceDriver and crash!!
  */
