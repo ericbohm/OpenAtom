@@ -63,7 +63,7 @@ pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 	printf("TESTFRAMEWORK -- setNumPes() finished\n");
 	fillScProxy();
 	printf("TESTFRAMEWORK -- fillScProxy() finished\n");
-	fillConfig(msg->argv[1],128,10,1);
+	fillConfig(msg->argv[1]);
 	printf("TESTFRAMEWORK -- fillConfig() finished with sGrainSize = %d\n", config.sGrainSize);
 
 	printf("TESTFRAMEWORK -- Initializing CP_State_GSPacePlane Array of dimensions [%d x %d]\n",config.nstates,config.nchareG);
@@ -130,8 +130,20 @@ void pairCalcTestMain::fillScProxy()
 	scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 }
 
-void pairCalcTestMain::fillConfig(char* input_name, int nstates_in, int nplanes_in, int maxIter_in)
+void pairCalcTestMain::fillConfig(char* input_name)
 {
+	int nstates_in,nplanes_in,maxIter_in;
+	FILE *loutfile = fopen("dumps/configData.out", "r");
+	if(loutfile!=NULL)
+	{
+		fscanf(loutfile,"%d\n%d\n%d\n",&nstates_in,&nplanes_in,&maxIter_in);
+		fclose(loutfile);
+	}
+	else
+	{
+		CkAbort("configData.out file not found\n");
+	}
+
 	config.readConfig(input_name,nstates_in,nplanes_in,maxIter_in,numPes);
 
 //	config.numPes = CkNumPes();

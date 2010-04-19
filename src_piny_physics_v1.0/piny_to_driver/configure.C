@@ -189,6 +189,12 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 //===================================================================================
 // Set rhoG and stateG chare array sizes
 
+#ifdef PAIRCALC_TEST_DUMP
+  FILE *loutfile = fopen("configData.out", "w");
+  fprintf(loutfile,"%d\n%d\n%d\n",nstates,minx+1,maxIter_in);
+  fclose(loutfile);
+#endif
+
   int nplane_x     = minx+1;
   int nplane_x_rho = 2*minx+1;
   PRINTF("  nplane = %d and nplane_rho = %d for the current system\n",

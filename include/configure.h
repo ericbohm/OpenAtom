@@ -14,6 +14,7 @@
 
 #include "dictionary.h"
 #include "pup.h"
+#include "debug_flags.h"
 
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
