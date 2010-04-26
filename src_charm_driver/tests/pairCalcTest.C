@@ -41,7 +41,7 @@ int numPes;
 bool fakeTorus;
 
 //cp_min_opt == 0 is dynamics, 1 is minimization
-int cp_min_opt = 1;
+int cp_min_opt = 0;
 //-----------------------------------------------//
 
 pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)

@@ -98,6 +98,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 	complex *force = packedForceData;
 	complex *psi = packedPlaneData;
 
+	if(cp_min_opt==0){
+		packedPlaneDataScr   = new complex[numPoints];
+		packedPlaneDataTemp  = new complex[numPoints];
+		memset(packedPlaneDataScr, 0, sizeof(complex)*numPoints);
+	}//endif
+
 	//CkPrintf("Gspace Chare %d x %d re-dumping data %f\n",thisIndex.x,thisIndex.y,((double *)force)[0]);
 
 //	dumpMatrixDouble("dumps2/lambdaBf",(double *)force, 1,
