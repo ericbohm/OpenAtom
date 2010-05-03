@@ -68,9 +68,6 @@
 #define KEEPORTHO  1  ///< retain orthoT
 #define PSIV       2  ///< multiply new psiV by retained orthoT
 
-/// The type of data that is input from GSpace and operated on by the PairCalcs
-typedef complex inputType;
-
 extern ComlibInstanceHandle mcastInstanceCP;
 
 extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}

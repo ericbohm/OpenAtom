@@ -14,8 +14,10 @@ namespace pc = cp::paircalc;
 class paircalcInputMsg;
 // A template message collator
 template <class msgType, typename dataType> class MessageDataCollator;
+/// The type of data that is input from GSpace and operated on by the PairCalcs
+typedef complex inputType;
 /// The type of the input msg collator
-typedef pc::MessageDataCollator<paircalcInputMsg,complex> CollatorType;
+typedef pc::MessageDataCollator<paircalcInputMsg,inputType> CollatorType;
 
 class PairCalcID; ///< @note: Should be temporary
 
