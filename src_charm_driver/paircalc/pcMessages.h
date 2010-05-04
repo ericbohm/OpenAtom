@@ -97,11 +97,11 @@ class partialResultMsg : public CMessage_partialResultMsg {
 #ifdef CMK_BLUEGENEL
 static void* alloc(int msgnum, size_t sz, int *sizes, int pb) {
   int offsets[2];
-  offsets[0] = ALIGN16(sz);
+  offsets[0] = CK_ALIGN(sz,16);
   if(sizes==0)
     offsets[1] = offsets[0];
   else
-    offsets[1] = offsets[0] + ALIGN16(sizeof(complex)*sizes[0]);
+    offsets[1] = offsets[0] + CK_ALIGN(sizeof(complex)*sizes[0],16);
   partialResultMsg *newmsg = (partialResultMsg *) CkAllocMsg(msgnum, offsets[1], pb);
   newmsg->result = (complex *) ((char *)newmsg + offsets[0]);
   return (void *) newmsg;
@@ -225,15 +225,15 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
   // to please BGL
  static  void *alloc(int msgnum, size_t sz, int *sizes, int pb) {
     int offsets[3];
-    offsets[0] = ALIGN16(sz);
+    offsets[0] = CK_ALIGN(sz,16);
     if(sizes==0)
       offsets[1] = offsets[0];
     else
-      offsets[1] = offsets[0] + ALIGN16(sizeof(double)*sizes[0]);
+      offsets[1] = offsets[0] + CK_ALIGN(sizeof(double)*sizes[0],16);
     if(sizes==0)
       offsets[2] = offsets[0];
     else
-      offsets[2] = offsets[1] + ALIGN16(sizeof(double)*sizes[1]);
+      offsets[2] = offsets[1] + CK_ALIGN(sizeof(double)*sizes[1],16);
     multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
     newmsg->matrix1 = (double *) ((char *)newmsg + offsets[0]);
     newmsg->matrix2 = (double *) ((char *)newmsg + offsets[1]);
