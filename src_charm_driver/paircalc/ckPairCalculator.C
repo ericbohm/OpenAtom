@@ -849,8 +849,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
     if(!existsOut)
     {
         CkAssert(outData==NULL);
-        outData = new double[grainSizeX * grainSizeY];
-        bzero(outData, sizeof(double)* grainSizeX * grainSizeY);
+        outData = reinterpret_cast<double*> (new inputType[grainSizeX * grainSizeY]);
+        bzero(outData, sizeof(inputType)* grainSizeX * grainSizeY);
         existsOut=true;
         #ifdef _PAIRCALC_DEBUG_
             CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
@@ -1035,7 +1035,7 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
         dumpMatrixDouble("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
     #endif
-    double *outTile;
+    inputType *outTile;
     bool reuseTile = false;
     bool borderX   = orthoGrainSizeRemX != 0;
     bool borderY   = orthoGrainSizeRemY != 0;
@@ -1045,8 +1045,8 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
     if(! borderX && ! borderY)
     { // only do once to cut down on new/delete
         reuseTile = true;
-        outTile  = new double[cfg.orthoGrainSize * cfg.orthoGrainSize];
-        bzero(outTile,sizeof(double)*cfg.orthoGrainSize * cfg.orthoGrainSize);
+        outTile  = new inputType[cfg.orthoGrainSize * cfg.orthoGrainSize];
+        bzero(outTile,sizeof(inputType) * cfg.orthoGrainSize * cfg.orthoGrainSize);
     }
     // forward multiply ldc
     int bigGindex=grainSizeY;
@@ -1065,19 +1065,18 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
             int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemY : cfg.orthoGrainSize;
             int tileSize=orthoGrainSizeX*orthoGrainSizeY;
             int bigOindex=orthoGrainSizeY;
-            int ocopySize=bigOindex*sizeof(double);
+            int ocopySize=bigOindex*sizeof(inputType);
             int orthoIndex=orthoX*numOrthoCol+orthoY;
             if(! reuseTile)
             {
-                outTile=new double[tileSize];
-                bzero(outTile,sizeof(double)*tileSize);
+                outTile = new inputType[tileSize];
+                bzero(outTile,sizeof(inputType)*tileSize);
             }
             // copy into submatrix, contribute
             // we need to stride by cfg.grainSize and copy by orthoGrainSize
-            int itileStart=tileStart;
             CkAssert(orthoIndex<numOrtho);
-            for(int ystart=0; ystart<tileSize; ystart+=bigOindex, itileStart+=bigGindex)
-                CmiMemcpy(&(outTile[ystart]),&(reinterpret_cast<double*>(fullOutput)[itileStart]),ocopySize);
+            for(int ystart=0, itileStart=tileStart; ystart<tileSize; ystart+=bigOindex, itileStart+=bigGindex)
+                CmiMemcpy(&(outTile[ystart]),&(fullOutput[itileStart]),ocopySize);
 
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                 char filename[80];
@@ -1085,7 +1084,7 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
                 dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
             #endif
 
-            mcastGrp->contribute(tileSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+            mcastGrp->contribute(tileSize*sizeof(inputType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
             if(! reuseTile)
                 delete [] outTile;
         }
