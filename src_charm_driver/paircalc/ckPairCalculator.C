@@ -815,8 +815,13 @@ PairCalculator::sendTiles(bool flag_dp)
 /**
  * Forward path multiply. Essentially does a simple GEMM on the input matrices.
  *
- * We get a left and right matrix each of dimension [numExpectedX/Y, numPoints]
- * We multiply them to get the S matrix of dimension [numExpectedX, numExpectedY]
+ * A = [numExpectedX, numPoints]         (left matrix, input)
+ * B = [numExpectedY, numPoints]         (right matrix, input)
+ * C = [numExpectedX, numExpectedY]      (output matrix, also called S matrix)
+ *
+ * In terms of the input matrix dimensions, we need:
+ * [numExpectedX, numExpectedY] = [numExpectedX, numPoints] X [numPoints, numExpectedY]
+ *
  *
  * GEMM performs: C = alpha * op(A).op(B) + beta * C
  * where the matrix dimensions are:
@@ -828,16 +833,14 @@ PairCalculator::sendTiles(bool flag_dp)
  *      k = numPoints
  *      n = numExpectedY
  *
- * [numExpectedX, numExpectedY] = [numExpectedX, numPoints] X [numPoints, numExpectedY]
- * To make this work, we transpose the first matrix (A).
+ * At first glance, it appears we need to transpose matrix B to make this work.
+ * However, since GEMMs are fortran routines, they have a transposed view of the data
+ * i.e, a matrix M[r,c] in C++ appears to be a matrix M'[c,r] if the raw array is
+ * directly passed into fortran.
  *
- * In C++ it appears to be:         [ydima, ydimb] = [ydima, xdima] X [xdimb, ydimb]
- * which would be wrong, this works because we're using fortran BLAS,
- * which has a transposed perspective (column major).
- * So the actual multiplication is: [xdima, xdimb] = [xdima, ydima] X [ydimb, xdimb]
- *
- * Since xdima == xdimb == numExpected == cfg.grainSize, this gives us the solution matrix we want in one step.
- * In the border case it gives numExpectedX x numExpectedY which is what we want on the borders.
+ * The input arrays passed directly into fortran routines will appear to be of dimensions
+ * [numPoints, numExpectedX] and [numPoints, numExpectedY]. Hence, to achieve the desired multiply,
+ * we transpose the first matrix (A). This gives us the solution matrix we want in one step.
  */
 void PairCalculator::multiplyForward(bool flag_dp)
 {
