@@ -108,7 +108,7 @@ docs:
 	@cd $(docs) && $(MAKE)
 
 doxygen:
-	@cd $(docs) && doxygen $(call abs2rel,$(base),$(docs))/Doxyfile
+	@cd $(docs) && doxygen Doxyfile
 
 ################## Utility targets ####################
 $(build) $(testop) $(testop_regr) $(testop_unit) $(testop_perf):
