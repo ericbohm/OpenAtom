@@ -122,7 +122,14 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
     numExpected=numExpectedX;
   // If I am a phantom chare, I expect to get only right matrix data
   if(amPhantom)
-      numExpected = numExpectedY;
+  {
+      ///@todo: This is a hack to ensure that phantoms which get matrix blocks
+      // which should actually be *their* left matrix blocks but arrive as right
+      // data dont choke when running remaindery grainSizes. Read commit log for info
+      numExpected = numExpectedX;
+      numExpectedX= numExpectedY;
+      numExpectedY= numExpected;
+  }
   resumed=true;
 
   touchedTiles=NULL;
