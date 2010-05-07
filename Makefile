@@ -110,6 +110,10 @@ docs:
 doxygen:
 	@cd $(docs) && doxygen Doxyfile
 
+clean_docs:
+	@cd $(docs) && $(MAKE) clean
+	@$(RM) -r $(docs)/html
+
 ################## Utility targets ####################
 $(build) $(testop) $(testop_regr) $(testop_unit) $(testop_perf):
 	@echo "=========== Creating directory: $@"
