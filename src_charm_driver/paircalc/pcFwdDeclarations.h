@@ -19,7 +19,6 @@ typedef complex inputType;
 /// The type of the input msg collator
 typedef pc::MessageDataCollator<paircalcInputMsg,inputType> CollatorType;
 
-class PairCalcID; ///< @note: Should be temporary
 
 // PC chare array proxies
 class CProxySection_PairCalculator;

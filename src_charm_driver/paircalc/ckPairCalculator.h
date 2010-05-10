@@ -263,8 +263,7 @@ extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, i
  * is available. The PCs then do their thing and the result is returned via 
  * the callback set in the create routine (which happens to be Ortho).
  *
- * The backward path is triggered by:
- * finishPairCalcSection(PairCalcID, datasize, data *)
+ * The backward path is triggered by multiplyResult()
  * Its result is returned via the callback entry point passed in
  * during creation
  *

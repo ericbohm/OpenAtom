@@ -604,7 +604,7 @@ void Ortho::makeSections(const pc::pcConfig &cfgSymmPC, const pc::pcConfig &cfgA
         }
     }
 
-    // Initialize the paircalc section managers with data from the readonly PairCalcID objects 
+    // Initialize the paircalc section managers with data from the paircalc config objects
     symmSectionMgr.init (thisIndex, cfgSymmPC , symAID , oMCastGID, oRedGID);
     asymmSectionMgr.init(thisIndex, cfgAsymmPC, asymAID, oMCastGID, oRedGID);
     
