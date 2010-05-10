@@ -10,12 +10,23 @@ namespace cp { namespace paircalc { class pcConfig; } }
 /// A shorter name for the namespace
 namespace pc = cp::paircalc;
 
+
+/// The type of input data as perceived by the paircalc world
+typedef complex inputType;
+/// The representation of the input data internal to the paircalc world
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+    typedef complex internalType;
+#else
+    typedef double internalType;
+#endif
+// The ratio between the input and internal data type sizes
+#define pcDataSizeFactor ( sizeof(inputType) / sizeof(internalType) )
+
+
 // The msg carrying input data to the paircalcs
 class paircalcInputMsg;
 // A template message collator
 template <class msgType, typename dataType> class MessageDataCollator;
-/// The type of data that is input from GSpace and operated on by the PairCalcs
-typedef complex inputType;
 /// The type of the input msg collator
 typedef pc::MessageDataCollator<paircalcInputMsg,inputType> CollatorType;
 
