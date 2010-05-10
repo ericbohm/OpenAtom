@@ -491,7 +491,7 @@ void PairCalculator::ResumeFromSync() {
 
 void PairCalculator::acceptLeftData(paircalcInputMsg *msg) 
 {
-    complex *data = msg->data();
+    inputType *data = msg->data();
     const int numRows  = msg->numRows();
     const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer
@@ -551,7 +551,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 
 void PairCalculator::acceptRightData(paircalcInputMsg *msg) 
 {
-    complex *data = msg->data();
+    inputType *data = msg->data();
     const int numRows  = msg->numRows();
     const int numCols  = msg->numCols();
 	/// Assert that data is a valid pointer

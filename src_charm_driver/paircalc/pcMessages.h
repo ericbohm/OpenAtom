@@ -1,4 +1,5 @@
 #include "pcMessages.decl.h"
+#include "pcFwdDeclarations.h"
 #include "ckcomplex.h"
 
 #ifndef PC_MESSAGES_H
@@ -144,11 +145,10 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 		/// An integer representation of the sender's ID
 		inline int sender() const  { return senderID; }
 		/// A pointer to the message data. No checks on pointer validity. Use with a pinch of salt
-		inline complex* data()     { return points; }
+		inline inputType* data()   { return points; }
 		/// Constructor used to create actual GSpace to PC messages
-		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize, int _nRows=1)
+		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, inputType *_points , bool _doPsiV, int _blkSize, int _nRows=1)
 		{
-            CkAssert(sizeof(complex)/sizeof(double) == 2);  ///< Is it needed? Should be a compile time assert anyway.
             nCols    =_size;
             nRows    =_nRows;
 			senderID =_sender;
@@ -156,10 +156,10 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
 			flag_dp  =_flag_dp;
 			doPsiV   =_doPsiV;
 			blkSize  =_blkSize;
-			CmiMemcpy(points,_points,nRows*nCols*sizeof(complex));
+			CmiMemcpy(points,_points,nRows*nCols*sizeof(inputType));
 		}
 		/// @todo: Message data, should slowly be hidden from the world. The sender and end user could become friends
-		complex *points;
+		inputType *points;
 		bool fromRow, flag_dp, doPsiV;
 		int blkSize; ///< @todo: blkSize is used in paircalc only for dumping data files in the backward path. Also, it cannot be retreived when usng RDMA. Is there an alternative?
 		
