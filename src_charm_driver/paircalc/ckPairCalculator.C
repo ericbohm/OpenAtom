@@ -1260,7 +1260,24 @@ void PairCalculator::multiplyPsiV()
 
 
 /**
- * Backward path multiplication
+ * Backward path multiplication. Involves more GEMMs
+ *
+ * The basic idea is to apply the orthonormalized 'correction' matrix to the
+ * input matrices from the forward path and ship them back to GSpace.
+ *
+ * For the symmetric instance, since the input matrices (left and right) are
+ * the same, there's only one input matrix to apply the correction to. We
+ * achieve better load balance by making the phantom chares also participate
+ * in this process. This is the reason the phantoms exist. And this is why
+ * input data is shipped off to the phantoms at the end of the forward path.
+ *
+ * For symm instance:
+ *      phantoms do: inDataRight . transpose(amatrix)
+ *  non-phantoms do: inDataLeft  . amatrix
+ *
+ * For asymm instance:
+ *      inDataLeft  . amatrix
+ *    - inDataRight . amatrix2
  */
 void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 {
@@ -1279,6 +1296,8 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
                 contribute(sizeof(double),&pstart,CkReduction::min_double, cfg.beginTimerCB , cfg.backwardTimerID);
             }
     #endif
+
+    //-------------------- Set the stage for the bw path work. Counters, flags, buffers etc -------
 
     /// Increment the number of tiles received in the backward path
     numRecdBW++;
@@ -1334,7 +1353,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
     /// If I am a phantom chare and have not yet received the right matrix data from my non-phantom mirror
     if(amPhantom && !existsRight)
-    { //our mirror data is delayed
+    {
         cfg.areBWTilesCollected=true;
         cfg.isBWstreaming=false;
         CkPrintf("[%d,%d,%d,%d,%d] Warning! phantom got bw before fw, forcing tile collection\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric);
@@ -1371,10 +1390,13 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     int k_in=grainSizeX;     // columns op(A) == rows op(B)
     double beta(0.0);
 
-    /// expectOrthoT is true only in asymm, dynamics. Hence only for the asymm, off-diagonal chares in dynamics
+    // expectOrthoT is true only in asymm, dynamics.
+    // Hence only for the asymm, off-diagonal chares in dynamics
+    // we need to subtract fpsi*orthoT (ie, subtract the result of the GEMM)
     if(expectOrthoT && !notOnDiagonal)
-        beta=1.0;  // need to subtract fpsi*orthoT
-    // default these to 0, will be set for streaming comp if !collectAllTiles
+        beta=1.0;
+
+    // These default to 0, will be set to appropriate value if we're streaming the computation in the BW path
     //BTransform=T offsets for C and A matrices
     int BTCoffset=0;
     int BTAoffset=0;
@@ -1386,22 +1408,22 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     double *amatrix=NULL;
     double *amatrix2=matrix2;  ///< @note: may be overridden later
 
-    // All at once no malloc. index is 0 in this case, so this is silly
+    // If there's only one paircalc chare (All at once no malloc. index is 0 in this case, so this is silly)
     if(cfg.numStates==cfg.grainSize)
         amatrix=matrix1;
 
     /// If the grain size for paircalc and ortho are the same
     if (cfg.orthoGrainSize==cfg.grainSize)
-    { // you were sent the correct section only
+    {
         amatrix=matrix1;
-        // the other tiles were already collected for PSIV
+        // Only one ortho will send to us. Ensure that the appropriate counters are set
         numRecdBW=numOrtho;
     }
     /// else, if this is a PsiV loop
     else if(actionType==PSIV)
     {
         amatrix=matrix1;
-        // the other tiles were already collected for PSIV
+        // The other tiles were already collected for PSIV
         numRecdBW=numOrtho;
     }
     /// else, if PC is collecting all the tiles from Ortho 
@@ -1410,7 +1432,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         collectTile(true, !unitcoef, false,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
         amatrix = inResult1;
         amatrix2 = inResult2;
-    } //else !collectAllTiles
+    }
     else
     {  // settings for streaming computation on each tile
         /* For Reference to collect tiles we do this
@@ -1433,25 +1455,12 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         // fix n_in and k_in
         n_in=orthoGrainSizeY;
         k_in=orthoGrainSizeX;
-        if(cfg.isSymmetric && notOnDiagonal) //swap the non diagonals
+        // For the non-phantom, off-diagonal chares, swap the ortho tile indices
+        if(cfg.isSymmetric && notOnDiagonal && !amPhantom)
         {
-            if(!amPhantom)
-            {
-                int swap=orthoX;
-                orthoX=orthoY;
-                orthoY=swap;
-            }
-            /* int swap=orthoX;
-             * orthoX=orthoY;
-             * orthoY=swap;
-             * if(amPhantom)
-             * {
-             *      n_in=orthoGrainSizeX;
-             *      k_in=orthoGrainSizeY;
-             * }
-             * k_in=(orthoX==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemX : cfg.orthoGrainSize;
-             * n_in=(orthoY == numOrthoCol-1) ? cfg.orthoGrainSize + orthoGrainSizeRemY : cfg.orthoGrainSize;
-             */
+            int swap=orthoX;
+            orthoX=orthoY;
+            orthoY=swap;
         }
         
         // skip to the rows which apply to this ortho
@@ -1460,49 +1469,38 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         BNCoffset=orthoX * m_in * cfg.orthoGrainSize;
         BNAoffset=orthoY * m_in * cfg.orthoGrainSize;
 
-        /*
-        if(symmetricOnDiagonal)
-        {
-            BNCoffset=orthoY * m_in * cfg.orthoGrainSize;
-            BNAoffset=orthoX * m_in * cfg.orthoGrainSize;
-        }
-        */
         beta=1.0;  // need to sum over tiles within orthoY columns
     }
-    
-    /// If we've received all the tiles, or if we're streaming the computations
+
+
+
+    //---------------------------------- Perform the actual computations --------------------------
+    /// If we have all the input we need (received all the tiles, or streaming the computations)
     if(cfg.orthoGrainSize==cfg.grainSize || numRecdBW==numOrtho || !cfg.areBWTilesCollected || actionType==PSIV)
-    { // have all the input we need
-        // call helper function to do the math
-        if(actionType!=PSIV && !cfg.areBWTilesCollected && n_in*k_in>size)
+    {
+        if(actionType!=PSIV && !cfg.areBWTilesCollected && n_in*k_in > size)
         {
             CkPrintf("[%d,%d,%d,%d,%d] Warning! your n_in %d and k_in %d is larger than matrix1->size %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric, n_in,k_in,size);
             n_in=cfg.orthoGrainSize;
             k_in=cfg.orthoGrainSize;
         }
+        // Call helper function to do the math
         bwMultiplyHelper(size, matrix1, matrix2, amatrix, amatrix2,  unitcoef, m_in, n_in, k_in, BNAoffset, BNCoffset, BTAoffset, BTCoffset, orthoX, orthoY, beta, orthoGrainSizeX, orthoGrainSizeY);
     }
 
+
+    //------------------------------ Send out the results as appropriate --------------------------
     //#define SKIP_PARTIAL_SEND
     #ifndef SKIP_PARTIAL_SEND
         /// If we're stream computing without any barriers, simply send whatever results are ready now
         if(cfg.isBWstreaming && !cfg.areBWTilesCollected && !cfg.isBWbarriered && actionType!=PSIV)
-        { // send results which are complete and not yet sent
-            /*
-            if(cfg.isSymmetric && notOnDiagonal &&!amPhantom) //swap the non diagonals
-            {
-                k_in=(orthoX==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemX : cfg.orthoGrainSize;
-                n_in=(orthoY == numOrthoCol-1) ? cfg.orthoGrainSize + orthoGrainSizeRemY : cfg.orthoGrainSize;
-            }
-            */
+        {
             bwSendHelper( orthoX, orthoY, k_in, n_in, orthoGrainSizeX, orthoGrainSizeY);
-            // bwSendHelper( orthoX, orthoY, k_in, n_in, k_in, n_in);
-
             /// If we're done with all the paircalc work in this loop (iteration), then cleanup
             if(numRecdBW==numOrtho)
                 cleanupAfterBWPath();
         }
-    #else // dump them all after multiply complete
+    #else
         /// If SKIP_PARTIAL_SEND is defined, and we're streaming, then we send only if we've received all the tiles
         if((cfg.isBWstreaming && !cfg.areBWTilesCollected && !cfg.isBWbarriered && actionType!=PSIV) && numRecdBW==numOrtho)
             enqueueBWsend(unitcoef);
@@ -1512,19 +1510,22 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         }
     #endif
 
-    /** If all the computations are done, and we're either collecting tiles or are barriered, then we need to send our results to GSpace now
+
+    /** 
+     * If all the computations are done, and we're either collecting tiles or are barriered, then we need to send our results to GSpace now
+     *
      * @note: We do not enter this if we're streaming without barriers, as in that case data will be sent out as it is ready
-     */
-    /** @note: cfg.orthoGrainSize == cfg.grainSize implies this PC chare will get only one msg in the bw path. 
+     *
+     * @note: cfg.orthoGrainSize == cfg.grainSize implies this PC chare will get only one msg in the bw path. 
      * This is covered by the check numRecdBW==numOrtho, hence is just for paranoia.
      *
-     * @note: It appears actionType = PSIV will not enter multiplyResult. Needs to be verified.
+     * @todo: It appears actionType = PSIV will not enter multiplyResult. Needs to be verified as lots of conditions here chk for actionType==PSIV
      */
     if(   ((!cfg.isBWstreaming && cfg.areBWTilesCollected) && (cfg.orthoGrainSize==cfg.grainSize || numRecdBW==numOrtho))
        || (cfg.isBWbarriered && (cfg.orthoGrainSize==cfg.grainSize || numRecdBW==numOrtho))
        || actionType==PSIV
       )
-    { // clean up
+    {
         /// If we're barriered on the backward path
         if(cfg.isBWbarriered)
         {
@@ -1776,6 +1777,7 @@ void PairCalculator::bwbarrier(CkReductionMsg *msg)
 {
       // everyone is done
       delete msg;
+      /// @todo: Comments says this is a minimization only hack! Figure out!
       bool unitcoef=true;  //cheap hack for minimzation only
       enqueueBWsend(unitcoef);
 }
@@ -1802,7 +1804,9 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
                 dumpMatrixDouble("bwm2cidata",amatrix2,grainSizeX, grainSizeY,0,0,0,streamCaughtR);
         }
     #endif
+
     int  matrixSize=grainSizeX*cfg.grainSize;
+
     /* If I will be running a PsiV step immediately after this, reuse outData to hold onto ortho
      * It is safe to reuse this memory. The normal backward path has no use for outData
      * and the forward path won't be called again until after we're done with it
@@ -1824,6 +1828,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     }
 
 
+    // Allocate memory for mynewData and othernewData
     if(!amPhantom && mynewData==NULL)
     {
         CkAssert(numPoints>0);
@@ -1845,7 +1850,6 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
             }
         }
     }
-    // phantoms live in a bizarre reverso world
     else if(amPhantom)
     {
         if(othernewData==NULL)
@@ -1853,12 +1857,16 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
             #ifdef _PAIRCALC_DEBUG_
                 CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
             #endif
+            // Phantoms live in a bizarre reverso world
             othernewData = new complex[numPoints*numExpectedY];
             bzero(othernewData,numPoints*numExpectedY * sizeof(complex));
         }
     }
- 
+
+
     double *mynewDatad= reinterpret_cast <double *> (mynewData);
+
+    // GEMM configuration
     double alpha(1.0);
     char transform='N';
     char transformT='T';
@@ -1877,7 +1885,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
         double StartTime=CmiWallTimer();
     #endif
 
-    //first multiply to apply the T or L matrix
+    // First multiply to apply the T or L matrix
     if(!amPhantom)
     {
         int lk_in=k_in;
@@ -1901,7 +1909,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
                         &(inDataLeft[BTAoffset]),  amatrix, &beta,
                         &(mynewDatad[BTCoffset]));
             }
-        #else // no split
+        #else
             #ifdef TEST_ALIGN
                 CkAssert((unsigned int) &(inDataLeft[BNAoffset] )%16==0);
                 CkAssert((unsigned int) amatrix %16==0);
