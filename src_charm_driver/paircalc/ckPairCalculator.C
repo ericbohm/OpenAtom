@@ -1305,36 +1305,32 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     actionType=msg->actionType;
     bool unitcoef = false;
 
-    int maxorthostateindex=(cfg.numStates/cfg.orthoGrainSize-1)*cfg.orthoGrainSize;
-    /// Find our tile indices within this sGrain
+    /// Get the indices of the ortho that chare that sent this data to us
     int orthoX=msg->orthoX*cfg.orthoGrainSize;
-
     int orthoY=msg->orthoY*cfg.orthoGrainSize;
-    orthoX= (orthoX>maxorthostateindex) ? maxorthostateindex : orthoX;
-    orthoY= (orthoY>maxorthostateindex) ? maxorthostateindex : orthoY;
+    // Phantom chares get the T matrix from the orthos corresponding to their mirrors. Hence swap their indices
     if(amPhantom)
     {
-        orthoX=(orthoX-thisIndex.y)/cfg.orthoGrainSize;
-        orthoY=(orthoY-thisIndex.x)/cfg.orthoGrainSize;
         int swap=orthoY;
         orthoY=orthoX;
         orthoX=swap;
-        //      CkPrintf("[%d,%d,%d,%d,%d]: phantom MultiplyResult with size %d numRecdBW %d actionType %d numPoints %d orthoX %d orthoY %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, msg->size, numRecdBW, msg->actionType, numPoints, orthoX, orthoY);
     }
-    else
-    {
-        orthoX=(orthoX-thisIndex.x)/cfg.orthoGrainSize;
-        orthoY=(orthoY-thisIndex.y)/cfg.orthoGrainSize;
-    }
-    
+
+    // The state index corresponding to the last ortho tile
+    int maxorthostateindex=(cfg.numStates/cfg.orthoGrainSize-1)*cfg.orthoGrainSize;
+    // Find our tile indices within this sGrain
+    orthoX= (orthoX>maxorthostateindex) ? maxorthostateindex : orthoX;
+    orthoY= (orthoY>maxorthostateindex) ? maxorthostateindex : orthoY;
+    orthoX=(orthoX-thisIndex.x)/cfg.orthoGrainSize;
+    orthoY=(orthoY-thisIndex.y)/cfg.orthoGrainSize;
+
+    // Compute the grainsize of the ortho that just sent this data
     int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemY : cfg.orthoGrainSize;
     int orthoGrainSizeX=(orthoX == numOrthoCol-1) ? cfg.orthoGrainSize + orthoGrainSizeRemX : cfg.orthoGrainSize;
-    //  CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
-    //  CkPrintf("orthoGrainSizeX*orthoGrainSizeY = %d msg->size %d\n",orthoGrainSizeY*orthoGrainSizeX, msg->size);
+
+    // Determine if ortho sent us a matrix2
     if(matrix2==NULL||size2<1)
-    {
         unitcoef = true;
-    }
 
     /// If I am a phantom chare and have not yet received the right matrix data from my non-phantom mirror
     if(amPhantom && !existsRight)
@@ -1347,9 +1343,6 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     int matrixSize=grainSizeX*grainSizeY;
 
     /// @note: ASSUMING TMATRIX IS REAL (LOSS OF GENERALITY)
-
-    double *amatrix=NULL;
-    double *amatrix2=matrix2;  ///< @note: may be overridden later
 
     #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
         CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
@@ -1388,11 +1381,14 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     //BTransform=N offsets for C and A matrices
     int BNCoffset=0;
     int BNAoffset=0;
-    
-    if(cfg.numStates==cfg.grainSize)// all at once no malloc
-    {
-        amatrix=matrix1;  // index is 0 in this case, so this is silly
-    }
+
+
+    double *amatrix=NULL;
+    double *amatrix2=matrix2;  ///< @note: may be overridden later
+
+    // All at once no malloc. index is 0 in this case, so this is silly
+    if(cfg.numStates==cfg.grainSize)
+        amatrix=matrix1;
 
     /// If the grain size for paircalc and ortho are the same
     if (cfg.orthoGrainSize==cfg.grainSize)
