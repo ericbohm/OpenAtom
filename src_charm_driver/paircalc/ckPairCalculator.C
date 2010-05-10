@@ -71,30 +71,17 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 
 
 // A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated
-class gemmDelegator
+inline void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
 {
-    public:
-        /// Construct a gemm delegate functor
-        gemmDelegator(bool useZgemm = false): useComplex(useZgemm)
-        {
-            CkAssert(sizeof(complex)/sizeof(double) == 2);
-        }
+    //CkAbort("zgemm is not yet available");
+    //ZGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+    DGEMM(opA, opB, m, n, k, alpha, reinterpret_cast<double*>(A), lda, reinterpret_cast<double*>(B), ldb, beta, reinterpret_cast<double*>(C), ldc);
+}
 
-        /// Use it just like a GEMM call
-        inline void operator() (char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
-        {
-            if (useComplex)
-                //ZGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-                CkAbort("zgemm is not yet available");
-            else
-            {
-                DGEMM(opA, opB, m, n, k, alpha, reinterpret_cast<double*>(A), lda, reinterpret_cast<double*>(B), ldb, beta, reinterpret_cast<double*>(C), ldc);
-            }
-        }
-
-    private:
-        bool useComplex;
-};
+inline void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc)
+{
+    DGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+}
 
 
 
@@ -852,8 +839,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
     if(!existsOut)
     {
         CkAssert(outData==NULL);
-        outData = reinterpret_cast<double*> (new inputType[grainSizeX * grainSizeY]);
-        bzero(outData, sizeof(inputType)* grainSizeX * grainSizeY);
+        outData = new internalType[grainSizeX * grainSizeY];
+        bzero(outData, sizeof(internalType)* grainSizeX * grainSizeY);
         existsOut=true;
         #ifdef _PAIRCALC_DEBUG_
             CkPrintf("[%d,%d,%d,%d,%d] Allocated outData %d * %d\n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,grainSizeX, grainSizeY);
@@ -870,11 +857,11 @@ void PairCalculator::multiplyForward(bool flag_dp)
     double beta     = double(0.0);   // Scale initial value of C by this factor
 
     // Get handles to the input and output matrices
-    inputType *matrixC = reinterpret_cast<inputType*> (outData);
-    inputType *matrixB = msgLeft->data();
-    inputType *matrixA;
+    internalType *matrixC = outData;
+    internalType *matrixB = reinterpret_cast<internalType*> ( msgLeft->data() );
+    internalType *matrixA;
     if(!symmetricOnDiagonal)
-        matrixA = msgRight->data();
+        matrixA = reinterpret_cast<internalType*> ( msgRight->data() );
     else
     {
         // Symm PC chares on the array diagonal only get a left matrix. For these B serves as A too
@@ -891,16 +878,13 @@ void PairCalculator::multiplyForward(bool flag_dp)
     // If we're sending the work to dgemm
     if (!cfg.useComplexMath)
     {
-        // Treat each complex as 2 doubles
-        k_in *= 2;
+        // If internal representation is as doubles, treat each complex as 2 doubles
+        k_in *= pcDataSizeFactor;
         // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
         if (flag_dp)
             alpha = 2.0;
     }
 
-
-    // Create a gemm delegator which will call the appropriate gemm
-    gemmDelegator myGEMM;
 
     // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
@@ -1020,7 +1004,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
 
 
-void PairCalculator::contributeSubTiles(inputType *fullOutput)
+void PairCalculator::contributeSubTiles(internalType *fullOutput)
 {
     #ifdef _PAIRCALC_DEBUG_
         CkPrintf("[%d,%d,%d,%d,%d]: contributeSubTiles \n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric);
@@ -1038,7 +1022,7 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
         dumpMatrixDouble("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
     #endif
-    inputType *outTile;
+    internalType *outTile;
     bool reuseTile = false;
     bool borderX   = orthoGrainSizeRemX != 0;
     bool borderY   = orthoGrainSizeRemY != 0;
@@ -1048,8 +1032,8 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
     if(! borderX && ! borderY)
     { // only do once to cut down on new/delete
         reuseTile = true;
-        outTile  = new inputType[cfg.orthoGrainSize * cfg.orthoGrainSize];
-        bzero(outTile,sizeof(inputType) * cfg.orthoGrainSize * cfg.orthoGrainSize);
+        outTile  = new internalType[cfg.orthoGrainSize * cfg.orthoGrainSize];
+        bzero(outTile,sizeof(internalType) * cfg.orthoGrainSize * cfg.orthoGrainSize);
     }
     // forward multiply ldc
     int bigGindex=grainSizeY;
@@ -1068,12 +1052,12 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
             int orthoGrainSizeY=(orthoY==numOrthoRow-1) ? cfg.orthoGrainSize+orthoGrainSizeRemY : cfg.orthoGrainSize;
             int tileSize=orthoGrainSizeX*orthoGrainSizeY;
             int bigOindex=orthoGrainSizeY;
-            int ocopySize=bigOindex*sizeof(inputType);
+            int ocopySize=bigOindex*sizeof(internalType);
             int orthoIndex=orthoX*numOrthoCol+orthoY;
             if(! reuseTile)
             {
-                outTile = new inputType[tileSize];
-                bzero(outTile,sizeof(inputType)*tileSize);
+                outTile = new internalType[tileSize];
+                bzero(outTile,sizeof(internalType)*tileSize);
             }
             // copy into submatrix, contribute
             // we need to stride by cfg.grainSize and copy by orthoGrainSize
@@ -1087,7 +1071,7 @@ void PairCalculator::contributeSubTiles(inputType *fullOutput)
                 dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
             #endif
 
-            mcastGrp->contribute(tileSize*sizeof(inputType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
+            mcastGrp->contribute(tileSize*sizeof(internalType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
             if(! reuseTile)
                 delete [] outTile;
         }

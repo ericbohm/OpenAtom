@@ -328,7 +328,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// @entry Simply redirects call to multiplyForward()
 		void multiplyForwardRDMA() { multiplyForward(cfg.isSymmetric); }
 		/// Piece up a tile and send all the pieces as this PC's contribution to the Ortho chares
-		void contributeSubTiles(inputType *fullOutput);
+		void contributeSubTiles(internalType *fullOutput);
 		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
 		void sendTiles(bool flag_dp);
 		/// Receive data from ortho chares and copy into matrix
