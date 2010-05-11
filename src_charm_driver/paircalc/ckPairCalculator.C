@@ -278,16 +278,16 @@ PairCalculator::pup(PUP::er &p)
       else
 	otherResultCookies=NULL;
       if(existsOut)
-	  outData= new double[grainSizeX*grainSizeY];
+	  outData= new internalType[grainSizeX*grainSizeY];
       else
 	  outData=NULL;
       /// @todo: Fix this to allocate or grab a msgLeft and msgRight. inDataLeft/Right is no longer allocated directly
       if(existsLeft)
-	  inDataLeft = reinterpret_cast<double*> ( new inputType[numExpectedX*numPoints] );
+	  inDataLeft = new internalType[numExpectedX*numPoints*pcDataSizeFactor];
       else
 	  inDataLeft=NULL;
       if(existsRight)
-	  inDataRight = reinterpret_cast<double*> ( new inputType[numExpectedY*numPoints] );
+	  inDataRight = new internalType[numExpectedY*numPoints*pcDataSizeFactor];
       else
 	  inDataRight=NULL;
       orthoCookies= new CkSectionInfo[numOrtho*2];
@@ -306,17 +306,17 @@ PairCalculator::pup(PUP::er &p)
     for (i=0; i<cfg.grainSize; i++) p|otherResultCookies[i];
   for (int i=0; i<cfg.grainSize; i++)
     CmiAssert(resultCookies[i].get_redNo() > 0);
-  if(existsOut)
-    p(outData, cfg.grainSize * cfg.grainSize);
+  //if(existsOut)
+    //p(outData, cfg.grainSize * cfg.grainSize);
     /** @todo: Fix this to pack msgLeft and msgRight directly. inDataLeft/Right is no longer allocated directly
       * msgLeft and msgRight will already be packed and available as msgs. They just wont be packed together with the rest of paircalc. 
       * Is there any way we could simply hand the msgs back to charm and ask it to deliver them to me after I am done migrating.?
       * Or am I talking crap?
-      */
   if(existsLeft)
     p(inDataLeft, numExpectedX * numPoints * 2);
   if(existsRight)
     p(inDataRight, numExpectedY* numPoints * 2);
+      */
   PUParray(p,orthoCookies,numOrtho*2);
   PUParray(p,orthoCB,numOrtho*2);
   if(cfg.isBWstreaming && !cfg.areBWTilesCollected)
@@ -498,7 +498,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 
 	/// Set member data pertinent to the left block
     msgLeft      = msg;
-	inDataLeft   = reinterpret_cast<double*> (data);
+	inDataLeft   = reinterpret_cast<internalType*> (data);
 	existsLeft   = true;
 	numRecd     += numRows;
 	numPoints    = numCols;
@@ -558,7 +558,7 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 
 	/// Set member data pertinent to the right block
     msgRight     = msg;
-	inDataRight  = reinterpret_cast<double*> (data);
+	inDataRight  = reinterpret_cast<internalType*> (data);
 	existsRight  = true;
 	numRecd     += numRows;
 	numPoints    = numCols;
@@ -1103,8 +1103,8 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
 
   int size=msg->size;
   int size2=msg->size2;
-  double *matrix1=msg->matrix1;
-  double *matrix2=msg->matrix2;
+  internalType *matrix1=msg->matrix1;
+  internalType *matrix2=msg->matrix2;
 #ifdef TEST_ALIGN
   CkAssert((unsigned int) msg->matrix2 %16 ==0);
 #endif
@@ -1200,7 +1200,7 @@ void PairCalculator::multiplyPsiV()
     if(!amPhantom && cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal) 
     {
         CkAssert(existsRight);
-        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,true,(complex*)inDataRight,true,blkSize,numExpectedY);
+        paircalcInputMsg *msg2phantom = new (numExpectedY*numPoints, 8*sizeof(int)) paircalcInputMsg(numPoints,0,false,true,msgRight->data(),true,blkSize,numExpectedY);
         bool prioPhan=false;
         if(prioPhan)
         {
@@ -1293,8 +1293,8 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
     int size=msg->size;
     int size2=msg->size2;
-    double *matrix1=msg->matrix1;
-    double *matrix2=msg->matrix2;
+    internalType *matrix1=msg->matrix1;
+    internalType *matrix2=msg->matrix2;
 
     #ifdef TEST_ALIGN
         if((unsigned int) msg->matrix1 %16 !=0)
@@ -1389,8 +1389,8 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     int BNAoffset=0;
 
 
-    double *amatrix=NULL;
-    double *amatrix2=matrix2;  ///< @note: may be overridden later
+    internalType *amatrix=NULL;
+    internalType *amatrix2=matrix2;  ///< @note: may be overridden later
 
     // If there's only one paircalc chare (All at once no malloc. index is 0 in this case, so this is silly)
     if(cfg.numStates==cfg.grainSize)
@@ -1661,7 +1661,7 @@ void PairCalculator::cleanupAfterBWPath()
 
 
 
-void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2)
+void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, internalType *matrix1, internalType* matrix2)
 {
 #ifdef _PAIRCALC_DEBUG_
   CkPrintf("[%d,%d,%d,%d,%d]: collectTile aggregating numRecdBW %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numRecdBW);
@@ -1677,8 +1677,8 @@ void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, 
   if(!doOrthoT && doMatrix1 && numRecdBW==1 && inResult1==NULL) //alloc on first receipt
     {
       CkAssert(inResult1==NULL);
-      inResult1 = new double[matrixSize];
-      bzero(inResult1,sizeof(double)*matrixSize);
+      inResult1 = new internalType[matrixSize];
+      bzero(inResult1,sizeof(internalType)*matrixSize);
     }
 
   // advance tilestart to new row and column
@@ -1709,15 +1709,15 @@ void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, 
 
   int tileSize=orthoGrainSizeX*orthoGrainSizeY;
 
-  int ocopySize=bigOindex*sizeof(double);
+  int ocopySize=bigOindex*sizeof(internalType);
 
   int savetileStart=tileStart;
 
   if(doMatrix2){ // CG non minimization case have GAMMA
     if(inResult2==NULL && numRecdBW==1) //alloc on first receipt
       {
-	inResult2 = new double[matrixSize];
-	bzero(inResult2,sizeof(double)*matrixSize);
+	inResult2 = new internalType[matrixSize];
+	bzero(inResult2,sizeof(internalType)*matrixSize);
       }
 	for(int i=0; i<tileSize; i+=bigOindex,tileStart+=bigGindex)
 	  CmiMemcpy(&(inResult2[tileStart]),&(matrix2[i]),ocopySize);
@@ -1729,7 +1729,7 @@ void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, 
 #endif
 
   }
-  double *dest= (doOrthoT) ? outData : inResult1;
+  internalType *dest= (doOrthoT) ? outData : inResult1;
 
   tileStart=savetileStart;
 
@@ -1772,7 +1772,7 @@ void PairCalculator::bwbarrier(CkReductionMsg *msg)
  * PRE: amatrix contains the entire matrix for the multiplication.
  * matrix contains just what was sent in the trigger message.
  */
-void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int orthoGrainSizeX, int orthoGrainSizeY)
+void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalType *matrix2, internalType *amatrix, internalType *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int orthoGrainSizeX, int orthoGrainSizeY)
 {
     #ifdef _PAIRCALC_DEBUG_
         if(numRecdBW==numOrtho|| cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
@@ -1800,15 +1800,15 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
         if(outData==NULL)
         {
             CkAssert(!existsOut);
-            outData=new double[matrixSize];
-            bzero(outData,sizeof(double)*matrixSize);
+            outData=new internalType[matrixSize];
+            bzero(outData,sizeof(internalType)*matrixSize);
             existsOut=true;
         }
         // Keep the orthoT we just received in matrix1
         if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
             collectTile(true, false, true,orthoX, orthoY, orthoGrainSizeX, orthoGrainSizeY, numRecdBW, matrixSize, matrix1, matrix2);
         else
-            CmiMemcpy(outData, amatrix, size*sizeof(double));
+            CmiMemcpy(outData, amatrix, size*sizeof(internalType));
     }
 
 
@@ -1848,7 +1848,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     }
 
 
-    double *mynewDatad= reinterpret_cast <double *> (mynewData);
+    internalType *mynewDatad= reinterpret_cast<internalType*> (mynewData);
 
     // GEMM configuration
     double alpha(1.0);
@@ -1906,18 +1906,14 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
                 #endif
                 // Note, your choice of k_in or n_in only matters on the border column, elsewhere k_in==n_in
                 //orig no valgrind invalid read 8 on A
-                DGEMM(&transform, &transform, &m_in, &ln_in, &lk_in, &alpha,
-                        &(inDataLeft[BNAoffset]), &m_in, amatrix, &lk_in, &beta,
-                        &(mynewDatad[BNCoffset]), &m_in);
+                myGEMM(&transform, &transform, &m_in, &ln_in, &lk_in, &alpha, &(inDataLeft[BNAoffset]), &m_in, amatrix, &lk_in, &beta, &(mynewDatad[BNCoffset]), &m_in);
             }
             else
             {
                 #ifdef PRINT_DGEMM_PARAMS
                     CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, n_in, m_in);
                 #endif
-                    DGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha,
-                            &(inDataLeft[BTAoffset]), &m_in,  amatrix, &n_in, &beta,
-                            &(mynewDatad[BTCoffset]), &m_in);
+                    myGEMM(&transform, &transformT, &m_in, &n_in, &k_in, &alpha, &(inDataLeft[BTAoffset]), &m_in,  amatrix, &n_in, &beta, &(mynewDatad[BTCoffset]), &m_in);
             }
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(230, StartTime, CmiWallTimer());
@@ -1941,7 +1937,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     // Multiply to compensate for the missing triangle in symmetric case
     if((amPhantom || (!cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)) && existsRight)
     {
-        double *othernewDatad= reinterpret_cast <double *> (othernewData);
+        internalType *othernewDatad = reinterpret_cast <internalType*> (othernewData);
         if(amPhantom)
         {
             int swap= n_in;
@@ -1960,9 +1956,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
             #ifdef PRINT_DGEMM_PARAMS
                 CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transformT, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
             #endif
-            DGEMM(&transform, &transformT, &m_in, &k_in, &n_in, &alpha,
-                    &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta,
-                    &(othernewDatad[BTCoffset]), &m_in);
+            myGEMM(&transform, &transformT, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta, &(othernewDatad[BTCoffset]), &m_in);
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(250, StartTime, CmiWallTimer());
             #endif
@@ -1985,7 +1979,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
         // output modified by subtracting an application of orthoT
         // C = alpha*A*B + beta*C
         // C= -1 * inRight * orthoT + C
-        double *othernewDatad;
+        internalType *othernewDatad;
         alpha=-1.0;  //comes in with a minus sign
         if(notOnDiagonal)
         {
@@ -1995,7 +1989,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
             beta=0.0; // new contribution off-diagonal
             if(!cfg.areBWTilesCollected && cfg.orthoGrainSize!=cfg.grainSize)
                 beta=1.0; // need to accumulate
-            othernewDatad= reinterpret_cast <double *> (othernewData);
+            othernewDatad= reinterpret_cast <internalType *> (othernewData);
         }
         else
         {
@@ -2019,9 +2013,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
             #ifndef CMK_OPTIMIZE
                 StartTime=CmiWallTimer();
             #endif
-            DGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha,
-                    &(inDataRight[BNAoffset]), &m_in, amatrix2, &n_in, &beta,
-                    &(othernewDatad[BNCoffset]), &m_in);
+            myGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, &(inDataRight[BNAoffset]), &m_in, amatrix2, &n_in, &beta, &(othernewDatad[BNCoffset]), &m_in);
             #ifndef CMK_OPTIMIZE
                 traceUserBracketEvent(240, StartTime, CmiWallTimer());
             #endif
@@ -2098,9 +2090,9 @@ void PairCalculator::bwMultiplyDynOrthoT()
 #endif
     double alpha=-1.0;  //set it up with a minus sign
     double beta=0.0; // new contribution off-diagonal
-    double *othernewDatad= reinterpret_cast <double *> (mynewData);
+    internalType *othernewDatad= reinterpret_cast <internalType*> (mynewData);
     if(notOnDiagonal)
-      othernewDatad= reinterpret_cast <double *> (othernewData);
+      othernewDatad= reinterpret_cast <internalType*> (othernewData);
 
     CmiNetworkProgress();
 
@@ -2118,7 +2110,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
 		   inDataRight, inResult2, &beta,
 		   othernewDatad);
 #else
-    DGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, inDataRight,
+    myGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, inDataRight,
     	  &m_in, inResult2, &n_in, &beta, othernewDatad, &m_in);
 
 #ifndef CMK_OPTIMIZE

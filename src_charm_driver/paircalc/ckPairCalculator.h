@@ -332,7 +332,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// Contribute orthoGrainSized tiles of data (that are ready?) to the corresponding ortho chares
 		void sendTiles(bool flag_dp);
 		/// Receive data from ortho chares and copy into matrix
-		void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, double *matrix1, double* matrix2);
+		void collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, int orthoX, int orthoY, int orthoGrainSizeX, int orthoGrainSizeY, int numRecdBW, int matrixSize, internalType *matrix1, internalType* matrix2);
 		/// @entry Initializes the section cookie and the reduction client. Called on startup as the chare world is being created
 		void initGRed(initGRedMsg *msg);
 		/// @entry During dynamics, each Ortho calls this on the Asymm loop PC instances to send its share of T back to avoid a race condition between Gamma and T.
@@ -348,7 +348,7 @@ class PairCalculator: public CBase_PairCalculator
 		/// @entry a debugging tool: a barrier at the end of the backward path before anything is sent over to GSP
 		void bwbarrier(CkReductionMsg *msg);
 		/// multiplyPsiV() and multiplyResult() call this to perform the matrix multiply math on the backward path. This calls DGEMM routines for the same.
-		void bwMultiplyHelper(int size, double *matrix1, double *matrix2, double *amatrix, double *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
+		void bwMultiplyHelper(int size, internalType *matrix1, internalType *matrix2, internalType *amatrix, internalType *amatrix2, bool unitcoef, int m_in, int n_in, int k_in, int BNAoffset, int BNCoffset, int BTAoffset, int BTCoffset, int orthoX, int orthoY, double beta, int ogx, int ogy);
 		/// Called on the normal backward path (non-psiV) to set up the data sends to GSpace
 		void bwSendHelper(int orthoX, int orthoY, int sizeX, int sizeY, int ogx, int ogy);
 		/// @entry Send the results via multiple reductions as triggered by a prioritized message
@@ -456,18 +456,18 @@ class PairCalculator: public CBase_PairCalculator
 		complex *mynewData; 						///< results of bw multiply
 		complex *othernewData; 					///< results of sym off diagonal multiply,
 		                           //! or the C=-1 *inRight* orthoT +c in dynamics
-		double *inDataLeft; 						///< the input pair to be transformed
-		double *inDataRight; 						///< the input pair to be transformed
+		internalType *inDataLeft; 						///< the input pair to be transformed
+		internalType *inDataRight; 						///< the input pair to be transformed
         paircalcInputMsg *msgLeft, *msgRight;   ///< Incoming messages with left and right matrix data that are kept around so that we can directly compute on them
-		double *outData; 							///< results of fw multiply
+		internalType *outData; 							///< results of fw multiply
 		int actionType; 							///< matrix usage control [NORMAL, KEEPORTHO, PSIV]
 		
 		double *allCaughtLeft; 					///< unordered rows of FW input
 		double *allCaughtRight; 					///< unordered rows of FW input
 		
 		
-		double *inResult1; 						///< accumulate ortho or lambda
-		double *inResult2; 						///< used in gamma calc (non minimization)
+		internalType *inResult1; 						///< accumulate ortho or lambda
+		internalType *inResult2; 						///< used in gamma calc (non minimization)
 		
 		/* to support the simpler section reduction*/
 		int rck; 									///< count of received cookies

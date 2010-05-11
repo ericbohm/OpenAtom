@@ -207,9 +207,9 @@ void PCSectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX
 
     /// Fill it with results
     if(ptr2==NULL)
-        omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+        omsg->init1(n, (internalType*)ptr1, orthoX, orthoY, actionType);
     else 
-        omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
+        omsg->init(n, n, (internalType*)ptr1, (internalType*)ptr2, orthoX, orthoY, actionType);
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
@@ -243,9 +243,9 @@ void PCSectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX,
 
     /// Fill it with results
     if(ptr2==NULL)
-        omsg->init1(n, ptr1, orthoX, orthoY, actionType);
+        omsg->init1(n, (internalType*)ptr1, orthoX, orthoY, actionType);
     else 
-        omsg->init(n, n, ptr1, ptr2, orthoX, orthoY, actionType);
+        omsg->init(n, n, (internalType*)ptr1, (internalType*)ptr2, orthoX, orthoY, actionType);
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
