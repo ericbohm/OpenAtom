@@ -1,5 +1,4 @@
 #include "pcMessages.decl.h"
-#include "pcFwdDeclarations.h"
 #include "ckcomplex.h"
 
 #ifndef PC_MESSAGES_H
@@ -192,30 +191,30 @@ class phantomMsg : public CMessage_phantomMsg {
 
 class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultMsg {
  public:
-  double *matrix1;
-  double *matrix2;
+  internalType *matrix1;
+  internalType *matrix2;
   int size;
   int size2;
   int orthoX;
   int orthoY;
   int actionType;
-  void init(int _size, int _size2, double *_points1, double *_points2, int _orthoX, int _orthoY, bool _actionType)
+  void init(int _size, int _size2, internalType *_points1, internalType *_points2, int _orthoX, int _orthoY, bool _actionType)
     {
       size=_size;
       size2=_size2;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
-      CmiMemcpy(matrix2,_points2,size2*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(internalType));
+      CmiMemcpy(matrix2,_points2,size2*sizeof(internalType));
       actionType=_actionType;
     }
-  void init1(int _size, double *_points1, int _orthoX, int _orthoY,int _actionType)
+  void init1(int _size, internalType *_points1, int _orthoX, int _orthoY,int _actionType)
     {
       size=_size;
       size2=0;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(internalType));
       actionType=_actionType;
       // this field does nothing in minimization
       matrix2=NULL;
@@ -229,14 +228,14 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
     if(sizes==0)
       offsets[1] = offsets[0];
     else
-      offsets[1] = offsets[0] + CK_ALIGN(sizeof(double)*sizes[0],16);
+      offsets[1] = offsets[0] + CK_ALIGN(sizeof(internalType)*sizes[0],16);
     if(sizes==0)
       offsets[2] = offsets[0];
     else
-      offsets[2] = offsets[1] + CK_ALIGN(sizeof(double)*sizes[1],16);
+      offsets[2] = offsets[1] + CK_ALIGN(sizeof(internalType)*sizes[1],16);
     multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
-    newmsg->matrix1 = (double *) ((char *)newmsg + offsets[0]);
-    newmsg->matrix2 = (double *) ((char *)newmsg + offsets[1]);
+    newmsg->matrix1 = (internalType *) ((char *)newmsg + offsets[0]);
+    newmsg->matrix2 = (internalType *) ((char *)newmsg + offsets[1]);
     return (void *) newmsg;
   }
 
