@@ -238,7 +238,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   for(int i = 0; i < m * n; i++){
     B[i] = S[i] / 2.0;
   }
-  memset(A, 0, sizeof(double) * m * n);
+  memset(A, 0, sizeof(internalType) * m * n);
   step = 0;
   iterations = 0;
   /* see if we have a non-zero part of I or T (=3I) */
@@ -336,8 +336,8 @@ void Ortho::resume(){
 	// copy orthoT for use in gamma computation
 	//	CkPrintf("O [%d %d] making copy of orthoT m %d n %d\n",thisIndex.x,thisIndex.y,m,n);
 	if(orthoT==NULL) //allocate if null
-	  { orthoT = new double[m * n];}
-	CmiMemcpy(orthoT,A,m*n*sizeof(double));
+	  { orthoT = new internalType[m * n];}
+	CmiMemcpy(orthoT,A,m*n*sizeof(internalType));
       }
     CkIndex2D pc = symmSectionMgr.computePCStateIndices();
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
@@ -475,8 +475,8 @@ void Ortho::resumeV(CkReductionMsg *msg){ // gspace tolerance check entry
 void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 //============================================================================
 
-  double *lambda = (double *)msg->getData();
-  int lambdaCount = msg->getSize()/sizeof(double);
+  internalType *lambda = (internalType*)msg->getData();
+  int lambdaCount = msg->getSize()/sizeof(internalType);
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
     dumpMatrixDouble("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -523,8 +523,8 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 	toleranceCheckOrthoT=false;
       }
     if(ortho==NULL)
-      ortho= new double[m*n];
-    CmiMemcpy(ortho,orthoT,m*n*sizeof(double));
+      ortho= new internalType[m*n];
+    CmiMemcpy(ortho,orthoT,m*n*sizeof(internalType));
     matA1.multiply(1, 0, orthoT, Ortho::gamma_done_cb, (void*) this,
 		   thisIndex.x, thisIndex.y);
     matB1.multiply(1, 0, lambda, Ortho::gamma_done_cb, (void*) this,
@@ -712,10 +712,10 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
     this->n = _n + remOrtho;
   else
     this->n = _n;
-  A = new double[this->m * this->n];
-  B = new double[this->m * this->n];
-  C = new double[this->m * this->n];
-  tmp_arr = new double[this->m * this->n];
+  A = new internalType[this->m * this->n];
+  B = new internalType[this->m * this->n];
+  C = new internalType[this->m * this->n];
+  tmp_arr = new internalType[this->m * this->n];
   step2done=false;
   step3done=false;
   step = 0;
@@ -764,7 +764,7 @@ void Ortho::do_iteration(void){
         CkPrintf("[%d,%d] Ortho::do_iteration \n", thisIndex.x, thisIndex.y);
     #endif
   step = 1;
-  memset(C, 0, m * n * sizeof(double));
+  memset(C, 0, m * n * sizeof(internalType));
   if(thisIndex.x == thisIndex.y){
     for(int i = 0; i < n; i++)
       C[i * n + i] = 3;
@@ -829,7 +829,7 @@ void Ortho::step_2(void){
  */
 void Ortho::step_3(){
   step = 3;
-  CmiMemcpy(B, A, m * n * sizeof(double));
+  CmiMemcpy(B, A, m * n * sizeof(internalType));
 #ifdef _CP_ORTHO_DUMP_SMAT_
     dumpMatrixDouble("step3:A:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
     dumpMatrixDouble("step3:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -862,22 +862,22 @@ void Ortho::tolerance_check(){
   }
 #endif
 
-  double ret = 0;
+  internalType ret = 0;
   for(int i = 0; i < m * n; i++){
-    double tmp = B[i] - A[i];
+    internalType tmp = B[i] - A[i];
     ret += tmp * tmp;
   }
-  double *tmp = B;
+  internalType *tmp = B;
   B = tmp_arr;
   tmp_arr = tmp;
   if(config.useOrthoSectionRed)
     {
       CkCallback mycb(CkIndex_Ortho::collect_error(NULL), thisProxy(0, 0));
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(symmSectionMgr.orthomCastGrpID).ckLocalBranch();
-      mcastGrp->contribute(sizeof(double),  &ret, CkReduction::sum_double, orthoCookie, mycb);
+      mcastGrp->contribute(sizeof(internalType),  &ret, CkReduction::sum_double, orthoCookie, mycb);
     }
   else
-    contribute(sizeof(double), &ret, CkReduction::sum_double);
+    contribute(sizeof(internalType), &ret, CkReduction::sum_double);
   iterations++;
 }
 
@@ -902,26 +902,26 @@ void Ortho::pup(PUP::er &p){
     p | step3done;
     if(p.isUnpacking() && thisIndex.x==0 &&thisIndex.y==0)
       { 
-	ortho = new double[cfg.numStates * cfg.numStates];
-	orthoT = new double[cfg.numStates * cfg.numStates];
+	ortho = new internalType[cfg.numStates * cfg.numStates];
+	orthoT = new internalType[cfg.numStates * cfg.numStates];
 	wallTimeArr = new double[config.maxIter];
       }
     if(thisIndex.x==0 && thisIndex.y==0)
       {
-	p(ortho,cfg.numStates*cfg.numStates);
-	p(orthoT,cfg.numStates*cfg.numStates);
+	PUParray(p,ortho,cfg.numStates*cfg.numStates);
+	PUParray(p,orthoT,cfg.numStates*cfg.numStates);
 	p(wallTimeArr,config.maxIter);
       }
     if(p.isUnpacking()){
-      A = new double[m * n];
-      B = new double[m * n];
-      C = new double[m * n];
-      tmp_arr = new double[m * n];
+      A = new internalType[m * n];
+      B = new internalType[m * n];
+      C = new internalType[m * n];
+      tmp_arr = new internalType[m * n];
     }
-    p(A, m * n);
-    p(B, m * n);
-    p(C, m * n);
-    p(tmp_arr, m * n);
+    PUParray(p,A, m * n);
+    PUParray(p,B, m * n);
+    PUParray(p,C, m * n);
+    PUParray(p,tmp_arr, m * n);
   }
 
 #include "orthoMap.h"

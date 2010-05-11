@@ -206,8 +206,8 @@ class Ortho : public CBase_Ortho
     private:
         orthoConfig cfg;
         int timeKeep;
-        double *orthoT; // only used on [0,0]
-        double *ortho; //only used on [0,0]
+        internalType *orthoT; // only used on [0,0]
+        internalType *ortho; //only used on [0,0]
         double *wallTimeArr;//only used on [0,0]
         int numGlobalIter; // global leanCP iterations
         // used in each element
@@ -226,7 +226,7 @@ class Ortho : public CBase_Ortho
         /// The proxy of the step 2 helper chare array
         CProxy_OrthoHelper step2Helper;
         bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
-        double *A, *B, *C, *tmp_arr;
+        internalType *A, *B, *C, *tmp_arr;
         int step;
         int m, n;
         double invsqr_tolerance;
