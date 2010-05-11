@@ -161,27 +161,6 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
   return SUCCESS;
 }
 
-/* Transpose data, which has dimension m x n */
-void transpose(double *data, int m, int n){
-  if(m == n){
-    /* transpose square matrix in place */
-    for(int i = 0; i < m; i++)
-      for(int j = i + 1; j < n; j++){
-        double tmp = data[i * n + j];
-        data[i * n + j] = data[j * m + i];
-        data[j * m + i] = tmp;
-      }
-  }
-  else {
-    double *tmp = new double[m * n];
-    CmiMemcpy(tmp, data, m * n * sizeof(double));
-    for(int i = 0; i < m; i++)
-      for(int j = 0; j < n; j++)
-        data[j * m + i] = tmp[i * n + j];
-    delete [] tmp;
-  }
-}
-
 /******************************************************************************/
 /* CLA_Matrix */
 

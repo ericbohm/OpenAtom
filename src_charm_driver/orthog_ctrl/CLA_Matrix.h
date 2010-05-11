@@ -208,5 +208,29 @@ int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
 #define SUCCESS			0
 #define ERR_INVALID_ALG		-1
 #define ERR_INVALID_DIM		-2
-void transpose(double *data, int m, int n);
+
+
+/* Transpose data, which has dimension m x n */
+template <typename T>
+void transpose(T *data, int m, int n)
+{
+  if(m == n){
+    /* transpose square matrix in place */
+    for(int i = 0; i < m; i++)
+      for(int j = i + 1; j < n; j++){
+        T tmp = data[i * n + j];
+        data[i * n + j] = data[j * m + i];
+        data[j * m + i] = tmp;
+      }
+  }
+  else {
+    T *tmp = new T[m * n];
+    CmiMemcpy(tmp, data, m * n * sizeof(T));
+    for(int i = 0; i < m; i++)
+      for(int j = 0; j < n; j++)
+        data[j * m + i] = tmp[i * n + j];
+    delete [] tmp;
+  }
+}
+
 #endif
