@@ -83,6 +83,9 @@
 //============================================================================
 
 
+#if CMK_BLUEGENEL
+#include <builtins.h>
+#endif
 //============================================================================
 extern Config config;
 
@@ -1675,8 +1678,8 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   // A) BGL STuff
 #ifdef CMK_BLUEGENEL
 #pragma disjoint(*force, *data)
-  //      __alignx(16,force);
-  //      __alignx(16,data);
+        __alignx(16,force);
+        __alignx(16,data);
 #endif
 
   //---------------------------------------------------
@@ -1776,8 +1779,8 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
 #ifdef CMK_BLUEGENEL
 #pragma disjoint(*force, *data)
-  //      __alignx(16,force);
-  //      __alignx(16,data);
+        __alignx(16,force);
+        __alignx(16,data);
 #endif
  //----------------------------------------------------------
  //B) Double Pack
@@ -2616,6 +2619,10 @@ void CP_State_GSpacePlane::sendPsi() {
 // Start the calculator
 
 #ifndef _CP_DEBUG_ORTHO_OFF_
+#ifdef TEST_ALIGN
+  CkAssert((unsigned int)psi%16==0);
+#endif
+
   symmPCmgr.sendLeftData(numPoints, psi, false);
   /// Symm loop PC chares in the top left [*,0,0,*] will not receive any right matrix data. Hence, if you're in such a PC's block, dont send right
   if(thisIndex.x >= symmPCmgr.pcCfg.grainSize)
@@ -2659,6 +2666,10 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
   complex *psi    = gs.packedPlaneData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize; // how far into the points this contribution lies
+#ifdef TEST_ALIGN
+  //  CkAssert((unsigned int)msg->getData()%16==0);
+  CkAssert((unsigned int)psi%16==0);
+#endif
 
 #ifdef _NAN_CHECK_
   for(int i=0;i<N ;i++){
@@ -2740,6 +2751,10 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
   complex *psi    = gs.packedPlaneData;
   int chunksize   = gs.numPoints/config.numChunksSym;
   int chunkoffset = offset*chunksize; // how far into the points this contribution lies
+#ifdef TEST_ALIGN
+  //  CkAssert((unsigned int)data%16==0);
+  CkAssert((unsigned int)psi%16==0);
+#endif
 
 #ifdef _NAN_CHECK_
   for(int i=0;i<N ;i++){
