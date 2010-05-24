@@ -1,6 +1,6 @@
 //bluegene check
 //Authored by Sameer Kumar 2006/8/12
-#if CMK_BLUEGENEL
+#if 0
 #include <builtins.h>
 
 //performs the arithmatic a[i] += b[i]

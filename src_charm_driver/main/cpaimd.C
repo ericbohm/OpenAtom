@@ -2651,7 +2651,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
 
   if(config.dumpMapFiles) {
-    int size[2];
+    int size[3];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
     MapFile *mf = new MapFile("VdWRSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
@@ -2662,7 +2662,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     delete mf;
   }
   if(config.dumpMapCoordFiles) {
-    int size[2];
+    int size[3];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
     MapFile *mf = new MapFile("VdWRSMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
