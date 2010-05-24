@@ -33,13 +33,13 @@
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
   LDFLAGS  += -L$(FFT_HOME)/lib -L/soft/apps/LAPACK \
-	      -L/opt/ibmcmp/xlf/bg/11.1/bglib -L/opt/ibmcmp/xlsmp/bg/1.7/bglib \
+	      -L/soft/apps/ibmcmp/xlf/bg/11.1/lib \
 	      -L/bgsys/ibm_essl/sles10/prod/opt/ibmmath/lib \
-	      -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib \
-	      -L/gpfs/home/bohm/zlib/lib
+	      -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib
   LDLIBS   += -module CkMulticast -module comlib -lconv-util \
-	      -lesslbg -lesslsmpbg -lxlf90_r -lmass -lmassv -lxlfmath \
-	      -lxlomp_ser -lxlsmp -lpthread xerbla.o -lm
+	      -lesslbg -lmass -lmassv -lxlfmath \
+	      -lxlf90_r -lxlomp_ser -lrt -lpthread \
+		  xerbla.o -lm -lz
 
 # @note: Empty target specific appends (+=) hide previous global values for
 #        make version 3.80 on bgp. Hence uncomment any of the following 
