@@ -50,7 +50,6 @@ class Config {
     int UberKmax;
     int UberMmax;
     int numInstances;
-
   //==================================
 
   //==================================

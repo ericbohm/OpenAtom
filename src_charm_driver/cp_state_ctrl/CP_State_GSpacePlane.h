@@ -158,9 +158,9 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void sendRedPsiV();
         void acceptRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
-        const UberCollection thisInstance;        
+        
     private:
-
+        const UberCollection thisInstance;
         int gotHandles;
         int forwardTimeKeep;
         int backwardTimeKeep;

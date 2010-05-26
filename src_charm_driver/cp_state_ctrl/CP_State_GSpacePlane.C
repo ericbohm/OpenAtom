@@ -1501,7 +1501,6 @@ void CP_State_GSpacePlane::combineForcesGetEke()
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
-  //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
 #ifdef _CP_DEBUG_PSI_OFF_
   iteration++;
   if(iteration==config.maxIter+1){

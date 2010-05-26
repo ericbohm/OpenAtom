@@ -1,14 +1,14 @@
 /** \file groups.h
  */
-#ifndef GROUPS_H
-#define GROUPS_H
 #include "Atoms.h"
 struct EnergyStruct;
 #include "groups.decl.h"
+#include "uber/Uber.h"
 #include "CPcharmParaInfo.decl.h"
 
+#ifndef GROUPS_H
+#define GROUPS_H
 
-#include "uber/Uber.h"
 
 class AtomMsg: public CMessage_AtomMsg 
 {
@@ -17,16 +17,6 @@ class AtomMsg: public CMessage_AtomMsg
         int natmStr,natmEnd;
         double *data;  
 };
-
-
-class BeadCMMsg: public CMessage_BeadCMMsg 
-{
-    public:
-        double *x;  
-        double *y;  
-        double *z;  
-};
-
 
 /** AtomsGrp class.
  * various chares use CkLocal to access the atoms:
@@ -59,31 +49,13 @@ class AtomsGrp: public Group {
   Atom *atoms;
   AtomNHC *atomsNHC;
   FastAtoms fastAtoms;
-  PIMD_CM PIMD_CM_Atoms;
-  CProxySection_AtomsGrp proxyHeadBeads;
-  bool atomsCMrecv,atomsPIMDXrecv;
-  bool amBeadRoot, amZerothBead;
-  int acceptCountfu;
-  int acceptCountX;
-  int acceptCountu;
-  int PIBeadIndex;
-  int numPIMDBeads;
+
   AtomsGrp(CkMigrateMessage *m) {}
   AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);
-  void init();
   ~AtomsGrp();
   void contributeforces();
-  void integrateAtoms();
-  void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-  void accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI);
-  void accept_PIMD_CM(BeadCMMsg *m);
-  void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
-
   void recvContribute(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
-  void send_PIMD_u();
-  void send_PIMD_fx();
-  void send_PIMD_x();
   void atomsDone();
   void sendAtoms(double,double ,double,int,int,int);
   void acceptAtoms(AtomMsg *);

@@ -28,8 +28,8 @@
 #include "structure_factor/StructureFactor.h"
 #include "load_balance/PeList.h"
 #include "utility/MapFile.h"
-#include "PIBeadAtoms.h"
 #include "utility/util.h"
+
 #include "src_piny_physics_v1.0/include/class_defs/Interface_ctrl.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsAtomPosInit.h"
@@ -92,7 +92,6 @@ bool firstInstance = true;
 
 // INT_MAPs are the ones actually used so
 // these are being changed to CkVec's for beads
-CkVec <int> PIBImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -152,7 +151,6 @@ CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
  *  one bead.
  */
 
-CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
@@ -542,7 +540,6 @@ main::main(CkArgMsg *msg) {
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 
     // bump all the INT_MAPs to the right size
-    PIBImaptable.resize(config.numInstances);
     GSImaptable.resize(config.numInstances);
     RSImaptable.resize(config.numInstances);
     RPPImaptable.resize(config.numInstances);
@@ -576,7 +573,7 @@ main::main(CkArgMsg *msg) {
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
     
-    mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
+
     excludePes=NULL;
     mainProxy=thishandle;
     // make one controller chare per instance
@@ -758,13 +755,8 @@ Per Instance startup BEGIN
 	    
 	      // we will need a different one of these per instance
 	      control_physics_to_driver(thisInstance);
-
-	    
 	    
 	      //============================================================================ 
-	      // handle Path Integrals
-	      if(config.UberImax>1)
-		init_PIBeads(sim, thisInstance);
 
 	      // and then we make the usual set of chares to which we pass
 	      // the Uber Index.
@@ -843,8 +835,6 @@ Per Instance startup BEGIN
 	    }
 	  } 
 	}
-      // now safe to init atom bead commanders
-      UatomsGrpProxy[thisInstance.getPO()].init();
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
@@ -1338,39 +1328,6 @@ void init_commlib_strategies(int numRhoG, int numReal, int numRhoRhart, UberColl
 
 
 //============================================================================
-//============================================================================
-//Create the PIBeadAtoms array
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-
-void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
-{
-
-  if(thisInstance.idxU.x>0)
-    { // the set of chares being created is for a non-zero PI all PI
-      // use the same PIBeadAtoms we simply direct the proxyoffset here to
-      // the one for the 0th bead.  
-      CkPrintf("Constructing PIMD Bead proxies for non zero instances\n");
-      UberCollection zeroBeadInstance=thisInstance;
-      zeroBeadInstance.idxU.x=0;
-      int proxyOffset=zeroBeadInstance.setPO();
-      UPIBeadAtomsProxy.push_back(UPIBeadAtomsProxy[proxyOffset]);
-    }
-  else
-    {
-      CkPrintf("Constructing PIMD Bead array\n");
-      CkArrayOptions opts(sim->natm_tot);
-      UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
-
-    }
-
- //TODO: we should have a map for this array, the default scheme would
- //result in these chares being within the 0th Bead partition which is
- //not an optimal choice
-}
-//============================================================================
-
 //Create the array elements for the GSpace, Particle and Real Space planes
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

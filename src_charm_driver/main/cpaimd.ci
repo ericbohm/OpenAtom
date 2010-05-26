@@ -25,28 +25,15 @@ module groups
 	{
 		double data[];
 	};
-
-	message BeadCMMsg 
-	{
-		double x[];
-		double y[];
-		double z[];
-	};
-
+	
 	group AtomsGrp {
 		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
 			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
-		entry void init();
                 entry void startRealSpaceForces();  	
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
-		entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-		entry void accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI);
-		entry void accept_PIMD_CM(BeadCMMsg *msg);
-		entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
-
 	};
 
     include "main/energy.h";
@@ -58,21 +45,6 @@ module groups
 	};
 };
 
-module PIBeadAtoms
-{
-	// Forward declarations
-	class UberCollection; 
-	class Atom;
-	class AtomNHC;
-	array [1D] PIBeadAtoms {
-		entry PIBeadAtoms(UberCollection, int);
-		entry void accept_PIMD_x(double x,double y, double z, int index );
-		entry void accept_PIMD_Fx(double Fx,double Fy, double Fz, int index);
-		entry void accept_PIMD_u(double xu,double yu, double zu, int index);
-	};
-
-
-};
 
 
 
@@ -101,8 +73,6 @@ module ENL_EKE_Collector
 
 module instanceController
 {
-	message ICCookieMsg;	
-
 	array [1D] InstanceController {
         entry InstanceController();
         entry void printEnergyEexc(CkReductionMsg *msg);
@@ -110,8 +80,6 @@ module instanceController
         entry void printFictEke(CkReductionMsg *msg);
         entry void allDoneCPForces(CkReductionMsg *m);
         entry void printEnergyEke(CkReductionMsg *m);
-	entry void allDoneCPForcesAllKPoint(CkReductionMsg *m);
-        entry [nokeep] void initCookie(ICCookieMsg *msg);
         entry void doneInit(CkReductionMsg *msg);
         entry void cleanExit(CkReductionMsg *m);
         entry void cleanExitAll(CkReductionMsg *m);
@@ -149,7 +117,6 @@ mainmodule cpaimd {
 	extern module structureFactor;
 	extern module structureFactorCache;
 	extern module groups;
-	extern module PIBeadAtoms;		
 	extern module timeKeeper;
 	extern module startupMessages;
 	extern module ENL_EKE_Collector;
@@ -170,7 +137,6 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
-	readonly CkVec <int> PIBImaptable;
 	readonly CkVec <MapType2> GSImaptable;
 	readonly CkVec <MapType2> RSImaptable;
 	readonly CkVec <MapType2> RPPImaptable;
@@ -187,8 +153,6 @@ mainmodule cpaimd {
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 	readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
-
-	readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;
 
 	readonly CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 	readonly CkVec <CProxy_GSpaceDriver> UgSpaceDriverProxy;
