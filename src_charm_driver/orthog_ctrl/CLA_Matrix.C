@@ -1,14 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
-/** \file CLA_Matrix.C
- *  
- */
-
 #include "CLA_Matrix.h"
 
 #if 0
@@ -39,127 +28,134 @@ extern CkReduction::reducerType sumFastDoubleType;
 /* helper functions */
 
 /* Should be called by user to create matrices. Documented in header file. */
-int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
- CProxy_ArrayElement bindB, CProxy_ArrayElement bindC, 		    int M, //nstates
-		    int K, //nstates
-		    int N, //nstates
-		    int m, //orthograinsize
-		    int k, //orthograinsize
-		    int n, //orthograinsize
-		    int strideM, // 1
-		    int strideK, // 1
-		    int strideN, // 1 
-		    CkCallback cbA, CkCallback cbB,
- CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho){
-  /* validate arguments */
-  if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
-    return ERR_INVALID_ALG;
+int make_multiplier(
+        CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
+        CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+        int M, //nstates
+        int K, //nstates
+        int N, //nstates
+        int m, //orthograinsize
+        int k, //orthograinsize
+        int n, //orthograinsize
+        int strideM, // 1
+        int strideK, // 1
+        int strideN, // 1
+        CkCallback cbA, CkCallback cbB, CkCallback cbC,
+        CkGroupID gid, int algorithm, int gemmSplitOrtho
+        )
+{
+    /* validate arguments */
+    if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
+        return ERR_INVALID_ALG;
 
-  if(m > M || k > K || n > N)
-    return ERR_INVALID_DIM;
-  /* create arrays */
-  CkArrayOptions optsA;
-  CkArrayOptions optsB;
-  CkArrayOptions optsC;
-  
-  optsA.bindTo(bindA);
-  optsB.bindTo(bindB);
-  optsC.bindTo(bindC);
+    if(m > M || k > K || n > N)
+        return ERR_INVALID_DIM;
 
+    /* create arrays */
+    CkArrayOptions optsA, optsB, optsC;
+    optsA.bindTo(bindA);
+    optsB.bindTo(bindB);
+    optsC.bindTo(bindC);
 
-  CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
-  CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
-  CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
-  A->setProxy(pa);
-  B->setProxy(pb);
-  C->setProxy(pc);
-  
-  /* populate arrays */
-  int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
-  int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
-  int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
-  if(M%m!=0)
-    M_chunks--;
-  if(K%k!=0)
-    K_chunks--;
-  if(N%n!=0)
-    N_chunks--;
-  //  correct for number of chunks
-  
-  // just the size of the border elements
-  if(algorithm == MM_ALG_2D){
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < K_chunks; j++)
-        (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
-    A->p.doneInserting();
+    CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
+    CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
+    CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
+    A->setProxy(pa);
+    B->setProxy(pb);
+    C->setProxy(pc);
 
-    for(int i = 0; i < K_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
-    B->p.doneInserting();
+    /* populate arrays */
+    int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
+    int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
+    int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
+    if(M%m!=0)
+        M_chunks--;
+    if(K%k!=0)
+        K_chunks--;
+    if(N%n!=0)
+        N_chunks--;
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
-    C->p.doneInserting();
-  }
-  else if(algorithm == MM_ALG_3D){
-    CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
-    int curpe = 0;
-    int totpe = CkNumPes();
-    for(int i = 0; i < M_chunks; i++){
-      int mm = m;
-      if(i == M_chunks - 1) {
-        mm = M % m;
-        if(mm == 0)
-          mm = m;
-      }
-      for(int j = 0; j < N_chunks; j++){
-        int nn = n;
-        if(j == N_chunks - 1) {
-          nn = N % n;
-          if(nn == 0)
-            nn = n;
-        }
-        for(int l = 0; l < K_chunks; l++){
-          int kk = k;
-          if(l == K_chunks - 1) {
-            kk = K % k;
-            if(kk == 0)
-              kk = k;
-          }
-          mult(i, j, l).insert(mm, kk, nn, curpe);
-          curpe = (curpe + 1) % totpe;
-        }
-      }
+    //  correct for number of chunks
+    // just the size of the border elements
+    if(algorithm == MM_ALG_2D)
+    {
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < K_chunks; j++)
+                (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
+        A->p.doneInserting();
+
+        for(int i = 0; i < K_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
+        B->p.doneInserting();
+
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
+        C->p.doneInserting();
     }
-    mult.doneInserting();
+    else if(algorithm == MM_ALG_3D)
+    {
+        CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
+        int curpe = 0;
+        int totpe = CkNumPes();
+        for(int i = 0; i < M_chunks; i++)
+        {
+            int mm = m;
+            if(i == M_chunks - 1)
+            {
+                mm = M % m;
+                if(mm == 0)
+                    mm = m;
+            }
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < K_chunks; j++)
-        (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
-    A->p.doneInserting();
+            for(int j = 0; j < N_chunks; j++)
+            {
+                int nn = n;
+                if(j == N_chunks - 1)
+                {
+                    nn = N % n;
+                    if(nn == 0)
+                        nn = n;
+                }
 
-    for(int i = 0; i < K_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
-    B->p.doneInserting();
+                for(int l = 0; l < K_chunks; l++)
+                {
+                    int kk = k;
+                    if(l == K_chunks - 1)
+                    {
+                        kk = K % k;
+                        if(kk == 0)
+                            kk = k;
+                    }
+                    mult(i, j, l).insert(mm, kk, nn, curpe);
+                    curpe = (curpe + 1) % totpe;
+                }
+            }
+        }
+        mult.doneInserting();
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
-    C->p.doneInserting();
-  }
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < K_chunks; j++)
+                (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
+        A->p.doneInserting();
 
-  return SUCCESS;
+        for(int i = 0; i < K_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
+        B->p.doneInserting();
+
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
+        C->p.doneInserting();
+    }
+
+    return SUCCESS;
 }
+
+
+
 
 /******************************************************************************/
 /* CLA_Matrix */
@@ -579,7 +575,7 @@ void CLA_Matrix::multiply(){
 #endif
 
   CmiNetworkProgress();
-  
+
   for(int i=1;i<=Kloop;i++){
     int aoff = Ksplit*i;
     int boff = n*i*Ksplit;
