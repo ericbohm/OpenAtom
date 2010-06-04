@@ -48,8 +48,8 @@ module ortho
 
 
 	message OrthoHelperMsg {
-		double A[];
-		double B[];
+		internalType A[];
+		internalType B[];
 	};
 
 

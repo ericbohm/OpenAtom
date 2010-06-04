@@ -40,17 +40,17 @@
 //============================================================================
 class OrthoHelperMsg : public CMessage_OrthoHelperMsg {
 public:
-  double *A;
-  double *B;
+  internalType *A;
+  internalType *B;
   int size; 
   double factorA;
   double factorB;
   double factorC;
-  void init(int insize, double * inA, double * inB, double infactorA, double infactorB, double infactorC)
+  void init(int insize, internalType* inA, internalType* inB, double infactorA, double infactorB, double infactorC)
     {
       size=insize;
-      memcpy(A,inA,size*sizeof(double));
-      memcpy(B,inB,size*sizeof(double));
+      memcpy(A,inA,size*sizeof(internalType));
+      memcpy(B,inB,size*sizeof(internalType));
       factorA=infactorA;
       factorB=infactorB;
       factorC=infactorC;
@@ -66,14 +66,14 @@ public:
     if(sizes==0)
       offsets[1] = offsets[0];
     else
-      offsets[1] = offsets[0] + ALIGN16(sizeof(double)*sizes[0]);
+      offsets[1] = offsets[0] + ALIGN16(sizeof(internalType)*sizes[0]);
     if(sizes==0)
       offsets[2] = offsets[0];
     else
-      offsets[2] = offsets[1] + ALIGN16(sizeof(double)*sizes[1]);
+      offsets[2] = offsets[1] + ALIGN16(sizeof(internalType)*sizes[1]);
     OrthoHelperMsg *newmsg = (OrthoHelperMsg *) CkAllocMsg(msgnum, offsets[2], pb);
-    newmsg->A = (double *) ((char *)newmsg + offsets[0]);
-    newmsg->B = (double *) ((char *)newmsg + offsets[1]);
+    newmsg->A = (internalType *) ((char *)newmsg + offsets[0]);
+    newmsg->B = (internalType *) ((char *)newmsg + offsets[1]);
     return (void *) newmsg;
   }
 
@@ -92,7 +92,7 @@ class OrthoHelper : public CBase_OrthoHelper
 	      CkCallback _orthoCB):
     m(_m), n(_n), matA (matA2), matB(matB2), matC(matC2), uponCompletion(_orthoCB)
     {
-      C= new double[m*n];
+      C= new internalType[m*n];
       A=NULL;
       B=NULL;
       trigger=NULL;
@@ -132,16 +132,16 @@ class OrthoHelper : public CBase_OrthoHelper
     p | m;
     p | n;
     if(p.isUnpacking()){
-      C = new double[m * n];
+      C = new internalType[m * n];
     }
-    p(C, m * n);
+    PUParray(p, C, m * n);
   }
   static inline void step_cb(void *obj){
     ((OrthoHelper *) obj)->sendMatrix();
   }
   int m;
   int n;
-  double *A, *B, *C;
+  internalType *A, *B, *C;
   OrthoHelperMsg *trigger;
   CLA_Matrix_interface matA, matB, matC;
   /// Callback to the owner ortho chare array to be used at the end of my work (step 2)
