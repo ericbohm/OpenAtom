@@ -17,6 +17,8 @@ extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 			   double *, int *, double *, int *, double *,
 			   double *, int *);}
 
+void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc);
+void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc);
 #define MULTARG_A	0
 #define MULTARG_B	1
 #define MULTARG_C	2
@@ -240,8 +242,8 @@ CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
      (M_chunks - 1) * strideM, strideM, thisIndex.y, thisIndex.y, 1);
     tmpA = tmpB = NULL;
   } else if(part == MULTARG_C) {
-    tmpA = new double[this->m * K];
-    tmpB = new double[K * this->n];
+    tmpA = new internalType[this->m * K];
+    tmpB = new internalType[K * this->n];
   }
 
   /* let the caller know we are ready */
@@ -371,8 +373,8 @@ void CLA_Matrix::pup(PUP::er &p){
     p | other1; p | other2;
     if(part == MULTARG_C){
       if(p.isUnpacking()){
-        tmpA = new double[m * K];
-        tmpB = new double[K * n];
+        tmpA = new internalType[m * K];
+        tmpB = new internalType[K * n];
       }
       PUParray(p, tmpA, m * K);
       PUParray(p, tmpB, K * n);
@@ -431,7 +433,7 @@ void CLA_Matrix::ResumeFromSync(void){
   }
 }
 
-void CLA_Matrix::multiply(double alpha, double beta, double *data,
+void CLA_Matrix::multiply(double alpha, double beta, internalType *data,
  void (*fptr) (void*), void *usr_data){
   if(algorithm == MM_ALG_2D){
     // A and B send out their chunks, ignoring alpha, beta, ftpr, and usr_data
@@ -477,7 +479,7 @@ void CLA_Matrix::multiply(double alpha, double beta, double *data,
       if(got_data){
         got_start = got_data = false;
         /* transpose reduction msg and do the alpha and beta multiplications */
-        double *data = (double*) res_msg->getData();
+        internalType *data = (internalType*) res_msg->getData();
         transpose(data, n, m);
         for(int i = 0; i < m; i++)
           for(int j = 0; j < n; j++)
@@ -495,7 +497,7 @@ void CLA_Matrix::receiveA(CLA_Matrix_msg *msg){
   row_count++;
   for(int i = 0; i < m; i++)
     CmiMemcpy(&tmpA[K * i + uk * (msg->fromY / K_stride)], &msg->data[i * msg->d2],
-     msg->d2 * sizeof(double));
+     msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -507,7 +509,7 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
   /* store current part */
   col_count++;
   CmiMemcpy(&tmpB[n * uk * (msg->fromX / K_stride)], msg->data,
-   msg->d1 * msg->d2 * sizeof(double));
+   msg->d1 * msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -559,8 +561,7 @@ void CLA_Matrix::multiply(){
       CkAssert(finite(tmpB[in*K+jn]));
 #endif
 
-  DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
-        dest,&m);
+  myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
 
 #ifdef _NAN_CHECK_
   for(int in=0; in<m; in++)
@@ -606,8 +607,7 @@ void CLA_Matrix::multiply(){
 	CkAssert(finite(tmpB[boff+in*Ksplit+jn]));
 #endif
 
-    DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
-          &tmpB[boff], &n, &betap, dest, &m);
+    myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
 
 #ifdef _NAN_CHECK_
     for(int in=0; in<m; in++)
@@ -649,8 +649,7 @@ void CLA_Matrix::multiply(){
       CkAssert(finite(tmpB[in*K+jn]));
 #endif
 
-     DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
-   dest, &m);
+     myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
 
 #ifdef _NAN_CHECK_
   for(int in=0; in<m; in++)
@@ -685,7 +684,7 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
   if(got_start){
     got_start = got_data = false;
     /* transpose reduction msg and do the alpha and beta multiplications */
-    double *data = (double*) msg->getData();
+    internalType *data = (internalType*) msg->getData();
     transpose(data, n, m);
     for(int i = 0; i < m; i++)
       for(int j = 0; j < n; j++)
@@ -702,9 +701,9 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
 
 /******************************************************************************/
 /* CLA_Matrix_msg */
-CLA_Matrix_msg::CLA_Matrix_msg(double *data, int d1, int d2, int fromX,
+CLA_Matrix_msg::CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX,
  int fromY){
-  CmiMemcpy(this->data, data, d1 * d2 * sizeof(double));
+  CmiMemcpy(this->data, data, d1 * d2 * sizeof(internalType));
   this->d1 = d1; this->d2 = d2;
   this->fromX = fromX; this->fromY = fromY;
 }
@@ -747,11 +746,11 @@ void CLA_MM3D_multiplier::receiveB(CLA_Matrix_msg *msg){
     data_msg = msg;
 }
 
-void CLA_MM3D_multiplier::multiply(double *A, double *B){
+void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
   double alpha = 1, beta = 0;
   gotA = gotB = false;
   char trans = 'T';
-  double *C = new double[m * n];
+  internalType *C = new internalType[m * n];
 #ifndef CMK_OPTIMIZE
   double  StartTime=CmiWallTimer();
 #endif
@@ -764,13 +763,13 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
 #ifdef PRINT_DGEMM_PARAMS
   CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, k, alpha, beta, k, n, m);
 #endif
-  DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
+  myGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
   //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
-  redGrp->contribute(m * n * sizeof(double), C, sumFastDoubleType,
+  redGrp->contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
    sectionCookie, reduce_CB);
   delete [] C;
 }

@@ -34,7 +34,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
     void readyC(CkReductionMsg *m);
     void mult_done(CkReductionMsg *m);
   private:
-    void multiply(double alpha, double beta, double *data,
+    void multiply(double alpha, double beta, internalType *data,
      void (*fptr) (void *), void *usr_data);
     void multiply();
 
@@ -51,7 +51,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
 
     /* For 2D algorithm */
     CProxySection_CLA_Matrix commGroup2D; // used by A and B
-    double *tmpA, *tmpB, *dest; // used by C
+    internalType *tmpA, *tmpB, *dest; // used by C
     int row_count, col_count; // used by C
     CProxy_CLA_Matrix other1; // For A, B. For B, A. For C, A.
     CProxy_CLA_Matrix other2; // For A, C. For B, C. For C, B.
@@ -75,7 +75,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
 class CLA_Matrix_interface {
   public:
     CLA_Matrix_interface(){}
-    inline void multiply(double alpha, double beta, double *data,
+    inline void multiply(double alpha, double beta, internalType *data,
      void (*fptr) (void *), void *usr_data, int x, int y){
       p(x, y).ckLocal()->multiply(alpha, beta, data, fptr, usr_data);
     }
@@ -100,9 +100,9 @@ class CLA_Matrix_interface {
 
 class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg {
   public:
-    CLA_Matrix_msg(double *data, int d1, int d2, int fromX, int fromY);
+    CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX, int fromY);
 //    ~CLA_Matrix_msg(){delete [] data;}
-    double *data;
+    internalType *data;
     int d1, d2;
     int fromX, fromY;
 };
@@ -157,7 +157,7 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
     void initialize_reduction(CLA_MM3D_mult_init_msg *m);
     void receiveA(CLA_Matrix_msg *msg);
     void receiveB(CLA_Matrix_msg *msg);
-    void multiply(double *A, double *B);
+    void multiply(internalType *A, internalType *B);
   private:
     int m, k, n;
     bool gotA, gotB;
