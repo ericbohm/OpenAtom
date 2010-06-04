@@ -191,7 +191,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
 #ifdef PAIRCALC_TEST_DUMP
   FILE *loutfile = fopen("configData.out", "w");
-  fprintf(loutfile,"%d\n%d\n%d\n",nstates,minx+1,maxIter_in);
+  fprintf(loutfile,"%d\n%d\n%d\n%d\n%d\n",nstates_in,minx+1,maxIter_in,cp_min_opt,gen_wave);
   fclose(loutfile);
 #endif
 
