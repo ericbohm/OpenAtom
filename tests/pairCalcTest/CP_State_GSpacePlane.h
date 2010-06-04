@@ -124,7 +124,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         CP_State_GSpacePlane();
         //CP_State_GSpacePlane(Config config_in, int cp_min_opt_in);
         CP_State_GSpacePlane(CkMigrateMessage *m) {};
-        ~CP_State_GSpacePlane() {};
+        ~CP_State_GSpacePlane();
         /// Gets called from the PairCalc data receivers to confirm the setup of an RDMA link
         //void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
         void pup(PUP::er &);
@@ -228,14 +228,17 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
 
         //Things that used to be in GStateSlab
         complex *packedPlaneData;
+        complex *packedPlaneDatap;
         complex *packedPlaneDataTemp;
         complex *packedPlaneDataScr;
         complex *packedForceData;
         complex *packedVelData;
         int numPoints;              // number of non-zero pts in the collection
-//        int ihave_kx0;              // plane zero is in the collection (stored consecutively)
-//        int kx0_strt;               // starting pt
-//        int kx0_end;                // ending pt
+        int ihave_kx0;              // plane zero is in the collection (stored consecutively)
+        int kx0_strt;               // starting pt
+        int kx0_end;                // ending pt
+        int *k_x;
+        int size_k_x;
 
 //        int *tk_x,*tk_y,*tk_z;  // Temp memory for output (size could be 0)
 //        complex *tpsi;          // Temp memory for output (needs careful pup)

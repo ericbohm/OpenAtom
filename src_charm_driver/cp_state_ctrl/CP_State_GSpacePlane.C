@@ -1552,7 +1552,6 @@ void  CP_State_GSpacePlane::sendLambda() {
     CmiMemcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
   }//endif
 
-#ifndef PAIRCALC_TEST_DUMP
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1 && cp_min_opt==0){
     double rad2i = 1.0/sqrt(2.0);
@@ -1561,12 +1560,32 @@ void  CP_State_GSpacePlane::sendLambda() {
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){force[i] *= rad2;}
   }//endif
 #endif
-#endif
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   for(int i=0;i<config.numChunksAsym;i++)
     CkAssert(countLambdaO[i]==0);
 #endif
+
+#ifdef PAIRCALC_TEST_DUMP
+  //output some data the pairCalcTest will need
+  eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+  int *k_x          = eesData->GspData[iplane_ind].ka;
+  char fmt[1000];
+  char filename[1000];
+  strncpy(fmt,"gspaceconfig",999);
+  strncat(fmt,"_%d_%d.out",999);
+  sprintf(filename,fmt, thisIndex.x, thisIndex.y);
+  FILE *loutfile = fopen(filename, "w");
+
+  fprintf(loutfile,"%d\n%d\n%d\n",gs.ihave_kx0,gs.kx0_strt,gs.kx0_end);
+
+  fprintf(loutfile,"%d\n",gs.numPoints);
+  for(int i = 0; i<gs.numPoints; i++)
+  	fprintf(loutfile,"%d\n",k_x[i]);
+
+  fclose(loutfile);
+#endif
+
 #ifdef _CP_GS_DUMP_LAMBDA_
     dumpMatrixDouble("lambdaBf",(double *)force, 1, 
                      gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
@@ -1685,13 +1704,11 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
-#ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
-#endif
    }else{
      if(countLambdaO[offset]<1){
 #ifdef CMK_BLUEGENEL
@@ -1794,13 +1811,11 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
-#ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        double wght  = (k_x[idest]==0 ? 0.5 : 1);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
-#endif
    }else{
      if(countLambdaO[offset]<1){
 #ifdef CMK_BLUEGENEL
@@ -2605,13 +2620,11 @@ void CP_State_GSpacePlane::sendPsi() {
      CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
   }//endif
 
-#ifndef PAIRCALC_TEST_DUMP
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2i;}
   }//endif
-#endif
 #endif
 
 //==============================================================================
@@ -2871,12 +2884,10 @@ void CP_State_GSpacePlane::doNewPsi(){
   countPsi    = 0;
   bzero(countPsiO,config.numChunksSym*sizeof(int));
 
-#ifndef PAIRCALC_TEST_DUMP
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){psi[i] *= rad2;}
   }//endif
-#endif
 
 //=============================================================================
 // (B) Generate some screen output of orthogonal psi
@@ -3201,12 +3212,10 @@ void  CP_State_GSpacePlane::sendPsiV() {
   complex *psi  = gs.packedPlaneData;     // by orthonormal psi when norb rotating
   CmiMemcpy(scr,psi,sizeof(complex)*ncoef);
 
-#ifndef PAIRCALC_TEST_DUMP
   if(gs.ihave_kx0==1){
     double rad2i = 1.0/sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){data[i] *= rad2i;}
   }//endif
-#endif
 
   int numPoints = gs.numPoints;
   symmPCmgr.sendLeftData(numPoints,data,true);
@@ -3362,13 +3371,11 @@ void CP_State_GSpacePlane::doNewPsiV(){
 
   complex *vpsi = gs.packedVelData;
 
-#ifndef PAIRCALC_TEST_DUMP
   for(int i=0;i<config.numChunksSym;i++){countVPsiO[i]=0;}
   if(gs.ihave_kx0==1){
     double rad2 = sqrt(2.0);
     for(int i=gs.kx0_strt; i<gs.kx0_end; i++){vpsi[i] *= rad2;}
   }//endif
-#endif
 
 //=============================================================================
 // III) Replace by finite difference until update is better

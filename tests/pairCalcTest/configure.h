@@ -39,7 +39,7 @@ class Config {
 //    int numFFTPoints;     // size number of r-grid    (piny)
     int numData;          // size number of g-grid    (piny)
 //    int ees_eext_opt;     // ees eext option on/off   (piny)
-    int gen_wave;         // generate initial states  (piny)
+//    int gen_wave;         // generate initial states  (piny)
     int nchareG;          // num state g-space chares (driver)
 //    int nchareRhoG;       // num rho g-space chares   (driver)
     int nchareVdW;        // num VanderWalls chares   (driver)

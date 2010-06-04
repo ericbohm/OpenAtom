@@ -6,8 +6,7 @@ FCC = gfortran
 FFT_HOME = $(HOME)/fftw
 
 base := ../..
-driver := ..
-#build = $(base)/build-O3/
+driver := ../../src_charm_driver
 physics = $(base)/src_piny_physics_v1.0
 math = $(base)/src_mathlib
 STANDARD_INC = $(physics)/include/pentium_par
@@ -18,24 +17,20 @@ LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lm -lfftw
 CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(physics)/include -I$(physics)/interface -I$(STANDARD_INC)
 CPPFLAGS += -DFORTRANUNDERSCORE #-DCMK_OPTIMIZE=1
 
-#libdriver_src =   
-#libdriver_obj = $(addprefix $(build), $(addsuffix .o, $(basename $(libdriver_src)) ))
-
 BINARIES = pairCalcTest
 
 all: ${BINARIES}
 
-pairCalcTest: configure.o interface_hand.o CLA_Matrix.o piny_malloc.o friend_lib.o InstanceController.o ckPairCalculator.o CP_State_GSpacePlane.o ortho.o PeList.o orthoBuilder.o pcCreationManager.o pcCommManager.o dgemm.o lsame.o xerbla.o fastadd.o pcBuilder.o pcSectionManager.o MapTable.o MapFile.o pairCalcTest.o #matrix2file.o
+pairCalcTest: configure.o interface_hand.o CLA_Matrix.o piny_malloc.o friend_lib.o InstanceController.o ckPairCalculator.o CP_State_GSpacePlane.o ortho.o PeList.o orthoBuilder.o pcCreationManager.o pcCommManager.o dgemm.o lsame.o xerbla.o fastadd.o pcBuilder.o pcSectionManager.o MapTable.o MapFile.o pairCalcTest.o
 	$(CHARMC) -language charm++ $(LDFLAGS) -o $@ *.o $(LDLIBS)
-#	$(CHARMC) -language charm++ $(LDFLAGS) -o $@ *.o $(libdriver_obj) $(LDLIBS)
 	
 pairCalcTest.o: pairCalcTest.C pairCalcTest.h CPcharmParaInfo.h CPcharmParaInfoGrp.h configure.h pairCalcTest.decl.h pairCalcTest.def.h gStatePlane.decl.h gStatePlane.def.h
 	${CHARMC} -o $@ pairCalcTest.C $(CPPFLAGS)
 	
-CP_State_GSpacePlane.o: CP_State_GSpacePlane.C CP_State_GSpacePlane.h gStatePlane.decl.h gStatePlane.def.h pairCalcTest.decl.h pairCalcTest.def.h configure.h #MyGStateSlab.h
+CP_State_GSpacePlane.o: CP_State_GSpacePlane.C CP_State_GSpacePlane.h gStatePlane.decl.h gStatePlane.def.h pairCalcTest.decl.h pairCalcTest.def.h configure.h gStatePlane.decl.h #MyGStateSlab.h
 	${CHARMC} -o $@ CP_State_GSpacePlane.C $(CPPFLAGS)
 	
-InstanceController.o: InstanceController.C InstanceController.h instanceController.decl.h instanceController.def.h
+InstanceController.o: InstanceController.C InstanceController.h instanceController.decl.h instanceController.def.h startupMessages.decl.h startupMessages.def.h gStatePlane.decl.h
 	${CHARMC} -o $@ InstanceController.C $(CPPFLAGS)
 
 fastadd.o: $(math)/fastadd.C
@@ -62,9 +57,6 @@ xerbla.o: $(math)/xerbla.f
 configure.o: configure.h configure.C
 	${CHARMC} -o $@ configure.C $(CPPFLAGS)
 	
-#this_configure.o: this_configure.h this_configure.C
-#	${CHARMC} -o $@ this_configure.C $(CPPFLAGS)
-
 pcSectionManager.o: $(driver)/orthog_ctrl/pcSectionManager.C $(driver)/orthog_ctrl/pcSectionManager.h
 	${CHARMC} -o $@ $(driver)/orthog_ctrl/pcSectionManager.C $(CPPFLAGS)
 
@@ -85,10 +77,7 @@ MapTable.o: $(driver)/load_balance/MapTable.C $(driver)/load_balance/MapTable.h
 
 MapFile.o: $(driver)/utility/MapFile.C $(driver)/utility/MapFile.h
 	${CHARMC} -o $@ $(driver)/utility/MapFile.C $(CPPFLAGS)
-	
-#matrix2file.o: $(driver)/utility/matrix2file.C $(driver)/utility/matrix2file.h
-#	${CHARMC} -o $@ $(driver)/utility/matrix2file.C $(CPPFLAGS)
-	
+		
 orthoBuilder.o: $(driver)/orthog_ctrl/orthoBuilder.C $(driver)/orthog_ctrl/orthoBuilder.h
 	${CHARMC} -o $@ $(driver)/orthog_ctrl/orthoBuilder.C $(CPPFLAGS)	
 
@@ -98,7 +87,7 @@ pcCreationManager.o: $(driver)/main/pcCreationManager.C $(driver)/main/pcCreatio
 ortho.o: $(driver)/orthog_ctrl/ortho.C $(driver)/orthog_ctrl/CLA_Matrix.h ortho.decl.h ortho.def.h
 	${CHARMC} -o $@ $(driver)/orthog_ctrl/ortho.C $(CPPFLAGS)
 
-CLA_Matrix.o: $(driver)/orthog_ctrl/CLA_Matrix.C $(driver)/orthog_ctrl/CLA_Matrix.h CLA_Matrix.decl.h CLA_Matrix.def.h
+CLA_Matrix.o: $(driver)/orthog_ctrl/CLA_Matrix.C $(driver)/orthog_ctrl/CLA_Matrix.h CLA_Matrix.decl.h CLA_Matrix.def.h ortho.decl.h ortho.def.h ckPairCalculator.decl.h ckPairCalculator.def.h
 	${CHARMC} -o $@ $(driver)/orthog_ctrl/CLA_Matrix.C $(CPPFLAGS)
 
 CLA_Matrix.decl.h CLA_Matrix.def.h:  $(driver)/orthog_ctrl/CLA_Matrix.ci
@@ -122,3 +111,7 @@ gSpaceDriver.def.h gSpaceDriver.decl.h gStatePlane.decl.h gStatePlane.def.h: gsp
 clean:
 	/bin/rm -f ${BINARIES} a.out core *.o
 	/bin/rm -f *.decl.h *.def.h charmrun
+
+run: all
+	/bin/rm -f *.out
+	./pairCalcTest cpaimd_config.p1

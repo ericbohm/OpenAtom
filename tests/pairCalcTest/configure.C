@@ -84,7 +84,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nplanes_in, int max
 //  natm_typ     = natm_typ_in;
 //  ees_eext_opt = ees_eext_opt_in;
 //  gen_wave     = gen_wave_in;
-  gen_wave = 0;
+//  gen_wave = 0;
 
 //===================================================================================
 // Set up the dictionaries
@@ -2596,7 +2596,7 @@ void Config::guesstimateParmsConfig(DICT_WORD *dict_gen,DICT_WORD *dict_rho,
 //============================================================================
 
 
-
+/*
 //===================================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
@@ -2840,7 +2840,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 //----------------------------------------------------------------------------------
    }//end routine
 //===================================================================================
-
+*/
 
 //===================================================================================
 // Some simple range checking : needs some love

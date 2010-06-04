@@ -56,7 +56,7 @@ class pairCalcTestMain : public CBase_pairCalcTestMain {
     int lambdaResponses;
 
     void fillScProxy();
-    void fillConfig(char* input_name);
+    void fillConfig(char* input_name, int nstates_in, int nplanes_in, int maxIter_in);
     void setNumPes();
     void buildMap();
     void calcBoxSize();

@@ -41,14 +41,35 @@ int numPes;
 bool fakeTorus;
 
 //cp_min_opt == 0 is dynamics, 1 is minimization
-int cp_min_opt = 0;
+int cp_min_opt;
+int gen_wave;
 //-----------------------------------------------//
 
 pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 {
 	printf("TESTFRAMEWORK -- Starting pairCalcTest - NOTE THAT MINIMIZATION MODE RUNS (cp_min_opt == 1) DO NOT CORRECTLY WEIGHT LAMBDA\n");
 
+	if(msg->argc < 2 || strcmp(msg->argv[1],"--help")==0){
+		printf("How to use: 1. Run OpenAtom with  \"PAIRCALC_TEST_DUMP\" defined in debug_flags.h\n");
+		printf("            2. Move all *.out files produced into the \"dumps\" folder\n");
+		printf("            3. Launch ./pairCalcTest, giving the configuration file used for the reference set as the first argument\n");
+		CkExit();
+	}
+
 	mainProxy = thisProxy;
+
+	int nstates_in,nplanes_in,maxIter_in;
+
+	FILE *loutfile = fopen("dumps/configData.out", "r");
+	if(loutfile!=NULL)
+	{
+		fscanf(loutfile,"%d\n%d\n%d\n%d\n%d\n",&nstates_in,&nplanes_in,&maxIter_in,&cp_min_opt,&gen_wave);
+		fclose(loutfile);
+	}
+	else
+	{
+		CkAbort("configData.out file not found\n");
+	}
 
 	psiResponses = 0;
 	lambdaResponses = 0;
@@ -63,7 +84,7 @@ pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 	printf("TESTFRAMEWORK -- setNumPes() finished\n");
 	fillScProxy();
 	printf("TESTFRAMEWORK -- fillScProxy() finished\n");
-	fillConfig(msg->argv[1]);
+	fillConfig(msg->argv[1],nstates_in,nplanes_in,maxIter_in);
 	printf("TESTFRAMEWORK -- fillConfig() finished with sGrainSize = %d\n", config.sGrainSize);
 
 	printf("TESTFRAMEWORK -- Initializing CP_State_GSPacePlane Array of dimensions [%d x %d]\n",config.nstates,config.nchareG);
@@ -124,25 +145,14 @@ void pairCalcTestMain::fillScProxy()
 //	int gen_wave=0;
 //	   if(istart_typ_cp ==0){gen_wave=1;}
 
-	sim->gen_wave = 1;
+	sim->gen_wave = gen_wave;
 	sim->tol_norb = 0;
 	sim->cp_min_opt = cp_min_opt;
 	scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 }
 
-void pairCalcTestMain::fillConfig(char* input_name)
+void pairCalcTestMain::fillConfig(char* input_name, int nstates_in, int nplanes_in, int maxIter_in)
 {
-	int nstates_in,nplanes_in,maxIter_in;
-	FILE *loutfile = fopen("dumps/configData.out", "r");
-	if(loutfile!=NULL)
-	{
-		fscanf(loutfile,"%d\n%d\n%d\n",&nstates_in,&nplanes_in,&maxIter_in);
-		fclose(loutfile);
-	}
-	else
-	{
-		CkAbort("configData.out file not found\n");
-	}
 
 	config.readConfig(input_name,nstates_in,nplanes_in,maxIter_in,numPes);
 
