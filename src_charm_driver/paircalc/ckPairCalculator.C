@@ -73,9 +73,8 @@ inline CkReductionMsg *sumMatrixDouble(int nMsg, CkReductionMsg **msgs)
 // A functor to simply delegate a gemm to either zgemm or dgemm based on how its instantiated
 inline void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc)
 {
-    //CkAbort("zgemm is not yet available");
-    //ZGEMM(opA, opB, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-    DGEMM(opA, opB, m, n, k, alpha, reinterpret_cast<double*>(A), lda, reinterpret_cast<double*>(B), ldb, beta, reinterpret_cast<double*>(C), ldc);
+    complex cAlpha(*alpha,0.), cBeta(*beta,0.);
+    ZGEMM(opA, opB, m, n, k, &cAlpha, A, lda, B, ldb, &cBeta, C, ldc);
 }
 
 inline void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc)

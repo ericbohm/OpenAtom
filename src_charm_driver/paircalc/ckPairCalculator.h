@@ -70,7 +70,11 @@
 
 extern ComlibInstanceHandle mcastInstanceCP;
 
-extern "C" {void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );}
+extern "C" {
+
+void DGEMM (char *, char *, int *, int *, int *,double *,double *, int *, double *, int *, double *, double *, int * );
+void ZGEMM (char *, char *, int *, int *, int *,complex *,complex *, int *, complex *, int *, complex *, complex *, int * );
+}
 
 #include "MessageDataCollator.h"
 #include "pcMessages.h"
