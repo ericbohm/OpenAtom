@@ -9,7 +9,7 @@
 //#include <unistd.h>
 //#include <iostream>
 //#include <sstream>
-//#include <string>
+#include <string>
 #include "charm++.h"
 #include "ckarray.h"
 //#include "utility/util.h"
@@ -45,6 +45,8 @@ int cp_min_opt;
 int gen_wave;
 //-----------------------------------------------//
 
+string inputDir;
+
 pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 {
 	printf("TESTFRAMEWORK -- Starting pairCalcTest - NOTE THAT MINIMIZATION MODE RUNS (cp_min_opt == 1) DO NOT CORRECTLY WEIGHT LAMBDA\n");
@@ -60,7 +62,11 @@ pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 
 	int nstates_in,nplanes_in,maxIter_in;
 
-	FILE *loutfile = fopen("dumps/configData.out", "r");
+	inputDir = msg->argv[2];
+
+	string path(inputDir);
+	path+="configData.out";
+	FILE *loutfile = fopen(path.c_str(), "r");
 	if(loutfile!=NULL)
 	{
 		fscanf(loutfile,"%d\n%d\n%d\n%d\n%d\n",&nstates_in,&nplanes_in,&maxIter_in,&cp_min_opt,&gen_wave);
@@ -68,7 +74,9 @@ pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 	}
 	else
 	{
-		CkAbort("configData.out file not found\n");
+		string abort("configData.out not found in ");
+		abort+=inputDir;
+		CkAbort(abort.c_str());
 	}
 
 	psiResponses = 0;

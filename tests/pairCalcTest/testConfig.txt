@@ -1,0 +1,28 @@
+TEST on
+
+	dir
+	dumps/
+	
+	\sGrainSize
+	16
+	32
+	end
+	
+	\orthoGrainSize
+	16
+	32
+	end
+	
+END TEST
+
+TEST off
+
+	dir
+	dumps2/
+	
+	\sGrainSize
+	128				
+	end
+
+
+END TEST

@@ -1,11 +1,15 @@
 #include "CP_State_GSpacePlane.h"
 #include "pairCalcTest.h"
+#include <string>
+
+using namespace std;
 
 //extern MyConfig config;
 extern int cp_min_opt;
 extern Config config;
 extern CProxy_pairCalcTestMain mainProxy;
 extern void fastAdd (double*, double*, int);
+extern string inputDir;
 
 CP_State_GSpacePlane::CP_State_GSpacePlane()
 //CP_State_GSpacePlane::CP_State_GSpacePlane(Config config_in, int cp_min_opt_in)
@@ -87,16 +91,21 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 	//dumpMatrixDouble("lambdaBf",(double *)force, 1,
     //gnumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
+	string path;
+
 	//Load lambda
-	packedForceData = loadMatrixDouble("dumps/lambdaBf",1,
+	path.assign(inputDir)+="lambdaBf";
+	packedForceData = loadMatrixDouble(path.c_str(),1,
 			thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	//Load Psi
-	packedPlaneData = loadMatrixDouble("dumps/psiBf",1,
+	path.assign(inputDir)+="psiBf";
+	packedPlaneData = loadMatrixDouble(path.c_str(),1,
 			thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	//Load Psip
-	packedPlaneDatap = loadMatrixDouble("dumps/psiBfp",1,
+	path.assign(inputDir)+="psiBfp";
+	packedPlaneDatap = loadMatrixDouble(path.c_str(),1,
 				thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	complex *force = packedForceData;
@@ -123,7 +132,8 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 	//Read in gspace configuration data
 	char fmt[1000];
 	char filename[1000];
-	strncpy(fmt,"dumps/gspaceconfig",999);
+	path.assign(inputDir)+="gspaceconfig";
+	strncpy(fmt,path.c_str(),999);
 	strncat(fmt,"_%d_%d.out",999);
 	sprintf(filename,fmt, thisIndex.x, thisIndex.y);
 	FILE *loutfile = fopen(filename, "r");
@@ -341,7 +351,9 @@ void CP_State_GSpacePlane::doNewPsi()
 
 	double testvalue=0.00000001;
 
-	complex * savedpsiAf  = loadMatrixDouble("dumps/psiAf",1,
+	string path;
+	path.assign(inputDir)+="psiAf";
+	complex * savedpsiAf  = loadMatrixDouble(path.c_str(),1,
 			thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	for(int i=0;i<numPoints;i++){
@@ -595,8 +607,9 @@ void CP_State_GSpacePlane::doLambda() {
 	bzero(countLambdaO,config.numChunksAsym*sizeof(int));
 
 	double testvalue=0.00000001;
-
-	complex* savedlambdaAf = loadMatrixDouble("dumps/lambdaAf",
+	string path;
+	path.assign(inputDir)+="lambdaAf";
+	complex* savedlambdaAf = loadMatrixDouble(path.c_str(),
 			1,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	for(int i=0;i<numPoints;i++){
