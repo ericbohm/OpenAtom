@@ -213,8 +213,8 @@ void PCSectionManager::sendResults(int n, internalType *ptr1, internalType *ptr2
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
-            CkAssert(finite(ptr1[i]));
-            CkAssert(finite(omsg->matrix1[i]));
+            CkAssert( isfinite(ptr1[i]) );
+            CkAssert( isfinite(omsg->matrix1[i]) );
         }
     #endif
 
@@ -249,8 +249,8 @@ void PCSectionManager::sendMatrix(int n, internalType *ptr1, internalType *ptr2,
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
-            CkAssert(finite(ptr1[i]));
-            CkAssert(finite(omsg->matrix1[i]));
+            CkAssert( isfinite(ptr1[i]) );
+            CkAssert( isfinite(omsg->matrix1[i]) );
         }
     #endif
 

@@ -84,6 +84,7 @@ inline void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, 
 
 
 
+
 PairCalculator::PairCalculator(CkMigrateMessage *m) { }
 
 PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType> inProxy, const pc::pcConfig _cfg): cfg(_cfg)
@@ -487,7 +488,7 @@ void PairCalculator::acceptLeftData(paircalcInputMsg *msg)
 	/// Check data validity
 	#ifdef _NAN_CHECK_
 		for(int i=0; i < numRows*numCols; i++)
-			CkAssert( finite(data[i].re) && finite(data[i].im) );
+			CkAssert( isfinite(data[i]) );
 	#endif
     /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
@@ -547,7 +548,7 @@ void PairCalculator::acceptRightData(paircalcInputMsg *msg)
 	/// Check data validity
 	#ifdef _NAN_CHECK_
 		for(int i=0; i < numRows*numCols; i++)
-			CkAssert( finite(data[i].re) && finite(data[i].im) );
+			CkAssert( isfinite(data[i]) );
 	#endif
     /// Once the basic checks have passed, and if we're debugging print status info
 	#ifdef _PAIRCALC_DEBUG_
@@ -774,7 +775,7 @@ PairCalculator::sendTiles(bool flag_dp)
 
 #ifdef _NAN_CHECK_
 	    for(int i=0; i<cfg.orthoGrainSize * cfg.orthoGrainSize; i++)
-	      CkAssert(finite(outTiles[orthoIndex][i]));
+	      CkAssert( isfinite(outTiles[orthoIndex][i]) );
 #endif
 
 	    mcastGrp->contribute(cfg.orthoGrainSize * cfg.orthoGrainSize*sizeof(double), outTiles[orthoIndex], sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
@@ -1097,7 +1098,7 @@ void PairCalculator::acceptOrthoT(multiplyResultMsg *msg)
   //  CkPrintf("[%d,%d,%d,%d,%d] acceptOrthoT, numRecdBWOT now %d \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numRecdBWOT);
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->size;i++)
-      CkAssert(finite(msg->matrix1[i]));
+      CkAssert( isfinite(msg->matrix1[i]) );
 #endif
 
   int size=msg->size;
@@ -1287,7 +1288,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
 
     #ifdef _NAN_CHECK_
         for(int i=0;i<msg->size;i++)
-            CkAssert(finite(msg->matrix1[i]));
+            CkAssert( isfinite(msg->matrix1[i]) );
     #endif
 
     int size=msg->size;
@@ -2307,14 +2308,11 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 
 #ifdef _NAN_CHECK_
 	for(int i=0;i<msg->N ;i++)
-	  {
-	    if(!finite(msg->result[i].re)|| !finite(msg->result[i].im))
-	      {
-		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
-	      }
-	    CkAssert(finite(msg->result[i].re));
-	    CkAssert(finite(msg->result[i].im));
-	  }
+    {
+        if( !isfinite(msg->result[i]) )
+            CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
+	    CkAssert( isfinite(msg->result[i]) );
+    }
 #endif
 	mycb.send(msg);
       }
@@ -2329,14 +2327,13 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	complex *computed=&(mynewData[jPermuted*numPoints]);
 #ifdef _NAN_CHECK_
 	for(int i=0;i<numPoints ;i++)
-	  {
-	    if(!finite(computed[i].re) || !finite(computed[i].im))
-	      {
-		fprintf(stderr,"[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan in computed at %d %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, jPermuted,i);
-		CkAssert(finite(computed[i].re));
-		CkAssert(finite(computed[i].im));
-	      }
-	  }
+    {
+        if( !isfinite(computed[i]) )
+        {
+            fprintf(stderr,"[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan in computed at %d %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, jPermuted,i);
+            CkAssert( isfinite(computed[i]) );
+        }
+    }
 #endif
 	int index=thisIndex.y;
 	CkCallback mycb(cp_entry, CkArrayIndex2D(jPermuted+index ,thisIndex.w), cb_aid);
@@ -2358,14 +2355,11 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 
 #ifdef _NAN_CHECK_
 	for(int i=0;i<msg->N ;i++)
-	  {
-	    if(!finite(msg->result[i].re)|| !finite(msg->result[i].im))
-	      {
-		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
-	      }
-	    CkAssert(finite(msg->result[i].re));
-	    CkAssert(finite(msg->result[i].im));
-	  }
+    {
+        if( !isfinite(msg->result[i]) )
+            CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultColumnDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
+        CkAssert( isfinite(msg->result[i]) );
+    }
 #endif
 	mycb.send(msg);
 	}
@@ -2500,10 +2494,9 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 			#ifdef _NAN_CHECK_
 				for(int i=0;i<omsg->N ;i++)
 				{
-					if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
+					if( !isfinite(omsg->result[i]) )
 						CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
-					CkAssert(finite(omsg->result[i].re));
-					CkAssert(finite(omsg->result[i].im));
+					CkAssert( isfinite(omsg->result[i]) );
 				}
 			#endif
 			mycb.send(omsg);
@@ -2533,10 +2526,9 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 			#ifdef _NAN_CHECK_
 				for(int i=0;i<omsg->N ;i++)
 				{
-					if(!finite(omsg->result[i].re) || !finite(omsg->result[i].im))
+					if( !isfinite(omsg->result[i]) )
 						CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect nan at %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, i);
-					CkAssert(finite(omsg->result[i].re));
-					CkAssert(finite(omsg->result[i].im));
+					CkAssert( isfinite(omsg->result[i]) );
 				}
 			#endif
 			mycb.send(omsg);
@@ -2691,7 +2683,7 @@ void PairCalculator::copyIntoTiles(double *source, double**dest, int sourceRows,
 	int tilej=y%tileSize;
 	touched[tiley+tilex]++;
 #ifdef _NAN_CHECK_
-	CkAssert(finite(value));
+	CkAssert( isfinite(value) );
 	CkAssert(touched[tiley+tilex]<=tileSize*tileSize);
 	CkAssert(tilex+tiley<numOrtho);
 #endif

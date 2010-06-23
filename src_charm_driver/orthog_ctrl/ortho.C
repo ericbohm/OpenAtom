@@ -57,7 +57,6 @@
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
 #include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #define PRINTF CkPrintf
-
 //============================================================================
 
 extern Config config;
@@ -168,10 +167,8 @@ void Ortho::start_calc(CkReductionMsg *msg){
   got_start = true;
   internalType *S = (internalType*) msg->getData();
 #ifdef _NAN_CHECK_
-  for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
-    {
-      CkAssert(isnan(((double*) msg->getData())[i])==0);
-    }
+  for(int i=0;i<msg->getSize()/sizeof(internalType) ;i++)
+      CkAssert( isfinite(S[i]) );
 #endif
 
   step = 0;
@@ -540,7 +537,7 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
 #ifdef _NAN_CHECK_
       CkAssert(lambdaCount==m*n);
       for(int i=0; i<m*n; i++)
-	CkAssert(finite(lambda[i]));
+          CkAssert( isfinite(lambda[i]) );
 #endif
 
       // finish pair calc
@@ -857,8 +854,8 @@ void Ortho::tolerance_check(){
 #ifdef _NAN_CHECK_ 
   for(int i = 0; i < m * n; i++)
   {
-    CkAssert(finite(A[i]));
-    CkAssert(finite(B[i]));
+      CkAssert( isfinite(A[i]) );
+      CkAssert( isfinite(B[i]) );
   }
 #endif
 
