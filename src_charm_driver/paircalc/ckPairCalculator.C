@@ -1367,7 +1367,7 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
     #endif
 
     // default DGEMM for non streaming comp case
-    int m_in=numPoints*2;   // rows of op(A)==rows C
+    int m_in = numPoints * pcDataSizeFactor;   // rows of op(A)==rows C
     // TODO: is n_in grainSizeX or is k_in?
     int n_in=grainSizeY;     // columns of op(B)==columns C
     int k_in=grainSizeX;     // columns op(A) == rows op(B)

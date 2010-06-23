@@ -159,7 +159,7 @@ class Ortho : public CBase_Ortho
         void gamma_done();
 
         /// S should be equal to 2I. This returns max value of deviation from that in this ortho's portion of the S matrix. 
-        inline double array_diag_max(int sizem, int sizen, double *array);
+        inline double array_diag_max(int sizem, int sizen, internalType *array);
         /// Called on ortho(0,0). Checks if PsiV update is needed based on the max deviation in S received via a redn across all orthos. Notifies GSpaceDriver if so. Called periodically in start_calc only for dynamics 
         void maxCheck(CkReductionMsg *msg);
         /// Once all GSpaceDriver chares are notified, they resume Ortho execution via a redn broadcast to this method
@@ -285,35 +285,37 @@ inline void Ortho::print_results(void)
 /**
  * OrthoT tolerance check util return max value
  */
-inline double Ortho::array_diag_max(int sizem, int sizen, double *array)
+inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
 {
     double absval, max_ret;
     if(thisIndex.x!=thisIndex.y)
     { //not diagonal
-        max_ret=fabs(array[0]);
+        max_ret = abs(array[0]);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval=fabs(array[i*sizen+j]);
+                absval = abs(array[i*sizen+j]);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
     }
     else
     { //on diagonal 
-        absval=fabs(fabs(array[0]-2.0));
+        absval = abs(array[0]-2.0);
         max_ret = absval;
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval=fabs(array[i*sizen+j]);
                 if(i!=j)
+                {
+                    absval = abs(array[i*sizen+j]);
                     max_ret = (max_ret>absval) ? max_ret : absval;
+                }
                 else
                 {
-                    absval=fabs(absval-2.0);
+                    absval = abs(absval-2.0);
                     max_ret = (max_ret>absval) ? max_ret : absval;
                 }//endif
             }

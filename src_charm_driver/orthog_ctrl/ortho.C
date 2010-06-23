@@ -166,7 +166,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
       }//endif
     }
   got_start = true;
-  double *S = (double*) msg->getData();
+  internalType *S = (internalType*) msg->getData();
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(double) ;i++)
     {
@@ -195,12 +195,12 @@ void Ortho::start_calc(CkReductionMsg *msg){
       */
       // simple out of place scheme
 
-      double *dest= (double*) omsg->getData();;
-      double tmp;
+      internalType *dest= (internalType*) omsg->getData();;
+      internalType tmp;
       for(int i = 0; i < m; i++)
-	for(int j = 0; j < n; j++){
-	  dest[j * m + i] = S[i *n + j];
-	}
+          for(int j = 0; j < n; j++)
+              dest[j * m + i] = S[i *n + j];
+
       thisProxy(thisIndex.y,thisIndex.x).start_calc(omsg);
 
     }
