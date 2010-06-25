@@ -10,15 +10,16 @@ FFT_HOME = $(HOME)/fftw
 include build.mk
 
 clean:
-	/bin/rm -f ${BINARIES} a.out core *.o setup tmp/*
-	/bin/rm -f *.decl.h *.def.h charmrun STATES_OUT/*
+	/bin/rm -f ${BINARIES} a.out core *.o setup
+	/bin/rm -f *.decl.h *.def.h charmrun
+	/bin/rm -rf tmp/ STATES_OUT/
 
 run: build runtests
 
 .PHONY: runtests
 
 runtests: setup pairCalcTest
-	make -f tests.mk
+	$(MAKE) -f tests.mk
 
 setup: testConfig.txt parseTestConfig
 	mkdir -p STATES_OUT
