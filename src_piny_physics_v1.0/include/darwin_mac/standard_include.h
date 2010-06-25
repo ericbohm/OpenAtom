@@ -10,7 +10,6 @@
 #include <ctime>
 #include <iostream>
 
-using namespace std;
 #define MACOSX_BLAS
 #ifdef PUP_ON
 #include <pup.h>
