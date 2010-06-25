@@ -21,7 +21,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
-using namespace std;
 #include "../../include/configure.h"
 
 int main();

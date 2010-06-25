@@ -11,8 +11,6 @@
 #include <ctime>
 #include <iostream>
 
-using namespace std;
-
 #ifdef PUP_ON
 #include <pup.h>
 #endif
