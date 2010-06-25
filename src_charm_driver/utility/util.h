@@ -149,7 +149,7 @@ public:
 
 #include "../../include/RunDescriptor.h"
 
-using namespace std;
+//using namespace std;
 
 #include "configure.h"
 

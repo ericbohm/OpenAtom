@@ -49,7 +49,7 @@
 #include <string>
 
 int TimeKeeperID=0;
-vector <string> TimeKeeperNames;
+std::vector <std::string> TimeKeeperNames;
 UberCollection thisInstance;
 //============================================================================
 /** 
@@ -1596,11 +1596,11 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
-  string forwardname("GSpaceForward");
+  std::string forwardname("GSpaceForward");
   std::ostringstream fwdstrm;
   fwdstrm << forwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gforward=keeperRegister(fwdstrm.str());
-  string backwardname("GSpaceBackward");
+  std::string backwardname("GSpaceBackward");
   std::ostringstream bwdstrm;
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
@@ -1704,8 +1704,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
   realSpaceOpts.setMap(rsMap);
-  int rforward=keeperRegister(string("RealSpaceForward"));
-  int rbackward=keeperRegister(string("RealSpaceBackward"));
+  int rforward=keeperRegister(std::string("RealSpaceForward"));
+  int rbackward=keeperRegister(std::string("RealSpaceBackward"));
 
   UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
     UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();  
@@ -2394,7 +2394,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   //--------------------------------------------------------------------------
     
   // insert rhoreal
-  int rhokeeper= keeperRegister(string("Density"));
+  int rhokeeper= keeperRegister(std::string("Density"));
   UrhoRealProxy.push_back(CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,dummy, 
 						     ees_eext_on, ngrid_eext_c,
 						     rhokeeper,

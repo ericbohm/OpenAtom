@@ -68,7 +68,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-    using namespace std;
+//using namespace std;
 
 //---------------------------------------------------------------------------
 #define CHARM_ON

@@ -186,7 +186,6 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
  */
 void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 {
-<<<<<<< HEAD:src_charm_driver/cp_state_ctrl/GSpaceDriver.C
   /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
   CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
 
@@ -196,28 +195,13 @@ void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
   if (myGSpaceObj->cleanExitCalled==1)
     readyToExit();
   /// If we were waiting for the atom integration (and the energy computation was done) resume the driver logic
+  MERGE_PATH_MAX(waitForEnergyAndAtoms);
   if (waitingForAtoms) 
     {
       waitingForAtoms = false; 
+      MERGE_PATH_RESET(waitForEnergyAndAtoms);
       if (!waitingForEnergy) resumeControl(); 
     } 
-=======
-	/// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
-	CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
-	///
-	isAtomIntegrationDone = true;
-	/// If GSpace has already called for an exit, check if we can exit again
-	if (myGSpaceObj->cleanExitCalled==1)
-		readyToExit();
-	/// If we were waiting for the atom integration (and the energy computation was done) resume the driver logic
-	MERGE_PATH_MAX(waitForEnergyAndAtoms);
-	if (waitingForAtoms) 
-	{
-		waitingForAtoms = false; 
-		MERGE_PATH_RESET(waitForEnergyAndAtoms);
-		if (!waitingForEnergy) resumeControl(); 
-	} 
->>>>>>> 0086d20... Tracing all of the non-debug resumeControl() calls.:src_charm_driver/cp_state_ctrl/GSpaceDriver.C
 }
 
 
