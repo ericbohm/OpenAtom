@@ -20,6 +20,7 @@ run: build runtests
 
 runtests: setup pairCalcTest
 	mkdir test_output
+	/bin/rm -f *.out
 	$(MAKE) -f tests.mk
 
 setup: testConfig.txt parseTestConfig
@@ -27,6 +28,5 @@ setup: testConfig.txt parseTestConfig
 	mkdir -p tmp
 	/bin/rm -f tmp/*
 	./parseTestConfig testConfig.txt
-	/bin/rm -f *.out
 	touch $@
 

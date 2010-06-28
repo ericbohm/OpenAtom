@@ -12,4 +12,3 @@ tests: $(testlist)
 
 $(testlist):
 	./pairCalcTest tmp/$@.config $(shell cat tmp/$@.dir) 2>test_output/$@.out
-	/bin/rm -f *.out
