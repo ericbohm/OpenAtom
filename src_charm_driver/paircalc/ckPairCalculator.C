@@ -876,7 +876,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
     #endif
 
     // If we're sending the work to dgemm
-    if (!cfg.useComplexMath)
+    #ifndef CP_PAIRCALC_USE_COMPLEX_MATH
+    //if (!cfg.useComplexMath)
     {
         // If internal representation is as doubles, treat each complex as 2 doubles
         k_in *= pcDataSizeFactor;
@@ -884,7 +885,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
         if (flag_dp)
             alpha = 2.0;
     }
-
+    #endif
 
     // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
