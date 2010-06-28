@@ -744,7 +744,12 @@ complex * CP_State_GSpacePlane::loadMatrixDouble(const char *infilename, int xdi
 
 		//read in ydim and calculate numPoints
 		fscanf(loutfile,"%d\n",&ydim);
+
+#ifdef COMPLEX_PAIRCALC
+		thisNumPoints = ydim;
+#else
 		thisNumPoints = ydim/2;
+#endif
 
 		//CkPrintf("Gspace Chare %d x %d has numPoints = %d\n",x,w,thisNumPoints);
 
@@ -758,12 +763,18 @@ complex * CP_State_GSpacePlane::loadMatrixDouble(const char *infilename, int xdi
 
 		//Allocate space for input
 		cmatrix = new complex[numPoints];
+
 		double *matrix = (double *)cmatrix;
 
 		for(int i=0;i<xdim;i++)
 			for(int j=0;j<ydim;j++)
 			{
+#ifdef COMPLEX_PAIRCALC
+				fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(cmatrix[i*ydim+j].re));
+				cmatrix[i*ydim+j].im = 0.0;
+#else
 				fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j]));
+#endif
 				//CkPrintf("Found: %lf\n",((double *)cmatrix)[i*ydim+j]);
 			}
 		fclose(loutfile);
