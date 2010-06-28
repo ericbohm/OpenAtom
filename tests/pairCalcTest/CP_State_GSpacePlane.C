@@ -12,12 +12,21 @@ extern void fastAdd (double*, double*, int);
 extern string inputDir;
 extern bool testpassed;
 
+int doublePack;
+
 CP_State_GSpacePlane::CP_State_GSpacePlane()
 //CP_State_GSpacePlane::CP_State_GSpacePlane(Config config_in, int cp_min_opt_in)
 {
 	int nstates = config.nstates;
 	int s_grain = config.sGrainSize;
 	numPoints = 0;
+
+	//If complex paircalc is being used, doublepack is effectively off
+#ifdef COMPLEX_PAIRCALC
+	doublePack = 0;
+#else
+	doublePack = config.doublePack;
+#endif
 
 	int ourgrain = thisIndex.x/s_grain*s_grain;
 	if(nstates == s_grain){
@@ -461,7 +470,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   countLambda++;
   //---------------------------------------------------
   // B) Double Pack
-  if(config.doublePack==1){
+  if(doublePack==1){
    if(cp_min_opt==1){
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
@@ -490,7 +499,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
   //---------------------------------------------------
   // C) Double Pack
-  if(config.doublePack==0){
+  if(doublePack==0){
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
@@ -532,7 +541,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   countLambda++;
 
   //B) Double Pack
-   if(config.doublePack==1){
+   if(doublePack==1){
     if(cp_min_opt==1){
  #ifdef CMK_BLUEGENEL
  #pragma unroll(10)
@@ -561,7 +570,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   //----------------------------------------------------------
   //C) Single pack
 
-   if(config.doublePack==0){
+   if(doublePack==0){
  #ifdef CMK_BLUEGENEL
  #pragma unroll(10)
  #endif
