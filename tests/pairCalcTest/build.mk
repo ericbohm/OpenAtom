@@ -19,7 +19,7 @@ build: ${BINARIES}
 parseTestConfig: parseTestConfig.C
 	$(CC) -o $@ parseTestConfig.C
 
-pairCalcTest: configure.o interface_hand.o CLA_Matrix.o piny_malloc.o friend_lib.o InstanceController.o ckPairCalculator.o CP_State_GSpacePlane.o ortho.o PeList.o orthoBuilder.o pcCreationManager.o pcCommManager.o dgemm.o lsame.o xerbla.o fastadd.o pcBuilder.o pcSectionManager.o MapTable.o MapFile.o pairCalcTest.o
+pairCalcTest: configure.o interface_hand.o CLA_Matrix.o piny_malloc.o friend_lib.o InstanceController.o ckPairCalculator.o CP_State_GSpacePlane.o ortho.o PeList.o orthoBuilder.o pcCreationManager.o pcCommManager.o dgemm.o zgemm.o lsame.o xerbla.o fastadd.o pcBuilder.o pcSectionManager.o MapTable.o MapFile.o pairCalcTest.o
 	$(CHARMC) -language charm++ $(LDFLAGS) -o $@ *.o $(LDLIBS)
 	
 pairCalcTest.o: pairCalcTest.C pairCalcTest.h CPcharmParaInfo.h CPcharmParaInfoGrp.h configure.h pairCalcTest.decl.h pairCalcTest.def.h gStatePlane.decl.h gStatePlane.def.h
@@ -46,6 +46,9 @@ interface_hand.o: $(physics)/interface/handle/interface_hand.C
 dgemm.o: $(math)/dgemm.f
 	${FCC} -c $(math)/dgemm.f
 	
+zgemm.o: $(math)/zgemm.f
+	${FCC} -c $<
+
 lsame.o: $(math)/lsame.f
 	${FCC} -c $(math)/lsame.f
 	
