@@ -10,21 +10,14 @@ extern Config config;
 extern CProxy_pairCalcTestMain mainProxy;
 extern void fastAdd (double*, double*, int);
 extern string inputDir;
+extern bool testpassed;
 
 CP_State_GSpacePlane::CP_State_GSpacePlane()
 //CP_State_GSpacePlane::CP_State_GSpacePlane(Config config_in, int cp_min_opt_in)
 {
-	//cp_min_opt = cp_min_opt_in;
-
-	//memcpy(&config, &config_in, sizeof(Config));
-
-//	printf("CP_State_GSpacePlane: Sizeof(Config) = %d\n",sizeof(Config));
-
 	int nstates = config.nstates;
 	int s_grain = config.sGrainSize;
 	numPoints = 0;
-
-//	printf("HAPPY----------------------HAPPY1, sgrain=%d and cp_min_opt=%d\n",s_grain,cp_min_opt);
 
 	int ourgrain = thisIndex.x/s_grain*s_grain;
 	if(nstates == s_grain){
@@ -38,8 +31,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 		}//endif
 	}//endif
 	AllPsiExpected*=config.numChunksSym;
-
-//	printf("HAPPY----------------------HAPPY2\n");
 
 	int numGrains=nstates/s_grain;
 	if(config.gSpaceSum){ // no reductions its all coming direct
@@ -57,8 +48,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 		AllLambdaExpected=1;
 	}//endif
 
-//	printf("HAPPY----------------------HAPPY3\n");
-
 	if(config.gSpaceSum){ // no reductions its all coming direct
 		if(cp_min_opt==0 && numGrains>1)
 		{ AllLambdaExpected=(2*numGrains-1)*config.numChunksAsym;}
@@ -69,8 +58,6 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 	{
 		AllLambdaExpected*=config.numChunksAsym;
 	}
-
-//	printf("HAPPY----------------------HAPPY4\n");
 
 	countPsi        = 0;
 	countLambda     = 0;
@@ -357,12 +344,18 @@ void CP_State_GSpacePlane::doNewPsi()
 			thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	for(int i=0;i<numPoints;i++){
+		//CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<testvalue);
 		if(fabs(psi[i].re-savedpsiAf[i].re)>testvalue){
-			fprintf(stderr, "GSP [%d,%d] %d element psi  %.10g not %.10g\n",
+			fprintf(stderr, "GSP [%d,%d] %d element psi.re  %.10g not %.10g\n",
 					thisIndex.x, thisIndex.y,i, psi[i].re, savedpsiAf[i].re);
-		}//endif
-		CkAssert(fabs(psi[i].re-savedpsiAf[i].re)<testvalue);
-		CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<testvalue);
+			testpassed = false;
+		}
+		//CkAssert(fabs(psi[i].im-savedpsiAf[i].im)<testvalue);
+		if(fabs(psi[i].im-savedpsiAf[i].im)>testvalue){
+			fprintf(stderr, "GSP [%d,%d] %d element psi.im  %.10g not %.10g\n",
+					thisIndex.x, thisIndex.y,i, psi[i].im, savedpsiAf[i].im);
+			testpassed = false;
+		}
 	}//endfor
 
 	mainProxy.finishPsi();
@@ -613,8 +606,18 @@ void CP_State_GSpacePlane::doLambda() {
 			1,thisIndex.y,thisIndex.x,thisIndex.x,0,false);
 
 	for(int i=0;i<numPoints;i++){
-		CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<testvalue);
-		CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<testvalue);
+		//CkAssert(fabs(force[i].re-savedlambdaAf[i].re)<testvalue);
+		if(fabs(force[i].re-savedlambdaAf[i].re)>testvalue){
+			fprintf(stderr, "GSP [%d,%d] %d element lambda.re  %.10g not %.10g\n",
+					thisIndex.x, thisIndex.y,i, force[i].re, savedlambdaAf[i].re);
+			testpassed = false;
+		}
+		//CkAssert(fabs(force[i].im-savedlambdaAf[i].im)<testvalue);
+		if(fabs(force[i].im-savedlambdaAf[i].im)>testvalue){
+			fprintf(stderr, "GSP [%d,%d] %d element lambda.im  %.10g not %.10g\n",
+					thisIndex.x, thisIndex.y,i, force[i].im, savedlambdaAf[i].im);
+			testpassed = false;
+		}
 	}//endfor
 
 	mainProxy.finishLambda();

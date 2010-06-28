@@ -39,6 +39,7 @@ CkReduction::reducerType sumFastDoubleType=CkReduction::addReducer(sumFastDouble
 
 int numPes;
 bool fakeTorus;
+bool testpassed;
 
 //cp_min_opt == 0 is dynamics, 1 is minimization
 int cp_min_opt;
@@ -57,6 +58,8 @@ pairCalcTestMain::pairCalcTestMain(CkArgMsg *msg)
 		printf("            3. Launch ./pairCalcTest, giving the configuration file used for the reference set as the first argument\n");
 		CkExit();
 	}
+
+	testpassed = true;
 
 	mainProxy = thisProxy;
 
@@ -141,6 +144,10 @@ void pairCalcTestMain::finishLambda()
 
 void pairCalcTestMain::done()
 {
+	if(testpassed)
+		fprintf(stderr,"Passed\n");
+	else
+		fprintf(stderr,"========================\n=====>> FAILED <<=======\n========================\n");
 	printf("TESTFRAMEWORK -- All Done\n");
 	CkExit();
 }

@@ -19,6 +19,7 @@ run: build runtests
 .PHONY: runtests
 
 runtests: setup pairCalcTest
+	mkdir test_output
 	$(MAKE) -f tests.mk
 
 setup: testConfig.txt parseTestConfig

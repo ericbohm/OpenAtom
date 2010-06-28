@@ -1,7 +1,7 @@
 TEST on
 
 	dir
-	/expand/home/arya/dumps/
+	../../data/pc-dump-ees-nl0l0-p1/
 	
 	\sGrainSize
 	16
