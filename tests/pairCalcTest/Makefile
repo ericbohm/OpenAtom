@@ -13,6 +13,7 @@ clean:
 	/bin/rm -f ${BINARIES} a.out core *.o setup
 	/bin/rm -f *.decl.h *.def.h charmrun
 	/bin/rm -rf tmp/ STATES_OUT/
+	/bin/rm -rf test_output
 
 run: build runtests
 
