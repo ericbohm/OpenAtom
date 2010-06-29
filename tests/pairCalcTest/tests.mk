@@ -8,7 +8,7 @@ tests: $(testlist)
 	@printf "===============================================================\n"
 	@printf "|                   Results Summary:                          |\n"
 	@printf "===============================================================\n"
-	@tail -n 1 test_output/*
+	@tail -n 2 test_output/*
 
 $(testlist):
 	./pairCalcTest tmp/$@.config $(shell cat tmp/$@.dir) 2>test_output/$@.out
