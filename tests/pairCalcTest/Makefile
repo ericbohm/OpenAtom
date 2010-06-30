@@ -1,31 +1,35 @@
 # Makefile scripts to build and run pair calculator tests
 
 BINARIES = pairCalcTest parseTestConfig
+TESTDIR  = test_output
 
-.PHONY: build clean run runtests setup
+.PHONY: build clean run clean_test runtests setup
 
 build: ${BINARIES}
 
 parseTestConfig: parseTestConfig.C
 	g++ -o $@ $^
 
-clean:
+clean: clean_test
 	@$(RM) $(wildcard *.decl.h *.def.h *.o *.a)
 	@$(RM) $(wildcard *.d *.di *.ci.stamp)
 	@$(RM) ${BINARIES} charmrun a.out core setup
-	@$(RM) -r tmp/ STATES_OUT/ test_output/
+
+clean_test:
+	@$(RM) -r tmp/ STATES_OUT/ $(TESTDIR)
+	@$(RM) $(wildcard *.out)
 
 run: build runtests
 
 runtests: setup pairCalcTest
-	mkdir test_output
-	/bin/rm -f *.out
+	@mkdir -p $(TESTDIR)
+	@$(RM) $(wildcard *.out)
 	$(MAKE) -f tests.mk
 
 setup: testConfig.txt parseTestConfig
 	mkdir -p STATES_OUT
 	mkdir -p tmp
-	/bin/rm -f tmp/*
+	@$(RM) tmp/*
 	./parseTestConfig testConfig.txt
 	touch $@
 

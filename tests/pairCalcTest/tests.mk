@@ -1,5 +1,6 @@
 #get list of test directories
 include tmp/*.name
+TESTDIR = test_output
 
 .PHONY: tests $(testlist)
 
@@ -11,4 +12,4 @@ tests: $(testlist)
 	@tail -n 2 test_output/*
 
 $(testlist):
-	./pairCalcTest tmp/$@.config $(shell cat tmp/$@.dir) 2>test_output/$@.out
+	./pairCalcTest tmp/$@.config $(shell cat tmp/$@.dir) 1>$(TESTDIR)/$@.log 2>$(TESTDIR)/$@.out
