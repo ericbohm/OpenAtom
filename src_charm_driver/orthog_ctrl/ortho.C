@@ -694,7 +694,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   if(invsqr_tolerance==0)
     invsqr_tolerance=INVSQR_TOLERANCE;
   if(invsqr_max_iter==0)
-    invsqr_tolerance=INVSQR_MAX_ITER;
+    invsqr_max_iter=INVSQR_MAX_ITER;
   this->matA1 = _matA1; this->matB1 = _matB1; this->matC1 = _matC1;
   this->matA2 = _matA2; this->matB2 = _matB2; this->matC2 = _matC2;
   this->matA3 = _matA3; this->matB3 = _matB3; this->matC3 = _matC3;
