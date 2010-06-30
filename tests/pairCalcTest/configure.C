@@ -17,12 +17,12 @@
 
 #include "charm++.h"
 #include "conv-autoconfig.h"
-#include "pentium/standard_include.h"
+#include "standard_include.h"
 #include "configure.h"
 #include "CPcharmParaInfo.h"
-#include "proto_defs/proto_friend_lib_entry.h"
-#include "proto_defs/proto_handle_entry.h"
-#include "class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include "../proto_defs/proto_friend_lib_entry.h"
+#include "../proto_defs/proto_handle_entry.h"
+#include "../class_defs/PINY_INIT/PhysicsParamTrans.h"
 
 extern int cp_min_opt;
 //#if CMK_PROJECTIONS_USE_ZLIB

@@ -1,23 +1,21 @@
 # Makefile scripts to build and run pair calculator tests
 
-CHARMDIR = $(HOME)/charm
-CHARMC = $(CHARMDIR)/bin/charmc $(OPTS)
-CC = g++
-FCC = gfortran
-FFT_HOME = $(HOME)/fftw
+BINARIES = pairCalcTest parseTestConfig
 
-#Step one, build all necessary files
-include build.mk
+.PHONY: build clean run runtests setup
+
+build: ${BINARIES}
+
+parseTestConfig: parseTestConfig.C
+	g++ -o $@ $^
 
 clean:
-	/bin/rm -f ${BINARIES} a.out core *.o setup
-	/bin/rm -f *.decl.h *.def.h charmrun
-	/bin/rm -rf tmp/ STATES_OUT/
-	/bin/rm -rf test_output
+	@$(RM) $(wildcard *.decl.h *.def.h *.o *.a)
+	@$(RM) $(wildcard *.d *.di *.ci.stamp)
+	@$(RM) ${BINARIES} charmrun a.out core setup
+	@$(RM) -r tmp/ STATES_OUT/ test_output/
 
 run: build runtests
-
-.PHONY: runtests
 
 runtests: setup pairCalcTest
 	mkdir test_output
@@ -30,4 +28,7 @@ setup: testConfig.txt parseTestConfig
 	/bin/rm -f tmp/*
 	./parseTestConfig testConfig.txt
 	touch $@
+
+# Include build script for the test code
+include build.mk
 
