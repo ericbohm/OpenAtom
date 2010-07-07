@@ -829,8 +829,8 @@ void CP_Rho_GHartExt::getHartEextEes(){
   int *k_x     = rho_gs.k_x;
   int *k_y     = rho_gs.k_y;
   int *k_z     = rho_gs.k_z;
-  double *b_re = eesData->RhoGHartData[myChareG].b_re;
-  double *b_im = eesData->RhoGHartData[myChareG].b_im;
+  double *b_re = eesData->RhoGHartData[myChareG]->b_re;
+  double *b_im = eesData->RhoGHartData[myChareG]->b_im;
 
  //----------------------------------------------------------
  // Initialize
@@ -1121,8 +1121,8 @@ void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
     int *k_y     = rho_gs.k_y;
     int *k_z     = rho_gs.k_z;
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-    double *b_re = eesData->RhoGHartData[myChareG].b_re;
-    double *b_im = eesData->RhoGHartData[myChareG].b_im;
+    double *b_re = eesData->RhoGHartData[myChareG]->b_re;
+    double *b_im = eesData->RhoGHartData[myChareG]->b_im;
 #if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif

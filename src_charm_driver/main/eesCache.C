@@ -95,12 +95,12 @@ eesCache::eesCache(int _nchareRPP, int _nchareGPP, int _nchareRHart,
    indGspChares      = new int[nchareGSP];
    indRhoGChares     = new int[nchareRhoG];
 
-   GppData           = new GPPDATA     [nchareGPP]; // over dimensioned
-   RppData           = new RPPDATA     [nchareRPP];
-   RhoGHartData      = new RHOGHARTDATA[nchareGHart];
-   RhoRHartData      = new RHORHARTDATA[nchareRHart];
-   GspData           = new GSPDATA[nchareGSP];
-   RhoGData          = new RHOGDATA[nchareRhoG];
+   GppData           = new GPPDATA *   [nchareGPP]; // over dimensioned
+   RppData           = new RPPDATA *   [nchareRPP];
+   RhoGHartData      = new RHOGHARTDATA*[nchareGHart];
+   RhoRHartData      = new RHORHARTDATA*[nchareRHart];
+   GspData           = new GSPDATA*[nchareGSP];
+   //RhoGData          = new RHOGDATA[nchareRhoG];
 
 }// end constructor
 //==============================================================================
@@ -118,7 +118,8 @@ void eesCache::registerCacheRPP  (int index){
   if(allowedRppChares[index]==0){
     nchareRPPProc          += 1;
     allowedRppChares[index] = 1;
-    RppData[index].init(index);
+    RppData[index] = new RPPDATA();
+    RppData[index]->init(index);
   }//endif
 
 }//end routine
@@ -137,7 +138,8 @@ void eesCache::registerCacheGPP  (int index, int ncoef, int *ka, int *kb, int *k
    if(allowedGppChares[index]==0){
      nchareGPPProc          += 1;
      allowedGppChares[index] = 1;
-     GppData[index].init(index,ncoef,ka,kb,kc);
+     GppData[index] = new GPPDATA();
+     GppData[index]->init(index,ncoef,ka,kb,kc);
    }//endif
 
 }//end routine
@@ -159,7 +161,8 @@ void eesCache::registerCacheRHart(int index){
 #endif
     nchareRHartProc             += 1;
     allowedRhoRHartChares[index] = 1;
-    RhoRHartData[index].init(index);
+    RhoRHartData[index] = new RHORHARTDATA();
+    RhoRHartData[index]->init(index);
   }//endif
 
 }//end routine
@@ -178,7 +181,8 @@ void eesCache::registerCacheGHart(int index, int ncoef, int *ka, int *kb, int *k
   if(allowedRhoGHartChares[index]==0){
     nchareGHartProc             += 1;
     allowedRhoGHartChares[index] = 1;
-    RhoGHartData[index].init(index,ncoef,ka,kb,kc);
+    RhoGHartData[index] = new RHOGHARTDATA();
+    RhoGHartData[index]->init(index,ncoef,ka,kb,kc);
   }//endif
 
 }//end routine
@@ -193,7 +197,8 @@ void eesCache::registerCacheGSP(int is ,int ip){
   if(allowedGspChares[ip]==0){
     nchareGSPProc       += 1;
     allowedGspChares[ip] = 1;
-    GspData[ip].init(ip);
+    GspData[ip] = new GSPDATA();
+    GspData[ip]->init(ip);
   }//endif
 
   int i = nchareGSPProcT;

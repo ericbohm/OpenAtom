@@ -600,7 +600,7 @@ void CPLOCAL::eesSetEesWghtGgrp(int ncoef, int *ka_in, int *kb_in, int *kc_in,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, 
-                                RHORHARTDATA *RhoRHartData)
+                                RHORHARTDATA **RhoRHartData)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -824,9 +824,9 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
    // Zero array mapping plane index, j, to interpolation index, jc.
    for(j=0;j<ngrid_c;j++){
      if(allowed_planes[j]==1){
-       rhoRsubplanes = RhoRHartData[j].rhoRsubplanes;
-       plane_index   = RhoRHartData[j].plane_index;
-       nSub          = RhoRHartData[j].nSub;
+       rhoRsubplanes = RhoRHartData[j]->rhoRsubplanes;
+       plane_index   = RhoRHartData[j]->plane_index;
+       nSub          = RhoRHartData[j]->nSub;
        for(i=0;i<natm;i++){plane_index[i] = 0;}
        for(int s=0;s<rhoRsubplanes;s++){for(i=0;i<natm;i++){nSub[s][i]=0;}}
      }//endif
@@ -838,19 +838,19 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
      // plane decomp
      if(allowed_planes[ip]==1){ // if the group wants this plane
        
-       rhoRsubplanes = RhoRHartData[ip].rhoRsubplanes;
-       subStr        = RhoRHartData[ip].subStr;
-       subEnd        = RhoRHartData[ip].subEnd;
-       subSiz        = RhoRHartData[ip].subSiz;
-       ntemp         = RhoRHartData[ip].ntemp;
-       itemp         = RhoRHartData[ip].itemp;
-       nSub          = RhoRHartData[ip].nSub;
-       igrid         = RhoRHartData[ip].igrid;
-       mn            = RhoRHartData[ip].mn;
-       dmn_x         = RhoRHartData[ip].dmn_x;
-       dmn_y         = RhoRHartData[ip].dmn_y;
-       dmn_z         = RhoRHartData[ip].dmn_z;
-       plane_index   = RhoRHartData[ip].plane_index;
+       rhoRsubplanes = RhoRHartData[ip]->rhoRsubplanes;
+       subStr        = RhoRHartData[ip]->subStr;
+       subEnd        = RhoRHartData[ip]->subEnd;
+       subSiz        = RhoRHartData[ip]->subSiz;
+       ntemp         = RhoRHartData[ip]->ntemp;
+       itemp         = RhoRHartData[ip]->itemp;
+       nSub          = RhoRHartData[ip]->nSub;
+       igrid         = RhoRHartData[ip]->igrid;
+       mn            = RhoRHartData[ip]->mn;
+       dmn_x         = RhoRHartData[ip]->dmn_x;
+       dmn_y         = RhoRHartData[ip]->dmn_y;
+       dmn_z         = RhoRHartData[ip]->dmn_z;
+       plane_index   = RhoRHartData[ip]->plane_index;
 
        // subplane decomp
        for(int s=0;s<rhoRsubplanes;s++){

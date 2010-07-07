@@ -304,10 +304,10 @@ void CP_State_ParticlePlane::initKVectors()
     if(ees_nonlocal==1){
        eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
        int ncoef = gSpaceNumPoints;
-       int *k_x  = eesData->GspData[myChareG].ka;
-       int *k_y  = eesData->GspData[myChareG].kb;
-       int *k_z  = eesData->GspData[myChareG].kc;
-       int mycoef= eesData->GspData[myChareG].ncoef;
+       int *k_x  = eesData->GspData[myChareG]->ka;
+       int *k_y  = eesData->GspData[myChareG]->kb;
+       int *k_z  = eesData->GspData[myChareG]->kc;
+       int mycoef= eesData->GspData[myChareG]->ncoef;
        if(eesData->allowedGspChares[myChareG]==0 || mycoef != ncoef){
          CkPrintf("Plane %d of state %d toasy %d %d\n",myChareG,thisIndex.x,mycoef,ncoef);
          CkExit();
@@ -491,9 +491,9 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
     if(gsp->acceptedPsi && gsp->doneNewIter){
       // get ks
       eesCache *eesData        = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-      int *k_x = eesData->GspData[myChareG].ka;
-      int *k_y = eesData->GspData[myChareG].kb;
-      int *k_z = eesData->GspData[myChareG].kc;
+      int *k_x = eesData->GspData[myChareG]->ka;
+      int *k_y = eesData->GspData[myChareG]->kb;
+      int *k_z = eesData->GspData[myChareG]->kc;
 
       // get sf
       StructFactCache *sfcache = UsfCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
@@ -706,9 +706,9 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 
   int mydoublePack = config.doublePack;
   int state_ind    = gss->istate_ind;                
-  int *k_x         = eesData->GspData[myChareG].ka;
-  int *k_y         = eesData->GspData[myChareG].kb;
-  int *k_z         = eesData->GspData[myChareG].kc;
+  int *k_x         = eesData->GspData[myChareG]->ka;
+  int *k_y         = eesData->GspData[myChareG]->kb;
+  int *k_z         = eesData->GspData[myChareG]->kc;
   complex *structureFactor,*structureFactor_fx,*structureFactor_fy,*structureFactor_fz;
 
   sfcache->getStructFact(thisIndex.y, atmIndex, &structureFactor, &structureFactor_fx, 
@@ -926,13 +926,13 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
 //============================================================================
 // Setup the projector and then launch the fft
 
-   double *d_re   = eesData->GppData[myChareG].b_re;    // precomputed stuff
-   double *d_im   = eesData->GppData[myChareG].b_im;
-   int *ind_gspl  = eesData->GppData[myChareG].ind_gspl;
-   double *h_gspl = eesData->GppData[myChareG].h_gspl;
-   int *k_x       = eesData->GspData[myChareG].ka;
-   int *k_y       = eesData->GspData[myChareG].kb;
-   int *k_z       = eesData->GspData[myChareG].kc;
+   double *d_re   = eesData->GppData[myChareG]->b_re;    // precomputed stuff
+   double *d_im   = eesData->GppData[myChareG]->b_im;
+   int *ind_gspl  = eesData->GppData[myChareG]->ind_gspl;
+   double *h_gspl = eesData->GppData[myChareG]->h_gspl;
+   int *k_x       = eesData->GspData[myChareG]->ka;
+   int *k_y       = eesData->GspData[myChareG]->kb;
+   int *k_z       = eesData->GspData[myChareG]->kc;
 
    int ncoef      = gSpaceNumPoints;
    complex *psi   = gss->packedPlaneData;
@@ -993,7 +993,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
    CkPrintf("HI, I am gPP %d %d in FFTNLFwd : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-  RunDescriptor *runs  = eesData->GspData[myChareG].runs;
+  RunDescriptor *runs  = eesData->GspData[myChareG]->runs;
   complex *projPsiGTmp = fftcache->tmpData;
 #if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
@@ -1202,7 +1202,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
    CkPrintf("HI, I am gPP %d %d in FFTNLeesBck : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-  RunDescriptor *runs  = eesData->GspData[myChareG].runs;
+  RunDescriptor *runs  = eesData->GspData[myChareG]->runs;
   fftcache->getCacheMem("CP_State_ParticlePlane::FFTNLEesBck");
   complex *projPsiGTmp = fftcache->tmpData;
 
@@ -1232,7 +1232,7 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
 #endif    
 
   fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
-                               eesData->GspData[myChareG].numRuns,runs,ngridcNL,myChareG);
+                               eesData->GspData[myChareG]->numRuns,runs,ngridcNL,myChareG);
 #if CMK_TRACE_ENABLED
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
@@ -1258,9 +1258,9 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
 
   int ncoef       = gSpaceNumPoints;
-  int *k_x        = eesData->GspData[myChareG].ka;
-  int *k_y        = eesData->GspData[myChareG].kb;
-  int *k_z        = eesData->GspData[myChareG].kc;
+  int *k_x        = eesData->GspData[myChareG]->ka;
+  int *k_y        = eesData->GspData[myChareG]->kb;
+  int *k_z        = eesData->GspData[myChareG]->kc;
   int ihave_g0    = gss->ihave_g000;
   int ind_g0      = gss->ind_g000;
   int nkx0        = gss->nkx0;

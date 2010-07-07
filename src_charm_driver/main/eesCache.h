@@ -60,12 +60,12 @@ class eesCache: public Group {
    int *indRhoGChares;         // lth: nchareRhoGProc: 
 
    // plane data on proc : again ignore state index
-   GPPDATA      *GppData;      // lth: nchareGPP  : only allowed guys have data
-   RPPDATA      *RppData;      // lth: nchareRPP  : only allowed guys have data
-   RHOGHARTDATA *RhoGHartData; // lth: nchareGHart: only allowed guys have data
-   RHORHARTDATA *RhoRHartData; // lth: nchareRHart: only allowed guys have data
-   GSPDATA      *GspData;      // lth: nchareGsp  : only allowed guys have data
-   RHOGDATA     *RhoGData;     // lth: nchareRhoG : only allowed guys have data
+   GPPDATA      **GppData;      // lth: nchareGPP  : only allowed guys have data
+   RPPDATA      **RppData;      // lth: nchareRPP  : only allowed guys have data
+   RHOGHARTDATA **RhoGHartData; // lth: nchareGHart: only allowed guys have data
+   RHORHARTDATA **RhoRHartData; // lth: nchareRHart: only allowed guys have data
+   GSPDATA      **GspData;      // lth: nchareGsp  : only allowed guys have data
+   //RHOGDATA     *RhoGData;     // lth: nchareRhoG : only allowed guys have data
 
   // Functions
    eesCache(){};

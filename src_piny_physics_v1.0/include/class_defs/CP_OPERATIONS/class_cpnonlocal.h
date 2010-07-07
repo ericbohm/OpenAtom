@@ -56,7 +56,7 @@ static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *,
 
 static void eesSplProjectorGgrp(int ,int *,int *,int *,double *,int *);
 
-static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA *);
+static void eesAtmBsplineRgrp(FastAtoms *, int *, RPPDATA **);
 
 static void eesProjGchare(int , complex *,int *,int *, int *,int , int , int ,
                           double *, double *, double *, double *,complex *,int *,

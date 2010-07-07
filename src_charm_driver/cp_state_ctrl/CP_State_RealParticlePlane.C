@@ -533,9 +533,9 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 
    if(iterNL==1){eesData->queryCacheRPP(myPlane,itime,iterNL);}// query once a t-step
 
-   int *plane_index = eesData->RppData[myPlane].plane_index;
-   int **igrid      = eesData->RppData[myPlane].igrid;
-   double **mn      = eesData->RppData[myPlane].mn;
+   int *plane_index = eesData->RppData[myPlane]->plane_index;
+   int **igrid      = eesData->RppData[myPlane]->igrid;
+   double **mn      = eesData->RppData[myPlane]->mn;
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
@@ -764,14 +764,14 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    int *allowedRppChares = eesData->allowedRppChares;
    CkAssert(allowedRppChares[myPlane]==1);
 
-   int *plane_index    = eesData->RppData[myPlane].plane_index;
-   int **igrid         = eesData->RppData[myPlane].igrid;
-   int *nBreakJ        = eesData->RppData[myPlane].nBreakJ;
-   int **sBreakJ       = eesData->RppData[myPlane].sBreakJ;
-   double **dmn_x      = eesData->RppData[myPlane].dmn_x;
-   double **dmn_y      = eesData->RppData[myPlane].dmn_y;
-   double **dmn_z      = eesData->RppData[myPlane].dmn_z;
-   double **mn         = eesData->RppData[myPlane].mn;
+   int *plane_index    = eesData->RppData[myPlane]->plane_index;
+   int **igrid         = eesData->RppData[myPlane]->igrid;
+   int *nBreakJ        = eesData->RppData[myPlane]->nBreakJ;
+   int **sBreakJ       = eesData->RppData[myPlane]->sBreakJ;
+   double **dmn_x      = eesData->RppData[myPlane]->dmn_x;
+   double **dmn_y      = eesData->RppData[myPlane]->dmn_y;
+   double **dmn_z      = eesData->RppData[myPlane]->dmn_z;
+   double **mn         = eesData->RppData[myPlane]->mn;
    double *projPsiRScr = fftcache->tmpDataR;
    fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
 

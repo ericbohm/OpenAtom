@@ -806,7 +806,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gs.ekeNhc_ret  = 0.0;  
   gs.cp_min_opt  = cp_min_opt;
 
-  gs.numRuns     = eesData->GspData[iplane_ind].numRuns;
+  gs.numRuns     = eesData->GspData[iplane_ind]->numRuns;
   gs.numLines    = gs.numRuns/2;
   gs.numFull     = (gs.numLines)*nz;
   gs.numFullNL   = (gs.numLines)*nzNL;
@@ -823,7 +823,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   gs.ngridbNL    = nyNL;
   gs.ngridcNL    = nzNL;
 
-  gs.numPoints   = eesData->GspData[iplane_ind].ncoef;;
+  gs.numPoints   = eesData->GspData[iplane_ind]->ncoef;;
   CkAssert(gs.numPoints == size);
 
   gs.ees_nonlocal        = sim->ees_nloc_on;
@@ -872,11 +872,11 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 //============================================================================
 // Setup k-vector ranges, masses and zero the force overlap
 
-  int *k_x          = eesData->GspData[iplane_ind].ka;
-  int *k_y          = eesData->GspData[iplane_ind].kb;
-  int *k_z          = eesData->GspData[iplane_ind].kc;
-  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
-  int mycoef        = eesData->GspData[iplane_ind].ncoef;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
+  int *k_y          = eesData->GspData[iplane_ind]->kb;
+  int *k_z          = eesData->GspData[iplane_ind]->kc;
+  double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
+  int mycoef        = eesData->GspData[iplane_ind]->ncoef;
   gSpaceNumPoints   = gs.numPoints;
 
   if(eesData->allowedGspChares[iplane_ind]==0 || mycoef != gSpaceNumPoints){
@@ -1159,7 +1159,7 @@ void CP_State_GSpacePlane::doFFT() {
 // A local function not a message : get pointer to memory for fft group
 
   eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
+  RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
 
   UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
 	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
@@ -1320,7 +1320,7 @@ void CP_State_GSpacePlane::doIFFT()
         double StartTime=CmiWallTimer();
     #endif
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-    RunDescriptor *runs = eesData->GspData[iplane_ind].runs;
+    RunDescriptor *runs = eesData->GspData[iplane_ind]->runs;
     FFTcache *fftcache        = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     
     fftcache->getCacheMem("CP_State_GSpacePlane::doIFFT");
@@ -1381,10 +1381,10 @@ void CP_State_GSpacePlane::combineForcesGetEke()
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int ncoef         = gs.numPoints;
-  int *k_x          = eesData->GspData[iplane_ind].ka;
-  int *k_y          = eesData->GspData[iplane_ind].kb;
-  int *k_z          = eesData->GspData[iplane_ind].kc;
-  double *g2        = eesData->GspData[iplane_ind].g2;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
+  int *k_y          = eesData->GspData[iplane_ind]->kb;
+  int *k_z          = eesData->GspData[iplane_ind]->kc;
+  double *g2        = eesData->GspData[iplane_ind]->g2;
 
 //================================================================================
 // Add forces from particle plane to forces from IFFT then zero them
@@ -1634,7 +1634,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
 
   int       N    = msg->getSize()/sizeof(complex);
   complex *data  = (complex *)msg->getData();
@@ -1754,7 +1754,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  int *k_x          = eesData->GspData[iplane_ind].ka;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
 
   complex *force    = gs.packedForceData;
   int chunksize     = gs.numPoints/config.numChunksAsym;
@@ -1989,10 +1989,10 @@ void CP_State_GSpacePlane::writeStateDumpFile()
   int ncoef      = gSpaceNumPoints;
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  int *k_x          = eesData->GspData[iplane_ind].ka;
-  int *k_y          = eesData->GspData[iplane_ind].kb;
-  int *k_z          = eesData->GspData[iplane_ind].kc;
-  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
+  int *k_y          = eesData->GspData[iplane_ind]->kb;
+  int *k_z          = eesData->GspData[iplane_ind]->kc;
+  double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
 
   complex *psi      = gs.packedPlaneData;
   complex *vpsi     = gs.packedVelData;       // to evolve psi to time, t.
@@ -2176,10 +2176,10 @@ void CP_State_GSpacePlane::integrateModForce() {
 // II. Local pointers    
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  int *k_x          = eesData->GspData[iplane_ind].ka;
-  int *k_y          = eesData->GspData[iplane_ind].kb;
-  int *k_z          = eesData->GspData[iplane_ind].kc;
-  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
+  int *k_y          = eesData->GspData[iplane_ind]->kb;
+  int *k_z          = eesData->GspData[iplane_ind]->kc;
+  double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
 
   int cp_min_opt     = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int cp_min_cg      = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg;
@@ -2941,7 +2941,7 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 // I) Local Pointers
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
 
   int ncoef         = gSpaceNumPoints;
   complex *psi      = gs.packedPlaneData;
@@ -3116,7 +3116,7 @@ void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 void CP_State_GSpacePlane::doneRedPsiVIntegrate() {
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  double *coef_mass = eesData->GspData[iplane_ind].coef_mass;
+  double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
   int ncoef         = gs.numPoints;
   int ncoef_red     = gs.nkx0_red;
   complex *vpsi     = gs.packedVelData;
@@ -3336,7 +3336,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
  eesCache *eesData    = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
 
- double *coef_mass    = eesData->GspData[iplane_ind].coef_mass;
+ double *coef_mass    = eesData->GspData[iplane_ind]->coef_mass;
  double dt           = sim->dt;
  double dt2          = 2.0*dt;
  int ncoef           = gs.numPoints;
@@ -3390,9 +3390,9 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 #endif
 
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-  int *k_x          = eesData->GspData[iplane_ind].ka;
-  int *k_y          = eesData->GspData[iplane_ind].kb;
-  int *k_z          = eesData->GspData[iplane_ind].kc;
+  int *k_x          = eesData->GspData[iplane_ind]->ka;
+  int *k_y          = eesData->GspData[iplane_ind]->kb;
+  int *k_z          = eesData->GspData[iplane_ind]->kc;
 
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   int nstates       = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;

@@ -229,7 +229,7 @@ void CPNONLOCAL::eesSplProjectorGgrp(int ncoef, int *ka, int *kb, int *kc,
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA *RPPData)
+void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDATA **RPPData)
 //==========================================================================
   {// begin routine 
 //==========================================================================
@@ -453,8 +453,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
    // Zero array mapping plane index, j, to interpolation index, jc.
    for(j=0;j<ngrid_c;j++){
      if(allowed_planes[j]==1){
-       plane_index = RPPData[j].plane_index;
-       igrid       = RPPData[j].igrid;
+       plane_index = RPPData[j]->plane_index;
+       igrid       = RPPData[j]->igrid;
        for(i=0;i<natm;i++){
           plane_index[i] = 0;
           for(jc=1;jc<=n_interp*n_interp;jc++){igrid[i][jc]=-2;}
@@ -488,12 +488,12 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
      for(jc=1;jc<=n_interp;jc++){
        int ip = igrid_c[jc][i];
        if(allowed_planes[ip]==1){
-        plane_index = RPPData[ip].plane_index;
-        igrid       = RPPData[ip].igrid;
-        mn          = RPPData[ip].mn;
-        dmn_x       = RPPData[ip].dmn_x;
-        dmn_y       = RPPData[ip].dmn_y;
-        dmn_z       = RPPData[ip].dmn_z;
+        plane_index = RPPData[ip]->plane_index;
+        igrid       = RPPData[ip]->igrid;
+        mn          = RPPData[ip]->mn;
+        dmn_x       = RPPData[ip]->dmn_x;
+        dmn_y       = RPPData[ip]->dmn_y;
+        dmn_z       = RPPData[ip]->dmn_z;
         plane_index[i] = jc; // Each jc is a different plane. Ex : plane_index[3] = 4
                             //      For the 3rd atom, the 4th c-interpolation pt
                             //      is on plane number ip=25
@@ -515,8 +515,8 @@ void CPNONLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes, RPPDAT
         }//endfor : jb
 #define _CP_BRK_BETTER_OFF // must flip cp_ees_nonlocal.h too
 #ifdef _CP_BRK_BETTER_
-        int *nBreakJ  = RPPData[ip].nBreakJ;
-        int **sBreakJ = RPPData[ip].sBreakJ;
+        int *nBreakJ  = RPPData[ip]->nBreakJ;
+        int **sBreakJ = RPPData[ip]->sBreakJ;
         nBreakJ[i]    = 1;   // length natm
         sBreakJ[i][1] = 1;   // length [natm][n_interp2+1]
         for(int jj=2;jj<=n_interp2;jj++){

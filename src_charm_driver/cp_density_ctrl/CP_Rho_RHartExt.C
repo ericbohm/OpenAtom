@@ -385,10 +385,10 @@ void CP_Rho_RHartExt::computeAtmSF(){
   eesCache *eesData= UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   if(iterAtmTyp==1){eesData->queryCacheRHart(myPlane,itime,iterAtmTyp);}
 
-  int *plane_index = eesData->RhoRHartData[myPlane].plane_index;
-  int **nSub       = eesData->RhoRHartData[myPlane].nSub;
-  int ***igrid     = eesData->RhoRHartData[myPlane].igrid;
-  double ***mn     = eesData->RhoRHartData[myPlane].mn;
+  int *plane_index = eesData->RhoRHartData[myPlane]->plane_index;
+  int **nSub       = eesData->RhoRHartData[myPlane]->nSub;
+  int ***igrid     = eesData->RhoRHartData[myPlane]->igrid;
+  double ***mn     = eesData->RhoRHartData[myPlane]->mn;
 
   AtomsGrp *ag     = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
   int natm         = ag->natm;
@@ -1152,12 +1152,12 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   AtomsGrp *ag       = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
   CkAssert(eesData->allowedRhoRHartChares[myPlane]!=0);
-  int *plane_index   = eesData->RhoRHartData[myPlane].plane_index;
-  int **nSub         = eesData->RhoRHartData[myPlane].nSub;
-  int ***igrid       = eesData->RhoRHartData[myPlane].igrid;
-  double ***dmn_x    = eesData->RhoRHartData[myPlane].dmn_x;
-  double ***dmn_y    = eesData->RhoRHartData[myPlane].dmn_y;
-  double ***dmn_z    = eesData->RhoRHartData[myPlane].dmn_z;
+  int *plane_index   = eesData->RhoRHartData[myPlane]->plane_index;
+  int **nSub         = eesData->RhoRHartData[myPlane]->nSub;
+  int ***igrid       = eesData->RhoRHartData[myPlane]->igrid;
+  double ***dmn_x    = eesData->RhoRHartData[myPlane]->dmn_x;
+  double ***dmn_y    = eesData->RhoRHartData[myPlane]->dmn_y;
+  double ***dmn_z    = eesData->RhoRHartData[myPlane]->dmn_z;
 
   FastAtoms *fastAtoms = &(ag->fastAtoms);
   int natm             = ag->natm;

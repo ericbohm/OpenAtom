@@ -37,7 +37,7 @@ class CPLOCAL{
   static void eesSetEesWghtGgrp(int , int *, int *, int *,double *, double *, 
                                 int ,int ,int ,int );
 
-  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA *);
+  static void eesAtmBsplineRgrp(FastAtoms *, int *, RHORHARTDATA **);
 
   static void eesPackGridRchare(int , int , double *, int ,int , int ***, double ***, int *, 
                                 int **, int );
