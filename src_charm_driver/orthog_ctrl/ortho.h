@@ -257,7 +257,7 @@ class Ortho : public CBase_Ortho
 inline void Ortho::recvStep2(CkDataMsg *msg)//double *step2result, int size)
 {
     // copy our data into the tmp_arr  
-    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(double));
+    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(internalType));
     step2done=true;
     delete msg;
     //End of iteration check
