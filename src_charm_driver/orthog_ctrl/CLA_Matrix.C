@@ -517,157 +517,142 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
     multiply();
 }
 
-void CLA_Matrix::multiply(){
-  /* reset counters */
-  row_count = col_count = 0;
-  got_start = false;
 
-  /* transpose result matrix (if beta != 0) */
-  if(beta != 0)
-    transpose(dest, m, n);
-  /* multiply */
-  char trans = 'T';
-//#define ORTHO_DGEMM_SPLIT 
 
-#define BUNDLE_USER_EVENTS
-#ifdef ORTHO_DGEMM_SPLIT 
-  double betap = 1.0;
-  int Ksplit_m=gemmSplitOrtho;  
-  int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
-  int Krem     = (K % Ksplit);
-  int Kloop    = K/Ksplit-1;
 
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
+void CLA_Matrix::multiply()
+{
+    // Reset counters
+    row_count = col_count = 0;
+    got_start = false;
 
-#ifdef TEST_ALIGN
-  CkAssert((unsigned int) tmpA %16==0);
-  CkAssert((unsigned int) tmpB %16==0);
-  CkAssert((unsigned int) dest %16==0);
-#endif
+    // Transpose result matrix (if beta != 0)
+    if(beta != 0)
+        transpose(dest, m, n);
+    // Multiply
+    char trans = 'T';
 
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
-#endif
+    //#define ORTHO_DGEMM_SPLIT
+    #define BUNDLE_USER_EVENTS
 
-#ifdef _NAN_CHECK_
-  for(int in=0; in<Ksplit; in++)
-    for(int jn=0; jn<m; jn++)
-      CkAssert(isfinite(tmpA[in*m+jn]));
+    #ifdef ORTHO_DGEMM_SPLIT
+        double betap = 1.0;
+        int Ksplit_m=gemmSplitOrtho;
+        int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
+        int Krem     = (K % Ksplit);
+        int Kloop    = K/Ksplit-1;
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
+        #endif
+        #ifdef TEST_ALIGN
+            CkAssert((unsigned int) tmpA %16==0);
+            CkAssert((unsigned int) tmpB %16==0);
+            CkAssert((unsigned int) dest %16==0);
+        #endif
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
+        #endif
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<Ksplit; in++)
+                for(int jn=0; jn<m; jn++)
+                    CkAssert(isfinite(tmpA[in*m+jn]));
+            for(int in=0; in<n; in++)
+                for(int jn=0; jn<Ksplit; jn++)
+                    CkAssert(isfinite(tmpB[in*K+jn]));
+        #endif
+        myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<m; in++)
+                for(int jn=0; jn<n; jn++)
+                    CkAssert(isfinite(dest[in*n+jn]));
+        #endif
+        #ifndef BUNDLE_USER_EVENTS
+            #ifndef CMK_OPTIMIZE
+                traceUserBracketEvent(401, StartTime, CmiWallTimer());
+            #endif
+        #endif
+        CmiNetworkProgress();
 
-  for(int in=0; in<n; in++)
-    for(int jn=0; jn<Ksplit; jn++)
-      CkAssert(isfinite(tmpB[in*K+jn]));
-#endif
+        for(int i=1;i<=Kloop;i++)
+        {
+            int aoff = Ksplit*i;
+            int boff = n*i*Ksplit;
+            if(i==Kloop){Ksplit+=Krem;}
+            #ifndef BUNDLE_USER_EVENTS
+                #ifndef CMK_OPTIMIZE
+                    StartTime=CmiWallTimer();
+                #endif
+            #endif
+            #ifdef TEST_ALIGN
+                CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
+                CkAssert((unsigned int) &(tmpB[boff]) %16==0);
+                CkAssert((unsigned int) dest %16==0);
+            #endif
+            #ifdef PRINT_DGEMM_PARAMS
+                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
+            #endif
+            #ifdef _NAN_CHECK_
+                for(int in=0; in<Ksplit; in++)
+                    for(int jn=0; jn<m; jn++)
+                        CkAssert(isfinite(tmpA[aoff+in*m+jn]));
+                for(int in=0; in<n; in++)
+                    for(int jn=0; jn<Ksplit; jn++)
+                        CkAssert(isfinite(tmpB[boff+in*Ksplit+jn]));
+            #endif
+            myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
+            #ifdef _NAN_CHECK_
+                for(int in=0; in<m; in++)
+                    for(int jn=0; jn<n; jn++)
+                        CkAssert(isfinite(dest[in*n+jn]));
+            #endif
+            #ifndef BUNDLE_USER_EVENTS
+                #ifndef CMK_OPTIMIZE
+                    traceUserBracketEvent(401, StartTime, CmiWallTimer());
+                #endif
+            #endif
+            CmiNetworkProgress();
+        }
 
-  myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
+        #ifdef BUNDLE_USER_EVENTS
+            #ifndef CMK_OPTIMIZE
+                traceUserBracketEvent(401, StartTime, CmiWallTimer());
+            #endif
+        #endif
+    #else
+        // Old unsplit version
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
+        #endif
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
+        #endif
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<K; in++)
+                for(int jn=0; jn<m; jn++)
+                    CkAssert(isfinite(tmpA[in*m+jn]));
+            for(int in=0; in<n; in++)
+                for(int jn=0; jn<K; jn++)
+                    CkAssert(isfinite(tmpB[in*K+jn]));
+        #endif
+        myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<m; in++)
+                for(int jn=0; jn<n; jn++)
+                    CkAssert(isfinite(dest[in*n+jn]));
+        #endif
+        #ifndef CMK_OPTIMIZE
+            traceUserBracketEvent(401, StartTime, CmiWallTimer());
+        #endif
+    #endif
 
-#ifdef _NAN_CHECK_
-  for(int in=0; in<m; in++)
-    for(int jn=0; jn<n; jn++)
-      CkAssert(isfinite(dest[in*n+jn]));
-#endif
-
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-
-  CmiNetworkProgress();
-
-  for(int i=1;i<=Kloop;i++){
-    int aoff = Ksplit*i;
-    int boff = n*i*Ksplit;
-    if(i==Kloop){Ksplit+=Krem;}
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
-#endif
-#endif
-
-#ifdef TEST_ALIGN
-    CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
-    CkAssert((unsigned int) &(tmpB[boff]) %16==0);
-    CkAssert((unsigned int) dest %16==0);
-#endif
-
-#ifdef PRINT_DGEMM_PARAMS
-    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
-#endif
-
-#ifdef _NAN_CHECK_
-    for(int in=0; in<Ksplit; in++)
-      for(int jn=0; jn<m; jn++)
-	CkAssert(isfinite(tmpA[aoff+in*m+jn]));
-
-    for(int in=0; in<n; in++)
-      for(int jn=0; jn<Ksplit; jn++)
-	CkAssert(isfinite(tmpB[boff+in*Ksplit+jn]));
-#endif
-
-    myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
-
-#ifdef _NAN_CHECK_
-    for(int in=0; in<m; in++)
-      for(int jn=0; jn<n; jn++)
-	CkAssert(isfinite(dest[in*n+jn]));
-#endif
-
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-    CmiNetworkProgress();
-  }//endfor
-
-#ifdef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-
-#else
-  /* old unsplit version */
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
-#endif
-
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
-#endif
-
-#ifdef _NAN_CHECK_
-  for(int in=0; in<K; in++)
-    for(int jn=0; jn<m; jn++)
-      CkAssert(isfinite(tmpA[in*m+jn]));
-
-  for(int in=0; in<n; in++)
-    for(int jn=0; jn<K; jn++)
-      CkAssert(isfinite(tmpB[in*K+jn]));
-#endif
-
-     myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
-
-#ifdef _NAN_CHECK_
-  for(int in=0; in<m; in++)
-    for(int jn=0; jn<n; jn++)
-      CkAssert(isfinite(dest[in*n+jn]));
-#endif
-
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-
-#endif
-  /* transpose result */
-  transpose(dest, n, m);
-
-  /* tell caller we are done */
-  fcb(user_data);
+    // Transpose the result
+    transpose(dest, n, m);
+    // Tell caller we are done
+    fcb(user_data);
 }
+
+
+
 
 void CLA_Matrix::readyC(CkReductionMsg *msg){
   CkCallback cb(CkIndex_CLA_Matrix::ready(NULL), thisProxy(0, 0));
