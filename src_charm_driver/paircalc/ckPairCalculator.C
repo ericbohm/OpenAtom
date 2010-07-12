@@ -876,7 +876,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
     #endif
 
     // If we're sending the work to dgemm
-    #ifndef CP_PAIRCALC_USE_COMPLEX_MATH
+    #ifndef CP_PAIRCALC_USES_COMPLEX_MATH
     //if (!cfg.useComplexMath)
     {
         // If internal representation is as doubles, treat each complex as 2 doubles
