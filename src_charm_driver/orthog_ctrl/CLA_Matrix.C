@@ -554,11 +554,11 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
   for(int in=0; in<Ksplit; in++)
     for(int jn=0; jn<m; jn++)
-      CkAssert(finite(tmpA[in*m+jn]));
+      CkAssert(isfinite(tmpA[in*m+jn]));
 
   for(int in=0; in<n; in++)
     for(int jn=0; jn<Ksplit; jn++)
-      CkAssert(finite(tmpB[in*K+jn]));
+      CkAssert(isfinite(tmpB[in*K+jn]));
 #endif
 
   myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
@@ -566,7 +566,7 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
   for(int in=0; in<m; in++)
     for(int jn=0; jn<n; jn++)
-      CkAssert(finite(dest[in*n+jn]));
+      CkAssert(isfinite(dest[in*n+jn]));
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
@@ -600,11 +600,11 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
     for(int in=0; in<Ksplit; in++)
       for(int jn=0; jn<m; jn++)
-	CkAssert(finite(tmpA[aoff+in*m+jn]));
+	CkAssert(isfinite(tmpA[aoff+in*m+jn]));
 
     for(int in=0; in<n; in++)
       for(int jn=0; jn<Ksplit; jn++)
-	CkAssert(finite(tmpB[boff+in*Ksplit+jn]));
+	CkAssert(isfinite(tmpB[boff+in*Ksplit+jn]));
 #endif
 
     myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
@@ -612,7 +612,7 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
     for(int in=0; in<m; in++)
       for(int jn=0; jn<n; jn++)
-	CkAssert(finite(dest[in*n+jn]));
+	CkAssert(isfinite(dest[in*n+jn]));
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
@@ -642,11 +642,11 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
   for(int in=0; in<K; in++)
     for(int jn=0; jn<m; jn++)
-      CkAssert(finite(tmpA[in*m+jn]));
+      CkAssert(isfinite(tmpA[in*m+jn]));
 
   for(int in=0; in<n; in++)
     for(int jn=0; jn<K; jn++)
-      CkAssert(finite(tmpB[in*K+jn]));
+      CkAssert(isfinite(tmpB[in*K+jn]));
 #endif
 
      myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
@@ -654,7 +654,7 @@ void CLA_Matrix::multiply(){
 #ifdef _NAN_CHECK_
   for(int in=0; in<m; in++)
     for(int jn=0; jn<n; jn++)
-      CkAssert(finite(dest[in*n+jn]));
+      CkAssert(isfinite(dest[in*n+jn]));
 #endif
 
 #ifndef CMK_OPTIMIZE
