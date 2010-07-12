@@ -2454,9 +2454,9 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 
 void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 {
-	#ifdef _PAIRCALC_DEBUG_
-		CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, actionType);
-	#endif
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d]: sendBWResultDirect with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, actionType);
+    #endif
 	// Now we have results in mynewData and if(cfg.isSymmetric) othernewData
 	bool otherdata=msg->otherdata;
 	delete msg;
@@ -2544,90 +2544,64 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 
 
 
-// entry method to allow us to delay this outbound communication
-// to minimize brain dead BG/L interference we have a signal to prioritize this
-void
-PairCalculator::sendBWResult(sendBWsignalMsg *msg)
+/** This is an entry method to allow us to delay this outbound communication
+ * to minimize brain dead BG/L interference we have a signal to prioritize this
+ */
+void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 {
+    #ifdef _PAIRCALC_DEBUG_
+        CkPrintf("[%d,%d,%d,%d,%d]: sendBWResult with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, actionType);
+    #endif
 
-#ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d]: sendBWResult with actionType %d\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, actionType);
-#endif
-  bool otherdata=msg->otherdata;
-  delete msg;
-  // Now we have results in mynewData and if(cfg.isSymmetric) othernewData
-  CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
-  int cp_entry=cb_ep;
-  if(actionType==PSIV)
+    bool otherdata=msg->otherdata;
+    delete msg;
+    // Now we have results in mynewData and if(cfg.isSymmetric) othernewData
+    CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+    int cp_entry=cb_ep;
+    if(actionType==PSIV)
+        cp_entry= cb_ep_tol;
+
+    if(otherdata)
     {
-      cp_entry= cb_ep_tol;
+        // We have this othernewdata issue for the symmetric case
+        // and the asymmetric dynamic case for the off diagonal elements
+        CkAssert(othernewData!=NULL);
+        int size=grainSizeX;
+        int index=thisIndex.x;
+        if(amPhantom)
+        {
+            index=thisIndex.y;
+            size=grainSizeY;
+        }
+        for(int j=0;j<size;j++)
+        {
+            // This callback creation could be obviated by keeping an
+            // array of callbacks, not clearly worth doing
+            complex *computed=&(othernewData[j*numPoints]);
+            CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
+            #ifdef _PAIRCALC_DEBUG_CONTRIB_
+                CkPrintf("[%d,%d,%d,%d,%d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
+            #endif
+            int outOffset=thisIndex.z;
+            mcastGrp->contribute(numPoints*sizeof(complex),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+        }
     }
-  /*
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
-  */
-  if(otherdata){  // we have this othernewdata issue for the symmetric case
-    // and the asymmetric dynamic case
-    // for the off diagonal elements
-    CkAssert(othernewData!=NULL);
-    int size=grainSizeX;
-    int index=thisIndex.x;
-    if(amPhantom)
-      {
-	index=thisIndex.y;
-	size=grainSizeY;
-      }
-    for(int j=0;j<size;j++)
-      {
-	//this callback creation could be obviated by keeping an
-	//array of callbacks, not clearly worth doing
-	complex *computed=&(othernewData[j*numPoints]);
-	CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-	CkPrintf("[%d,%d,%d,%d,%d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
-#endif
-	/*
-#ifndef CMK_OPTIMIZE
-	StartTime=CmiWallTimer();
-#endif
-	*/
-	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
-	/*
-#ifndef CMK_OPTIMIZE
-	traceUserBracketEvent(220, StartTime, CmiWallTimer());
-#endif
-	*/
 
-      }
-  }
-  if(!amPhantom)
+    if(!amPhantom)
     {
-      int outsize=grainSizeY;
-      int index=thisIndex.y;
-
-      CkAssert(mynewData!=NULL);
-      for(int j=0;j<outsize;j++) //mynewdata
-	{
-	  complex *computed=&(mynewData[j*numPoints]);
-	  CkCallback mycb(cp_entry, CkArrayIndex2D(j+index,thisIndex.w), cb_aid);
-#ifdef _PAIRCALC_DEBUG_CONTRIB_
-	  CkPrintf("[%d,%d,%d,%d,%d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
-#endif
-	  /*
-	    #ifndef CMK_OPTIMIZE
-	    StartTime=CmiWallTimer();
-	    #endif
-	  */
-	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
-	  /*
-	    #ifndef CMK_OPTIMIZE
-	    traceUserBracketEvent(220, StartTime, CmiWallTimer());
-	    #endif
-	  */
-	}
+        int outsize=grainSizeY;
+        int index=thisIndex.y;
+        CkAssert(mynewData!=NULL);
+        for(int j=0;j<outsize;j++) //mynewdata
+        {
+            complex *computed=&(mynewData[j*numPoints]);
+            CkCallback mycb(cp_entry, CkArrayIndex2D(j+index,thisIndex.w), cb_aid);
+            #ifdef _PAIRCALC_DEBUG_CONTRIB_
+                CkPrintf("[%d,%d,%d,%d,%d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
+            #endif
+            int outOffset=thisIndex.z;
+            mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+        }
     }
 
     /// If we're done with all the paircalc work in this loop (iteration), then cleanup
