@@ -457,8 +457,8 @@ class PairCalculator: public CBase_PairCalculator
 		bool existsNew; 							///< newData allocated
 		bool resumed; 							///< have resumed from load balancing
 		
-		complex *mynewData; 						///< results of bw multiply
-		complex *othernewData; 					///< results of sym off diagonal multiply,
+		inputType *mynewData; 						///< results of bw multiply
+		inputType *othernewData; 					///< results of sym off diagonal multiply,
 		                           //! or the C=-1 *inRight* orthoT +c in dynamics
 		internalType *inDataLeft; 						///< the input pair to be transformed
 		internalType *inDataRight; 						///< the input pair to be transformed

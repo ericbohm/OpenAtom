@@ -1573,14 +1573,14 @@ void PairCalculator::cleanupAfterBWPath()
     {
         if (!amPhantom)
         {
-            bzero(mynewData,numPoints*numExpectedY* sizeof(complex));
+            bzero(mynewData,numPoints*numExpectedY* sizeof(inputType));
             if (othernewData) ///< @todo: is this redundant? isnt othernewData always allocated?
-                bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
+                bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
 	    }
         else
         {
             if (othernewData) ///< @todo: is this redundant? isnt othernewData always allocated?
-                bzero(othernewData,numPoints*numExpectedY * sizeof(complex));
+                bzero(othernewData,numPoints*numExpectedY * sizeof(inputType));
         }
     }
 
@@ -1820,8 +1820,8 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
         #ifdef _PAIRCALC_DEBUG_
             CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
         #endif
-        mynewData = new complex[numPoints*numExpectedY];
-        bzero(mynewData,numPoints*numExpectedY* sizeof(complex));
+        mynewData = new inputType[numPoints*numExpectedY];
+        bzero(mynewData,numPoints*numExpectedY* sizeof(inputType));
         existsNew=true;
         if(!amPhantom && ((cfg.isSymmetric || !unitcoef) && notOnDiagonal))
         {
@@ -1830,8 +1830,8 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
                 #ifdef _PAIRCALC_DEBUG_
                     CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
                 #endif
-                othernewData = new complex[numPoints*numExpectedX];
-                bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
+                othernewData = new inputType[numPoints*numExpectedX];
+                bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
             }
         }
     }
@@ -1843,8 +1843,8 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
                 CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
             #endif
             // Phantoms live in a bizarre reverso world
-            othernewData = new complex[numPoints*numExpectedY];
-            bzero(othernewData,numPoints*numExpectedY * sizeof(complex));
+            othernewData = new inputType[numPoints*numExpectedY];
+            bzero(othernewData,numPoints*numExpectedY * sizeof(inputType));
         }
     }
 
@@ -2070,8 +2070,8 @@ void PairCalculator::bwMultiplyDynOrthoT()
 #ifdef _PAIRCALC_DEBUG_
       CkPrintf("[%d,%d,%d,%d,%d] Allocated other %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedX,numPoints);
 #endif
-      othernewData = new complex[numPoints*numExpectedX];
-      bzero(othernewData,numPoints*numExpectedX * sizeof(complex));
+      othernewData = new inputType[numPoints*numExpectedX];
+      bzero(othernewData,numPoints*numExpectedX * sizeof(inputType));
       existsNew=true;
     }
   if(mynewData==NULL)
@@ -2081,8 +2081,8 @@ void PairCalculator::bwMultiplyDynOrthoT()
       CkPrintf("[%d,%d,%d,%d,%d] Allocated mynewData %d * %d *2 \n",thisIndex.w,thisIndex.x,thisIndex.y,thisIndex.z,cfg.isSymmetric,numExpectedY,numPoints);
 #endif
 
-      mynewData = new complex[numPoints*numExpectedY];
-      bzero(mynewData,numPoints*numExpectedY* sizeof(complex));
+      mynewData = new inputType[numPoints*numExpectedY];
+      bzero(mynewData,numPoints*numExpectedY* sizeof(inputType));
       existsNew=true;
     }
 
@@ -2293,7 +2293,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	// shift the send order proportional to chunk index
 	int jPermuted=(j+permuter>endGrain) ? (j+permuter-numToSend) : (j+permuter) ;
 
-	complex *computed=&(othernewData[jPermuted*numPoints]);
+	inputType *computed=&(othernewData[jPermuted*numPoints]);
 	CkCallback mycb(cp_entry, CkArrayIndex2D(jPermuted+ index ,thisIndex.w), cb_aid);
 	partialResultMsg *msg=new (numPoints, 8*sizeof(int) ) partialResultMsg;
 	if(cfg.resultMsgPriority)
@@ -2325,7 +2325,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
 	int jPermuted=(j+permuter>endGrain) ? (j+permuter-numToSend) : (j+permuter) ;
-	complex *computed=&(mynewData[jPermuted*numPoints]);
+	inputType *computed=&(mynewData[jPermuted*numPoints]);
 #ifdef _NAN_CHECK_
 	for(int i=0;i<numPoints ;i++)
     {
@@ -2348,7 +2348,7 @@ PairCalculator::sendBWResultColumnDirect(bool otherdata, int startGrain, int end
 	/*
 	  msg->N=numPoints;
 	  msg->myoffset = thisIndex.z; // chunkth
-	  CmiMemcpy(msg->result,mynewData+jPermuted*numPoints,msg->N*sizeof(complex));
+	  CmiMemcpy(msg->result,mynewData+jPermuted*numPoints,msg->N*sizeof(inputType));
 	*/
 #ifdef _PAIRCALC_DEBUG_
 	CkPrintf("[%d,%d,%d,%d,%d]:sending partial of size %d offset %d to [%d %d]\n", thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,jPermuted,index+jPermuted,thisIndex.w);
@@ -2399,7 +2399,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
       {
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
-	complex *computed=&(othernewData[j*numPoints]);
+	inputType *computed=&(othernewData[j*numPoints]);
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();
 #endif
@@ -2410,7 +2410,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 #endif
 
 	int outOffset=thisIndex.z;
-	mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+	mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2427,7 +2427,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
       for(int j=startGrain;j<endGrain;j++) //mynewdata
 	{
 
-	complex *computed=&(mynewData[j*numPoints]);
+	inputType *computed=&(mynewData[j*numPoints]);
 #ifndef CMK_OPTIMIZE
 	double StartTime=CmiWallTimer();
 #endif
@@ -2438,7 +2438,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 #endif
 
 	  int outOffset=thisIndex.z;
-	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+	  mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 
 #ifndef CMK_OPTIMIZE
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
@@ -2478,7 +2478,7 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 		}
 		for(int j=0;j<size;j++)
 		{
-			complex *computed=&(othernewData[j*numPoints]);
+			inputType *computed=&(othernewData[j*numPoints]);
 			//this callback creation could be obviated by keeping an
 			//array of callbacks, not clearly worth doing
 			CkCallback mycb(cp_entry, CkArrayIndex2D(j+ index ,thisIndex.w), cb_aid);
@@ -2512,7 +2512,7 @@ void PairCalculator::sendBWResultDirect(sendBWsignalMsg *msg)
 		int index=thisIndex.y;
 		for(int j=0;j<outsize;j++) //mynewdata
 		{
-			complex *computed=&(mynewData[j*numPoints]);
+			inputType *computed=&(mynewData[j*numPoints]);
 			CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
 			partialResultMsg *omsg= new (numPoints, 8*sizeof(int) ) partialResultMsg;
 			if(cfg.resultMsgPriority)
@@ -2577,13 +2577,13 @@ void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
         {
             // This callback creation could be obviated by keeping an
             // array of callbacks, not clearly worth doing
-            complex *computed=&(othernewData[j*numPoints]);
+            inputType *computed=&(othernewData[j*numPoints]);
             CkCallback mycb(cp_entry, CkArrayIndex2D(j+index ,thisIndex.w), cb_aid);
             #ifdef _PAIRCALC_DEBUG_CONTRIB_
                 CkPrintf("[%d,%d,%d,%d,%d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
             #endif
             int outOffset=thisIndex.z;
-            mcastGrp->contribute(numPoints*sizeof(complex),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
+            mcastGrp->contribute(numPoints*sizeof(inputType),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
         }
     }
 
@@ -2594,13 +2594,13 @@ void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
         CkAssert(mynewData!=NULL);
         for(int j=0;j<outsize;j++) //mynewdata
         {
-            complex *computed=&(mynewData[j*numPoints]);
+            inputType *computed=&(mynewData[j*numPoints]);
             CkCallback mycb(cp_entry, CkArrayIndex2D(j+index,thisIndex.w), cb_aid);
             #ifdef _PAIRCALC_DEBUG_CONTRIB_
                 CkPrintf("[%d,%d,%d,%d,%d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
             #endif
             int outOffset=thisIndex.z;
-            mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
+            mcastGrp->contribute(numPoints*sizeof(inputType), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
         }
     }
 
