@@ -52,6 +52,7 @@
 
 //#include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
+#include <sstream>
 
 #ifdef TRACE_MEMORY
     #include <trace-projections.h>
@@ -170,6 +171,16 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }
   got_start = true;
   internalType *S = (internalType*) msg->getData();
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"inputS_"<<thisIndex.x<<"_"<<thisIndex.y;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<S[i*n + j]<<std::endl;
+    fout.close();
+}
 #ifdef _NAN_CHECK_
   for(int i=0;i<msg->getSize()/sizeof(internalType) ;i++)
       CkAssert( isfinite(S[i]) );
@@ -374,6 +385,16 @@ void Ortho::resume(){
      * sections to make the mirror orthos deliver the data to our non-phantoms. 
      * Refer PCSectionManager::setupArraySection for more info.
      */
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoSymmA_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<A[i*n + j]<<std::endl;
+    fout.close();
+}
     if(pc.x == pc.y)   //we have the answer scalc wants
       symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
     else if(thisIndex.y < thisIndex.x)   //we have the answer scalc wants
@@ -546,6 +567,16 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
       for(int i=0; i<m*n; i++)
           CkAssert( isfinite(lambda[i]) );
 #endif
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoAsymmLambda"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<lambda[i*n + j]<<std::endl;
+    fout.close();
+}
 
       // finish pair calc
       asymmSectionMgr.sendResults(lambdaCount, lambda, 0, thisIndex.x, thisIndex.y, 0, asymmSectionMgr.msgPriority+1);
@@ -657,6 +688,26 @@ void Ortho::gamma_done(){
       CkAssert(fabs(S[i]-savedgmat[i])<0.0001);
     }
 #endif
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoAsymmB"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<B[i*n + j]<<std::endl;
+    fout.close();
+}
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoAsymmOrtho"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<ortho[i*n + j]<<std::endl;
+    fout.close();
+}
   if(config.PCCollectTiles)
     {
       // if not streaming we might as well just lockstep these
@@ -769,10 +820,9 @@ void Ortho::do_iteration(void){
     #endif
   step = 1;
   memset(C, 0, m * n * sizeof(internalType));
-  if(thisIndex.x == thisIndex.y){
+  if(thisIndex.x == thisIndex.y)
     for(int i = 0; i < n; i++)
       C[i * n + i] = 3;
-  }
 #ifdef _CP_ORTHO_DUMP_SMAT_
     dumpMatrixDouble("step1:A:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
     dumpMatrixDouble("step1:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
@@ -799,6 +849,17 @@ void Ortho::do_iteration(void){
  */
 void Ortho::step_2(void){
 
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    CkPrintf("\nWriting orthoPostStep1C_%d_%d_%d",thisIndex.x, thisIndex.y, iterations);
+    fname<<"orthoPostStep1C"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<C[i*n + j]<<std::endl;
+    fout.close();
+}
     step = 2;
   if(config.useOrthoHelpers)
     {
@@ -854,6 +915,26 @@ void Ortho::step_3(){
  * current: T -> A, S1 -> tmp_arr, S2 -> C, S3 -> B
  */
 void Ortho::tolerance_check(){
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoPostStep2tmp"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<tmp_arr[i*n + j]<<std::endl;
+    fout.close();
+}
+if (thisIndex.x==0 && thisIndex.y==0)
+{
+    std::stringstream fname;
+    fname<<"orthoPostStep3A"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<iterations;
+    std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+    for(int i=0;i<m;i++)
+        for(int j=0;j<n;j++)
+            fout<<i<<" "<<j<<" "<<A[i*n + j]<<std::endl;
+    fout.close();
+}
   step = 4;
   step2done=false;
   step3done=false;

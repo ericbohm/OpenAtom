@@ -1,6 +1,8 @@
 #include "ckPairCalculator.h"
 #include "utility/matrix2file.h"
+
 #include <sstream> 
+#include <fstream>
 
 ComlibInstanceHandle mcastInstanceCP;
 ComlibInstanceHandle mcastInstanceACP;
@@ -892,6 +894,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
             alpha = 2.0;
     }
     #endif
+        if (flag_dp)
+            alpha = 2.0;
 
     // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
@@ -1572,6 +1576,36 @@ void PairCalculator::cleanupAfterBWPath()
             inDataRight = 0;
             existsRight = false;
         }
+if (!amPhantom) {
+if (othernewData)
+{
+std::stringstream fname;
+fname<<"bwOtherNewData"<<thisIndex.w<<"_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<thisIndex.z<<"_"<<cfg.isSymmetric;
+std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+for(int i=0;i<numExpectedX*numPoints;i++)
+        fout<<i<<" "<<othernewData[i]<<std::endl;
+fout.close();
+}
+if (mynewData)
+{
+std::stringstream fname;
+fname<<"bwMyNewData"<<thisIndex.w<<"_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<thisIndex.z<<"_"<<cfg.isSymmetric;
+std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+for(int i=0;i<numExpectedY*numPoints;i++)
+        fout<<i<<" "<<mynewData[i]<<std::endl;
+fout.close();
+}
+} else {
+if (othernewData)
+{
+std::stringstream fname;
+fname<<"bwOtherNewData"<<thisIndex.w<<"_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<thisIndex.z<<"_"<<cfg.isSymmetric;
+std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+for(int i=0;i<numExpectedY*numPoints;i++)
+        fout<<i<<" "<<othernewData[i]<<std::endl;
+fout.close();
+}
+}
     }
 
     /// For only the speed-optimized (high-mem) mode

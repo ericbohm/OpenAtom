@@ -2,6 +2,8 @@
 #include "paircalc/pcConfig.h"
 
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 #ifdef USE_COMLIB
 extern ComlibInstanceHandle mcastInstanceCP;
@@ -186,7 +188,6 @@ void PCSectionManager::setupArraySection(CkCallback cb, bool arePhantomsOn, bool
 
 
 
-
 void PCSectionManager::sendResults(int n, internalType *ptr1, internalType *ptr2, int orthoX, int orthoY, int actionType, int priority)
 {
     #ifdef VERBOSE_SECTIONMANAGER
@@ -217,6 +218,12 @@ void PCSectionManager::sendResults(int n, internalType *ptr1, internalType *ptr2
             CkAssert( isfinite(omsg->matrix1[i]) );
         }
     #endif
+std::stringstream fname;
+fname<<"orthoResult_"<<orthoX<<"_"<<orthoY;
+std::ofstream fout(fname.str().c_str(), std::ios_base::out);
+for(int i=0;i<n;i++)
+        fout<<i<<" "<<ptr1[i]<<std::endl;
+fout.close();
 
     /// Trigger the backward path for my paircalc section
     pcSection.multiplyResult(omsg);
