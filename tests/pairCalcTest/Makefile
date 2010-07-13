@@ -33,6 +33,8 @@ setup: testConfig.txt parseTestConfig
 	./parseTestConfig testConfig.txt
 	touch $@
 
+#CPPFLAGS += -DCOMPLEX_PAIRCALC -DCP_PAIRCALC_USES_COMPLEX_MATH
+
 # Include build script for the test code
 include build.mk
 
