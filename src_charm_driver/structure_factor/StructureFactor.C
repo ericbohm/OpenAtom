@@ -21,7 +21,6 @@ extern CkVec <CProxy_StructureFactor> UsfCompProxy;
 extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
 extern CkVec <CProxy_AtomsCache> UatomsCacheProxy;
 extern CkVec <CProxy_EnergyGroup> UegroupProxy;
-extern CProxy_CPcharmParaInfoGrp      scProxy;
 extern CProxy_PhysScratchCache  pScratchProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
 
@@ -37,7 +36,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
 {
     int iteration_src = msg->iteration_src;
     delete msg; // prioritized trigger
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
     if(sim->ees_nloc_on==1)
         CkAbort("No structure factors under EES nonlocal\n");
    //    CkPrintf("[%d %d %d] compute %d\n",thisIndex.x,thisIndex.y,thisIndex.z,numdest);

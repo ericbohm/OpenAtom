@@ -40,7 +40,6 @@
 extern Config                               config;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
-extern CProxy_CPcharmParaInfoGrp            scProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>  UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>          UgSpaceDriverProxy;
 
@@ -77,7 +76,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX,
 //============================================================================
 // Set counters local variables
 
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
     cp_grad_corr_on = sim->cp_grad_corr_on;
 
     iplane_ind    = thisIndex.x;
@@ -190,7 +189,7 @@ CP_Rho_GSpacePlane::CP_Rho_GSpacePlane(int sizeX,
 //============================================================================
 void CP_Rho_GSpacePlane::init()
 {
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
     //make section proxy
     if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
       // haven't written support for kpoint rhog nl launch yet
@@ -356,7 +355,7 @@ void CP_Rho_GSpacePlane::acceptRhoData(RhoGSFFTMsg *msg) {
   int isub             = msg->offsetGx; // subplane index
   complex *partlyIFFTd = msg->data;
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int ix               = thisIndex.x;   // chare array index
   int sizeZ            = rho_gs.sizeZ;
   int numLines         = rho_gs.numLines;
@@ -562,7 +561,7 @@ void CP_Rho_GSpacePlane::launchNlG() {
 //============================================================================
 // Launch the nonlocal energy computation
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
   if(sim->ees_nloc_on==1 && config.launchNLeesFromRho==2){ 
     /*      if(config.nchareRhoG<config.nchareG){
@@ -670,7 +669,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoR(int iopt) {
 //============================================================================
 // Local Pointers and Variables
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int sizeZ    = rho_gs.sizeZ;
   int ix       = thisIndex.x;
   int numLines = rho_gs.numLines;
@@ -808,7 +807,7 @@ void CP_Rho_GSpacePlane::RhoGSendRhoRall() {
 //============================================================================
 // Local Pointers and Variables
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int sizeZ    = rho_gs.sizeZ;
   int ix       = thisIndex.x;
   int numLines = rho_gs.numLines;
@@ -899,7 +898,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
   int isub             = msg->offsetGx; // subplane index
   complex *partlyIFFTd = msg->data;
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int ix               = thisIndex.x;   // chare array index
   int sizeZ            = rho_gs.sizeZ;
   int numLines         = rho_gs.numLines;
@@ -1015,7 +1014,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
   int isub             = msg->offsetGx; // subplane index
   complex *partlyIFFTd = msg->data;
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int ix               = thisIndex.x;   // chare array index
   int sizeZ            = rho_gs.sizeZ;
   int numLines         = rho_gs.numLines;
@@ -1195,7 +1194,7 @@ void CP_Rho_GSpacePlane::ResumeFromSync(){
 //============================================================================
 void CP_Rho_GSpacePlane::exitForDebugging(){
   countDebug++;  
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int nchareG          = sim->nchareRhoG;
   if(countDebug==nchareG){
     countDebug=0;

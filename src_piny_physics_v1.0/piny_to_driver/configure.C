@@ -63,7 +63,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   UberImax = pi_beads; //pi_beads : fixing > 1 implementation now 
   UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now 
   UberKmax = ntemper;  //ntemper must be 1 for now
-  UberLmax = nspin;    //nspin   spin not yet in here
+  UberMmax = nspin;    //nspin   spin not yet in here
 
   // Warn the folks when dicey things are going down
   if(pi_beads>1){

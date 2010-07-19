@@ -32,7 +32,6 @@ extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CProxy_PhysScratchCache         pScratchProxy;
 extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
@@ -484,7 +483,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 void GSPDATA::init(int index_in,int nkpoint_in){
 //==============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
  //------------------------------------------------------------
  // Set the variables from the generic parainfo group

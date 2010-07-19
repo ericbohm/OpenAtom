@@ -42,7 +42,6 @@ extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
-extern CProxy_CPcharmParaInfoGrp              scProxy;
 extern CProxy_main                            mainProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
@@ -225,14 +224,15 @@ void CP_State_RealSpacePlane::acceptFFT(RSFFTMsg *msg) {
   vksDone=false;
 #endif
 
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     int size               = msg->size; 
     int Index              = msg->senderIndex;
     int Jndex              = msg->senderJndex;
     int Kndex              = msg->senderKndex;
     complex *partiallyFFTd = msg->data;
-    int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-    int **tranUnpack       = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-    int *nline_per_chareG  = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+    int nchareG            = sim->nchareG;
+    int **tranUnpack       = sim->index_tran_upack;
+    int *nline_per_chareG  = sim->nlines_per_chareG;
 
     int planeSize          = rs.size;
 
@@ -332,8 +332,9 @@ void CP_State_RealSpacePlane::doFFT(){
 // Perform the FFT and get psi^2 which we can store in cache tmpData because
 // we will blast it right off before losing control
 
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-    int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+    int nplane_x        = sim->nplane_x;
     complex *planeArr   = rs.planeArr;
     double  *planeArrR  = rs.planeArrR;
    
@@ -379,10 +380,6 @@ void CP_State_RealSpacePlane::doFFT(){
 
     double *data = fftcache->tmpDataR;
 
-  if(istate==0 && iplane_ind==0){
-    CkPrintf("I, state 0 plane 0 of kpt %d am sending to rho with wght %g\n",kpoint_ind, wght_rho);
-  }//endif
-
     if(config.doublePack){
       for(int i=0,i2=0;i<ngridb;i++,i2+=2){
         for(int j=i*ngrida;j<(i+1)*ngrida;j++){
@@ -408,8 +405,8 @@ void CP_State_RealSpacePlane::doFFT(){
 // If non-local itself is on and the ees method is to be used, launch
 
 #ifndef _CP_DEBUG_SFNL_OFF_ // non-local is allowed 
-  int ees_nonlocal = scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on;
-  int natm_nl      = scProxy.ckLocalBranch()->cpcharmParaInfo->natm_nl;
+  int ees_nonlocal = sim->ees_nloc_on;
+  int natm_nl      = sim->natm_nl;
 
   if(ees_nonlocal==1 && config.launchNLeesFromRho==0 && natm_nl>0){
     //    CkAssert(config.nchareG<=ngridc);
@@ -681,8 +678,9 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
  //------------------------------------------------------------------
  // The FFT
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   FFTcache *fftcache  = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
-  int nplane_x        = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  int nplane_x        = sim->nplane_x;
   complex *planeArr   = rs.planeArr;
   double *planeArrR   = rs.planeArrR;
   // more convenient definition
@@ -708,9 +706,10 @@ void CP_State_RealSpacePlane::sendFPsiToGSP() {
 //===================================================================
 // Perform the transpose and then the blast off the final 1D-FFT
 
-  int nchareG            = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
-  int **tranpack         = scProxy.ckLocalBranch()->cpcharmParaInfo->index_tran_upack;
-  int *nlines_per_chareG = scProxy.ckLocalBranch()->cpcharmParaInfo->nlines_per_chareG;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+  int nchareG            = sim->nchareG;
+  int **tranpack         = sim->index_tran_upack;
+  int *nlines_per_chareG = sim->nlines_per_chareG;
   complex *vks_on_state  = rs.planeArr;
 
     /****************************************

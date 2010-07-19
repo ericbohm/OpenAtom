@@ -85,11 +85,9 @@
 
 //============================================================================
 extern Config config;
-
 extern CProxy_main                    mainProxy;
 extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
-extern CProxy_CPcharmParaInfoGrp      scProxy;
 extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
@@ -100,6 +98,7 @@ extern CkVec <CProxy_EnergyGroup>             UegroupProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>         UsfCacheProxy;
 extern CkVec <CProxy_eesCache>                UeesCacheProxy;
+
 
 extern CProxy_ComlibManager mgrProxy;
 extern ComlibInstanceHandle gssInstance;
@@ -127,7 +126,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 //============================================================================
 // Unpack
 //  CkPrintf("{%d} GSP [%d,%d] psiCgOvlap\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
   int cp_min_opt    = sim->cp_min_opt;
@@ -301,7 +300,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
 //        << thisIndex.x << " " << thisIndex.y << " " <<CkMyPe() << endl;
 //============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
   wallTimeArr=NULL;
@@ -681,7 +680,7 @@ void CP_State_GSpacePlane::readFile() {
 
   CP           *cp           = CP::get();
 #include "../class_defs/allclass_strip_cp.h"
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int numData       = config.numData;
   int ibinary_opt   = sim->ibinary_opt;
   int istart_typ_cp = sim->istart_typ_cp;
@@ -730,8 +729,7 @@ void CP_State_GSpacePlane::readFile() {
             config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-
-#define _DEBUG_KPT_CODE_
+#define _DEBUG_KPT_CODE_OFF_
 #ifdef _DEBUG_KPT_CODE_
     if(ind_state==0){
       CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
@@ -739,7 +737,8 @@ void CP_State_GSpacePlane::readFile() {
       CkPrintf("in routine CP_State_GspacePlane.C\n");
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
-    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
+//    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
+    double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
     for(int i=0;i<numData;i++){
       double re = cos(phase); double im = sin(phase);
       double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
@@ -759,7 +758,7 @@ void CP_State_GSpacePlane::readFile() {
     double *yfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.y-1;
     double *zfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.z-1;
     cpgen_wave->create_coefs(kx,ky,kz,numData,ind_state,complexPoints,
-                             xfull,yfull,zfull);
+                             xfull,yfull,zfull,kpoint_ind);
   }//*endif
 
   if(config.nGplane_x != nplane && config.doublePack){
@@ -866,7 +865,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
     temperScreenFile = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   registrationFlag  = 1;
   eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   eesData->registerCacheGSP(thisIndex.x,thisIndex.y);
@@ -986,6 +985,11 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
   gs.setKRange(gSpaceNumPoints,k_x,k_y,k_z);
 
+  if(thisIndex.x==0){
+     CkPrintf("send recv Rcomm stuff : %d :%d %d \n",thisIndex.y,simReadOnly.RCommPkg[thisIndex.y].num_recv_tot,
+                                                 	         simReadOnly.RCommPkg[thisIndex.y].num_send_tot);
+  }//endif
+
   fovlap      = 0.0; 
 
 //============================================================================
@@ -1034,7 +1038,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     }//endfor
    }//endfor
   }//endif
-
 
 //============================================================================
 //Some PC initialization that needs to happen here to avoid
@@ -1169,7 +1172,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
   }//endif
 
   doneNewIter = true;
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   if(thisIndex.x==0 && thisIndex.y==0 ){
     if(!(sim->cp_min_opt==1)){
       fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
@@ -1196,7 +1199,6 @@ void CP_State_GSpacePlane::startNewIter ()  {
 // otherwise race conditions can leak in.  Rely on the constructor
 // for initialization.  Reset set your flags as soon as you are done
 // with the tests that require them.
-
 
   int cp_min_opt = sim->cp_min_opt;
 
@@ -1258,7 +1260,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
 void CP_State_GSpacePlane::screenPrintWallTimes()
 {
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   // do new iteration output once globally from the 0th instance
   if(thisIndex.x==0 && thisIndex.y==0 
      && thisInstance.idxU.x==0 && thisInstance.idxU.y==0 
@@ -1509,9 +1511,10 @@ void CP_State_GSpacePlane::doIFFT()
     #endif
     
     // Finish up by multiplying the the FFT scaling factor
-    double scaleFactor = -2.0/double(scProxy.ckLocalBranch()->cpcharmParaInfo->sizeX * 
-                                     scProxy.ckLocalBranch()->cpcharmParaInfo->sizeY * 
-                                     scProxy.ckLocalBranch()->cpcharmParaInfo->sizeZ);
+    CPcharmParaInfo *sim = CPcharmParaInfo::get();
+    double scaleFactor = -2.0/double(sim->sizeX * 
+                                     sim->sizeY * 
+                                     sim->sizeZ);
     complex *forces = gs.packedForceData;
     for(int index=0; index<gs.numPoints; index++)
         forces[index] = forcTmp[index]*scaleFactor;
@@ -1562,7 +1565,7 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   int *k_x          = eesData->GspData[iplane_ind]->ka;
   int *k_y          = eesData->GspData[iplane_ind]->kb;
   int *k_z          = eesData->GspData[iplane_ind]->kc;
-  double **g2        = eesData->GspData[iplane_ind]->g2;
+  double **g2       = eesData->GspData[iplane_ind]->g2;
 
 //================================================================================
 // Add forces from particle plane to forces from IFFT then zero them
@@ -1680,7 +1683,6 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-#define _DEBUG_KPT_AT_GAMMA_
 #ifdef _DEBUG_KPT_AT_GAMMA_
 
     int i=0;
@@ -1753,9 +1755,10 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 // Get nice local variables and if dynamics make a copy
 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  int cp_min_opt = sim->cp_min_opt;
 
   if(cp_min_opt==0){ // dynamics in on : minimization is off
     int ncoef           = gs.numPoints;
@@ -1924,7 +1927,7 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt    = sim->cp_min_opt;
   int cp_lsda       = sim->nspin - 1;  // 1 for lsda and 0 for lda
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -2072,7 +2075,8 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   }
 #endif
 
-  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int cp_min_opt    = sim->cp_min_opt;
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind]->ka;
 
@@ -2171,7 +2175,8 @@ void CP_State_GSpacePlane::doLambda() {
 // (I) If you have got it all : Rescale it and resume
   // CkPrintf("{%d} GSP [%d,%d] doLambda\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
   CkAssert(countLambda==AllLambdaExpected);
-  int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int cp_min_opt = sim->cp_min_opt;
   complex *force = gs.packedForceData;
 #ifdef _NAN_CHECK_
   for(int i=0;i<gs.numPoints ;i++){
@@ -2278,11 +2283,12 @@ void CP_State_GSpacePlane::computeCgOverlap() {
      CkAbort("Error: Attempting to compute cg overlap without lambda correction\n");
    }//endif
 
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    int istate      = gs.istate_ind;
    int ncoef       = gs.numPoints;
    complex *forces = gs.packedForceData;
-   int cp_min_opt  = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-   int cp_min_cg   = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg;
+   int cp_min_opt  = sim->cp_min_opt;
+   int cp_min_cg   = sim->cp_min_cg;
 
 //=========================================================================
 
@@ -2321,7 +2327,7 @@ void CP_State_GSpacePlane::writeStateDumpFile()
     CkAbort("{%d} Flow of Control Error : Attempting to write states without completing psi, vpsi and Lambda\n");
 
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt = (sim->cp_min_opt);
 
   int ind_state  = (thisIndex.x+1);
@@ -2418,7 +2424,7 @@ void CP_State_GSpacePlane::writeStateDumpFile()
 void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
 //============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int sizeX        = (sim->sizeX);
   int sizeY        = (sim->sizeY);
   int sizeZ        = (sim->sizeZ);
@@ -2529,8 +2535,9 @@ void CP_State_GSpacePlane::integrateModForce() {
   int *k_z          = eesData->GspData[iplane_ind]->kc;
   double *coef_mass = eesData->GspData[iplane_ind]->coef_mass;
 
-  int cp_min_opt     = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-  int cp_min_cg      = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_cg;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int cp_min_opt     = sim->cp_min_opt;
+  int cp_min_cg      = sim->cp_min_cg;
 
   int istate         = gs.istate_ind;
   int ncoef          = gs.numPoints;
@@ -2751,7 +2758,7 @@ void CP_State_GSpacePlane::sendRedPsi() {
 //==============================================================================
 
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   complex *sendData = gs.packedPlaneData;
@@ -2799,17 +2806,17 @@ void CP_State_GSpacePlane::sendRedPsi() {
 // Check for errors 
 
   if(iii!=num_send_tot){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.1\n",thisIndex.x,thisIndex.y,
  	                                           num_send_tot,iii);
     CkExit();
   }//endif
   if(numRecvRedPsi==0 && gs.nkx0_red>0){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.2\n",thisIndex.x,thisIndex.y,
 	                                        numRecvRedPsi,gs.nkx0_red);
     CkExit();
   }//endif
   if(jjj != gs.nkx0_uni-gs.nkx0_zero){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d\n sendredPsi.3",thisIndex.x,thisIndex.y,
 	                                        jjj,gs.nkx0_uni);
     CkExit();
   }//endif
@@ -2830,7 +2837,7 @@ void CP_State_GSpacePlane::sendRedPsi() {
 void CP_State_GSpacePlane::acceptRedPsi(GSRedPsiMsg *msg) {
 //==============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   int ncoef         = msg->size;
@@ -2912,7 +2919,7 @@ void CP_State_GSpacePlane::sendPsi() {
     CkPrintf("sendpsi %d %d\n",thisIndex.y,cleanExitCalled);
 #endif
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt       = sim->cp_min_opt;
 
   if(finishedCpIntegrate==0){
@@ -3010,7 +3017,7 @@ void CP_State_GSpacePlane::acceptNewPsi(CkReductionMsg *msg){
 //=============================================================================
 // (0) Fuss with the redundant psis
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt       = sim->cp_min_opt;
   if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
@@ -3089,7 +3096,7 @@ void CP_State_GSpacePlane::acceptNewPsi(partialResultMsg *msg){
 //=============================================================================
 // (0) Fuss with the redundant psis
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt       = sim->cp_min_opt;
   if(iteration>0){
     if(iRecvRedPsi!=1 || iSentRedPsi!=1){
@@ -3173,7 +3180,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (0) Fuss with the redundant psis
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt       = sim->cp_min_opt;
   int cp_min_update    = sim->cp_min_update;
 
@@ -3351,7 +3358,7 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 // III) We still have these funky g=0 plane guys that may be on other procs and
 //      we have sync those guys, also, or PC won't work correctly
 
-  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim       = CPcharmParaInfo::get();
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   complex *sendData = gs.packedVelData;
@@ -3389,17 +3396,17 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 // Check for errors 
 
   if(iii!=num_send_tot){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.1\n",thisIndex.x,thisIndex.y,
  	                                           num_send_tot,iii);
     CkExit();
   }//endif
   if(numRecvRedPsi==0 && gs.nkx0_red>0){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.2\n",thisIndex.x,thisIndex.y,
 	                                        numRecvRedPsi,gs.nkx0_red);
     CkExit();
   }//endif
   if(jjj != gs.nkx0_uni-gs.nkx0_zero){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.3\n",thisIndex.x,thisIndex.y,
 	                                        jjj,gs.nkx0_uni);
     CkExit();
   }//endif
@@ -3420,7 +3427,7 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 void CP_State_GSpacePlane::acceptRedPsiV(GSRedPsiMsg *msg) {
 //==============================================================================
 
-  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim       = CPcharmParaInfo::get();
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   int ncoef         = msg->size;
@@ -3516,7 +3523,7 @@ void  CP_State_GSpacePlane::sendPsiV() {
 //==============================================================================
 // Error Check
 
-  CPcharmParaInfo *sim       = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim       = CPcharmParaInfo::get();
   RedundantCommPkg *RCommPkg = sim->RCommPkg;
 
   if(iRecvRedPsiV!=1 || iSentRedPsiV!=1){
@@ -3713,7 +3720,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //=============================================================================
 // III) Replace by finite difference until update is better
 
- CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+ CPcharmParaInfo *sim = CPcharmParaInfo::get();
  eesCache *eesData    = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
 
  double *coef_mass    = eesData->GspData[iplane_ind]->coef_mass;
@@ -3775,8 +3782,9 @@ void CP_State_GSpacePlane::screenOutputPsi(int iprintout){
   int *k_y          = eesData->GspData[iplane_ind]->kb;
   int *k_z          = eesData->GspData[iplane_ind]->kc;
 
-  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
-  int nstates       = scProxy.ckLocalBranch()->cpcharmParaInfo->nstates;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int cp_min_opt    = sim->cp_min_opt;
+  int nstates       = sim->nstates;
 
   complex *vpsi     = gs.packedVelData;
   complex *psi      = gs.packedPlaneData;       //orthogonal psi
@@ -3939,8 +3947,9 @@ void CP_State_GSpacePlane::computeEnergies(int param, double d){
 //==============================================================================
 // if your debugging or natm_nl==0 you get fewer energies
 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int isub =0;
-  int natm_nl = scProxy.ckLocalBranch()->cpcharmParaInfo->natm_nl;
+  int natm_nl = sim->natm_nl;
   if(natm_nl==0){isub++;}
 #ifdef _CP_DEBUG_SFNL_OFF_
   if(natm_nl!=0){isub++;}

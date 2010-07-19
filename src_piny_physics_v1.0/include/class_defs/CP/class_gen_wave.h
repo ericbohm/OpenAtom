@@ -33,7 +33,7 @@ class GEN_WAVE{
 
    void create_coefs(int *k_x,int *k_y,int *k_z,
                      int gSpaceSize,int nstate_in,complex *gspace_coefs,
-                     double *xfull, double *yfull, double *zfull);
+                     double *xfull, double *yfull, double *zfull, int kpoint_ind);
 
    void splin_btrans(double *g,double **gpsi0, double **gpsi1,
                      double **gpsi2, double **gpsi3,

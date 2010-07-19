@@ -134,7 +134,6 @@ CkHashtableT<intdual, int> OrthoHelpermaptable;
 
 
 CProxy_main                       mainProxy;
-CProxy_CPcharmParaInfoGrp         scProxy;
 CProxy_PhysScratchCache           pScratchProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
@@ -159,6 +158,7 @@ CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
  *  one bead.
  */
 
+CPcharmParaInfo simReadOnly;
 CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
@@ -404,7 +404,7 @@ main::main(CkArgMsg *msg) {
     CkCallback piny_callback (CkCallback::ignore);
     Interface_ctrl piny_interface (msg->argv[2],piny_callback);
 
-    CPcharmParaInfo *sim  = new CPcharmParaInfo();
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     PhysicsParamTransfer::ParaInfoInit(sim);
 
     int ibinary_opt    = sim->ibinary_opt;
@@ -555,7 +555,6 @@ main::main(CkArgMsg *msg) {
 
     make_rho_runs(sim);
 
-    scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
     pScratchProxy = CProxy_PhysScratchCache::ckNew();
     // bump all the INT_MAPs to the right size
     AtomImaptable.resize(config.numInstances);
@@ -907,7 +906,7 @@ Per Instance startup BEGIN
 // clean up
 
     delete msg;
-    delete sim;
+    //    delete sim;
     delete rfoo;
     delete gfoo;
     delete excludePes;

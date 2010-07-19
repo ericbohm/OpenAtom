@@ -78,7 +78,7 @@ CP_Rho_GHartExt::CP_Rho_GHartExt(
 //============================================================================
 
   CkAssert(sizeX>0); //check for startup wackiness
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   CkVec <RunDescriptor> *sortedRunDescriptors = sim->RhosortedRunDescriptors;
 
 //============================================================================
@@ -362,7 +362,7 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 //============================================================================
 // Check the flow of control to see if we can use the data.
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int cp_min_opt = sim->cp_min_opt;
 
   iteration ++;
@@ -544,7 +544,7 @@ void CP_Rho_GHartExt::sendVks() {
 
 //============================================================================
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    FFTcache *fftcache   = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
    complex *vksScr      = fftcache->tmpData; // scratch from the cache has FFT output
 
@@ -677,7 +677,7 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 //  atmSFT: numLines collections of lines of lth ngridcEext each with constant (gx,gy) 
 //          Each message contains 1 pt on each line
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int size             = msg->size;
   int offset           = msg->offset;   // z index
   int isub             = msg->offsetGx; // subplane index
@@ -975,7 +975,7 @@ void CP_Rho_GHartExt::sendAtmSF(int flag){
          thisIndex.x,thisIndex.y,flag,iterAtmTyp,natmTyp,CkMyPe());
 #endif
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;      
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   complex *senddata  = fftcache->tmpData;
   int ix             = thisIndex.x;
@@ -1196,7 +1196,7 @@ void CP_Rho_GHartExt::acceptVks(int size, complex * inVks){
 void CP_Rho_GHartExt::exitForDebugging(){
 //============================================================================
 
-  CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim      = CPcharmParaInfo::get();
   int nchareG               = sim->nchareRhoGEext;
 
   CountDebug++;  

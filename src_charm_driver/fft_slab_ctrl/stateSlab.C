@@ -20,7 +20,6 @@
 
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 extern Config                    config;
-extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec <CProxy_eesCache>           UeesCacheProxy;
 extern int nstates;
 extern int sizeX;
@@ -417,7 +416,8 @@ void initRealStateSlab(RealStateSlab *rs, int ngrid_a,int ngrid_b, int ngrid_c,
 
    rs->thisState  = stateIndex;                // my state (I)
    rs->thisPlane  = planeIndex;                // my plane (z)
-   rs->numPlanesToExpect = scProxy.ckLocalBranch()->cpcharmParaInfo->nchareG;
+   CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+   rs->numPlanesToExpect = sim->nchareG;
    if(config.doublePack){
      int rsize_a    = ngrid_a*(ngrid_b/2+1);
      int rsize_b    = ngrid_b*(ngrid_a/2+1);

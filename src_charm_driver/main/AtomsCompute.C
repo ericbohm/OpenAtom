@@ -44,7 +44,6 @@ extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
 extern CProxy_TemperController temperControllerProxy;
 extern CProxy_InstanceController instControllerProxy;
-extern CProxy_CPcharmParaInfoGrp   scProxy;
 extern CProxy_PhysScratchCache pScratchProxy;
 
 //----------------------------------------------------------------------------
@@ -656,7 +655,7 @@ void AtomsCompute::outputAtmEnergy() {
 //==========================================================================
 
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
   int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
   double eKineticNhc    = eg->estruct.eKineticNhc_atm;

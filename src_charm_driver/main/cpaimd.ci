@@ -168,6 +168,7 @@ module temperController
 
 
 mainmodule cpaimd {	
+
 	readonly double Timer;
 	readonly int nstates;
 	readonly int sizeX;
@@ -204,6 +205,7 @@ mainmodule cpaimd {
 	extern module temperController;
 
 
+    readonly CPcharmParaInfo simReadOnly;
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
@@ -233,7 +235,6 @@ mainmodule cpaimd {
 
 	readonly Config config;
 
-	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_PhysScratchCache pScratchProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 
