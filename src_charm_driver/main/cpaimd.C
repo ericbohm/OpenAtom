@@ -129,7 +129,6 @@ CkHashtableT<intdual, int> OrthoHelpermaptable;
 
 
 CProxy_main                       mainProxy;
-CProxy_CPcharmParaInfoGrp         scProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
@@ -152,6 +151,7 @@ CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
  *  one bead.
  */
 
+CPcharmParaInfo simReadOnly;
 CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
@@ -395,7 +395,7 @@ main::main(CkArgMsg *msg) {
     CkCallback piny_callback (CkCallback::ignore);
     Interface_ctrl piny_interface (msg->argv[2],piny_callback);
 
-    CPcharmParaInfo *sim  = new CPcharmParaInfo();
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
     PhysicsParamTransfer::ParaInfoInit(sim);
 
     int ibinary_opt    = sim->ibinary_opt;
@@ -540,8 +540,9 @@ main::main(CkArgMsg *msg) {
     PhysicsParamTransfer::control_new_mapping_function(sim,doublePack);
 
     make_rho_runs(sim);
-
-    scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
+    for (int i =0;i<config.nchareG;i++){
+     CkPrintf("send recv Rcomm in main.1 : %d :%d %d \n",i,sim->RCommPkg[i].num_recv_tot,sim->RCommPkg[i].num_send_tot);
+    }//endif
 
     // bump all the INT_MAPs to the right size
     PIBImaptable.resize(config.numInstances);
@@ -864,7 +865,7 @@ Per Instance startup BEGIN
 // clean up
 
     delete msg;
-    delete sim;
+    //    delete sim;
     delete rfoo;
     delete gfoo;
     delete excludePes;

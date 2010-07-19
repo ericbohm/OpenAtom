@@ -5,9 +5,12 @@
 #include "InstanceController.h"
 extern int nstates;
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 /* ostensibly the InstanceController may need to know about everything */
+CPcharmParaInfo simReadOnly;
 extern CkVec < CkVec <int> > UplaneUsedByNLZ;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
@@ -28,7 +31,12 @@ extern CProxy_TimeKeeper                         TimeKeeperProxy;
 extern CkGroupID                                 mCastGrpId;
 extern CkVec <UberCollection>                    UberAlles;
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
+//============================================================================
+
+
+
 InstanceController::InstanceController() {
+
   done_init=0;Timer=CmiWallTimer(); numKpointforces=0;
   UberCollection instance=UberCollection(thisIndex);
   // 0th k, 0th spin makes this to lockdown everyone so the atoms
@@ -54,13 +62,18 @@ InstanceController::InstanceController() {
       ICCookieMsg *cookieme=new ICCookieMsg;
       sectProxy.initCookie(cookieme);
     }
-}
+
+//============================================================================
+  }// end constructor
+//============================================================================
+
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::doneInit(CkReductionMsg *msg){
-//============================================================================
-  CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+    CkPrintf("{%d} Done_init for %d userflag %d\n",thisIndex, (int)((int *)msg->getData())[0],msg->getUserFlag());
   // This assert should be a formality.
   // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
   // to provide instance info to the pc/ortho bubble. @todo: remove this assert
@@ -87,13 +100,13 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	    UrhoRealProxy[thisIndex].init();
 	    UrhoGProxy[thisIndex].init();
 	    UrhoGHartExtProxy[thisIndex].init();
-	    if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_eext_on)
+	    if(sim->ees_eext_on)
 	      {UrhoRHartExtProxy[thisIndex].init();}
 	  }
       }
     if (done_init == 4){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
-      if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
+      if(sim->ees_nloc_on==1)
 	{UrealParticlePlaneProxy[thisIndex].init();}
       // its completion triggers the final phase
 
@@ -112,7 +125,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
     if (done_init >= 5) {
       if (done_init == 5){ 
 	//          PRINT_LINE_STAR;
-          if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
+          if(sim->cp_min_opt==1){
             CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
 	  }else{
             CkPrintf("{%d} Running Open Atom CP Dynamics: \n",thisIndex);
@@ -123,16 +136,26 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       }//endif
     }
     done_init++;
-}
 //============================================================================
-void InstanceController::initCookie(ICCookieMsg *msg)
-{
+   }// end routine
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::initCookie(ICCookieMsg *msg){
     CkGetSectionInfo(allKPcookie, msg);
     //    delete msg; nokeep
 }
+//============================================================================
 
 
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void InstanceController::printEnergyHart(CkReductionMsg *msg){
+//============================================================================
   //  double ehart = 0, eext = 0.0, ewd = 0.0;
   void *data=msg->getData();
   double ehart = ((double *)data)[0];
@@ -147,10 +170,19 @@ void InstanceController::printEnergyHart(CkReductionMsg *msg){
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXT, eext);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EWD, ewd);
   delete msg;
-}
 
-void InstanceController::printEnergyEexc(CkReductionMsg *msg)
-{
+//============================================================================
+  }//end routine
+//============================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::printEnergyEexc(CkReductionMsg *msg){
+//============================================================================
+
   double eexc = 0;
   double egga = 0;
   void *data=msg->getData();
@@ -169,7 +201,9 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   CkPrintf("exiting in printEnergyEexc\n");CkExit();
 #endif
   delete msg;
-}
+
+//============================================================================
+  }//end routine
 //============================================================================
 
 //============================================================================
@@ -178,7 +212,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
   void InstanceController::printEnergyEke(CkReductionMsg *m){
-  
+//============================================================================  
   double d = ((double *)m->getData())[0];
   delete m;
 #ifdef _CP_DEBUG_SFNL_OFF_
@@ -188,9 +222,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
   //  CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, d);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
-
 }
-//============================================================================
 
 
 //============================================================================
@@ -199,7 +231,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
   void InstanceController::printFictEke(CkReductionMsg *m){
-  
+//============================================================================  
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
   double d0   = ((double *)m->getData())[0];
   double d1   = ((double *)m->getData())[1];
   double d2   = ((double *)m->getData())[2];
@@ -207,7 +240,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   double d4   = ((double *)m->getData())[4];
   delete m;
 
-  if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
+  if(sim->cp_min_opt==0){
     CkPrintf("{%d} Fict Temp   =  %.10g K\n", thisIndex, d0); // per g-chare temp
     CkPrintf("{%d} Fict Eke    =  %.10g K\n", thisIndex, d2); // total kinetic energy
     CkPrintf("{%d} Fict TempNHC=  %.10g K\n", thisIndex, d1); // per g-chare tempNHC
@@ -217,7 +250,8 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   }//endif
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
-}
+//============================================================================
+  }//end routine
 //============================================================================
 
 
@@ -238,6 +272,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
+//============================================================================
   delete m;
   // only the 0th instance of each k-point and spin is allowed to do this 
   
@@ -261,14 +296,18 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
     }
 
-}
+//============================================================================
+}//end routine
+//============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
 void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
   UberCollection thisInstance(thisIndex);
       CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
-
-
 }
 
 //============================================================================
@@ -283,7 +322,6 @@ void InstanceController::cleanExit(CkReductionMsg *m)
   contribute(sizeof(int), &exited, CkReduction::sum_int, 
 	     CkCallback(CkIndex_InstanceController::cleanExitAll(NULL),CkArrayIndex1D(0),thisProxy), 0);
 }
-//============================================================================
 
 // When the simulation is done, make a clean exit  
 // this gets called on the 0th element when everyone calls cleanExit
@@ -297,7 +335,6 @@ void InstanceController::cleanExitAll(CkReductionMsg *m)
   CkPrintf("********************************************************************************\n");
   CkExit();
 }
-
 
 #include "instanceController.def.h"
 

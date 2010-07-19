@@ -446,7 +446,7 @@ void GEN_WAVE::fill_gw_gpsi(CPATOM_MAPS * cpatom_maps,CPCOEFFS_INFO *cpcoeffs_in
 //========================================================================
 void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
 		            int gSpaceSize,int state_ind_m1,complex *gspace_coefs,
-                            double *xfull, double *yfull, double *zfull)
+                            double *xfull, double *yfull, double *zfull, int kpoint_ind)
 //========================================================================
    {//begin routine
 //========================================================================
@@ -470,6 +470,14 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
   double psi_r[21],psi_i[21];
   double ylmr[21],ylmi[21];
 
+
+  int nkpoint        = cpewald->nkpoint;
+  int doublePack     = cpewald->doublepack;
+
+  double akpoint =   cpewald->akpoint[kpoint_ind+1];
+  double bkpoint =   cpewald->bkpoint[kpoint_ind+1];
+  double ckpoint =   cpewald->ckpoint[kpoint_ind+1];
+
   if(nab_initio_g!=nab_initio){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
      PRINTF("GenWave :  bad number of ab initio atoms %d %d\n",
@@ -479,6 +487,7 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
   }//endif
 
 //----------------------------------------------------------------------
+
   double *cp_box_center     =  gencell->cp_box_center;
   double *cp_box_center_rel =  gencell->cp_box_center_rel;
   double *hmat              =  gencell->hmat_cp;
@@ -552,6 +561,7 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
 //-------------------------------------------------------------------------
 // get g vectors                                                           
 
+    k_x[i] += akpoint; k_y[i] += bkpoint; k_z[i] += ckpoint;
     double gx = tpi*(k_x[i]*hmati[1] + k_y[i]*hmati[2] + k_z[i]*hmati[3]);
     double gy = tpi*(k_x[i]*hmati[4] + k_y[i]*hmati[5] + k_z[i]*hmati[6]);
     double gz = tpi*(k_x[i]*hmati[7] + k_y[i]*hmati[8] + k_z[i]*hmati[9]);
@@ -671,12 +681,16 @@ void GEN_WAVE::create_coefs(int *k_x,int *k_y,int *k_z,
     gspace_coefs[i].re = helr*psi_r[is] - heli*psi_i[is];
     gspace_coefs[i].im = heli*psi_r[is] + helr*psi_i[is];
 
-    double wght = 2.0;
-    if(k_x[i]==0)wght=1.0;
+    double wght = 1.0;
+    if(doublePack==1){
+      wght = 2.0;
+      if(k_x[i]==0)wght=1.0;
+    }//endif
     anorm += (gspace_coefs[i].re*gspace_coefs[i].re+
               gspace_coefs[i].im*gspace_coefs[i].im)*wght;
-    if(i%30==0)
-      CmiNetworkProgress();
+    if(i%30==0)  CmiNetworkProgress();
+
+    k_x[i] -= akpoint; k_y[i] -= bkpoint; k_z[i] -= ckpoint;
   }//endfor:gSpaceSize
 
 //=========================================================================
@@ -1383,10 +1397,10 @@ void GEN_WAVE::read_coef_fetch_kpoints(int kpt_file_name_set,
     }/*endif*/
   }/*endfor*/
 
-#define _DEBUG_KPT_AT_GAMMA_
+#define _DEBUG_KPT_AT_GAMMA_OFF_
   doublepack = 0;
 #ifndef _DEBUG_KPT_AT_GAMMA_
-  if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}
+  if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}  // we have the gamma point
 #else
   PRINTF("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
   PRINTF("In gen_wave.C, setting doublePack=0 by hand\n");

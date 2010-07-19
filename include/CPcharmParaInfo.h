@@ -17,7 +17,7 @@
 
 #include "../include/RunDescriptor.h"
 #include "../src_piny_physics_v1.0/friend_lib/proto_friend_lib_entry.h"
-
+class CPcharmParaInfo; extern CPcharmParaInfo simReadOnly;
 //=============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
@@ -63,11 +63,12 @@ class RedundantCommPkg {
     }}
   }
 
-  void Init(RedundantCommPkg *R){
+  void Init(RedundantCommPkg *R,int index){
     nk0_max      = R->nk0_max;
     nchareG      = R->nchareG;
     num_recv_tot = R->num_recv_tot;
     num_send_tot = R->num_send_tot;
+    CkPrintf("inside Rcom copy constructore %d : %d %d \n",index,num_recv_tot,num_send_tot);
     Init(nk0_max,nchareG);
     for(int i=0;i<nchareG;i++){
       num_send[i]=R->num_send[i];
@@ -107,6 +108,7 @@ class RedundantCommPkg {
     if(p.isUnpacking()) {
       Init(nk0_max,nchareG);
     }
+    CkPrintf("inside Rcom pup : %d %d isPacking %d isUnpacking %d\n",num_recv_tot,num_send_tot,p.isPacking(), p.isUnpacking());
     PUParray(p,num_send,nchareG);
     PUParray(p,num_recv,nchareG);
     for(int i=0;i<nchareG;i++)
@@ -389,7 +391,10 @@ class CPcharmParaInfo {
      }//endfor
 
      RCommPkg = new RedundantCommPkg [nchareG]; 
-     for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i]);}
+     for(int i=0;i<nchareG;i++){
+      CkPrintf("before Rcom copy constructore %d : %d %d \n",i,s.RCommPkg[i].num_recv_tot,s.RCommPkg[i].num_send_tot);
+     }
+     for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i],i);}
 
      nlIters   = s.nlIters;
      ioff_zmat = new int [nlIters];
@@ -450,6 +455,235 @@ class CPcharmParaInfo {
 
      LBTurnInstrumentOff();
    }//end constructor
+//=============================================================================
+
+//=============================================================================
+CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
+//=============================================================================
+#ifdef _CP_DEBUG_PARAINFO_VERBOSE_
+    CkPrintf("CPcharmParaInfo assign operator\n");
+#endif
+     vol          = s.vol;
+     tol_norb     = s.tol_norb;
+     tol_cp_min   = s.tol_cp_min;
+     tol_cp_dyn   = s.tol_cp_dyn;
+     dt           = s.dt;
+     nspin        = s.nspin;
+     pi_beads     = s.pi_beads;;
+     ntemper      = s.ntemper;
+     nkpoint      = s.nkpoint;
+     iperd        = s.iperd;
+     doublepack   = s.doublepack;
+     fftopt       = s.fftopt;
+     kx_max       = s.kx_max;
+     ky_max       = s.ky_max;
+     kz_max       = s.kz_max; 
+     cp_norb_rot_kescal = s.cp_norb_rot_kescal;
+     ndump_frq    = s.ndump_frq;
+     istart_typ_cp= s.istart_typ_cp;
+     cp_grad_corr_on = s.cp_grad_corr_on;
+     cp_opt       = s.cp_opt; 
+     cp_std       = s.cp_std;
+     cp_wave      = s.cp_wave;
+     cp_min_opt   = s.cp_min_opt;
+     cp_min_update= s.cp_min_update;
+     cp_min_cg    = s.cp_min_cg;
+     cp_min_std   = s.cp_min_std;
+     rhoRsubplanes= s.rhoRsubplanes;
+     sizeX        = s.sizeX;
+     sizeY        = s.sizeY;
+     sizeZ        = s.sizeZ;
+     nstates      = s.nstates;
+     ees_eext_on  = s.ees_eext_on;
+     ees_nloc_on  = s.ees_nloc_on; 
+     ngrid_nloc_a = s.ngrid_nloc_a; 
+     ngrid_nloc_b = s.ngrid_nloc_b; 
+     ngrid_nloc_c = s.ngrid_nloc_c; 
+     ngrid_eext_a = s.ngrid_eext_a; 
+     ngrid_eext_b = s.ngrid_eext_b; 
+     ngrid_eext_c = s.ngrid_eext_c; 
+     ntime        = s.ntime;
+     gen_wave     = s.gen_wave;
+     ncoef        = s.ncoef;
+     ibinary_opt  = s.ibinary_opt;
+     ibinary_write_opt = s.ibinary_write_opt;
+     nplane_x     = s.nplane_x;
+     nchareG      = s.nchareG;
+     nlines_tot   = s.nlines_tot;
+     npts_tot     = s.npts_tot;
+     nlines_max   = s.nlines_max;
+     natm_tot     = s.natm_tot;
+     natm_typ     = s.natm_typ;
+     natm_nl      = s.natm_nl;
+     numSfGrps    = s.numSfGrps;
+     natm_nl_grp_max = s.natm_nl_grp_max;
+     if(nplane_x==0 || nplane_x > sizeX){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Error in CPcharmParaInfo constructor\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+     }//endif
+     if(nchareG==0){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Error in CPcharmParaInfo constructor\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+     }//endif
+     nlines_tot_rho  = s.nlines_tot_rho;
+     npts_tot_rho    = s.npts_tot_rho;
+     nlines_max_rho  = s.nlines_max_rho;
+     nlines_max_eext = s.nlines_max_eext;
+     nplane_rho_x    = s.nplane_rho_x;
+     nchareRhoG      = s.nchareRhoG;
+     nchareVdW       = s.nchareVdW;
+     nchareRhoGEext  = s.nchareRhoGEext;
+     npts_per_chareRhoG   = new int[nchareRhoG];
+     nlines_per_chareRhoG = new int[nchareRhoG];
+     nlines_per_chareRhoGEext = new int[nchareRhoGEext];
+     lines_per_chareRhoG  = new double[nchareRhoG];
+     pts_per_chareRhoG    = new double[nchareRhoG];
+     if(nplane_rho_x==0 || nplane_rho_x > sizeX){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Error in CPcharmParaInfo constructor\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+     }//endif
+     if(nchareRhoG==0){
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkPrintf("Error in CPcharmParaInfo constructor\n");
+       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+       CkExit();
+     }//endif
+     for(int i=0;i<nchareRhoG;i++){
+       nlines_per_chareRhoG[i] = s.nlines_per_chareRhoG[i];
+       lines_per_chareRhoG[i]  = s.lines_per_chareRhoG[i];
+       pts_per_chareRhoG[i]    = s.pts_per_chareRhoG[i];
+       npts_per_chareRhoG[i]   = s.npts_per_chareRhoG[i];
+     }//endfor
+     index_tran_upack_rho = cmall_int_mat(0,nchareRhoG,0,nlines_max_rho,
+                                          "cpcharmparainfo.h");
+     for(int i=0;i<nchareRhoG;i++){
+      for(int j=0;j<nlines_per_chareRhoG[i];j++){
+        index_tran_upack_rho[i][j] = s.index_tran_upack_rho[i][j];
+      }//endfor
+     }//endfor
+
+     for(int i=0;i<nchareRhoGEext;i++){
+       nlines_per_chareRhoGEext[i] = s.nlines_per_chareRhoGEext[i];
+     }//endfor
+     index_tran_upack_eext=cmall_int_mat(0,nchareRhoGEext,0,nlines_max_rho,
+                                         "cpcharmparainfo.h");
+     for(int i=0;i<nchareRhoGEext;i++){
+      for(int j=0;j<nlines_per_chareRhoGEext[i];j++){
+        index_tran_upack_eext[i][j] = s.index_tran_upack_eext[i][j];
+      }//endfor
+     }//endfor
+
+     sortedRunDescriptors = new CkVec<RunDescriptor> [nchareG];
+     for(int i=0;i<nchareG;i++){
+       for(int j=0;j<s.sortedRunDescriptors[i].size();j++){
+          sortedRunDescriptors[i].push_back(s.sortedRunDescriptors[i][j]);
+       }//endfor
+     }//endfor
+
+     RhosortedRunDescriptors = new CkVec<RunDescriptor> [nchareRhoG];
+     for(int i=0;i<nchareRhoG;i++){
+       for(int j=0;j<s.RhosortedRunDescriptors[i].size();j++){
+          RhosortedRunDescriptors[i].push_back(s.RhosortedRunDescriptors[i][j]);
+       }//endfor
+     }//endfor
+     npts_per_chareG   = new int[nchareG];
+     index_output_off  = new int[nchareG];
+     nlines_per_chareG = new int[nchareG];
+     lines_per_chareG  = new double[nchareG];
+     pts_per_chareG    = new double[nchareG];
+     for(int i=0;i<nchareG;i++){
+       nlines_per_chareG[i] = s.nlines_per_chareG[i];
+       lines_per_chareG[i]  = s.lines_per_chareG[i];
+       pts_per_chareG[i]    = s.pts_per_chareG[i];
+       npts_per_chareG[i]   = s.npts_per_chareG[i];
+       index_output_off[i]  = s.index_output_off[i];
+     }//endfor
+     index_tran_upack = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
+     for(int i=0;i<nchareG;i++){
+      for(int j=0;j<nlines_per_chareG[i];j++){
+        index_tran_upack[i][j] = s.index_tran_upack[i][j];
+      }//endfor
+     }//endfor
+
+     index_tran_upackNL = cmall_int_mat(0,nchareG,0,nlines_max,"cpcharmparainfo.h");
+     for(int i=0;i<nchareG;i++){
+      for(int j=0;j<nlines_per_chareG[i];j++){
+        index_tran_upackNL[i][j] = s.index_tran_upackNL[i][j];
+      }//endfor
+     }//endfor
+
+     RCommPkg = new RedundantCommPkg [nchareG]; 
+     for(int i=0;i<nchareG;i++){
+      CkPrintf("before Rcom copy constructore %d : %d %d \n",i,s.RCommPkg[i].num_recv_tot,s.RCommPkg[i].num_send_tot);
+     }
+     for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i],i);}
+
+     nlIters   = s.nlIters;
+     ioff_zmat = new int [nlIters];
+     nmem_zmat = new int [nlIters];;
+     for(int i =0;i<nlIters;i++){
+       ioff_zmat[i] = s.ioff_zmat[i];
+       nmem_zmat[i] = s.nmem_zmat[i];
+     }//endif
+
+     if(rhoRsubplanes>1){
+       index_tran_upack_rho_y  = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                              0,nlines_max_rho,"util.C");
+       index_tran_pack_rho_y   = cmall_itens3(0,nchareRhoG,0,rhoRsubplanes,
+                                              0,nlines_max_rho,"util.C");
+       nline_send_rho_y        = cmall_int_mat(0,nchareRhoG,0,rhoRsubplanes,"util.C");
+       index_tran_upack_eext_y = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_upack_eext_ys= cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_pack_eext_y  = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       index_tran_pack_eext_ys = cmall_itens3(0,nchareRhoGEext,0,rhoRsubplanes,
+                                              0,nlines_max_eext,"util.C");
+       nline_send_eext_y       = cmall_int_mat(0,nchareRhoGEext,0,rhoRsubplanes,"util.C");
+       for(int igrp=0;igrp<nchareRhoG;igrp++){
+          for(int ic=0;ic<rhoRsubplanes;ic++){
+            nline_send_rho_y[igrp][ic] = s.nline_send_rho_y[igrp][ic];
+            for(int jc=0;jc<nline_send_rho_y[igrp][ic];jc++){
+              index_tran_upack_rho_y[igrp][ic][jc] = s.index_tran_upack_rho_y[igrp][ic][jc];
+              index_tran_pack_rho_y[igrp][ic][jc] = s.index_tran_pack_rho_y[igrp][ic][jc];
+	    }//endfor
+	  }//endfor
+       }//endfor
+       for(int igrp=0;igrp<nchareRhoGEext;igrp++){
+        for(int ic=0;ic<rhoRsubplanes;ic++){
+         nline_send_eext_y[igrp][ic] = s.nline_send_eext_y[igrp][ic];
+         for(int jc=0;jc<nline_send_eext_y[igrp][ic];jc++){
+          index_tran_upack_eext_y[igrp][ic][jc]= s.index_tran_upack_eext_y[igrp][ic][jc];
+          index_tran_upack_eext_ys[igrp][ic][jc]= s.index_tran_upack_eext_ys[igrp][ic][jc];
+          index_tran_pack_eext_y[igrp][ic][jc] = s.index_tran_pack_eext_y[igrp][ic][jc];
+          index_tran_pack_eext_ys[igrp][ic][jc] = s.index_tran_pack_eext_ys[igrp][ic][jc];
+         }//endfor
+	}//endfor
+       }//endfor
+
+       listSubFlag = s.listSubFlag;
+       ngxSubMax   = s.ngxSubMax; 
+       numSubGx    = new int [rhoRsubplanes];
+       listSubGx   = cmall_int_mat(0,rhoRsubplanes,0,ngxSubMax,"charmparainfo");
+       for(int ic=0;ic<rhoRsubplanes;ic++){
+         numSubGx[ic] = s.numSubGx[ic];
+         for(int jc=0;jc<numSubGx[ic];jc++){
+           listSubGx[ic][jc] = s.listSubGx[ic][jc];
+	 }//endfor
+       }//endfor
+
+     }//endif : we have subplanes
+
+
+     return *this;
+   }//end assign operator
 //=============================================================================
 
 //=============================================================================
@@ -695,6 +929,9 @@ class CPcharmParaInfo {
 #endif
 	  }//endif
       }//endif
+      if(p.isPacking()){
+	CkPrintf("isPacking CPcharmParaInfo::pup Rcom 0: %d %d \n", RCommPkg[0].num_recv_tot, RCommPkg[0].num_send_tot);	
+      }
       if(p.isUnpacking()){
          RCommPkg = new RedundantCommPkg [nchareG]; 
       }//endif
@@ -705,6 +942,11 @@ class CPcharmParaInfo {
 #endif
 
    };
+
+  static CPcharmParaInfo *get(){
+    return &simReadOnly;  // return the pointer of the global instance
+  }
+
 //----------------------------------------------------------------------------
    }; // end class
 //=============================================================================

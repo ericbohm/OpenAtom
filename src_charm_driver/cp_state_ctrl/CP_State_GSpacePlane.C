@@ -100,6 +100,8 @@ extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
 extern CkVec <CProxy_StructFactCache>         UsfCacheProxy;
 extern CkVec <CProxy_eesCache>                UeesCacheProxy;
 
+extern CPcharmParaInfo simReadOnly;
+
 extern CProxy_ComlibManager mgrProxy;
 extern ComlibInstanceHandle gssInstance;
 extern ComlibInstanceHandle mcastInstancePP;
@@ -654,16 +656,9 @@ void CP_State_GSpacePlane::readFile() {
   if(gen_wave==0){
     sprintf(fname, "%s.s%d.k%d.b%d.t%d/state%d.out",config.dataPath,ispin_ind,kpoint_ind,ibead_ind,itemper_ind,
                                                     ind_state+1);
-    if(ind_state==0){
-      CkPrintf("Reading state 0 of kpoint %d\n",kpoint_ind);
-    }
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-    if(ind_state==0){
-      CkPrintf("Completed Reading state 0 of kpoint %d\n",kpoint_ind);
-    }//endif
-
-#define _DEBUG_KPT_CODE_
+#define _DEBUG_KPT_CODE_OFF_
 #ifdef _DEBUG_KPT_CODE_
     if(ind_state==0){
       CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
@@ -671,7 +666,8 @@ void CP_State_GSpacePlane::readFile() {
       CkPrintf("in routine CP_State_GspacePlane.C\n");
       CkPrintf("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");
     }//endif
-    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
+//    double phase = M_PI*((double)(nkpoint*ind_state+1+kpoint_ind))/((double)(nstates*nkpoint+1));
+    double phase = M_PI*((double)(ind_state+1))/((double)(nstates+1));
     for(int i=0;i<numData;i++){
       double re = cos(phase); double im = sin(phase);
       double ore = re*complexPoints[i].re - im*complexPoints[i].im; 
@@ -691,7 +687,7 @@ void CP_State_GSpacePlane::readFile() {
     double *yfull =UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.y-1;
     double *zfull =UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.z-1;
     cpgen_wave->create_coefs(kx,ky,kz,numData,ind_state,complexPoints,
-                             xfull,yfull,zfull);
+                             xfull,yfull,zfull,kpoint_ind);
   }//*endif
 
   if(config.nGplane_x != nplane && config.doublePack){
@@ -917,6 +913,11 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
   gs.setKRange(gSpaceNumPoints,k_x,k_y,k_z);
 
+  if(thisIndex.x==0){
+     CkPrintf("send recv Rcomm stuff : %d :%d %d \n",thisIndex.y,simReadOnly.RCommPkg[thisIndex.y].num_recv_tot,
+                                                 	         simReadOnly.RCommPkg[thisIndex.y].num_send_tot);
+  }//endif
+
   fovlap      = 0.0; 
 
 //============================================================================
@@ -965,7 +966,6 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     }//endfor
    }//endfor
   }//endif
-
 
 //============================================================================
 //Some PC initialization that needs to happen here to avoid
@@ -1548,7 +1548,6 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-#define _DEBUG_KPT_AT_GAMMA_
 #ifdef _DEBUG_KPT_AT_GAMMA_
 
    int istate        = gs.istate_ind;
@@ -2551,17 +2550,17 @@ void CP_State_GSpacePlane::sendRedPsi() {
 // Check for errors 
 
   if(iii!=num_send_tot){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.1\n",thisIndex.x,thisIndex.y,
  	                                           num_send_tot,iii);
     CkExit();
   }//endif
   if(numRecvRedPsi==0 && gs.nkx0_red>0){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.2\n",thisIndex.x,thisIndex.y,
 	                                        numRecvRedPsi,gs.nkx0_red);
     CkExit();
   }//endif
   if(jjj != gs.nkx0_uni-gs.nkx0_zero){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d\n sendredPsi.3",thisIndex.x,thisIndex.y,
 	                                        jjj,gs.nkx0_uni);
     CkExit();
   }//endif
@@ -3141,17 +3140,17 @@ void CP_State_GSpacePlane::sendRedPsiV(){
 // Check for errors 
 
   if(iii!=num_send_tot){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.1\n",thisIndex.x,thisIndex.y,
  	                                           num_send_tot,iii);
     CkExit();
   }//endif
   if(numRecvRedPsi==0 && gs.nkx0_red>0){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.2\n",thisIndex.x,thisIndex.y,
 	                                        numRecvRedPsi,gs.nkx0_red);
     CkExit();
   }//endif
   if(jjj != gs.nkx0_uni-gs.nkx0_zero){
-    CkPrintf("Error in GSchare %d %d : %d %d\n",thisIndex.x,thisIndex.y,
+    CkPrintf("Error in GSchare %d %d : %d %d : sendRedPsiV.3\n",thisIndex.x,thisIndex.y,
 	                                        jjj,gs.nkx0_uni);
     CkExit();
   }//endif

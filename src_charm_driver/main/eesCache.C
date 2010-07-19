@@ -30,7 +30,6 @@ extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 

@@ -25,6 +25,7 @@
 
 //----------------------------------------------------------------------------
 
+CPcharmParaInfo simReadOnly;
 extern CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 extern CkVec <IntMap2on2> GSImaptable;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
@@ -35,7 +36,6 @@ extern CkVec <CProxy_AtomsGrp>             UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
-extern CProxy_CPcharmParaInfoGrp   scProxy;
 
 //----------------------------------------------------------------------------
 
@@ -407,7 +407,7 @@ void AtomsGrp::integrateAtoms()
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",CkMyPe(),natm);
 #endif
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
 
    double eKinetic_loc   = 0.0;
    double eKineticNhc_loc= 0.0;
@@ -537,7 +537,7 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim  = 
   int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
   double eKineticNhc    = eg->estruct.eKineticNhc_atm;

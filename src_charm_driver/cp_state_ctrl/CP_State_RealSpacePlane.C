@@ -381,10 +381,6 @@ void CP_State_RealSpacePlane::doFFT(){
 
     double *data = fftcache->tmpDataR;
 
-  if(istate==0 && iplane_ind==0){
-    CkPrintf("I, state 0 plane 0 of kpt %d am sending to rho with wght %g\n",kpoint_ind, wght_rho);
-  }//endif
-
     if(config.doublePack){
       for(int i=0,i2=0;i<ngridb;i++,i2+=2){
         for(int j=i*ngrida;j<(i+1)*ngrida;j++){

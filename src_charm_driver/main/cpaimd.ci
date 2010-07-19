@@ -124,6 +124,7 @@ module instanceController
 
 
 mainmodule cpaimd {	
+
 	readonly double Timer;
 	readonly int nstates;
 	readonly int sizeX;
@@ -157,6 +158,7 @@ mainmodule cpaimd {
 	extern module instanceController;
 
 
+    readonly CPcharmParaInfo simReadOnly;
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
 	readonly CkHashtableT<intdual, int> GSmaptable;
 	readonly CkHashtableT<intdual, int> RSmaptable;
