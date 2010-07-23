@@ -1,0 +1,60 @@
+Ortho: S --> T
+
+OpenAtom is an ab-initio quantum chemistry code that uses the Charm++ parallel computing framework. More information about OpenAtom and Charm++ can be found in [1] and [2]. For the purposes of this discussion, we should be aware that there are two different kinds of simulations that OpenAtom is capable of. One calculates the ground state electronic energy of a system by minimizing a functional of the charge density (hereafter called minimization or just min). The other is simulating the actual evolution of a system in time, ie dynamics (or just dyn). 
+
+The focus of this discussion is on optimizing the computations in and communications from/to a particular participant in the parallelized OpenAtom world to sustain / improve performance as we scale. Ortho is a 2D array of compute objects (chares) that orchestrates the iterative orthonormalization of a square input matrix. It accepts this input matrix from a 4D array of compute entities (chares) known as the PairCalculators (hereafter, PCs or paircalcs) and also sends its output back to these same entities. It also plays a secondary role in another phase of the computations where it interacts with another set of PC chares. Ortho's behavior also changes slightly based on whether a simulation run is minimization or dynamics. 
+
+
+
+Algebra
+------------
+Irrespective of the type of the simulations, Ortho's primary workload stems from the need to maintain the orthogonality of the electronic states. Ortho's share of the work in this process consists of an iterative computation of the inverse, square-root of an input 'overlap' matrix (S). The S matrix is a square of side nStates, which is the number of electronic states in the system being simulated. The input matrix should (ideally) be equal to 2I, in keeping with the number of electrons permitted in each state. Despite the calculations introducing deviations from this ideal, the input matrix will still be symmetric. Hence only one half of the PC chare array participates in the computation of this matrix, producing just one triangle of the square S. This means that S arrives as input at only half of the ortho chares. The chares in this triangular section of the chare array that gets input, simply send a transpose of their tiles to their mirror chares across the chare array diagonal.
+
+Despite the calclations in Ortho also producing a symmetric matrix as output, the lack of necessary triangular matrix solvers leads us to perform full matrix calculations. /* Describe any other relevant matrix properties */. The core of the iterative loop performs these matrix operations. Here, I is the identity matrix and S is the input.
+
+Initialize:
+A = I; B = 0.5 * S
+
+Step 1: compute C
+C = 3I - A*B
+
+Step 2: compute new B
+Bnew = 0.5 . B * C
+
+Step 3: compute new A
+Anew = 0.5 . C * A
+
+Check: check tolerance and iteration limits
+residual = max( (Borig[i,j] - Bnew[i,j])^2 )
+A = Anew; B = Bnew
+
+This loop is repeated iteratively until the residual falls within limits or until the number of iterations hits some ceiling. This tolerance and the upper limit on the number of iterations which determine exit are specified by the user. The matrix multiplies are actually executed by instances of another chare array known as CLA_Matrix. The underlying multiply calls eventually go to a DGEMM implementation. Ortho provides the upper-level parallel orchestration and input / output for the S and the T matrices. As step 2 and step 3 do not depend on each other, they can be executed in parallel. This introduces another array of helper compute objects known as OrthoHelper which takes over the work for step 2 and feeds the results back once they are available. 
+
+
+
+Parallelization
+--------------------
+
+Ortho is a 2D chare array assuming the shape of the 2D 'S' matrix that it operates on. This matrix is divided up into square tiles of side specified by the user. Each tile is operated on by one Ortho chare. If this tile size is called orthoGrainSize, the size of this chare array is (nStates/orthoGrainSize, nStates/orthoGrainSize). The PairCalculators are 4D chare arrays with dimensions (nPlanes, nStates/pcGrainSize, nStates/pcGrainSize, nChunks). For this discussion, consider nPlanes and nChunks to be simply extra dimensions independant of the states axes along which work (and data) are decomposed. pcGrainsize is simply an (almost) independantly chosen granularity for the S matrix when it is handled by the paircalcs.
+
+One restriction on orthoGrainSize is that it be a multiple of pcGrainSize. This is simply a condition enforced to keep the decomposition logic tractable. Also note that the total number of states is decided by the system being simulated and is not controlled by the user or the code. Hence, user defined grain sizes might result in some PC chares (and hence, ortho chares) being left with a remainder number of states to handle. This is handled appropriately in the code to give the user as much freedom in choosing the grain sizes. These grain sizes, hence, fundamentally affect the computation/communication characteristics of the simulation during these phases and provide room for tuning the performance.
+
+Paircalcs are indexed based on the state indices of the first element in their tile of the S matrix; i.e, PC indices along the state dimensions increase in quanta of pcGrainSize. This gives the impression of a chare array that is sparse along the state dimensions. By some artifact of development, Orthos are indexed continuously, and hence ortho(x,y) handles an S matrix tile with indices starting from (x*orthoGrainSize,y*orthoGrainSize).
+
+The ortho chare responsible for element (s1,s2) of the S matrix talks to all PC chares that compute data for that element (s1,s2) of the matrix. The element (s1,s2) of the input matrix is produced by a reduction that flattens (sums) the results from all PCs that work on a tile that contains (s1,s2). Hence every ortho chare talks to a section of the 4D PC array that spans the plane and chunk dimensions. Input for each ortho comes from PC(*,s,s',*)  and results go back to the same section of the array too. From the PC's perspective, each PC chare will have to talk one or more ortho chares depending on the ratio of orthoGrainSize / pcGrainSize. Again, these chares contain the logic to chop up their big tile of input into appropriately smaller pieces and contribute each piece to a different reduction that ends up at the appropriate Ortho. 
+
+/* Refer openAtom chares arrays and control flow diagram */
+
+
+More details that may be relevant
+-----------------------
+- Mapping on machines with topology
+- PC phantoms
+- PsiV updates (when, why, how, who)
+
+
+References
+-----------
+1. http://charm.cs.illinois.edu
+2. Fine-grained parallelization of the Car–Parrinello ab initio molecular dynamics method on the IBM Blue Gene/L supercomputer, IBM Journal of Research and Development, Vol 52, Issue 1, 2008
+
