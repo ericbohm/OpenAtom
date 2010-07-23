@@ -25,12 +25,12 @@
 
 //==============================================================================
 
+extern CPcharmParaInfo simReadOnly;
 extern CkVec <CProxy_FFTcache> UfftCacheProxy;
 extern Config config;
 extern int nstates;
 extern int sizeX;
 extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
-extern CProxy_CPcharmParaInfoGrp scProxy;
 
 //==============================================================================
 //==============================================================================

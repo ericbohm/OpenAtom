@@ -49,12 +49,13 @@
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 //=========================================================================
+
+extern CPcharmParaInfo simReadOnly;
 extern CProxy_main                               mainProxy;
 extern CProxy_InstanceController                 instControllerProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
-extern CProxy_CPcharmParaInfoGrp                 scProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;

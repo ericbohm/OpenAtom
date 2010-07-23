@@ -27,8 +27,8 @@
 
 //============================================================================
 
+extern CPcharmParaInfo simReadOnly;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
-extern CProxy_CPcharmParaInfoGrp    scProxy;
 extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>       UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
@@ -60,7 +60,7 @@ CP_Rho_RHartExt::CP_Rho_RHartExt(int _ngrida, int _ngridb, int _ngridc,
 //============================================================================
 // Set some pareameters
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   nplane_rho_x         = sim->nplane_rho_x;
   listSubFlag          = sim->listSubFlag;
   rhoRsubplanes        = config.rhoRsubplanes;
@@ -286,7 +286,7 @@ void CP_Rho_RHartExt::startEextIter(){
 //============================================================================
 // Check for error
 
- CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+ CPcharmParaInfo *sim = CPcharmParaInfo::get();
  int cp_min_opt = sim->cp_min_opt;
 
  iteration ++;
@@ -480,7 +480,7 @@ void CP_Rho_RHartExt::sendAtmSfRyToGy(){
 // Launch the communication
 
   CkAssert(rhoRsubplanes>1);
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int **listSubGx      = sim->listSubGx;
   int  *numSubGx       = sim->numSubGx;
 
@@ -613,7 +613,7 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
 
 #ifdef DEBUG_INT_TRANS_FWD
   if(countIntRtoG==rhoRsubplanes){
-    CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+    CPcharmParaInfo *sim =  CPcharmParaInfo::get();
     int **listSubGx = sim->listSubGx;
     int ic          = thisIndex.y;
     char name[100];
@@ -649,7 +649,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
          thisIndex.x,thisIndex.y,thisIndex.z,iterAtmTyp,CkMyPe());
 #endif
 
-  CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim      = CPcharmParaInfo::get();
   int nchareG               = sim->nchareRhoGEext;
 
   int **tranpack            = sim->index_tran_upack_eext;
@@ -747,7 +747,7 @@ void CP_Rho_RHartExt::sendAtmSfRhoGHart(){
 void CP_Rho_RHartExt::recvAtmForcFromRhoGHart(RhoRHartMsg *msg){
 //============================================================================
 
-  CPcharmParaInfo *sim      = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim      = CPcharmParaInfo::get();
   int nchareG               = sim->nchareRhoGEext;
 
   int **tranUnpack          = sim->index_tran_upack_eext;
@@ -1019,7 +1019,7 @@ void CP_Rho_RHartExt::sendAtmForcGxToRx(int iopt){
 void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
 //============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   int **listSubGx      = sim->listSubGx;
   int  *numSubGx       = sim->numSubGx;
 
@@ -1192,7 +1192,7 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
    CkPrintf("HI, I am rhart chare %d %d %d in computeAtmForc.2 w %d at %d done on %d\n",
              thisIndex.x,thisIndex.y,thisIndex.z,flagEwd,iterAtmTyp,CkMyPe());
 #endif
-   CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   CPcharmParaInfo *sim   = CPcharmParaInfo::get();
    int index = (thisIndex.x % sim->sizeZ);
    UrhoRealProxy[thisInstance.proxyOffset](index,thisIndex.y).RHartReport();
    iterAtmTyp  = 0;

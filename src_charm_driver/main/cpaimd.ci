@@ -187,7 +187,6 @@ mainmodule cpaimd {
 
 	readonly Config config;
 
-	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
 	readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
 

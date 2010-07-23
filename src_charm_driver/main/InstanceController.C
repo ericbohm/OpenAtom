@@ -9,7 +9,7 @@ extern int nstates;
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /* ostensibly the InstanceController may need to know about everything */
-CPcharmParaInfo simReadOnly;
+extern CPcharmParaInfo simReadOnly;
 extern CkVec < CkVec <int> > UplaneUsedByNLZ;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
@@ -223,6 +223,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg){
   //  CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, d);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
 }
+
 
 
 //============================================================================

@@ -23,10 +23,10 @@
 
 //=========================================================================
 
+extern CPcharmParaInfo simReadOnly;
 extern CProxy_main                       mainProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
-extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
@@ -380,7 +380,7 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
     int Index              = msg->senderIndex; // which g-space chare sent the data
     complex *partiallyFFTd = msg->data;
 
-    CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+    CPcharmParaInfo *sim   = CPcharmParaInfo::get();
     int nchareG            = sim->nchareG;
     int **tranUnpack       = sim->index_tran_upackNL;
     int *nline_per_chareG  = sim->nlines_per_chareG;
@@ -474,7 +474,8 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 //============================================================================
 
   fftDataDone=false;
-  int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+  int nplane_x = sim->nplane_x;
   if(!config.doublePack){nplane_x = (nplane_x+1)/2;} // convert to the doublePack definition
 
 //============================================================================
@@ -575,7 +576,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 //============================================================================
 void CP_State_RealParticlePlane::computeZmatEes(){
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    int iterNL1          = iterNL-1;           // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1]; 
@@ -654,7 +655,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
                                         int state, int index,int iterNL_in){
 //============================================================================
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    int iterNL1          = iterNL_in-1;        // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
    int nZmat            = nmem_zmat[iterNL1];
@@ -734,7 +735,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 void CP_State_RealParticlePlane::recvZMatEes(CkReductionMsg *msg){
 //============================================================================
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    int iterNL_in        = msg->getUserFlag();
    //   int iterNL1          = iterNL_in-1;        // silly C++ convention
    int iterNL1          = iterNL-1;        // silly C++ convention
@@ -808,7 +809,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg){
    double *zmat_loc=msg->zmat;
    int iterNL_in=msg->iterNL;
    CkAssert(msg->iterNL>0);
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+   CPcharmParaInfo *sim = CPcharmParaInfo::get();
    int iterNL1          = iterNL-1;          // silly C++ convention
    int *nmem_zmat       = sim->nmem_zmat;    // zmat memory size
    int nZmat            = nmem_zmat[iterNL1];
@@ -1079,7 +1080,8 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
 void CP_State_RealParticlePlane::FFTNLEesBckR(){
 //============================================================================
 
-  int nplane_x = scProxy.ckLocalBranch()->cpcharmParaInfo->nplane_x;
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
+  int nplane_x = sim->nplane_x;
   if(!config.doublePack){nplane_x = (nplane_x+1)/2;} // convert to the doublePack definition
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
@@ -1174,7 +1176,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 void CP_State_RealParticlePlane::sendToEesGPP(){
 //============================================================================
 
-  CPcharmParaInfo *sim   = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim   = CPcharmParaInfo::get();
   FFTcache *fftcache     = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
   int nchareG            = sim->nchareG;
   int **tranpack         = sim->index_tran_upackNL;

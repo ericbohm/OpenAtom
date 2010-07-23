@@ -7,7 +7,7 @@
 extern int nstates;
 extern Config config;
 
-extern CProxy_CPcharmParaInfoGrp 		scProxy;
+extern CPcharmParaInfo simReadOnly;
 extern CProxy_TimeKeeper 			TimeKeeperProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>      UgSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane> 	UparticlePlaneProxy;
@@ -18,7 +18,6 @@ extern CProxy_InstanceController      instControllerProxy;
 GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance): 
 			thisInstance(_thisInstance),
 			myGSpaceObj(0),
-			paraInfo(0),
 			isFirstStep(true),
 			waitingForEnergy(false),
 			waitingForAtoms(false),
@@ -31,10 +30,11 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 	#ifdef DEBUG_CP_GSPACE_CREATION
 		CkPrintf("GSpaceDriver[%d,%d] born\n",thisIndex.x,thisIndex.y);
 	#endif
-	/// Initialize flags and counters that record the control state
-	paraInfo = scProxy.ckLocalBranch ()->cpcharmParaInfo;
-	ees_nonlocal = paraInfo->ees_nloc_on;
-        int natm_nl  = paraInfo->natm_nl;
+	/// Initialize flags and counters that record the control
+	/// state
+        CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+	ees_nonlocal = sim->ees_nloc_on;
+        int natm_nl  = sim->natm_nl;
         if(natm_nl==0){
 	  areNLForcesDone=true;
         }//endif
@@ -46,7 +46,6 @@ GSpaceDriver::GSpaceDriver(const UberCollection _thisInstance):
 ///
 GSpaceDriver::GSpaceDriver(CkMigrateMessage *msg): 
 			myGSpaceObj(0),
-			paraInfo(0),
 			controlThread(0)
 {}
 
@@ -68,7 +67,6 @@ void GSpaceDriver::pup(PUP::er &p)
 	if( p.isUnpacking() )
 	{
 		controlThread = RTH_Runtime_create(RTH_Routine_lookup(GSpaceDriver,driveGSpace),this);
-		paraInfo = scProxy.ckLocalBranch ()->cpcharmParaInfo;
 	}
 	RTH_Runtime_pup(controlThread,p,this);
 }
@@ -285,8 +283,8 @@ void GSpaceDriver::needUpdatedPsiV()
 void GSpaceDriver::startNonLocalEes(int iteration_loc)
 {
 
-    paraInfo = scProxy.ckLocalBranch ()->cpcharmParaInfo;
-    int natm_nl  = paraInfo->natm_nl;
+    CPcharmParaInfo *sim  = CPcharmParaInfo::get();
+    int natm_nl  = sim->natm_nl;
 
     if(iteration_loc!=myGSpaceObj->iteration)
         CkAbort("GSpaceDriver::startNonLocalEes - Iteration mismatch between GSpace and someone else who asked to launch NL computations\n");

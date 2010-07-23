@@ -25,7 +25,7 @@
 
 //----------------------------------------------------------------------------
 
-CPcharmParaInfo simReadOnly;
+extern CPcharmParaInfo simReadOnly;
 extern CkVec <CProxy_PIBeadAtoms>       UPIBeadAtomsProxy;
 extern CkVec <IntMap2on2> GSImaptable;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
@@ -537,7 +537,7 @@ void AtomsGrp::outputAtmEnergy() {
 //==========================================================================
 
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = 
+  CPcharmParaInfo *sim  = CPcharmParaInfo::get(); 
   int myid              = CkMyPe();  
   double eKinetic       = eg->estruct.eKinetic_atm;
   double eKineticNhc    = eg->estruct.eKineticNhc_atm;

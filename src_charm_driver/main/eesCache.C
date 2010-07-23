@@ -25,6 +25,7 @@
 
 
 //----------------------------------------------------------------------------
+extern CPcharmParaInfo simReadOnly;
 extern Config config;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
@@ -478,7 +479,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 void GSPDATA::init(int index_in,int nkpoint_in){
 //==============================================================================
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
 
  //------------------------------------------------------------
  // Set the variables from the generic parainfo group
