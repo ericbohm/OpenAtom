@@ -396,7 +396,7 @@ mainmodule cpaimd {
 	};
 
 
-       array [2D] CP_VanderWaalsG {
+       array [3D] CP_VanderWaalsG {
 		entry CP_VanderWaalsG(UberCollection);
 		entry [nokeep] void init();
 	};
