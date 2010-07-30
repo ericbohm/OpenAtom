@@ -43,8 +43,8 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
 void IntegrationComplete(void *, void *);
 
 //#define _CP_DEBUG_PSI_OFF_
-//#define _CP_ENERGY_GRP_VERBOSE_
-//#define _CP_DEBUG_ATMS_
+#define _CP_ENERGY_GRP_VERBOSE_
+#define _CP_DEBUG_ATMS_
 //#define _CP_DEBUG_ATMS_EXIT_
 
 //==============================================================================
@@ -245,12 +245,6 @@ void AtomsGrp::init()
       // make lists of group IDs and their Commander PE
       
       CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
-      /*
-	const int **elems_c=  new const int*[numPIMDBeads];
-      const int *naelems_c= new int[numPIMDBeads];
-      int **elems=const_cast<int **>(elems);
-      int *naelems= const_cast<int *>(naelems_c);
-      */
       int **elems=new int*[numPIMDBeads];
       int *naelems=new int[numPIMDBeads];
       for(int i=0;i<numPIMDBeads;i++)
@@ -262,8 +256,17 @@ void AtomsGrp::init()
 	  int offset=instance.calcPO();
 	  elems[i][0]=GSImaptable[offset].get(0,0);
 	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
+	  CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n", thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
+
 	}
       proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
+      delete [] naelems;
+      for(int i=0;i<numPIMDBeads;i++)
+	delete [] elems[i];
+    }
+  else
+    {
+      // do nothing, there is only 1 bead
     }
 
 
@@ -282,7 +285,7 @@ void AtomsGrp::init()
 void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //==========================================================================
 // Local pointers
-//  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
+  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
   int i,j;
   double *ftot      = (double *) msg->getData();
 
@@ -295,9 +298,8 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //============================================================
 // Copy out the reduction of energy and forces
 
-#ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: inside recv forces %d : %d\n",myid,natm);
-#endif
+//#ifdef _CP_DEBUG_ATMS_
+  //#endif
   double pot_ewd_rs_loc = ftot[3*natm];
   double potPerdCorrLoc = ftot[3*natm+1];
   double fmag = 0.0;
@@ -391,7 +393,7 @@ void AtomsGrp::integrateAtoms()
 // Integrate the atoms
 
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",myid,natm);
+  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",CkMyPe(),natm);
 #endif
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
   CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
@@ -504,7 +506,7 @@ void AtomsGrp::integrateAtoms()
     outputAtmEnergy();
 
     int i=0;
-    //    CkPrintf("{%d}[%d] AtomsGrp::integrateAtoms contributing to atomsDone\n ", thisInstance.proxyOffset, CkMyPe());     
+    CkPrintf("{%d}[%d] AtomsGrp::integrateAtoms contributing to atomsDone\n ", thisInstance.proxyOffset, CkMyPe());     
     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
@@ -512,6 +514,9 @@ void AtomsGrp::integrateAtoms()
 //-------------------------------------------------------------------------
    }//end routine
 //==========================================================================
+
+
+
 
 
 //==========================================================================
@@ -568,82 +573,6 @@ void AtomsGrp::outputAtmEnergy() {
    }//end routine
 //==========================================================================
 
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/**
- * Increment the iteration counters in atoms and eesData call
- * gSpaceDriver->doneMovingAtoms() That is done via localbranch to all
- * co-located gSpacePlanes in the localBarrier scheme.  Used to be via
- * messages.  This permits the new step to advance with the new Psi.
- */
-  void AtomsGrp::atomsDone(CkReductionMsg *msg) {
-    //    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
-//==========================================================================
-  delete msg;
-  atomsDone();
-}
-//==========================================================================
-
-
-//==========================================================================
-// Needs to have each proc invoke directly doneMovingAtoms method of the
-// GSpaceDrivers which are mapped to it. Without migration, we have that map
-// at startup. With migration, one must write an enroll/dropout routine.
-// All 
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-void AtomsGrp::atomsDone() {
-//==========================================================================
-// Increment iteration counters
-//  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
- int myid = CkMyPe();
-
- EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
- iteration++;
- eg->estruct.iteration_atm   = iteration;
- eg->iteration_atm           = iteration;
- // CkPrintf("{%d}[%d] atomsDone now at eg->iteration_atm %d \n",thisInstance.proxyOffset,myid,eg->iteration_atm);
-
-#ifdef _DEBUG_CHECK_ATOM_COMM_
- char fname[100];
- sprintf(fname,"atoms.out.%d.%d",iteration,myid);
- FILE *fp = fopen(fname,"w");
- for(int i=0;i<natm;i++){
-   fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
- }//endfor
- fclose(fp);
-#endif
-
-//==========================================================================
-// Use the cool new data caching system to say we're done.
-   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
-							 //k-point
-							 //needs to be
-							 //handled
-     
-     UberCollection thisPoint=thisInstance;
-     thisPoint.idxU.y=kpoint; // not at the gamma point
-     thisPoint.setPO();
-     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-     int *indState     = eesData->gspStateInd;
-     int *indPlane     = eesData->gspPlaneInd;
-     int ngo           = eesData->nchareGSPProcT;
-     
-     for(int i=0; i<ngo; i++){
-       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-       if(iadd!=1){
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
-		  myid,iadd,indState[i],indPlane[i]);
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkExit();
-       }//endif
-       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
-     }//endfor
-   }//endfor
-}//end routine
 
 
 
@@ -722,7 +651,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
  */
   void AtomsGrp::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
-//    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
+    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
   AtomsGrp *ag      = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
   double *atmData   = msg->data;
   int    nsize      = msg->nsize;
@@ -809,7 +738,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
      if(numPIMDBeads>1)
        {
-	 CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms. numPIMDBeads >1 transform PIMD U to X\n ", thisInstance.proxyOffset, CkMyPe());     
+	 CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms. numPIMDBeads >1 transform PIMD U to X iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);
 	 // transform PIMD U to X
 	 if(amBeadRoot)
 	   send_PIMD_u();
@@ -839,8 +768,90 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
   }//end routine
 //==========================================================================
 
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/**
+ * Increment the iteration counters in atoms and eesData call
+ * gSpaceDriver->doneMovingAtoms() That is done via localbranch to all
+ * co-located gSpacePlanes in the localBarrier scheme.  Used to be via
+ * messages.  This permits the new step to advance with the new Psi.
+ */
+  void AtomsGrp::atomsDone(CkReductionMsg *msg) {
+    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
+//==========================================================================
+  delete msg;
+  atomsDone();
+}
+//==========================================================================
+
+
+//==========================================================================
+// Needs to have each proc invoke directly doneMovingAtoms method of the
+// GSpaceDrivers which are mapped to it. Without migration, we have that map
+// at startup. With migration, one must write an enroll/dropout routine.
+// All 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+void AtomsGrp::atomsDone() {
+//==========================================================================
+// Increment iteration counters
+  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+ int myid = CkMyPe();
+
+ EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+ iteration++;
+ eg->estruct.iteration_atm   = iteration;
+ eg->iteration_atm           = iteration;
+ // CkPrintf("{%d}[%d] atomsDone now at eg->iteration_atm %d \n",thisInstance.proxyOffset,myid,eg->iteration_atm);
+
+#ifdef _DEBUG_CHECK_ATOM_COMM_
+ char fname[100];
+ sprintf(fname,"atoms.out.%d.%d",iteration,myid);
+ FILE *fp = fopen(fname,"w");
+ for(int i=0;i<natm;i++){
+   fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
+ }//endfor
+ fclose(fp);
+#endif
+
+//==========================================================================
+// Use the cool new data caching system to say we're done.
+   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
+							 //k-point
+							 //needs to be
+							 //handled
+     
+     UberCollection thisPoint=thisInstance;
+     thisPoint.idxU.y=kpoint; // not at the gamma point
+     thisPoint.setPO();
+     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
+     int *indState     = eesData->gspStateInd;
+     int *indPlane     = eesData->gspPlaneInd;
+     int ngo           = eesData->nchareGSPProcT;
+     
+     for(int i=0; i<ngo; i++){
+       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
+       if(iadd!=1){
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
+		  myid,iadd,indState[i],indPlane[i]);
+	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+	 CkExit();
+       }//endif
+       CkPrintf("{%d}[%d] AtomsGrp::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
+     }//endfor
+   }//endfor
+}//end routine
+
+
 void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
 {
+  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   for(int atomnum=0; atomnum<natm; atomnum++)
     {
       PIMD_CM_Atoms.x[atomnum]=msg->x[atomnum];
@@ -851,18 +862,22 @@ void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
   atomsCMrecv=true;
   if(atomsPIMDXrecv)
     {
+      CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
       int i=0;
       CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsCMrecv=atomsPIMDXrecv=false;
     }
-
+  else
+  {
+    CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM warning! atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
+  }
 }
 
 
 void AtomsGrp::send_PIMD_u()
 {
-  //  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u\n ", thisInstance.proxyOffset, CkMyPe());     
+  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   for(int atomnum=0;atomnum<natm;atomnum++)
     {
       UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(atoms[atomnum].xu,atoms[atomnum].yu,atoms[atomnum].zu, PIBeadIndex);
@@ -871,18 +886,18 @@ void AtomsGrp::send_PIMD_u()
 
 void AtomsGrp::send_PIMD_fx()
 { 
-  //  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_fx\n ", thisInstance.proxyOffset, CkMyPe());     
+  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
        
   for(int atomnum=0;atomnum<natm;atomnum++)
     {
-      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_Fx(atoms[atomnum].fx,atoms[atomnum].fy,atoms[atomnum].fz, PIBeadIndex);
+      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_Fx(atoms[atomnum].fx,atoms[atomnum].fy,atoms[atomnum].fz, CkMyPe(), PIBeadIndex);
     }
 }
 
 // is broadcast to us
 void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
 {
-  //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu\n ", thisInstance.proxyOffset, CkMyPe());     
+
   atoms[atomI].fxu=_fxu;
   atoms[atomI].fyu=_fyu;
   atoms[atomI].fzu=_fzu;
@@ -890,8 +905,10 @@ void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
   fastAtoms.fyu[atomI]=_fyu;
   fastAtoms.fzu[atomI]=_fzu;
   acceptCountfu++;
+  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu (%d of %d) iteration %d\n", thisInstance.proxyOffset, CkMyPe(),acceptCountfu, natm, iteration);     
   if(acceptCountfu==natm)
     {
+      CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu done calling integrator iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
       integrateAtoms();
       acceptCountfu=0;
     }
@@ -899,7 +916,7 @@ void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
 
 void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI)
 {
-  
+  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   atoms[atomI].x=_x;
   atoms[atomI].y=_y;
   atoms[atomI].z=_z;
@@ -914,9 +931,14 @@ void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI)
       if(atomsCMrecv)
 	{
 	  int i=0;
+	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
 	  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
 	  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 	  atomsCMrecv=atomsPIMDXrecv=false;
+	}
+      else
+	{
+	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x warning! atomsCMrecv is %d iteration %d\n", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
 	}
 
     }
@@ -936,6 +958,7 @@ void AtomsGrp::send_PIMD_x()
 void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI)
 {
 
+  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
   atoms[atomI].xu=_xu;
   atoms[atomI].yu=_yu;
   atoms[atomI].zu=_zu;
