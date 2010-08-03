@@ -149,8 +149,6 @@ public:
 
 #include "../../include/RunDescriptor.h"
 
-using namespace std;
-
 #include "configure.h"
 
 //===================================================================================

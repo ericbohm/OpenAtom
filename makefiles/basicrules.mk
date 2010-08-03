@@ -9,6 +9,7 @@ CHARMINC  = $(CHARMBASE)/include
 CC        = $(CHARMBIN)/charmc
 CXX       = $(CHARMBIN)/charmc
 FC        = $(CHARMBIN)/charmc
+CHARMC    = $(CHARMBIN)/charmc
 
 # Other tools
 LN        = ln -sf
@@ -25,6 +26,7 @@ v ?= 0
 
 ifeq ($(strip $v),0)
   info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp = @echo Compiling $(<F)
   info-c   = @echo Compiling $(<F)
   info-f   = @echo Compiling $(<F)
@@ -34,6 +36,7 @@ ifeq ($(strip $v),0)
 else 
 ifeq ($(strip $v),1)
   info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp = @echo Compiling $(<F) with options $(CXXFLAGS)
   info-c   = @echo Compiling $(<F) with options $(CFLAGS)
   info-f   = @echo Compiling $(<F) with options $(FFLAGS)
@@ -43,6 +46,7 @@ ifeq ($(strip $v),1)
 else 
 ifeq ($(strip $v),2)
   info-dep = @echo Generating dependencies for $(<F)
+  info-ci  = @echo Parsing interface definitions in $(<F)
   info-cpp =
   info-c   =
   info-f   =
@@ -81,7 +85,7 @@ endif
 # Rule to generate dependency info for charm++ interface (ci) definition files
 %.di: %.ci
 	$(info-dep)
-	@$(CXX) -gendeps $< > $@
+	@$(CHARMC) -M $< > $@
 
 
 # Pattern rules copied from the built-in make rules
@@ -113,3 +117,6 @@ endif
 	@echo Preprocessing $<
 	$q$(PREPROCESS.F) $(OUTPUT_OPTION) $<
 
+%.ci.stamp: %.ci
+	$(info-ci)
+	$q$(CHARMC) $< && touch $@

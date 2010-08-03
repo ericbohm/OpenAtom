@@ -49,7 +49,7 @@
 #include <string>
 
 int TimeKeeperID=0;
-vector <string> TimeKeeperNames;
+std::vector <std::string> TimeKeeperNames;
 UberCollection thisInstance;
 //============================================================================
 /** 
@@ -1596,11 +1596,11 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
-  string forwardname("GSpaceForward");
+  std::string forwardname("GSpaceForward");
   std::ostringstream fwdstrm;
   fwdstrm << forwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gforward=keeperRegister(fwdstrm.str());
-  string backwardname("GSpaceBackward");
+  std::string backwardname("GSpaceBackward");
   std::ostringstream bwdstrm;
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
@@ -1704,8 +1704,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
   realSpaceOpts.setMap(rsMap);
-  int rforward=keeperRegister(string("RealSpaceForward"));
-  int rbackward=keeperRegister(string("RealSpaceBackward"));
+  int rforward=keeperRegister(std::string("RealSpaceForward"));
+  int rbackward=keeperRegister(std::string("RealSpaceBackward"));
 
   UrealSpacePlaneProxy.push_back( CProxy_CP_State_RealSpacePlane::ckNew(1, 1, ngrida, ngridb, ngridc, rforward, rbackward, thisInstance, realSpaceOpts));
     UrealSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();  
@@ -2394,7 +2394,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   //--------------------------------------------------------------------------
     
   // insert rhoreal
-  int rhokeeper= keeperRegister(string("Density"));
+  int rhokeeper= keeperRegister(std::string("Density"));
   UrhoRealProxy.push_back(CProxy_CP_Rho_RealSpacePlane::ckNew(sizeX,dummy, 
 						     ees_eext_on, ngrid_eext_c,
 						     rhokeeper,
@@ -2651,7 +2651,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
 
   if(config.dumpMapFiles) {
-    int size[2];
+    int size[3];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
     MapFile *mf = new MapFile("VdWRSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
@@ -2662,7 +2662,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     delete mf;
   }
   if(config.dumpMapCoordFiles) {
-    int size[2];
+    int size[3];
     size[0] = nchareRhoR; size[1] = config.rhoRsubplanes; size[2]=nchareVdW;
     MapFile *mf = new MapFile("VdWRSMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
@@ -2687,9 +2687,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   success = 0;
   if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("VdWGSMap", &VdWGSImaptable[thisInstance.getPO()]);
 #else
@@ -2711,9 +2711,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   vdwgsOpts.setMap(vdwgsMap);
 
   if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
 #else
@@ -2722,9 +2722,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     delete mf;
   }
   if(config.dumpMapCoordFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
 #else

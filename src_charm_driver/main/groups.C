@@ -14,7 +14,6 @@
 
 #include <cmath>
 
-using namespace std;
 //#include "CP_State_Plane.h"
 
 //----------------------------------------------------------------------------
