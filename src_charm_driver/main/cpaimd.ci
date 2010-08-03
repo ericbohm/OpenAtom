@@ -26,7 +26,8 @@ module groups
 		double data[];
 	};
 
-	message BeadCMMsg 
+
+	message AtomXYZMsg 
 	{
 		double x[];
 		double y[];
@@ -43,8 +44,8 @@ module groups
                 entry void atomsDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
 		entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-		entry void accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI);
-		entry void accept_PIMD_CM(BeadCMMsg *msg);
+		entry void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
+		entry void accept_PIMD_CM(AtomXYZMsg *msg);
 		entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
 
 	};
@@ -67,7 +68,7 @@ module PIBeadAtoms
 	array [1D] PIBeadAtoms {
 		entry PIBeadAtoms(UberCollection, int);
 		entry void accept_PIMD_x(double x,double y, double z, int index );
-		entry void accept_PIMD_Fx(double Fx,double Fy, double Fz, int index);
+		entry void accept_PIMD_Fx(AtomXYZMsg *msg);
 		entry void accept_PIMD_u(double xu,double yu, double zu, int index);
 	};
 

@@ -19,13 +19,15 @@ class AtomMsg: public CMessage_AtomMsg
 };
 
 
-class BeadCMMsg: public CMessage_BeadCMMsg 
+class AtomXYZMsg: public CMessage_AtomXYZMsg 
 {
     public:
         double *x;  
         double *y;  
         double *z;  
+	int index;
 };
+
 
 
 /** AtomsGrp class.
@@ -75,14 +77,14 @@ class AtomsGrp: public Group {
   void contributeforces();
   void integrateAtoms();
   void accept_PIMD_x(double _x, double _y, double _z, int atomI);
-  void accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI);
-  void accept_PIMD_CM(BeadCMMsg *m);
+  void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
+  void accept_PIMD_CM(AtomXYZMsg *m);
   void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
 
   void recvContribute(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
   void send_PIMD_u();
-  void send_PIMD_fx();
+  void send_PIMD_Fx();
   void send_PIMD_x();
   void atomsDone();
   void sendAtoms(double,double ,double,int,int,int);

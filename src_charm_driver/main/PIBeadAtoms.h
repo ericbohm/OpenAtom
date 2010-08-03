@@ -46,7 +46,7 @@ class PIBeadAtoms : public CBase_PIBeadAtoms
  public:
 	PIBeadAtoms(CkMigrateMessage *m) {}
         PIBeadAtoms(UberCollection _thisInstance, int _numBeads);
-	void accept_PIMD_Fx(double _Fx, double _Fy, double _Fz, int PIBeadIndex);
+	void accept_PIMD_Fx(AtomXYZMsg *msg);
 	void accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex);
 	void accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex);
 	~PIBeadAtoms(){}

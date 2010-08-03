@@ -43,8 +43,8 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
 void IntegrationComplete(void *, void *);
 
 //#define _CP_DEBUG_PSI_OFF_
-#define _CP_ENERGY_GRP_VERBOSE_
-#define _CP_DEBUG_ATMS_
+//#define _CP_ENERGY_GRP_VERBOSE_
+//#define _CP_DEBUG_ATMS_
 //#define _CP_DEBUG_ATMS_EXIT_
 
 //==============================================================================
@@ -166,12 +166,57 @@ AtomsGrp::~AtomsGrp(){
 //==============================================================================
 
 
+
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+void AtomsGrp::init()
+{
+  // you are bead root if you are the processor at the base of the
+  // GSP for your Instance, which we don't know until GSP is mapped
+  // hence the 2nd phase init since atomsgrp is made before GSP
+  const int offset=thisInstance.getPO();
+  amBeadRoot      = (CkMyPe()==GSImaptable[offset].get(0,0));
+  amZerothBead    = (thisInstance.idxU.x==0);
+  if(numPIMDBeads>1)
+    {
+            
+      // make lists of group IDs and their Commander PE
+      
+      CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
+      int **elems=new int*[numPIMDBeads];
+      int *naelems=new int[numPIMDBeads];
+      for(int i=0;i<numPIMDBeads;i++)
+	{
+	  elems[i]= new int[1];
+	  UberCollection instance=thisInstance;
+	  naelems[i]=1;
+	  instance.idxU.x=0;
+	  int offset=instance.calcPO();
+	  elems[i][0]=GSImaptable[offset].get(0,0);
+	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
+	  //	  CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n", thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
+
+	}
+      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
+      delete [] naelems;
+      for(int i=0;i<numPIMDBeads;i++)
+	delete [] elems[i];
+    }
+  else
+    {
+      // do nothing, there is only 1 bead
+    }
+
+
+}
+//==============================================================================
+
+
+
 /** trigger force computation
  * based on real forces available in each processor's chare then contribute to
- * global group reduction -> recvContribute
+ * global group reduction of all atom forces (within this bead) -> recvContribute
  */
 void AtomsGrp::startRealSpaceForces(){
 //==========================================================================
@@ -231,47 +276,6 @@ void AtomsGrp::contributeforces(){
   }//end routine
 //==========================================================================
 
-void AtomsGrp::init()
-{
-  // you are bead root if you are the processor at the base of the
-  // GSP for your Instance, which we don't know until GSP is mapped
-  // hence the 2nd phase init since atomsgrp is made before GSP
-  const int offset=thisInstance.getPO();
-  amBeadRoot      = (CkMyPe()==GSImaptable[offset].get(0,0));
-  amZerothBead    = (thisInstance.idxU.x==0);
-  if(numPIMDBeads>1)
-    {
-            
-      // make lists of group IDs and their Commander PE
-      
-      CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
-      int **elems=new int*[numPIMDBeads];
-      int *naelems=new int[numPIMDBeads];
-      for(int i=0;i<numPIMDBeads;i++)
-	{
-	  elems[i]= new int[1];
-	  UberCollection instance=thisInstance;
-	  naelems[i]=1;
-	  instance.idxU.x=0;
-	  int offset=instance.calcPO();
-	  elems[i][0]=GSImaptable[offset].get(0,0);
-	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
-	  CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n", thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
-
-	}
-      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
-      delete [] naelems;
-      for(int i=0;i<numPIMDBeads;i++)
-	delete [] elems[i];
-    }
-  else
-    {
-      // do nothing, there is only 1 bead
-    }
-
-
-}
-
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -279,13 +283,13 @@ void AtomsGrp::init()
  * Apply forces to each processor's copy of the atoms.  This is parallelized so
  * that a subset of the atoms are computed on each processor and their results
  * broadcast to AtmGroup->acceptAtoms().  Move the atoms each processor is
- * responsible for. Set various energyGroup members.  contribute to group
+ * responsible for.  Set various energyGroup members.  contribute to group
  * reduction ->atomsDone
  */
 void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //==========================================================================
 // Local pointers
-  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
+//  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
   int i,j;
   double *ftot      = (double *) msg->getData();
 
@@ -375,9 +379,13 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   eg->estruct.eewald_real     = pot_ewd_rs_loc;  
   eg->estruct.fmag_atm        = fmag;
 
+
    if(numPIMDBeads>1)
-     {
-       send_PIMD_fx();
+     {  
+       // we have all the forces within this bead
+       // we have moved our portion of this bead's atoms
+       send_PIMD_Fx();
+       // atom integration must wait on Fx->Fu
      }
    else
     {
@@ -385,7 +393,11 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
     }
 }
 
-
+//==========================================================================
+// Integrate Atoms
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 void AtomsGrp::integrateAtoms()
 {
 
@@ -506,7 +518,7 @@ void AtomsGrp::integrateAtoms()
     outputAtmEnergy();
 
     int i=0;
-    CkPrintf("{%d}[%d] AtomsGrp::integrateAtoms contributing to atomsDone\n ", thisInstance.proxyOffset, CkMyPe());     
+    //    CkPrintf("{%d}[%d] AtomsGrp::integrateAtoms contributing to atomsDone\n ", thisInstance.proxyOffset, CkMyPe());     
     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
@@ -514,8 +526,6 @@ void AtomsGrp::integrateAtoms()
 //-------------------------------------------------------------------------
    }//end routine
 //==========================================================================
-
-
 
 
 
@@ -573,6 +583,28 @@ void AtomsGrp::outputAtmEnergy() {
    }//end routine
 //==========================================================================
 
+
+void AtomsGrp::send_PIMD_Fx()
+{ 
+  //  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+  // every BOC has all Fx might as well just bcast from beadroot
+  if(amBeadRoot)
+    {  //
+      AtomXYZMsg *msg= new (natm, natm, natm, 8*sizeof(int)) AtomXYZMsg;
+      for(int atomI=0;atomI<natm;atomI++)
+	{
+	  msg->x[atomI]=atoms[atomI].fx;
+	  msg->y[atomI]=atoms[atomI].fy;
+	  msg->z[atomI]=atoms[atomI].fz;
+	}
+      msg->index=PIBeadIndex;
+      UPIBeadAtomsProxy[thisInstance.proxyOffset].accept_PIMD_Fx(msg);
+    }
+  else
+    { // everyone else should chill out for Fu
+    }
+
+}
 
 
 
@@ -651,7 +683,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
  */
   void AtomsGrp::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
-    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
+//    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
   AtomsGrp *ag      = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
   double *atmData   = msg->data;
   int    nsize      = msg->nsize;
@@ -738,20 +770,19 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
      if(numPIMDBeads>1)
        {
-	 CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms. numPIMDBeads >1 transform PIMD U to X iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);
+	 //	 CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms. numPIMDBeads >1 transform PIMD U to X iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);
 	 // transform PIMD U to X
 	 if(amBeadRoot)
 	   send_PIMD_u();
 	 if(amBeadRoot && amZerothBead)
 	   {
-	     BeadCMMsg *msg = new (natm,natm,natm) BeadCMMsg;
+	     AtomXYZMsg *msg = new (natm,natm,natm) AtomXYZMsg;
 	     for(int atomI=0;atomI<natm;atomI++)
 	       {
 		 msg->x[atomI]=atoms[atomI].xu;
 		 msg->y[atomI]=atoms[atomI].yu;
 		 msg->z[atomI]=atoms[atomI].zu;
 	       }
-	     CkAbort("make this into a message");
 	     proxyHeadBeads.accept_PIMD_CM(msg);
 	   }
        }
@@ -780,7 +811,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
  * messages.  This permits the new step to advance with the new Psi.
  */
   void AtomsGrp::atomsDone(CkReductionMsg *msg) {
-    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
+    //    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
 //==========================================================================
   delete msg;
   atomsDone();
@@ -799,7 +830,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 void AtomsGrp::atomsDone() {
 //==========================================================================
 // Increment iteration counters
-  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+//  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
  int myid = CkMyPe();
 
  EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
@@ -842,16 +873,16 @@ void AtomsGrp::atomsDone() {
 	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
 	 CkExit();
        }//endif
-       CkPrintf("{%d}[%d] AtomsGrp::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+       //       CkPrintf("{%d}[%d] AtomsGrp::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
        UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
      }//endfor
    }//endfor
 }//end routine
 
 
-void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
+void AtomsGrp::accept_PIMD_CM(AtomXYZMsg *msg)
 {
-  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+  //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   for(int atomnum=0; atomnum<natm; atomnum++)
     {
       PIMD_CM_Atoms.x[atomnum]=msg->x[atomnum];
@@ -862,7 +893,7 @@ void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
   atomsCMrecv=true;
   if(atomsPIMDXrecv)
     {
-      CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
+      //      CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
       int i=0;
       CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
@@ -870,32 +901,22 @@ void AtomsGrp::accept_PIMD_CM(BeadCMMsg *msg)
     }
   else
   {
-    CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM warning! atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
+    //    CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM warning! atomsPIMDXrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
   }
 }
 
 
 void AtomsGrp::send_PIMD_u()
 {
-  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+  //  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   for(int atomnum=0;atomnum<natm;atomnum++)
     {
       UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(atoms[atomnum].xu,atoms[atomnum].yu,atoms[atomnum].zu, PIBeadIndex);
     }
 }
 
-void AtomsGrp::send_PIMD_fx()
-{ 
-  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
-       
-  for(int atomnum=0;atomnum<natm;atomnum++)
-    {
-      UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_Fx(atoms[atomnum].fx,atoms[atomnum].fy,atoms[atomnum].fz, CkMyPe(), PIBeadIndex);
-    }
-}
-
 // is broadcast to us
-void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
+void AtomsGrp::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI)
 {
 
   atoms[atomI].fxu=_fxu;
@@ -905,10 +926,10 @@ void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
   fastAtoms.fyu[atomI]=_fyu;
   fastAtoms.fzu[atomI]=_fzu;
   acceptCountfu++;
-  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu (%d of %d) iteration %d\n", thisInstance.proxyOffset, CkMyPe(),acceptCountfu, natm, iteration);     
+  //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu (%d of %d) iteration %d\n", thisInstance.proxyOffset, CkMyPe(),acceptCountfu, natm, iteration);     
   if(acceptCountfu==natm)
     {
-      CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu done calling integrator iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+      //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu done calling integrator iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
       integrateAtoms();
       acceptCountfu=0;
     }
@@ -916,7 +937,7 @@ void AtomsGrp::accept_PIMD_fu(double _fxu, double _fyu, double _fzu, int atomI)
 
 void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI)
 {
-  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+  //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
   atoms[atomI].x=_x;
   atoms[atomI].y=_y;
   atoms[atomI].z=_z;
@@ -931,14 +952,14 @@ void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI)
       if(atomsCMrecv)
 	{
 	  int i=0;
-	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
+	  //	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
 	  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
 	  contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 	  atomsCMrecv=atomsPIMDXrecv=false;
 	}
       else
 	{
-	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x warning! atomsCMrecv is %d iteration %d\n", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
+	  //	  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x warning! atomsCMrecv is %d iteration %d\n", thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
 	}
 
     }
@@ -958,7 +979,7 @@ void AtomsGrp::send_PIMD_x()
 void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI)
 {
 
-  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
+  //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
   atoms[atomI].xu=_xu;
   atoms[atomI].yu=_yu;
   atoms[atomI].zu=_zu;
@@ -1059,7 +1080,7 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
    
       // we can construct this after all k-points have reported
       if(config.UberJmax>1)
-	CkPrintf("to fix estruct.totalElecEnergy\n");
+	CkPrintf("GLENN!! you need to fix estruct.totalElecEnergy for k-points\n");
       estruct.totalElecEnergy  = es.totalElecEnergy;
       estruct.iteration_gsp= es.iteration_gsp;
       iteration_gsp        = es.iteration_gsp;

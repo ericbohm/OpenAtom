@@ -9,8 +9,9 @@
 
 */
 
-#include "PIBeadAtoms.h"
+
 #include "groups.h" 
+#include "PIBeadAtoms.h"
 
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 
@@ -18,7 +19,7 @@ extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
 
 PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads) :thisInstance(_thisInstance), numBeads(_numBeads)
 {
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::PIBeadAtoms \n",thisInstance.proxyOffset,thisIndex);
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::PIBeadAtoms numbeads %d\n",thisInstance.proxyOffset,thisIndex, numBeads);
   x= new double[numBeads];
   y= new double[numBeads];
   z= new double[numBeads];
@@ -34,14 +35,19 @@ PIBeadAtoms::PIBeadAtoms(UberCollection _thisInstance, int _numBeads) :thisInsta
   acceptCount_Fx=0;
   acceptCount_u=0;
   acceptCount_x=0;
+  
 }
 
-void PIBeadAtoms::accept_PIMD_Fx(double _Fx, double _Fy, double _Fz, int PIBeadIndex){
-  fx[PIBeadIndex]=_Fx;
-  fy[PIBeadIndex]=_Fy;
-  fz[PIBeadIndex]=_Fz;
+void PIBeadAtoms::accept_PIMD_Fx(AtomXYZMsg *msg){
+  fx[msg->index]=msg->x[thisIndex];
+  fy[msg->index]=msg->y[thisIndex];
+  fz[msg->index]=msg->z[thisIndex];
+  delete msg;
+  //  atomdest[PIBeadIndex]=atomdest;
   acceptCount_Fx++;
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx \n",thisInstance.proxyOffset,thisIndex);
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_Fx, numBeads);
+
+  // 
   if(acceptCount_Fx==numBeads)
     {
       compute_PIMD_Fu();
@@ -51,21 +57,24 @@ void PIBeadAtoms::accept_PIMD_Fx(double _Fx, double _Fy, double _Fz, int PIBeadI
       {
 	  instance.idxU.x=bead;
 	  int proxyOffset=instance.setPO();
-	  int atomdest=0;
-	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
+	  //	  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_Fx sending atomsGrp{%d}.accept_PIMD_fu\n",thisInstance.proxyOffset,thisIndex, proxyOffset);
+	  //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
+	  //	  fyu[bead], fzu[bead], thisIndex);
+	  // this atom index has to send the Fu to everyone
+	  UatomsGrpProxy[proxyOffset].accept_PIMD_Fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
       }
     }
 }
 
 void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex)
 {
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u \n",thisInstance.proxyOffset,thisIndex);
+
 
   xu[PIBeadIndex]=_xu;
   yu[PIBeadIndex]=_yu;
   zu[PIBeadIndex]=_zu;
   acceptCount_u++;
-
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_u (%d of %d)\n",thisInstance.proxyOffset,thisIndex, acceptCount_u, numBeads );
   if(acceptCount_u==numBeads)
     {
       compute_PIMD_x();
@@ -76,17 +85,19 @@ void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIn
 	    instance.idxU.x=bead;
 	    int proxyOffset=instance.setPO();
 	    int atomdest=0;
-	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
+	    //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_x(x[bead],y[bead], z[bead], thisIndex);
+	    UatomsGrpProxy[proxyOffset].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
 	}
     }
 }
 void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex )
 {
-  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x \n",thisInstance.proxyOffset,thisIndex);
+
   x[PIBeadIndex]=_x;
   y[PIBeadIndex]=_y;
   z[PIBeadIndex]=_z;
   acceptCount_x++;
+  //  CkPrintf("{%d}[%d] PIBeadAtoms::accept_PIMD_x (%d of %d) \n",thisInstance.proxyOffset,thisIndex, acceptCount_x, numBeads);
   if(acceptCount_x==numBeads)
     {
       compute_PIMD_u();
@@ -97,7 +108,8 @@ void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex
 	    instance.idxU.x=bead;
 	    int proxyOffset=instance.setPO();
 	    int atomdest=0;
-	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
+	    //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_u(xu[bead],yu[bead],zu[bead],  thisIndex);
+	    UatomsGrpProxy[proxyOffset].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
 	}
 
     }
