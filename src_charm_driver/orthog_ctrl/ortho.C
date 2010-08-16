@@ -53,6 +53,10 @@
 //#include "fft_slab_ctrl/fftCacheSlab.h"
 #include <unistd.h>
 
+#ifdef TRACE_MEMORY
+    #include <trace-projections.h>
+#endif
+
 #include "src_mathlib/mathlib.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cporthog.h"
 #include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
@@ -305,6 +309,9 @@ void Ortho::collect_results(void){
 
 #ifdef _CP_DEBUG_TMAT_
     print_results();
+#endif
+#ifdef TRACE_MEMORY
+    traceMemoryUsage();
 #endif
     numGlobalIter++;
 //=======================================================================
