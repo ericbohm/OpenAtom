@@ -21,7 +21,7 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2 -qstrict
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -DCMK_OPTIMIZE=1 \
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -DUSE_HPM=0 \
 	      -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
@@ -36,10 +36,11 @@
 	      -L/soft/apps/ibmcmp/xlf/bg/11.1/lib \
 	      -L/bgsys/ibm_essl/sles10/prod/opt/ibmmath/lib \
 	      -L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib
+#	      -L/gpfs/home/bohm/zlib/lib
   LDLIBS   += -module CkMulticast -module comlib -lconv-util \
-	      -lesslbg -lmass -lmassv -lxlfmath \
-	      -lxlf90_r -lxlomp_ser -lrt -lpthread \
-		  xerbla.o -lm -lz
+	      -lesslbg -lmass -lmassv -lxlfmath -lxlf90_r -lxlomp_ser \
+	      -lrt -lpthread xerbla.o -lm -lz
+#	      -lhpm -lSPI.cna
 
 # @note: Empty target specific appends (+=) hide previous global values for
 #        make version 3.80 on bgp. Hence uncomment any of the following 
