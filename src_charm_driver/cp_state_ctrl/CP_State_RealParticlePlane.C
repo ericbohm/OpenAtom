@@ -32,7 +32,6 @@ extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 extern CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
-extern CkVec <CProxy_EnergyGroup>                UegroupProxy;
 extern CkVec <MapType2>                          RPPImaptable;
 extern CkGroupID            mCastGrpId;
 extern ComlibInstanceHandle mssPInstance;

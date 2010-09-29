@@ -164,6 +164,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
         /// (E) Check for atom integration : should just be a safety
         if(c->isAtomIntegrationDone==false && c->myGSpaceObj->iteration>0)
             c->waitingForAtoms = true;
+
         //------------------------------------------------------------------------
         /// (F) If the atom or energy stuff is slow, relax for a bit (doneMovingAtoms or doneComputingEnergy resumes)
         if(c->waitingForAtoms || c->waitingForEnergy)

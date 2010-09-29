@@ -83,7 +83,7 @@ CP_VanderWaalsG::~CP_VanderWaalsG(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 void CP_VanderWaalsG::pup(PUP::er &p){
-  ArrayElement2D::pup(p);
+  //  ArrayElement2D::pup(p);
   //  p|thisInstance;
 //--------------------------------------------------------------------------
    }//end routine

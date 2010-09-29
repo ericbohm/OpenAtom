@@ -186,6 +186,7 @@ void GSpaceDriver::doneComputingEnergy(const int AtomsGrpIter)
  */
 void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 {
+  //  CkPrintf("{%d}[%d] GSpaceDriver::doneMovingAtoms()\n ", thisInstance.proxyOffset, CkMyPe());     
   /// Ensure the iterations are synced @todo: Should this be an if condition? It was when it lived in GSpace
   CkAssert(myGSpaceObj->iteration == AtomsGrpIter);
 

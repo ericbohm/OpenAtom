@@ -2687,9 +2687,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   success = 0;
   if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     success = mf->loadMap("VdWGSMap", &VdWGSImaptable[thisInstance.getPO()]);
 #else
@@ -2711,9 +2711,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   vdwgsOpts.setMap(vdwgsMap);
 
   if(config.dumpMapFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMap(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
 #else
@@ -2722,9 +2722,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     delete mf;
   }
   if(config.dumpMapCoordFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = nchareVdW;
-    MapFile *mf = new MapFile("VdWGSMap_coord", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+    int size[3];
+    size[0] = nchareRhoG; size[1] = nchareVdW; size[2] = nchareVdW;
+    MapFile *mf = new MapFile("VdWGSMap_coord", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
     mf->dumpMapCoords(&VdWGSImaptable[thisInstance.getPO()], thisInstance.getPO());
 #else
