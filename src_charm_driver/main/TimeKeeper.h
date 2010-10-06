@@ -11,7 +11,7 @@
  * DO NOT use /soft/apps/UPC/lib/libhpm.a it uses MPI and will 
  * cause you a lot of grief.
  */
-#ifdef USE_HPM
+#if USE_HPM
 extern "C" void HPM_Init(int);        
 extern "C" void HPM_Start(char *label,int);
 extern "C" void HPM_Stop(char *label,int);
@@ -45,7 +45,7 @@ extern "C" void HPM_Print(int,int);
 #include <string>
 #include "TopoManager.h"
 
-#ifdef USE_HPM
+#if USE_HPM
 extern "C" void HPM_Init(int);        
 extern "C" void HPM_Start(char *label,int);
 extern "C" void HPM_Stop(char *label,int);
@@ -81,7 +81,7 @@ class TimeKeeper : public Group
       HPMCounter=-1;
     HPMEndCounter=0;
     PRJCounter=0;
-#ifdef USE_HPM
+#if USE_HPM
     TopoManager *topoMgr = new TopoManager();
     int x,y,z;
     topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
@@ -111,7 +111,7 @@ class TimeKeeper : public Group
 #endif
     }
 
-#ifdef USE_HPM
+#if USE_HPM
   void initHPM(){
     if(HPMCounter==-1)
       {

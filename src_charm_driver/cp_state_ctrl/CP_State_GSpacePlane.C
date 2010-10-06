@@ -982,7 +982,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 
 #endif
 #ifdef _CP_SUBSTEP_TIMING_
-#ifdef USE_HPM
+#if USE_HPM
   (TimeKeeperProxy.ckLocalBranch())->initHPM();
 #endif // HPM
 #endif // _CP_SUBSTEP_TIMING_
@@ -1113,7 +1113,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CkCallback cb(CkIndex_TimeKeeper::collectStart(NULL),0,TimeKeeperProxy);
       contribute(sizeof(double),&gstart,CkReduction::min_double, cb , forwardTimeKeep);
   }//endif
-#ifdef USE_HPM
+#if USE_HPM
   if(iteration==HPM_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startHPM("OneStep");}
   if(iteration==HPM_OFF_STEP ){(TimeKeeperProxy.ckLocalBranch())->stopHPM("OneStep");}
 #endif // HPM
@@ -1506,7 +1506,7 @@ void CP_State_GSpacePlane::launchAtoms() {
   if(iteration==config.maxIter+1){
     int i=0;
 #ifdef _CP_SUBSTEP_TIMING_
-#ifdef USE_HPM
+#if USE_HPM
     (TimeKeeperProxy.ckLocalBranch())->printHPM();
 #endif	
 #endif

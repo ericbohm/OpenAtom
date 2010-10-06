@@ -133,7 +133,7 @@ void GSpaceDriver::readyToExit()
 	if(isAtomIntegrationDone && isEnergyReductionDone)
 	{
 		#ifdef _CP_SUBSTEP_TIMING_
-			#ifdef USE_HPM
+			#if USE_HPM
 				(TimeKeeperProxy.ckLocalBranch())->printHPM();
 			#endif
 		#endif
