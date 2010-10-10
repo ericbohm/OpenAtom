@@ -831,7 +831,7 @@ PairCalculator::multiplyForward(bool flag_dp)
   if (flag_dp)  // scaling factor for psi
     alpha=2.0;
   double beta=double(0.0); // C is unset
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -872,7 +872,7 @@ PairCalculator::multiplyForward(bool flag_dp)
   DGEMM(&transformT, &transform, &m_in, &n_in, &Ksplit, &alpha, matrixA , &k_in, inDataLeft, &k_in, &beta, outData, &ldc);
   CmiNetworkProgress();
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
@@ -881,7 +881,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     int KsplitU = (i==Kloop ? Ksplit+Krem : Ksplit);
     // if(i==Kloop){Ksplit+=Krem;}
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     StartTime=CmiWallTimer();
 #endif
 #ifdef TEST_ALIGN
@@ -896,7 +896,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     DGEMM(&transformT, &transform, &m_in, &n_in, &KsplitU, &alpha, &matrixA[off], &k_in, &inDataLeft[off], &k_in, &betap, outData, &ldc);
     CmiNetworkProgress();
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 
@@ -923,7 +923,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     DGEMM(&transformT, &transform, &m_in, &n_in, &k_in, &alpha,
 	  matrixA, &lda, inDataLeft, &ldb, &beta, outData, &ldc);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif  // SPLIT
@@ -933,7 +933,7 @@ PairCalculator::multiplyForward(bool flag_dp)
 #endif
 
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   StartTime=CmiWallTimer();
 #endif
 
@@ -947,7 +947,7 @@ PairCalculator::multiplyForward(bool flag_dp)
     }
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
   if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal) //mirror our data to the phantom
@@ -1860,7 +1860,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
     dumpMatrixDouble("bwmrodata",inDataRight,numExpectedY,numPoints*2,thisIndex.y,0);
   }
 #endif
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -1914,7 +1914,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 	      &(inDataLeft[BTAoffset]), &m_in,  amatrix, &n_in, &beta,
 	      &(mynewDatad[BTCoffset]), &m_in);
       }
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 
@@ -1930,7 +1930,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 #endif
     }// end of !amPhantom
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   StartTime=CmiWallTimer();
 #endif
 
@@ -1964,7 +1964,7 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 	    &(inDataRight[BTAoffset]), &m_in,  amatrix, &k_in, &beta,
 	    &(othernewDatad[BTCoffset]), &m_in);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       traceUserBracketEvent(250, StartTime, CmiWallTimer());
 #endif
 
@@ -2023,14 +2023,14 @@ void PairCalculator::bwMultiplyHelper(int size, double *matrix1, double *matrix2
 		   &(othernewDatad[BNCoffset]));
 
 #else // no split
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     StartTime=CmiWallTimer();
 #endif
     DGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha,
 	  &(inDataRight[BNAoffset]), &m_in, amatrix2, &n_in, &beta,
 	  &(othernewDatad[BNCoffset]), &m_in);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2103,7 +2103,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
       existsNew=true;
     }
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     double alpha=-1.0;  //set it up with a minus sign
@@ -2131,7 +2131,7 @@ void PairCalculator::bwMultiplyDynOrthoT()
     DGEMM(&transform, &transform, &m_in, &k_in, &n_in, &alpha, inDataRight,
     	  &m_in, inResult2, &n_in, &beta, othernewDatad, &m_in);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(240, StartTime, CmiWallTimer());
 #endif
 
@@ -2424,7 +2424,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 	//this callback creation could be obviated by keeping an
 	//array of callbacks, not clearly worth doing
 	complex *computed=&(othernewData[j*numPoints]);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	double StartTime=CmiWallTimer();
 #endif
 
@@ -2436,7 +2436,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 	int outOffset=thisIndex.z;
 	mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
 	//	if((j-startGrain) % 8)
@@ -2452,7 +2452,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 	{
 
 	complex *computed=&(mynewData[j*numPoints]);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	double StartTime=CmiWallTimer();
 #endif
 	CkCallback mycb(cp_entry, CkArrayIndex2D(j+thisIndex.y ,thisIndex.w), cb_aid);
@@ -2464,7 +2464,7 @@ void PairCalculator::sendBWResultColumn(bool otherdata, int startGrain, int endG
 	  int outOffset=thisIndex.z;
 	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
 
@@ -2589,7 +2589,7 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
       cp_entry= cb_ep_tol;
     }
   /*
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
   */
@@ -2614,14 +2614,14 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	CkPrintf("[%d,%d,%d,%d,%d] contributing other %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric, numPoints,j,thisIndex.x+j,thisIndex.w);
 #endif
 	/*
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	StartTime=CmiWallTimer();
 #endif
 	*/
 	int outOffset=thisIndex.z;
 	mcastGrp->contribute(numPoints*sizeof(complex),computed, sumMatrixDoubleType, otherResultCookies[j], mycb, outOffset);
 	/*
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 	traceUserBracketEvent(220, StartTime, CmiWallTimer());
 #endif
 	*/
@@ -2642,14 +2642,14 @@ PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 	  CkPrintf("[%d,%d,%d,%d,%d] contributing %d offset %d to [%d %d]\n",thisIndex.w, thisIndex.x, thisIndex.y, thisIndex.z, cfg.isSymmetric,numPoints,j,thisIndex.y+j,thisIndex.w);
 #endif
 	  /*
-	    #ifndef CMK_OPTIMIZE
+	    #if CMK_TRACE_ENABLED
 	    StartTime=CmiWallTimer();
 	    #endif
 	  */
 	  int outOffset=thisIndex.z;
 	  mcastGrp->contribute(numPoints*sizeof(complex), computed, sumMatrixDoubleType, resultCookies[j], mycb, outOffset);
 	  /*
-	    #ifndef CMK_OPTIMIZE
+	    #if CMK_TRACE_ENABLED
 	    traceUserBracketEvent(220, StartTime, CmiWallTimer());
 	    #endif
 	  */
@@ -2723,7 +2723,7 @@ void PairCalculator::copyIntoTiles(double *source, double**dest, int sourceRows,
 
 void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc)
 {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         double StartTime=CmiWallTimer();
 #endif
         double betap = 1.0;
@@ -2742,7 +2742,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
           int moffc   = (ms-1)*Msplit;
           int MsplitU = (ms==Mloop ? Msplit+Mrem : Msplit);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
           StartTime=CmiWallTimer();
 #endif
 #endif
@@ -2758,7 +2758,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
           DGEMM(transT, trans, &MsplitU, &n, &Ksplit, alpha, &A[moff], lda, B, ldb, &betap, &C[moffc], ldc);
 
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
           traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2768,7 +2768,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
             int koff    = ks*Ksplit;
             int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
             StartTime=CmiWallTimer();
 #endif
 #endif
@@ -2783,7 +2783,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 #endif
             DGEMM(transT, trans, &MsplitU, &n, &KsplitU, alpha, &A[koff+moff], lda, &B[koff], ldb, &betap, &C[moffc], ldc);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
 
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
@@ -2793,7 +2793,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
         }//endfor
 
 #ifdef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2801,7 +2801,7 @@ void PairCalculator::dgemmSplitFwdStreamMK(int m, int n, int k, char *trans, cha
 
 void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, int *lda, double *B, int *ldb, double *C, int *ldc)
 {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         double StartTime=CmiWallTimer();
 #endif
         double betap = 1.0;
@@ -2813,7 +2813,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
         int Nsplit   = ( (n > Nsplit_m) ? Nsplit_m : n);
         int Nrem     = (n % Nsplit);
         int Nloop    = n/Nsplit;
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
             StartTime=CmiWallTimer();
 #endif
         for(int ns=1;ns<=Nloop;ns++)
@@ -2822,7 +2822,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
           int noffc   = (ns-1)*(*ldc)*Nsplit;
           int NsplitU = (ns==Nloop ? Nsplit+Nrem : Nsplit);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
           StartTime=CmiWallTimer();
 #endif
 #endif
@@ -2837,7 +2837,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
 #endif
             DGEMM(transT, trans, &m, &NsplitU, &Ksplit, alpha, A, lda, &B[noff], ldb, &betap, &C[noffc], ldc);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
             traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2846,7 +2846,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
               int koff    = ks*Ksplit;
               int KsplitU = (ks==Kloop ? Ksplit+Krem : Ksplit);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
               StartTime=CmiWallTimer();
 #endif
 #endif
@@ -2862,7 +2862,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
               DGEMM(transT, trans, &m, &NsplitU, &KsplitU, alpha, &A[koff], lda, &B[koff+noff], ldb, &betap, &C[noffc], ldc);
 
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
               traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2871,7 +2871,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
           }//endfor
 
 #ifdef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
           traceUserBracketEvent(210, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2879,7 +2879,7 @@ void PairCalculator::dgemmSplitFwdStreamNK(int m, int n, int k, char *trans, cha
 
 void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *transT, double *alpha, double *A, double *B, double *bt, double *C)
 {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         double StartTime=CmiWallTimer();
 #endif
         int Msplit_m = gemmSplitBW;
@@ -2901,7 +2901,7 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
     ldb=n;
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, A, &m, B, &ldb, bt, C, &m);
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -2912,7 +2912,7 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
           int off = i*Msplit;
           if(i==Mloop) { Msplit+=Mrem; }
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         StartTime=CmiWallTimer();
 #endif
 #endif
@@ -2928,14 +2928,14 @@ void PairCalculator::dgemmSplitBwdM(int m, int n, int k, char *trans, char *tran
         DGEMM(trans, transT, &Msplit, &n, &k, alpha, &A[off], &m, B, &ldb, bt, &C[off], &m);
 
 #ifndef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 #endif
         CmiNetworkProgress();
       } //endfor
 #ifdef BUNDLE_USER_EVENT
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
         traceUserBracketEvent(230, StartTime, CmiWallTimer());
 #endif
 #endif

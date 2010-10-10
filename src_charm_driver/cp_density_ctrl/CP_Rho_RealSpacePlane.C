@@ -1,10 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -630,7 +623,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
   double  *dataR     = rho_rs.rhoIRX;   // rhoirx is around doing nothing now
   complex *dataC     = rho_rs.rhoIRXC;  // so we can use it to store the FFT
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -641,7 +634,7 @@ void CP_Rho_RealSpacePlane::fftRhoRtoRhoG(){
     fftcache->doRhoFFTRtoG_Rchare(dataC,dataR,nplane_rho_x,ngrida,ngridb,iplane_ind);
   }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(RhoRtoGFFT_, StartTime, CmiWallTimer());    
 #endif
 
@@ -935,11 +928,11 @@ void CP_Rho_RealSpacePlane::fftRhoRyToGy(int iopt){
   }//endif
 
   FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
   fftcache->doRhoFFTRyToGy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(doRhoFFTRytoGy_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1346,7 +1339,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
     countGradVks[iopt]=0;
     if(rhoRsubplanes==1){doneGradRhoVks++;}
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
 
@@ -1358,7 +1351,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVks(RhoRSFFTMsg *msg){
       sendPartlyFFTGxToRx(iopt);
     }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1508,7 +1501,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
     countGradVks[iopt]=0;
     if(rhoRsubplanes==1){doneGradRhoVks+=3;}
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
 
@@ -1526,7 +1519,7 @@ void CP_Rho_RealSpacePlane::acceptGradRhoVksAll(RhoRSFFTMsg *msg){
       sendPartlyFFTGxToRx(3);
     }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(fwFFTGtoRnot0_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1740,11 +1733,11 @@ void CP_Rho_RealSpacePlane::acceptRhoGradVksGxToRx(RhoGSFFTMsg *msg){
     done = 1;
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     fftcache->doRhoFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(doRhoFFTGxtoRx_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1839,12 +1832,12 @@ void CP_Rho_RealSpacePlane::GradCorr(){
 #define GGA_ON
 #ifdef GGA_ON
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
     CPXCFNCTS::CP_getGGAFunctional(npts,nf1,nf2,nf3,density,rhoIRX,rhoIRY,rhoIRZ,
                                    Vks,thisIndex.x,exc_gga_ret,config.nfreq_xcfnctl);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(GradCorrGGA_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1917,7 +1910,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 // I) rhoIRX : Scale, Real to complex FFT, perform FFT, transpose
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -1931,7 +1924,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     sendPartlyFFTRyToGy(ioptx);// transpose and do the y-gy fft
   }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(WhiteByrdFFTX_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1942,7 +1935,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 // II) rhoIRY : Scale, real to complex FFT, perform FFT, transpose
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   StartTime=CmiWallTimer();
 #endif
 
@@ -1956,7 +1949,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     sendPartlyFFTRyToGy(iopty); // transpose and do the y-gy fft
   }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(WhiteByrdFFTY_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1967,7 +1960,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
 //============================================================================
 // III) rhoIRZ : Scale, real to complex FFT, perform FFT, transpose
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   StartTime=CmiWallTimer();
 #endif
 
@@ -1980,7 +1973,7 @@ void CP_Rho_RealSpacePlane::whiteByrdFFT(){
     sendPartlyFFTRyToGy(ioptz);// transpose and do the y-gy fft
   }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(WhiteByrdFFTZ_, StartTime, CmiWallTimer());    
 #endif
 
@@ -2101,7 +2094,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
   if(countWhiteByrd == recvCountFromGRho){
     countWhiteByrd=0;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
@@ -2112,7 +2105,7 @@ void CP_Rho_RealSpacePlane::acceptWhiteByrd(RhoRSFFTMsg *msg){
       fftcache->doRhoFFTGyToRy_Rchare(dataC,dataR,myNplane_rho,ngrida,ngridb,iplane_ind);
       sendPartlyFFTGxToRx(0);
     }
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(PostByrdfwFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -2246,7 +2239,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
       countGradVks[iopt]=0;
 
       FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       double StartTime=CmiWallTimer();
 #endif
       if(rhoRsubplanes==1){
@@ -2257,7 +2250,7 @@ void CP_Rho_RealSpacePlane::acceptHartVks(RhoHartRSFFTMsg *msg){
         sendPartlyFFTGxToRx(4);
       }//endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       traceUserBracketEvent(fwFFTGtoR0_, StartTime, CmiWallTimer());    
 #endif
   }//endif : communication from rhog 

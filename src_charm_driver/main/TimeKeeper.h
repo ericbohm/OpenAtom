@@ -91,7 +91,7 @@ class TimeKeeper : public Group
 
   void startTrace()
     {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       if(PRJCounter++==0)
 	{
 	  traceBegin();
@@ -102,7 +102,7 @@ class TimeKeeper : public Group
 
   void stopTrace()
     {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       if(--PRJCounter==0)
 	{
 	  traceEnd();
