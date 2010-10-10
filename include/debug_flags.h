@@ -1,15 +1,8 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 //=============================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=============================================================================
 /** \file debug_flags.h
- *                    Useful debugging flags
+ *  Useful debugging flags
  *
  */
 //=============================================================================
@@ -64,6 +57,7 @@
 //=============================================================================
 // src_charm_driver/paircalc/ckPairCalculator.C and a dozen other places
 //#define _NAN_CHECK_
+//#define PRINT_DGEMM_PARAMS
 
 //=============================================================================
 // src_charm_driver/main/groups.C

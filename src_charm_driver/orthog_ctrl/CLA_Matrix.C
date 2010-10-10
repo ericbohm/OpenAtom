@@ -1,10 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 /** \file CLA_Matrix.C
  *  
  */
@@ -22,7 +15,6 @@ using std::endl;
 #else
 #define DGEMM dgemm
 #endif
-//#define PRINT_DGEMM_PARAMS
 
 extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 			   double *, int *, double *, int *, double *,

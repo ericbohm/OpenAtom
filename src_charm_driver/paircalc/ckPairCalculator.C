@@ -2114,13 +2114,13 @@ void PairCalculator::bwMultiplyDynOrthoT()
 
     CmiNetworkProgress();
 
-#ifdef PRINT_DGEMM_PARAMS
-    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
-#endif
     char transform='N';
     int m_in=numPoints*2;
     int n_in=grainSizeY;     // columns of op(B)==columns C
     int k_in=grainSizeX;     // columns op(A) == rows op(B)
+#ifdef PRINT_DGEMM_PARAMS
+    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transform, transform, m_in, n_in, k_in, alpha, beta, m_in, k_in, m_in);
+#endif
 
 #if PC_BWD_DGEMM_SPLIT > 0
 
