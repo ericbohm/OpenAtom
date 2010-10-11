@@ -1011,8 +1011,8 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
      cpvel_samp->qseed = (double) cpvel_samp->iseed;
   /*-----------------------------------------------------------------------*/ 
   /* 15)\rndm_seed2{#} */
-     sscanf(dict[15].keyarg,"%d",&(mdvel_samp->iseed2));
-     sscanf(dict[15].keyarg,"%d",&(cpvel_samp->iseed2));
+     sscanf(dict[15].keyarg,"%ld",&(mdvel_samp->iseed2));
+     sscanf(dict[15].keyarg,"%ld",&(cpvel_samp->iseed2));
   /*-----------------------------------------------------------------------*/ 
   /* 16)\generic_fft_opt{on,off} */
      ifound = 0;

@@ -69,8 +69,8 @@ class MDVEL_SAMP {
      fprintf(fp,"mdvel_samp:  nvx_samp %d\n",nvx_smpl);
      fprintf(fp,"mdvel_samp:  nvx_scale %d\n",nvx_scale);
      fprintf(fp,"mdvel_samp:  nvnhc_smpl %d\n",nvnhc_smpl);
-     fprintf(fp,"mdvel_samp:  iseed1 %d\n",iseed);
-     fprintf(fp,"mdvel_samp:  iseed2 %d\n",iseed2);
+     fprintf(fp,"mdvel_samp:  iseed1 %ld\n",iseed);
+     fprintf(fp,"mdvel_samp:  iseed2 %ld\n",iseed2);
 
      fprintf(fp,"mdvel_samp:  qseed %.12g\n",qseed);
 

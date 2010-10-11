@@ -106,7 +106,7 @@ void ATOMOUTPUT::write_gen_header(int ibinary,int iwrite_freq,
  if(ibinary==0){
    FILE *fp = cfopen(fname,"w");
    fprintf(fp,
-     "%d leanCP %s %d %.10g %d %d %d %d %d %d %d %d %d %d %d %d %.10g %.10g %d\n",
+     "%d leanCP %s %d %.10g %d %d %d %d %d %d %d %d %d %d %d %d %.10g %.10g %.10g %d\n",
            ibinary,
            file_typ,
            gentimeinfo->ntime,
@@ -282,7 +282,7 @@ void ATOMOUTPUT::write_gen_header_cp(int ibinary,int iwrite_freq,
  if(ibinary==0){
    FILE *fp = cfopen(fname,"w");
    fprintf(fp,
-     "%d leanCP %s %d %.10g %d %d %d %d %d %d %d %d %d %d %d %d %.10g %.10g %d\n",
+     "%d leanCP %s %d %.10g %d %d %d %d %d %d %d %d %d %d %d %d %.10g %.10g %.10g %d\n",
            ibinary,
            file_typ,
            gentimeinfo->ntime,

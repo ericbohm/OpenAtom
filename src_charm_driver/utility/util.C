@@ -1280,18 +1280,18 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
          }
          int nPackedLoc;
          int n=1;
-         fread(&(nPackedLoc),sizeof(int),n,fp);
-         fread(&(nx),sizeof(int),n,fp);
-         fread(&(ny),sizeof(int),n,fp);
-         fread(&(nz),sizeof(int),n,fp);
+         CkAssert(fread(&(nPackedLoc),sizeof(int),n,fp)>0);
+         CkAssert(fread(&(nx),sizeof(int),n,fp));
+         CkAssert(fread(&(ny),sizeof(int),n,fp));
+         CkAssert(fread(&(nz),sizeof(int),n,fp));
          for(int pNo=0;pNo<nPacked;pNo++) {
            int x,y,z;
            double re,im;
-           fread(&(re),sizeof(double),n,fp);
-           fread(&(im),sizeof(double),n,fp);
-           fread(&(x),sizeof(int),n,fp);
-           fread(&(y),sizeof(int),n,fp);
-           fread(&(z),sizeof(int),n,fp);
+           CkAssert(fread(&(re),sizeof(double),n,fp));
+           CkAssert(fread(&(im),sizeof(double),n,fp));
+           CkAssert(fread(&(x),sizeof(int),n,fp));
+           CkAssert(fread(&(y),sizeof(int),n,fp));
+           CkAssert(fread(&(z),sizeof(int),n,fp));
            arrCP[pNo] = complex(re, im);
            kx[pNo]    = x;
            ky[pNo]    = y;

@@ -73,8 +73,8 @@ class CPVEL_SAMP{
     fprintf(fp,"nvc_smpl %d\n",nvc_smpl);
     fprintf(fp,"nvcnhc_smpl %d\n",nvcnhc_smpl);
     fprintf(fp,"nvc_scal %d\n",nvc_scal);
-    fprintf(fp,"iseed %d\n",iseed);
-    fprintf(fp,"iseed2 %d\n",iseed2);
+    fprintf(fp,"iseed %ld\n",iseed);
+    fprintf(fp,"iseed2 %ld\n",iseed2);
     fprintf(fp,"iauto_vc_scal_opt %d\n",iauto_vc_scal_opt);
     fprintf(fp,"qseed %g\n",qseed);
     fprintf(fp,"vc_scal_tol %g\n",vc_scal_tol);

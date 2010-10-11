@@ -816,7 +816,8 @@ void set_rbar_free_params(char *molsetname,char fun_key[],
 
   fp = cfopen((const char *)rbar_free_dict[2].keyarg,"r");
 
-  fscanf(fp,"%d",&num);readtoendofline(fp);
+  if(fscanf(fp,"%d",&num)){}
+  readtoendofline(fp);
   if(num!=mdrbar_sig_free->nfree){
      PRINTF("To have no errors,\n");
      PRINTF("Would be life without meaning,\n");
@@ -829,16 +830,18 @@ void set_rbar_free_params(char *molsetname,char fun_key[],
   }/*endif*/
 
   for(i=1;i<=num;i++){
-    fscanf(fp,"%d %d %d %d",
+    if(fscanf(fp,"%d %d %d %d",
                &(free_parse->imoltyp_rbar1_free[i]),
                &(free_parse->imol_rbar1_free[i]),
                &(free_parse->ires_rbar1_free[i]),
-               &(free_parse->iatm_rbar1_free[i]));readtoendofline(fp);
-    fscanf(fp,"%d %d %d %d",
+	      &(free_parse->iatm_rbar1_free[i]))){}
+    readtoendofline(fp);
+    if(fscanf(fp,"%d %d %d %d",
                &(free_parse->imoltyp_rbar2_free[i]),
                &(free_parse->imol_rbar2_free[i]),
                &(free_parse->ires_rbar2_free[i]),
-               &(free_parse->iatm_rbar2_free[i]));readtoendofline(fp);
+	      &(free_parse->iatm_rbar2_free[i]))){}
+    readtoendofline(fp);
   }/*endfor*/
 
   fclose(fp);

@@ -725,7 +725,7 @@ void GEN_WAVE::splin_btrans(double *g,double **gpsi0, double **gpsi1,
 
   fp_name_ps = cfopen((const char *) fname_ps,"r");
 
-    fscanf(fp_name_ps,"%d %lg %d ",&nr,&rmax,&n_ang_now);
+  if(fscanf(fp_name_ps,"%d %lg %d ",&nr,&rmax,&n_ang_now)){}
     readtoendofline(fp_name_ps);
     readtoendofline(fp_name_ps);
 
@@ -746,7 +746,7 @@ void GEN_WAVE::splin_btrans(double *g,double **gpsi0, double **gpsi1,
     for(iang=1; iang <= n_ang1; iang++){
 
       for(ir=1; ir<= nr; ir++){
-        fscanf(fp_name_ps,"%lg %lg ",&xx,&(rphi[ir]));
+        if(fscanf(fp_name_ps,"%lg %lg ",&xx,&(rphi[ir]))){}
       }//endfor
 
       iang_now = iang-1;
@@ -1120,7 +1120,8 @@ void GEN_WAVE::read_occupation_numbers(double *occ_up,double *occ_dn,
 
   FILE *fp;
   fp=cfopen((const char *) occupation_file,"r");
-  fscanf(fp,"%d",&nstate_file); readtoendofline(fp);
+  if(fscanf(fp,"%d",&nstate_file)){}
+  readtoendofline(fp);
   if (nstate_file != nstate_up){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Yo, dawg, occupation number file %s\n",occupation_file);
@@ -1130,7 +1131,8 @@ void GEN_WAVE::read_occupation_numbers(double *occ_up,double *occ_dn,
       EXIT(1);
   }/*endif*/
   for (int i=1; i<=nstate_up; i++){
-    fscanf(fp,"%lf %lf",&occ_up[i],&occ_dn[i]); readtoendofline(fp);
+    if(fscanf(fp,"%lf %lf",&occ_up[i],&occ_dn[i])){}; 
+    readtoendofline(fp);
     ncnt++;
     if(occ_up[i]<0 || occ_up[i]>1.0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");

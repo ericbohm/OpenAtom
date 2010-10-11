@@ -302,7 +302,7 @@ main::main(CkArgMsg *msg) {
 	strncat(simfname,lastslash,strchr(msg->argv[2],'.') - lastslash);
 	CkPrintf("  Tidy mode, running %s\n",tidyphysfname);
 	unlink(simfname);
-	system(tidyphysfname);
+	CkAssert(system(tidyphysfname)>=0);
 	strncpy(tidyphysfname,simfname,1024);
 	strncat(tidyphysfname,".coords_out",20);
 	CkPrintf("  Tidy mode, unlinking %s\n",tidyphysfname);

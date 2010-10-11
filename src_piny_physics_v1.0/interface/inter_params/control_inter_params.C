@@ -61,7 +61,7 @@ void control_inter_params(MDINTERACT *mdinteract,SPLINE_PARSE *spline_parse,
   int i,j,iii;                           // Num: Counters               
   int ninter;                            // Num: Number of interactions 
   double now_mem;                        // Num: Memory allocated here  
-  char typ[5];
+  char typ[6];
   int nbase,nbase2,ibase_want;
   CATM_LAB *cinter,*cinter_base;
   char *fun_key;

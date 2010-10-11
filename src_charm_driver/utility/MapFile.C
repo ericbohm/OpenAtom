@@ -204,11 +204,11 @@ int MapFile::loadMap(const char *filename, MapType2 *map)
   FILE *fp = fopen(filename, "r");
   if(fp==NULL)
     return 0;
-  fscanf(fp, "%s%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &numProcs); 
+  CkAssert(fscanf(fp, "%s%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &numProcs)); 
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
     {
-      fscanf(fp, "%d%d%d\n", &x, &y, &pe);
+      CkAssert(fscanf(fp, "%d%d%d\n", &x, &y, &pe));
       map->set(x, y, pe);
     }
   fclose(fp);
@@ -222,12 +222,12 @@ int MapFile::loadMap(const char *filename, MapType3 *map)
   FILE *fp = fopen(filename, "r");
   if(fp==NULL)
     return 0;
-  fscanf(fp, "%s%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
+  CkAssert(fscanf(fp, "%s%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs)); 
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]; j++)
       for(int k=0; k<sizeDim[2]; k++)
 	{	
-	  fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe);
+	  CkAssert(fscanf(fp, "%d%d%d%d", &x, &y, &z, &pe));
       map->set(x, y, z, pe);
 	}
   fclose(fp);
@@ -242,13 +242,13 @@ int MapFile::loadMap(const char *filename, MapType4 *map)
   FILE *fp = fopen(filename, "r");
   if(fp==NULL)
     return 0;
-  fscanf(fp, "%s%d%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs); 
+  CkAssert(fscanf(fp, "%s%d%d%d%d%d%d", mapName, &numDim, &sizeDim[0], &sizeDim[1], &sizeDim[2], &sizeDim[3], &numProcs)); 
   for(int i=0; i<sizeDim[0]; i++)
     for(int j=0; j<sizeDim[1]*stride; j+=stride)
       for(int k=0; k<sizeDim[2]*stride; k+=stride)
 	for(int l=0; l<sizeDim[3]; l++)
 	{	
-	  fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe);
+	  CkAssert(fscanf(fp, "%d%d%d%d%d", &x, &y, &z, &w, &pe));
       map->set(x, y, z, w, pe);
 	}
   fclose(fp);
