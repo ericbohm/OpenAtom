@@ -16,6 +16,7 @@
 #include "src_piny_physics_v1.0/include/class_defs/allclass_gen.h"
 #include "src_piny_physics_v1.0/include/class_defs/allclass_cp.h"
 #include "src_piny_physics_v1.0/include/class_defs/PINY_INIT/PhysicsParamTrans.h"
+#include <assert.h>
 extern Config config;
 extern int sizeX;
 #if CMK_PROJECTIONS_USE_ZLIB
@@ -1280,18 +1281,18 @@ void readState(int nPacked, complex *arrCP, const char *fromFile,int ibinary_opt
          }
          int nPackedLoc;
          int n=1;
-         CkAssert(fread(&(nPackedLoc),sizeof(int),n,fp)>0);
-         CkAssert(fread(&(nx),sizeof(int),n,fp));
-         CkAssert(fread(&(ny),sizeof(int),n,fp));
-         CkAssert(fread(&(nz),sizeof(int),n,fp));
+         assert(fread(&(nPackedLoc),sizeof(int),n,fp)>0);
+         assert(fread(&(nx),sizeof(int),n,fp));
+         assert(fread(&(ny),sizeof(int),n,fp));
+         assert(fread(&(nz),sizeof(int),n,fp));
          for(int pNo=0;pNo<nPacked;pNo++) {
            int x,y,z;
            double re,im;
-           CkAssert(fread(&(re),sizeof(double),n,fp));
-           CkAssert(fread(&(im),sizeof(double),n,fp));
-           CkAssert(fread(&(x),sizeof(int),n,fp));
-           CkAssert(fread(&(y),sizeof(int),n,fp));
-           CkAssert(fread(&(z),sizeof(int),n,fp));
+           assert(fread(&(re),sizeof(double),n,fp));
+           assert(fread(&(im),sizeof(double),n,fp));
+           assert(fread(&(x),sizeof(int),n,fp));
+           assert(fread(&(y),sizeof(int),n,fp));
+           assert(fread(&(z),sizeof(int),n,fp));
            arrCP[pNo] = complex(re, im);
            kx[pNo]    = x;
            ky[pNo]    = y;
@@ -1948,7 +1949,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
    if(ibinary_write_opt==0){
      FILE *fp  = fopen(psiName,"w");
-     CkAssert(fp!=NULL);
+     assert(fp!=NULL);
      fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
      for(int i=istrt+1;i<ncoef;i++){
        fprintf(fp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
@@ -1963,7 +1964,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==2){
      strcat(psiName,".gz");
      gzFile zfp  = gzopen(psiName,"w");
-     CkAssert(zfp!=NULL);
+     assert(zfp!=NULL);
      gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
      for(int i=istrt+1;i<ncoef;i++){
        gzprintf(zfp,"%g %g %d %d %d \n",psi[index[i]].re,psi[index[i]].im,
@@ -1977,7 +1978,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==3){
      strcat(psiName,".gz");
      gzFile zfp  = gzopen(psiName,"w");
-     CkAssert(zfp!=NULL);
+     assert(zfp!=NULL);
      int n=1;
      gzwrite(zfp,&ncoef_true,sizeof(int));
      gzwrite(zfp,&sizeX,sizeof(int));
@@ -2001,7 +2002,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 #endif
    else{
      FILE *fp  = fopen(psiName,"w");
-     CkAssert(fp!=NULL);
+     assert(fp!=NULL);
      int n=1;
      fwrite(&ncoef_true,sizeof(int),n,fp);
      fwrite(&sizeX,sizeof(int),n,fp);
@@ -2028,7 +2029,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
     if(ibinary_write_opt==0){
       FILE *fp  = fopen(vpsiName,"w");
-      CkAssert(fp!=NULL);
+      assert(fp!=NULL);
       fprintf(fp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
         fprintf(fp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
@@ -2043,7 +2044,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==2){
      strcat(vpsiName,".gz");
      gzFile zfp=gzopen(vpsiName,"w");
-     CkAssert(zfp!=NULL);
+     assert(zfp!=NULL);
       gzprintf(zfp,"%d %d %d %d\n",ncoef_true,sizeX,sizeY,sizeZ);
       for(int i=istrt+1;i<ncoef;i++){
         gzprintf(zfp,"%g %g %d %d %d \n",vpsi[index[i]].re,vpsi[index[i]].im,
@@ -2058,7 +2059,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
    else if(ibinary_write_opt==3){
      strcat(vpsiName,".gz");
      gzFile zfp=gzopen(vpsiName,"w");
-     CkAssert(zfp!=NULL);
+     assert(zfp!=NULL);
      int n=1;
      gzwrite(zfp,&ncoef_true,sizeof(int));
      gzwrite(zfp,&sizeX,sizeof(int));
@@ -2082,7 +2083,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 #endif
 else{
       FILE *fp  = fopen(vpsiName,"w");
-      CkAssert(fp!=NULL);
+      assert(fp!=NULL);
       int n=1;
       fwrite(&ncoef_true,sizeof(int),n,fp);
       fwrite(&sizeX,sizeof(int),n,fp);
