@@ -43,10 +43,13 @@ void CPXCFNCTS::CP_getGGAFunctional(
     int cp_becke = cpopts->cp_becke;
     int cp_lyp   = cpopts->cp_lyp;
 
+    int cp_pbe_x = cpopts->cp_pbe_x;
+    int cp_pbe_c = cpopts->cp_pbe_c;
+
     double ex,ec,dfx_drho,fx,fc,dfx_dgrho,dfc_drho,dfc_dgrho,dfxc_dgrho;
     double unit_gx,unit_gy,unit_gz;
 
-    static const double beta = 0.0042;
+    static const double beta_becke = 0.0042;
 
     double gc_cut = cppseudo->gga_cut;
     double vol    = gencell->vol;
@@ -113,12 +116,20 @@ void CPXCFNCTS::CP_getGGAFunctional(
 
        fx  = 0.0;  dfx_drho  = 0.0;  dfx_dgrho = 0.0;
        if(cp_becke==1){
-         becke_gcx_lda(rho,g_rho2,&fx,&dfx_drho,&dfx_dgrho,beta);
+         becke_gcx_lda(rho,g_rho2,&fx,&dfx_drho,&dfx_dgrho,beta_becke);
+       }//endif
+
+       if(cp_pbe_x==1){
+         pbe_gcx_lda(rho,g_rho2,&fx,&dfx_drho,&dfx_dgrho);
        }//endif
 
        fc = 0.0;  dfc_drho  = 0.0;  dfc_dgrho = 0.0;
        if(cp_lyp==1){ 
-         lyp_gcc(rho,g_rho2,&fc,&dfc_drho,&dfc_dgrho);
+         lyp_gcc_lda(rho,g_rho2,&fc,&dfc_drho,&dfc_dgrho);
+       }//endif
+
+       if(cp_pbe_c==1){ 
+         pbe_gcc_lda(rho,g_rho2,&fc,&dfc_drho,&dfc_dgrho);
        }//endif
 
 //----------------------------------------------------------

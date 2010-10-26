@@ -298,9 +298,12 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   /* 1)\cp_vxc_typ{pz_lda,pw_lda,pz_lsda}                     */
     ifound = 0;
     index=1;
-    if(strcasecmp(dict[1].keyarg,"pz_lda")==0) {ifound++;}
-    if(strcasecmp(dict[1].keyarg,"pw_lda")==0) {ifound++;}
-    if(strcasecmp(dict[1].keyarg,"pz_lsda")==0){ifound++;}
+    cpopts->cp_pz_lda = 0;
+    cpopts->cp_pw_lda = 0;
+    cpopts->cp_pz_lsda = 0;
+    if(strcasecmp(dict[1].keyarg,"pz_lda")==0) {ifound++;cpopts->cp_pz_lda=1;}
+    if(strcasecmp(dict[1].keyarg,"pw_lda")==0) {ifound++;cpopts->cp_pw_lda=1;}
+    if(strcasecmp(dict[1].keyarg,"pz_lsda")==0){ifound++;cpopts->cp_pz_lsda=1;}
     sscanf(dict[1].keyarg,"%s",cppseudo->vxc_typ);
     if(ifound == 0) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
   /*-----------------------------------------------------------------------*/ 
@@ -322,7 +325,7 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if(strcasecmp(dict[2].keyarg,"fila_2x")==0)  {
         ifound++;cpopts->cp_gga=1;}
     if(strcasecmp(dict[2].keyarg,"pbe_x")==0)  {
-        ifound++;cpopts->cp_gga=1;}
+      ifound++;cpopts->cp_gga=1;cpopts->cp_pbe_x=1;}
     if(strcasecmp(dict[2].keyarg,"brx89")==0 ||
        strcasecmp(dict[2].keyarg,"brx2k")==0) {
         ifound++;
@@ -376,7 +379,7 @@ void set_sim_params_cp(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if(strcasecmp(dict[3].keyarg,"lyp")==0)    {
       ifound++;cpopts->cp_gga=1; cpopts->cp_lyp=1;}
     if(strcasecmp(dict[3].keyarg,"pbe_c")==0)    {
-      ifound++;cpopts->cp_gga=1;}
+      ifound++;cpopts->cp_gga=1; cpopts->cp_pbe_c=1;}
     if(strcasecmp(dict[3].keyarg,"lypm1")==0)    {
       ifound++;cpopts->cp_gga=1;cpopts->cp_laplacian_on=1;}
     if(strcasecmp(dict[3].keyarg,"tau1_c")==0 ){

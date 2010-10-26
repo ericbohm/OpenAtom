@@ -25,11 +25,19 @@ static void CP_exc_calc(
           const int , const int , const int , const int ,
           double *,double *,double *,double *,int nfreq_cmi_update = 8);
 
+static void CP_exc_pz_calc(
+          const int , const int , const int , const int ,
+          double *,double *,double *,double *,int nfreq_cmi_update = 8);
+
+static void CP_exc_pw_calc(
+          const int , const int , const int , const int ,
+          double *,double *,double *,double *,int nfreq_cmi_update = 8);
+
 static void CP_div_rho_gspace_calc( 
           complex* ,const int *, const int *, const int *, 
           int size, complex* , complex* , complex* );
 
- static void CP_getGGAFunctional(
+static void CP_getGGAFunctional(
           const int , const int ,const int ,const int ,
           double *,double *, double *, double *, 
           double *,int ,double *,int nfreq_cmi_update=8);
@@ -40,7 +48,11 @@ static void CP_white_byrd_gspace_calc(
 
 static void becke_gcx_lda(double ,double , double *,double *,double *,double );
 
-static void lyp_gcc(double ,double ,double *,double *,double *);
+static void lyp_gcc_lda(double ,double ,double *,double *,double *);
+
+static void pbe_gcx_lda(double, double, double *,double *,double *);
+
+static void pbe_gcc_lda(double ,double ,double *,double *,double *);
 
 static void CP_fetch_hmati(double **, double *);
 

@@ -34,6 +34,11 @@ class CPOPTS{
   int icheck_perd_size;       // Opt: Check atm dists under CBCs 
   int icheck_dual_size;       // Opt: Check atm dists under CBCs 
 
+                              // lda and lsda local exc flags
+  int cp_pz_lda;
+  int cp_pw_lda;
+  int cp_pz_lsda;
+
   int cp_becke;               // cp GGA flags 
   int cp_pw91x;
   int cp_fila_1x; 
@@ -95,6 +100,10 @@ class CPOPTS{
       iread_coef_binary  = 0;    
       icheck_perd_size   = 0;     
       icheck_dual_size   = 0;     
+
+      cp_pz_lda       = 0;
+      cp_pw_lda       = 0;
+      cp_pz_lsda      = 0;
       cp_becke        = 0;     
       cp_pw91x        = 0;
       cp_fila_1x      = 0; 
@@ -146,6 +155,10 @@ class CPOPTS{
       p | iread_coef_binary;
       p | icheck_perd_size;
       p | icheck_dual_size;
+
+      p | cp_pz_lda;
+      p | cp_pw_lda;
+      p | cp_pz_lsda;
       p | cp_becke;
       p | cp_pw91x;
       p | cp_fila_1x; 

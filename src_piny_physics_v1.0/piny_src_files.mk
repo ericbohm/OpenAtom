@@ -53,7 +53,7 @@ ABINITIO_PHYSICS_FILES = cp_eke.C cp_nl_energy_forc.C cp_nlmat.C \
                          cp_lowdin.C cp_rspace_ion.C \
                          cp_grad_rho_ctrl.C cp_becke.C gen_wave.C \
                          cp_dynamics.C cp_vel_sampl.C cp_isokin.C \
-                         cp_ees_nonlocal.C
+                         cp_ees_nonlocal.C cp_pw_lda.C cp_pbe.C
 
 CLASSICAL_PHYSICS_FILES = control_integrate.C write_output.C write_gen_header.C \
                           integration_drivers.C

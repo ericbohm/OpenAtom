@@ -73,8 +73,8 @@ void CPXCFNCTS::becke_gcx_lda(double rho,double g_rho2,
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
 /*==========================================================================*/
 
-void CPXCFNCTS::lyp_gcc(double rho,double g_rho2,double *fn,
-                        double *df_dn,double *df_dgn)
+void CPXCFNCTS::lyp_gcc_lda(double rho,double g_rho2,double *fn,
+                            double *df_dn,double *df_dgn)
 
 /*==========================================================================*/
 /*         Begin Routine                                                    */

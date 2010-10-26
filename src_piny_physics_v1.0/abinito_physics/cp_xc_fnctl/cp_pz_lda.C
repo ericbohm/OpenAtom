@@ -5,12 +5,67 @@
 #include "../class_defs/CP_OPERATIONS/class_cpxcfnctls.h"
 #include "../class_defs/allclass_cp.h"
 
-
 //===========================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===========================================================================
 
 void CPXCFNCTS::CP_exc_calc(
+              const int numFFT, const int nf1, const int nf2, const int nf3,
+              double *density,double *result,double *exc_ret,double *muxc_ret,int nfreq_cmi_update)
+
+//============================================================================
+// Function:  Exchange-correlation functional
+//
+// NOTE FOR RAMKUMAR:  BOX VOLUME (vol) MUST BE PASSED IN AND 
+//                     exc_ret AND muxc_ret MUST BE SENT OUT.
+//                     I ALSO ASSUME result IS ZEROED SOMEWHERE SO THAT I
+//                     CAN ACCUMULATE IT.
+//============================================================================
+{ /* Begin function */
+//--------------------------------------------------------------------------
+// Static variables        
+
+
+  GENERAL_DATA *general_data = GENERAL_DATA::get();
+  CP           *cp           = CP::get();
+
+#include "../class_defs/allclass_strip_gen.h"
+#include "../class_defs/allclass_strip_cp.h"
+
+  int cp_pw_lda   = cpopts->cp_pw_lda;
+
+  int cp_pz_lda   = cpopts->cp_pz_lda;
+
+  int ifound=0;
+
+  if (cp_pz_lda==1){
+    ifound++;
+    CP_exc_pz_calc(numFFT,nf1,nf2,nf3,density,result,exc_ret,muxc_ret,nfreq_cmi_update);
+  }//endif
+
+  if (cp_pw_lda==1){
+    ifound++;
+    CP_exc_pw_calc(numFFT,nf1,nf2,nf3,density,result,exc_ret,muxc_ret,nfreq_cmi_update);
+  }//endif
+
+  if (ifound != 1){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Unknown LDA Exchange-Correlation functional.\n");
+     PRINTF("In class CPXCFNCT.\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }
+
+//===========================================================================
+  }//end routine
+//===========================================================================
+
+
+//===========================================================================
+//ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//===========================================================================
+
+void CPXCFNCTS::CP_exc_pz_calc(
               const int numFFT, const int nf1, const int nf2, const int nf3,
               double *density,double *result,double *exc_ret,double *muxc_ret,int nfreq_cmi_update)
 
