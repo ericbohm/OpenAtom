@@ -1,10 +1,3 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 /** \file CLA_Matrix.C
  *  
  */
@@ -22,7 +15,6 @@ using std::endl;
 #else
 #define DGEMM dgemm
 #endif
-//#define PRINT_DGEMM_PARAMS
 
 extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 			   double *, int *, double *, int *, double *,
@@ -560,7 +552,7 @@ void CLA_Matrix::multiply(){
   int Krem     = (K % Ksplit);
   int Kloop    = K/Ksplit-1;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -594,7 +586,7 @@ void CLA_Matrix::multiply(){
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -606,7 +598,7 @@ void CLA_Matrix::multiply(){
     int boff = n*i*Ksplit;
     if(i==Kloop){Ksplit+=Krem;}
 #ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     StartTime=CmiWallTimer();
 #endif
 #endif
@@ -641,7 +633,7 @@ void CLA_Matrix::multiply(){
 #endif
 
 #ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
 #endif
@@ -649,14 +641,14 @@ void CLA_Matrix::multiply(){
   }//endfor
 
 #ifdef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
 #endif
 
 #else
   /* old unsplit version */
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
 
@@ -683,7 +675,7 @@ void CLA_Matrix::multiply(){
       CkAssert(finite(dest[in*n+jn]));
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(401, StartTime, CmiWallTimer());
 #endif
 
@@ -777,7 +769,7 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
   gotA = gotB = false;
   char trans = 'T';
   double *C = new double[m * n];
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double  StartTime=CmiWallTimer();
 #endif
 #ifdef TEST_ALIGN
@@ -790,7 +782,7 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
   CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, k, alpha, beta, k, n, m);
 #endif
   DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();

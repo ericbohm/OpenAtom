@@ -629,18 +629,6 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // pack atom positions : new for use : old for output
   if(numPIMDBeads>1)
-  for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
-    atmData[(j)  ]=atoms[i].x;
-    atmData[(j+1)]=atoms[i].y;
-    atmData[(j+2)]=atoms[i].z;
-    atmData[(j+3)]=atoms[i].xold;
-    atmData[(j+4)]=atoms[i].yold;
-    atmData[(j+5)]=atoms[i].zold;
-    atmData[(j+6)]=atoms[i].vxold;
-    atmData[(j+7)]=atoms[i].vyold;
-    atmData[(j+8)]=atoms[i].vzold;
-  }//endfor
-  else
     {
       for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
 	atmData[(j)  ]=atoms[i].xu;
@@ -653,8 +641,23 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 	atmData[(j+7)]=atoms[i].vyuold;
 	atmData[(j+8)]=atoms[i].vzuold;
       }//endfor
-
     }
+  else
+    {
+      for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
+	atmData[(j)  ]=atoms[i].x;
+	atmData[(j+1)]=atoms[i].y;
+	atmData[(j+2)]=atoms[i].z;
+	atmData[(j+3)]=atoms[i].xold;
+	atmData[(j+4)]=atoms[i].yold;
+	atmData[(j+5)]=atoms[i].zold;
+	atmData[(j+6)]=atoms[i].vxold;
+	atmData[(j+7)]=atoms[i].vyold;
+	atmData[(j+8)]=atoms[i].vzold;
+      }//endfor
+
+    }//endif
+
 //==========================================================================
 // pack the 3 energies
 
@@ -692,18 +695,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // unpack atom position and velocity
   if(numPIMDBeads>1)
-  for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
-    atoms[i].x     = atmData[(j)  ];
-    atoms[i].y     = atmData[(j+1)];
-    atoms[i].z     = atmData[(j+2)];
-    atoms[i].xold  = atmData[(j+3)];
-    atoms[i].yold  = atmData[(j+4)];
-    atoms[i].zold  = atmData[(j+5)];
-    atoms[i].vxold = atmData[(j+6)];
-    atoms[i].vyold = atmData[(j+7)];
-    atoms[i].vzold = atmData[(j+8)];
-  }//endfor
-  else
+
     for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
     atoms[i].xu     = atmData[(j)  ];
     atoms[i].yu     = atmData[(j+1)];
@@ -715,6 +707,18 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
     atoms[i].vyuold = atmData[(j+7)];
     atoms[i].vzuold = atmData[(j+8)];
     }//endfor
+  else
+  for(int i=natmStr,j=0;i<natmEnd;i++,j+=9){
+    atoms[i].x     = atmData[(j)  ];
+    atoms[i].y     = atmData[(j+1)];
+    atoms[i].z     = atmData[(j+2)];
+    atoms[i].xold  = atmData[(j+3)];
+    atoms[i].yold  = atmData[(j+4)];
+    atoms[i].zold  = atmData[(j+5)];
+    atoms[i].vxold = atmData[(j+6)];
+    atoms[i].vyold = atmData[(j+7)];
+    atoms[i].vzold = atmData[(j+8)];
+  }//endfor
   //endif
 
 //==========================================================================

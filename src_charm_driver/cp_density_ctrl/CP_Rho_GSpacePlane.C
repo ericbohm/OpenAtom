@@ -457,7 +457,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
 //      a)FFT b) Compress to sphere and store in data_out
 
     int ioptRho=0;
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
@@ -468,7 +468,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
                                   rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs, 
                                   rho_gs.sizeZ,1,iplane_ind);
-#ifndef CMK_OPTIMIZE    
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -529,7 +529,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
 //============================================================================
 // III) Start grad corr computations if necessary
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
      StartTime=CmiWallTimer();
 #endif    
    if(cp_grad_corr_on!=0){
@@ -537,7 +537,7 @@ void CP_Rho_GSpacePlane::doRhoFFT() {
    }else{
       fftcache->freeCacheMem("CP_Rho_GSpacePlane::acceptRhoData");
    }//endif
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(divRhoVksGspace_, StartTime, CmiWallTimer());    
 #endif
 
@@ -959,14 +959,14 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd(RhoGSFFTMsg *msg) {
     countWhiteByrd[iopt]=0;
     doneWhiteByrd++;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif    
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
     fftcache->doRhoFFTRtoG_Gchare(chunk,chunk,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                   rho_gs.sizeZ,0,iplane_ind);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1080,7 +1080,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
     countWhiteByrd[1]=0;
     doneWhiteByrd+=3;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif    
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
@@ -1093,7 +1093,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrdAll(RhoGSFFTMsg *msg) {
     fftcache->doRhoFFTRtoG_Gchare(chunkZ,chunkZ,rho_gs.numFull,rho_gs.numPoints,
                                   rho_gs.numLines,rho_gs.numRuns,rho_gs.runs,
                                   rho_gs.sizeZ,0,iplane_ind);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(BwFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
   }//endif
@@ -1122,7 +1122,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 //============================================================================
 // Set the timer and some options
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif    
 
@@ -1154,7 +1154,7 @@ void CP_Rho_GSpacePlane::acceptWhiteByrd() {
 //============================================================================
 // End tracing and send whitebyrd back to Rhoreal space
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(ByrdanddoFwFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 

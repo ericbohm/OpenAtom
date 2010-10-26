@@ -1,6 +1,6 @@
 #include "matrix2file.h"
 #include "charm++.h"//< Just for CkAbort!!
-
+#include <assert.h>
 void dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim,int w,int x,int y, int z, bool symmetric)
 {
   char fmt[1000];
@@ -33,7 +33,7 @@ void loadMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim
       int junk1,junk2;
       for(int i=0;i<xdim;i++)
 	for(int j=0;j<ydim;j++)
-	  fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j]));
+	  assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i*ydim+j])));
       fclose(loutfile);
     }
   else
@@ -69,7 +69,7 @@ void loadMatrix2DDouble(const char *infilename, double **matrix, int xdim, int y
       int junk1,junk2;
       for(int i=0;i<xdim;i++)
 	for(int j=1;j<=ydim;j++)
-	  fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i][j]));
+	  assert(fscanf(loutfile,"%d %d %lf\n",&junk1,&junk2,&(matrix[i][j])));
       fclose(loutfile);
     }
   else
@@ -106,7 +106,7 @@ void loadMatrix2DInt(const char *infilename, int **matrix, int xdim, int ydim,in
       int junk1,junk2;
       for(int i=0;i<xdim;i++)
 	for(int j=1;j<=ydim;j++)
-	  fscanf(loutfile,"%d %d %d\n",&junk1,&junk2,&(matrix[i][j]));
+	  assert(fscanf(loutfile,"%d %d %d\n",&junk1,&junk2,&(matrix[i][j])));
       fclose(loutfile);
     }
   else

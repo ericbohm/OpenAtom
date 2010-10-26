@@ -656,7 +656,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
         FFLUSH(stdout);
         EXIT(1);
       }//endif
-      fgets(line,MAXLINE,fp_dnamei);
+      char *junk=fgets(line,MAXLINE,fp_dnamei);
       if(sscanf(line,"%d %d \n",&num_nhc_now,&len_nhc_now)!=2){
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Error while reading NHC information\n");

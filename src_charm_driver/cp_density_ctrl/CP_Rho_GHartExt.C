@@ -1,12 +1,4 @@
 //============================================================================
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
-//============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
 /** \file CP_Rho_GHartExt.C
@@ -446,7 +438,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
 //============================================================================
 // compute vks(g) from hart eext and reduce eext and ehart
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
@@ -454,7 +446,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
    CPLOCAL::CP_hart_eext_calc(numPoints,rho,natm,fastAtoms,vks,
                               &ehart_ret,&eext_ret,&ewd_ret,k_x,k_y,k_z,perdCorr,
                               thisIndex.x,config.nfreq_cplocal_hartext);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(HartExcVksG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -852,13 +844,13 @@ void CP_Rho_GHartExt::getHartEextEes(){
 
  //----------------------------------------------------------
  // Get the energy, vks, modifiy atmSF, contribute to total SF
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
   double *perdCorr = rho_gs.perdCorr;
   CPLOCAL::eesHartEextGchare(ncoef,iterAtmTypFull,rho,vks,atmSF,atmSFtot,
                              b_re,b_im,&ehart_ret,&eext_ret,k_x,k_y,k_z,perdCorr,myChareG,config.nfreq_cplocal_eeshart);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesHartExcG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -871,12 +863,12 @@ void CP_Rho_GHartExt::getHartEextEes(){
 // If you have SFtot get the ewald energy  : A reduction is required when atmTyp parallel
 
   if(iterAtmTyp==natmTyp && nchareHartAtmT==1){
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     double *perdCorr = rho_gs.perdCorr;
     CPLOCAL::eesEwaldGchare(ncoef,atmSFtot,b_re,b_im,&ewd_ret,k_x,k_y,k_z,perdCorr,myChareG,config.nfreq_cplocal_eesewald);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
 #endif
 #ifdef _CP_GHART_VERBOSE_
@@ -1131,12 +1123,12 @@ void CP_Rho_GHartExt::acceptAtmSFTot(int size, complex *inSF){
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     double *b_re = eesData->RhoGHartData[myChareG].b_re;
     double *b_im = eesData->RhoGHartData[myChareG].b_im;
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double StartTime=CmiWallTimer();
 #endif
     double *perdCorr = rho_gs.perdCorr;
     CPLOCAL::eesEwaldGchare(ncoef,atmSFtotRecv,b_re,b_im,&ewd_ret,k_x,k_y,k_z,perdCorr,myChareG,config.nfreq_cplocal_eesewald);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesEwaldG_, StartTime, CmiWallTimer());    
 #endif
 

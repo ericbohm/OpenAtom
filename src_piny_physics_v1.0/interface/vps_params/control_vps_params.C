@@ -799,12 +799,13 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
       /*-------------------------------------*/
       /* Read in Radial Channel Matrices     */
       /*-------------------------------------*/
-
+       
       /*-----------  S CHANNEL --------------*/
        ioff_rad = 0;
        for(irad=1; irad <= n_rad0_now; irad++){
         for(jrad=1; jrad <= n_rad0_now; jrad++){
-         fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad]));
+	  if(fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad])))
+	    {vps_read_error(vps_file);}
         }/*endfor*/
         ioff_rad += n_rad_max;
        }/*endfor*/
@@ -813,7 +814,8 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
        ioff_rad = n_rad_max*n_rad_max;
        for(irad=1; irad <= n_rad1_now; irad++){
         for(jrad=1; jrad <= n_rad1_now; jrad++){
-         fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad]));
+	  if(fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad])))
+	    {vps_read_error(vps_file);}
         }/*endfor*/
         ioff_rad += n_rad_max;
        }/*endfor*/
@@ -822,7 +824,8 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
        ioff_rad = 2*n_rad_max*n_rad_max;
        for(irad=1; irad <= n_rad2_now; irad++){
         for(jrad=1; jrad <= n_rad2_now; jrad++){
-         fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad]));
+	  if(fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad])))
+	    {vps_read_error(vps_file);}
         }/*endfor*/
         ioff_rad += n_rad_max;
        }/*endfor*/
@@ -831,7 +834,8 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
        ioff_rad = 3*n_rad_max*n_rad_max;
        for(irad=1; irad <= n_rad3_now; irad++){
         for(jrad=1; jrad <= n_rad3_now; jrad++){
-         fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad]));
+	  if(fscanf(fp_vps_file,"%lf ",&(vpsnorm[jrad+ioff_rad])))
+	    {vps_read_error(vps_file);}
         }/*endfor*/
         ioff_rad += n_rad_max;
        }/*endfor*/
@@ -1166,16 +1170,16 @@ void make_vps_splin(char *vps_file,int loc_opt,int n_ang,
                       {vps_read_error(vps_file);}
       /*-----------  Skip the matrix  --------------*/
        for(irad=1; irad <= (n_rad0_now*n_rad0_now); irad++){
-         fscanf(fp_vps_file,"%lf ",&tmp);
+         if(fscanf(fp_vps_file,"%lf ",&tmp)){}
        }/*endfor*/
        for(irad=1; irad <= (n_rad1_now*n_rad1_now); irad++){
-         fscanf(fp_vps_file,"%lf ",&tmp);
+         if(fscanf(fp_vps_file,"%lf ",&tmp)){}
        }/*endfor*/
        for(irad=1; irad <= (n_rad2_now*n_rad2_now); irad++){
-         fscanf(fp_vps_file,"%lf ",&tmp);
+         if(fscanf(fp_vps_file,"%lf ",&tmp)){}
        }/*endfor*/
        for(irad=1; irad <= (n_rad3_now*n_rad3_now); irad++){
-         fscanf(fp_vps_file,"%lf ",&tmp);
+         if(fscanf(fp_vps_file,"%lf ",&tmp)){}
        }/*endfor*/
 
 /*--------------------------------------------------------------------------*/

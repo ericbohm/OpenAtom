@@ -21,7 +21,7 @@ FFT_HOME      = $(HOME)/fftw
                OPT       = -O3
                # What flags do we use when compiling the fragile portions of piny
                OPT_CARE  = -O2
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -DCMK_OPTIMIZE=1 \
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE \
                            -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
                FFLAGS   += $(OPT) -qstrict -qextname \
                            -funroll-all-loops -fsched-interblock -falign-loops=16 \

@@ -2772,19 +2772,19 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        EXIT(1);
       }//endif
-      fread(&(nPacked),sizeof(int),n,fp);
-      fread(&(nx),sizeof(int),n,fp);
-      fread(&(ny),sizeof(int),n,fp);
-      fread(&(nz),sizeof(int),n,fp);
+      if(fread(&(nPacked),sizeof(int),n,fp)){}
+      if(fread(&(nx),sizeof(int),n,fp)){}
+      if(fread(&(ny),sizeof(int),n,fp)){}
+      if(fread(&(nz),sizeof(int),n,fp)){}
       nktot=0;
       nplane0=0;
       for(int pNo=0;pNo<nPacked;pNo++) {
        double re,im; int x,y,z;
-       fread(&(re),sizeof(double),n,fp);
-       fread(&(im),sizeof(double),n,fp);
-       fread(&(x),sizeof(int),n,fp);
-       fread(&(y),sizeof(int),n,fp);
-       fread(&(z),sizeof(int),n,fp);
+       if(fread(&(re),sizeof(double),n,fp)){}
+       if(fread(&(im),sizeof(double),n,fp)){}
+       if(fread(&(x),sizeof(int),n,fp)){}
+       if(fread(&(y),sizeof(int),n,fp)){}
+       if(fread(&(z),sizeof(int),n,fp)){}
        if(pNo==0){minx=x; maxx=x;}
        if(x<minx){minx=x;}
        if(x>maxx){maxx=x;}
