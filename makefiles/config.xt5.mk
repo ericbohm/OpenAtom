@@ -21,8 +21,7 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE \
-	      -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
@@ -31,9 +30,8 @@
 
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
-  LDFLAGS  += -L$(FFT_HOME)/lib -L/opt/acml/4.3.0/gfortran64_int64/lib
-  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lm -lz \
-	      -lacml
+  LDFLAGS  += -L$(FFT_HOME)/lib
+  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lm -lz -lacml
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
