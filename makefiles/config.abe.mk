@@ -21,8 +21,7 @@ FFT_HOME	  = /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
                OPT       = -O3
                # What flags do we use when compiling the fragile portions of piny
                OPT_CARE  = -O2
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE \
-                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
                FFLAGS   += $(OPT)
                CFLAGS   += $(OPT)
                CXXFLAGS += $(OPT)

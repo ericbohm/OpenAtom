@@ -21,8 +21,7 @@ FFT_HOME      = $(TACC_FFTW2_DIR)
                OPT       = -O3
                # What flags do we use when compiling the fragile portions of piny
                OPT_CARE  = -O2
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE \
-                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include
                FFLAGS   += $(OPT)
                CFLAGS   += $(OPT)
                CXXFLAGS += $(OPT)

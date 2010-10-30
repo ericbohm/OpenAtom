@@ -21,8 +21,7 @@ FFT_HOME      = /bgl/local/fftw-2.1.5
                OPT       = -O3
                # What flags do we use when compiling the fragile portions of piny
                OPT_CARE  = -O2 -qstrict
-               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF \
-                          -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib 
+               CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE_OFF -I$(FFT_HOME)/include
                FFLAGS   += $(OPT)
                CFLAGS   += $(OPT)
                CXXFLAGS += $(OPT) -qarch=440 -qtune=440

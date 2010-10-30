@@ -21,8 +21,7 @@
   OPT       = -O3
   # What flags do we use when compiling the fragile portions of piny
   OPT_CARE  = -O2
-  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE \
-	      -I$(FFT_HOME)/include -I$(CHARMBASE)/include/fftlib #-DUSE_COMLIB
+  CPPFLAGS += $(DUAL_FFTW) -DFORTRANUNDERSCORE -I$(FFT_HOME)/include #-DUSE_COMLIB
   FFLAGS   += $(OPT)
   CFLAGS   += $(OPT)
   CXXFLAGS += $(OPT)
