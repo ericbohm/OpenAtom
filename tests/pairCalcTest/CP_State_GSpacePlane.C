@@ -23,7 +23,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane()
 
 	//If complex paircalc is being used, doublepack is effectively off
 #ifdef COMPLEX_PAIRCALC
-	doublePack = 0;
+	doublePack = config.doublePack;//0;
 #else
 	doublePack = config.doublePack;
 #endif
@@ -339,7 +339,11 @@ void CP_State_GSpacePlane::doNewPsi()
 
 	if(ihave_kx0==1){
 		double rad2 = sqrt(2.0);
+#ifdef COMPLEX_PAIRCALC
+		for(int i=kx0_strt; i<kx0_end*2; i++){psi[i].re *= rad2;}
+#else
 		for(int i=kx0_strt; i<kx0_end; i++){psi[i] *= rad2;}
+#endif
 	}//endif
 
 	countPsi = 0;
@@ -601,7 +605,11 @@ void CP_State_GSpacePlane::doLambda() {
 		// dynamics scale it out
 		if(ihave_kx0==1){
 			double rad2i = 1.0/sqrt(2.0);
+#ifdef COMPLEX_PAIRCALC
+			for(int i=kx0_strt; i<kx0_end*2; i++){force[i].re *= rad2i;}
+#else
 			for(int i=kx0_strt; i<kx0_end; i++){force[i] *= rad2i;}
+#endif
 		}//endif
 	}//endif
 
