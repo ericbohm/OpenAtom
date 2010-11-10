@@ -1591,8 +1591,14 @@ if (mynewData)
 std::stringstream fname;
 fname<<"bwMyNewData"<<thisIndex.w<<"_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<thisIndex.z<<"_"<<cfg.isSymmetric;
 std::ofstream fout(fname.str().c_str(), std::ios_base::out);
-for(int i=0;i<numExpectedY*numPoints;i++)
-        fout<<i<<" "<<mynewData[i]<<std::endl;
+for(int i=0,j=0;i<numExpectedY*numPoints;i++,j+=2){
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+        fout<<i<<" "<<mynewData[i].re<<std::endl;
+#else
+		fout<<j<<" "<<mynewData[i].re<<std::endl;
+		fout<<j+1<<" "<<mynewData[i].im<<std::endl;
+#endif
+}
 fout.close();
 }
 } else {
@@ -1601,8 +1607,14 @@ if (othernewData)
 std::stringstream fname;
 fname<<"bwOtherNewData"<<thisIndex.w<<"_"<<thisIndex.x<<"_"<<thisIndex.y<<"_"<<thisIndex.z<<"_"<<cfg.isSymmetric;
 std::ofstream fout(fname.str().c_str(), std::ios_base::out);
-for(int i=0;i<numExpectedY*numPoints;i++)
-        fout<<i<<" "<<othernewData[i]<<std::endl;
+for(int i=0,j=0;i<numExpectedY*numPoints;i++,j+=2){
+#ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+		fout<<i<<" "<<othernewData[i].re<<std::endl;
+#else
+        fout<<j<<" "<<othernewData[i].re<<std::endl;
+        fout<<j+1<<" "<<othernewData[i].im<<std::endl;
+#endif
+}
 fout.close();
 }
 }
