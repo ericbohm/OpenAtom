@@ -17,7 +17,7 @@ clean: clean_test
 
 clean_test:
 	@$(RM) -r tmp/ STATES_OUT/ $(TESTDIR)
-	@$(RM) $(wildcard *.out bwMyNewData* bwOtherNewData* ortho* inputS*)
+	@$(RM) $(wildcard *.out bwMyNewData* bwOtherNewData* orthoAsymm* orthoSymm* orthoResult* orthoPost* inputS*)
 
 run: build runtests
 
