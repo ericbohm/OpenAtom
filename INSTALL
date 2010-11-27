@@ -1,6 +1,6 @@
-=======================================================================
-		OpenAtom Massively Parallel Code v1.0
-=======================================================================
+================================================================================
+		    OpenAtom Massively Parallel Code v1.0
+================================================================================
 
 INSTALLATION
 
@@ -9,67 +9,68 @@ INSTALLATION
     ii.  FFTW Library Path
     iii. Optimized Math Libraries
 
-2. Before anything else, copy the machine specific configuration file 
-   (config.MACHINE.mk) in the makefiles/ directory to the OpenAtom base 
-   directory and rename it to config.mk.
+2. First, copy a machine specific configuration file (config.MACHINE.mk) from
+   the makefiles/ directory to the OpenAtom base directory and rename it to
+   config.mk.
 
-   Linux Workstations config.mk
-   Abe (NCSA)         config.abe.mk
-   Blue Gene/L        config.bgl.mk
-   Blue Gene/P        config.bgp.mk
-   Ranger (TACC)      config.ranger.mk
-   Turing (UIUC CSE)  config.turing.mk
-   XT4/XT5            config.xt5.mk
+   Linux Workstations	config.mk
+   Abe (NCSA)		config.abe.mk
+   Blue Gene/L		config.bgl.mk
+   Blue Gene/P		config.bgp.mk
+   Ranger (TACC)	config.ranger.mk
+   Turing (UIUC CSE)	config.turing.mk
+   XT4/XT5		config.xt5.mk
   
 3. To install Charm++, download a copy from http://charm.cs.illinois.edu
-   Depending on the architecture of the machine, choose the right
-   build options and build Charm.
-   If you have trouble building Charm, mail ppl AT cs.uiuc.edu
+   Depending on the architecture of the machine, choose the right build options
+   and build Charm++. If you have trouble building Charm++, e-mail:
+   charm@cs.illinois.edu
 
-   Edit the CHARMBASE variable in config.mk to point to the
-   Charm++ installation.
+   Next, edit the CHARMBASE variable in config.mk to point to the Charm++
+   installation.
 
 4. OpenAtom requires double precision FFTW installed in some location.
    
-   Edit the FFT_HOME variable in config.mk to point to the
-   FFTW installation. You might also need to edit the DUAL_FFTW 
-   variable depending on how FFTW was compiled. It takes two values:
-   DUAL_FFTW_OFF and DUAL_FFTW
+   Edit the FFT_HOME variable in config.mk to point to the FFTW installation.
+   You might also need to edit the DUAL_FFTW variable depending on how FFTW was
+   compiled. It takes two values: DUAL_FFTW_OFF and DUAL_FFTW
 
-5. Check to make sure the optimization options are the ones that you
-   desire. These are set as the value of the variable OPT in the 
-   config.mk file. These flags are also suffixed to the name of the
-   build directory giving you a separate directory for each different
-   set of flags.
+5. To start the build, simply type make in the top-level directory along with
+   any other options that you require. The binary 'OpenAtom' is placed in the
+   build directory whose name is indicated at the start and end of the build
+   process.
 
-6. Be sure to type 'make help' to review the different options you have
-   when invoking the build. For e.g., parallel builds can be much faster
-   if your machine supports it.
 
-7. To start the build, simply type make in the top-level directory along
-   with any other options that you require.  The binary 'OpenAtom' is 
-   placed in the build directory whose name is indicated at the start 
-   and end of the build process.
+OPTIONAL CONFIGURATION
 
-8. make test should run a minimal set of regression tests and report failures.
-   To use it, you will have to obtain the water (32 molecules, 10Ry cutoff) 
-   dataset from our git repositories.
+1. Check to make sure the optimization options are the ones that you desire.
+   These are set as the value of the variable OPT in the config.mk file. These
+   flags are also suffixed to the name of the build directory giving you a
+   separate directory for each different set of flags.
 
-   Authenticated access: (assuming your ssh config defines charmgit)
-   git clone charmgit:datasets/openatom/water_32M_10Ry
+2. Be sure to type 'make help' to review the different options you have when
+   invoking the build. For e.g., parallel builds can be much faster if your
+   machine supports it.
 
-   Anonymous access:
-   git clone git://charm.cs.illinois.edu/datasets/openatom/water_32M_10Ry.git
 
-   Place the dataset in the data/ directory of the openatom tree. Alternatively,
-   you can place this anywhere and modify the 'w3210' variable in your make config
-   file (config.mk) to point to the location.
+TEST YOUR BUILD
 
-   Note:
-   - This test setup is still quite nascent and in development. 
-   - It currently directly invokes the OpenAtom binary for simple sequential runs.
-     If your machine has a job queue or a headnode, this may not be desirable or 
-     possible.
-   - The setup still is not ready to be used in any environment where job submission
-     is required.
+make test should run a minimal set of regression tests and report failures. To
+use it, you will have to obtain the water (32 molecules, 10Ry cutoff) dataset
+from our git repositories.
+
+  Anonymous access:
+  git clone git://charm.cs.illinois.edu/datasets/openatom/water_32M_10Ry.git
+
+Place the dataset in the data/ directory of the openatom tree. Alternatively,
+you can place this anywhere and modify the 'w3210' variable in your make config
+file (config.mk) to point to the location.
+
+Note:
+  - This test setup is still quite nascent and in development. 
+  - It currently directly invokes the OpenAtom binary for simple sequential
+    runs. If your machine has a job queue or a headnode, this may not be
+    desirable or possible.
+  - The setup still is not ready to be used in any environment where job
+    submission is required.
 
