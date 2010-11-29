@@ -1,18 +1,11 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
 /** \file MapGen.C
  *  Author: Abhinav S Bhatele
  *  Date Created: July 10th, 2008
  *
  */
 
-#include <iostream>
-#include <fstream>
+#include <iostream.h>
+#include <fstream.h>
 
 #define CUBE_SIZE       2
 #define DISTANCE        10
