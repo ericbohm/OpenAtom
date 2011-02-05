@@ -44,7 +44,7 @@ InstanceController::InstanceController() {
       CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
       sectProxy.ckSectionDelegate(mcastGrp);
-      ICCookieMsg *cookieme=new () ICCookieMsg;
+      ICCookieMsg *cookieme=new ICCookieMsg;
       sectProxy.initCookie(cookieme);
     }
 }
