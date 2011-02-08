@@ -13,6 +13,13 @@
 // do reductions to time each phase of the time step
 #define _CP_SUBSTEP_TIMING_
 
+// enable Perfsuite hardware monitoring on Abe
+#define PERFSUITE_ENABLED
+#ifdef PERFSUITE_ENABLED
+#define PERFSUITE_ON_STEP 4
+#define PERFSUITE_OFF_STEP 7
+#endif
+
 //-----------------------------------------------------------------------
 //#define  _CP_DEBUG_SCALC_ONLY_  // REALLY scalc only NOTHING ELSE
 #ifdef _CP_DEBUG_SCALC_ONLY_

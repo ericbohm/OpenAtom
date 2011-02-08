@@ -40,6 +40,11 @@
 #include "TopoManager.h"
 #include "TimeKeeper.h"
 
+#ifdef PERFSUITE_ENABLED
+#include <perfsuite.h>
+#include <pshwpc.h>
+#endif
+
 #include "charm++.h"
 
 #include <cmath>
@@ -275,6 +280,11 @@ main::main(CkArgMsg *msg) {
     }//endif
     CkPrintf("Executing OpenAtom: BINARY - %s\n", msg->argv[0]);
     CkPrintf("Binary produced from source-tree at commit: %s\n",OpenAtomRevision);
+
+#ifdef PERFSUITE_ENABLED
+    if (ps_hwpc_init() != 0)
+        CkAbort("Error initializing libpshwpc!\n");
+#endif
 
     if(msg->argc >3 && msg->argv[3][0] == 't')
       {

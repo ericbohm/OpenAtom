@@ -63,6 +63,11 @@
 #endif
 #include "paircalc/RDMAMessages.h"
 
+#ifdef PERFSUITE_ENABLED
+#include <perfsuite.h>
+#include <pshwpc.h>
+#endif
+
 #include "charm++.h"
 
 #include <iostream>
@@ -1094,6 +1099,17 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #if CMK_TRACE_ENABLED
   if(iteration==TRACE_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startTrace();}
   if(iteration==TRACE_OFF_STEP){(TimeKeeperProxy.ckLocalBranch())->stopTrace();}
+#endif
+
+#ifdef PERFSUITE_ENABLED
+  if(iteration==PERFSUITE_ON_STEP) {
+	  if (ps_hwpc_start() != 0)
+		  CkAbort("Error starting performance counting!\n");
+  }
+  if(iteration==PERFSUITE_OFF_STEP) {
+	  if (ps_hwpc_stop("openatom") != 0)
+		  CkAbort("Error stopping/outputting performance counting!\n");
+  }
 #endif
 
     if(config.lbgspace || config.lbpaircalc ||config.lbdensity){
