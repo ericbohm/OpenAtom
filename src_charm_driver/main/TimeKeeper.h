@@ -45,6 +45,11 @@ extern "C" void HPM_Print(int,int);
 #include <string>
 #include "TopoManager.h"
 
+#ifdef PERFSUITE_ENABLED
+#include <perfsuite.h>
+#include <pshwpc.h>
+#endif
+
 #if USE_HPM
 extern "C" void HPM_Init(int);        
 extern "C" void HPM_Start(char *label,int);
@@ -86,6 +91,11 @@ class TimeKeeper : public Group
     int x,y,z;
     topoMgr->rankToCoordinates(CkMyPe(),x,y,z,local_rank);
     delete topoMgr;
+#endif
+
+#ifdef PERFSUITE_ENABLED
+    if (ps_hwpc_init() != 0)
+        CkAbort("Error initializing libpshwpc!\n");
 #endif
   }
 
