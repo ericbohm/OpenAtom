@@ -96,6 +96,7 @@ class TimeKeeper : public Group
 #ifdef PERFSUITE_ENABLED
     if (ps_hwpc_init() != 0)
         CkAbort("Error initializing libpshwpc!\n");
+    CkPrintf("INIT PERFSUITE ON TIMEKEEPER ID %d",TimeKeeperID);
 #endif
   }
 
@@ -118,6 +119,22 @@ class TimeKeeper : public Group
 	  traceEnd();
 	  //	  CkPrintf("[%d] trace ended \n",CkMyPe());
 	}
+#endif
+    }
+
+  void startPerfsuite()
+    {
+#ifdef PERFSUITE_ENABLED
+	  if (ps_hwpc_start() != 0)
+	  	CkAbort("Error starting performance counting!\n");
+#endif
+    }
+
+  void stopPerfsuite()
+    {
+#ifdef PERFSUITE_ENABLED
+	  if (ps_hwpc_stop("openatom") != 0)
+		CkAbort("Error stopping/outputting performance counting!\n");
 #endif
     }
 
