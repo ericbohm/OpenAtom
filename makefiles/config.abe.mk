@@ -29,13 +29,13 @@ FFT_HOME	  = /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
 
 #---------------------------------------------------------------
 #--------- Flags for linking ---------#
-               LDFLAGS  += -L$(FFT_HOME)/lib -L$(MKL_HOME)/lib/em64t -memory os -thread context
-               LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lmkl -lguide -lpthread -lm
+               LDFLAGS  += -L$(FFT_HOME)/lib -L$(MKL_HOME)/lib/em64t -memory os -thread context -L/usr/apps/tools/perfsuite/lib
+               LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lmkl -lguide -lpthread -lm -lpshwpc
 
 
 #---------------------------------------------------------------
 #--------- Flags and settings just for the driver code ---------#
-$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC)
+$(libdriver):  CPPFLAGS += -I. -I$(driver) -I$(base) -I$(base)/include -I$(STANDARD_INC) -I/usr/apps/tools/perfsuite/include
 $(libdriver):  FFLAGS   +=
 $(libdriver):  CFLAGS   +=
 $(libdriver):  CXXFLAGS +=
