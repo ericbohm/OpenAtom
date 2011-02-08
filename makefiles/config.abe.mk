@@ -29,7 +29,7 @@ FFT_HOME	  = /usr/apps/math/fftw/fftw-2.1.5/mpichvmi-intel10
 
 #---------------------------------------------------------------
 #--------- Flags for linking ---------#
-               LDFLAGS  += -L$(FFT_HOME)/lib -L$(MKL_HOME)/lib/em64t -memory os -thread context -L/usr/apps/tools/perfsuite/lib
+               LDFLAGS  += -L$(FFT_HOME)/lib -L$(MKL_HOME)/lib/em64t -memory os -thread context -L/usr/apps/tools/perfsuite/lib64
                LDLIBS   += -module CkMulticast -module comlib -lz -lconv-util -lmkl -lguide -lpthread -lm -lpshwpc
 
 
