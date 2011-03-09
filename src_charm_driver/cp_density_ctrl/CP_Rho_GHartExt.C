@@ -728,6 +728,18 @@ void CP_Rho_GHartExt::recvAtmSFFromRhoRHart(RhoGHartMsg *msg){
 
   countEextFFT++;
   if (countEextFFT == recvCountFromRHartExt) {
+#ifdef _DEBUG_GLENN_KPT_
+    char name[100];
+    sprintf(name,"SfAtmGxGyZ_inG.p%d.t%d.out",thisIndex.x,iter);
+    FILE *fp = fopen(name,"w");
+    for(int ix =0;ix<numLines;ix++){
+     for(int iy =0;iy<ngridcEext;iy++){
+       int i = ix*ngridcEext + iy;
+       fprintf(fp,"%d %d : %g %g\n",iy,ix,atmSF[i].re,atmSF[i].im);
+     }//endfor
+    }//endof
+    fclose(fp);
+#endif
     countEextFFT = 0;
 #ifndef _DEBUG_INT_TRANS_FWD_
     launchFlag   = 1;
@@ -785,7 +797,7 @@ void CP_Rho_GHartExt::FFTEesBck(){
                                  numLines,rho_gs.numRuns,rho_gs.runs,ngridcEext,ind_x);
 
 //============================================================================
-// If you are in g-space, get the energy otherwise tranpose
+// If the density has arrived, you can get the energy otherwise chill
 
   if(densityHere==1){getHartEextEes();}
 

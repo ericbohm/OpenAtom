@@ -149,6 +149,7 @@ void CP_Rho_RHartExt::init(){
  
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     eesData->registerCacheRHart(thisIndex.x);
+    CkPrintf("I am proc %d and I am registering plane %d in the CacheRhart\n",CkMyPe(),thisIndex.x);
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
     atmSFR      = reinterpret_cast<double*> (atmSFC);
@@ -456,6 +457,18 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
     fclose(fp);
     UrhoRHartExtProxy[thisInstance.proxyOffset](0,0,0).exitForDebugging();
 #else
+#ifdef _GLENN_DBG_KPT_
+    char name[100];
+    sprintf(name,"sfAtmTypGxGyZ_inR.p%d.t%d.out",thisIndex.x,iterAtmTyp);
+    FILE *fp = fopen(name,"w");
+    for(int ix =0;ix<nplane_rho_x;ix++){
+      for(int iy =0;iy<ngridb;iy++){
+        int i = iy*(ngrida/2+1) + ix;
+        fprintf(fp,"%d %d : %g %g\n",iy,ix,atmSFC[i].re,atmSFC[i].im);
+      }//endfor
+    }//endof
+    fclose(fp);
+#endif
     sendAtmSfRhoGHart(); // single transpose method (z ---> gx,gy)
 #endif
   }//endif

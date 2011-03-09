@@ -731,13 +731,11 @@ void CPLOCAL::eesAtmBsplineRgrp(FastAtoms *atoms, int *allowed_planes,
     CmiNetworkProgress();
 #endif
    }//endfor
-  
 
 //==========================================================================
 // III) Initialize M2 and get the Mn's using the recursion relation         
 //    Note: M_n is defined on 0 to n. Since frac between 0 and 1, the       
 //          calculation is performed in an order that takes advantage of it 
-
    for(i=0;i<natm;i++){
      mn_a[1][i] = 1.0 - fabs(ua[1][i]-1.0);
      mn_b[1][i] = 1.0 - fabs(ub[1][i]-1.0);
@@ -973,6 +971,17 @@ void CPLOCAL::eesPackGridRchare(int natm, int ityp, double *sfAtmTypR, int iplan
 //==========================================================================
 // sfatmtypr is ready to be ffted and used to generate eext
 
+#define _Glenn_DEBUG_KPT_OFF_
+#ifdef _Glenn_DEBUG_KPT_
+   char myFileName[100];
+   sprintf(myFileName, "sfAtmTypR_eext.p%d.s%d.t%d",iplane,sIndex,ityp);
+   FILE *fp = fopen(myFileName,"w");
+     for(int i=0;i<(ngrid_a+2)*ngrid_b;i++){
+       fprintf(fp,"%g\n",sfAtmTypR[i]);
+     }//endfor
+   fclose(fp);
+#endif
+
 //--------------------------------------------------------------------------
   }//end routine
 //==========================================================================
@@ -1048,7 +1057,8 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 //==========================================================================
 // DEBUG output
 
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
+#define _CP_DEBUG_VKS_HART_EEXT_FOO_OFF_
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
    printf("Qtyp[%d] %g\n",ityp,q_typ[ityp]);
    char myFileName[100];
    sprintf(myFileName, "Vext_Gspace_%d.out.ees.%d", index,ityp);
@@ -1120,10 +1130,13 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
        //------------------------------------------------------
        // c)electron force
        vks[i] += vext.conj();
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
-               k_x[i],k_y[i],k_z[i],
-	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
+ //       fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g : %g %g : %g\n",
+ //               k_x[i],k_y[i],k_z[i],
+ //	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart,vtemp);
+         fprintf(fp,"%d %d %d : %g %g : %g %g : %g %g \n",
+               k_x[i],k_y[i],k_z[i],rho[i].re,rho[i].im,
+               sfAtmTypG[i].re,sfAtmTypG[i].im,b_re[i],b_im[i]);
 #endif
        //------------------------------------------------------
        // d)atom force : set up backtransform
@@ -1170,9 +1183,9 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
      temp_r          = rho[i].re*b_re[i];
      sfAtmTypG[i].re = vtemp*temp_r;
      sfAtmTypG[i].im = 0.0;
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
-       fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
-	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart);
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
+            fprintf(fp,"0 0 0 : %g %g : %g %g : %g %g : %g %g \n",
+     	       rho[i].re,rho[i].im,vext.re,vext.im,vks[i].re,vks[i].im,eext,ehart);
 #endif
    }//endif
 
@@ -1181,11 +1194,12 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
    if(ityp==1){ehart_ret[0] = ehart/2.0;}
    eext_ret[0] += eext;
+   PRINTF("Hi I am eext chare %d doing typ %d with local eext %.10g izero %d ncoef %d\n",index,ityp,eext,izero,ncoef);
 
 //==========================================================================
 // Debug output
 
-#ifdef _CP_DEBUG_VKS_HART_EEXT_
+#ifdef _CP_DEBUG_VKS_HART_EEXT_FOO_
    fclose(fp);
 #endif
 

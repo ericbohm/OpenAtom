@@ -1890,7 +1890,6 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
       }//endif
       RCommPkg[i].num_recv_tot = num_recv_tot;
       RCommPkg[i].num_send_tot = num_send_tot;
-      CkPrintf("send recv stuff for %d: %d %d \n",i,num_send_tot,num_recv_tot);
      }//endfor
 
      for(int i=0;i<nchareG;i++){

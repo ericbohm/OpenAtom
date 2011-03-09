@@ -540,9 +540,6 @@ main::main(CkArgMsg *msg) {
     PhysicsParamTransfer::control_new_mapping_function(sim,doublePack);
 
     make_rho_runs(sim);
-    for (int i =0;i<config.nchareG;i++){
-     CkPrintf("send recv Rcomm in main.1 : %d :%d %d \n",i,sim->RCommPkg[i].num_recv_tot,sim->RCommPkg[i].num_send_tot);
-    }//endif
 
     // bump all the INT_MAPs to the right size
     PIBImaptable.resize(config.numInstances);

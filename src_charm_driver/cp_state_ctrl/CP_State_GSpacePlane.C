@@ -401,6 +401,7 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   initGStateSlab(&gs,sizeX,sim->sizeY,sim->sizeZ,gSpaceUnits,realSpaceUnits,s_grain,
                  thisIndex.y,thisIndex.x,len_nhc_cp,num_nhc_cp,nck_nhc_cp);
 
+
 //============================================================================
 // Load Balancing etc
 
@@ -910,10 +911,12 @@ void CP_State_GSpacePlane::initGSpace(int            size,
   }//endif
 
   gs.setKRange(gSpaceNumPoints,k_x,k_y,k_z);
-
-  if(thisIndex.x==0){
-     CkPrintf("send recv Rcomm stuff : %d :%d %d \n",thisIndex.y,simReadOnly.RCommPkg[thisIndex.y].num_recv_tot,
-                                                 	         simReadOnly.RCommPkg[thisIndex.y].num_send_tot);
+  // if I have redundant coefs, I must receive them from someone (e.g. myself included)
+  // numRecRedPsi is the number of chares that send master to coefs to me to overwrite my redundant guys
+  if(numRecvRedPsi==0 && gs.nkx0_red>0){
+    CkPrintf("Error in GSchare(%d %d) on proc %d : numRecvRedPsi=%d gs.nkx0_red=%d\n",thisIndex.x,thisIndex.y,
+	     CkMyPe(),numRecvRedPsi,gs.nkx0_red);
+    CkExit();
   }//endif
 
   fovlap      = 0.0; 
@@ -2557,11 +2560,6 @@ void CP_State_GSpacePlane::sendRedPsi() {
   if(iii!=num_send_tot){
     CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.1\n",thisIndex.x,thisIndex.y,
  	                                           num_send_tot,iii);
-    CkExit();
-  }//endif
-  if(numRecvRedPsi==0 && gs.nkx0_red>0){
-    CkPrintf("Error in GSchare %d %d : %d %d : sendredPsi.2\n",thisIndex.x,thisIndex.y,
-	                                        numRecvRedPsi,gs.nkx0_red);
     CkExit();
   }//endif
   if(jjj != gs.nkx0_uni-gs.nkx0_zero){

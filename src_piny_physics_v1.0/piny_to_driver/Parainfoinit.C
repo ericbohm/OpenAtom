@@ -623,7 +623,8 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
     EXIT(1);
   }//endif
 
-  if (doublePack==0){
+  //RAZ: switched this from 0 to 1:
+  if (doublePack==1){
     setkvec3d_sm(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
   }else{
     setkvec3d_sm_kpt(nktot,ecut,kmax,hmati,ka,kb,kc,ibrk1,ibrk2,&gmin,&gmax,0);
