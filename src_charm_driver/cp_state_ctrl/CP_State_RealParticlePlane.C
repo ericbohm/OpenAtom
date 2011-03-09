@@ -550,6 +550,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
    double  StartTime=CmiWallTimer();
 #endif    
 
+#ifdef _Glenn_DBG_KPT_
   char junk[1000];
   FILE *fp;
   if(thisIndex.x==0 && thisIndex.y==0){
@@ -562,9 +563,11 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
      }//endfor
      fclose(fp);
   }//endif
+#endif
 
   UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB,myPlane);
+#ifdef _Glenn_DBG_KPT_
   if(thisIndex.x==0 && thisIndex.y==0){
     sprintf(junk,"rpp%d.%d_afterFFT.out",thisIndex.x,thisIndex.y);
     fp = fopen(junk,"w");
@@ -575,6 +578,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
      }//endfor
      fclose(fp);
   }//endif
+#endif
 
 #if CMK_TRACE_ENABLED
    traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    

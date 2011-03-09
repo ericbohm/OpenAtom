@@ -268,11 +268,11 @@ FFTcache::FFTcache(
     }//endif
 
     if(config.doublePack){
-      skipR = ngridaNL+2;
-      skipC = ngridaNL/2+1;
+      skipR = ngrida+2;
+      skipC = ngrida/2+1;
     }else{
-      skipR = 2*ngridaNL;
-      skipC = ngridaNL;
+      skipR = 2*ngrida;
+      skipC = ngrida;
     }//endif
 
     if(rhoRsubPlanes==1){

@@ -68,7 +68,6 @@ class RedundantCommPkg {
     nchareG      = R->nchareG;
     num_recv_tot = R->num_recv_tot;
     num_send_tot = R->num_send_tot;
-    CkPrintf("inside Rcom copy constructore %d : %d %d \n",index,num_recv_tot,num_send_tot);
     Init(nk0_max,nchareG);
     for(int i=0;i<nchareG;i++){
       num_send[i]=R->num_send[i];
@@ -104,18 +103,17 @@ class RedundantCommPkg {
 
   void pup(PUP::er &p){
     p|nk0_max;        p|nchareG;
-    p|num_recv_tot;   p|num_send_tot;
     if(p.isUnpacking()) {
-      Init(nk0_max,nchareG);
-    }
-    CkPrintf("inside Rcom pup : %d %d isPacking %d isUnpacking %d\n",num_recv_tot,num_send_tot,p.isPacking(), p.isUnpacking());
+      Init(nk0_max,nchareG); // sets num_recv_tot and num_send_tot to 0
+    }//endif
+    p|num_recv_tot;   p|num_send_tot; // must follow Init
     PUParray(p,num_send,nchareG);
     PUParray(p,num_recv,nchareG);
     for(int i=0;i<nchareG;i++)
       PUParray(p,lst_send[i],nk0_max);
     for(int i=0;i<nchareG;i++)
       PUParray(p,lst_recv[i],nk0_max);
-  }
+  }//end pup
 
 //----------------------------------------------------------------------------
    };// end class
@@ -233,7 +231,7 @@ class CPcharmParaInfo {
    CPcharmParaInfo(CPcharmParaInfo &s){
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-    CkPrintf("CPcharmParaInfo copy constructor\n");
+     CkPrintf("[%d] CPcharmParaInfo copy constructor\n",CkMyPe());
 #endif
      vol          = s.vol;
      tol_norb     = s.tol_norb;
@@ -392,9 +390,6 @@ class CPcharmParaInfo {
      }//endfor
 
      RCommPkg = new RedundantCommPkg [nchareG]; 
-     for(int i=0;i<nchareG;i++){
-      CkPrintf("before Rcom copy constructore %d : %d %d \n",i,s.RCommPkg[i].num_recv_tot,s.RCommPkg[i].num_send_tot);
-     }
      for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i],i);}
 
      nlIters   = s.nlIters;
@@ -462,7 +457,7 @@ class CPcharmParaInfo {
 CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-    CkPrintf("CPcharmParaInfo assign operator\n");
+  CkPrintf("[%d] CPcharmParaInfo assign operator\n", CkMyPe());
 #endif
      vol          = s.vol;
      tol_norb     = s.tol_norb;
@@ -620,9 +615,6 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
      }//endfor
 
      RCommPkg = new RedundantCommPkg [nchareG]; 
-     for(int i=0;i<nchareG;i++){
-      CkPrintf("before Rcom copy constructore %d : %d %d \n",i,s.RCommPkg[i].num_recv_tot,s.RCommPkg[i].num_send_tot);
-     }
      for(int i=0;i<nchareG;i++){RCommPkg[i].Init(&s.RCommPkg[i],i);}
 
      nlIters   = s.nlIters;
@@ -691,7 +683,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
    CPcharmParaInfo() {
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-   CkPrintf("CPcharmParaInfo constructor\n");
+     CkPrintf("[%d] CPcharmParaInfo constructor\n", CkMyPe());
 #endif
        rhoRsubplanes = 1;
        lines_per_chareG=NULL; 
@@ -774,7 +766,7 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
   void pup(PUP::er &p){
 //=============================================================================
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
-     CkPrintf("CPcharmParaInfo pup\n");
+    CkPrintf("[%d] CPcharmParaInfo pup\n", CkMyPe());
 #endif
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
       p|ntemper;    p|pi_beads; p|nkpoint;  p|nspin;
@@ -929,19 +921,14 @@ CPcharmParaInfo &  operator=(const CPcharmParaInfo &s){
 #endif
 	  }//endif
       }//endif
-      if(p.isPacking()){
-	CkPrintf("isPacking CPcharmParaInfo::pup Rcom 0: %d %d \n", RCommPkg[0].num_recv_tot, RCommPkg[0].num_send_tot);	
-      }
       if(p.isUnpacking()){
          RCommPkg = new RedundantCommPkg [nchareG]; 
       }//endif
       PUParray(p,RCommPkg,nchareG);
-
 #ifdef _CP_DEBUG_PARAINFO_VERBOSE_
      CkPrintf("end CPcharmParaInfo pup\n");
 #endif
-
-   };
+  };
 
   static CPcharmParaInfo *get(){
     return &simReadOnly;  // return the pointer of the global instance
