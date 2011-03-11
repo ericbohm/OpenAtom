@@ -1620,7 +1620,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts(nstates,nchareG);
-  particleOpts.setMap(gsMap); // the maps for both the arrays are the same
+  GSMapCrayXT5 gsCrayMap = GSMapCrayXT5::ckNew(nstates*nchareG);
+  particleOpts.setMap(gsCrayMap); // the maps for both the arrays are the same
   particleOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
   UparticlePlaneProxy.push_back(CProxy_CP_State_ParticlePlane::ckNew(
                        nchareG, sim->sizeY, sim->sizeZ,ngridaNl,ngridbNl,ngridcNl,
@@ -1703,7 +1704,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew(thisInstance);
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
-  realSpaceOpts.setMap(rsMap);
+
+  RSMapCrayXT5 rsCrayMap = RSMapCrayXT5::ckNew(nstates*nchareR);
+  realSpaceOpts.setMap(rsCrayMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
 

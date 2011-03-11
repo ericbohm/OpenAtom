@@ -23,6 +23,8 @@
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
 
+#define XT5_CORE_PER_NODE 4
+
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
@@ -232,7 +234,27 @@ class CkArrayMapTable4 : public CkArrayMap
  */
 //============================================================================
 
+class GSMapCrayXT5: public CkArrayMap {
 
+public:
+	GSMapCrayXT5(int _size){_size = size;}
+	void pup(PUP::er &p){}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int *index=(int *) iIndex.data();
+
+		//block mapping across PEs
+		int proc = (index[0]*index[1])/size*CkNumPes();
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~GSMapCrayXT5(){}
+
+private:
+	int size;
+};
  
 class GSMap: public CkArrayMapTable2 {
 
@@ -292,6 +314,26 @@ class GSMap: public CkArrayMapTable2 {
  *
  */
 //============================================================================
+
+class RSMapCrayXT5: public CkArrayMap {
+
+public:
+	RSMapCrayXT5(int _size){_size = size;}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int *index=(int *) iIndex.data();
+
+		int proc=index[0]*index[1]/size*CkNumPes();
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~RSMapCrayXT5(){}
+
+private:
+	int size;
+};
 
 class RSMap: public CkArrayMapTable2 {
 
