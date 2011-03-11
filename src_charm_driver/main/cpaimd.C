@@ -1592,7 +1592,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // there is only one IntMap per chare type, but each instance has
   // its own map group
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew(thisInstance);
-
+  CProxy_GSMapCrayXT5 gsCrayMap = CProxy_GSMapCrayXT5::ckNew(nstates*nchareG);
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
@@ -1604,7 +1604,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   std::ostringstream bwdstrm;
   bwdstrm << backwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
   int gbackward=keeperRegister(bwdstrm.str());
-  gSpaceOpts.setMap(gsMap);
+  gSpaceOpts.setMap(gsCrayMap);
   UgSpacePlaneProxy.push_back(CProxy_CP_State_GSpacePlane::ckNew(sizeX, 1, 1, sGrainSize, gforward, gbackward, thisInstance, gSpaceOpts));
   UgSpacePlaneProxy[thisInstance.proxyOffset].doneInserting();
   // CkPrintf("{%d} main uGSpacePlaneProxy[%d] is %d\n",thisInstance.proxyOffset,thisInstance.proxyOffset,CkGroupID(UgSpacePlaneProxy[thisInstance.proxyOffset].ckGetArrayID()).idx);
@@ -1620,7 +1620,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts(nstates,nchareG);
-  GSMapCrayXT5 gsCrayMap = new GSMapCrayXT5(nstates*nchareG);
   particleOpts.setMap(gsCrayMap); // the maps for both the arrays are the same
   particleOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
   UparticlePlaneProxy.push_back(CProxy_CP_State_ParticlePlane::ckNew(
@@ -1705,7 +1704,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
 
-  RSMapCrayXT5 rsCrayMap = new RSMapCrayXT5(nstates*nchareR);
+  CProxy_RSMapCrayXT5 rsCrayMap = CProxy_RSMapCrayXT5::ckNew(nstates*nchareR);
   realSpaceOpts.setMap(rsCrayMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));

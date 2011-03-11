@@ -432,10 +432,18 @@ mainmodule cpaimd {
 		entry GSMap(UberCollection);
 	};
 	
+	group GSMapCrayXT5 : CkArrayMap {
+		entry GSMapCrayXT5(int);
+	};
+
 	group RPPMap : CkArrayMap {
 		entry RPPMap(UberCollection);
 	};
 
+
+	group RSMapCrayXT5 : CkArrayMap {
+		entry RSMapCrayXT5(int);
+	};
 
 	group RSMap : CkArrayMap {
 		entry RSMap(UberCollection);
