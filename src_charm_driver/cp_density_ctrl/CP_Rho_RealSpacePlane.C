@@ -524,6 +524,7 @@ void CP_Rho_RealSpacePlane::launchEextRNlG() {
 	     UberCollection destKpointInstance=thisInstance;
 	     destKpointInstance.idxU.y=kpoint;
 	     int proxyOffset=destKpointInstance.setPO();
+	     //TODO Change this to a section multicast (see Init() in CP_Rho_GSpacePlane)
 	     for(int ns=ist;ns<iend;ns++){
 	    
 	       //           CkPrintf("RhoRP[%d,%d] triggering NL %d %d \n",
