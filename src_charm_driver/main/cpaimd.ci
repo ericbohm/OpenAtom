@@ -440,6 +440,9 @@ mainmodule cpaimd {
 		entry RPPMap(UberCollection);
 	};
 
+	group RPPMapCrayXT5 : CkArrayMap {
+			entry RPPMapCrayXT5(int);
+	};
 
 	group RSMapCrayXT5 : CkArrayMap {
 		entry RSMapCrayXT5(int);

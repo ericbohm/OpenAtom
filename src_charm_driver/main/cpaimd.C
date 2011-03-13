@@ -1966,6 +1966,8 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #endif
   }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
+  CProxy_RPPMapCrayXT5 rspCrayMap= CProxy_RPPMapCrayXT5::ckNew(nstates*ngridcNl);
+
   newtime=CmiWallTimer();
   CmiNetworkProgressAfter(0);
   CkPrintf("RPPMap created in %g\n",newtime-Timer);
@@ -2010,7 +2012,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   }
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
-  pRealSpaceOpts.setMap(rspMap);
+  pRealSpaceOpts.setMap(rspCrayMap);
   UrealParticlePlaneProxy.push_back(CProxy_CP_State_RealParticlePlane::ckNew(
                                 ngridaNl,ngridbNl,ngridcNl,
                                 numIterNL,zmatSizeMax,Rstates_per_pe,

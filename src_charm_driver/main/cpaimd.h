@@ -391,6 +391,26 @@ class RSMap: public CkArrayMapTable2 {
 };
 //============================================================================
 
+class RPPMapCrayXT5: public CkArrayMap {
+
+public:
+	RPPMapCrayXT5(int _size){size = _size;}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int *index=(int *) iIndex.data();
+
+		int proc=(float)index[0]*index[1]/size*CkNumPes();
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~RPPMapCrayXT5(){}
+
+private:
+	int size;
+};
+
 class RPPMap: public CkArrayMapTable2 {
 
  public:
