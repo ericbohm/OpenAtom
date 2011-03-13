@@ -237,8 +237,9 @@ class CkArrayMapTable4 : public CkArrayMap
 class GSMapCrayXT5: public CkArrayMap {
 
 public:
-	GSMapCrayXT5(int _size){_size = size;}
 	void pup(PUP::er &p){}
+	GSMapCrayXT5(int _size){
+ 		size = _size;
 #ifdef CRAYDEBUG
 		CkPrintf("GSMap size = %d\n",size);
 #endif
@@ -252,7 +253,7 @@ public:
 		int *index=(int *) iIndex.data();
 
 		//block mapping across PEs
-		int proc = (index[0]*index[1])/size*CkNumPes();
+		int proc = (float)index[0]*index[1]/size*CkNumPes();
 
 #ifdef CRAYDEBUG
 		CkPrintf("GSMap: %d x %d = %d mapped to %d [Calc = %d/%d*%d]\n",index[0],index[1],index[0]*index[1],proc,index[0]*index[1],size,CkNumPes());
@@ -330,13 +331,13 @@ class GSMap: public CkArrayMapTable2 {
 class RSMapCrayXT5: public CkArrayMap {
 
 public:
-	RSMapCrayXT5(int _size){_size = size;}
+	RSMapCrayXT5(int _size){size = _size;}
 
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int *index=(int *) iIndex.data();
 
-		int proc=index[0]*index[1]/size*CkNumPes();
+		int proc=(float)index[0]*index[1]/size*CkNumPes();
 		CkAssert(proc>=0);
 		return(proc);
 	}
