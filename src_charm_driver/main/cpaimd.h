@@ -237,7 +237,6 @@ class CkArrayMapTable4 : public CkArrayMap
 class GSMapCrayXT5: public CkArrayMap {
 
 public:
-	void pup(PUP::er &p){}
 	GSMapCrayXT5(int _size){
  		size = _size;
 #ifdef CRAYDEBUG
