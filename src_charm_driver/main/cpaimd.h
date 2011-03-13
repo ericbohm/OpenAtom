@@ -239,6 +239,13 @@ class GSMapCrayXT5: public CkArrayMap {
 public:
 	GSMapCrayXT5(int _size){_size = size;}
 	void pup(PUP::er &p){}
+#ifdef CRAYDEBUG
+		CkPrintf("GSMap size = %d\n",size);
+#endif
+	}
+	void pup(PUP::er &p){
+		CkAbort("GSMapCrayXT5 got PUPed!\n");
+	}
 
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
@@ -246,6 +253,11 @@ public:
 
 		//block mapping across PEs
 		int proc = (index[0]*index[1])/size*CkNumPes();
+
+#ifdef CRAYDEBUG
+		CkPrintf("GSMap: %d x %d = %d mapped to %d [Calc = %d/%d*%d]\n",index[0],index[1],index[0]*index[1],proc,index[0]*index[1],size,CkNumPes());
+#endif
+
 		CkAssert(proc>=0);
 		return(proc);
 	}

@@ -1592,6 +1592,9 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // there is only one IntMap per chare type, but each instance has
   // its own map group
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew(thisInstance);
+#ifdef CRAYDEBUG
+  CkPrintf("GSMap about to instantiate, size = %d\n",nstates*nchareG);
+#endif
   CProxy_GSMapCrayXT5 gsCrayMap = CProxy_GSMapCrayXT5::ckNew(nstates*nchareG);
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
