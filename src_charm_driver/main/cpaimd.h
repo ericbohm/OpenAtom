@@ -233,42 +233,6 @@ class CkArrayMapTable4 : public CkArrayMap
  *
  */
 //============================================================================
-
-class GSMapCrayXT5: public CkArrayMap {
-
-public:
-	GSMapCrayXT5(int _x, int _size){
- 		x = _x;
-		size = _size;
-#ifdef CRAYDEBUG
-		CkPrintf("GSMap size = %d\n",size);
-#endif
-	}
-	void pup(PUP::er &p){
-		CkAbort("GSMapCrayXT5 got PUPed!\n");
-	}
-
-	//  int procNum(int, const CkArrayIndex &);
-	inline int procNum(int, const CkArrayIndex &iIndex){
-		int *index=(int *) iIndex.data();
-
-		//block mapping across PEs
-		int proc = (float)(index[0]*x+index[1])/size*CkNumPes();
-
-#ifdef CRAYDEBUG
-		CkPrintf("GSMap: %d x %d = %d mapped to %d [Calc = %d/%d*%d]\n",index[0],index[1],index[0]*index[1],proc,index[0]*index[1],size,CkNumPes());
-#endif
-
-		CkAssert(proc>=0);
-		return(proc);
-	}
-
-	~GSMapCrayXT5(){}
-
-private:
-	int x;
-	int size;
-};
  
 class GSMap: public CkArrayMapTable2 {
 
@@ -329,30 +293,6 @@ class GSMap: public CkArrayMapTable2 {
  */
 //============================================================================
 
-class RSMapCrayXT5: public CkArrayMap {
-
-public:
-	RSMapCrayXT5(int _x, int _size){
-		x = _x;
-		size = _size;
-	}
-
-	//  int procNum(int, const CkArrayIndex &);
-	inline int procNum(int, const CkArrayIndex &iIndex){
-		int *index=(int *) iIndex.data();
-
-		int proc=(float)(index[0]*x+index[1])/size*CkNumPes();
-		CkAssert(proc>=0);
-		return(proc);
-	}
-
-	~RSMapCrayXT5(){}
-
-private:
-	int x;
-	int size;
-};
-
 class RSMap: public CkArrayMapTable2 {
 
  public:
@@ -397,11 +337,12 @@ class RSMap: public CkArrayMapTable2 {
 };
 //============================================================================
 
-class RPPMapCrayXT5: public CkArrayMap {
+class BlockMap2DArray: public CkArrayMap {
 
 public:
-	RPPMapCrayXT5(int _x, int _size){
-		x = _x;
+	//Need the size of one dimension, and the total size
+	BlockMap2DArray(int _x_size, int _size){
+		x_size = _x_size;
 		size = _size;
 	}
 
@@ -409,15 +350,15 @@ public:
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int *index=(int *) iIndex.data();
 
-		int proc=(float)(index[0]*x+index[1])/size*CkNumPes();
+		int proc=(float)(index[0]*x_size+index[1])/size*CkNumPes();
 		CkAssert(proc>=0);
 		return(proc);
 	}
 
-	~RPPMapCrayXT5(){}
+	~BlockMap2DArray(){}
 
 private:
-	int x;
+	int x_size;
 	int size;
 };
 

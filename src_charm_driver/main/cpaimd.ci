@@ -431,21 +431,13 @@ mainmodule cpaimd {
 	group GSMap : CkArrayMap {
 		entry GSMap(UberCollection);
 	};
-	
-	group GSMapCrayXT5 : CkArrayMap {
-		entry GSMapCrayXT5(int,int);
-	};
 
 	group RPPMap : CkArrayMap {
 		entry RPPMap(UberCollection);
 	};
 
-	group RPPMapCrayXT5 : CkArrayMap {
-			entry RPPMapCrayXT5(int,int);
-	};
-
-	group RSMapCrayXT5 : CkArrayMap {
-		entry RSMapCrayXT5(int,int);
+	group BlockMap2DArray : CkArrayMap {
+		entry BlockMap2DArray(int,int);
 	};
 
 	group RSMap : CkArrayMap {

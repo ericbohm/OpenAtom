@@ -1595,7 +1595,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 #ifdef CRAYDEBUG
   CkPrintf("GSMap about to instantiate, size = %d\n",nstates*nchareG);
 #endif
-  CProxy_GSMapCrayXT5 gsCrayMap = CProxy_GSMapCrayXT5::ckNew(nchareG,nstates*nchareG);
+  CProxy_BlockMap2DArray gsCrayMap = CProxy_BlockMap2DArray::ckNew(nchareG,nstates*nchareG);
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
@@ -1707,7 +1707,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
 
-  CProxy_RSMapCrayXT5 rsCrayMap = CProxy_RSMapCrayXT5::ckNew(nchareR,nstates*nchareR);
+  CProxy_BlockMap2DArray rsCrayMap = CProxy_BlockMap2DArray::ckNew(nchareR,nstates*nchareR);
   realSpaceOpts.setMap(rsCrayMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
@@ -1966,7 +1966,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #endif
   }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
-  CProxy_RPPMapCrayXT5 rspCrayMap= CProxy_RPPMapCrayXT5::ckNew(ngridcNl,nstates*ngridcNl);
+  CProxy_BlockMap2DArray rspCrayMap= CProxy_BlockMap2DArray::ckNew(ngridcNl,nstates*ngridcNl);
 
   newtime=CmiWallTimer();
   CmiNetworkProgressAfter(0);
