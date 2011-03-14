@@ -433,7 +433,7 @@ mainmodule cpaimd {
 	};
 	
 	group GSMapCrayXT5 : CkArrayMap {
-		entry GSMapCrayXT5(int);
+		entry GSMapCrayXT5(int,int);
 	};
 
 	group RPPMap : CkArrayMap {
@@ -441,11 +441,11 @@ mainmodule cpaimd {
 	};
 
 	group RPPMapCrayXT5 : CkArrayMap {
-			entry RPPMapCrayXT5(int);
+			entry RPPMapCrayXT5(int,int);
 	};
 
 	group RSMapCrayXT5 : CkArrayMap {
-		entry RSMapCrayXT5(int);
+		entry RSMapCrayXT5(int,int);
 	};
 
 	group RSMap : CkArrayMap {
