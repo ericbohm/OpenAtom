@@ -405,7 +405,7 @@ public:
 
 	//If you don't specify an offset, assumes offset=0
 	NodeMap2DArray(int _x_size, int _size){
-			NodeMap2DArray(int _x_size, int _size, 0);
+			NodeMap2DArray(_x_size, _size, 0);
 	}
 
 	//  int procNum(int, const CkArrayIndex &);
