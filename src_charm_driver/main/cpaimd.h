@@ -24,6 +24,7 @@
 #include "ckhashtable.h"
 
 #define CORES_PER_NODE 4
+#define CRAYDEBUG
 
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
