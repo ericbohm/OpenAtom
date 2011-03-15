@@ -2425,6 +2425,9 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   /// @todo: valgrind complains of a tiny memleak here. Check if callbacks get destroyed properly. 
   UrhoRealProxy[thisInstance.proxyOffset].ckSetReductionClient( new CkCallback(CkIndex_InstanceController::printEnergyEexc(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   CmiNetworkProgressAfter(0);
+#ifdef CRAYDEBUG
+  CkPrintf("Instantiated RhoR\n");
+#endif
   //--------------------------------------------------------------------------
   // insert rhog
   UrhoGProxy.push_back(CProxy_CP_Rho_GSpacePlane::ckNew(sizeX, 1, 
@@ -2436,6 +2439,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 */
   UrhoGProxy[thisInstance.proxyOffset].doneInserting();
   CmiNetworkProgressAfter(0);
+#ifdef CRAYDEBUG
+  CkPrintf("Instantiated RhoG\n");
+#endif
+
   //--------------------------------------------------------------------------
   // insert rhoghart
   UrhoGHartExtProxy.push_back(CProxy_CP_Rho_GHartExt::ckNew(ngrid_eext_a,ngrid_eext_b,
@@ -2454,6 +2461,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   UrhoGHartExtProxy[thisInstance.proxyOffset].ckSetReductionClient(new CkCallback(CkIndex_InstanceController::printEnergyHart(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   UrhoGHartExtProxy[thisInstance.proxyOffset].doneInserting();
   CmiNetworkProgressAfter(0);
+#ifdef CRAYDEBUG
+  CkPrintf("Instantiated RhoGHart\n");
+#endif
+
   //--------------------------------------------------------------------------
   // insert rhoRhart
   if(ees_eext_on){
@@ -2474,6 +2485,9 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     UrhoRHartExtProxy[thisInstance.proxyOffset].doneInserting();
   }//endif
   CmiNetworkProgressAfter(0);
+#ifdef CRAYDEBUG
+  CkPrintf("Instantiated RhoRHart\n");
+#endif
   //===========================================================================
   // Output to the screen
   // need to add maps for these, for now just let em default
