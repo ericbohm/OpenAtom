@@ -397,7 +397,13 @@ public:
 				core_num=offset;
 
 			map[i] = (core_num%CORES_PER_NODE)+current_node*CORES_PER_NODE;
-
+#ifdef CRAYDEBUG
+			if(map[i]<0 || map[i]>=CkNumPes())
+			{
+				CkPrintf("attempted to map chare %d to proc %d\n",i,map[i]);
+				CkAbort("NodeMap2DArray: mapped to out of bounds processor!");
+			}
+#endif
 			previous_node = current_node;
 			core_num++;
 		}
