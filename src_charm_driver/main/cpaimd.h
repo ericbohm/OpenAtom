@@ -361,11 +361,15 @@ public:
 		CkPrintf("NodeMap2DArray using %d CORES_PER_NODE\n",CORES_PER_NODE);
 #endif
 
-		int node_count = CkNumPes()/CORES_PER_NODE;
+		int cores_per_node = CORES_PER_NODE;
+		int node_count = CkNumPes()/cores_per_node;
 
+		//If ran into case where node_count <=0 due to single processor run or incorrect CORES_PER_NODE defined
 		if(node_count<=0){
-			CkPrintf("NodeMap2DArray: Num PEs / CORES_PER_NODE <=0, degrading to single node case\n");
+			CkPrintf("NodeMap2DArray: Num PEs / cores_per_node <=0, degrading to single node case\n");
 			node_count=1;
+			cores_per_node=1;
+			offset=0;
 		}
 
 #ifdef CRAYDEBUG
@@ -409,7 +413,7 @@ public:
 			if(current_node!=previous_node)
 				core_num=offset;
 
-			map[i] = (core_num%CORES_PER_NODE)+current_node*CORES_PER_NODE;
+			map[i] = (core_num%cores_per_node)+current_node*cores_per_node;
 #ifdef CRAYDEBUG
 			if(map[i]<0 || map[i]>=CkNumPes())
 			{
