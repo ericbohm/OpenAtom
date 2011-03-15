@@ -23,7 +23,7 @@
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
 
-#define XT5_CORE_PER_NODE 4
+#define CORES_PER_NODE 4
 
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
@@ -336,6 +336,96 @@ class RSMap: public CkArrayMapTable2 {
   }
 };
 //============================================================================
+
+//Maps even sized stripes of a 2D array with strides across nodes
+class NodeMap2DArray: public CkArrayMap {
+
+public:
+	//Need the size of one dimension, and the total size, and the offset of
+	//the core within a node to map to e.g. an offset of 0 will map in a node
+	//starting at core 0, an offset of 1 will start with core 1.  If more cores
+	//than CORES_PER_NODE-offset are required, it will wrap around mapping
+	//within a node (i.e. if offset = 2, cores per node = 4, and 5 chares per
+	//node, the chares are mapped to cores 2, 3, 0, 1, 2)
+
+	NodeMap2DArray(int _x_size, int _size, int offset){
+
+		//Check offset
+		if(offset<0)
+			CkAbort("NodeMap2DArray: received negative offset!\n");
+
+		x_size = _x_size;
+		int size = _size;
+
+		int node_count = CkNumPes()/CORES_PER_NODE;
+
+		int chares_per_node = size/node_count;
+
+		//number of nodes that need an extra chare if size/node_count has remainder
+		int big_nodes = size%node_count;
+
+		map = new int[size];
+
+		//map the IDs of chares that belong on a node with an extra chare
+		int count=0;
+		for(int i=0;i<big_nodes;i++){
+			for(int j=0;j<chares_per_node+1;j++){
+				map[count]=i;
+				count++;
+			}
+		}
+
+		//map the remaining chares to the remaining cores
+		for(int i=big_nodes;i<node_count;i++){
+			for(int j=0;j<chares_per_node;j++){
+				map[count]=i;
+				count++;
+			}
+		}
+
+		//At this point, the map array contains the node to which each chare
+		//must be mapped.  The node needs to be converted to the exact core.
+		//If an offset was defined, that needs to be taken into account.
+		int core_num=0;
+		int current_node;
+		int previous_node=-1;
+
+		for(int i=0;i<size;i++){
+			current_node = map[i];
+
+			if(current_node!=previous_node)
+				core_num=offset;
+
+			map[i] = (core_num%CORES_PER_NODE)+current_node*CORES_PER_NODE;
+
+			previous_node = current_node;
+			core_num++;
+		}
+	}
+
+	//If you don't specify an offset, assumes offset=0
+	NodeMap2DArray(int _x_size, int _size){
+			NodeMap2DArray(int _x_size, int _size, 0);
+	}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int *index=(int *) iIndex.data();
+
+		int proc=map[index[0]*x_size+index[1] ];
+
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~NodeMap2DArray(){
+		delete[] map;
+	}
+
+private:
+	int x_size;
+	int *map;
+};
 
 class BlockMap2DArray: public CkArrayMap {
 
