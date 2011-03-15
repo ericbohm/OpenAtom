@@ -2170,7 +2170,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
-  CProxy_BlockMap2DArray rhorsCrayMap = CProxy_BlockMap2DArray::ckNew(config.rhoRsubplanes,nchareRhoR*config.rhoRsubplanes);
+  CProxy_NodeMap2DArray rhorsCrayMap = CProxy_NodeMap2DArray::ckNew(config.rhoRsubplanes,nchareRhoR*config.rhoRsubplanes);
 
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
   //CkArrayOptions rhorsOpts;
@@ -2234,7 +2234,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
-  CProxy_BlockMap2DArray rhogsCrayMap = CProxy_BlockMap2DArray::ckNew(1,nchareRhoG*1);
+  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(1,nchareRhoG*1);
 
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
@@ -2303,7 +2303,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
-    CProxy_BlockMap2DArray rhorHartCrayMap = CProxy_BlockMap2DArray::ckNew(config.rhoRsubplanes*nchareHartAtmT,nchareRhoRHart*config.rhoRsubplanes*nchareHartAtmT);
+    CProxy_NodeMap2DArray rhorHartCrayMap = CProxy_NodeMap2DArray::ckNew(config.rhoRsubplanes*nchareHartAtmT,nchareRhoRHart*config.rhoRsubplanes*nchareHartAtmT);
 
     rhorhartOpts.setMap(rhorHartCrayMap);
 
@@ -2372,7 +2372,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
-  CProxy_BlockMap2DArray rhogHartCrayMap = CProxy_BlockMap2DArray::ckNew(nchareHartAtmT,nchareRhoGHart*nchareHartAtmT);
+  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(nchareHartAtmT,nchareRhoGHart*nchareHartAtmT);
 
   CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
   //  CkArrayOptions rhoghartOpts;
