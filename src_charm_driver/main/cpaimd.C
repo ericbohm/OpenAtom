@@ -2333,6 +2333,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
   } //endif : ees_ext_on
   CkPrintf("RhoRHartMap built %d x %d x %d\n",nchareRhoRHart, config.rhoRsubplanes, config.nchareHartAtmT);
+#ifdef CRAYDEBUG
+  CkPrintf("CRAYDEBUG: Built RhoRHartMap\n");
+#endif
+
   //---------------------------------------------------------------------------
   // rho GHart 
   // if there aren't enough free procs refresh the avail list;
