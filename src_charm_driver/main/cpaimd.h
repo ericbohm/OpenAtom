@@ -426,14 +426,6 @@ public:
 		}
 	}
 
-	//If you don't specify an offset, assumes offset=0
-	NodeMap2DArray(int _x_size, int _size){
-#ifdef CRAYDEBUG
-		CkPrintf("NodeMap2DArray called WITHOUT an offset\n");
-#endif
-			NodeMap2DArray(_x_size, _size, 0);
-	}
-
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int *index=(int *) iIndex.data();

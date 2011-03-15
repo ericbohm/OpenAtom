@@ -429,7 +429,6 @@ mainmodule cpaimd {
 	};
 
 	group NodeMap2DArray : CkArrayMap {
-			entry NodeMap2DArray(int,int);
 			entry NodeMap2DArray(int,int,int);
 	};
         
