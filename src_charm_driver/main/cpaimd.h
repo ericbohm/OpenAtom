@@ -357,12 +357,20 @@ public:
 		x_size = _x_size;
 		int size = _size;
 
+#ifdef CRAYDEBUG
+		CkPrintf("NodeMap2DArray using %d CORES_PER_NODE\n",CORES_PER_NODE);
+#endif
+
 		int node_count = CkNumPes()/CORES_PER_NODE;
 
 		if(node_count<=0){
-			CkPrintf("NodeMap2DArray: Num PEs / CORES_PER_NODE <=0, degrading to single node case");
+			CkPrintf("NodeMap2DArray: Num PEs / CORES_PER_NODE <=0, degrading to single node case\n");
 			node_count=1;
 		}
+
+#ifdef CRAYDEBUG
+		CkPrintf("NodeMap2DArray using %d Nodes\n",node_count);
+#endif
 
 		int chares_per_node = size/node_count;
 
