@@ -2403,6 +2403,9 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   //============================================================================
   // Instantiate the chares
+#ifdef CRAYDEBUG
+  CkPrintf("Starting RHO chares instantiation\n");
+#endif
 
   bool dummy = true;
 
