@@ -24,7 +24,6 @@
 #include "ckhashtable.h"
 
 #define CORES_PER_NODE 4
-#define CRAYDEBUG
 
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
@@ -425,6 +424,9 @@ public:
 
 	//If you don't specify an offset, assumes offset=0
 	NodeMap2DArray(int _x_size, int _size){
+#ifdef CRAYDEBUG
+		CkPrintf("NodeMap2DArray called WITHOUT an offset\n");
+#endif
 			NodeMap2DArray(_x_size, _size, 0);
 	}
 
