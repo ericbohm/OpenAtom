@@ -427,6 +427,11 @@ mainmodule cpaimd {
 	group RhoRHartMap : CkArrayMap {
 		entry RhoRHartMap(UberCollection);
 	};
+
+	group NodeMap2DArray : CkArrayMap {
+			entry NodeMap2DArray(int,int);
+			entry NodeMap2DArray(int,int,int);
+	};
         
 	group GSMap : CkArrayMap {
 		entry GSMap(UberCollection);
