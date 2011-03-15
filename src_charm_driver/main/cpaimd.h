@@ -359,6 +359,11 @@ public:
 
 		int node_count = CkNumPes()/CORES_PER_NODE;
 
+		if(node_count<=0){
+			CkPrintf("NodeMap2DArray: Num PEs / CORES_PER_NODE <=0, degrading to single node case");
+			node_count=1;
+		}
+
 		int chares_per_node = size/node_count;
 
 		//number of nodes that need an extra chare if size/node_count has remainder
