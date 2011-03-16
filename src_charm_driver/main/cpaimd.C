@@ -2234,7 +2234,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(1,nchareRhoG*1,0);
+  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(1,nchareRhoG*1,2);
 
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
@@ -2380,7 +2380,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 #endif
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(nchareHartAtmT,nchareRhoGHart*nchareHartAtmT,0);
+  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(nchareHartAtmT,nchareRhoGHart*nchareHartAtmT,2);
 
 #ifdef CRAYDEBUG
   CkPrintf("Built RhoGHart map\n");
