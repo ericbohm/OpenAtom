@@ -348,6 +348,15 @@ public:
 	//within a node (i.e. if offset = 2, cores per node = 4, and 5 chares per
 	//node, the chares are mapped to cores 2, 3, 0, 1, 2)
 
+	//Definitions:
+	//size: size of the chare array
+	//x_size: size of the X dimension of the chare array
+	//big_nodes: if size/node_count has a remainder, the number of nodes that have size/node_count+1 chares
+	//big_cores: number of cores on all big nodes (big_nodes*cores_per_node)
+	//small_cores: number of cores on all small nodes ((node_count-big_nodes)*cores_per_node)
+	//chares_on_big_nodes: the total number of chares assigned to big nodes
+	//chares_on_small_nodes: the total number of chares assigned to small nodes
+
 	NodeMap2DArray(int _x_size, int _size, int offset){
 
 		//Check offset
@@ -355,14 +364,14 @@ public:
 			CkAbort("NodeMap2DArray: received negative offset!\n");
 
 		x_size = _x_size;
-		int size = _size;
+		size = _size;
 
 #ifdef CRAYDEBUG
 		CkPrintf("NodeMap2DArray using %d CORES_PER_NODE\n",CORES_PER_NODE);
 #endif
 
-		int cores_per_node = CORES_PER_NODE;
-		int node_count = CkNumPes()/cores_per_node;
+		cores_per_node = CORES_PER_NODE;
+		node_count = CkNumPes()/cores_per_node;
 
 		//If ran into case where node_count <=0 due to single processor run or incorrect CORES_PER_NODE defined
 		if(node_count<=0){
@@ -378,71 +387,70 @@ public:
 
 		int chares_per_node = size/node_count;
 
-		//number of nodes that need an extra chare if size/node_count has remainder
-		int big_nodes = size%node_count;
+		//number of nodes that need an extra chare if size/node_count has remainder, a big node
+		//big nodes have (chares_per_node+1) number of chares each
+		big_nodes = size%node_count;
 
-		map = new int[size];
+		//total number of chares that go on a big node
+		chares_on_big_nodes = (chares_per_node+1)*big_nodes;
 
-		//map the IDs of chares that belong on a node with an extra chare
-		int count=0;
-		for(int i=0;i<big_nodes;i++){
-			for(int j=0;j<chares_per_node+1;j++){
-				map[count]=i;
-				count++;
-			}
-		}
+		//small nodes hold chares_per_node number of chares each
+		chares_on_small_nodes = size-chares_on_big_nodes;
 
-		//map the remaining chares to the remaining cores
-		for(int i=big_nodes;i<node_count;i++){
-			for(int j=0;j<chares_per_node;j++){
-				map[count]=i;
-				count++;
-			}
-		}
-
-		//At this point, the map array contains the node to which each chare
-		//must be mapped.  The node needs to be converted to the exact core.
-		//If an offset was defined, that needs to be taken into account.
-		int core_num=0;
-		int current_node;
-		int previous_node=-1;
-
-		for(int i=0;i<size;i++){
-			current_node = map[i];
-
-			if(current_node!=previous_node)
-				core_num=offset;
-
-			map[i] = (core_num%cores_per_node)+current_node*cores_per_node;
-#ifdef CRAYDEBUG
-			if(map[i]<0 || map[i]>=CkNumPes())
-			{
-				CkPrintf("attempted to map chare %d to proc %d\n",i,map[i]);
-				CkAbort("NodeMap2DArray: mapped to out of bounds processor!");
-			}
-#endif
-			previous_node = current_node;
-			core_num++;
-		}
+		//Number of cores on all big nodes and small nodes
+		big_cores = big_nodes*cores_per_node;
+		small_cores = (node_count-big_nodes)*cores_per_node;
 	}
 
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int *index=(int *) iIndex.data();
 
-		int proc=map[index[0]*x_size+index[1] ];
+		//index for striping across X dimension of chare array
+		int chare_num = index[0]*x_size+index[1];
 
-		CkAssert(proc>=0);
-		return(proc);
+		//Math intentionally has not been simplified to remain intuitive
+
+		//Calculate what proc and node this would go to for a block mapping scheme spread across all processors
+		//If this chare belongs on a big node:
+		float block_proc;
+		if(chare_num < chares_on_big_nodes)
+			block_proc = (float)chare_num/chares_on_big_nodes*big_cores;
+		//otherwise it belongs on a small node, note that small nodes start after big cores, so they are offset by big_cores
+		else
+			block_proc = ((float)chare_num-chares_on_big_nodes)/chares_on_small_nodes*small_cores + big_cores;
+
+		//node assignment of a chare and the proc index relative to the node
+		int my_node = block_proc/cores_per_node;
+		float proc_within_node = fmod(block_proc,cores_per_node);
+
+		//adjust indicies to map the chares starting with the first processor in the node
+		//(i.e. instead of mapping 2 chares into a 4-core node onto processor 0 and 2, it will put them on 0 and 1
+		float node_proc;
+		if(chare_num < chares_on_big_nodes)
+			node_proc = proc_within_node*chares_on_big_nodes/big_cores;
+		else
+			node_proc = proc_within_node*chares_on_small_nodes/small_cores;
+
+		//calculate final proc index
+		int proc = my_node*cores_per_node+node_proc;
+
+		CkAssert(proc>=0 && proc<CkNumPes());
+		return proc;
 	}
 
-	~NodeMap2DArray(){
-		delete[] map;
-	}
+	~NodeMap2DArray(){}
 
 private:
 	int x_size;
-	int *map;
+	int size;
+	int cores_per_node;
+	int node_count;
+	int big_nodes;
+	int big_cores;
+	int small_cores;
+	int chares_on_big_nodes;
+	int chares_on_small_nodes;
 };
 
 class BlockMap2DArray: public CkArrayMap {
