@@ -436,7 +436,9 @@ public:
 		//calculate final proc index
 		int proc = node_proc + my_node*cores_per_node;
 
+#ifdef CRAYDEBUG
 		CkPrintf("chare_num %d mapped to %d globally\n",chare_num,proc);
+#endif
 
 		CkAssert(proc>=0 && proc<CkNumPes());
 		return proc;
