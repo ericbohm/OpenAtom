@@ -23,8 +23,6 @@
 #include "StreamingStrategy.h"
 #include "ckhashtable.h"
 
-#define CORES_PER_NODE 4
-
 #undef OLD_COMMLIB 
 #define USE_INT_MAP
 #ifndef USE_INT_MAP
@@ -353,60 +351,87 @@ public:
 	//Definitions:
 	//x_size: size of the X dimension of the chare array
 	//size: size of the chare array
-	//big_nodes: if size/node_count has a remainder, the number of nodes that have size/node_count+1 chares
+	//cores_per_node: total number of cores per node (pass in TopoManager's getProcsPerNode() for CrayXT5)
+	//offset: core offset within the given set of cores and nodes
+	//core_offset: used to exclude cores from a mapping when used with num_nodes_to_use
+	//             i.e. core_offset=1 and num_cores_to_use_per_node=cores_per_node-1 would exclude core 0 of every node
+	//node_offset: used to exclude nodes when used with num_nodes_to_use
+	//             i.e. node_offset=num_nodes/2 and num_nodes_to_use=num_nodes/2 excludes the first half of the nodes
+
+	//big_nodes: if size/num_nodes has a remainder, the number of nodes that have size/num_nodes+1 chares
 	//big_cores: number of cores on all big nodes (big_nodes*cores_per_node)
-	//small_cores: number of cores on all small nodes ((node_count-big_nodes)*cores_per_node)
+	//small_cores: number of cores on all small nodes ((num_nodes-big_nodes)*cores_per_node)
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _x_size, int _size, int _offset, int _num_cores_to_use_per_node, int _core_offset){
-
-
-		x_size = _x_size;
-		size = _size;
-		offset = _offset;
-		core_offset = _core_offset;
+	NodeMap2DArray(int _x_size, int _size, int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
 
 #ifdef CRAYDEBUG
-		CkPrintf("NodeMap2DArray read %d CORES_PER_NODE\n",CORES_PER_NODE);
+		CkPrintf("NODEMAP read %d CORES_PER_NODE\n",_cores_per_node);
 #endif
 
-		num_cores_to_use_per_node = _num_cores_to_use_per_node;
+		total_cores_per_node = _cores_per_node;
+		total_num_nodes = CmiNumPhysicalNodes();
 
-		cores_per_node = CORES_PER_NODE;
-		node_count = CkNumPes()/cores_per_node;
+		if(_x_size < 0)
+			CkAbort("NODEMAP received x_size < 0\n");
+		else
+			x_size = _x_size;
 
-		//If ran into case where node_count <=0 due to single processor run or incorrect CORES_PER_NODE defined
-		if(node_count<=0){
-			CkPrintf("NodeMap2DArray: Num PEs / cores_per_node <=0, degrading to single node case\n");
-			node_count=1;
-			cores_per_node=1;
-			offset=0;
+		if(_size < 0)
+			CkAbort("NODEMAP received size < 0\n");
+		else
+			size = _size;
+
+		//If number of cores to use per node is out of bounds, set it to the value passed into _cores_per_node
+		if(_num_cores_to_use_per_node > total_cores_per_node || _num_cores_to_use_per_node <= 0){
+			CkPrintf("NODEMAP WARNING: num_cores_to_use_per_node = %d is out of range, setting to detected cores per node\n", _num_cores_to_use_per_node, total_cores_per_node);
+			cores_per_node = total_cores_per_node;
 		}
+		else
+			cores_per_node = _num_cores_to_use_per_node;
 
-		//If number of cores to use per node is out of bounds, set it to the value determined by the API
-		if(num_cores_to_use_per_node > CORES_PER_NODE || num_cores_to_use_per_node <= 0)
-			num_cores_to_use_per_node = CORES_PER_NODE;
+		//If number of nodes to use per node is out of bounds, set it to the value determined by the API
+		if(_num_nodes_to_use <= 0 || _num_nodes_to_use > total_num_nodes){
+			CkPrintf("NODEMAP WARNING: num_nodes = %d is out of range, setting to detected value of nodes: %d\n", num_nodes, total_num_nodes);
+			num_nodes = total_num_nodes;
+		}
+		else
+			num_nodes = _num_nodes_to_use;
 
 		//Check offset
 		if(offset<0) {
 			CkPrintf("NODEMAP WARNING: offset = %d is negative, setting to zero\n", offset);
 			offset = 0;
 		}
+		else
+			offset = _offset;
 
-		//if core_offset out of bounds, reset it
-		if(core_offset < 0 || core_offset >= CORES_PER_NODE)
-			core_offset = _core_offset % CORES_PER_NODE;
+		//if core_offset out of bounds, mod it to fit in bounds
+		if(core_offset < 0 || core_offset >= total_cores_per_node) {
+			CkPrintf("NODEMAP WARNING: core_offset = %d is out of bounds, setting it to core_offset MOD cores_per_node = %d\n", core_offset, _core_offset % total_cores_per_node);
+			core_offset = _core_offset % total_cores_per_node;
+		}
+		else
+			core_offset = _core_offset;
+
+		//if node_offset out of bounds, mod it to fit in bounds
+		if(node_offset < 0 || node_offset >= total_num_nodes) {
+			CkPrintf("NODEMAP WARNING: core_offset = %d is out of bounds, setting it to node_offset MOD CmiNumPhysicalNodes() = %d\n", core_offset, _node_offset % total_num_nodes);
+			node_offset = _node_offset % total_num_nodes;
+		}
+		else
+			node_offset = _node_offset;
 
 #ifdef CRAYDEBUG
-		CkPrintf("NodeMap2DArray using %d Nodes\n",node_count);
+		CkPrintf("NODEMAP using %d Nodes\n",num_nodes);
 #endif
 
-		chares_per_node = size/node_count;
+		chares_per_node = size/num_nodes;
 
-		//number of nodes that need an extra chare if size/node_count has remainder, a big node
+		//number of nodes that need an extra chare if size/num_nodes has remainder, a big node
 		//big nodes have (chares_per_node+1) number of chares each
-		big_nodes = size%node_count;
+		big_nodes = size%num_nodes;
 
 		//total number of chares that go on a big node
 		chares_on_big_nodes = (chares_per_node+1)*big_nodes;
@@ -416,7 +441,7 @@ public:
 
 		//Number of cores on all big nodes and small nodes
 		big_cores = big_nodes*cores_per_node;
-		small_cores = (node_count-big_nodes)*cores_per_node;
+		small_cores = (num_nodes-big_nodes)*cores_per_node;
 	}
 
 	//  int procNum(int, const CkArrayIndex &);
@@ -447,10 +472,10 @@ public:
 			node_index = chare_num % chares_per_node;
 
 		//Calculate which proc within a node this chare is assigned to including all offsets
-		int node_proc = ( ( (node_index+offset) % num_cores_to_use_per_node ) + core_offset) % CORES_PER_NODE;
+		int node_proc = ( ( (node_index + offset) % cores_per_node) + core_offset) % total_cores_per_node;
 
 		//calculate final proc index
-		int proc = node_proc + my_node*cores_per_node;
+		int proc = node_proc + ( (my_node + node_offset) % total_num_nodes) * cores_per_node;
 
 #ifdef CRAYDEBUG
 		CkPrintf("chare_num %d mapped to %d globally\n",chare_num,proc);
@@ -468,8 +493,10 @@ private:
 	int offset;
 	int core_offset;
 	int cores_per_node;
-	int num_cores_to_use_per_node;
-	int node_count;
+	int total_cores_per_node;
+	int total_num_nodes;
+	int node_offset;
+	int num_nodes;
 	int chares_per_node;
 	int big_nodes;
 	int big_cores;
