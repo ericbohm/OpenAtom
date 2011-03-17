@@ -344,9 +344,11 @@ public:
 	//Need the size of one dimension, and the total size, and the offset of
 	//the core within a node to map to e.g. an offset of 0 will map in a node
 	//starting at core 0, an offset of 1 will start with core 1.  If more cores
-	//than CORES_PER_NODE-offset are required, it will wrap around mapping
+	//than cores_per_node-offset are required, it will wrap around mapping
 	//within a node (i.e. if offset = 2, cores per node = 4, and 5 chares per
 	//node, the chares are mapped to cores 2, 3, 0, 1, 2)
+
+	//the input num_cores_to_use (per node) and core_offset can be used together to exclude certain cores in a node
 
 	//Definitions:
 	//size: size of the chare array
@@ -357,7 +359,7 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _x_size, int _size, int _offset){
+	NodeMap2DArray(int _x_size, int _size, int _offset, int _num_cores_to_use_per_node, int _core_offset){
 
 		//Check offset
 		if(offset<0)
@@ -366,10 +368,13 @@ public:
 		x_size = _x_size;
 		size = _size;
 		offset = _offset;
+		core_offset = _core_offset;
 
 #ifdef CRAYDEBUG
 		CkPrintf("NodeMap2DArray read %d CORES_PER_NODE\n",CORES_PER_NODE);
 #endif
+
+		num_cores_to_use_per_node = _num_cores_to_use_per_node;
 
 		cores_per_node = CORES_PER_NODE;
 		node_count = CkNumPes()/cores_per_node;
@@ -381,6 +386,14 @@ public:
 			cores_per_node=1;
 			offset=0;
 		}
+
+		//If number of cores to use per node is out of bounds, set it to the value determined by the API
+		if(num_cores_to_use_per_node > CORES_PER_NODE || num_cores_to_use_per_node <= 0)
+			num_cores_to_use_per_node = CORES_PER_NODE;
+
+		//if core_offset out of bounds, reset it
+		if(core_offset < 0 || core_offset >= CORES_PER_NODE)
+			core_offset = _core_offset % CORES_PER_NODE;
 
 #ifdef CRAYDEBUG
 		CkPrintf("NodeMap2DArray using %d Nodes\n",node_count);
@@ -430,8 +443,8 @@ public:
 		else
 			node_index = chare_num % chares_per_node;
 
-		//Calculate which proc within a node this chare is assigned to including the offset
-		int node_proc = (node_index+offset) % cores_per_node;
+		//Calculate which proc within a node this chare is assigned to including all offsets
+		int node_proc = ( ( (node_index+offset) % num_cores_to_use_per_node ) + core_offset) % CORES_PER_NODE;
 
 		//calculate final proc index
 		int proc = node_proc + my_node*cores_per_node;
@@ -450,7 +463,9 @@ private:
 	int x_size;
 	int size;
 	int offset;
+	int core_offset;
 	int cores_per_node;
+	int num_cores_to_use_per_node;
 	int node_count;
 	int chares_per_node;
 	int big_nodes;
