@@ -357,7 +357,7 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _x_size, int _size, int offset){
+	NodeMap2DArray(int _x_size, int _size, int _offset){
 
 		//Check offset
 		if(offset<0)
@@ -365,9 +365,10 @@ public:
 
 		x_size = _x_size;
 		size = _size;
+		offset = _offset;
 
 #ifdef CRAYDEBUG
-		CkPrintf("NodeMap2DArray using %d CORES_PER_NODE\n",CORES_PER_NODE);
+		CkPrintf("NodeMap2DArray read %d CORES_PER_NODE\n",CORES_PER_NODE);
 #endif
 
 		cores_per_node = CORES_PER_NODE;
@@ -385,7 +386,7 @@ public:
 		CkPrintf("NodeMap2DArray using %d Nodes\n",node_count);
 #endif
 
-		int chares_per_node = size/node_count;
+		chares_per_node = size/node_count;
 
 		//number of nodes that need an extra chare if size/node_count has remainder, a big node
 		//big nodes have (chares_per_node+1) number of chares each
@@ -409,31 +410,33 @@ public:
 		//index for striping across X dimension of chare array
 		int chare_num = index[0]*x_size+index[1];
 
-		//Math intentionally has not been simplified to remain intuitive
-
 		//Calculate what proc and node this would go to for a block mapping scheme spread across all processors
 		//If this chare belongs on a big node:
-		float block_proc;
+		int block_proc;
 		if(chare_num < chares_on_big_nodes)
 			block_proc = (float)chare_num/chares_on_big_nodes*big_cores;
 		//otherwise it belongs on a small node, note that small nodes start after big cores, so they are offset by big_cores
 		else
 			block_proc = ((float)chare_num-chares_on_big_nodes)/chares_on_small_nodes*small_cores + big_cores;
 
-		//node assignment of a chare and the proc index relative to the node
+		//node assignment of a chare
 		int my_node = block_proc/cores_per_node;
-		float proc_within_node = fmod(block_proc,cores_per_node);
 
-		//adjust indicies to map the chares starting with the first processor in the node
-		//(i.e. instead of mapping 2 chares into a 4-core node onto processor 0 and 2, it will put them on 0 and 1
-		float node_proc;
+		//Calculate the chare_num index relative to nodes
+		int node_index;
+		//If this chare belongs on a big node
 		if(chare_num < chares_on_big_nodes)
-			node_proc = proc_within_node*chares_on_big_nodes/big_cores;
+			node_index = chare_num % (chares_per_node + 1);
 		else
-			node_proc = proc_within_node*chares_on_small_nodes/small_cores;
+			node_index = chare_num % chares_per_node;
+
+		//Calculate which proc within a node this chare is assigned to including the offset
+		int node_proc = (node_index+offset) % cores_per_node;
 
 		//calculate final proc index
-		int proc = my_node*cores_per_node+node_proc;
+		int proc = node_proc + my_node*cores_per_node;
+
+		CkPrintf("chare_num %d mapped to %d globally\n",chare_num,proc);
 
 		CkAssert(proc>=0 && proc<CkNumPes());
 		return proc;
@@ -444,8 +447,10 @@ public:
 private:
 	int x_size;
 	int size;
+	int offset;
 	int cores_per_node;
 	int node_count;
+	int chares_per_node;
 	int big_nodes;
 	int big_cores;
 	int small_cores;
