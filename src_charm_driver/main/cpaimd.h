@@ -351,8 +351,8 @@ public:
 	//the input num_cores_to_use (per node) and core_offset can be used together to exclude certain cores in a node
 
 	//Definitions:
-	//size: size of the chare array
 	//x_size: size of the X dimension of the chare array
+	//size: size of the chare array
 	//big_nodes: if size/node_count has a remainder, the number of nodes that have size/node_count+1 chares
 	//big_cores: number of cores on all big nodes (big_nodes*cores_per_node)
 	//small_cores: number of cores on all small nodes ((node_count-big_nodes)*cores_per_node)
@@ -361,9 +361,6 @@ public:
 
 	NodeMap2DArray(int _x_size, int _size, int _offset, int _num_cores_to_use_per_node, int _core_offset){
 
-		//Check offset
-		if(offset<0)
-			CkAbort("NodeMap2DArray: received negative offset!\n");
 
 		x_size = _x_size;
 		size = _size;
@@ -390,6 +387,12 @@ public:
 		//If number of cores to use per node is out of bounds, set it to the value determined by the API
 		if(num_cores_to_use_per_node > CORES_PER_NODE || num_cores_to_use_per_node <= 0)
 			num_cores_to_use_per_node = CORES_PER_NODE;
+
+		//Check offset
+		if(offset<0) {
+			CkPrintf("NODEMAP WARNING: offset = %d is negative, setting to zero\n", offset);
+			offset = 0;
+		}
 
 		//if core_offset out of bounds, reset it
 		if(core_offset < 0 || core_offset >= CORES_PER_NODE)
