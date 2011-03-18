@@ -487,7 +487,7 @@ public:
 		else if(dim == 2)
 			chare_num = index[0]*y_size+index[1];
 		else if(dim == 3)
-			chare_num = index[0]*y_size+index[1]*z_size+index[2]; //put in y*z for y_size for a 3D array
+			chare_num = index[0]*y_size*z_size+index[1]*z_size+index[2]; //put in y*z for y_size for a 3D array
 		else
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
