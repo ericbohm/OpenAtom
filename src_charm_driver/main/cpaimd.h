@@ -432,12 +432,9 @@ public:
 
 		//initialize values
 		y_size = 1;
-		z_size = 1;
 
-		if(dim == 2)
-			y_size = numElements.data()[1];
 		if(dim == 3)
-			z_size = numElements.data()[2];
+			y_size = numElements.data()[1];
 
 		if(size <= 0)
 			CkAbort("NODEMAP received size <= 0\n");
@@ -445,14 +442,12 @@ public:
 		if(y_size <= 0)
 			CkAbort("NODEMAP received y_size <= 0\n");
 
-		if(z_size <= 0)
-			CkAbort("NODEMAP received z_size <= 0\n");
 
 		if(dim > 3)
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
 #ifdef CRAYDEBUG
-		CkPrintf("==========NODEMAP ============== y_size = %d, z_size = %d\n",y_size, z_size);
+		CkPrintf("==========NODEMAP ============== y_size = %d\n",y_size);
 #endif
 
 		chares_per_node = size/num_nodes;
@@ -485,9 +480,9 @@ public:
 		if(dim == 1)
 			chare_num = index[0];
 		else if(dim == 2)
-			chare_num = index[0]*y_size+index[1];
+			chare_num = index[0]+size*index[1];
 		else if(dim == 3)
-			chare_num = index[0]*y_size*z_size+index[1]*z_size+index[2]; //put in y*z for y_size for a 3D array
+			chare_num = index[0]+size*index[1]+size*y_size*index[2];
 		else
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
@@ -529,7 +524,6 @@ public:
 
 private:
 	int y_size;
-	int z_size;
 	int size;
 	int offset;
 	int core_offset;
