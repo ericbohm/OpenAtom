@@ -393,31 +393,31 @@ public:
 
 		//If number of nodes to use per node is out of bounds, set it to the value determined by the API
 		if(_num_nodes_to_use <= 0 || _num_nodes_to_use > total_num_nodes){
-			CkPrintf("NODEMAP WARNING: num_nodes = %d is out of range, setting to detected value of nodes: %d\n", num_nodes, total_num_nodes);
+			CkPrintf("NODEMAP WARNING: num_nodes_to_use = %d is out of range, setting to detected value of nodes: %d\n", _num_nodes_to_use, total_num_nodes);
 			num_nodes = total_num_nodes;
 		}
 		else
 			num_nodes = _num_nodes_to_use;
 
 		//Check offset
-		if(offset<0) {
-			CkPrintf("NODEMAP WARNING: offset = %d is negative, setting to zero\n", offset);
+		if(_offset < 0) {
+			CkPrintf("NODEMAP WARNING: offset = %d is negative, setting to zero\n", _offset);
 			offset = 0;
 		}
 		else
 			offset = _offset;
 
 		//if core_offset out of bounds, mod it to fit in bounds
-		if(core_offset < 0 || core_offset >= total_cores_per_node) {
-			CkPrintf("NODEMAP WARNING: core_offset = %d is out of bounds, setting it to core_offset MOD cores_per_node = %d\n", core_offset, _core_offset % total_cores_per_node);
+		if(_core_offset < 0 || _core_offset >= total_cores_per_node) {
+			CkPrintf("NODEMAP WARNING: core_offset = %d is out of bounds, setting it to core_offset MOD total_cores_per_node = %d\n", _core_offset, _core_offset % total_cores_per_node);
 			core_offset = _core_offset % total_cores_per_node;
 		}
 		else
 			core_offset = _core_offset;
 
 		//if node_offset out of bounds, mod it to fit in bounds
-		if(node_offset < 0 || node_offset >= total_num_nodes) {
-			CkPrintf("NODEMAP WARNING: core_offset = %d is out of bounds, setting it to node_offset MOD CmiNumPhysicalNodes() = %d\n", core_offset, _node_offset % total_num_nodes);
+		if(_node_offset < 0 || _node_offset >= total_num_nodes) {
+			CkPrintf("NODEMAP WARNING: node_offset = %d is out of bounds, setting it to node_offset MOD total_num_nodes = %d\n", _node_offset, _node_offset % total_num_nodes);
 			node_offset = _node_offset % total_num_nodes;
 		}
 		else
