@@ -372,6 +372,7 @@ public:
 
 		total_cores_per_node = _cores_per_node;
 		total_num_nodes = CmiNumPhysicalNodes();
+		CkPrintf("NODEMAP INFO: detected %d cores per node and %d nodes\n",total_cores_per_node,total_num_nodes);
 
 		if(_x_size < 0)
 			CkAbort("NODEMAP received x_size < 0\n");
