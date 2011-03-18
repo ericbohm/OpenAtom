@@ -468,8 +468,8 @@ public:
 		chares_on_small_nodes = size-chares_on_big_nodes;
 
 		//Number of cores on all big nodes and small nodes
-		big_cores = big_nodes*cores_per_node;
-		small_cores = (num_nodes-big_nodes)*cores_per_node;
+		big_cores = big_nodes*total_cores_per_node;
+		small_cores = (num_nodes-big_nodes)*total_cores_per_node;
 
 		return 0;
 	}
@@ -501,7 +501,7 @@ public:
 			block_proc = ((float)chare_num-chares_on_big_nodes)/chares_on_small_nodes*small_cores + big_cores;
 
 		//node assignment of a chare
-		int my_node = block_proc/cores_per_node;
+		int my_node = block_proc/total_cores_per_node;
 
 		//Calculate the chare_num index relative to nodes
 		int node_index;
@@ -515,7 +515,7 @@ public:
 		int node_proc = ( ( (node_index + offset) % cores_per_node) + core_offset) % total_cores_per_node;
 
 		//calculate final proc index
-		int proc = node_proc + ( (my_node + node_offset) % total_num_nodes) * cores_per_node;
+		int proc = node_proc + ( (my_node + node_offset) % total_num_nodes) * total_cores_per_node;
 
 #ifdef CRAYDEBUG
 		CkPrintf("chare_num %d mapped to %d globally\n",chare_num,proc);
