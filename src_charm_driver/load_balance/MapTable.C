@@ -116,19 +116,41 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
   maptable = _tomap;
   availprocs = _availprocs;
 
+  /** The first instance creates the map and the other instances just use the
+   *  map with a translation
+   */
   if(numInst == 0) {
     state_load = 0.0;
     int l, m, pl, pm, srem, rem, i=0;
 
+    /** The first thing is to find the size of blocks (chunks) of GSpace chares
+     *  which will be put on each processor. This depends on the number of
+     *  states to be given to each processor (input by the user)
+     *
+     *			  <- m ->
+     *		<--- nchareG --->
+     *		*****************  ^  ^
+     *		|		|  |  l
+     *		|		|  |  _
+     *		|		|
+     *		|		| nstates
+     *		|		|		Y
+     *		|		|  |
+     *		|		|  |		|
+     *		|		|  |		|
+     *		*****************  -		|________ X
+     *
+     */
     l = Gstates_per_pe;		// no of states in one chunk
     pl = nstates / l;		// no of procs on y axis
     if(nstates % l == 0)
-      srem = 0;
+      srem = 0;			// remainder states
     else
     {
       while(pow(2.0, (double)i) < pl)
 	i++;
-      pl = (int) pow(2.0, (double)(i-1));		// make it same as the nearest smaller power of 2
+      // make it same as the nearest smaller power of 2
+      pl = (int) pow(2.0, (double)(i-1));
       srem = nstates % pl;
     }
     pm = availprocs->count() / pl;		// no of procs on x axis
