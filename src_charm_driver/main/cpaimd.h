@@ -349,7 +349,8 @@ public:
 	//the input num_cores_to_use (per node) and core_offset can be used together to exclude certain cores in a node
 
 	//Definitions:
-	//x_size: size of the X dimension of the chare array
+	//y_size: size of the y dimension of the chare array
+	//z_size: size of the z dimension of the chare array
 	//size: size of the chare array
 	//cores_per_node: total number of cores per node (pass in TopoManager's getProcsPerNode() for CrayXT5)
 	//offset: core offset within the given set of cores and nodes
@@ -364,7 +365,7 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _x_size, int _size, int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
+	NodeMap2DArray(int _y_size, int _z_size, int _size, int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
 
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP read %d CORES_PER_NODE\n",_cores_per_node);
@@ -377,13 +378,18 @@ public:
 		CkPrintf("NODEMAP INFO: detected %d cores per node and %d nodes\n",total_cores_per_node,total_num_nodes);
 #endif
 
-		if(_x_size < 0)
-			CkAbort("NODEMAP received x_size < 0\n");
+		if(_y_size <= 0)
+			CkAbort("NODEMAP received y_size <= 0\n");
 		else
-			x_size = _x_size;
+			y_size = _y_size;
 
-		if(_size < 0)
-			CkAbort("NODEMAP received size < 0\n");
+		if(_z_size <= 0)
+			CkAbort("NODEMAP received z_size <= 0\n");
+		else
+			z_size = _z_size;
+
+		if(_size <= 0)
+			CkAbort("NODEMAP received size <= 0\n");
 		else
 			size = _size;
 
@@ -450,10 +456,20 @@ public:
 
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
+		int dim = iIndex.dimension;
 		int *index=(int *) iIndex.data();
 
-		//index for striping across X dimension of chare array
-		int chare_num = index[0]*x_size+index[1];
+		//index for striping across lower dimensions of chare array
+		int chare_num;
+
+		if(dim == 1)
+			chare_num = index[0];
+		else if(dim == 2)
+			chare_num = index[0]*y_size+index[1];
+		else if(dim == 3)
+			chare_num = index[0]*y_size+index[1]*z_size+index[2]; //put in y*z for y_size for a 3D array
+		else
+			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
 		//Calculate what proc and node this would go to for a block mapping scheme spread across all processors
 		//If this chare belongs on a big node:
@@ -492,7 +508,8 @@ public:
 	~NodeMap2DArray(){}
 
 private:
-	int x_size;
+	int y_size;
+	int z_size;
 	int size;
 	int offset;
 	int core_offset;
@@ -513,8 +530,8 @@ class BlockMap2DArray: public CkArrayMap {
 
 public:
 	//Need the size of one dimension, and the total size
-	BlockMap2DArray(int _x_size, int _size){
-		x_size = _x_size;
+	BlockMap2DArray(int _y_size, int _size){
+		y_size = _y_size;
 		size = _size;
 	}
 
@@ -522,7 +539,7 @@ public:
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int *index=(int *) iIndex.data();
 
-		int proc=(float)(index[0]*x_size+index[1])/size*CkNumPes();
+		int proc=(float)(index[0]*y_size+index[1])/size*CkNumPes();
 		CkAssert(proc>=0);
 		return(proc);
 	}
@@ -530,7 +547,7 @@ public:
 	~BlockMap2DArray(){}
 
 private:
-	int x_size;
+	int y_size;
 	int size;
 };
 
