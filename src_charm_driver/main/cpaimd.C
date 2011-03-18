@@ -2057,6 +2057,12 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   int nchareRhoGHart  = rhoGHelpers*nchareRhoG;
   int nchareRhoRHart  = ngrid_eext_c;
 
+  int rhorsSize = nchareRhoR*config.rhoRsubplanes;
+  int rhogsSize = nchareRhoG;
+  int rhorHartSize = nchareRhoRHart*config.rhoRsubplanes*nchareHartAtmT;
+  int rhogHartSize = nchareRhoGHart*nchareHartAtmT;
+  CkPrintf("RHO SIZES: rhor=%d, rhog=%d, rhorhart=%d, rhoghart=%d\n",rhorsSize,rhogsSize,rhorHartSize,rhogHartSize);
+  CkPrintf("RHO SIZES: rhor(%d x %d) rhog(%d) rhorhart(%d x %d x %d) rhoghart(%d x %d)\n",nchareRhoR,config.rhoRsubplanes,nchareRhoG,nchareRhoRHart,config.rhoRsubplanes,nchareHartAtmT,nchareRhoGHart,nchareHartAtmT);
 
   if(thisInstance.idxU.y>0)
     { // the set of chares being created is for a non-zero kpoint
