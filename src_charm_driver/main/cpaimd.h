@@ -349,9 +349,6 @@ public:
 	//the input num_cores_to_use (per node) and core_offset can be used together to exclude certain cores in a node
 
 	//Definitions:
-	//y_size: size of the y dimension of the chare array
-	//z_size: size of the z dimension of the chare array
-	//size: size of the chare array
 	//cores_per_node: total number of cores per node (pass in TopoManager's getProcsPerNode() for CrayXT5)
 	//offset: core offset within the given set of cores and nodes
 	//core_offset: used to exclude cores from a mapping when used with num_nodes_to_use
@@ -365,7 +362,7 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _y_size, int _z_size, int _size, int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
+	NodeMap2DArray(int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
 
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP read %d CORES_PER_NODE\n",_cores_per_node);
@@ -377,21 +374,6 @@ public:
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP INFO: detected %d cores per node and %d nodes\n",total_cores_per_node,total_num_nodes);
 #endif
-
-		if(_y_size <= 0)
-			CkAbort("NODEMAP received y_size <= 0\n");
-		else
-			y_size = _y_size;
-
-		if(_z_size <= 0)
-			CkAbort("NODEMAP received z_size <= 0\n");
-		else
-			z_size = _z_size;
-
-		if(_size <= 0)
-			CkAbort("NODEMAP received size <= 0\n");
-		else
-			size = _size;
 
 		//If number of cores to use per node is out of bounds, set it to the value passed into _cores_per_node
 		if(_num_cores_to_use_per_node > total_cores_per_node || _num_cores_to_use_per_node <= 0){
@@ -436,6 +418,42 @@ public:
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP using %d Nodes\n",num_nodes);
 #endif
+	}
+
+	int registerArray(CkArrayIndexMax& numElements,CkArrayID aid) {
+
+		int dim = numElements.dimension;
+
+		size = numElements.getCombinedCount();
+
+#ifdef CRAYDEBUG
+		CkPrintf("==========NODEMAP ============== size = %d, dim = %d\n",size, dim);
+#endif
+
+		//initialize values
+		y_size = 1;
+		z_size = 1;
+
+		if(dim == 2)
+			y_size = numElements.data()[1];
+		if(dim == 3)
+			z_size = numElements.data()[2];
+
+		if(size <= 0)
+			CkAbort("NODEMAP received size <= 0\n");
+
+		if(y_size <= 0)
+			CkAbort("NODEMAP received y_size <= 0\n");
+
+		if(z_size <= 0)
+			CkAbort("NODEMAP received z_size <= 0\n");
+
+		if(dim > 3)
+			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
+
+#ifdef CRAYDEBUG
+		CkPrintf("==========NODEMAP ============== y_size = %d, z_size = %d\n",y_size, z_size);
+#endif
 
 		chares_per_node = size/num_nodes;
 
@@ -452,6 +470,8 @@ public:
 		//Number of cores on all big nodes and small nodes
 		big_cores = big_nodes*cores_per_node;
 		small_cores = (num_nodes-big_nodes)*cores_per_node;
+
+		return 0;
 	}
 
 	//  int procNum(int, const CkArrayIndex &);

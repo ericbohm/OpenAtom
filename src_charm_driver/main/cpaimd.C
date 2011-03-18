@@ -2172,7 +2172,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhorsCrayMap = CProxy_NodeMap2DArray::ckNew(config.rhoRsubplanes,1,nchareRhoR*config.rhoRsubplanes,cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
+  CProxy_NodeMap2DArray rhorsCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
   //CkArrayOptions rhorsOpts;
@@ -2236,7 +2236,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(1,1,nchareRhoG,cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
+  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
@@ -2305,7 +2305,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
-    CProxy_NodeMap2DArray rhorHartCrayMap = CProxy_NodeMap2DArray::ckNew(config.rhoRsubplanes*nchareHartAtmT, nchareHartAtmT,nchareRhoRHart*config.rhoRsubplanes*nchareHartAtmT,cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
+    CProxy_NodeMap2DArray rhorHartCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
     rhorhartOpts.setMap(rhorHartCrayMap);
 
@@ -2382,7 +2382,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 #endif
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(nchareHartAtmT,1,nchareRhoGHart*nchareHartAtmT,cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
+  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
 #ifdef CRAYDEBUG
   CkPrintf("Built RhoGHart map\n");
