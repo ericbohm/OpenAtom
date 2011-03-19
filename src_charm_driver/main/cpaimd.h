@@ -425,29 +425,30 @@ public:
 		int dim = numElements.dimension;
 
 		size = numElements.getCombinedCount();
+		if(size <= 0)
+			CkAbort("NODEMAP received size <= 0\n");
 
 #ifdef CRAYDEBUG
 		CkPrintf("==========NODEMAP ============== size = %d, dim = %d\n",size, dim);
 #endif
 
-		//initialize values
-		y_size = 1;
+		if(dim == 2 || dim == 3) {
+			x_size = numElements.data()[0];
+			if(x_size <= 0)
+				CkAbort("NODEMAP received x_size <= 0\n");
+		}
 
-		if(dim == 3)
+		if(dim == 3) {
 			y_size = numElements.data()[1];
-
-		if(size <= 0)
-			CkAbort("NODEMAP received size <= 0\n");
-
-		if(y_size <= 0)
-			CkAbort("NODEMAP received y_size <= 0\n");
-
+			if(x_size <= 0)
+				CkAbort("NODEMAP received y_size <= 0\n");
+		}
 
 		if(dim > 3)
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
 #ifdef CRAYDEBUG
-		CkPrintf("==========NODEMAP ============== y_size = %d\n",y_size);
+		CkPrintf("==========NODEMAP ============== x_size = %d, y_size = %d\n",x_size,y_size);
 #endif
 
 		chares_per_node = size/num_nodes;
@@ -480,9 +481,9 @@ public:
 		if(dim == 1)
 			chare_num = index[0];
 		else if(dim == 2)
-			chare_num = index[0]+size*index[1];
+			chare_num = index[0]+x_size*index[1];
 		else if(dim == 3)
-			chare_num = index[0]+size*index[1]+size*y_size*index[2];
+			chare_num = index[0]+x_size*index[1]+x_size*y_size*index[2];
 		else
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
@@ -523,6 +524,7 @@ public:
 	~NodeMap2DArray(){}
 
 private:
+	int x_size;
 	int y_size;
 	int size;
 	int offset;
