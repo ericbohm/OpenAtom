@@ -1968,7 +1968,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #endif
   }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
-  CProxy_BlockMap2DArray rspCrayMap= CProxy_BlockMap2DArray::ckNew(ngridcNl,nstates*ngridcNl);
+  CProxy_NodeMap2DArray rspCrayMap= CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
   newtime=CmiWallTimer();
   CmiNetworkProgressAfter(0);
