@@ -882,6 +882,7 @@ void CP_State_ParticlePlane::startNLEes(int iteration_in){
   //   Spin my wheels while atoms integrate, cleanExit and Energy reducts
   //   and ortho does who knows what.
   if(iteration>config.maxIter){
+     ///TODO: Remove unused var gsp
      CP_State_GSpacePlane *gsp = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal();
      iterNL = 0;
     /// If the nonlocal force computations are barriered, contribute to the reduction
