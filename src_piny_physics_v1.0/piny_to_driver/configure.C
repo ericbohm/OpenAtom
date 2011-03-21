@@ -1589,25 +1589,25 @@ void Config::set_config_dict_gen (int *num_dict ,DICT_WORD **dict){
   // 3)\useCommlib{}
     ind=3;
     strcpy((*dict)[ind].keyword,"useCommlib");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 4)\useGMulticast{}
     ind=4;
     strcpy((*dict)[ind].keyword,"useGMulticast");
-    strcpy((*dict)[ind].keyarg,"off");    
+    strcpy((*dict)[ind].keyarg,"on");
     strcpy((*dict)[ind].error_mes,"on/off");
   //-----------------------------------------------------------------------------
   // 5)\numMulticastMsgs{}
     ind=5;
     strcpy((*dict)[ind].keyword,"numMulticastMsgs");
-    strcpy((*dict)[ind].keyarg,"10");    
+    strcpy((*dict)[ind].keyarg,"4");
     strcpy((*dict)[ind].error_mes,"a number > 0");
   //-----------------------------------------------------------------------------
   // 6)\useCommlibMulticast{}
     ind=6;
     strcpy((*dict)[ind].keyword,"useCommlibMulticast");
-    strcpy((*dict)[ind].keyarg,"on");    
+    strcpy((*dict)[ind].keyarg,"off");
     strcpy((*dict)[ind].error_mes,"on/off");
 //----------------------------------------------------------------------------------
   // 7)\useTimeKeeper{}
