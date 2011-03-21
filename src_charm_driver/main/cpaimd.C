@@ -1597,7 +1597,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 #ifdef CRAYDEBUG
   CkPrintf("GSMap about to instantiate, size = %d\n",nstates*nchareG);
 #endif
-  CProxy_BlockMap2DArray gsCrayMap = CProxy_BlockMap2DArray::ckNew(nchareG,nstates*nchareG);
+  CProxy_NodeMap2DArray gsCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0,0);
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
@@ -1709,7 +1709,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
 
-  CProxy_BlockMap2DArray rsCrayMap = CProxy_BlockMap2DArray::ckNew(nchareR,nstates*nchareR);
+  CProxy_NodeMap2DArray rsCrayMap = CProxy_NodeMap2DArray::ckNew(cores_per_node,0,cores_per_node,0,CmiNumPhysicalNodes(),0,0);
   realSpaceOpts.setMap(rsCrayMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
