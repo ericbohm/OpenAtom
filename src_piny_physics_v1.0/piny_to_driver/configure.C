@@ -3137,9 +3137,9 @@ void Config::rangeExit(int param, const char *name, int iopt){
 // Density Controls
 
     if(useCommlibMulticast+useGMulticast!=1){
-      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      PRINTF("   You can't use both the g and commlib multicast\n");
-      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Must turn on either useGMulticast or useCommlibMulticast\n");
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
       EXIT(1);
     }//endif
 
