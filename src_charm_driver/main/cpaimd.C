@@ -1922,6 +1922,8 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   int nchareG         = sim->nchareG;
   int nchareRPP       = ngridcNl;
 
+  CkPrintf("RPP SIZE: RealParticlePlane(%d x %d)\n",nstates,ngridcNl);
+
   int numIterNL       = sim->nlIters;
   int zmatSizeMax     = sim->nmem_zmat_max;
 
