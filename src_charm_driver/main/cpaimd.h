@@ -436,9 +436,7 @@ public:
 			x_size = numElements.data()[0];
 			if(x_size <= 0)
 				CkAbort("NODEMAP received x_size <= 0\n");
-		}
 
-		if(dim == 3) {
 			y_size = numElements.data()[1];
 			if(x_size <= 0)
 				CkAbort("NODEMAP received y_size <= 0\n");
@@ -481,7 +479,8 @@ public:
 		if(dim == 1)
 			chare_num = index[0];
 		else if(dim == 2)
-			chare_num = index[0]+x_size*index[1];
+			//chare_num = index[0]+x_size*index[1]; //stripe across x-dimension
+			chare_num = index[0]*y_size+index[1]; //stripe across y-dimension
 		else if(dim == 3)
 			chare_num = index[0]+x_size*index[1]+x_size*y_size*index[2];
 		else
