@@ -355,6 +355,7 @@ public:
 	//             i.e. core_offset=1 and num_cores_to_use_per_node=cores_per_node-1 would exclude core 0 of every node
 	//node_offset: used to exclude nodes when used with num_nodes_to_use
 	//             i.e. node_offset=num_nodes/2 and num_nodes_to_use=num_nodes/2 excludes the first half of the nodes
+	//stripe: value of 0 stripes 2D arrays across Y dimension, value of 1 stripes across X dimension.  Irrelevant for 1D or 3D arrays
 
 	//big_nodes: if size/num_nodes has a remainder, the number of nodes that have size/num_nodes+1 chares
 	//big_cores: number of cores on all big nodes (big_nodes*cores_per_node)
@@ -362,7 +363,7 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset){
+	NodeMap2DArray(int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset, int _stripe){
 
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP read %d CORES_PER_NODE\n",_cores_per_node);
@@ -374,6 +375,8 @@ public:
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP INFO: detected %d cores per node and %d nodes\n",total_cores_per_node,total_num_nodes);
 #endif
+
+		stripe = _stripe;
 
 		//If number of cores to use per node is out of bounds, set it to the value passed into _cores_per_node
 		if(_num_cores_to_use_per_node > total_cores_per_node || _num_cores_to_use_per_node <= 0){
@@ -478,9 +481,12 @@ public:
 
 		if(dim == 1)
 			chare_num = index[0];
-		else if(dim == 2)
-			//chare_num = index[0]+x_size*index[1]; //stripe across x-dimension
-			chare_num = index[0]*y_size+index[1]; //stripe across y-dimension
+		else if(dim == 2) {
+			if(stripe == 0)
+				chare_num = index[0]*y_size+index[1]; //stripe across y-dimension
+			else
+				chare_num = index[0]+x_size*index[1]; //stripe across x-dimension
+		}
 		else if(dim == 3)
 			chare_num = index[0]+x_size*index[1]+x_size*y_size*index[2];
 		else
@@ -527,6 +533,7 @@ private:
 	int y_size;
 	int size;
 	int offset;
+	int stripe;
 	int core_offset;
 	int cores_per_node;
 	int total_cores_per_node;
