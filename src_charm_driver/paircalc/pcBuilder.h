@@ -2,6 +2,8 @@
 #include "pcConfig.h"
 #include "pcInstanceIDs.h"
 #include "load_balance/PeList.h"
+#include "main/cpaimd.h"
+#include "cpaimd.decl.h"
 
 #include "charm++.h"
 

@@ -97,6 +97,7 @@ module ckPairCalculator
 
 	extern module pcMessages;
 	extern module inputDataHandler;
+	extern module cpaimd;
 
     include "paircalc/pcFwdDeclarations.h";
 	array [4D] InputDataHandler <CollatorType,CollatorType>;

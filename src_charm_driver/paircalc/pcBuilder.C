@@ -141,8 +141,17 @@ void Builder::createPairCalcs()
     CProxy_PairCalculator pairCalculatorProxy;
     CProxy_InputDataHandler<CollatorType,CollatorType> inputHandlerProxy;
 
+    int cores_per_node = CkNumPes()/CmiNumPhysicalNodes();
+
+    // Compute the max value of the state dimension indices of the paircalc array
+    int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
+    int s1_size = pcMaxStateDimIndex/cfg.grainSize;
+    int size = cfg.numPlanes*s1_size;
+
+    CProxy_NodeMapPCArray pcCrayMap = CProxy_NodeMapPCArray::ckNew(size,s1_size,0,cfg.numPlanes,cfg.numChunks,cores_per_node,0,CmiNumPhysicalNodes(),0);
+
     // Create an empty array but specify element locations using the map
-    paircalcOpts.setMap(pcHandle.mapperGID);
+    paircalcOpts.setMap(pcCrayMap);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION
@@ -157,8 +166,6 @@ void Builder::createPairCalcs()
     pcHandle.pcAID = pairCalculatorProxy.ckGetArrayID();
     pcHandle.handlerAID = inputHandlerProxy.ckGetArrayID();
 
-    // Compute the max value of the state dimension indices of the paircalc array
-    int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
     // Populate the sparse, 4D paircalc array
     for(int numX = 0; numX < cfg.numPlanes; numX ++)
     {
