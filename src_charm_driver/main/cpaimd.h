@@ -363,14 +363,10 @@ public:
 	//chares_on_big_nodes: the total number of chares assigned to big nodes
 	//chares_on_small_nodes: the total number of chares assigned to small nodes
 
-	NodeMap2DArray(int _cores_per_node, int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset, int _stripe){
+	NodeMap2DArray(int _offset, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset, int _stripe){
 
-#ifdef CRAYDEBUG
-		CkPrintf("NODEMAP read %d CORES_PER_NODE\n",_cores_per_node);
-#endif
-
-		total_cores_per_node = _cores_per_node;
 		total_num_nodes = CmiNumPhysicalNodes();
+		total_cores_per_node = CkNumPes()/total_num_nodes;
 
 #ifdef CRAYDEBUG
 		CkPrintf("NODEMAP INFO: detected %d cores per node and %d nodes\n",total_cores_per_node,total_num_nodes);
