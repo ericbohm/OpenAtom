@@ -431,6 +431,10 @@ mainmodule cpaimd {
 	group NodeMap2DArray : CkArrayMap {
 			entry NodeMap2DArray(int,int,int,int,int,int);
 	};
+	
+	group NodeMapPCArray : NodeMap2DArray {
+		entry NodeMapPCArray(int,int,int,int,int,int,int,int,int);
+	};
         
 	group GSMap : CkArrayMap {
 		entry GSMap(UberCollection);

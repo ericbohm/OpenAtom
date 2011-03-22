@@ -488,6 +488,12 @@ public:
 		else
 			CkAbort("NodeMap cannot handle Chare arrays with more than 3 dimensions\n");
 
+		return getProc(chare_num);
+	}
+
+	~NodeMap2DArray(){}
+
+	inline int getProc(int chare_num) {
 		//Calculate what proc and node this would go to for a block mapping scheme spread across all processors
 		//If this chare belongs on a big node:
 		int block_proc;
@@ -522,9 +528,6 @@ public:
 		return proc;
 	}
 
-	~NodeMap2DArray(){}
-
-private:
 	int x_size;
 	int y_size;
 	int size;
@@ -542,6 +545,61 @@ private:
 	int small_cores;
 	int chares_on_big_nodes;
 	int chares_on_small_nodes;
+};
+
+class NodeMapPCArray: public NodeMap2DArray {
+public:
+	NodeMapPCArray(int _size, int _s1_size, int _s2_size, int _numPlanes, int _numChunks, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)
+	: NodeMap2DArray(0, _num_cores_to_use_per_node, _core_offset, _num_nodes_to_use, _node_offset, 0) {
+
+		size = _size;
+		numPlanes = _numPlanes;
+		s1_size = _s1_size;
+		s2_size = _s2_size;
+		numChunks = _numChunks;
+
+		chares_per_node = size/num_nodes;
+
+		//number of nodes that need an extra chare if size/num_nodes has remainder, a big node
+		//big nodes have (chares_per_node+1) number of chares each
+		big_nodes = size%num_nodes;
+
+		//total number of chares that go on a big node
+		chares_on_big_nodes = (chares_per_node+1)*big_nodes;
+
+		//small nodes hold chares_per_node number of chares each
+		chares_on_small_nodes = size-chares_on_big_nodes;
+
+		//Number of cores on all big nodes and small nodes
+		big_cores = big_nodes*total_cores_per_node;
+		small_cores = (num_nodes-big_nodes)*total_cores_per_node;
+	}
+
+	int registerArray(CkArrayIndexMax& numElements,CkArrayID aid) {}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int dim = iIndex.dimension;
+		int *index=(int *) iIndex.data();
+
+		//index for striping across lower dimensions of chare array
+		int chare_num;
+
+		if(dim == 4)
+			chare_num = index[0]+numPlanes*index[1]; //stripe along y-dimension
+			//chare_num = index[0]*s1_size*s2_size*numChunks+index[2]*s1_size*numChunks+index[3]*s1_size+index[1];
+		else
+			CkAbort("NodeMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
+
+		return getProc(chare_num);
+	}
+
+private:
+	int numPlanes;
+	int s1_size;
+	int s2_size;
+	int numChunks;
+
 };
 
 class BlockMap2DArray: public CkArrayMap {
