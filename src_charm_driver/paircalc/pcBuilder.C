@@ -154,7 +154,7 @@ void Builder::createPairCalcs()
             }
     }
 
-    CProxy_NodeMapPCArray pcCrayMap = CProxy_NodeMapPCArray::ckNew(size,s1_size,0,cfg.numPlanes,cfg.numChunks,cores_per_node,0,CmiNumPhysicalNodes(),0);
+    CProxy_BlockMap2DArray pcCrayMap = CProxy_BlockMap2DArray::ckNew(s1_size,size);
 
     // Create an empty array but specify element locations using the map
     paircalcOpts.setMap(pcCrayMap);
