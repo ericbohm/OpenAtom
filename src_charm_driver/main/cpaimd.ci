@@ -437,7 +437,7 @@ mainmodule cpaimd {
 	};
 	
 	group NodeMapPCArray : NodeMap2DArray {
-		entry NodeMapPCArray(int,int,int,int,int,int,int,int,int);
+		entry NodeMapPCArray(int,int,int,int,bool,int,int,int,int);
 	};
 	
 	group NodeMapOrthoArray : NodeMap2DArray {
