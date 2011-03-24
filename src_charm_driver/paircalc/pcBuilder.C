@@ -147,7 +147,7 @@ void Builder::createPairCalcs()
     int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
     int size = cfg.numPlanes*cfg.numStates*cfg.numStates*cfg.numChunks;
 
-    CProxy_BlockMapPCArray pcCrayMap = CProxy_BlockMapPCArray::ckNew(cfg.numPlanes,cfg.numStates,cfg.numChunks,cfg.grainSize,(cfg.isSymmetric && !cfg.arePhantomsOn));
+    CProxy_NodeMapPCArray pcCrayMap = CProxy_NodeMapPCArray::ckNew(cfg.numPlanes,cfg.numStates,cfg.numChunks,cfg.grainSize,(cfg.isSymmetric && !cfg.arePhantomsOn),cores_per_node,0,CmiNumPhysicalNodes(),0);
 
     // Create an empty array but specify element locations using the map
     paircalcOpts.setMap(pcCrayMap);
