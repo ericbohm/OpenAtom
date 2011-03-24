@@ -93,7 +93,7 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     CkArrayOptions orthoOpts;
 
     int cores_per_node = CkNumPes()/CmiNumPhysicalNodes();
-    CProxy_NodeMapOrthoArray orthoCrayMap = CProxy_NodeMapOrthoArray::ckNew(cfg.numStates,cores_per_node,0,CmiNumPhysicalNodes(),0);
+    CProxy_BlockMapOrthoArray orthoCrayMap = CProxy_BlockMapOrthoArray::ckNew(cfg.numStates,cfg.grainSize);
 
     orthoOpts.setMap(orthoCrayMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);

@@ -712,6 +712,65 @@ private:
 
 };
 
+class BlockMapOrthoArray: public CkArrayMap {
+
+public:
+	//Need the size of one dimension, and the total size
+	BlockMapOrthoArray(int _numStates, int _grainSize){
+
+		numStates = _numStates;
+		grainSize = _grainSize;
+		actualStateSize = numStates/_grainSize;
+		size = actualStateSize*actualStateSize;
+
+		map = new int[size];
+
+		int count = 0;
+		int maxorthostateindex=(numStates/grainSize-1) * grainSize;
+
+		//The nesting of these loops determines what is adjacent
+		//s2, then s1 are placed adjacent
+		//effectively an entire s1 state is grouped together when linearized
+		//this linearization matches the PC mapping
+		for (int s1 = 0; s1 <= maxorthostateindex; s1 += grainSize)
+		{
+			for (int s2 = 0; s2 <= maxorthostateindex; s2 += grainSize)
+			{
+				int index = s1/grainSize*actualStateSize+s2/grainSize;
+				map[index] = count++;
+			}
+		}
+	}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int dim = iIndex.dimension;
+		int *index=(int *) iIndex.data();
+
+		//index for striping across lower dimensions of chare array
+		int chare_num;
+
+		if(dim == 2)
+			//state2 adjacent, then state1 adjacent
+			chare_num = index[0]/grainSize*actualStateSize+index[1]/grainSize;
+		else
+			CkAbort("BlockMapOrtho cannot handle Chare arrays != 2 dimensions - this mapping scheme is made for Orthos\n");
+
+		int proc=(float)map[chare_num]/size*CkNumPes();
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~BlockMapOrthoArray(){}
+
+private:
+	int numStates;
+	int grainSize;
+	int actualStateSize;
+	int size;
+	int* map;
+};
+
 class NodeMapOrthoArray: public NodeMap2DArray {
 public:
 	NodeMapOrthoArray(int _numStates, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)
