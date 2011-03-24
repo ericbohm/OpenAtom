@@ -91,7 +91,11 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     // Create the ortho map group
     CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
     CkArrayOptions orthoOpts;
-    orthoOpts.setMap(orthoMap);
+
+    int cores_per_node = CkNumPes()/CmiNumPhysicalNodes();
+    CProxy_NodeMapOrthoArray orthoCrayMap = CProxy_NodeMapOrthoArray::ckNew(cfg.numStates,cores_per_node,0,CmiNumPhysicalNodes(),0);
+
+    orthoOpts.setMap(orthoCrayMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
     // Create maps for the Ortho helper chares

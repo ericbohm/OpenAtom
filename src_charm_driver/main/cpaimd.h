@@ -602,6 +602,55 @@ private:
 
 };
 
+class NodeMapOrthoArray: public NodeMap2DArray {
+public:
+	NodeMapOrthoArray(int _numStates, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)
+	: NodeMap2DArray(0, _num_cores_to_use_per_node, _core_offset, _num_nodes_to_use, _node_offset, 0) {
+
+		size = _numStates*_numStates;
+		numStates = _numStates;
+
+		chares_per_node = size/num_nodes;
+
+		//number of nodes that need an extra chare if size/num_nodes has remainder, a big node
+		//big nodes have (chares_per_node+1) number of chares each
+		big_nodes = size%num_nodes;
+
+		//total number of chares that go on a big node
+		chares_on_big_nodes = (chares_per_node+1)*big_nodes;
+
+		//small nodes hold chares_per_node number of chares each
+		chares_on_small_nodes = size-chares_on_big_nodes;
+
+		//Number of cores on all big nodes and small nodes
+		big_cores = big_nodes*total_cores_per_node;
+		small_cores = (num_nodes-big_nodes)*total_cores_per_node;
+	}
+
+	int registerArray(CkArrayIndexMax& numElements,CkArrayID aid) {}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int dim = iIndex.dimension;
+		short *index=(short *) iIndex.data();
+
+		//index for striping across lower dimensions of chare array
+		int chare_num;
+
+		if(dim == 2)
+			//State 1 is adjacent, then state2 adjacent to match PairCalc mapping
+			chare_num = index[1]*numStates+index[0];
+		else
+			CkAbort("NodeMapOrtho cannot handle Chare arrays != 2 dimensions - this mapping scheme is made for Orthos\n");
+
+		return getProc(chare_num);
+	}
+
+private:
+	int numStates;
+
+};
+
 class BlockMap2DArray: public CkArrayMap {
 
 public:

@@ -2,6 +2,8 @@
 #include "orthoConfig.h"
 #include "paircalc/pcInstanceIDs.h"
 #include "load_balance/PeList.h"
+#include "main/cpaimd.h"
+#include "cpaimd.decl.h"
 
 #ifndef ORTHO_BUILDER_H
 #define ORTHO_BUILDER_H
