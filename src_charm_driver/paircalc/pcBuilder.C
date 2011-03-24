@@ -157,7 +157,7 @@ void Builder::createPairCalcs()
     CProxy_BlockMap2DArray pcCrayMap = CProxy_BlockMap2DArray::ckNew(s1_size,size);
 
     // Create an empty array but specify element locations using the map
-    paircalcOpts.setMap(pcCrayMap);
+    //paircalcOpts.setMap(pcCrayMap);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION
