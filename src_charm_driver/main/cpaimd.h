@@ -601,7 +601,7 @@ public:
 		int chare_num;
 
 		if(dim == 4)
-			//Chunks adjacent, planes adjacent, state1 adjacent, then state2 adjacent
+			//Chunks adjacent, planes adjacent, state2 adjacent, then state1 adjacent
 			chare_num = index[1]/grainSize*numChunks*numPlanes*actualStateSize+index[2]/grainSize*numChunks*numPlanes+index[0]*numChunks+index[3];
 		else
 			CkAbort("BlockMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
