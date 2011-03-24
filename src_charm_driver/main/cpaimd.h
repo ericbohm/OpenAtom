@@ -580,7 +580,7 @@ public:
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int dim = iIndex.dimension;
-		int *index=(int *) iIndex.data();
+		short *index=(short *) iIndex.data();
 
 		//index for striping across lower dimensions of chare array
 		int chare_num;

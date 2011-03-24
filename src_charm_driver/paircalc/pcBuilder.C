@@ -145,19 +145,12 @@ void Builder::createPairCalcs()
 
     // Compute the max value of the state dimension indices of the paircalc array
     int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
-    int s1_size = (pcMaxStateDimIndex+cfg.grainSize)/cfg.grainSize;
-    int size=0;// = cfg.numPlanes*s1_size;
+    int size = cfg.numPlanes*cfg.numStates;
 
-    for(int numX = 0; numX < cfg.numPlanes; numX ++) {
-            for (int s1 = 0; s1 <= pcMaxStateDimIndex; s1 += cfg.grainSize){
-            	size++;
-            }
-    }
-
-    CProxy_BlockMap2DArray pcCrayMap = CProxy_BlockMap2DArray::ckNew(s1_size,size);
+    CProxy_NodeMapPCArray pcCrayMap = CProxy_NodeMapPCArray::ckNew(size,cfg.numStates,cfg.numStates,cfg.numPlanes,cfg.numChunks,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
     // Create an empty array but specify element locations using the map
-    //paircalcOpts.setMap(pcCrayMap);
+    paircalcOpts.setMap(pcCrayMap);
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION
