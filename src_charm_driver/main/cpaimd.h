@@ -752,7 +752,7 @@ public:
 
 		if(dim == 2)
 			//state2 adjacent, then state1 adjacent
-			chare_num = index[0]/grainSize*actualStateSize+index[1]/grainSize;
+			chare_num = index[0]*actualStateSize+index[1];
 		else
 			CkAbort("BlockMapOrtho cannot handle Chare arrays != 2 dimensions - this mapping scheme is made for Orthos\n");
 
@@ -828,9 +828,15 @@ public:
 
 		if(dim == 2)
 			//State 2 is adjacent, then state 1 adjacent to match PairCalc mapping
-			chare_num = index[0]/grainSize*actualStateSize+index[1]/grainSize;
+			//Ortho is actually not stored sparsely, so scaling is unnecessary here.
+			chare_num = index[0]*actualStateSize+index[1];
 		else
 			CkAbort("NodeMapOrtho cannot handle Chare arrays != 2 dimensions - this mapping scheme is made for Orthos\n");
+
+#ifdef CRAYDEBUG
+		CkPrintf("orthoGrainSize = %d, actualStateSize = %d\n", grainSize, actualStateSize);
+		CkPrintf("Ortho [%d %d] with chare_num = %d mapped to proc %d\n", index[0], index[1], chare_num, getProc(map[chare_num]));
+#endif
 
 		return getProc(map[chare_num]);
 	}
