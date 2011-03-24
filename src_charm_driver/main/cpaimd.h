@@ -547,6 +547,74 @@ public:
 	int chares_on_small_nodes;
 };
 
+class BlockMapPCArray: public CkArrayMap {
+
+public:
+	//Need the size of one dimension, and the total size
+	BlockMapPCArray(int _numPlanes, int _numStates, int _numChunks, int _grainSize, bool _symm){
+
+		numPlanes = _numPlanes;
+		numStates = _numStates;
+		numChunks = _numChunks;
+		size = _numPlanes*_numStates*_numStates*_numChunks;
+
+		//Allocating full array instead of sparse, bad idea for memory at scale
+		map = new int[_numPlanes*_numStates*_numStates*_numChunks];
+
+		int count = 0;
+		int pcMaxStateDimIndex = (_numStates / _grainSize - 1) * _grainSize;
+
+		//The nesting of these loops determines what is adjacent
+		//Currently chunks, then planes, then s2, then s1
+		//meaning chunks are closest, and s1 states are spread apart
+		//effectively an entire s1 state is grouped together when linearized
+		for (int s1 = 0; s1 <= pcMaxStateDimIndex; s1 += _grainSize)
+		{
+			// Make the symmetric array a triangular prism of chares only if phantoms are not needed
+			int s2start = _symm ? s1 : 0;
+			for (int s2 = s2start; s2 <= pcMaxStateDimIndex; s2 += _grainSize)
+			{
+				for(int numX = 0; numX < _numPlanes; numX ++)
+				{
+					for (int c = 0; c < _numChunks; c++)
+					{
+						int index = s1*_numChunks*_numPlanes*_numStates+s2*_numChunks*_numPlanes+numX*_numChunks+c;
+						map[index] = count++;
+					}
+				}
+			}
+		}
+	}
+
+	//  int procNum(int, const CkArrayIndex &);
+	inline int procNum(int, const CkArrayIndex &iIndex){
+		int dim = iIndex.dimension;
+		short *index=(short *) iIndex.data();
+
+		//index for striping across lower dimensions of chare array
+		int chare_num;
+
+		if(dim == 4)
+			//Chunks adjacent, planes adjacent, state1 adjacent, then state2 adjacent
+			chare_num = index[1]*numChunks*numPlanes*numStates+index[2]*numChunks*numPlanes+index[0]*numChunks+index[3];
+		else
+			CkAbort("NodeMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
+
+		int proc=(float)map[chare_num]/size*CkNumPes();
+		CkAssert(proc>=0);
+		return(proc);
+	}
+
+	~BlockMapPCArray(){}
+
+private:
+	int numPlanes;
+	int numStates;
+	int numChunks;
+	int size;
+	int* map;
+};
+
 class NodeMapPCArray: public NodeMap2DArray {
 public:
 	NodeMapPCArray(int _size, int _s1_size, int _s2_size, int _numPlanes, int _numChunks, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)

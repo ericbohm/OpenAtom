@@ -432,6 +432,10 @@ mainmodule cpaimd {
 			entry NodeMap2DArray(int,int,int,int,int,int);
 	};
 	
+	group BlockMapPCArray : CkArrayMap {
+		entry BlockMapPCArray(int,int,int,int,bool);
+	};
+	
 	group NodeMapPCArray : NodeMap2DArray {
 		entry NodeMapPCArray(int,int,int,int,int,int,int,int,int);
 	};
