@@ -31,7 +31,7 @@
 #-------------------------------------------------------------------------------
 #------------------------------ Flags for linking ------------------------------
   LDFLAGS  += -L$(FFT_HOME)/lib
-  LDLIBS   += -module CkMulticast -module comlib -lconv-util -lm -lz -lacml
+  LDLIBS   += -module CkMulticast -module comlib -lrca -lconv-util -lm -lz -lacml
 
 #-------------------------------------------------------------------------------
 #----------------- Flags and settings just for the driver code -----------------
