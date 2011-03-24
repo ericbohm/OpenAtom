@@ -773,11 +773,31 @@ private:
 
 class NodeMapOrthoArray: public NodeMap2DArray {
 public:
-	NodeMapOrthoArray(int _numStates, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)
+	NodeMapOrthoArray(int _numStates, int _grainSize, int _num_cores_to_use_per_node, int _core_offset, int _num_nodes_to_use, int _node_offset)
 	: NodeMap2DArray(0, _num_cores_to_use_per_node, _core_offset, _num_nodes_to_use, _node_offset, 0) {
 
-		size = _numStates*_numStates;
 		numStates = _numStates;
+		grainSize = _grainSize;
+		actualStateSize = numStates/_grainSize;
+		size = actualStateSize*actualStateSize;
+
+		map = new int[size];
+
+		int count = 0;
+		int maxorthostateindex=(numStates/grainSize-1) * grainSize;
+
+		//The nesting of these loops determines what is adjacent
+		//s2, then s1 are placed adjacent
+		//effectively an entire s1 state is grouped together when linearized
+		//this linearization matches the PC mapping
+		for (int s1 = 0; s1 <= maxorthostateindex; s1 += grainSize)
+		{
+			for (int s2 = 0; s2 <= maxorthostateindex; s2 += grainSize)
+			{
+				int index = s1/grainSize*actualStateSize+s2/grainSize;
+				map[index] = count++;
+			}
+		}
 
 		chares_per_node = size/num_nodes;
 
@@ -801,23 +821,25 @@ public:
 	//  int procNum(int, const CkArrayIndex &);
 	inline int procNum(int, const CkArrayIndex &iIndex){
 		int dim = iIndex.dimension;
-		short *index=(short *) iIndex.data();
+		int *index=(int *) iIndex.data();
 
 		//index for striping across lower dimensions of chare array
 		int chare_num;
 
 		if(dim == 2)
-			//State 1 is adjacent, then state2 adjacent to match PairCalc mapping
-			chare_num = index[1]*numStates+index[0];
+			//State 2 is adjacent, then state 1 adjacent to match PairCalc mapping
+			chare_num = index[0]/grainSize*actualStateSize+index[1]/grainSize;
 		else
 			CkAbort("NodeMapOrtho cannot handle Chare arrays != 2 dimensions - this mapping scheme is made for Orthos\n");
 
-		return getProc(chare_num);
+		return getProc(map[chare_num]);
 	}
 
 private:
 	int numStates;
-
+	int grainSize;
+	int actualStateSize;
+	int *map;
 };
 
 class BlockMap2DArray: public CkArrayMap {

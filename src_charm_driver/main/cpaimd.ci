@@ -445,7 +445,7 @@ mainmodule cpaimd {
 	};
 	
 	group NodeMapOrthoArray : NodeMap2DArray {
-		entry NodeMapOrthoArray(int,int,int,int,int);
+		entry NodeMapOrthoArray(int,int,int,int,int,int);
 	};
         
 	group GSMap : CkArrayMap {
