@@ -556,10 +556,11 @@ public:
 		numPlanes = _numPlanes;
 		numStates = _numStates;
 		numChunks = _numChunks;
-		size = _numPlanes*_numStates*_numStates*_numChunks;
+		grainSize = _grainSize;
+		actualStateSize = numStates/_grainSize;
+		size = _numPlanes*actualStateSize*actualStateSize*_numChunks;
 
-		//Allocating full array instead of sparse, bad idea for memory at scale
-		map = new int[_numPlanes*_numStates*_numStates*_numChunks];
+		map = new int[size];
 
 		int count = 0;
 		int pcMaxStateDimIndex = (_numStates / _grainSize - 1) * _grainSize;
@@ -578,7 +579,12 @@ public:
 				{
 					for (int c = 0; c < _numChunks; c++)
 					{
-						int index = s1*_numChunks*_numPlanes*_numStates+s2*_numChunks*_numPlanes+numX*_numChunks+c;
+						int index = s1/grainSize*_numChunks*_numPlanes*actualStateSize+s2/grainSize*_numChunks*_numPlanes+numX*_numChunks+c;
+#ifdef CRAYDEBUG
+						CkPrintf("Accessing map[%d] with map size = %d\n",index, size);
+						CkPrintf("Accessing s1=%d, s2=%d, numX=%d, c=%d\n",s1,s2,numX,c);
+						CkPrintf("actualStateSize=%d, numStates=%d, numPlanes=%d, numChunks=%d\n",actualStateSize,numStates,numPlanes,numChunks);
+#endif
 						map[index] = count++;
 					}
 				}
@@ -596,7 +602,7 @@ public:
 
 		if(dim == 4)
 			//Chunks adjacent, planes adjacent, state1 adjacent, then state2 adjacent
-			chare_num = index[1]*numChunks*numPlanes*numStates+index[2]*numChunks*numPlanes+index[0]*numChunks+index[3];
+			chare_num = index[1]/grainSize*numChunks*numPlanes*actualStateSize+index[2]/grainSize*numChunks*numPlanes+index[0]*numChunks+index[3];
 		else
 			CkAbort("NodeMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
 
@@ -611,6 +617,8 @@ private:
 	int numPlanes;
 	int numStates;
 	int numChunks;
+	int grainSize;
+	int actualStateSize;
 	int size;
 	int* map;
 };
@@ -1199,3 +1207,4 @@ void setTraceUserEvents();
 
 #endif
 
+                                                  
