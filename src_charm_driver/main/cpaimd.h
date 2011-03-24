@@ -586,7 +586,7 @@ public:
 		int chare_num;
 
 		if(dim == 4)
-			chare_num = index[0]+numPlanes*index[1]; //stripe along y-dimension
+			chare_num = index[0]*s1_size+index[1]; //stripe along y-dimension
 			//chare_num = index[0]*s1_size*s2_size*numChunks+index[2]*s1_size*numChunks+index[3]*s1_size+index[1];
 		else
 			CkAbort("NodeMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
