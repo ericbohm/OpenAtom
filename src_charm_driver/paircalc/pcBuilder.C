@@ -145,7 +145,7 @@ void Builder::createPairCalcs()
 
     // Compute the max value of the state dimension indices of the paircalc array
     int pcMaxStateDimIndex = (cfg.numStates / cfg.grainSize - 1) * cfg.grainSize;
-    int size = cfg.numPlanes*cfg.numStates;
+    int size = cfg.numPlanes*cfg.numStates*cfg.numStates*cfg.numChunks;
 
     CProxy_NodeMapPCArray pcCrayMap = CProxy_NodeMapPCArray::ckNew(size,cfg.numStates,cfg.numStates,cfg.numPlanes,cfg.numChunks,cores_per_node,0,CmiNumPhysicalNodes(),0);
 
