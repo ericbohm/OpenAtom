@@ -1183,6 +1183,7 @@ void CP_State_RealParticlePlane::sendToEesGPP(){
   recvBlock = 0; // I am done, I can recv messages now from PP
                  // If I recv with block==1, something is terribly wrong
   if(iterNL==numIterNl){
+    count = 0;
     iterNL = 0;
     cp_enl = 0;
     launchFFT=false;
