@@ -631,7 +631,7 @@ void CP_State_RealParticlePlane::recvZMatEesSimp(int size, double *_zmat,
 // Bcast the puppy dog back out to your friends : Bow-Wow-Wow
 
     if(countZ==nChareR){
-      if(iterNL != iterNL){
+      if(iterNL != iterNL_in){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("Wrong iterNls strange racing: %d %d : %d %d : %d %d\n",
                    iterNL,iterNL_in,thisIndex.x,thisIndex.y,state,index);
