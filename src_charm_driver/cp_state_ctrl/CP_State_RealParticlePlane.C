@@ -497,6 +497,9 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
 
+  if(iterNL < 1)
+	  CkAbort("Fail in FFTNLEesFwdR, iterNL < 1\n");
+
   if(registrationFlag==1){computeZmatEes();}
 
   if(registrationFlag==0 && iterNL!=1 || iterNL==0){
