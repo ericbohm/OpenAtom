@@ -397,8 +397,8 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
 
     if(iterNLNow!=iterNL || recvBlock==1){
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d %d\n",iterNLNow,iterNL,
-                   thisIndex.y,Index,recvBlock);
+      CkPrintf("Dude, iter count %d != %d for NL-Rchare %d %d %d %d\n",iterNLNow,iterNL,
+                   thisIndex.y,Index,recvBlock, count);
       CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       CkExit();
     }//endif
