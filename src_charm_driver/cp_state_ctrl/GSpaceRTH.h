@@ -24,7 +24,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
             #ifndef _CP_DEBUG_PSI_OFF_  
                 //------------------------------------------------------------------------
                 /// (A) Start new iteration, reset the counters
-                c->myGSpaceObj->startNewIter();
+                c->myGSpaceObj->thisProxy(c->thisIndex.x,c->thisIndex.y).startNewIter();
                 //------------------------------------------------------------------------
                 /// (B) If nonlocal energy computations are allowed, start SF/computeZ of NL forces.
                 #ifndef _CP_DEBUG_SFNL_OFF_
@@ -42,7 +42,7 @@ RTH_Routine_code(GSpaceDriver,driveGSpace)
                 /// If VKS forces are allowed, do the forward and back FFTs (The nonlocal ees methods will be launched elsewhere to overlap appropriately with other work)
                 #ifndef _CP_DEBUG_VKS_OFF_ 
                     /// (D) FFT psi(gx,gy,gz)->psi(gx,gy,z)
-                    c->myGSpaceObj->doFFT();
+                    c->myGSpaceObj->thisProxy(c->thisIndex.x,c->thisIndex.y).doFFT();
                     /// Send psi to RealSpace
                     c->myGSpaceObj->sendFFTData();
                     /// Wait for (psi*vks) = F[gx,gy,z] to arive from RealSpace (acceptIFFT resumes)

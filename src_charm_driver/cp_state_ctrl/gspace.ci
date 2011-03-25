@@ -91,7 +91,7 @@ module gStatePlane
 		entry void initGSpace(int m, complex pts[m], int mv, complex vpts[mv], int nx,int ny,int nz,int ngridaNL,int ngridbNL,int ngridcNL, int istart_cp);
 		entry void acceptIFFT(GSIFFTMsg *);
 		entry [local] void doIFFT();
-		entry void doFFT();
+		entry [local] void doFFT();
 		entry void completeRDMAhandshake(RDMASetupConfirmationMsg<RDMApair_GSP_PC> *msg);
 		entry void collectFileOutput(GStateOutMsg *msg);
 		entry void acceptNewPsi(CkReductionMsg *msg);	
@@ -108,7 +108,7 @@ module gStatePlane
 		entry void acceptRedPsiV(GSRedPsiMsg *msg);
 
 		entry void makePCproxies();
-		entry void startNewIter ();
+		entry [local] void startNewIter ();
 
 		entry void computeEnergies(int p, double d);
 		entry void psiCgOvlap(CkReductionMsg *);
