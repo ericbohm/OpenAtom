@@ -522,11 +522,6 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 //============================================================================
 void CP_State_RealParticlePlane::computeZmatEes(){
 
-   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-   int iterNL1          = iterNL-1;           // silly C++ convention
-   int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
-   int nZmat            = nmem_zmat[iterNL1]; 
-
 //============================================================================ 
 // Check out your B-splines from the cache and then compute Zmat
 
@@ -558,6 +553,19 @@ void CP_State_RealParticlePlane::computeZmatEes(){
 //============================================================================
 // Launch section reduction : 
 
+   planeReduction();
+
+//----------------------------------------------------------------------------
+    }//end routine
+//============================================================================
+
+void CP_State_RealParticlePlane::planeReduction()
+{
+   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+   int iterNL1          = iterNL-1;           // silly C++ convention
+   int *nmem_zmat       = sim->nmem_zmat;     // zmat size now
+   int nZmat            = nmem_zmat[iterNL1];
+
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
    if(thisIndex.x==0)
     CkPrintf("HI, I am rPP %d %d in send to zmat-red : %d %d %d d\n",
@@ -577,11 +585,7 @@ void CP_State_RealParticlePlane::computeZmatEes(){
                                                thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-
-//----------------------------------------------------------------------------
-    }//end routine
-//============================================================================
-
+}
 
 //============================================================================
 // A chare can be behind by 1 iteration only. This message can arrive before
@@ -898,6 +902,13 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 //============================================================================
 // If we are done, send out the energy : HELP HELP Evil Section Multicast
 
+  energyReduction();
+//----------------------------------------------------------------------------
+}//end routine
+//============================================================================
+
+void CP_State_RealParticlePlane::energyReduction()
+{
    if(thisIndex.y==reductionPlaneNum && iterNL==numIterNl){
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
      if(thisIndex.x==0)
@@ -971,9 +982,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 
   FFTNLEesBckR();
   // do not delete nokeep message
-//----------------------------------------------------------------------------
-}//end routine
-//============================================================================
+}
 
 //============================================================================
 // Control launch of FFT based on Rho having more of its act together
