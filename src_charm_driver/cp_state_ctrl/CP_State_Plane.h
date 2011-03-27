@@ -557,6 +557,10 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
 
    bool launchFFT; 
    bool fftDataDone;
+   bool rPlaneRedCookieSet;
+   bool planeReductionReady;
+   bool rEnlCookieSet;
+   bool energyReductionReady;
 
    double cp_enl;         // Non-local energy
    double cp_enlTot;      // Reduced Non-local energy
