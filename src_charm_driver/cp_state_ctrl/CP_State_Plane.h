@@ -562,6 +562,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    bool rEnlCookieSet;
    bool energyReductionReady;
 
+   int *red_pl;
    double cp_enl;         // Non-local energy
    double cp_enlTot;      // Reduced Non-local energy
    double *projPsiR;      // real/final form of projector (after gx,gy FFTs)
