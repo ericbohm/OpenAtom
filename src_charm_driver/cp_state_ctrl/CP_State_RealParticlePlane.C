@@ -435,9 +435,9 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
       fftDataDone=true;
       if(launchFFT){
 	thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
-        if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1\n");CkExit();}
+        if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1 %d %d\n", rhoRTime, itime);CkExit();}
       }else{
-        if(iterNL!=1){CkPrintf("Badddd launchFFT.2\n");CkExit();}
+        if(iterNL!=1){CkPrintf("Badddd launchFFT.2 %d\n",iterNL);CkExit();}
       }//endif
     }//endif
 
@@ -1008,8 +1008,8 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
   rhoRTime = time_in;
   launchFFT=true;
   if(fftDataDone){
-    if(iterNL!=1){CkPrintf("Badddd launchFFT.3\n");CkExit();}
-    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.4\n");CkExit();}
+    if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d\n", iterNL);CkExit();}
+    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .4 %d %d\n",rhoRTime,itime);CkExit();}
     thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
   }//endif
 //----------------------------------------------------------------------------
