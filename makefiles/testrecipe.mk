@@ -25,7 +25,7 @@ ees-nl1l1-p1-desc = EES: on for nonlocal; on for locals;
 ees-nl1l1-p1-args = $(regrInpDir)/cpaimd_config.p1 $(regrInpDir)/water.input.min.ees-nl1l1
 
 # Define the list of tests to run
-testList   = ees-nl0l0-p1 ees-nl0l1-p1 ees-nl1l0-p1 ees-nl1l1-p1
+testList   = ees-nl1l1-p1 ees-nl1l0-p1 ees-nl0l1-p1 ees-nl0l0-p1
 
 
 .PHONY: test-regr
