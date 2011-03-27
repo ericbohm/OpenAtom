@@ -181,29 +181,6 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
 void CP_State_RealParticlePlane::init(){
 
 //============================================================================
-// Malloc the projector memory, non-local matrix and register with your cache
-
-  if(ees_nonlocal==1){
-   //--------
-   // malloc
-    projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
-    projPsiR    = reinterpret_cast<double*> (projPsiC);
-    zmat        = new double[zmatSizeMax];
-    zmatScr     = new double[zmatSizeMax];
-   //--------
-   // Register
-    eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
-    eesData->registerCacheRPP(thisIndex.y);
-   //--------
-   // Tell your friends your are ready to boogy
-    int i=1;
-    CkCallback cb(CkIndex_CP_State_RealParticlePlane::registrationDone(NULL),
-		  UrealParticlePlaneProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-  }//endif
-
-
-//============================================================================
 // Choose reduction plane reasonably intelligently
 
   int *red_pl       = new int[nstates];
@@ -304,6 +281,28 @@ void CP_State_RealParticlePlane::init(){
      ComlibAssociateProxy(mssPInstance,gPP_proxy);
   }//endif
 #endif
+
+//============================================================================
+// Malloc the projector memory, non-local matrix and register with your cache
+
+  if(ees_nonlocal==1){
+   //--------
+   // malloc
+    projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
+    projPsiR    = reinterpret_cast<double*> (projPsiC);
+    zmat        = new double[zmatSizeMax];
+    zmatScr     = new double[zmatSizeMax];
+   //--------
+   // Register
+    eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+    eesData->registerCacheRPP(thisIndex.y);
+   //--------
+   // Tell your friends your are ready to boogy
+    int i=1;
+    CkCallback cb(CkIndex_CP_State_RealParticlePlane::registrationDone(NULL),
+                  UrealParticlePlaneProxy[thisInstance.proxyOffset]);
+    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  }//endif
 
 }
 
