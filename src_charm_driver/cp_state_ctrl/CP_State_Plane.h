@@ -598,8 +598,10 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void recvFromEesGPP(NLFFTMsg *);
    void FFTNLEesFwdR();
    void computeZmatEes();
+   void planeReduction();
    void recvZMatEes(CkReductionMsg *);
    void computeAtmForcEes(CompAtmForcMsg *msg);
+   void energyReduction();
    void FFTNLEesBckR();
    void sendToEesGPP();
    void setPlaneRedCookie(EnlCookieMsg *);
