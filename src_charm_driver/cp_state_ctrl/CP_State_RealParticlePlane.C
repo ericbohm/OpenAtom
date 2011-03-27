@@ -1008,7 +1008,7 @@ void CP_State_RealParticlePlane::launchFFTControl(int time_in){
   rhoRTime = time_in;
   launchFFT=true;
   if(fftDataDone){
-    if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d\n", iterNL);CkExit();}
+    if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d %d %d %d\n", iterNL, count, nChareG, itime);CkExit();}
     if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .4 %d %d\n",rhoRTime,itime);CkExit();}
     thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
   }//endif
