@@ -168,22 +168,11 @@ CP_State_RealParticlePlane::CP_State_RealParticlePlane(
   saveddmn_z=NULL;
   savedigrid=NULL;
 #endif
-//----------------------------------------------------------------------------
-  }//end routine
-//============================================================================
-
-//============================================================================
-// Post construction initialization.
-// you can't make sections until the multicast manager is done
-//============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//============================================================================
-void CP_State_RealParticlePlane::init(){
 
 //============================================================================
 // Choose reduction plane reasonably intelligently
 
-  int *red_pl       = new int[nstates];
+  red_pl       = new int[nstates];
   //foreach state, try to find a new proc for each state's reduction plane
   int *usedProc= new int[CkNumPes()];
   memset(usedProc,0,sizeof(int)*CkNumPes());
@@ -196,14 +185,14 @@ void CP_State_RealParticlePlane::init(){
       {
         bool used=false;
         int thisstateplaneproc=RPPImaptable[thisInstance.proxyOffset].get(state,plane)%CkNumPes();
-	if(usedProc[thisstateplaneproc]>charperpe);
-	{
-	  used=true;
-	}
+        if(usedProc[thisstateplaneproc]>charperpe);
+        {
+          used=true;
+        }
 
         if(!used || (plane+1==nChareR))
           {
-	    usedProc[thisstateplaneproc]++;
+            usedProc[thisstateplaneproc]++;
             red_pl[state]=plane;
             plane=nChareR;
           }
@@ -212,7 +201,7 @@ void CP_State_RealParticlePlane::init(){
   }
   reductionPlaneNum = red_pl[thisIndex.x];
   delete [] usedProc;
-	    /* old less reliable method
+            /* old less reliable method
   int l             = Rstates_per_pe;
   int pl            = (nstates / l);
   int pm            = (CkNumPes() / pl);
@@ -222,14 +211,43 @@ void CP_State_RealParticlePlane::init(){
     red_pl[i]= (  ((i % Rstates_per_pe)*planes_per_pe)% nChareR);
   }//endif
   reductionPlaneNum = red_pl[thisIndex.x];
-	    */
+            */
   
   /*for(int i=0; i<nstates;i++){ ifndef USE_TOPOMAP
     red_pl[i] = calcReductionPlaneNum(thisIndex.x);
   }//endif
   reductionPlaneNum = calcReductionPlaneNum(thisIndex.x); */
 
+if(ees_nonlocal==1){
+   //--------
+   // malloc
+    projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
+    projPsiR    = reinterpret_cast<double*> (projPsiC);
+    zmat        = new double[zmatSizeMax];
+    zmatScr     = new double[zmatSizeMax];
+}
 
+//============================================================================
+// Setup the comlib to talk to GPP
+
+  gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
+#ifdef USE_COMLIB
+  if (config.useMssInsGPP){
+     ComlibAssociateProxy(mssPInstance,gPP_proxy);
+  }//endif
+#endif
+
+//----------------------------------------------------------------------------
+  }//end routine
+//============================================================================
+
+//============================================================================
+// Post construction initialization.
+// you can't make sections until the multicast manager is done
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealParticlePlane::init(){
 //============================================================================
 // Build section reductions
 
@@ -273,25 +291,9 @@ void CP_State_RealParticlePlane::init(){
   delete [] red_pl;
 
 //============================================================================
-// Setup the comlib to talk to GPP
-
-  gPP_proxy = UparticlePlaneProxy[thisInstance.proxyOffset];
-#ifdef USE_COMLIB
-  if (config.useMssInsGPP){
-     ComlibAssociateProxy(mssPInstance,gPP_proxy);
-  }//endif
-#endif
-
-//============================================================================
 // Malloc the projector memory, non-local matrix and register with your cache
 
   if(ees_nonlocal==1){
-   //--------
-   // malloc
-    projPsiC    = (complex*) fftw_malloc(csize*sizeof(complex));
-    projPsiR    = reinterpret_cast<double*> (projPsiC);
-    zmat        = new double[zmatSizeMax];
-    zmatScr     = new double[zmatSizeMax];
    //--------
    // Register
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -305,8 +307,6 @@ void CP_State_RealParticlePlane::init(){
   }//endif
 
 }
-
-
 
 //============================================================================
 // The destructor : never called directly but I guess migration needs it
