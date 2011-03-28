@@ -433,7 +433,7 @@ void CP_State_RealParticlePlane::recvFromEesGPP(NLFFTMsg *msg){
        CkPrintf("HI, I am rPP %d %d in recvfromGpp : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
       fftDataDone=true;
-      if(launchFFT){
+      if(launchFFT && registrationFlag == 1){
 	if(rhoRTime!=itime){CkPrintf("Badddd launchFFT.1 %d %d\n", rhoRTime, itime);CkExit();}
         if(iterNL!=1){CkPrintf("Badddd launchFFT.2 %d\n",iterNL);CkExit();}
 	thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
@@ -1006,7 +1006,7 @@ void CP_State_RealParticlePlane::energyReduction()
 void CP_State_RealParticlePlane::launchFFTControl(int time_in){
   rhoRTime = time_in;
   launchFFT=true;
-  if(fftDataDone){
+  if(fftDataDone && registrationFlag == 1){
     if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d %d %d %d\n", iterNL, count, nChareG, itime);CkExit();}
     if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .4 %d %d\n",rhoRTime,itime);CkExit();}
     thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
@@ -1281,9 +1281,9 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 #endif
 
   registrationFlag=1;
-  if(fftDataDone){
-    if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d %d %d %d\n", iterNL, count, nChareG, itime);CkExit();}
-    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .4 %d %d\n",rhoRTime,itime);CkExit();}
+  if(fftDataDone && launchFFT){
+    if(iterNL!=1){CkPrintf("Badddd launchFFT .5 %d %d %d %d\n", iterNL, count, nChareG, itime);CkExit();}
+    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .6 %d %d\n",rhoRTime,itime);CkExit();}
     thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
   }//endif
 
