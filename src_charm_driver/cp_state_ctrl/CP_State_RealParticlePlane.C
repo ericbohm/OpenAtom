@@ -1284,7 +1284,11 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 #endif
 
   registrationFlag=1;
-  if(iterNL==1){computeZmatEes();}
+  if(fftDataDone){
+    if(iterNL!=1){CkPrintf("Badddd launchFFT .3 %d %d %d %d\n", iterNL, count, nChareG, itime);CkExit();}
+    if(rhoRTime!=itime){CkPrintf("Badddd launchFFT .4 %d %d\n",rhoRTime,itime);CkExit();}
+    thisProxy(thisIndex.x,thisIndex.y).FFTNLEesFwdR();
+  }//endif
 
   if(iterNL>1){
     CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
