@@ -695,7 +695,9 @@ public:
 
 		if(dim == 4)
 			//Chunks adjacent, planes adjacent, state2 adjacent, then state1 adjacent
-			chare_num = index[1]/grainSize*numChunks*numPlanes*actualStateSize+index[2]/grainSize*numChunks*numPlanes+index[0]*numChunks+index[3];
+			//chare_num = index[1]/grainSize*numChunks*numPlanes*actualStateSize+index[2]/grainSize*numChunks*numPlanes+index[0]*numChunks+index[3];
+		        //Chunks adjacent, state2 adjacent, state1 adjacent, then planes adjacent
+		        chare_num = index[0]*numChunks*numStates/grainSize*numStates/grainSize+index[1]/grainSize*numChunks*numStates/grainSize+index[2]/grainSize*numChunks+index[3];
 		else
 			CkAbort("NodeMapPC cannot handle Chare arrays != 4 dimensions - this mapping scheme is made for PairCalcs\n");
 
