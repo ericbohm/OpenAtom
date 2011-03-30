@@ -397,6 +397,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
   if(!cfg.isSymmetric && ++numRecd==numOrtho)
   {
+      CkPrintf("[%d,%d,%d,%d,%d] initGRed %d %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,numRecd,numOrtho);
     struct s_array { //(sendArray, bcastArray)
       int ep; //Entry point to call
       CkGroupID id; //Array ID to call it on
