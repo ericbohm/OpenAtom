@@ -1597,7 +1597,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 #ifdef CRAYDEBUG
   CkPrintf("GSMap about to instantiate, size = %d\n",nstates*nchareG);
 #endif
-  CProxy_NodeMap2DArray gsCrayMap = CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,0);
+  CProxy_NodeMap2DArray gsCrayMap = CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,1);
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
