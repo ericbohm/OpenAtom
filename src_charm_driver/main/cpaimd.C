@@ -1709,7 +1709,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
 
-  CProxy_NodeMap2DArray rsCrayMap = CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,0);
+  CProxy_NodeMap2DArray rsCrayMap = CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,1);
   realSpaceOpts.setMap(rsCrayMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
@@ -1970,7 +1970,7 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #endif
   }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rspCrayMap= CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,0);
+  CProxy_NodeMap2DArray rspCrayMap= CProxy_NodeMap2DArray::ckNew(0,cores_per_node,0,CmiNumPhysicalNodes(),0,1);
 
   newtime=CmiWallTimer();
   CmiNetworkProgressAfter(0);
@@ -2203,7 +2203,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhorsCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhors_chares_per_node,0,CmiNumPhysicalNodes(),0,1);
+  CProxy_NodeMap2DArray rhorsCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhors_chares_per_node,0,CmiNumPhysicalNodes(),0,0);
 
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
   //CkArrayOptions rhorsOpts;
@@ -2267,7 +2267,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhogs_chares_per_node,rhors_chares_per_node,CmiNumPhysicalNodes(),0,1);
+  CProxy_NodeMap2DArray rhogsCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhogs_chares_per_node,rhors_chares_per_node,CmiNumPhysicalNodes(),0,0);
 
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
@@ -2336,7 +2336,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
-    CProxy_NodeMap2DArray rhorHartCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhorHart_chares_per_node,rhors_chares_per_node+rhogs_chares_per_node,CmiNumPhysicalNodes(),0,1);
+    CProxy_NodeMap2DArray rhorHartCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhorHart_chares_per_node,rhors_chares_per_node+rhogs_chares_per_node,CmiNumPhysicalNodes(),0,0);
 
     rhorhartOpts.setMap(rhorHartCrayMap);
 
@@ -2413,7 +2413,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 #endif
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
-  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhogHart_chares_per_node,rhors_chares_per_node+rhogs_chares_per_node+rhorHart_chares_per_node,CmiNumPhysicalNodes(),0,1);
+  CProxy_NodeMap2DArray rhogHartCrayMap = CProxy_NodeMap2DArray::ckNew(0,rhogHart_chares_per_node,rhors_chares_per_node+rhogs_chares_per_node+rhorHart_chares_per_node,CmiNumPhysicalNodes(),0,0);
 
 #ifdef CRAYDEBUG
   CkPrintf("Built RhoGHart map\n");
