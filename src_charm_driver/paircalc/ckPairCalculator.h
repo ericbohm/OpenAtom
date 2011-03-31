@@ -407,6 +407,7 @@ class PairCalculator: public CBase_PairCalculator
 		CollatorType *leftCollator, *rightCollator;
 		/// Flags indicating if the left and right matrix blocks have been received
 		bool isLeftReady, isRightReady;
+		int numOrthoCookiesRecvd;                                       ///< counts the number of ortho cookies recieved at startup
 		int numRecd; 								///< number of messages received
 		int numRecdBW; 							///< number of messages received BW
 		int numRecdBWOT; 							///< number of messages received BW orthoT

@@ -395,7 +395,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   */
 
   /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
-  if(!cfg.isSymmetric && ++numRecd==numOrtho)
+  if(!cfg.isSymmetric && ++numOrthoCookiesRecvd==numOrtho)
   {
       CkPrintf("[%d,%d,%d,%d,%d] initGRed %d %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,numRecd,numOrtho);
     struct s_array { //(sendArray, bcastArray)
@@ -405,8 +405,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
     } array, *ap;
 
 
-      contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
-      numRecd=0;
+      contribute(sizeof(int), &numOrthoCookiesRecvd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
   }
 
   //  do not delete nokeep msg
@@ -1062,6 +1061,9 @@ PairCalculator::contributeSubTiles(double *fullOutput)
 	  snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
 	  dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
 #endif
+
+	  if(numOrthoCookiesRecvd != numOrtho)
+	    CkAbort("Attempted to contribute in ContributeSubTiles before cookies set.\n");
 	  mcastGrp->contribute(tileSize*sizeof(double), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
 	  if(! reuseTile)
 	    delete [] outTile;
