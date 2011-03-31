@@ -116,6 +116,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  //UgSpaceDriverProxy[thisIndex].startControl();
           CkStartQD(cb);
       }//endif
+      else
+        CkAbort("Received done_init > 4\n Too many phase completion notification, there is a problem in the control flow.\n");
     }
     done_init++;
 }
