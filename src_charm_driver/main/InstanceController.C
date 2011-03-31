@@ -112,7 +112,9 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  }//endif
 	  //          PRINT_LINE_STAR; CkPrintf("\n");
 	  //          PRINT_LINE_STAR;
-	  UgSpaceDriverProxy[thisIndex].startControl();
+          CkCallback cb(CkIndex_GSpaceDriver::startControl(), UgSpaceDriverProxy[thisIndex]);
+	  //UgSpaceDriverProxy[thisIndex].startControl();
+          CkStartQD(cb);
       }//endif
     }
     done_init++;
