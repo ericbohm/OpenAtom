@@ -114,6 +114,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  //          PRINT_LINE_STAR;
           CkCallback cb(CkIndex_GSpaceDriver::startControl(), UgSpaceDriverProxy[thisIndex]);
 	  //UgSpaceDriverProxy[thisIndex].startControl();
+          CkPrintf("Checking QD...\n");
           CkStartQD(cb);
       }//endif
       else
