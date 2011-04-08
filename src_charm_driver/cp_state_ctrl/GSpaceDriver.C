@@ -109,6 +109,7 @@ void GSpaceDriver::init()
  */
 void GSpaceDriver::startControl()
 {
+    CkPrintf("QD Passed, in startControl()\n");
     /// Get hold of the (local) GSpacePlane and ParticlePlane objects that we'll be working with
 	myGSpaceObj = UgSpacePlaneProxy[thisInstance.proxyOffset](thisIndex.x,thisIndex.y).ckLocal();
 	CkAssert(myGSpaceObj);
