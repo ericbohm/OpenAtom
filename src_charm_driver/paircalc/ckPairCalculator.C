@@ -96,6 +96,7 @@ PairCalculator::PairCalculator(CProxy_InputDataHandler<CollatorType,CollatorType
   existsOut=false;
   existsNew=false;
   numRecd = 0;
+  numOrthoCookiesRecvd = 0;
   numRecdBW = 0;
   numRecdBWOT = 0;
   numRecRight = 0;
@@ -395,7 +396,8 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   */
 
   /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
-  if(!cfg.isSymmetric && ++numOrthoCookiesRecvd==numOrtho)
+  ++numOrthoCookiesRecvd;
+  if(!cfg.isSymmetric && numOrthoCookiesRecvd==numOrtho)
   {
       CkPrintf("[%d,%d,%d,%d,%d] initGRed %d %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,numRecd,numOrtho);
     struct s_array { //(sendArray, bcastArray)
