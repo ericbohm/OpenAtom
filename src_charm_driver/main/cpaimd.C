@@ -749,7 +749,7 @@ Per Instance startup BEGIN
 	      CkVec  <int>  peUsedByNLZ;
 	      CkVec  <int>  planeUsedByNLZ;
 
-	      UberIndex thisInstanceIndex(integral,kpoint,temper);
+	      UberIndex thisInstanceIndex(integral, kpoint, temper, spin);
 	      thisInstance=UberCollection(thisInstanceIndex);
 	      UberAlles.push_back(thisInstance);
 	      //============================================================================    
