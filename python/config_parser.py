@@ -92,7 +92,8 @@ def config_reader(filename):
 			checkresult.checkresult(testoutput, reffile, configfile[0]['iternum'], configfile[0]['numSigDigits'])
 			counter = counter + 1
 		testcounter=testcounter + 1
-config_reader('testConfig.yml')
+configfilename = raw_input('Please enter the config file name \n')
+config_reader(configfilename)
 				
 
 
