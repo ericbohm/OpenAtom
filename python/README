@@ -1,0 +1,16 @@
+1\ Install the PyYAML package
+	1.1 Download the lateset version of PyYAML from http://pyyaml.org/wiki/PyYAML
+	1.2 install PyYAML by using command 'python setup.py install'. If you want to use arbitrary install path instead of default one, please use command 'python setup.py install --home=PATH' and then use command 'export PYTHONPATH = PATH/lib/python'.
+
+2\ Run the program
+	2.1 Make sure that '*.py' and '*.yml' are in the same folder
+	2.2 at the terminal, type 'python config_parser.py'. Program will read from the config file, lanuch the testing and compare the output files with ref files.
+
+3\ Rules for config file
+ 	3.1 Every entry should start with '- '.
+	3.2 Every key should start with '  ' (two spaces).
+	3.3 Use format key: value
+	3.4 If there are multiple values for a single key, please use following format: key: [value0, value1, value2, ...]
+	3.5 There are at least two entries in each config file. The first one should contain general config infomation, the following keys are required in the first entry: numSigDigits (significant digit), iternum (iteration number). Testing entried should start from entry 2, the following keys are required for testing entry: machine names(use '[]' if there is no machine name.); inputDir; inputPar; inputPhy; outRef; keys; numpe (number of CPU).
+	3.6 Using '%K' to represent the values in key list; '%T' to represent the values in test name; '%P' to represent the values in numpe.
+	3.7 Please check 'testConfig.yml' for the sample of config files.
