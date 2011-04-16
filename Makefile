@@ -10,7 +10,7 @@ include $(makedir)/srcdirs.mk
 # Location in which the build directory should be created
 where         = $(base)
 # The name prefix of the build directory
-builddir      = build
+builddir     ?= build
 
 ################## Determine if we'll need info from a configuration file ##################
 infoTargets:= help docs doxygen
