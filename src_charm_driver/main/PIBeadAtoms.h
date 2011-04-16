@@ -46,6 +46,7 @@ class PIBeadAtoms : public CBase_PIBeadAtoms
  public:
 	PIBeadAtoms(CkMigrateMessage *m) {}
         PIBeadAtoms(UberCollection _thisInstance, int _numBeads);
+        PIBeadAtoms(int );
 	void accept_PIMD_Fx(AtomXYZMsg *msg);
 	void accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex);
 	void accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIndex);
@@ -53,20 +54,27 @@ class PIBeadAtoms : public CBase_PIBeadAtoms
  private:
 	const UberCollection thisInstance;
 	int numBeads;
-	void compute_PIMD_Fu(){}
-	void compute_PIMD_u(){}
-	void compute_PIMD_x(){}
+	void compute_PIMD_Fu();
+	void compute_PIMD_u();
+	void compute_PIMD_x();
+	void output_PIMD_u();
+	void output_PIMD_x();
+	void zero_PIMD_u();
+	void zero_PIMD_x();
+	void zero_PIMD_fu();
+	void energy_PIMD_u();
+	void energy_PIMD_x();
+        void modelpot_PIMD_x(double *);
+        void checkUforce();
 	// each of these arrays is of length numBeads
 	double *x,*y,*z;
 	double *xu,*yu,*zu;
 	double *fx,*fy,*fz;
 	double *fxu,*fyu,*fzu;
+        double *rat1,*rat2,*veig;
 	int acceptCount_Fx;
 	int acceptCount_u;
 	int acceptCount_x;
 };
-
-
-
-
 #endif 	    /* !PIBEAD_H_ */
+
