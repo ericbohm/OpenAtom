@@ -1433,15 +1433,21 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   UsfCompProxy.push_back(CProxy_StructureFactor::ckNew());
   if(firstInstance) CkPrintf("created sfcomp proxy\n");
 
-  if(thisInstance.idxU.y>0)
+  if(thisInstance.idxU.y>0 || thisInstance.idxU.s >0)
     { // the set of chares being created is for a non-zero kpoint
-      // all k-points use the same atoms and energies
+      // all k-points and spins use the same atoms and energies
       // we simply direct the proxyoffset here to the one for
       // the 0th kpoint
       
       UberCollection zeroKpointInstance=thisInstance;
       zeroKpointInstance.idxU.y=0;
       int proxyOffset=zeroKpointInstance.setPO();
+      // At some future point we could split the cache proxy so that
+      // it could be shared across pretty much any kind of instance.
+      // Currently we need different ones for beads and tempers due to
+      // some atom bits that are blended in with the rest of the cache
+      // stuff due to modularity failure in its design.  If eesCache
+      // proxy eats all your memory, complain to Glenn.
       UeesCacheProxy.push_back(UeesCacheProxy[proxyOffset]);
     }
   else

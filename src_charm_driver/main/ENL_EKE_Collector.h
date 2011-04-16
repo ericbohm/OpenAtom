@@ -13,7 +13,6 @@
 * path-integrals
 * note: each tempering would have its own ENL and EKE
 * so the number of elements for this array is the number of tempers
-* (UberKmax)
 
 * this object is so simple that making it a chare array borders on
 * overkill. It receives messages, sums them, and prints.  So its only

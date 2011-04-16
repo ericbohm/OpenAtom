@@ -1057,8 +1057,8 @@ EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInst
 void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) {
 //==========================================================================
 
-  if(config.UberJmax>1)
-    {// need to sum enl and eke across kpoints
+  if(config.UberJmax>1 || config.UberMmax >1)
+    {// need to sum enl and eke across kpoints and spin
       estruct.enl          += es.enl;
       estruct.eke          += es.eke;
       estruct.fictEke      += es.fictEke;

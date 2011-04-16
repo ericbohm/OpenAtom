@@ -31,16 +31,23 @@ extern CProxy_ENL_EKE_Collector                  ENLEKECollectorProxy;
 InstanceController::InstanceController() {
   done_init=0;Timer=CmiWallTimer(); numKpointforces=0;
   UberCollection instance=UberCollection(thisIndex);
-  if(config.UberJmax>1 && instance.idxU.y==0)
+  // 0th k, 0th spin makes this to lockdown everyone so the atoms
+  // shared across all k and spin can start sanely
+  if((config.UberMmax >1 || config.UberJmax>1) && instance.idxU.y==0 && instance.idxU.s==0)
     {
-      // make section for k-points
+      // make section for k-points and spins
       CkVec <CkArrayIndex1D> elems;
       for(int kp =0; kp<config.UberJmax; kp++)
 	{
 	  instance.idxU.y=kp;
-	  instance.setPO();
-	  elems.push_back(CkArrayIndex1D(instance.proxyOffset));
+	  for(int spin =0; spin<config.UberMmax; spin++)
+	    {
+	      instance.idxU.s=spin;
+	      instance.setPO();
+	      elems.push_back(CkArrayIndex1D(instance.proxyOffset));
+	    }
 	}
+
       CProxySection_InstanceController sectProxy=CProxySection_InstanceController::ckNew(thisProxy.ckGetArrayID(),elems.getVec(),elems.size());
       CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch(); 
       sectProxy.ckSectionDelegate(mcastGrp);
@@ -232,10 +239,10 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
 //============================================================================
 void InstanceController::allDoneCPForces(CkReductionMsg *m){
   delete m;
-  // only the 0th instance of each k-point is allowed to do this 
+  // only the 0th instance of each k-point and spin is allowed to do this 
   
   UberCollection thisInstance(thisIndex);
-  if(config.UberJmax>1)
+  if(config.UberJmax>1 || config.UberMmax >1 ) 
     {
       // contribute to the section which includes all k-points of this
       // bead
