@@ -112,6 +112,12 @@
 //#define DEBUG_CP_GSPACE_CREATION
 //#define DEBUG_CP_GSPACE_PSIV
 
+/**
+ * Enables dumping of Psi and Lambda from GSpace
+ * Psi and Lambda are dumped both before being sent to PC ("Bf" suffix)
+ * and immediately after receiving back from PC ("Af" suffix). Note that
+ * the dump files are overwritten at each iteration.
+*/
 //#define PAIRCALC_TEST_DUMP
 
 //If paircalc test will be run, lambda and psi dumps must be activated
