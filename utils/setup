@@ -1,0 +1,8 @@
+mkdir STATES_OUT
+cd STATES_OUT
+(cd ../STATES; find -type d ! -name .) | xargs mkdir
+
+cd ..
+mkdir ATOM_COORDS_OUT
+cd ATOM_COORDS_OUT
+(cd ../ATOM_COORDS_IN; find -type d ! -name .) | xargs mkdir
