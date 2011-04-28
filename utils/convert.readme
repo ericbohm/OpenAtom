@@ -1,0 +1,4 @@
+The "convert" script converts a dataset to the new directory
+structure format.
+
+Run "convert" in the folder where your dataset is stored.
