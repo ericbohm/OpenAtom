@@ -1,0 +1,6 @@
+mkdir ATOM_COORDS_IN/
+mkdir ATOM_COORDS_IN/Bead.0_Temper.0
+mv water.coords_initial ATOM_COORDS_IN/Bead.0_Temper.0
+
+mkdir STATES/Spin.0_Kpt.0_Bead.0_Temper.0
+mv STATES/state*.out* STATES/Spin.0_Kpt.0_Bead.0_Temper.0/
