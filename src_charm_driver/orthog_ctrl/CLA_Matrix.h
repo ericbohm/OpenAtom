@@ -1,24 +1,13 @@
-/*****************************************************************************
- * $Source$
- * $Author$
- * $Date$
- * $Revision$
- *****************************************************************************/
-
-/** \file CLA_Matrix.h
- *  
- */
-
 #ifndef CLA_Matrix_H
 #define CLA_Matrix_H
 
 #include "CLA_Matrix.decl.h"
 #include "ckmulticast.h"
 
-/* Class definitions */
-
-/* The CLA_Matrix class should not be used directy by the user. See comments
- * below regarding CLA_Matrix_interface. */
+/*
+ * The CLA_Matrix class should not be used directy by the user. See comments
+ * below regarding CLA_Matrix_interface
+ */
 class CLA_Matrix : public CBase_CLA_Matrix{
   friend class CLA_Matrix_interface;
 
@@ -45,7 +34,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
     void readyC(CkReductionMsg *m);
     void mult_done(CkReductionMsg *m);
   private:
-    void multiply(double alpha, double beta, double *data,
+    void multiply(double alpha, double beta, internalType *data,
      void (*fptr) (void *), void *usr_data);
     void multiply();
 
@@ -62,7 +51,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
 
     /* For 2D algorithm */
     CProxySection_CLA_Matrix commGroup2D; // used by A and B
-    double *tmpA, *tmpB, *dest; // used by C
+    internalType *tmpA, *tmpB, *dest; // used by C
     int row_count, col_count; // used by C
     CProxy_CLA_Matrix other1; // For A, B. For B, A. For C, A.
     CProxy_CLA_Matrix other2; // For A, C. For B, C. For C, B.
@@ -75,6 +64,9 @@ class CLA_Matrix : public CBase_CLA_Matrix{
     bool got_start, got_data;
 };
 
+
+
+
 /* This class below and the make_multiplier function below are the only way in
  * which a user of the library should interact with the libary. Users should
  * never explicitly create char CLA_Matrix object or call their entry methods.
@@ -83,7 +75,7 @@ class CLA_Matrix : public CBase_CLA_Matrix{
 class CLA_Matrix_interface {
   public:
     CLA_Matrix_interface(){}
-    inline void multiply(double alpha, double beta, double *data,
+    inline void multiply(double alpha, double beta, internalType *data,
      void (*fptr) (void *), void *usr_data, int x, int y){
       p(x, y).ckLocal()->multiply(alpha, beta, data, fptr, usr_data);
     }
@@ -103,14 +95,20 @@ class CLA_Matrix_interface {
    CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
 };
 
+
+
+
 class CLA_Matrix_msg : public CkMcastBaseMsg, public CMessage_CLA_Matrix_msg {
   public:
-    CLA_Matrix_msg(double *data, int d1, int d2, int fromX, int fromY);
+    CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX, int fromY);
 //    ~CLA_Matrix_msg(){delete [] data;}
-    double *data;
+    internalType *data;
     int d1, d2;
     int fromX, fromY;
 };
+
+
+
 
 class CLA_MM3D_mult_init_msg : public CkMcastBaseMsg,
  public CMessage_CLA_MM3D_mult_init_msg {
@@ -125,6 +123,10 @@ class CLA_MM3D_mult_init_msg : public CkMcastBaseMsg,
     CkCallback ready;
     CkCallback reduce;
 };
+
+
+
+
 
 class CLA_MM3D_Map : public CkArrayMap {
   public:
@@ -143,6 +145,9 @@ class CLA_MM3D_Map : public CkArrayMap {
     int M_chunks, K_chunks, N_chunks, pes;
 };
 
+
+
+
 class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
   public:
     CLA_MM3D_multiplier(){};
@@ -152,7 +157,7 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
     void initialize_reduction(CLA_MM3D_mult_init_msg *m);
     void receiveA(CLA_Matrix_msg *msg);
     void receiveB(CLA_Matrix_msg *msg);
-    void multiply(double *A, double *B);
+    void multiply(internalType *A, internalType *B);
   private:
     int m, k, n;
     bool gotA, gotB;
@@ -164,6 +169,9 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
     double *A, *B, *C;
 */
 };
+
+
+
 
 /* Function below creates the necessary interfaces so that
  * C = beta * C + alpha * A * B
@@ -185,6 +193,18 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
  *  ERR_INVALID_ALG: an invalid algorithm was selected
  *  ERR_INVALID_DIM: invalid dimensions were given
  */
+int make_multiplier(
+        CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
+        CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+        int M, int K, int N,
+        int m, int k, int n,
+        int strideM, int strideK, int strideZ,
+        CkCallback cbA, CkCallback cbB, CkCallback cbC,
+        CkGroupID gid, int algorithm, int gemmSplitOrtho
+        );
+
+
+
 
 /* Valid values for 'algorithm' are given below. As new ones are added,
  * they should be given incremental numbers. MM_ALG_MIN should not be changed,
@@ -197,16 +217,35 @@ class CLA_MM3D_multiplier : public CBase_CLA_MM3D_multiplier{
 #define MM_ALG_3D	2
 #define MM_ALG_MAX	2
 
-int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
- CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
- int M, int K, int N, int m, int k, int n, int strideM, int strideK,
- int strideZ, CkCallback cbA, CkCallback cbB,
- CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho);
-
 /* Error codes */
 #define SUCCESS			0
 #define ERR_INVALID_ALG		-1
 #define ERR_INVALID_DIM		-2
-void transpose(double *data, int m, int n);
+
+
+
+
+/* Transpose data, which has dimension m x n */
+template <typename T>
+void transpose(T *data, int m, int n)
+{
+  if(m == n){
+    /* transpose square matrix in place */
+    for(int i = 0; i < m; i++)
+      for(int j = i + 1; j < n; j++){
+        T tmp = data[i * n + j];
+        data[i * n + j] = data[j * m + i];
+        data[j * m + i] = tmp;
+      }
+  }
+  else {
+    T *tmp = new T[m * n];
+    CmiMemcpy(tmp, data, m * n * sizeof(T));
+    for(int i = 0; i < m; i++)
+      for(int j = 0; j < n; j++)
+        data[j * m + i] = tmp[i * n + j];
+    delete [] tmp;
+  }
+}
+
 #endif

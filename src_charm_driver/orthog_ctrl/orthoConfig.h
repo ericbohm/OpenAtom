@@ -18,6 +18,9 @@ class orthoConfig
         bool isDynamics; ///< @note: This could turn into an enum as more run modes are introduced
         /// If, this is a minimization run, is it for generating the system wave functions?
         bool isGenWave; ///< @todo: Used in ortho only for shifting step number by 1. Eliminate
+        /// Should the actual matrix multiplies be handled as real math or complex math
+        bool useComplexMath;
+
         //-------------------- Vars that indicate problem size / decomposition --------------------
         /// The number of states in the simulation (the dimension of the input square matrix)
         int numStates;
@@ -42,6 +45,7 @@ class orthoConfig
         {
             p|isDynamics;
             p|isGenWave;
+            p|useComplexMath;
             p|numStates;
             p|grainSize;
             p|instanceIndex;

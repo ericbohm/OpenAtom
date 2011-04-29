@@ -187,7 +187,7 @@ void PCSectionManager::setupArraySection(CkCallback cb, bool arePhantomsOn, bool
 
 
 
-void PCSectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
+void PCSectionManager::sendResults(int n, internalType *ptr1, internalType *ptr2, int orthoX, int orthoY, int actionType, int priority)
 {
     #ifdef VERBOSE_SECTIONMANAGER
         CkPrintf("PCSectionManager::sendResults()\n");
@@ -213,8 +213,8 @@ void PCSectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
-            CkAssert(finite(ptr1[i]));
-            CkAssert(finite(omsg->matrix1[i]));
+            CkAssert( isfinite(ptr1[i]) );
+            CkAssert( isfinite(omsg->matrix1[i]) );
         }
     #endif
 
@@ -223,7 +223,7 @@ void PCSectionManager::sendResults(int n, double *ptr1, double *ptr2, int orthoX
 }
 
 
-void PCSectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX, int orthoY, int actionType, int priority)
+void PCSectionManager::sendMatrix(int n, internalType *ptr1, internalType *ptr2, int orthoX, int orthoY, int actionType, int priority)
 {
     #ifdef VERBOSE_SECTIONMANAGER
         CkPrintf("PCSectionManager::sendMatrix()\n");
@@ -249,8 +249,8 @@ void PCSectionManager::sendMatrix(int n, double *ptr1, double *ptr2, int orthoX,
     #ifdef _NAN_CHECK_
         for(int i=0;i<n ;i++)
         {
-            CkAssert(finite(ptr1[i]));
-            CkAssert(finite(omsg->matrix1[i]));
+            CkAssert( isfinite(ptr1[i]) );
+            CkAssert( isfinite(omsg->matrix1[i]) );
         }
     #endif
 

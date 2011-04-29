@@ -138,28 +138,27 @@ class paircalcInputMsg: public CkMcastBaseMsg, public CMessage_paircalcInputMsg
         paircalcInputMsg(const int _sender, const int _nCols, const int _nRows=1)
                             : nCols(_nCols), nRows(_nRows), senderID(_sender), doPsiV(false) {}
         /// The number of rows in the data array stored in this msg
-		inline int numRows() const 	{ return nRows; }
+		inline int numRows() const { return nRows; }
         /// The number of columns of data units in the data array stored in this msg
-		inline int numCols() const 	{ return nCols; }
+		inline int numCols() const { return nCols; }
 		/// An integer representation of the sender's ID
-		inline int sender() const 			{ return senderID; }
+		inline int sender() const  { return senderID; }
 		/// A pointer to the message data. No checks on pointer validity. Use with a pinch of salt
-		inline double* data() 				{ return reinterpret_cast<double*> (points); }
+		inline inputType* data()   { return points; }
 		/// Constructor used to create actual GSpace to PC messages
-		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, complex *_points , bool _doPsiV, int _blkSize, int _nRows=1)
+		paircalcInputMsg(int _size, int _sender, bool _fromRow, bool _flag_dp, inputType *_points , bool _doPsiV, int _blkSize, int _nRows=1)
 		{
-            CkAssert(sizeof(complex)/sizeof(double) == 2);  ///< Is it needed? Should be a compile time assert anyway.
-            nCols    =_size*2; ///< Convert the num of data units from complex to doubles
+            nCols    =_size;
             nRows    =_nRows;
 			senderID =_sender;
 			fromRow  =_fromRow;
 			flag_dp  =_flag_dp;
 			doPsiV   =_doPsiV;
 			blkSize  =_blkSize;
-			CmiMemcpy(points,_points,nRows*nCols*sizeof(double));
+			CmiMemcpy(points,_points,nRows*nCols*sizeof(inputType));
 		}
 		/// @todo: Message data, should slowly be hidden from the world. The sender and end user could become friends
-		complex *points;
+		inputType *points;
 		bool fromRow, flag_dp, doPsiV;
 		int blkSize; ///< @todo: blkSize is used in paircalc only for dumping data files in the backward path. Also, it cannot be retreived when usng RDMA. Is there an alternative?
 		
@@ -192,30 +191,30 @@ class phantomMsg : public CMessage_phantomMsg {
 
 class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultMsg {
  public:
-  double *matrix1;
-  double *matrix2;
+  internalType *matrix1;
+  internalType *matrix2;
   int size;
   int size2;
   int orthoX;
   int orthoY;
   int actionType;
-  void init(int _size, int _size2, double *_points1, double *_points2, int _orthoX, int _orthoY, bool _actionType)
+  void init(int _size, int _size2, internalType *_points1, internalType *_points2, int _orthoX, int _orthoY, bool _actionType)
     {
       size=_size;
       size2=_size2;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
-      CmiMemcpy(matrix2,_points2,size2*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(internalType));
+      CmiMemcpy(matrix2,_points2,size2*sizeof(internalType));
       actionType=_actionType;
     }
-  void init1(int _size, double *_points1, int _orthoX, int _orthoY,int _actionType)
+  void init1(int _size, internalType *_points1, int _orthoX, int _orthoY,int _actionType)
     {
       size=_size;
       size2=0;
       orthoX=_orthoX;
       orthoY=_orthoY;
-      CmiMemcpy(matrix1,_points1,size*sizeof(double));
+      CmiMemcpy(matrix1,_points1,size*sizeof(internalType));
       actionType=_actionType;
       // this field does nothing in minimization
       matrix2=NULL;
@@ -229,14 +228,14 @@ class multiplyResultMsg : public CkMcastBaseMsg, public CMessage_multiplyResultM
     if(sizes==0)
       offsets[1] = offsets[0];
     else
-      offsets[1] = offsets[0] + CK_ALIGN(sizeof(double)*sizes[0],16);
+      offsets[1] = offsets[0] + CK_ALIGN(sizeof(internalType)*sizes[0],16);
     if(sizes==0)
       offsets[2] = offsets[0];
     else
-      offsets[2] = offsets[1] + CK_ALIGN(sizeof(double)*sizes[1],16);
+      offsets[2] = offsets[1] + CK_ALIGN(sizeof(internalType)*sizes[1],16);
     multiplyResultMsg *newmsg = (multiplyResultMsg *) CkAllocMsg(msgnum, offsets[2], pb);
-    newmsg->matrix1 = (double *) ((char *)newmsg + offsets[0]);
-    newmsg->matrix2 = (double *) ((char *)newmsg + offsets[1]);
+    newmsg->matrix1 = (internalType *) ((char *)newmsg + offsets[0]);
+    newmsg->matrix2 = (internalType *) ((char *)newmsg + offsets[1]);
     return (void *) newmsg;
   }
 

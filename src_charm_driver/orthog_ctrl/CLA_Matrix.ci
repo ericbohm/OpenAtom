@@ -23,9 +23,13 @@
  */
 
 module CLA_Matrix{
+
+  /* Just to grab internalType definitions */
+  include "paircalc/pcFwdDeclarations.h";
+
   /* used to send matrix chunks */
   message CLA_Matrix_msg{
-    double data[];
+    internalType data[];
   };
 
   /* auxiliary array, map, and message classes for 3D algorithm */

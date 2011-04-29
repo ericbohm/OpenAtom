@@ -1,7 +1,3 @@
-/** \file CLA_Matrix.C
- *  
- */
-
 #include "CLA_Matrix.h"
 
 #if 0
@@ -20,6 +16,8 @@ extern "C" {void  DGEMM(char *, char *, int *, int *, int *, double *,
 			   double *, int *, double *, int *, double *,
 			   double *, int *);}
 
+void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, complex *A, int *lda, complex *B, int *ldb, double *beta, complex *C, int *ldc);
+void myGEMM(char *opA, char *opB, int *m, int *n, int *k, double *alpha, double *A, int *lda, double *B, int *ldb, double *beta, double *C, int *ldc);
 #define MULTARG_A	0
 #define MULTARG_B	1
 #define MULTARG_C	2
@@ -31,148 +29,134 @@ extern CkReduction::reducerType sumFastDoubleType;
 /* helper functions */
 
 /* Should be called by user to create matrices. Documented in header file. */
-int make_multiplier(CLA_Matrix_interface *A, CLA_Matrix_interface *B,
- CLA_Matrix_interface *C, CProxy_ArrayElement bindA,
- CProxy_ArrayElement bindB, CProxy_ArrayElement bindC, 		    int M, //nstates
-		    int K, //nstates
-		    int N, //nstates
-		    int m, //orthograinsize
-		    int k, //orthograinsize
-		    int n, //orthograinsize
-		    int strideM, // 1
-		    int strideK, // 1
-		    int strideN, // 1 
-		    CkCallback cbA, CkCallback cbB,
- CkCallback cbC, CkGroupID gid, int algorithm, int gemmSplitOrtho){
-  /* validate arguments */
-  if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
-    return ERR_INVALID_ALG;
+int make_multiplier(
+        CLA_Matrix_interface *A, CLA_Matrix_interface *B, CLA_Matrix_interface *C,
+        CProxy_ArrayElement bindA, CProxy_ArrayElement bindB, CProxy_ArrayElement bindC,
+        int M, //nstates
+        int K, //nstates
+        int N, //nstates
+        int m, //orthograinsize
+        int k, //orthograinsize
+        int n, //orthograinsize
+        int strideM, // 1
+        int strideK, // 1
+        int strideN, // 1
+        CkCallback cbA, CkCallback cbB, CkCallback cbC,
+        CkGroupID gid, int algorithm, int gemmSplitOrtho
+        )
+{
+    /* validate arguments */
+    if(algorithm < MM_ALG_MIN || MM_ALG_MAX < algorithm)
+        return ERR_INVALID_ALG;
 
-  if(m > M || k > K || n > N)
-    return ERR_INVALID_DIM;
-  /* create arrays */
-  CkArrayOptions optsA;
-  CkArrayOptions optsB;
-  CkArrayOptions optsC;
-  
-  optsA.bindTo(bindA);
-  optsB.bindTo(bindB);
-  optsC.bindTo(bindC);
+    if(m > M || k > K || n > N)
+        return ERR_INVALID_DIM;
 
+    /* create arrays */
+    CkArrayOptions optsA, optsB, optsC;
+    optsA.bindTo(bindA);
+    optsB.bindTo(bindB);
+    optsC.bindTo(bindC);
 
-  CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
-  CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
-  CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
-  A->setProxy(pa);
-  B->setProxy(pb);
-  C->setProxy(pc);
-  
-  /* populate arrays */
-  int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
-  int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
-  int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
-  if(M%m!=0)
-    M_chunks--;
-  if(K%k!=0)
-    K_chunks--;
-  if(N%n!=0)
-    N_chunks--;
-  //  correct for number of chunks
-  
-  // just the size of the border elements
-  if(algorithm == MM_ALG_2D){
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < K_chunks; j++)
-        (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
-    A->p.doneInserting();
+    CProxy_CLA_Matrix pa = CProxy_CLA_Matrix::ckNew(optsA);
+    CProxy_CLA_Matrix pb = CProxy_CLA_Matrix::ckNew(optsB);
+    CProxy_CLA_Matrix pc = CProxy_CLA_Matrix::ckNew(optsC);
+    A->setProxy(pa);
+    B->setProxy(pb);
+    C->setProxy(pc);
 
-    for(int i = 0; i < K_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
-    B->p.doneInserting();
+    /* populate arrays */
+    int M_chunks = (M + m - 1) / m; // same as ceil(1.0 * M / m)
+    int K_chunks = (K + k - 1) / k; // same as ceil(1.0 * K / k)
+    int N_chunks = (N + n - 1) / n; // same as ceil(1.0 * N / n)
+    if(M%m!=0)
+        M_chunks--;
+    if(K%k!=0)
+        K_chunks--;
+    if(N%n!=0)
+        N_chunks--;
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM,
-         strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
-    C->p.doneInserting();
-  }
-  else if(algorithm == MM_ALG_3D){
-    CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
-    int curpe = 0;
-    int totpe = CkNumPes();
-    for(int i = 0; i < M_chunks; i++){
-      int mm = m;
-      if(i == M_chunks - 1) {
-        mm = M % m;
-        if(mm == 0)
-          mm = m;
-      }
-      for(int j = 0; j < N_chunks; j++){
-        int nn = n;
-        if(j == N_chunks - 1) {
-          nn = N % n;
-          if(nn == 0)
-            nn = n;
-        }
-        for(int l = 0; l < K_chunks; l++){
-          int kk = k;
-          if(l == K_chunks - 1) {
-            kk = K % k;
-            if(kk == 0)
-              kk = k;
-          }
-          mult(i, j, l).insert(mm, kk, nn, curpe);
-          curpe = (curpe + 1) % totpe;
-        }
-      }
+    //  correct for number of chunks
+    // just the size of the border elements
+    if(algorithm == MM_ALG_2D)
+    {
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < K_chunks; j++)
+                (A->p(i * strideM, j * strideK)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_A, B->p, C->p, cbA, gemmSplitOrtho);
+        A->p.doneInserting();
+
+        for(int i = 0; i < K_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (B->p(i * strideK, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, A->p, C->p, cbB, gemmSplitOrtho);
+        B->p.doneInserting();
+
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (C->p(i * strideM, j * strideN)).insert(M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, A->p, B->p, cbC, gemmSplitOrtho);
+        C->p.doneInserting();
     }
-    mult.doneInserting();
+    else if(algorithm == MM_ALG_3D)
+    {
+        CProxy_CLA_MM3D_multiplier mult = CProxy_CLA_MM3D_multiplier::ckNew();
+        int curpe = 0;
+        int totpe = CkNumPes();
+        for(int i = 0; i < M_chunks; i++)
+        {
+            int mm = m;
+            if(i == M_chunks - 1)
+            {
+                mm = M % m;
+                if(mm == 0)
+                    mm = m;
+            }
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < K_chunks; j++)
-        (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
-    A->p.doneInserting();
+            for(int j = 0; j < N_chunks; j++)
+            {
+                int nn = n;
+                if(j == N_chunks - 1)
+                {
+                    nn = N % n;
+                    if(nn == 0)
+                        nn = n;
+                }
 
-    for(int i = 0; i < K_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
-    B->p.doneInserting();
+                for(int l = 0; l < K_chunks; l++)
+                {
+                    int kk = k;
+                    if(l == K_chunks - 1)
+                    {
+                        kk = K % k;
+                        if(kk == 0)
+                            kk = k;
+                    }
+                    mult(i, j, l).insert(mm, kk, nn, curpe);
+                    curpe = (curpe + 1) % totpe;
+                }
+            }
+        }
+        mult.doneInserting();
 
-    for(int i = 0; i < M_chunks; i++)
-      for(int j = 0; j < N_chunks; j++)
-        (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n,
-         strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
-    C->p.doneInserting();
-  }
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < K_chunks; j++)
+                (A->p(i * strideM, j * strideK)).insert(mult, M, K, N, m, k, n,strideM, strideK, strideN, MULTARG_A, cbA, gid, gemmSplitOrtho);
+        A->p.doneInserting();
 
-  return SUCCESS;
+        for(int i = 0; i < K_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (B->p(i * strideK, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_B, cbB, gid, gemmSplitOrtho);
+        B->p.doneInserting();
+
+        for(int i = 0; i < M_chunks; i++)
+            for(int j = 0; j < N_chunks; j++)
+                (C->p(i * strideM, j * strideN)).insert(mult, M, K, N, m, k, n, strideM, strideK, strideN, MULTARG_C, cbC, gid, gemmSplitOrtho);
+        C->p.doneInserting();
+    }
+
+    return SUCCESS;
 }
 
-/* Transpose data, which has dimension m x n */
-void transpose(double *data, int m, int n){
-  if(m == n){
-    /* transpose square matrix in place */
-    for(int i = 0; i < m; i++)
-      for(int j = i + 1; j < n; j++){
-        double tmp = data[i * n + j];
-        data[i * n + j] = data[j * m + i];
-        data[j * m + i] = tmp;
-      }
-  }
-  else {
-    double *tmp = new double[m * n];
-    CmiMemcpy(tmp, data, m * n * sizeof(double));
-    for(int i = 0; i < m; i++)
-      for(int j = 0; j < n; j++)
-        data[j * m + i] = tmp[i * n + j];
-    delete [] tmp;
-  }
-}
+
+
 
 /******************************************************************************/
 /* CLA_Matrix */
@@ -257,8 +241,8 @@ CLA_Matrix::CLA_Matrix(int _M, int _K, int _N, int _m, int _k, int _n,
      (M_chunks - 1) * strideM, strideM, thisIndex.y, thisIndex.y, 1);
     tmpA = tmpB = NULL;
   } else if(part == MULTARG_C) {
-    tmpA = new double[this->m * K];
-    tmpB = new double[K * this->n];
+    tmpA = new internalType[this->m * K];
+    tmpB = new internalType[K * this->n];
   }
 
   /* let the caller know we are ready */
@@ -388,8 +372,8 @@ void CLA_Matrix::pup(PUP::er &p){
     p | other1; p | other2;
     if(part == MULTARG_C){
       if(p.isUnpacking()){
-        tmpA = new double[m * K];
-        tmpB = new double[K * n];
+        tmpA = new internalType[m * K];
+        tmpB = new internalType[K * n];
       }
       PUParray(p, tmpA, m * K);
       PUParray(p, tmpB, K * n);
@@ -448,7 +432,7 @@ void CLA_Matrix::ResumeFromSync(void){
   }
 }
 
-void CLA_Matrix::multiply(double alpha, double beta, double *data,
+void CLA_Matrix::multiply(double alpha, double beta, internalType *data,
  void (*fptr) (void*), void *usr_data){
   if(algorithm == MM_ALG_2D){
     // A and B send out their chunks, ignoring alpha, beta, ftpr, and usr_data
@@ -494,7 +478,7 @@ void CLA_Matrix::multiply(double alpha, double beta, double *data,
       if(got_data){
         got_start = got_data = false;
         /* transpose reduction msg and do the alpha and beta multiplications */
-        double *data = (double*) res_msg->getData();
+        internalType *data = (internalType*) res_msg->getData();
         transpose(data, n, m);
         for(int i = 0; i < m; i++)
           for(int j = 0; j < n; j++)
@@ -512,7 +496,7 @@ void CLA_Matrix::receiveA(CLA_Matrix_msg *msg){
   row_count++;
   for(int i = 0; i < m; i++)
     CmiMemcpy(&tmpA[K * i + uk * (msg->fromY / K_stride)], &msg->data[i * msg->d2],
-     msg->d2 * sizeof(double));
+     msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -524,7 +508,7 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
   /* store current part */
   col_count++;
   CmiMemcpy(&tmpB[n * uk * (msg->fromX / K_stride)], msg->data,
-   msg->d1 * msg->d2 * sizeof(double));
+   msg->d1 * msg->d2 * sizeof(internalType));
   delete msg;
 
   /* If we have all the parts, multiply */
@@ -532,160 +516,142 @@ void CLA_Matrix::receiveB(CLA_Matrix_msg *msg){
     multiply();
 }
 
-void CLA_Matrix::multiply(){
-  /* reset counters */
-  row_count = col_count = 0;
-  got_start = false;
 
-  /* transpose result matrix (if beta != 0) */
-  if(beta != 0)
-    transpose(dest, m, n);
-  /* multiply */
-  char trans = 'T';
-//#define ORTHO_DGEMM_SPLIT 
 
-#define BUNDLE_USER_EVENTS
-#ifdef ORTHO_DGEMM_SPLIT 
-  double betap = 1.0;
-  int Ksplit_m=gemmSplitOrtho;  
-  int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
-  int Krem     = (K % Ksplit);
-  int Kloop    = K/Ksplit-1;
 
-#ifndef CMK_OPTIMIZE
-  double StartTime=CmiWallTimer();
-#endif
+void CLA_Matrix::multiply()
+{
+    // Reset counters
+    row_count = col_count = 0;
+    got_start = false;
 
-#ifdef TEST_ALIGN
-  CkAssert((unsigned int) tmpA %16==0);
-  CkAssert((unsigned int) tmpB %16==0);
-  CkAssert((unsigned int) dest %16==0);
-#endif
+    // Transpose result matrix (if beta != 0)
+    if(beta != 0)
+        transpose(dest, m, n);
+    // Multiply
+    char trans = 'T';
 
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
-#endif
+    //#define ORTHO_DGEMM_SPLIT
+    #define BUNDLE_USER_EVENTS
 
-#ifdef _NAN_CHECK_
-  for(int in=0; in<Ksplit; in++)
-    for(int jn=0; jn<m; jn++)
-      CkAssert(finite(tmpA[in*m+jn]));
+    #ifdef ORTHO_DGEMM_SPLIT
+        double betap = 1.0;
+        int Ksplit_m=gemmSplitOrtho;
+        int Ksplit   = (K > Ksplit_m) ? Ksplit_m : K;
+        int Krem     = (K % Ksplit);
+        int Kloop    = K/Ksplit-1;
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
+        #endif
+        #ifdef TEST_ALIGN
+            CkAssert((unsigned int) tmpA %16==0);
+            CkAssert((unsigned int) tmpB %16==0);
+            CkAssert((unsigned int) dest %16==0);
+        #endif
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, beta, K, n, m);
+        #endif
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<Ksplit; in++)
+                for(int jn=0; jn<m; jn++)
+                    CkAssert(isfinite(tmpA[in*m+jn]));
+            for(int in=0; in<n; in++)
+                for(int jn=0; jn<Ksplit; jn++)
+                    CkAssert(isfinite(tmpB[in*K+jn]));
+        #endif
+        myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta, dest,&m);
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<m; in++)
+                for(int jn=0; jn<n; jn++)
+                    CkAssert(isfinite(dest[in*n+jn]));
+        #endif
+        #ifndef BUNDLE_USER_EVENTS
+            #ifndef CMK_OPTIMIZE
+                traceUserBracketEvent(401, StartTime, CmiWallTimer());
+            #endif
+        #endif
+        CmiNetworkProgress();
 
-  for(int in=0; in<n; in++)
-    for(int jn=0; jn<Ksplit; jn++)
-      CkAssert(finite(tmpB[in*K+jn]));
-#endif
+        for(int i=1;i<=Kloop;i++)
+        {
+            int aoff = Ksplit*i;
+            int boff = n*i*Ksplit;
+            if(i==Kloop){Ksplit+=Krem;}
+            #ifndef BUNDLE_USER_EVENTS
+                #ifndef CMK_OPTIMIZE
+                    StartTime=CmiWallTimer();
+                #endif
+            #endif
+            #ifdef TEST_ALIGN
+                CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
+                CkAssert((unsigned int) &(tmpB[boff]) %16==0);
+                CkAssert((unsigned int) dest %16==0);
+            #endif
+            #ifdef PRINT_DGEMM_PARAMS
+                CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
+            #endif
+            #ifdef _NAN_CHECK_
+                for(int in=0; in<Ksplit; in++)
+                    for(int jn=0; jn<m; jn++)
+                        CkAssert(isfinite(tmpA[aoff+in*m+jn]));
+                for(int in=0; in<n; in++)
+                    for(int jn=0; jn<Ksplit; jn++)
+                        CkAssert(isfinite(tmpB[boff+in*Ksplit+jn]));
+            #endif
+            myGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, &tmpB[boff], &n, &betap, dest, &m);
+            #ifdef _NAN_CHECK_
+                for(int in=0; in<m; in++)
+                    for(int jn=0; jn<n; jn++)
+                        CkAssert(isfinite(dest[in*n+jn]));
+            #endif
+            #ifndef BUNDLE_USER_EVENTS
+                #ifndef CMK_OPTIMIZE
+                    traceUserBracketEvent(401, StartTime, CmiWallTimer());
+                #endif
+            #endif
+            CmiNetworkProgress();
+        }
 
-  DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, tmpA, &K, tmpB, &n, &beta,
-        dest,&m);
+        #ifdef BUNDLE_USER_EVENTS
+            #ifndef CMK_OPTIMIZE
+                traceUserBracketEvent(401, StartTime, CmiWallTimer());
+            #endif
+        #endif
+    #else
+        // Old unsplit version
+        #ifndef CMK_OPTIMIZE
+            double StartTime=CmiWallTimer();
+        #endif
+        #ifdef PRINT_DGEMM_PARAMS
+            CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
+        #endif
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<K; in++)
+                for(int jn=0; jn<m; jn++)
+                    CkAssert(isfinite(tmpA[in*m+jn]));
+            for(int in=0; in<n; in++)
+                for(int jn=0; jn<K; jn++)
+                    CkAssert(isfinite(tmpB[in*K+jn]));
+        #endif
+        myGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta, dest, &m);
+        #ifdef _NAN_CHECK_
+            for(int in=0; in<m; in++)
+                for(int jn=0; jn<n; jn++)
+                    CkAssert(isfinite(dest[in*n+jn]));
+        #endif
+        #ifndef CMK_OPTIMIZE
+            traceUserBracketEvent(401, StartTime, CmiWallTimer());
+        #endif
+    #endif
 
-#ifdef _NAN_CHECK_
-  for(int in=0; in<m; in++)
-    for(int jn=0; jn<n; jn++)
-      CkAssert(finite(dest[in*n+jn]));
-#endif
-
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-  traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-
-  CmiNetworkProgress();
-  
-  for(int i=1;i<=Kloop;i++){
-    int aoff = Ksplit*i;
-    int boff = n*i*Ksplit;
-    if(i==Kloop){Ksplit+=Krem;}
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    StartTime=CmiWallTimer();
-#endif
-#endif
-
-#ifdef TEST_ALIGN
-    CkAssert((unsigned int) &(tmpA[aoff]) %16==0);
-    CkAssert((unsigned int) &(tmpB[boff]) %16==0);
-    CkAssert((unsigned int) dest %16==0);
-#endif
-
-#ifdef PRINT_DGEMM_PARAMS
-    CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, Ksplit, alpha, betap, K, n, m);
-#endif
-
-#ifdef _NAN_CHECK_
-    for(int in=0; in<Ksplit; in++)
-      for(int jn=0; jn<m; jn++)
-	CkAssert(finite(tmpA[aoff+in*m+jn]));
-
-    for(int in=0; in<n; in++)
-      for(int jn=0; jn<Ksplit; jn++)
-	CkAssert(finite(tmpB[boff+in*Ksplit+jn]));
-#endif
-
-    DGEMM(&trans, &trans, &m, &n, &Ksplit, &alpha, &tmpA[aoff], &K, 
-          &tmpB[boff], &n, &betap, dest, &m);
-
-#ifdef _NAN_CHECK_
-    for(int in=0; in<m; in++)
-      for(int jn=0; jn<n; jn++)
-	CkAssert(finite(dest[in*n+jn]));
-#endif
-
-#ifndef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-    CmiNetworkProgress();
-  }//endfor
-
-#ifdef BUNDLE_USER_EVENTS
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-#endif
-
-#else
-  /* old unsplit version */
-#ifndef CMK_OPTIMIZE
-    double StartTime=CmiWallTimer();
-#endif
-
-#ifdef PRINT_DGEMM_PARAMS
-  CkPrintf("CLA_MATRIX DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, K, alpha, beta, K, n, m);
-#endif
-
-#ifdef _NAN_CHECK_
-  for(int in=0; in<K; in++)
-    for(int jn=0; jn<m; jn++)
-      CkAssert(finite(tmpA[in*m+jn]));
-
-  for(int in=0; in<n; in++)
-    for(int jn=0; jn<K; jn++)
-      CkAssert(finite(tmpB[in*K+jn]));
-#endif
-
-     DGEMM(&trans, &trans, &m, &n, &K, &alpha, tmpA, &K, tmpB, &n, &beta,
-   dest, &m);
-
-#ifdef _NAN_CHECK_
-  for(int in=0; in<m; in++)
-    for(int jn=0; jn<n; jn++)
-      CkAssert(finite(dest[in*n+jn]));
-#endif
-
-#ifndef CMK_OPTIMIZE
-    traceUserBracketEvent(401, StartTime, CmiWallTimer());
-#endif
-
-#endif
-  /* transpose result */
-  transpose(dest, n, m);
-
-  /* tell caller we are done */
-  fcb(user_data);
+    // Transpose the result
+    transpose(dest, n, m);
+    // Tell caller we are done
+    fcb(user_data);
 }
+
+
+
 
 void CLA_Matrix::readyC(CkReductionMsg *msg){
   CkCallback cb(CkIndex_CLA_Matrix::ready(NULL), thisProxy(0, 0));
@@ -702,7 +668,7 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
   if(got_start){
     got_start = got_data = false;
     /* transpose reduction msg and do the alpha and beta multiplications */
-    double *data = (double*) msg->getData();
+    internalType *data = (internalType*) msg->getData();
     transpose(data, n, m);
     for(int i = 0; i < m; i++)
       for(int j = 0; j < n; j++)
@@ -719,9 +685,9 @@ void CLA_Matrix::mult_done(CkReductionMsg *msg){
 
 /******************************************************************************/
 /* CLA_Matrix_msg */
-CLA_Matrix_msg::CLA_Matrix_msg(double *data, int d1, int d2, int fromX,
+CLA_Matrix_msg::CLA_Matrix_msg(internalType *data, int d1, int d2, int fromX,
  int fromY){
-  CmiMemcpy(this->data, data, d1 * d2 * sizeof(double));
+  CmiMemcpy(this->data, data, d1 * d2 * sizeof(internalType));
   this->d1 = d1; this->d2 = d2;
   this->fromX = fromX; this->fromY = fromY;
 }
@@ -764,11 +730,11 @@ void CLA_MM3D_multiplier::receiveB(CLA_Matrix_msg *msg){
     data_msg = msg;
 }
 
-void CLA_MM3D_multiplier::multiply(double *A, double *B){
+void CLA_MM3D_multiplier::multiply(internalType *A, internalType *B){
   double alpha = 1, beta = 0;
   gotA = gotB = false;
   char trans = 'T';
-  double *C = new double[m * n];
+  internalType *C = new internalType[m * n];
 #ifndef CMK_OPTIMIZE
   double  StartTime=CmiWallTimer();
 #endif
@@ -781,13 +747,13 @@ void CLA_MM3D_multiplier::multiply(double *A, double *B){
 #ifdef PRINT_DGEMM_PARAMS
   CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", trans, trans, m, n, k, alpha, beta, k, n, m);
 #endif
-  DGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
+  myGEMM(&trans, &trans, &m, &n, &k, &alpha, A, &k, B, &n, &beta, C, &m);
 #ifndef CMK_OPTIMIZE
     traceUserBracketEvent(402, StartTime, CmiWallTimer());
 #endif
   CmiNetworkProgress();
   //    redGrp->contribute(m * n * sizeof(double), C, CkReduction::sum_double,
-  redGrp->contribute(m * n * sizeof(double), C, sumFastDoubleType,
+  redGrp->contribute(m * n * sizeof(internalType), C, sumFastDoubleType,
    sectionCookie, reduce_CB);
   delete [] C;
 }

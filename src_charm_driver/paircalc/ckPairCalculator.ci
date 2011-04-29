@@ -3,6 +3,9 @@
  */
 
 module pcMessages {
+
+    include "paircalc/pcFwdDeclarations.h";
+
 	readonly ComlibInstanceHandle mcastInstanceCP;
 	readonly ComlibInstanceHandle mcastInstanceACP;
 
@@ -29,12 +32,12 @@ module pcMessages {
 	};
 	
 	message paircalcInputMsg {
-		complex points[];
+        inputType points[];
 	};
 
 	message multiplyResultMsg  {
-	  double matrix1[];
-	  double matrix2[];
+        internalType matrix1[];
+        internalType matrix2[];
 	};
 
 	message entireResultMsg  {

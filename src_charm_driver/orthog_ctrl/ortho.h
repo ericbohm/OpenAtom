@@ -159,7 +159,7 @@ class Ortho : public CBase_Ortho
         void gamma_done();
 
         /// S should be equal to 2I. This returns max value of deviation from that in this ortho's portion of the S matrix. 
-        inline double array_diag_max(int sizem, int sizen, double *array);
+        inline double array_diag_max(int sizem, int sizen, internalType *array);
         /// Called on ortho(0,0). Checks if PsiV update is needed based on the max deviation in S received via a redn across all orthos. Notifies GSpaceDriver if so. Called periodically in start_calc only for dynamics 
         void maxCheck(CkReductionMsg *msg);
         /// Once all GSpaceDriver chares are notified, they resume Ortho execution via a redn broadcast to this method
@@ -206,8 +206,8 @@ class Ortho : public CBase_Ortho
     private:
         orthoConfig cfg;
         int timeKeep;
-        double *orthoT; // only used on [0,0]
-        double *ortho; //only used on [0,0]
+        internalType *orthoT; // only used on [0,0]
+        internalType *ortho; //only used on [0,0]
         double *wallTimeArr;//only used on [0,0]
         int numGlobalIter; // global leanCP iterations
         // used in each element
@@ -226,7 +226,7 @@ class Ortho : public CBase_Ortho
         /// The proxy of the step 2 helper chare array
         CProxy_OrthoHelper step2Helper;
         bool toleranceCheckOrthoT; //trigger tolerance failure PsiV conditions
-        double *A, *B, *C, *tmp_arr;
+        internalType *A, *B, *C, *tmp_arr;
         int step;
         int m, n;
         double invsqr_tolerance;
@@ -257,7 +257,7 @@ class Ortho : public CBase_Ortho
 inline void Ortho::recvStep2(CkDataMsg *msg)//double *step2result, int size)
 {
     // copy our data into the tmp_arr  
-    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(double));
+    CmiMemcpy(tmp_arr, msg->getData(), m * n * sizeof(internalType));
     step2done=true;
     delete msg;
     //End of iteration check
@@ -285,35 +285,36 @@ inline void Ortho::print_results(void)
 /**
  * OrthoT tolerance check util return max value
  */
-inline double Ortho::array_diag_max(int sizem, int sizen, double *array)
+inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
 {
     double absval, max_ret;
     if(thisIndex.x!=thisIndex.y)
     { //not diagonal
-        max_ret=fabs(array[0]);
+        max_ret = abs(array[0]);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval=fabs(array[i*sizen+j]);
+                absval = abs(array[i*sizen+j]);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
     }
     else
     { //on diagonal 
-        absval=fabs(fabs(array[0]-2.0));
-        max_ret = absval;
+        max_ret = abs(array[0]-2.0);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval=fabs(array[i*sizen+j]);
                 if(i!=j)
+                {
+                    absval = abs(array[i*sizen+j]);
                     max_ret = (max_ret>absval) ? max_ret : absval;
+                }
                 else
                 {
-                    absval=fabs(absval-2.0);
+                    absval = abs(array[i*sizen+j]-2.0);
                     max_ret = (max_ret>absval) ? max_ret : absval;
                 }//endif
             }
