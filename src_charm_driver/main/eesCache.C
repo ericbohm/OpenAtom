@@ -407,13 +407,13 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
     CPNONLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRppChares,RppData);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
 #endif
 
@@ -452,13 +452,13 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
 
     AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     double  StartTime=CmiWallTimer();
 #endif    
 
     CPLOCAL::eesAtmBsplineRgrp(fastAtoms,allowedRhoRHartChares,RhoRHartData);
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(eesAtmBspline_, StartTime, CmiWallTimer());    
 #endif
 

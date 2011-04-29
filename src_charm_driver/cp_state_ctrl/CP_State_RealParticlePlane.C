@@ -457,13 +457,13 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
      thisIndex.x,thisIndex.y,iterNL,ngridA,ngridB,nplane_x);
 #endif
   // This is actually in place, projPsiR and projPsiC use the same location
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
   UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doNlFFTGtoR_Rchare(projPsiC,projPsiR,
                                                     nplane_x,ngridA,ngridB,myPlane);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -542,13 +542,13 @@ void CP_State_RealParticlePlane::computeZmatEes(){
     CkPrintf("HI, I am rPP %d %d in computeZmat : %d\n",thisIndex.x,thisIndex.y,iterNL);
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
    CPNONLOCAL::eesZmatRchare(projPsiR,iterNL,zmat,igrid,mn,
                              plane_index,thisIndex.x,myPlane);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    traceUserBracketEvent(eesZmatR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -878,7 +878,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
 #endif
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
@@ -888,7 +888,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
                       myPlane,thisIndex.x,fastAtoms);
    cp_enl += cp_enl_now;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesEnergyAtmForcR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1030,7 +1030,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime= CmiWallTimer();    
 #endif
   /*rfftwnd_plan plan = fftcache->bwdXPlanNL.rfftwPlan;
@@ -1079,7 +1079,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 #endif
 
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 

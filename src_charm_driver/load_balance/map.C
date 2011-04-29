@@ -333,7 +333,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 //    CkPrintf("scalc map call for [%d %d %d %d] on pe %d\n", 
 //       idx4d.index[0],idx4d.index[1],idx4d.index[2],idx4d.index[3],CkMyPe());
 //============================================================================
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       double StartTime=CmiWallTimer();
 #endif
     //Here maxY is the max number of planes;
@@ -401,7 +401,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
 	  
 	  if((w == idx4d.index[0]) && (x == idx4d.index[1]) &&
 	     (y == idx4d.index[2])) {
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
              traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
 #endif
              delete [] load;
@@ -412,7 +412,7 @@ int SCalcMap::slowprocNum(int hdl, const CkArrayIndex4D &idx4d){
     }//endfor : w
 
     delete [] load;
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(Scalcmap_, StartTime, CmiWallTimer());    
 #endif
 

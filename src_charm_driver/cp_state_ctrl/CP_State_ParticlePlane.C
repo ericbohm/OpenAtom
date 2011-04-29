@@ -515,7 +515,7 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
       int mydoublePack = config.doublePack;
       int zoffset      = natm_nl_grp_max * atmIndex;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       double  StartTime=CmiWallTimer();
 #endif    
 
@@ -523,7 +523,7 @@ void CP_State_ParticlePlane::computeZ(PPDummyMsg *m){
 	     structureFactor,structureFactor_fx,structureFactor_fy,
 	     structureFactor_fz,&zmatrix[zoffset],&zmatrix_fx[zoffset],&zmatrix_fy[zoffset],
 	     &zmatrix_fz[zoffset],thisIndex.x,mydoublePack,numSfGrps,atmIndex);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
       traceUserBracketEvent(enlMatrixCalc_, StartTime, CmiWallTimer());    
 #endif
 
@@ -621,14 +621,14 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
     int mydoublePack = config.doublePack;
     double myenl     = 0.0;
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
     CPNONLOCAL::CP_enl_atm_forc_calc(numSfGrps,atmIndex,fastAtoms,&zmatrixSum[zoffset],
                &zmatrixSum_fx[zoffset],&zmatrixSum_fy[zoffset],&zmatrixSum_fz[zoffset],
 	       &myenl,mydoublePack,istate_ind);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
     traceUserBracketEvent(enlAtmForcCalc_, StartTime, CmiWallTimer());    
 #endif
 
@@ -716,14 +716,14 @@ void CP_State_ParticlePlane::getForces(int zmatSize, int atmIndex,
 
   if (gSpaceNumPoints != 0){
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
     CPNONLOCAL::CP_enl_force_calc(zmatrixSum_loc,gSpaceNumPoints, k_x, k_y, k_z,
                                   structureFactor,myForces,state_ind,mydoublePack,
                                   numSfGrps, atmIndex);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(enlForcCalc_, StartTime, CmiWallTimer());    
 #endif
 
@@ -947,14 +947,14 @@ void CP_State_ParticlePlane::createNLEesFFTdata(){
    fftcache->getCacheMem("CP_State_ParticlePlane::createNLEesFFTdata");
    complex *projPsiGTmp = fftcache->tmpData; // store in tmp
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
    CPNONLOCAL::eesProjGchare(ncoef,psi,k_x,k_y,k_z,ihave_g0,ind_g0,iterNL,
                               d_re,d_im,dyp_re,dyp_im,projPsiGTmp,ind_gspl,h_gspl,
                               thisIndex.x,thisIndex.y,config.nfreq_cpnonlocal_eesfwd);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesProjG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -995,7 +995,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 
   RunDescriptor *runs  = eesData->GspData[myChareG]->runs;
   complex *projPsiGTmp = fftcache->tmpData;
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   double StartTime=CmiWallTimer();
 #endif
 
@@ -1003,7 +1003,7 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
                                (gss->numRuns),runs,ngridcNL,myChareG);
   fftcache->freeCacheMem("CP_State_ParticlePlane::FFTNLEesFwd");
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(doNlFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1227,13 +1227,13 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
     }
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
   fftcache->doNlFFTRtoG_Gchare(projPsiG,projPsiGTmp,numFullNL,gSpaceNumPoints,numLines,
                                eesData->GspData[myChareG]->numRuns,runs,ngridcNL,myChareG);
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(doNlFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1293,7 +1293,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
     }
 #endif
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    
 
@@ -1301,7 +1301,7 @@ void CP_State_ParticlePlane::computeNLEesForces(){
                                k_x,k_y,k_z,thisIndex.x,thisIndex.y,iterNL,config.nfreq_cpnonlocal_eesbk);
   fftcache->freeCacheMem("CP_State_ParticlePlane::computeNLEesForces");
 
-#ifndef CMK_OPTIMIZE
+#if CMK_TRACE_ENABLED
   traceUserBracketEvent(eesPsiForcGspace_, StartTime, CmiWallTimer());    
 #endif    
 
