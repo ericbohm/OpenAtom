@@ -54,7 +54,7 @@ typedef IntMap2 IntMap4;
 
 #define FIRST_BALANCE_STEP 100000000
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
 #define TRACE_ON_STEP 4
 #define TRACE_OFF_STEP 7
 #endif

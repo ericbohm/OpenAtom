@@ -1030,7 +1030,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #ifdef _CP_DEBUG_SF_CACHE_
     CkPrintf("GSP [%d,%d] StartNewIter\n",thisIndex.x, thisIndex.y);
 #endif
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     traceUserSuppliedData(iteration);
 #endif 
   if(iteration>0){
@@ -1091,7 +1091,7 @@ void CP_State_GSpacePlane::startNewIter ()  {
       CmiMemorySweep("GSP");
     }
 */
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   if(iteration==TRACE_ON_STEP ){(TimeKeeperProxy.ckLocalBranch())->startTrace();}
   if(iteration==TRACE_OFF_STEP){(TimeKeeperProxy.ckLocalBranch())->stopTrace();}
 #endif
@@ -1151,7 +1151,7 @@ void CP_State_GSpacePlane::doFFT() {
 
 //============================================================================
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE    
   double StartTime=CmiWallTimer();
 #endif
 
@@ -1164,7 +1164,7 @@ void CP_State_GSpacePlane::doFFT() {
   UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->doStpFFTGtoR_Gchare(gs.packedPlaneData,gs.packedForceData, 
 	           gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(GspaceFwFFT_, StartTime, CmiWallTimer());
 #endif   
 }
@@ -1316,7 +1316,7 @@ void CP_State_GSpacePlane::acceptIFFT(GSIFFTMsg *msg)
 void CP_State_GSpacePlane::doIFFT() 
 {
     // Now do the IFFT in place
-    #if CMK_TRACE_ENABLED
+    #ifndef CMK_OPTIMIZE
         double StartTime=CmiWallTimer();
     #endif
     eesCache *eesData   = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -1328,7 +1328,7 @@ void CP_State_GSpacePlane::doIFFT()
     fftcache->doStpFFTRtoG_Gchare(gs.packedForceData,forcTmp,
     gs.numFull,gs.numPoints,gs.numLines,gs.numRuns,runs,gs.zdim,iplane_ind);
     
-    #if CMK_TRACE_ENABLED
+    #ifndef CMK_OPTIMIZE
         traceUserBracketEvent(GspaceBwFFT_, StartTime, CmiWallTimer());
     #endif
     
@@ -2267,7 +2267,7 @@ void CP_State_GSpacePlane::integrateModForce() {
 //---------------------------------------------------------------
 // (B) Numerical integration
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
       double StartTime=CmiWallTimer();
 #endif
 
@@ -2321,7 +2321,7 @@ void CP_State_GSpacePlane::integrateModForce() {
   }//endfor
 #endif
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
       traceUserBracketEvent(IntegrateModForces_, StartTime, CmiWallTimer());
 #endif
 

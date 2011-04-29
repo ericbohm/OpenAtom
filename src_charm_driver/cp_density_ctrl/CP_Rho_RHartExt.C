@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source$
+ * $Author$
+ * $Date$
+ * $Revision$
+ *****************************************************************************/
+
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -421,7 +428,7 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
 
 //==========================================================================
 // Do the FFT
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
 
@@ -433,7 +440,7 @@ void CP_Rho_RHartExt::fftAtmSfRtoG(){
     fftcache->doEextFFTRtoG_Rchare(atmSFC,atmSFR,nplane_rho_x,ngrida,ngridb,iplane_ind);
   }//endif
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTRtoG_, StartTime, CmiWallTimer());    
 #endif
 
@@ -594,12 +601,12 @@ void CP_Rho_RHartExt::recvAtmSfRyToGy(RhoGHartMsg *msg){
 
     countIntRtoG = 0;
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
     fftcache->doEextFFTRyToGy_Rchare(atmSFCint,atmSFRint,myNplane_rho,
                                      ngrida,ngridb,iplane_ind);
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTRytoGy_, StartTime, CmiWallTimer());    
 #endif
 
@@ -895,7 +902,7 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
 
 //============================================================================
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
 
@@ -908,7 +915,7 @@ void CP_Rho_RHartExt::fftAtmForcGtoR(int flagEwd){
     sendAtmForcGxToRx(flagEwd);
   }//endif
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTGtoR_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1079,11 +1086,11 @@ void CP_Rho_RHartExt::recvAtmForcGxToRx(RhoGHartMsg *msg){
   if(countIntGtoR[iopt]==rhoRsubplanes){
     countIntGtoR[iopt]=0;
     FFTcache *fftcache = UfftCacheProxy[thisInstance.proxyOffset].ckLocalBranch();  
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     double StartTime=CmiWallTimer();
 #endif
     fftcache->doEextFFTGxToRx_Rchare(dataC,dataR,nplane_rho_x,ngrida,myNgridb,iplane_ind);
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(doEextFFTGxtoRx_, StartTime, CmiWallTimer());    
 #endif
 
@@ -1162,14 +1169,14 @@ void CP_Rho_RHartExt::computeAtmForc(int flagEwd){
   FastAtoms *fastAtoms = &(ag->fastAtoms);
   int natm             = ag->natm;
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
    double  StartTime=CmiWallTimer();
 #endif    
 
    CPLOCAL::eesAtmForceRchare(natm,fastAtoms,iterAtmTypFull,igrid,
 			      dmn_x,dmn_y,dmn_z, plane_index,nSub,data,
 			      myPlane,mySubplane,flagEwd);
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   traceUserBracketEvent(eesAtmForcR_, StartTime, CmiWallTimer());    
 #endif
 

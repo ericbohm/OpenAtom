@@ -297,7 +297,7 @@ void CP_State_RealSpacePlane::doFFT(){
     complex *planeArr   = rs.planeArr;
     double  *planeArrR  = rs.planeArrR;
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE    
     double StartTime=CmiWallTimer();
 #endif
 
@@ -313,7 +313,7 @@ void CP_State_RealSpacePlane::doFFT(){
     }//endfor
     CmiNetworkProgress();
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     traceUserBracketEvent(doRealFwFFT_, StartTime, CmiWallTimer());
 #endif    
 
@@ -407,7 +407,7 @@ void CP_State_RealSpacePlane::doReduction(){
 // Perform the Reduction to get the density : vks holds psi^2 for us
 // Return values for vks cannot hit this chare until the reduciton is complete.
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE    
    double StartTime=CmiWallTimer();
 #endif
   
@@ -431,7 +431,7 @@ void CP_State_RealSpacePlane::doReduction(){
 
   CmiNetworkProgress(); // yuck!
 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     traceUserBracketEvent(DoFFTContribute_, StartTime, CmiWallTimer());
 #endif    
 
@@ -568,7 +568,7 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
  //------------------------------------------------------------------
  // Start the timer
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
   double StartTime=CmiWallTimer();
 #endif
 
@@ -582,7 +582,7 @@ void CP_State_RealSpacePlane::doVksFFT() {
 
  //------------------------------------------------------------------
  // End timer 
-#if CMK_TRACE_ENABLED
+#ifndef CMK_OPTIMIZE
     traceUserBracketEvent(doRealBwFFT_, StartTime, CmiWallTimer());
 #endif
 
