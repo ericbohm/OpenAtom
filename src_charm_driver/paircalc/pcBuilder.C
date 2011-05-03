@@ -143,6 +143,9 @@ void Builder::createPairCalcs()
 
     // Create an empty array but specify element locations using the map
     paircalcOpts.setMap(pcHandle.mapperGID);
+    paircalcOpts.setAnytimeMigration(false);
+    paircalcOpts.setStaticInsertion(true);    
+
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
     #ifdef DEBUG_CP_PAIRCALC_CREATION
@@ -151,6 +154,9 @@ void Builder::createPairCalcs()
 
     /// Create an empty input handler chare array that will accept all incoming messages from GSpace
     handlerOpts.bindTo(pairCalculatorProxy);
+    handlerOpts.setAnytimeMigration(false);
+    handlerOpts.setStaticInsertion(true);    
+
     inputHandlerProxy = CProxy_InputDataHandler<CollatorType,CollatorType> ::ckNew(pairCalculatorProxy,handlerOpts);
 
     // Initialize my set of array / group IDs

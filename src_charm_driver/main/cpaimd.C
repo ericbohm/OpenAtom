@@ -586,6 +586,9 @@ main::main(CkArgMsg *msg) {
 
     // make one collector per uberKmax
     CkArrayOptions enlopts(config.UberKmax);
+    enlopts.setAnytimeMigration(false);
+    enlopts.setStaticInsertion(true);    
+
     ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, enlopts);
     ENLEKECollectorProxy.doneInserting();
 
@@ -1362,6 +1365,8 @@ void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
     {
       CkPrintf("Constructing PIMD Bead array\n");
       CkArrayOptions opts(sim->natm_tot);
+      opts.setAnytimeMigration(false);
+      opts.setStaticInsertion(true);    
       UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
 
     }
@@ -1603,6 +1608,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
+  gSpaceOpts.setAnytimeMigration(false);
+  gSpaceOpts.setStaticInsertion(true);
   std::string forwardname("GSpaceForward");
   std::ostringstream fwdstrm;
   fwdstrm << forwardname << "." << thisInstance.idxU.x << "." << thisInstance.idxU.y << "." << thisInstance.idxU.z; 
@@ -1619,6 +1626,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
  //--------------------------------------------------------------------------------
  // Bind the GSpaceDriver array to the GSpacePlane array so that they migrate together
  CkArrayOptions gspDriverOpts(nstates,nchareG);
+ gspDriverOpts.setAnytimeMigration(false);
+ gspDriverOpts.setStaticInsertion(true);
  gspDriverOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
  UgSpaceDriverProxy.push_back( CProxy_GSpaceDriver::ckNew(thisInstance,gspDriverOpts) );
  UgSpaceDriverProxy[thisInstance.proxyOffset].doneInserting();
@@ -1627,6 +1636,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   //  CkArrayOptions particleOpts(nstates,nchareG);
   CkArrayOptions particleOpts(nstates,nchareG);
+  particleOpts.setAnytimeMigration(false);
+  particleOpts.setStaticInsertion(true);
   particleOpts.setMap(gsMap); // the maps for both the arrays are the same
   particleOpts.bindTo(UgSpacePlaneProxy[thisInstance.proxyOffset]);
   UparticlePlaneProxy.push_back(CProxy_CP_State_ParticlePlane::ckNew(
@@ -1710,6 +1721,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   CProxy_RSMap rsMap= CProxy_RSMap::ckNew(thisInstance);
   //  CkArrayOptions realSpaceOpts(nstates,nchareR);
   CkArrayOptions realSpaceOpts(nstates,nchareR);
+  realSpaceOpts.setAnytimeMigration(false);
+  realSpaceOpts.setStaticInsertion(true);
   realSpaceOpts.setMap(rsMap);
   int rforward=keeperRegister(std::string("RealSpaceForward"));
   int rbackward=keeperRegister(std::string("RealSpaceBackward"));
@@ -2012,6 +2025,8 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
   }
   Timer=newtime;
   CkArrayOptions pRealSpaceOpts(nstates,ngridcNl);
+  pRealSpaceOpts.setAnytimeMigration(false);
+  pRealSpaceOpts.setStaticInsertion(true);
   pRealSpaceOpts.setMap(rspMap);
   UrealParticlePlaneProxy.push_back(CProxy_CP_State_RealParticlePlane::ckNew(
                                 ngridaNl,ngridbNl,ngridcNl,
@@ -2172,6 +2187,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
   //CkArrayOptions rhorsOpts;
+  rhorsOpts.setAnytimeMigration(false);
+  rhorsOpts.setStaticInsertion(true);
   rhorsOpts.setMap(rhorsMap);
 
 
@@ -2234,6 +2251,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
   CkArrayOptions rhogsOpts(nchareRhoG,1);
   //CkArrayOptions rhogsOpts;
+  rhogsOpts.setAnytimeMigration(false);
+  rhogsOpts.setStaticInsertion(true);
   rhogsOpts.setMap(rhogsMap);
 
   if(config.dumpMapFiles) {
@@ -2267,7 +2286,6 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     RhoAvail->reset();
   CkArrayOptions rhorhartOpts(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
   //CkArrayOptions rhorhartOpts;
-    
   if(ees_eext_on) {
 #ifdef USE_INT_MAP
     RhoRHartImaptable[thisInstance.getPO()].buildMap(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
@@ -2299,6 +2317,8 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
+    rhorhartOpts.setAnytimeMigration(false);
+    rhorhartOpts.setStaticInsertion(true);
     rhorhartOpts.setMap(rhorHartMap);
 
     if(config.dumpMapFiles) {
@@ -2368,6 +2388,9 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
   CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);
   //  CkArrayOptions rhoghartOpts;
+  rhoghartOpts.setAnytimeMigration(false);
+  rhoghartOpts.setStaticInsertion(true);    
+
   rhoghartOpts.setMap(rhogHartMap);
   CmiNetworkProgressAfter(0);
   if(config.dumpMapFiles) {
@@ -2474,7 +2497,12 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   int nchareRhoRealLSP=1;
   int nchareRhoRealLSPsubplanes=1;
   CkArrayOptions lspgspOpts(nchareRhoGLSP);
+  lspgspOpts.setAnytimeMigration(false);
+  lspgspOpts.setStaticInsertion(true);    
   CkArrayOptions lsprealOpts(nchareRhoRealLSP, nchareRhoRealLSPsubplanes);
+  lsprealOpts.setAnytimeMigration(false);
+  lsprealOpts.setStaticInsertion(true);    
+
   UlsRhoGProxy.push_back(CProxy_CP_LargeSP_RhoGSpacePlane::ckNew(thisInstance,lspgspOpts));
   UlsRhoRealProxy.push_back(CProxy_CP_LargeSP_RhoRealSpacePlane::ckNew(thisInstance,lsprealOpts));
   printf("\n");
@@ -2654,6 +2682,9 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   CProxy_VdWRSMap vdwrsMap = CProxy_VdWRSMap::ckNew(thisInstance);
   CkArrayOptions vdwrsOpts(nchareRhoR, config.rhoRsubplanes, nchareVdW);
   //CkArrayOptions rhorsOpts;
+  vdwrsOpts.setAnytimeMigration(false);
+  vdwrsOpts.setStaticInsertion(true);    
+
   vdwrsOpts.setMap(vdwrsMap);
 
 
