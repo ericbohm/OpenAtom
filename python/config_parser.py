@@ -23,11 +23,12 @@ def config_reader(filename):
 		finalcommandlist = []
 		outputlist = []
 		finaloutputlist = []
+		mykey = ''
 		for K_value in keylist:
 			for P_value in numpelist:
 				inputParlist.append(configfile[testcounter]['inputPar'])
 				inputPhylist.append(configfile[testcounter]['inputPhy'])
-				outReflist.append(configfile[testcounter]['outRef'].replace('$K', K_value).replace('$T', configfile[testcounter]['name']))
+				outReflist.append(configfile[testcounter]['outRef'].replace('$K', K_value).replace('$P', P_value).replace('$T', configfile[testcounter]['name']))
 		inputParlist = list(set(inputParlist)) #delete duplicates
 		inputPhylist = list(set(inputPhylist))
 		outReflist = list(set(outReflist))
@@ -76,6 +77,7 @@ def config_reader(filename):
 			os.system('ln -s ../../../' + configfile[testcounter]['inputDir'] + '* .')
 			os.system('ln -s ../../data/DATABASE ..')
 			os.system(value)
+			#print value
 			os.system('./tidy water')
 			os.system('rm -r STATES_OUT')
 			os.system('mkdir STATES_OUT')
