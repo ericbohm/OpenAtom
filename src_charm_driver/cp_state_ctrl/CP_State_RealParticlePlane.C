@@ -1121,7 +1121,6 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
 // here is the computation of the fft
 
 #if CMK_TRACE_ENABLED
->>>>>>> 77eeeac... The first big kpoint revision with more to come. Some things are hardwired and this code
   double StartTime= CmiWallTimer();    
 #endif
 

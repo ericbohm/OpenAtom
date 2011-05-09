@@ -126,7 +126,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 //============================================================================
 // Unpack
 //  CkPrintf("{%d} GSP [%d,%d] psiCgOvlap\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  CPcharmParaInfo *sim = CPcharmParaInfo::get();
   AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
   int cp_min_opt    = sim->cp_min_opt;
@@ -1432,7 +1432,7 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
   int *k_x          = eesData->GspData[iplane_ind]->ka;
   int *k_y          = eesData->GspData[iplane_ind]->kb;
   int *k_z          = eesData->GspData[iplane_ind]->kc;
-  double *g2        = eesData->GspData[iplane_ind]->g2;
+  double **g2       = eesData->GspData[iplane_ind]->g2;
 
 //================================================================================
 // Add forces from particle plane to forces from IFFT then zero them
