@@ -122,5 +122,6 @@ module ckPairCalculator
 		entry [local] void multiplyForward(bool);
 		entry [local] void bwMultiplyDynOrthoT();
 		entry [local] void multiplyPsiV();
+		entry void phantomDone();
 	};
 }

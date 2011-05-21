@@ -67,9 +67,9 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   CkAssert(msg->getUserFlag()==thisIndex);
   delete msg;
     double newtime=CmiWallTimer();
-    CkAssert(done_init<5);
+    CkAssert(done_init<6);
 
-    if(done_init<4){
+    if(done_init<5){
       CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
       Timer=newtime;
     }else{
@@ -79,7 +79,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       //      PRINT_LINE_STAR; printf("\n");
       Timer=newtime;
     }//endif
-    if (done_init==1)
+    if (done_init==3)
       { // kick off post constructor inits
 	UberCollection thisInstance(thisIndex);
 	if(thisInstance.idxU.y==0)
@@ -91,7 +91,7 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	      {UrhoRHartExtProxy[thisIndex].init();}
 	  }
       }
-    if (done_init == 3){
+    if (done_init == 4){
       // 2nd to last, we do this after we know gsp, pp, and rp exist
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
 	{UrealParticlePlaneProxy[thisIndex].init();}
@@ -109,8 +109,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       }//endfor */
 
     }//endif
-    if (done_init >= 4) {
-      if (done_init == 4){ 
+    if (done_init >= 5) {
+      if (done_init == 5){ 
 	//          PRINT_LINE_STAR;
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);

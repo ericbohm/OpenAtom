@@ -394,7 +394,7 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   int orthoIndex=orthoIndexX*numOrthoCol+orthoIndexY;
 
 #ifdef _PAIRCALC_DEBUG_
-  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY);
+  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
 #endif
  // numOrtho here is numOrtho per sGrain
   CkAssert(orthoIndex<numOrtho*2);
@@ -411,15 +411,28 @@ void PairCalculator::initGRed(initGRedMsg *msg)
   */
 
   /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
-  if(!cfg.isSymmetric && ++numRecd==numOrtho)
+  ++numRecd;
+  //  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
+  if(numRecd==numOrtho)
   {
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
       numRecd=0;
   }
+  if(cfg.arePhantomsOn && cfg.isSymmetric && notOnDiagonal)
+    {
+
+      //      CkPrintf("[%d,%d,%d,%d,%d] phantom trigger\n");
+      thisProxy(thisIndex.w,thisIndex.y, thisIndex.x,thisIndex.z).phantomDone();
+    }
 
   //  do not delete nokeep msg
 }
 
+void PairCalculator::phantomDone()
+{
+  //  CkPrintf("[%d,%d,%d,%d,%d] phantom contrib\n");
+  contribute(sizeof(int), &numOrtho , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
+}
 
 
 void PairCalculator::initResultSection(initResultMsg *msg)

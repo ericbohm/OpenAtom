@@ -321,6 +321,9 @@ class PairCalculator: public CBase_PairCalculator
 		inline CollatorType* leftHandler() const { return leftCollator; }
 		/// Returns a pointer to the collator that will buffer the right matrix data (only for use by the corresponding InputDataHandler chare)
 		inline CollatorType* rightHandler() const { return rightCollator; }
+
+		/// @entry To handle correct startup for symm PC w/phantoms
+		void phantomDone();
 		/// @entry Method to send in the complete block of the left matrix
 		void acceptLeftData(paircalcInputMsg *msg); 
 		/// @entry Method to send in the complete block of the right matrix
