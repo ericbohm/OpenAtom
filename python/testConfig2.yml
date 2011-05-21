@@ -1,0 +1,24 @@
+- config:
+  numSigDigits: 5
+  iternum: 1 
+  outputLog: test.log
+#DFSDF
+- name: test-sgrainsize
+  desc: Test if different paircalc grainsizes give the same results
+  machine names: []
+  inputDir: data/water_32M_10Ry/
+  inputPar: cpaimd_config.$K.p1
+  inputPhy: water.input.min.ees-nl1l1.$K
+  outRef: ref-$K-p1.log
+  keys: [sgrain-128, sgrain-064, sgrain-032] 
+  numpe: [4]
+- name: test-numpes
+  desc: Test if different number of PEs affects the results
+  machine names: []
+  inputDir: data/water_32M_10Ry/
+  inputPar: cpaimd_config.$K.p$P
+  inputPhy: water.input.min.ees-nl1l1.$K
+  outRef: ref-$K-p$P.log
+  keys: [sgrain-032]
+  numpe: [1, 2, 4, 8]
+
