@@ -49,7 +49,7 @@ libs: mathlib
 
 # Clean only the build artifacts. Leave the binary etc around
 clean:
-	@$(RM) $(wildcard *.decl.h *.def.h *.o)
+	@$(RM) $(wildcard *.decl.h *.def.h *.o *.ci.stamp)
 
 again:
 	@$(MAKE) clean; $(MAKE)
