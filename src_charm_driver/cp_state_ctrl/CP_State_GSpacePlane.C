@@ -1752,6 +1752,14 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
   int offset        = msg->myoffset;
   if(offset<0){offset=0;}
 
+#ifdef _NAN_CHECK_
+  for(int i=0; i < N; i++)
+  {
+      CkAssert(finite(data[i].re));
+      CkAssert(finite(data[i].im));
+  }
+#endif
+
   int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind]->ka;
@@ -3251,6 +3259,14 @@ void CP_State_GSpacePlane::acceptNewPsiV(partialResultMsg *msg){
   int N           = msg->N;
   complex *data   = msg->result;
   int offset      = msg->myoffset;  if(offset<0){offset=0;}
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i < N; i++)
+  {
+      CkAssert(finite(data[i].re));
+      CkAssert(finite(data[i].im));
+  }
+#endif
 
   complex *vpsi   = gs.packedVelData;
   int chunksize   = gs.numPoints/config.numChunksSym;
