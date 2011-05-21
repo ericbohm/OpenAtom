@@ -2306,6 +2306,16 @@ void CP_State_GSpacePlane::integrateModForce() {
   }
 #endif
 
+#ifdef _NAN_CHECK_
+  for(int i=0; i < ncoef; i++)
+  {
+      CkAssert(finite(psi_g[i].re));
+      CkAssert(finite(psi_g[i].im));
+      CkAssert(finite(forces[i].re));
+      CkAssert(finite(forces[i].im));
+  }
+#endif
+
   fictEke = 0.0; ekeNhc=0.0; potNHC=0.0;
   CPINTEGRATE::CP_integrate(ncoef,istate,iteration,forces,forcesold,psi_g,
                coef_mass,k_x,k_y,k_z,len_nhc,num_nhc,nck_nhc,fNHC,vNHC,xNHC,xNHCP,
@@ -2335,6 +2345,16 @@ void CP_State_GSpacePlane::integrateModForce() {
 
 //---------------------------------------------------------------
 // (C) Debug output after integration
+
+#ifdef _NAN_CHECK_
+  for(int i=0; i < ncoef; i++)
+  {
+      CkAssert(finite(psi_g[i].re));
+      CkAssert(finite(psi_g[i].im));
+      CkAssert(finite(forces[i].re));
+      CkAssert(finite(forces[i].im));
+  }
+#endif
 
 #ifdef _CP_DEBUG_DYNAMICS_
   if(cp_min_opt!=1){
