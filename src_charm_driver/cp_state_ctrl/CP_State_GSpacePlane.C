@@ -2309,6 +2309,8 @@ void CP_State_GSpacePlane::integrateModForce() {
 #ifdef _NAN_CHECK_
   for(int i=0; i < ncoef; i++)
   {
+      CkAssert(finite(vpsi_g[i].re));
+      CkAssert(finite(vpsi_g[i].im));
       CkAssert(finite(psi_g[i].re));
       CkAssert(finite(psi_g[i].im));
       CkAssert(finite(forces[i].re));
@@ -2349,6 +2351,8 @@ void CP_State_GSpacePlane::integrateModForce() {
 #ifdef _NAN_CHECK_
   for(int i=0; i < ncoef; i++)
   {
+      CkAssert(finite(vpsi_g[i].re));
+      CkAssert(finite(vpsi_g[i].im));
       CkAssert(finite(psi_g[i].re));
       CkAssert(finite(psi_g[i].im));
       CkAssert(finite(forces[i].re));
