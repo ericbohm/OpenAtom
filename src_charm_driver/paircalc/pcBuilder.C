@@ -143,8 +143,8 @@ void Builder::createPairCalcs()
 
     // Create an empty array but specify element locations using the map
     paircalcOpts.setMap(pcHandle.mapperGID);
-    paircalcOpts.setAnytimeMigration(false);
-    paircalcOpts.setStaticInsertion(true);    
+    //    paircalcOpts.setAnytimeMigration(false);
+    //    paircalcOpts.setStaticInsertion(true);    
 
     pairCalculatorProxy = CProxy_PairCalculator::ckNew(inputHandlerProxy, cfg, paircalcOpts);
 
