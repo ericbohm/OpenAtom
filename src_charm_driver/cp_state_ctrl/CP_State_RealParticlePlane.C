@@ -9,6 +9,7 @@
 //=========================================================================
 
 #include "utility/util.h"  ///@note: Putting this declaration further down seems to screw things. Whats the issue with fft malloc & free declarations?
+
 #include "CP_State_ParticlePlane.h"
 #include "CP_State_Plane.h"
 #include "structure_factor/StructFactorCache.h"
@@ -22,7 +23,7 @@
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cplocal.h"
 
 //=========================================================================
-
+extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_main                       mainProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
@@ -190,12 +191,6 @@ void CP_State_RealParticlePlane::init(){
    // Register
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch (); 
     eesData->registerCacheRPP(thisIndex.y);
-   //--------
-   // Tell your friends your are ready to boogy
-    int i=1;
-    CkCallback cb(CkIndex_CP_State_RealParticlePlane::registrationDone(NULL),
-		  UrealParticlePlaneProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
 
@@ -256,6 +251,8 @@ void CP_State_RealParticlePlane::init(){
   // The plane section reduction to the reduction plane for zmat
   // Only the root of the reduction does setup dance.
   //-----------------------------------------------------------
+  enlSectionComplete=false;
+  planeRedSectionComplete=false;
   if(thisIndex.y==reductionPlaneNum){
     rPlaneSectProxy = 
        CProxySection_CP_State_RealParticlePlane::ckNew(thisProxy.ckGetArrayID(),
@@ -267,11 +264,16 @@ void CP_State_RealParticlePlane::init(){
     EnlCookieMsg *emsg= new EnlCookieMsg;
     rPlaneSectProxy.setPlaneRedCookie(emsg);
   }//endif
+  else
+    { // if you aren't in the reduction plane you are setup
+      planeRedSectionComplete=true;
+    }
 
   //-----------------------------------------------------------
   // The reduction over states involving the reduction planes for cp_enl
   // Only the root of the reduction does setup dance, state=0
   //-----------------------------------------------------------
+
   if(thisIndex.y==reductionPlaneNum && thisIndex.x==0){
       CkArrayIndexMax *elems = new CkArrayIndexMax[nstates];
       CkArrayIndex2D idx(0, reductionPlaneNum);  // cheesy constructor
@@ -289,6 +291,17 @@ void CP_State_RealParticlePlane::init(){
       rPlaneENLProxy.setEnlCookie(emsg);
       delete [] elems;
   }//endif
+  else
+    { // if not part of enl, setup complete
+      bool inEnl=false;
+      for (int j = 0; j < nstates; j++) {
+	if(thisIndex.x ==j && thisIndex.y== red_pl[j])
+	  inEnl=true;
+      }//endfor
+      if(!inEnl)
+	enlSectionComplete=true;
+    }
+  initComplete();
   delete [] red_pl;
 
 //============================================================================
@@ -303,7 +316,52 @@ void CP_State_RealParticlePlane::init(){
 
 }
 
+//============================================================================
+// All cookies initialized for enl section, only reduction root receives this
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealParticlePlane::enlSectDone(CkReductionMsg *m)
+{
+  //  CkPrintf("RPP[%d %d] gets enlSectDone\n",thisIndex.x, thisIndex.y);
+  delete m;
+  enlSectionComplete=true;
+  initComplete();
+}
 
+//============================================================================
+// All cookies initialized for zmat plane reduction
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealParticlePlane::planeRedSectDone(CkReductionMsg *m)
+{
+  //  CkPrintf("RPP[%d %d] gets rPlaneRedSectDone\n",thisIndex.x, thisIndex.y);
+  delete m;
+  planeRedSectionComplete=true;
+  initComplete();
+}
+
+//============================================================================
+// Initialization and registration done for this chare
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void CP_State_RealParticlePlane::initComplete()
+{
+  // If the sections are done for enl and zmat, then we are also done
+  // registering. The coalesced completion state is reported in to the
+  // global initialization phase process.
+  if(  enlSectionComplete && planeRedSectionComplete)
+    {
+      //      CkPrintf("RPP[%d %d] initComplete\n",thisIndex.x, thisIndex.y);
+      int constructed=1;
+      contribute(sizeof(int), &constructed, CkReduction::sum_int, 
+		 CkCallback(CkIndex_InstanceController::doneInit(NULL),
+			    CkArrayIndex1D(thisInstance.proxyOffset),
+			    instControllerProxy), thisInstance.proxyOffset);
+    }
+}
 
 //============================================================================
 // The destructor : never called directly but I guess migration needs it
@@ -1205,7 +1263,21 @@ void CP_State_RealParticlePlane::setPlaneRedCookie(EnlCookieMsg *m){
   if(thisIndex.x==0)
    CkPrintf("RPP[%d %d] gets rPlaneRedCookie\n",thisIndex.x, thisIndex.y);
 #endif
+
   CkGetSectionInfo(rPlaneRedCookie,m);
+  int cookiedone=1;
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+   CkCallback cb(CkIndex_CP_State_RealParticlePlane::planeRedSectDone(NULL),
+                 CkArrayIndex2D(thisIndex.x,reductionPlaneNum),
+                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+   mcastGrp->contribute(sizeof(int),&cookiedone,CkReduction::sum_int,
+     rPlaneRedCookie,cb);
+     // if not root, we are set up
+  if(thisIndex.y!=reductionPlaneNum)
+    {
+      planeRedSectionComplete=true;
+      initComplete();
+    }
 }
 //============================================================================
 
@@ -1224,6 +1296,18 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
    CkPrintf("RPP[%d %d] gets rEnlCookie\n",thisIndex.x, thisIndex.y);
 #endif
   CkGetSectionInfo(rEnlCookie,m);
+  int cookiedone=1;
+  CkMulticastMgr *mcastGrp = CProxy_CkMulticastMgr(mCastGrpId).ckLocalBranch();
+  CkCallback cb(CkIndex_CP_State_RealParticlePlane::enlSectDone(NULL),
+                 CkArrayIndex2D(0,reductionPlaneNum),
+                 UrealParticlePlaneProxy[thisInstance.proxyOffset].ckGetArrayID());
+     mcastGrp->contribute(sizeof(int), &cookiedone, 
+		          CkReduction::sum_int,rEnlCookie, cb);
+     // if not root, we are set up
+  if(thisIndex.y!=reductionPlaneNum || thisIndex.x!=0){     
+    enlSectionComplete=true;
+    initComplete();
+  }
 }
 //============================================================================
 
@@ -1232,15 +1316,13 @@ void CP_State_RealParticlePlane::setEnlCookie(EnlCookieMsg *m){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-  void CP_State_RealParticlePlane::registrationDone(CkReductionMsg *msg) {
+  void CP_State_RealParticlePlane::registrationDone() {
 //==========================================================================
 
-  int sum = ((int *)msg->getData())[0];
-  delete msg;
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_
   if(thisIndex.x==0)
-   CkPrintf("HI, I am realPPa %d %d in reg : %d\n",thisIndex.x,thisIndex.y,sum);
+   CkPrintf("HI, I am realPPa %d %d \n",thisIndex.x,thisIndex.y);
 #endif
 
   registrationFlag=1;

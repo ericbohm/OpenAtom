@@ -557,6 +557,8 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
 
    bool launchFFT; 
    bool fftDataDone;
+   bool planeRedSectionComplete;
+   bool enlSectionComplete;
 
    double cp_enl;         // Non-local energy
    double cp_enlTot;      // Reduced Non-local energy
@@ -591,6 +593,9 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    CP_State_RealParticlePlane(int , int , int ,int , int ,int ,int,int, UberCollection);
    void init();
   ~CP_State_RealParticlePlane();
+   void planeRedSectDone(CkReductionMsg *m);
+   void enlSectDone(CkReductionMsg *m);
+   void initComplete();
    void launchFFTControl(int );
    void pup(PUP::er &);
    void printEnlR(CkReductionMsg *m);
@@ -605,7 +610,7 @@ class CP_State_RealParticlePlane: public CBase_CP_State_RealParticlePlane {
    void setPlaneRedCookie(EnlCookieMsg *);
    void setEnlCookie(EnlCookieMsg *);
    int calcReductionPlaneNum(int );
-   void registrationDone(CkReductionMsg *msg);
+   void registrationDone();
    void recvZMatEesSimp(int , double *,int,int,int);
 };
 //============================================================================

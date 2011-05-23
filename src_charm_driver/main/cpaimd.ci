@@ -305,13 +305,15 @@ mainmodule cpaimd {
 
                 entry [nokeep] void setPlaneRedCookie(EnlCookieMsg *);
                 entry [nokeep] void setEnlCookie(EnlCookieMsg *);
-                entry void registrationDone(CkReductionMsg *msg);
+                entry void registrationDone();
 		entry void printEnlR(CkReductionMsg *);
 		entry void printEnlRSimp(double ,int,int);
                 entry void recvZMatEesSimp(int size, double _zmat[size],int state, 
                                            int index, int iterNL_in);
 		entry [local] void FFTNLEesFwdR();
 	        entry void launchFFTControl(int );
+		entry void enlSectDone(CkReductionMsg *m);
+		entry void planeRedSectDone(CkReductionMsg *m);
 	};
 
 	

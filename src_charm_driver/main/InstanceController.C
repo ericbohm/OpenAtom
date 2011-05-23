@@ -67,18 +67,11 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   CkAssert(msg->getUserFlag()==thisIndex);
   delete msg;
     double newtime=CmiWallTimer();
-    CkAssert(done_init<6);
+    CkAssert(done_init<7);
 
     if(done_init<5){
       CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
-      Timer=newtime;
-    }else{
-      CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
-      //      PRINT_LINE_DASH;
-      CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
-      //      PRINT_LINE_STAR; printf("\n");
-      Timer=newtime;
-    }//endif
+    }
     if (done_init==3)
       { // kick off post constructor inits
 	UberCollection thisInstance(thisIndex);
@@ -92,11 +85,9 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  }
       }
     if (done_init == 4){
-      // 2nd to last, we do this after we know gsp, pp, and rp exist
+      // We do this after we know gsp, pp, rp, rpp exist
       if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
 	{UrealParticlePlaneProxy[thisIndex].init();}
-      // its completion triggers the final phase
-
       // kick off file reading in gspace
       CkPrintf("{%d} Initiating import of states\n",thisIndex);
       CkPrintf("{%d} IC uGSpacePlaneProxy[%d] is %d\n",thisIndex,thisIndex, CkGroupID(UgSpacePlaneProxy[thisIndex].ckGetArrayID()).idx);
@@ -104,14 +95,16 @@ void InstanceController::doneInit(CkReductionMsg *msg){
         UgSpacePlaneProxy[thisIndex](s,UplaneUsedByNLZ[thisIndex][s]).readFile();
       } //endfor
 
-      /* for(int s=0;s<nstates;s++){ ifndef USE_TOPOMAP
-        gSpacePlaneProxy(s,0).readFile();
-      }//endfor */
-
     }//endif
-    if (done_init >= 5) {
-      if (done_init == 5){ 
+    if (done_init == 5){
+      CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
+      UrealParticlePlaneProxy[thisIndex].registrationDone();
+    }
+
+    if (done_init >= 6) {
+      if (done_init == 6){ 
 	//          PRINT_LINE_STAR;
+	CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
             CkPrintf("{%d} Running Open Atom CP Minimization: \n",thisIndex);
 	  }else{
@@ -122,7 +115,8 @@ void InstanceController::doneInit(CkReductionMsg *msg){
 	  UgSpaceDriverProxy[thisIndex].startControl();
       }//endif
     }
-    done_init++;
+    Timer=newtime;
+    ++done_init;
 }
 //============================================================================
 void InstanceController::initCookie(ICCookieMsg *msg)
