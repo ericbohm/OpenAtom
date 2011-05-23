@@ -290,26 +290,26 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
     double absval, max_ret;
     if(thisIndex.x!=thisIndex.y)
     { //not diagonal
-        max_ret = abs(array[0]);
+        max_ret = std::abs(array[0]);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval = abs(array[i*sizen+j]);
+                absval = std::abs(array[i*sizen+j]);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
     }
     else
     { //on diagonal 
-        max_ret = abs(array[0]-2.0);
+        max_ret = std::abs(array[0]-2.0);
         for(int i=0;i<sizem;i++)
         {
             for(int j=0;j<sizen;j++)
             {
-                absval = abs(array[i*sizen+j]);
+                absval = std::abs(array[i*sizen+j]);
                 if(i == j)
-                    absval = abs(absval - 2.0);
+                    absval = std::abs(absval - 2.0);
                 max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
