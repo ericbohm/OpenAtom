@@ -307,16 +307,10 @@ inline double Ortho::array_diag_max(int sizem, int sizen, internalType *array)
         {
             for(int j=0;j<sizen;j++)
             {
-                if(i!=j)
-                {
-                    absval = abs(array[i*sizen+j]);
-                    max_ret = (max_ret>absval) ? max_ret : absval;
-                }
-                else
-                {
-                    absval = abs(array[i*sizen+j]-2.0);
-                    max_ret = (max_ret>absval) ? max_ret : absval;
-                }//endif
+                absval = abs(array[i*sizen+j]);
+                if(i == j)
+                    absval = abs(absval - 2.0);
+                max_ret = (max_ret>absval) ? max_ret : absval;
             }
         }//endfor
     }//endif
