@@ -65,11 +65,14 @@ void InstanceController::doneInit(CkReductionMsg *msg){
   // Also, when paircalc becomes completely instance unaware, it will fail. This single assert is not enough motivation
   // to provide instance info to the pc/ortho bubble. @todo: remove this assert
   CkAssert(msg->getUserFlag()==thisIndex);
+  int numPhases=5;
+  if(scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1)
+    numPhases++;
   delete msg;
     double newtime=CmiWallTimer();
-    CkAssert(done_init<7);
-
-    if(done_init<5){
+    CkAssert(done_init<numPhases+1);
+    
+    if(done_init<numPhases){
       CkPrintf("{%d} Completed chare instantiation phase %d in %g\n",thisIndex,done_init+1,newtime-Timer);
     }
     if (done_init==3)
@@ -96,13 +99,13 @@ void InstanceController::doneInit(CkReductionMsg *msg){
       } //endfor
 
     }//endif
-    if (done_init == 5){
+    if (done_init == 5 && scProxy.ckLocalBranch()->cpcharmParaInfo->ees_nloc_on==1){
       CkPrintf("{%d} Completed chare data acquisition phase %d in %g\n",thisIndex, done_init+1,newtime-Timer);
       UrealParticlePlaneProxy[thisIndex].registrationDone();
     }
 
-    if (done_init >= 6) {
-      if (done_init == 6){ 
+    if (done_init >= numPhases) {
+      if (done_init == numPhases){ 
 	//          PRINT_LINE_STAR;
 	CkPrintf("{%d} Chare array launch and initialization complete       \n",thisIndex);
           if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==1){
