@@ -1,0 +1,146 @@
+OpenAtom startup has the following basic flow:
+
+1. PINY initialization
+
+ Reads PINY config and the rest of the physical system parameter files
+ to set the constants which determine problem size.  These are stored
+ in the CPcharmParaInfo class object named sim (for simulation). 
+
+2. Charm initialization
+
+ Reads the cpaimd_config file which determines parallel decomposition.
+ This is mostly stored in the config object, but a bunch of readonly
+ globals also get instantiated with this information.
+
+3. Topological map setup
+
+ We initialize several structures which will be useful for topology
+ aware mapping.
+
+4. Parallel Object Proxy Creation
+
+ We loop through a Four deep nested launcher by integral, kpoint,
+ temper, and spin to construct the appropriate chare arrays for each
+ instance.
+
+ a. We setup the State chares (GS, RS, PP, RPP) along with their maps.
+
+ b. We setup the Paircalc and ortho chares (SymPC, AsymmPC, ortho, CLA) 
+
+ c. We setup the Density chares (rho, vanderwaals)
+
+ d. We setup the non-local chares for Ees (if configured)
+
+ In each case we are constructing the proxy and calling for parallel
+ object construction of the elements in each of those arrays.
+
+5. Parallel Launch
+
+ This is the startup phases 1 through 6.
+
+ 1. Phase 0 is kicked off by reaching the end of main. This turns
+ execution completely over to the charm scheduler, at which point it
+ will process the object constructor messages that we triggered in the proxy
+ creation in the previous step.  Object construction will occur in this order
+  
+  a. all readonlies will be initialized.
+
+  b. all groups will be constructed
+
+  c. all arrays will be constructed
+
+ The ordering within those phases is non-deterministic, so we don't
+ expect to have control over the ordering of chare array construction.
+ The upshot of this is that in order to safely make array sections we
+ wait until the objects are constructed and then call a second phase
+ of initialization.  In practice this means that arrays will
+ contribute to reductions during construction and the completion of
+ those reductions will trigger a chain of section creation which will
+ eventually feed back into a reduction that reports to the global
+ startup phase ordering in InstanceController.
+
+ 2. Phase 2 and 3 are automatically triggered during the construction
+ process.  These phases are ortho constructing proxies to sections of
+ the paircalculators.  In each case they construct a section and send
+ a message on that section to its elements to initialize a cookie.
+ Receipt of that cookie increments a counter and when each PC element
+ has received all the cookies it expects, it contributes to a
+ reduction which reports to InstanceController::doneInit().  There is
+ a phase for symmetric and asymmetric calculator, they could complete
+ in either order.
+
+ 3. Phase 4 triggers the post construction initialization of section
+ proxies and cache registrations in RhoReal RhoG RhoGHartExt.  The big
+ ticket item here is the sections of RealSpace made by RhoReal.  These
+ operate in the previously described fashion wherein you make a
+ section, initialize the cookies with a dummy message and report on
+ completion via a reduction along the section. When realspace has
+ received as many cookies as there are rhoreal subplanes, it
+ contributes to a reduction reporting to InstanceController::doneInit.
+
+ 5. Phase 5 is triggered by the completion of the RS sections. When
+ EES is enabled, phase 5 will launch the section construction and
+ registration process in RealParticlePlane.  The coalesced completion
+ of eesCache, enlSection, and planeRedSection initialization
+ contributes to a single reduction reporting to
+ InstanceController::doneInit.  This phase always triggers the loading
+ and multicasting of the gspace state data from the statefiles. When
+ all elements of gspace are initialized with that data they contribute
+ to a reduction which reports to InstanceController::doneInit.
+
+ 7. Phase 6 happens only if EES is enabled, it broadcasts
+ registrationDone to all RealParticlePlane elements.
+ 
+ 8. Phase 7 (or 6 if no realparticleplane) means that all
+ initialization is complete and startup is effectively over.  Control
+ is then turned over to the gSpaceDriver::startControl.  Some chares
+ will do a little local first iteration initialization after this.
+ Semantically it should now be safe to engage in any operation as the
+ previous phases should have taken care of any synchronized
+ initialization issues.
+
+_____________________________________________________________________________
+How (and when) to Modify Startup:
+
+ The primary raison d'etra of our multiphase startup scheme is to make
+ it safe to engage in reductions using a cookie on an array section.
+ This is only a tricky problem if your flow of control requires that
+ you do a reduction on that section before you do a multicast.  If the
+ multicast occurs first, then you can trivially initialize the cookie
+ using the multicast message, because the cookie will always be there
+ in every multicast message.  If the reduction occurs first, you need
+ something to initialize that cookie for you first, and for
+ consistency you want to make sure that everyone has an initialized
+ cookie before anyone tries to start using their cookies.
+
+ The OpenAtom practice to solve this problem is as follows:
+
+ 0. Add a post constructor init function to your chare array to make
+ your section
+
+ 1. Construct section proxy. 
+
+ 2. Delegate section proxy.
+
+ 3. Send a dummy message (which inherits from CkMcastBaseMsg) to some
+ entry point named BlahBlahCookie, in practice this should be
+ setMyNewThingCookie, but there are a number of legacy functions with
+ less descriptive names.
+
+ 4. setMyNewThingCookie
+  calls  CkGetSectionInfo(rMyNewThingCookie,msg);
+  contributes an int containing 1 to that section using that cookie to a root entry point named myNewThingSectDone().
+
+ 5. myNewThingSectDone can now contribute to a reduction which reports
+   to InstanceController::doneInit()
+ 
+ 6. increment numPhases appropriately (possibly conditionally if your
+  new thing is an optional feature).  Insert your post constructor
+  init function in InstanceController::doneInit().  Probably after
+  done_init==4, but there may be a condition under which you want it
+  done before gspace is initialized.  Add an if(done_init==?) to
+  handle the reduction receipt of the completion of your section.
+
+Test your change exhaustively before checking in or suffer hateful
+email messages when you make startup hang.
+
