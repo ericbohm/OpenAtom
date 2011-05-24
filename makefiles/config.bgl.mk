@@ -37,7 +37,7 @@ FFT_HOME      = /bgl/local/fftw-2.1.5
                            -L/opt/ibmcmp/xlf/bg/11.1/blrts_lib \
                            -L/opt/ibmcmp/xlsmp/bg/1.7/lib
                LDLIBS   += -module CkMulticast -module comlib -lconv-util \
-                           -lesslbg -lxlf90 -latlas -llapack440 -lmass -lmassv -lxlfmath -lxlomp_ser
+                           -lesslbg -lxlf90 -latlas -llapack440 -lmass -lmassv -lxlfmath -lxlomp_ser -lz
 
 
 # @note: Empty target specific appends (+=) hide previous global values for
