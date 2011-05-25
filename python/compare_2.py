@@ -13,6 +13,9 @@ def compare_2(testoutput, reffile, magnum):
 			break
 		testcontent.append(line)
 	testfile.close()
+	if len(testcontent) == 0:
+		print 'Error, empty test output file.'
+		return False
 	counter = 0
 	while 2 > 1:
 		line = ref_file.readline()
@@ -20,6 +23,9 @@ def compare_2(testoutput, reffile, magnum):
 			break
 		refcontent.append(line)
 	ref_file.close()
+	if len(refcontent) == 0:
+		print 'Error, empty ref file.'
+		return False
 	#start compare
 	while 2 > 1:
 		testlen = len(testcontent)

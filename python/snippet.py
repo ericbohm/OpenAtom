@@ -49,7 +49,6 @@ def snippet(num, inputfile, outputfile):
 		while 2 > 1:
 			line = in_file.readline()
 			if line == '':
-				print 'reach the end of the file'
 				in_file.close()
 				out_file.close()
 				return

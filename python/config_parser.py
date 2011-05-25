@@ -123,12 +123,13 @@ def config_reader(filename):
 		while counter < lengh:
 			testoutput = '../build-O3/test-output/regression/' + outputlist[counter]
 			reffile = '../build-O3/test-output/regression/regression/' + refdict[outputlist[counter]]
-			print 'comparing file' + outputlist[counter]
+			print 'comparing file :' + outputlist[counter]
 			checkresult.checkresult(testoutput, reffile, configfile[0]['iternum'], configfile[0]['numSigDigits'])
 			counter = counter + 1
 		testcounter=testcounter + 1
 		refdict.clear()
-configfilename = raw_input('Please enter the config file name \n')
+import sys
+configfilename = sys.argv[1]
 config_reader(configfilename)
 				
 
