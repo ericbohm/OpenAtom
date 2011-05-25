@@ -730,7 +730,7 @@ void CP_State_GSpacePlane::readFile() {
             config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-#define _DEBUG_KPT_CODE_OFF_
+#define _DEBUG_KPT_CODE_
 #ifdef _DEBUG_KPT_CODE_
     if(ind_state==0){
       CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
@@ -1686,11 +1686,14 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-#ifdef _DEBUG_KPT_AT_GAMMA_
+//==============================================================================
+// begin debug
+#ifdef _DEBUG_KPT_CODE_
+    iteration++;
 
     int i=0;
-    contribute(sizeof(int),&i,CkReduction::sum_int,CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-    cleanExitCalled = 1;
+    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),
+              CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int ncoef         = gs.numPoints;
@@ -1702,12 +1705,15 @@ void CP_State_GSpacePlane::launchAtoms() {
 
     FILE* fp;
     char junk[1000];
-    sprintf(junk,"forces.k%d.%d.out",kpoint_ind,thisIndex.x);
+    sprintf(junk,"forces_before_lambda.k%d.%d.out",kpoint_ind,thisIndex.x);
     fp=fopen(junk,"a");
     for(int i=0; i<gs.numPoints; i++){
       fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
     }//endfor
     fclose(fp);
+
+//end debug
+//==============================================================================
 #else
 //==============================================================================
 // The usual stuff
@@ -1723,7 +1729,6 @@ void CP_State_GSpacePlane::launchAtoms() {
     cleanExitCalled = 1;
 
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-
   }else{
 #endif
    int i=0;
