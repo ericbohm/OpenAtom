@@ -657,7 +657,7 @@ void CP_State_GSpacePlane::readFile() {
                                                     ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
-#define _DEBUG_KPT_CODE_OFF_
+#define _DEBUG_KPT_CODE_
 #ifdef _DEBUG_KPT_CODE_
     if(ind_state==0){
       CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
@@ -1550,33 +1550,34 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-#ifdef _DEBUG_KPT_AT_GAMMA_
+//==============================================================================
+// begin debug
+#ifdef _DEBUG_KPT_CODE_
+    iteration++;
 
-   int istate        = gs.istate_ind;
-   if(istate==0 && iplane_ind==0){
-     CkPrintf("I am state %d and plane %d of kpt %d : %d\n",istate,iplane_ind,kpoint_ind,config.UberJmax);
-   }//endif
-
-   cleanExitCalled = 1;
-   contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  
-       CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+    int i=0;
+    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),
+              CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int ncoef         = gs.numPoints;
-    int *k_x          = eesData->GspData[iplane_ind].ka;
-    int *k_y          = eesData->GspData[iplane_ind].kb;
-    int *k_z          = eesData->GspData[iplane_ind].kc;
+    int *k_x          = eesData->GspData[iplane_ind]->ka;
+    int *k_y          = eesData->GspData[iplane_ind]->kb;
+    int *k_z          = eesData->GspData[iplane_ind]->kc;
 
     complex *force = gs.packedForceData;
 
     FILE* fp;
     char junk[1000];
-    sprintf(junk,"forces.k%d.%d.out",kpoint_ind,thisIndex.x);
+    sprintf(junk,"forces_before_lambda.k%d.%d.out",kpoint_ind,thisIndex.x);
     fp=fopen(junk,"a");
     for(int i=0; i<gs.numPoints; i++){
       fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
     }//endfor
     fclose(fp);
+
+//end debug
+//==============================================================================
 #else
 //==============================================================================
 // The usual stuff
@@ -1591,7 +1592,6 @@ void CP_State_GSpacePlane::launchAtoms() {
 #endif
     cleanExitCalled = 1;
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-
   }else{
 #endif
    int i=0;
@@ -2013,6 +2013,35 @@ void CP_State_GSpacePlane::doLambda() {
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
+
+//==============================================================================
+
+#ifdef _DEBUG_KPT_CODE_
+   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+   int ncoef         = gs.numPoints;
+   int *k_x          = eesData->GspData[iplane_ind]->ka;
+   int *k_y          = eesData->GspData[iplane_ind]->kb;
+   int *k_z          = eesData->GspData[iplane_ind]->kc;
+
+   FILE* fp;
+   char junk[1000];
+   sprintf(junk,"forces_after_lambda.k%d.%d.out",kpoint_ind,thisIndex.x);
+   fp=fopen(junk,"a");
+   for(int i=0; i<gs.numPoints; i++){
+     fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
+   }//endfor
+   fclose(fp);
+
+   int istate        = gs.istate_ind;
+   if(istate==0 && iplane_ind==0){
+      CkPrintf("I am state %d and plane %d of kpt %d : %d\n",istate,iplane_ind,kpoint_ind,config.UberJmax);
+   }//endif
+
+   cleanExitCalled = 1;
+   contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  
+   CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+
 #endif
 
 //==============================================================================
