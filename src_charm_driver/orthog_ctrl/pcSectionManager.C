@@ -82,7 +82,7 @@ void PCSectionManager::createPCsection(const int s1, const int s2)
     orthoIndexY-=s2;
     int orthoArrIndex=orthoIndexX*numOrthoCol+orthoIndexY;
     
-    //    std::random_shuffle(elems, elems + ecount);
+    std::random_shuffle(elems, elems + ecount);
 
     /// Create and save this paircalc section
     pcSection = CProxySection_PairCalculator::ckNew(pcArrayID,  elems, ecount);

@@ -412,10 +412,9 @@ void PairCalculator::initGRed(initGRedMsg *msg)
 
   /// @note: numRecd here is just used as some counter during the init phase. Not related to its usual purpose
   ++numRecd;
-  
+  //  CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
   if(numRecd==numOrtho)
   {
-    //    CkPrintf("[%d,%d,%d,%d,%d] initGRed ox %d oy %d oindex %d oxindex %d oyindex %d numRecd %d numOrtho %d\n",thisIndex.w,thisIndex.x,thisIndex.y, thisIndex.z, cfg.isSymmetric,msg->orthoX, msg->orthoY,orthoIndex, orthoIndexX, orthoIndexY, numRecd, numOrtho);
       contribute(sizeof(int), &numRecd , CkReduction::sum_int, cfg.uponSetupCompletion, cfg.instanceIndex);
       numRecd=0;
   }

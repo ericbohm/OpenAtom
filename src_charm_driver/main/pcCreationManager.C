@@ -27,9 +27,9 @@ void PCCreationManager::build(CkCallback cb, const int boxSize, PeListFactory ge
     // Create the symmetric (psi) and asymmetric (lambda) paircalc instances
     CkPrintf("\n\nCreating the symmetric (psi) and asymmetric (lambda) paircalculators\n");
     cp::paircalc::Builder symmBuilder(symmCfg), asymmBuilder(asymmCfg);
-
-    msg->asymmIDs = asymmBuilder.build(boxSize, getPeList, gSpaceMap);
     msg->symmIDs  = symmBuilder.build (boxSize, getPeList, gSpaceMap);
+    msg->asymmIDs = asymmBuilder.build(boxSize, getPeList, gSpaceMap);
+
     // Spawn the ortho array and its world of chares/classes (CLA_Matrix, OrthoHelper etc.)
     CkPrintf("Creating the ortho array\n");
     cp::ortho::Builder orthoBuilder(orthoCfg);

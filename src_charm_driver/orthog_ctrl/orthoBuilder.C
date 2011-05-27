@@ -91,8 +91,6 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
     // Create the ortho map group
     CProxy_OrthoMap orthoMap = CProxy_OrthoMap::ckNew(orthoMapTable);
     CkArrayOptions orthoOpts;
-    //    orthoOpts.setAnytimeMigration(false);
-    //    orthoOpts.setStaticInsertion(true);    
     orthoOpts.setMap(orthoMap);
     CProxy_Ortho orthoProxy = CProxy_Ortho::ckNew(orthoOpts);
 
@@ -119,8 +117,6 @@ CkArrayID Builder::build(cp::paircalc::InstanceIDs &asymmHandle, PeListFactory g
         CkPrintf("OrthoHelperMap created in %g\n", newtime-Timer);
         CProxy_OrthoHelperMap orthoHMap = CProxy_OrthoHelperMap::ckNew(helperMapTable);
         CkArrayOptions orthoHOpts;
-	//orthoHOpts.setAnytimeMigration(false);
-	//orthoHOpts.setStaticInsertion(true);    
         orthoHOpts.setMap(orthoHMap);
         orthoHelperProxy = CProxy_OrthoHelper::ckNew(orthoHOpts);
         helperAID = orthoHelperProxy.ckGetArrayID();

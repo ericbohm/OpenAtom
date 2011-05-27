@@ -54,13 +54,6 @@ int make_multiplier(
 
     /* create arrays */
     CkArrayOptions optsA, optsB, optsC;
-    //    optsA.setAnytimeMigration(false);
-    //    optsB.setAnytimeMigration(false);
-    //    optsC.setAnytimeMigration(false);
-    //    optsA.setStaticInsertion(true);
-    //    optsB.setStaticInsertion(true);
-    //    optsC.setStaticInsertion(true);
-
     optsA.bindTo(bindA);
     optsB.bindTo(bindB);
     optsC.bindTo(bindC);
