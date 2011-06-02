@@ -2227,11 +2227,6 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
       CkPrintf("  Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
 
-    UberImax = 1;
-    UberJmax = 1;
-    UberKmax = 1;
-    UberMmax = 1;
-
     // TODO get the number of instances.  This is a Glenn item as most
     // of the instance stuff will be on the piny side and determining
     // how many instances there are of each type, and then the total
