@@ -732,6 +732,7 @@ void CP_State_GSpacePlane::readFile() {
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
 #define _DEBUG_KPT_CODE_
 #ifdef _DEBUG_KPT_CODE_
+/***************
     if(ind_state==0){
       CkPrintf("\n$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
       CkPrintf("Adding a phase to the states to debug kpt code!!\n");
@@ -747,6 +748,7 @@ void CP_State_GSpacePlane::readFile() {
       complexPoints[i].re = ore;
       complexPoints[i].im = oim;
     }//endfor
+************/
 #endif
   }else{
     kx -= 1;  ky -= 1; kz -=1;
@@ -1689,11 +1691,6 @@ void CP_State_GSpacePlane::launchAtoms() {
 //==============================================================================
 // begin debug
 #ifdef _DEBUG_KPT_CODE_
-    iteration++;
-
-    int i=0;
-    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),
-              CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int ncoef         = gs.numPoints;
@@ -1714,13 +1711,19 @@ void CP_State_GSpacePlane::launchAtoms() {
 
 //end debug
 //==============================================================================
-#else
+//#else
 //==============================================================================
 // The usual stuff
-#ifdef _CP_DEBUG_PSI_OFF_
-  iteration++;
-  if(iteration==config.maxIter+1){
+//    iteration++;
     int i=0;
+
+    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),
+              CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
+
+#ifdef _CP_DEBUG_PSI_OFF_
+//  iteration++;
+  if(iteration==config.maxIter+1){
+//    int i=0;
 #ifdef _CP_SUBSTEP_TIMING_
 #if USE_HPM
     (TimeKeeperProxy.ckLocalBranch())->printHPM();
@@ -1731,7 +1734,7 @@ void CP_State_GSpacePlane::launchAtoms() {
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   }else{
 #endif
-   int i=0;
+//   int i=0;
    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_DEBUG_PSI_OFF_
   }//endif

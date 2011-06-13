@@ -1195,7 +1195,6 @@ void CPLOCAL::eesHartEextGchare(int ncoef, int ityp, complex *rho, complex *vks,
 
    if(ityp==1){ehart_ret[0] = ehart/2.0;}
    eext_ret[0] += eext;
-   PRINTF("Hi I am eext chare %d doing typ %d with local eext %.10g izero %d ncoef %d\n",index,ityp,eext,izero,ncoef);
 
 //==========================================================================
 // Debug output

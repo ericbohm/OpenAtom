@@ -1398,7 +1398,7 @@ void GEN_WAVE::read_coef_fetch_kpoints(int kpt_file_name_set,
     }/*endif*/
   }/*endfor*/
 
-#define _DEBUG_KPT_AT_GAMMA_OFF_
+#define _DEBUG_KPT_AT_GAMMA_
   doublepack = 0;
 #ifndef _DEBUG_KPT_AT_GAMMA_
   if(igamma_kpt_ind != 0 && nkpoint==1){doublepack = 1;}  // we have the gamma point

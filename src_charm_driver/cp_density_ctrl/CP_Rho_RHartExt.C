@@ -148,7 +148,6 @@ void CP_Rho_RHartExt::init(){
  
     eesCache *eesData  = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     eesData->registerCacheRHart(thisIndex.x);
-    CkPrintf("I am proc %d and I am registering plane %d in the CacheRhart\n",CkMyPe(),thisIndex.x);
 
     atmSFC      = (complex*) fftw_malloc(csize*sizeof(complex));
     atmSFR      = reinterpret_cast<double*> (atmSFC);
