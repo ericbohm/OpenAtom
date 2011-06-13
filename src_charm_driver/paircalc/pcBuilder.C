@@ -151,6 +151,11 @@ void Builder::createPairCalcs()
     #ifdef DEBUG_CP_PAIRCALC_CREATION
         CkPrintf("Builder: Creating a%s paircalc instance\n", (cfg.isSymmetric?" symmetric":"n asymmetric") );
     #endif
+    #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+        CkPrintf("Builder: Creating paircalcs for instance %d that use complex math\n", cfg.instanceIndex);
+    #else
+        CkPrintf("Builder: Creating paircalcs for instance %d that do not use complex math\n", cfg.instanceIndex);
+    #endif
 
     /// Create an empty input handler chare array that will accept all incoming messages from GSpace
     handlerOpts.bindTo(pairCalculatorProxy);
