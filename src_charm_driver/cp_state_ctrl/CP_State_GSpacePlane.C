@@ -1572,22 +1572,16 @@ void CP_State_GSpacePlane::launchAtoms() {
       fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
     }//endfor
     fclose(fp);
-
+#endif
 //end debug
 //==============================================================================
-//#else
+
 //==============================================================================
 // The usual stuff
-//    iteration++;
-    int i=0;
-
-    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),
-              CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
-
 #ifdef _CP_DEBUG_PSI_OFF_
 //  iteration++;
   if(iteration==config.maxIter+1){
-//    int i=0;
+    int i=0;
 #ifdef _CP_SUBSTEP_TIMING_
 #if USE_HPM
     (TimeKeeperProxy.ckLocalBranch())->printHPM();
@@ -1597,19 +1591,12 @@ void CP_State_GSpacePlane::launchAtoms() {
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
   }else{
 #endif
-//   int i=0;
+   int i=0;
    contribute(sizeof(int),&i,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::allDoneCPForces(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 #ifdef _CP_DEBUG_PSI_OFF_
   }//endif
 #endif
-//==============================================================================
-// debugging at gamma endif
-#endif
-//==============================================================================
-
-//==============================================================================
 }//end routine
-//===============================================================================
 
 
 
