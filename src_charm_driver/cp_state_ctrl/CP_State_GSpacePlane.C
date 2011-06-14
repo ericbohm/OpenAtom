@@ -1566,7 +1566,7 @@ void CP_State_GSpacePlane::launchAtoms() {
 
     FILE* fp;
     char junk[1000];
-    sprintf(junk,"forces_before_lambda.k%d.%d.out",kpoint_ind,thisIndex.x);
+    sprintf(junk,"forces_before_lambda.k%d.%d.%d.out",kpoint_ind,thisIndex.x,iteration);
     fp=fopen(junk,"a");
     for(int i=0; i<gs.numPoints; i++){
       fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
@@ -2016,7 +2016,7 @@ void CP_State_GSpacePlane::doLambda() {
 
    FILE* fp;
    char junk[1000];
-   sprintf(junk,"forces_after_lambda.k%d.%d.out",kpoint_ind,thisIndex.x);
+   sprintf(junk,"forces_after_lambda.k%d.%d.%d.out",kpoint_ind,thisIndex.x,iteration);
    fp=fopen(junk,"a");
    for(int i=0; i<gs.numPoints; i++){
      fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
