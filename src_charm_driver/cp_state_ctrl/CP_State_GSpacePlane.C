@@ -1551,33 +1551,6 @@ void CP_State_GSpacePlane::combineForcesGetEke(){
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
-  //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
-//==============================================================================
-// begin debug
-#ifdef _DEBUG_KPT_CODE_
-
-    eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
-    int ncoef         = gs.numPoints;
-    int *k_x          = eesData->GspData[iplane_ind]->ka;
-    int *k_y          = eesData->GspData[iplane_ind]->kb;
-    int *k_z          = eesData->GspData[iplane_ind]->kc;
-
-    complex *force = gs.packedForceData;
-
-    FILE* fp;
-    char junk[1000];
-    sprintf(junk,"forces_before_lambda.k%d.%d.%d.out",kpoint_ind,thisIndex.x,iteration);
-    fp=fopen(junk,"a");
-    for(int i=0; i<gs.numPoints; i++){
-      fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
-    }//endfor
-    fclose(fp);
-#endif
-//end debug
-//==============================================================================
-
-//==============================================================================
-// The usual stuff
 #ifdef _CP_DEBUG_PSI_OFF_
 //  iteration++;
   if(iteration==config.maxIter+1){
@@ -1681,6 +1654,25 @@ void  CP_State_GSpacePlane::sendLambda() {
       CkAssert(fabs(psi[i].im-savedpsiBf[i].im)<testvalue);
   }//endfor
 #endif
+//==============================================================================
+// begin debug
+#ifdef _DEBUG_KPT_CODE_
+    eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+    int *k_x          = eesData->GspData[iplane_ind]->ka;
+    int *k_y          = eesData->GspData[iplane_ind]->kb;
+    int *k_z          = eesData->GspData[iplane_ind]->kc;
+
+    FILE* fp;
+    char junk[1000];
+    sprintf(junk,"forces_before_lambda.k%d.%d.%d.out",kpoint_ind,thisIndex.x,iteration);
+    fp=fopen(junk,"a");
+    for(int i=0; i<gs.numPoints; i++){
+      fprintf(fp,"%d %d %d %.12g %.12g\n",k_x[i],k_y[i],k_z[i],force[i].re,force[i].im);
+    }//endfor
+    fclose(fp);
+#endif
+//end debug
+//==============================================================================
 
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
