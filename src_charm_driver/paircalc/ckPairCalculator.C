@@ -881,17 +881,11 @@ void PairCalculator::multiplyForward(bool flag_dp)
         CkAssert((unsigned int)matrixC%16==0);
     #endif
 
-    // If we're sending the work to dgemm
-    #ifndef CP_PAIRCALC_USES_COMPLEX_MATH
-    //if (!cfg.useComplexMath)
-    {
-        // If internal representation is as doubles, treat each complex as 2 doubles
-        k_in *= pcDataSizeFactor;
-        // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
-        if (flag_dp)
-            alpha = 2.0;
-    }
-    #endif
+    // If internal representation is as doubles, treat each complex as 2 doubles
+    k_in *= pcDataSizeFactor;
+    // Double packing (possible only in symm PC for real input) entails a scaling factor for psi
+    if (flag_dp)
+        alpha = 2.0;
 
     // with dgemm splitting
     #if PC_FWD_DGEMM_SPLIT > 0
