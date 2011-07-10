@@ -1714,7 +1714,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
-    for(int i=0,idest=chunkoffset; i<N; i++,idest){
+    for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
     }//endfor
@@ -1823,7 +1823,7 @@ void CP_State_GSpacePlane::acceptLambda(partialResultMsg *msg) {
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
-    for(int i=0,idest=chunkoffset; i<N; i++,idest){
+    for(int i=0,idest=chunkoffset; i<N; i++,idest++){
        force[idest].re -= 0.5*data[i].re;
        force[idest].im -= 0.5*data[i].im;
     }//endfor
