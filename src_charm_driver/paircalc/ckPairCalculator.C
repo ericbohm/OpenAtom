@@ -776,7 +776,7 @@ PairCalculator::sendTiles(bool flag_dp)
 	    int orthoY=orthoIndex%numOrthoCol;
 	    char filename[80];
 	    snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
-	    dumpMatrixDouble(filename, outTiles[orthoIndex], cfg.orthoGrainSize, cfg.orthoGrainSize,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
+	    dumpMatrix(filename, outTiles[orthoIndex], cfg.orthoGrainSize, cfg.orthoGrainSize,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
 #endif
 
 #ifdef _NAN_CHECK_
@@ -939,8 +939,8 @@ void PairCalculator::multiplyForward(bool flag_dp)
     // without dgemm splitting
     #else
         #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-            dumpMatrixDouble("fwlmdata", matrixB, numExpectedX, numPoints*2, thisIndex.x, 0);
-            dumpMatrixDouble("fwrmdata", matrixA, numExpectedY, numPoints*2, thisIndex.y, 0);
+            dumpMatrix("fwlmdata", matrixB, numExpectedX, numPoints*2, thisIndex.x, 0);
+            dumpMatrix("fwrmdata", matrixA, numExpectedY, numPoints*2, thisIndex.y, 0);
         #endif
         #ifdef PRINT_DGEMM_PARAMS
             CkPrintf("HEY-DGEMM %c %c %d %d %d %f %f %d %d %d\n", transformT, transform, m_in, n_in, k_in, alpha, beta, k_in, k_in, m_in);
@@ -959,7 +959,7 @@ void PairCalculator::multiplyForward(bool flag_dp)
 
 
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-        dumpMatrixDouble("fwgmodata",matrixC,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
+        dumpMatrix("fwgmodata",matrixC,grainSizeX, grainSizeY,thisIndex.x, thisIndex.y);
     #endif
     #ifndef CMK_TRACE_ENABLED
         StartTime=CmiWallTimer();
@@ -1021,7 +1021,7 @@ void PairCalculator::contributeSubTiles(internalType *fullOutput)
 
     CkMulticastMgr *mcastGrp=CProxy_CkMulticastMgr(mCastGrpIdOrtho).ckLocalBranch();
     #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
-        dumpMatrixDouble("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
+        dumpMatrix("fullOutput", fullOutput, grainSizeX, grainSizeY, thisIndex.x, thisIndex.y);
     #endif
     internalType *outTile;
     bool reuseTile = false;
@@ -1069,7 +1069,7 @@ void PairCalculator::contributeSubTiles(internalType *fullOutput)
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                 char filename[80];
                 snprintf(filename,80,"fwoutTile_%d_%d:",orthoX,orthoY);
-                dumpMatrixDouble(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
+                dumpMatrix(filename, outTile, orthoGrainSizeX, orthoGrainSizeY,thisIndex.x+orthoX*cfg.orthoGrainSize, thisIndex.y+orthoY*cfg.orthoGrainSize);
             #endif
 
             mcastGrp->contribute(tileSize*sizeof(internalType), outTile, sumMatrixDoubleType, orthoCookies[orthoIndex], orthoCB[orthoIndex]);
@@ -1352,18 +1352,18 @@ void PairCalculator::multiplyResult(multiplyResultMsg *msg)
         CkPrintf("orthoGrainSizeX %d orthoGrainSizeY %d orthoX %d orthoY %d e1 %.10g\n",orthoGrainSizeX, orthoGrainSizeY, orthoX, orthoY, msg->matrix1[0]);
         if(cfg.grainSize==cfg.orthoGrainSize)
         {
-            dumpMatrixDouble("bwm1idata",msg->matrix1,grainSizeX,grainSizeY,0,0,orthoX, orthoY);
+            dumpMatrix("bwm1idata",msg->matrix1,grainSizeX,grainSizeY,0,0,orthoX, orthoY);
             if(!unitcoef)
             { // CG non minimization case
-                dumpMatrixDouble("bwm2idata",msg->matrix2,grainSizeX,grainSizeY);
+                dumpMatrix("bwm2idata",msg->matrix2,grainSizeX,grainSizeY);
             }
         }
         else
         {          
-            dumpMatrixDouble("bwm1idata",msg->matrix1,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
+            dumpMatrix("bwm1idata",msg->matrix1,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
             if(!unitcoef)
             { // CG non minimization case
-                dumpMatrixDouble("bwm2idata",msg->matrix2,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
+                dumpMatrix("bwm2idata",msg->matrix2,orthoGrainSizeX,orthoGrainSizeY,0,0,orthoX, orthoY);
             }
         }
     #endif
@@ -1726,7 +1726,7 @@ void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, 
 #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
     char filename[80];
     snprintf(filename,80,"bwinResult2_%d_%d:",orthoX,orthoY);
-    dumpMatrixDouble(filename, matrix2, orthoGrainSizeX, orthoGrainSizeY,orthoX*cfg.orthoGrainSize, orthoY*cfg.orthoGrainSize);
+    dumpMatrix(filename, matrix2, orthoGrainSizeX, orthoGrainSizeY,orthoX*cfg.orthoGrainSize, orthoY*cfg.orthoGrainSize);
 #endif
 
   }
@@ -1749,7 +1749,7 @@ void PairCalculator::collectTile(bool doMatrix1, bool doMatrix2, bool doOrthoT, 
 	snprintf(filename,80,"bworthoT_%d_%d:",orthoX,orthoY);
       else
 	snprintf(filename,80,"bwinResult1_%d_%d:",orthoX,orthoY);
-      dumpMatrixDouble(filename, matrix1, orthoGrainSizeX, orthoGrainSizeY,orthoX*cfg.orthoGrainSize, orthoY*cfg.orthoGrainSize);
+      dumpMatrix(filename, matrix1, orthoGrainSizeX, orthoGrainSizeY,orthoX*cfg.orthoGrainSize, orthoY*cfg.orthoGrainSize);
 #endif
     }
 
@@ -1783,10 +1783,10 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
     #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
         if(cfg.orthoGrainSize==cfg.grainSize || cfg.areBWTilesCollected)
         {
-            dumpMatrixDouble("bwm1cidata",amatrix,grainSizeX,grainSizeY,0,0,0,streamCaughtR);
+            dumpMatrix("bwm1cidata",amatrix,grainSizeX,grainSizeY,0,0,0,streamCaughtR);
             // CG non minimization case
             if(!unitcoef)
-                dumpMatrixDouble("bwm2cidata",amatrix2,grainSizeX, grainSizeY,0,0,0,streamCaughtR);
+                dumpMatrix("bwm2cidata",amatrix2,grainSizeX, grainSizeY,0,0,0,streamCaughtR);
         }
     #endif
 
@@ -1860,10 +1860,10 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
         int chunksize=blkSize/cfg.numChunks;
         int ystart=chunksize*thisIndex.z;
         if(!amPhantom)
-            dumpMatrixDouble("bwmlodata",inDataLeft,numExpectedX,numPoints*2,thisIndex.x,0);
+            dumpMatrix("bwmlodata",inDataLeft,numExpectedX,numPoints*2,thisIndex.x,0);
         if(!unitcoef||amPhantom)
         { // CG non minimization case
-            dumpMatrixDouble("bwmrodata",inDataRight,numExpectedY,numPoints*2,thisIndex.y,0);
+            dumpMatrix("bwmrodata",inDataRight,numExpectedY,numPoints*2,thisIndex.y,0);
         }
     #endif
     #ifndef CMK_TRACE_ENABLED
@@ -2611,7 +2611,7 @@ void PairCalculator::sendBWResult(sendBWsignalMsg *msg)
 
 
 
-void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, int xdim, int ydim, int xstart, int ystart, int xtra1, int xtra2)
+void PairCalculator::dumpMatrix(const char *infilename, double *matrix, int xdim, int ydim, int xstart, int ystart, int xtra1, int xtra2)
 {
   char fmt[1000];
   char filename[1000];
@@ -2623,6 +2623,21 @@ void PairCalculator::dumpMatrixDouble(const char *infilename, double *matrix, in
   for(int i=0;i<xdim;i++)
     for(int j=0;j<ydim;j++)
       fprintf(loutfile,"%d %d %.12g\n",i+xstart,j+ystart,matrix[i*ydim+j]);
+  fclose(loutfile);
+}
+
+void PairCalculator::dumpMatrix(const char *infilename, complex *matrix, int xdim, int ydim, int xstart, int ystart, int xtra1, int xtra2)
+{
+  char fmt[1000];
+  char filename[1000];
+  strncpy(fmt,infilename,999);
+  strncat(fmt,"_%d_%d_%d_%d_%d_%d_%d.out",999);
+  sprintf(filename, fmt, thisIndex.w,thisIndex.x, thisIndex.y, thisIndex.z,
+	  xtra1, xtra2, cfg.isSymmetric);
+  FILE *loutfile = fopen(filename, "w");
+  for(int i=0;i<xdim;i++)
+    for(int j=0;j<ydim;j++)
+      fprintf(loutfile,"%d %d %.12g %.12g\n", i+xstart, j+ystart, matrix[i*ydim+j].re, matrix[i*ydim+j].im);
   fclose(loutfile);
 }
 
