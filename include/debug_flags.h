@@ -11,7 +11,7 @@
 // Major League Debug Controllers
 
 // do reductions to time each phase of the time step
-#define _CP_SUBSTEP_TIMING_
+//#define _CP_SUBSTEP_TIMING_
 
 //-----------------------------------------------------------------------
 //#define  _CP_DEBUG_SCALC_ONLY_  // REALLY scalc only NOTHING ELSE
