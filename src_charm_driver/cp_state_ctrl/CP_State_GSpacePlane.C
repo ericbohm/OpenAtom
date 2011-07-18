@@ -1413,21 +1413,21 @@ void CP_State_GSpacePlane::combineForcesGetEke()
 
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("vksBf",(double *)ppForces, 1, 
+    dumpMatrix("vksBf",(double *)ppForces, 1, 
                 gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrixDouble("forceBf",(double *)forces, 1, 
+    dumpMatrix("forceBf",(double *)forces, 1, 
                 gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   if(savedvksBf==NULL){ // load it
       savedvksBf= new complex[gs.numPoints];
-      loadMatrixDouble("vksBf",(double *)savedvksBf, 1, 
+      loadMatrix("vksBf",(double *)savedvksBf, 1, 
                  gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   if(savedforceBf==NULL){ // load it
       savedforceBf= new complex[gs.numPoints];
-      loadMatrixDouble("forceBf",(double *)savedforceBf, 1, 
+      loadMatrix("forceBf",(double *)savedforceBf, 1, 
                 gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
 
@@ -1568,21 +1568,21 @@ void  CP_State_GSpacePlane::sendLambda() {
     CkAssert(countLambdaO[i]==0);
 #endif
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrixDouble("lambdaBf",(double *)force, 1, 
+    dumpMatrix("lambdaBf",(double *)force, 1, 
                      gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
-    dumpMatrixDouble("psiBf",(double *)psi, 1, 
+    dumpMatrix("psiBf",(double *)psi, 1, 
                      gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_PSI_
   if(savedlambdaBf==NULL){ // load it
       savedlambdaBf= new complex[gs.numPoints];
-      loadMatrixDouble("lambdaBf",(double *)savedlambdaBf, 1, 
+      loadMatrix("lambdaBf",(double *)savedlambdaBf, 1, 
                        gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   if(savedpsiBf==NULL){ // load it
       savedpsiBf= new complex[gs.numPoints];
-      loadMatrixDouble("psiBf",(double *)savedpsiBf, 1, 
+      loadMatrix("psiBf",(double *)savedpsiBf, 1, 
                         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   double testvalue=0.00000001;
@@ -1657,7 +1657,7 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 
 /*
   if(thisIndex.y==0){
-    dumpMatrixDouble("lambdab4",(double *)force, 1, gs.numPoints*2,
+    dumpMatrix("lambdab4",(double *)force, 1, gs.numPoints*2,
                       thisIndex.y,thisIndex.x,thisIndex.x,0,false);
   }//endif
 
@@ -1898,7 +1898,7 @@ void CP_State_GSpacePlane::doLambda() {
 // Debug
 
 #ifdef _CP_GS_DUMP_LAMBDA_
-    dumpMatrixDouble("lambdaAf",(double *)force, 1, gs.numPoints*2,
+    dumpMatrix("lambdaAf",(double *)force, 1, gs.numPoints*2,
                       thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
@@ -1906,7 +1906,7 @@ void CP_State_GSpacePlane::doLambda() {
   double testvalue=0.00000001;
   if(savedlambdaAf==NULL){ // load it
       savedlambdaAf= new complex[gs.numPoints];
-      loadMatrixDouble("lambdaAf",(double *)savedlambdaAf, 1, 
+      loadMatrix("lambdaAf",(double *)savedlambdaAf, 1, 
                         gs.numPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){
@@ -2622,7 +2622,7 @@ void CP_State_GSpacePlane::sendPsi() {
 #endif
   
 #ifdef _CP_GS_DUMP_PSI_
-    dumpMatrixDouble("psiBfp",(double *)psi, 1, gs.numPoints*2,
+    dumpMatrix("psiBfp",(double *)psi, 1, gs.numPoints*2,
                      thisIndex.y,thisIndex.x,thisIndex.x,0,false);     
 #endif
 
@@ -2630,7 +2630,7 @@ void CP_State_GSpacePlane::sendPsi() {
   double testvalue=0.00000001;
   if(savedpsiBfp==NULL){ // load it
       savedpsiBfp= new complex[gs.numPoints];
-      loadMatrixDouble("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,
+      loadMatrix("psiBfp",(double *)savedpsiBfp, 1, gs.numPoints*2,
                         thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){
@@ -2896,7 +2896,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 // (E) Debug psi
 
 #ifdef _CP_GS_DUMP_PSI_
-  dumpMatrixDouble("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
+  dumpMatrix("psiAf",(double *)psi, 1, gs.numPoints*2,thisIndex.y,thisIndex.x,
                     thisIndex.x,0,false);
 #endif
 
@@ -2904,7 +2904,7 @@ void CP_State_GSpacePlane::doNewPsi(){
   double testvalue=0.00000001;
   if(savedpsiAf==NULL){
       savedpsiAf= new complex[gs.numPoints];
-      loadMatrixDouble("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,
+      loadMatrix("psiAf",(double *)savedpsiAf, 1, gs.numPoints*2,
                         thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
   }//endif
   for(int i=0;i<gs.numPoints;i++){

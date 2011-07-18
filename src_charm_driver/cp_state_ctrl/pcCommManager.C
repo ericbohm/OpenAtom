@@ -184,7 +184,7 @@ void PCCommManager::sendLeftDataMcast(int numPoints, complex* ptr, bool psiV)
                 outsize= chunksize + (numPoints % pcCfg.numChunks);
             #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
             if(pcCfg.isSymmetric && gspaceIndex.y==0)
-                dumpMatrixDouble("gspPts",(double *)ptr, 1, numPoints*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
+                dumpMatrix("gspPts",(double *)ptr, 1, numPoints*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
             CkPrintf("L [%d,%d,%d,%d,%d] chunk %d chunksize %d outsize %d for numpoint %d offset will be %d %.12g\n",gspaceIndex.y,gspaceIndex.x, gspaceIndex.x, chunk,pcCfg.isSymmetric, chunk,chunksize, outsize, numPoints, chunk*chunksize, ptr[chunk*chunksize].re);
             #endif
             // If sending directly, use the vector of target PC chares
@@ -217,7 +217,7 @@ void PCCommManager::sendLeftDataMcast(int numPoints, complex* ptr, bool psiV)
                 CkSetQueueing(msg, CK_QUEUEING_IFIFO);
                 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
                 if(pcCfg.isSymmetric && gspaceIndex.y==0)
-                    dumpMatrixDouble("pairmsg",(double *)msg->points, 1, outsize*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
+                    dumpMatrix("pairmsg",(double *)msg->points, 1, outsize*2,gspaceIndex.y,gspaceIndex.x,0,chunk,pcCfg.isSymmetric);
                 #endif
                 #ifdef _NAN_CHECK_
                 for(int i=0;i<outsize ;i++)

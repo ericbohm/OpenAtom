@@ -216,7 +216,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
     }
 
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("smat",(double *)S, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("smat",(double *)S, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 
@@ -224,7 +224,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   if(savedsmat==NULL)
     { // load it
       savedsmat= new double[m*n];
-      loadMatrixDouble("smat",(double *)savedsmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
+      loadMatrix("smat",(double *)savedsmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -348,14 +348,14 @@ void Ortho::resume(){
     //    if(thisIndex.y <= thisIndex.x)   //we have the answer scalc wants
     //    if((pc.y < pc.x) || ((pc.y==pc.x)&&()))   //we have the answer scalc wants
 #ifdef _CP_ORTHO_DUMP_TMAT_
-    dumpMatrixDouble("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("tmat",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
 #ifdef _CP_ORTHO_DEBUG_COMPARE_TMAT_
   if(savedtmat==NULL)
     { // load it
       savedtmat= new double[m*n];
-      loadMatrixDouble("tmat",(double *)savedtmat, m, n, numGlobalIter, thisIndex.x * orthoGrainSize,thisIndex.y*orthoGrainSize,0,false);
+      loadMatrix("tmat",(double *)savedtmat, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -394,7 +394,7 @@ void Ortho::resume(){
 	// we have a transposed copy of what scalc wants
     symmSectionMgr.sendResults(m*n, A, 0, thisIndex.x, thisIndex.y, actionType, 0);
 #ifdef _CP_ORTHO_DUMP_TMAT_
-	dumpMatrixDouble("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+	dumpMatrix("tmatT",(double *)A, m, n,numGlobalIter,thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
       }
@@ -484,14 +484,14 @@ void Ortho::acceptSectionLambda(CkReductionMsg *msg) {
   int lambdaCount = msg->getSize()/sizeof(internalType);
 
 #ifdef _CP_ORTHO_DUMP_LMAT_
-    dumpMatrixDouble("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("lmat",lambda, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 #ifdef _CP_ORTHO_DEBUG_COMPARE_LMAT_
   if(savedlmat==NULL)
     { // load it
       savedlmat= new double[m*n];
-      loadMatrixDouble("lmat",(double *)savedlmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
+      loadMatrix("lmat",(double *)savedlmat, m, n,numGlobalIter, thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -635,7 +635,7 @@ void Ortho::gamma_done(){
 //thisIndex.y,orthoT[0],orthoT[1],orthoT[m*n-2],orthoT[m*n-1],B[0],B[1],B[m*n-2],B[m*n-1]);
 
 #ifdef _CP_ORTHO_DUMP_GMAT_
-    dumpMatrixDouble("gmat",(double *)B, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("gmat",(double *)B, m, n, numGlobalIter, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 
 #endif
 
@@ -645,7 +645,7 @@ void Ortho::gamma_done(){
   if(savedgmat==NULL)
     { // load it
       savedgmat= new double[m*n];
-      loadMatrixDouble("gmat",(double *)savedgmat, m, n,numGlobalIter,thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
+      loadMatrix("gmat",(double *)savedgmat, m, n,numGlobalIter,thisIndex.x*cfg.grainSize,thisIndex.y*cfg.grainSize,0,false);
     }
   for(int i=0;i<m*n;i++)
     {
@@ -775,9 +775,9 @@ void Ortho::do_iteration(void){
       C[i * n + i] = 3;
   }
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step1:A:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    dumpMatrixDouble("step1:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    dumpMatrixDouble("step1:C:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step1:A:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step1:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step1:C:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
   matA1.multiply(-1, 1, A, Ortho::step_2_cb, (void*) this,
@@ -812,9 +812,9 @@ void Ortho::step_2(void){
   else
     {
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step2:A:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    dumpMatrixDouble("step2:B:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    //    dumpMatrixDouble("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step2:A:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step2:B:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    //    dumpMatrix("step2:C:",(double *)tmp_arr, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
       matA2.multiply(0.5, 0, B, Ortho::step_3_cb, (void*) this,
@@ -836,9 +836,9 @@ void Ortho::step_3(){
   step = 3;
   CmiMemcpy(B, A, m * n * sizeof(internalType));
 #ifdef _CP_ORTHO_DUMP_SMAT_
-    dumpMatrixDouble("step3:A:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    dumpMatrixDouble("step3:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
-    dumpMatrixDouble("step3:C:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step3:A:",(double *)C, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step3:B:",(double *)B, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
+    dumpMatrix("step3:C:",(double *)A, m, n, iterations, thisIndex.x * cfg.grainSize, thisIndex.y * cfg.grainSize, 0, false);
 #endif
 
   matA3.multiply(0.5, 0, C, Ortho::tol_cb, (void*) this,

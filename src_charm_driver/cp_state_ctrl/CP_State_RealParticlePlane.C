@@ -528,7 +528,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
 #endif
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("projPsiC",(double *)projPsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
@@ -538,7 +538,7 @@ void CP_State_RealParticlePlane::FFTNLEesFwdR(){
   if(savedprojpsiC==NULL)
     { // load it
       savedprojpsiC= new complex[csize];
-      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<csize;i++)
     {
@@ -869,7 +869,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
   if(savedprojpsiC==NULL)
     { // load it
       savedprojpsiC= new complex[csize];
-      loadMatrixDouble("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiC",(double *)savedprojpsiC, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
 #ifdef _INSANEO_PARANOID_COMPARE_THAT_EATS_HUGE_MEMORY_
   if(savedmn==NULL)
@@ -978,8 +978,8 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    }//endif
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("zmat",(double *)zmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
-    dumpMatrixDouble("projPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("zmat",(double *)zmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+    dumpMatrix("projPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
@@ -988,7 +988,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
   if(savedzmat==NULL)
     { // load it
       savedzmat= new double[nZmat_in];
-      loadMatrixDouble("zmat",(double *)savedzmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
+      loadMatrix("zmat",(double *)savedzmat, 1, nZmat_in,thisIndex.y,thisIndex.x,thisIndex.x,iterNL,false);    
     }
   for(int i=0;i<nZmat_in; i++)
     {
@@ -1002,14 +1002,14 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
   if(savedProjpsiRScr==NULL)
     { // load it
       savedProjpsiRScr= new double[planeSize];
-      loadMatrixDouble("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<planeSize;i++)
     {
       if(fabs(projPsiRScr[i]-savedProjpsiRScr[i])>0.0001)
 	{
 	  fprintf(stderr, "RPP [%d,%d] %d element projpsi  %.10g not %.10g\n",thisIndex.x, thisIndex.y,i, projPsiRScr[i], savedProjpsiRScr[i]);
-	  dumpMatrixDouble("badprojPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+	  dumpMatrix("badprojPsiRScr",(double *)projPsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 	}
       CkAssert(fabs(projPsiRScr[i]-savedProjpsiRScr[i])<0.0001);
 
@@ -1076,7 +1076,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   if(savedProjpsiRScr==NULL)
     { // load it
       savedProjpsiRScr= new double[planeSize];
-      loadMatrixDouble("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiRScr",(double *)savedProjpsiRScr, 1, planeSize,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<planeSize;i++)
     {
@@ -1112,7 +1112,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   */
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("projPsiCScr",(double *)projPsiCScr, 1, (ngridA+2)*ngridB,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
@@ -1122,7 +1122,7 @@ void CP_State_RealParticlePlane::FFTNLEesBckR(){
   if(savedProjpsiCScr==NULL)
     { // load it
       savedProjpsiCScr= new complex[csize];
-      loadMatrixDouble("projPsiCScr",(double *)savedProjpsiCScr, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiCScr",(double *)savedProjpsiCScr, 1, csize*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<csize;i++)
     {

@@ -1008,14 +1008,14 @@ void CP_State_ParticlePlane::FFTNLEesFwd(){
 #endif
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiGb4send",(double *)projPsiG, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("projPsiGb4send",(double *)projPsiG, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   if(savedprojpsiBfsend==NULL)
     { // load it
       savedprojpsiBfsend= new complex[gSpaceNumPoints];
-      loadMatrixDouble("projPsiGb4send",(double *)savedprojpsiBfsend, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiGb4send",(double *)savedprojpsiBfsend, 1, gSpaceNumPoints*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<gSpaceNumPoints;i++)
     {
@@ -1207,14 +1207,14 @@ void CP_State_ParticlePlane::FFTNLEesBck(){
   complex *projPsiGTmp = fftcache->tmpData;
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiGb4",(double *)projPsiG, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("projPsiGb4",(double *)projPsiG, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   if(savedprojpsiGBf==NULL)
     { // load it
       savedprojpsiGBf= new complex[numFullNL];
-      loadMatrixDouble("projPsiGb4",(double *)savedprojpsiGBf, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiGb4",(double *)savedprojpsiGBf, 1, numFullNL*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<numFullNL;i++)
     {
@@ -1273,14 +1273,14 @@ void CP_State_ParticlePlane::computeNLEesForces(){
   complex *projPsiGTmp = fftcache->tmpData;
 
 #ifdef _CP_GS_DUMP_VKS_
-    dumpMatrixDouble("projPsiGtmpb4",(double *)projPsiGTmp, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+    dumpMatrix("projPsiGtmpb4",(double *)projPsiGTmp, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
 #endif
 
 #ifdef _CP_GS_DEBUG_COMPARE_VKS_
   if(savedprojpsiBf==NULL)
     { // load it
       savedprojpsiBf= new complex[ncoef];
-      loadMatrixDouble("projPsiGtmpb4",(double *)savedprojpsiBf, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
+      loadMatrix("projPsiGtmpb4",(double *)savedprojpsiBf, 1, ncoef*2,thisIndex.y,thisIndex.x,thisIndex.x,0,false);    
     }
   for(int i=0;i<ncoef;i++)
     {
