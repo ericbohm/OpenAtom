@@ -181,3 +181,15 @@
 //=============================================================================
 // src_piny_physics_v1.0/piny_to_driver/Parainfoinit.C
 //#define _CP_DEBUG_LINES_PER_PLANE_
+
+// ---- All matrix dumps ----
+//#define _CP_GS_DUMP_VKS_
+//#define _CP_GS_DUMP_LAMBDA_
+//#define _CP_GS_DUMP_PSI_
+//#define _PAIRCALC_DEBUG_PARANOID_FW_
+//#define _CP_ORTHO_DUMP_SMAT_
+//#define _CP_ORTHO_DUMP_TMAT_
+//#define _CP_ORTHO_DEBUG_COMPARE_TMAT_
+//#define _CP_ORTHO_DUMP_LMAT_
+//#define _CP_ORTHO_DUMP_GMAT_
+
