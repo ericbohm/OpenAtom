@@ -557,7 +557,7 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 25;
+  *num_dict = 26;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_gen")-1;
 
 /*========================================================================*/
@@ -703,6 +703,12 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[25].error_mes,"a number > 0");
         strcpy((*dict)[25].keyword,"annealing_target_temperature");
         strcpy((*dict)[25].keyarg,"300");
+
+  /*-----------------------------------------------------------------------*/ 
+  /*  26)\num_parallel_temperers{#} */
+        strcpy((*dict)[26].error_mes,"a number > 0");
+        strcpy((*dict)[26].keyword,"num_parallel_temperers");
+        strcpy((*dict)[26].keyarg,"1");
 
 /*========================================================================*/
 /*                   End Subprogram:                                      */
@@ -1298,7 +1304,7 @@ void set_sim_dict_write(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 29;
+  *num_dict = 31;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_write")-1;
 
 /*========================================================================*/
@@ -1457,6 +1463,16 @@ void set_sim_dict_write(int *num_dict,DICT_WORD *dict[])
          strcpy((*dict)[29].error_mes,"none");
          strcpy((*dict)[29].keyword,"cp_elf_file");
          strcpy((*dict)[29].keyarg,"sim_cp_elf.out");
+  /*-----------------------------------------------------------------------*/ 
+  /*  30)\atm_coord_dir_in */
+         strcpy((*dict)[30].error_mes,"none");
+         strcpy((*dict)[30].keyword,"atm_coord_dir_in");
+         strcpy((*dict)[30].keyarg,"ATOM_COORDS_IN");
+  /*-----------------------------------------------------------------------*/ 
+  /*  31)\atm_coord_dir_out */
+         strcpy((*dict)[31].error_mes,"none");
+         strcpy((*dict)[31].keyword,"atm_coord_dir_out");
+         strcpy((*dict)[31].keyarg,"ATOM_COORDS_OUT");
   /*-----------------------------------------------------------------------*/ 
 /*========================================================================*/
 /*------------------------------------------------------------------------*/

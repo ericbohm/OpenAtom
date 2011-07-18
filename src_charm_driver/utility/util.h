@@ -188,7 +188,8 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 void sort_kxky(int ,int *,int *,int *,int *,int);
 
 void writeStateFile(int ,complex *,complex *,
-                    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int);
+                    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int,
+                    int , int , int , int );
 
 void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
 

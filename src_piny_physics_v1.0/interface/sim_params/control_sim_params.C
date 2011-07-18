@@ -113,6 +113,10 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
                                        "control_sim_params");
   filename_parse->dnameci            = (char *)cmalloc(MAXWORD*sizeof(char),
                                        "control_sim_params");
+  general_data->genfilenames.atm_crd_dir_out = (char *)cmalloc(MAXWORD*sizeof(char),
+                                       "control_sim_params");
+  general_data->genfilenames.atm_crd_dir_in = (char *)cmalloc(MAXWORD*sizeof(char),
+                                       "control_sim_params");
   general_data->genfilenames.dname   = (char *)cmalloc(MAXWORD*sizeof(char),
                                        "control_sim_params");
   general_data->genfilenames.dnamei  = (char *)cmalloc(MAXWORD*sizeof(char),

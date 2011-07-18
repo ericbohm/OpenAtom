@@ -252,6 +252,12 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
+
+  myBeadIndex    = thisInstance.idxU.x;
+  myKptIndex     = thisInstance.idxU.y;
+  myTemperIndex  = thisInstance.idxU.z;
+  mySpinIndex    = thisInstance.idxU.s;
+
 //============================================================================
 
   istate_ind           = thisIndex.x;
@@ -530,6 +536,10 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|acceptedLambda;
   p|itemp; // 2 temporary variables for debugging in scope
   p|jtemp;
+  p|myBeadIndex;
+  p|myKptIndex;
+  p|myTemperIndex;
+  p|mySpinIndex;
 
   p|ehart_total;
   p|enl_total;
@@ -639,13 +649,15 @@ void CP_State_GSpacePlane::readFile() {
   int nlines_tot,nplane;
 
   if(istart_typ_cp>=3){
-    sprintf(fname, "%s/vState%d.out", config.dataPath, ind_state + 1);
+    sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+            config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,vcomplexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
             kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,1);
   }//endif
 
   if(gen_wave==0){
-    sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
+    sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+            config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
   }else{
@@ -2220,12 +2232,20 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
   if(countFileOut==nchareG){
      countFileOut = 0;
      int ind_state = thisIndex.x+1;
-     char psiName[200]; char vpsiName[200];
-     sprintf(psiName, "%s/state%d.out", config.dataPathOut,ind_state);
-     sprintf(vpsiName,"%s/vState%d.out",config.dataPathOut,ind_state);
+     int ibead     = myBeadIndex;
+     int ikpt      = myKptIndex;
+     int itemper   = myTemperIndex;
+     int ispin     = mySpinIndex;
+
+     char psiName[400]; char vpsiName[400];
+
+     sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
+     sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
      writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
                     sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                    myiteration,ind_state);
+                    myiteration,ind_state,ispin,ikpt,itemper,ibead);
      fftw_free(tpsi); tpsi  = NULL;
      fftw_free(tvpsi);tvpsi = NULL;
      fftw_free(tk_x); tk_x  = NULL;
