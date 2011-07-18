@@ -101,6 +101,11 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         int finishedCpIntegrate;
         int numRecvRedPsi;
         int iterRotation;
+	int myBeadIndex;
+	int myKptIndex;
+	int myTemperIndex;
+	int mySpinIndex;
+
         double ake_old;
         
         bool acceptedVPsi;

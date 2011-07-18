@@ -24,7 +24,7 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-PhysicsAtomPosInit::PhysicsAtomPosInit (){
+PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
 //============================================================================
 // Get the readonly structures ready to go
 
@@ -43,7 +43,9 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
 //============================================================================
 // Copy out some useful variables and error check
 
-  pi_beads      = (mdclatoms_info->pi_beads);
+  pi_beads_true = (mdclatoms_info->pi_beads); //input controled by directory
+  pi_beads      = 1;
+  ntemper       = gensimopts->ntemper;
   natm_tot      = (mdclatoms_info->natm_tot);
   natm_nl       = (cppseudo->nonlocal.natm);
   iextended_on  = (mdtherm_info->iextended_on);
@@ -54,6 +56,16 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
   len_nhc       = (mdtherm_info->len_nhc);
   cp_wave_opt   = (gensimopts->cp_wave);
   isokin_opt    = mdtherm_info->isokin_opt;
+  ibead         = ibead_in;
+  itemper       = itemper_in;
+
+  if( (ibead>=pi_beads_true) || (ibead < 0) || (itemper >=ntemper) || (itemper < 0) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Bad bead or temperer index to DriverAtomInit : %d %d : %d %d\n",
+            ibead,pi_beads_true,itemper,ntemper);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
 
   if(iextended_on==1){
     if(num_nhc != 3*natm_tot){
@@ -112,7 +124,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
 //  Fill the Piny Data Structures : Resampl atom velocities if necessary
 
   read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
-             mdclatoms_pos,&therm_class,therm_bead);
+             mdclatoms_pos,&therm_class,therm_bead,ibead,itemper);
 
   if(istart_typ<3){
     for(int ip=1;ip<=pi_beads;ip++){
@@ -132,7 +144,8 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNHC){
+void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNHC,
+                                        int ibead_in, int itemper_in){
 //============================================================================
 // Local pointers and Error checking
 
@@ -144,9 +157,10 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 #include "../include/class_defs/allclass_strip_mdatoms.h"
   int istart = gensimopts->istart;
 
-  if(natm_in != natm_tot){
+  if(natm_tot != natm_in || ibead != ibead_in || itemper != itemper_in){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("Bad atom number to DriverAtomInit\n");
+     PRINTF("Bad input to DriverAtomInit %d %d : %d %d : %d %d\n",
+  	     natm_tot,natm_in,ibead,ibead_in,itemper,itemper_in);
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
   }//endif

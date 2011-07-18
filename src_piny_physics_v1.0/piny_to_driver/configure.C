@@ -29,9 +29,10 @@
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //===================================================================================
 void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int nkf3, 
-                         int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
+                        int maxIter_in,int ibinary_opt,int natm_nl_in, int fftopt_in,
                         int numPes_in, int natm_typ_in,int ees_eext_opt_in,
-                        int gen_wave_in,int ncoef, int cp_min_opt, int nchareRhoRHart)
+                        int gen_wave_in,int ncoef, int cp_min_opt, int nchareRhoRHart,
+                        int doublePack_in,int pi_beads, int nkpoint, int ntemper, int nspin)
 //===================================================================================
    {//begin routine
 //===================================================================================
@@ -71,6 +72,45 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   }//endif
 
 //===================================================================================
+// set the Uber parameters
+
+  UberImax = pi_beads; //pi_beads : fixing > 1 implementation now 
+  UberJmax = nkpoint;  //nkpoint  : fixing > 1 implementation now 
+  UberKmax = ntemper;  //ntemper must be 1 for now
+  UberMmax = nspin;    //nspin   
+
+  // Warn the folks when dicey things are going down
+  if(pi_beads>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, pi_beads > 1 = %d\n",pi_beads);
+    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+  }//endif
+
+  if(nkpoint>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, nkpoint > 1 = %d\n",nkpoint);
+    PRINTF("    This is not yet supported in any way, shape or form in this version\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+    EXIT(1);
+  }//endif
+
+  if(nspin>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, nspin > 1 = %d\n",nspin);
+    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+  }//endif
+
+  if(ntemper>1){
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+    PRINTF("    Danger, Danger, ntemper > 1 = %d\n",ntemper);
+    PRINTF("    This is not yet supported in any way, shape or form\n");
+    PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
+    EXIT(1);
+  }//endif
+
+//===================================================================================
 // Set some parameters directly from PINY input
 
   nstates      = nstates_in;
@@ -83,6 +123,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   natm_typ     = natm_typ_in;
   ees_eext_opt = ees_eext_opt_in;
   gen_wave     = gen_wave_in;
+  doublePack   = doublePack_in;
 
 //===================================================================================
 // Set up the dictionaries
@@ -150,8 +191,27 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
 
   int sizex,sizey,sizez,nPacked,minx,maxx;
 
+  // check input directories if gen_wave is off
   if(gen_wave==0){
-    sprintf (fname, "%s/state1.out", dataPath);
+    for(int ispin=0;ispin<nspin;ispin++){
+    for(int ikpt=0;ikpt<nkpoint;ikpt++){
+    for(int ibead=0;ibead<pi_beads;ibead++){
+    for(int itemper=0;itemper<ntemper;itemper++){
+      sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPath,ispin,ikpt,ibead,itemper);
+      FILE *fpck = fopen(fname,"w");
+      if(fpck==NULL){
+        sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPath,ispin,ikpt,ibead,itemper);
+        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("   Input directory, %s , is not present\n",fname);
+        PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
+      fclose(fpck);
+    }}}}// end fors : input directory check
+  }//endif : gen_wave off
+
+  if(gen_wave==0){
+    sprintf (fname, "%s/Spin.0_Kpt.0_Bead.0_Temper.0/state1.out", dataPath);
     PRINTF("  Opening state file : %s\n",fname);
   }//endif
 
@@ -159,20 +219,29 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
                 nkf1,nkf2,nkf3,ncoef);
 
   if(gen_wave==0){
-    sprintf (fname, "%s/state1.out", dataPath);
+    sprintf (fname, "%s/Spin.0_Kpt.0_Bead.0_Temper.0/state1.out", dataPath);
     PRINTF("  Closing state file : %s\n\n",fname);
   }//endif
 
-  sprintf (fname, "%s/ChkDirExistOAtom", dataPathOut);
-  FILE *fpck = fopen(fname,"w");
-  if(fpck==NULL){
-    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("   Output directory, %s , is not present\n",dataPathOut);
-    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    EXIT(1);
-  }//endif
-  fclose(fpck);
+  // check output directories always!
+  for(int ispin=0;ispin<nspin;ispin++){
+  for(int ikpt=0;ikpt<nkpoint;ikpt++){
+  for(int ibead=0;ibead<pi_beads;ibead++){
+  for(int itemper=0;itemper<ntemper;itemper++){
+    sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/ChkDirExistOAtom",dataPathOut,ispin,ikpt,ibead,itemper);
+    FILE *fpck = fopen(fname,"w");
+    if(fpck==NULL){
+      sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d",dataPathOut,ispin,ikpt,ibead,itemper);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("   Output directory, %s , is not present\n",fname);
+      PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+    }//endif
+    fclose(fpck);
+  }}}}// end fors : directory check
   
+//===================================================================================
+// FFT sizes 
 
   if(sizex!=nkf1 || sizey!=nkf2 || sizez !=nkf3){
     PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -187,7 +256,7 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   numData      = nPacked;
 
 //===================================================================================
-// Set rhoG and stateG chare array sizes
+// Set rhoG and stateG chare array sizes based on FFT stuff
 
   int nplane_x     = minx+1;
   int nplane_x_rho = 2*minx+1;
@@ -2151,18 +2220,13 @@ void Config::set_config_params_nfreq  (DICT_WORD *dict, char *fun_key, char *inp
 void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dict_rho,
                             DICT_WORD *dict_state,DICT_WORD *dict_pc,
                             DICT_WORD *dict_nl,DICT_WORD *dict_map, 
-				    int nchareRhoRHart, int nplane_x_rho, int natm_typ){
+			    int nchareRhoRHart, int nplane_x_rho, int natm_typ){
 //=============================================================================
   if(fakeTorus)
     { //
       numPes=torusDimNX * torusDimNY * torusDimNZ * torusDimNT;
       CkPrintf("  Using fake torus node %d X %d X %d X %d numPes %d\n", torusDimNX, torusDimNY, torusDimNZ, torusDimNT, numPes);
     }
-
-    UberImax = 1;
-    UberJmax = 1;
-    UberKmax = 1;
-    UberMmax = 1;
 
     // TODO get the number of instances.  This is a Glenn item as most
     // of the instance stuff will be on the piny side and determining

@@ -16,11 +16,13 @@
 class PhysicsAtomPosInit{
 //---------------------------------------------------------------------------
  public:
-     PhysicsAtomPosInit ();
+     PhysicsAtomPosInit (int , int );
     ~PhysicsAtomPosInit ();
      MDCLATOMS_POS* mdclatoms_pos;
      MDTHERM_POS    therm_class;
      MDTHERM_POS*   therm_bead;
+     int            pi_beads_true;
+     int            ntemper;
      int            pi_beads;
      int            natm_tot;
      int            natm_nl;
@@ -31,9 +33,11 @@ class PhysicsAtomPosInit{
      int            len_nhc;
      int            istart_typ;
      int            isokin_opt;
+     int            ibead;
+     int            itemper;
      double         kT;
      double       **mass_nhc;
-     void DriverAtomInit (int,Atom *,AtomNHC *);
+     void DriverAtomInit (int,Atom *,AtomNHC *,int, int);
 };
 //==========================================================================
 #endif

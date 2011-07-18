@@ -417,7 +417,8 @@ main::main(CkArgMsg *msg) {
     numPes=CkNumPes();
     config.readConfig(msg->argv[1],sim->nstates,sim->sizeX,sim->sizeY,sim->sizeZ,
                       sim->ntime,ibinary_opt,natm_nl,fftopt,numPes,natm_typ,
-                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c);
+                      ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
+                      sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
     fakeTorus        = config.fakeTorus>0;
     CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
     if(fakeTorus)
@@ -2767,20 +2768,7 @@ void init_VdW_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 void control_physics_to_driver(UberCollection thisInstance){
 //============================================================================
 // make a group : create a proxy for the atom class and also a reduction client
-    PhysicsAtomPosInit *PhysicsAtom  = new PhysicsAtomPosInit();
-    int natm          = PhysicsAtom->natm_tot;
-    int natm_nl       = PhysicsAtom->natm_nl;
-    int len_nhc       = PhysicsAtom->len_nhc;
-    int iextended_on  = PhysicsAtom->iextended_on;
-    int cp_min_opt    = PhysicsAtom->cp_min_opt;
-    int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
-    int isokin_opt    = PhysicsAtom->isokin_opt;
-    double kT         = PhysicsAtom->kT;
-  
-    Atom *atoms       = new Atom[natm];
-    AtomNHC *atomsNHC = new AtomNHC[natm];
 
-    PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC);
     // Make  groups for the atoms and energies 
     if(thisInstance.idxU.y>0|| thisInstance.idxU.s>0)
       { // the set of chares being created is for a non-zero kpoint
@@ -2797,14 +2785,30 @@ void control_physics_to_driver(UberCollection thisInstance){
       }
     else
       {
+        int ibead         = thisInstance.idxU.x;
+        int itemper       = thisInstance.idxU.z;
+        PhysicsAtomPosInit *PhysicsAtom  = new PhysicsAtomPosInit(ibead,itemper);
+        int natm          = PhysicsAtom->natm_tot;
+        int natm_nl       = PhysicsAtom->natm_nl;
+        int len_nhc       = PhysicsAtom->len_nhc;
+        int iextended_on  = PhysicsAtom->iextended_on;
+        int cp_min_opt    = PhysicsAtom->cp_min_opt;
+        int cp_wave_opt   = PhysicsAtom->cp_wave_opt;
+        int isokin_opt    = PhysicsAtom->isokin_opt;
+        double kT         = PhysicsAtom->kT;
+  
+        Atom *atoms       = new Atom[natm];
+        AtomNHC *atomsNHC = new AtomNHC[natm];
+ 
+        PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
 	UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
 	UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
                                            kT,atoms,atomsNHC,thisInstance));
+        delete [] atoms;
+        delete [] atomsNHC;
+        delete PhysicsAtom;
       }
-    delete [] atoms;
-    delete [] atomsNHC;
-    delete PhysicsAtom;
 
 
 //----------------------------------------------------------------------------

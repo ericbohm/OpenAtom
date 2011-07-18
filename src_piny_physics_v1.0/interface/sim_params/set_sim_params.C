@@ -1106,6 +1106,15 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     if(gensimopts->ann_start_temp < 0.0){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
 
+  /*-----------------------------------------------------------------------*/
+  /*  26)\num_parallel_temperers{#} */
+
+    sscanf(dict[26].keyarg,"%d",&int_key_arg);
+    gensimopts->ntemper = int_key_arg;
+    index=26;
+    if(gensimopts->ntemper < 1){
+       keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
+
 /*========================================================================*/
     }/*end routine*/ 
 /*========================================================================*/
@@ -2442,9 +2451,19 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     sscanf(dict[18].keyarg,"%s",filename_parse->simname);
   /*-----------------------------------------------------------------------*/ 
   /* 19)\out_restart_file */
-    sscanf(dict[19].keyarg,"%s",genfilenames->dname);
+    index = 19;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
+    sscanf(dict[index].keyarg,"%s",genfilenames->dname);
   /*-----------------------------------------------------------------------*/ 
   /* 20)\in_restart_file */
+    index = 20;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[20].keyarg,"%s",filename_parse->dnamei);
     sscanf(dict[20].keyarg,"%s",genfilenames->dnamei);
   /*-----------------------------------------------------------------------*/ 
@@ -2452,12 +2471,27 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     sscanf(dict[21].keyarg,"%s",genfilenames->iname);
   /*-----------------------------------------------------------------------*/ 
   /* 22)\atm_pos_file */
+    index = 22;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[22].keyarg,"%s",genfilenames->cpname);
   /*-----------------------------------------------------------------------*/ 
   /* 23)\atm_vel_file */
+    index = 23;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[23].keyarg,"%s",genfilenames->cvname);
   /*-----------------------------------------------------------------------*/ 
   /* 24)\conf_partial_file */
+    index = 24;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
      sscanf(dict[24].keyarg,"%s",genfilenames->cpparname);
   /*-----------------------------------------------------------------------*/ 
   /* 25)\mol_set_file */
@@ -2474,14 +2508,19 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   /*-----------------------------------------------------------------------*/ 
   /* 29)\cp_elf_file */
      sscanf(dict[29].keyarg,"%s",genfilenames->elfname);
-
+  /*-----------------------------------------------------------------------*/ 
+  /*  30)\atm_coord_dir_in */
+     sscanf(dict[30].keyarg,"%s",genfilenames->atm_crd_dir_in);
+  /*-----------------------------------------------------------------------*/ 
+  /*  31)\atm_coord_dir_out */
+     sscanf(dict[31].keyarg,"%s",genfilenames->atm_crd_dir_out);
 /*========================================================================*/
 
   cfree(strip,"set_sim_params_write");
   cfree(strip2,"set_sim_params_write");
 
 /*========================================================================*/
-    }/*end routine*/ 
+  }/*end routine*/ 
 /*========================================================================*/
 
 

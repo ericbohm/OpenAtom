@@ -81,6 +81,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
 // Initial positions, forces, velocities 
     numPIMDBeads    = config.UberImax;
     PIBeadIndex     = thisInstance.idxU.x;
+    TemperIndex     = thisInstance.idxU.z;
     atoms           = new Atom[natm];
     atomsNHC        = new AtomNHC[natm];
     CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
@@ -763,7 +764,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
        int iwrite_atm = 0;
        int myid       = CkMyPe();
        ATOMOUTPUT::ctrl_piny_output(iteration,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
-                                    &iwrite_atm,output_on);
+                                    &iwrite_atm,output_on,TemperIndex,PIBeadIndex);
        if(myid==0 && iwrite_atm>0){
          CkPrintf("-----------------------------------\n");
          CkPrintf("Writing atoms to disk at time %d\n",iteration);

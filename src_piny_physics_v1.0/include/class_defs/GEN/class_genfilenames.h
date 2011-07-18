@@ -29,17 +29,21 @@ class GENFILENAMES {
   int iwrite_units;           // Opt: Write screen output units      
 
   char *iname;                // Chr: Instananeous data file name    
-  char *dnamei;               // Chr: Atm input file name             
-  char *dname;                // Chr: Atm dump file name             
+
+  char *dnamei;               // Chr: Atm pos-coord input file name             
+  char *dname;                // Chr: Atm pos-coord dump file name             
+  char *cpname;               // Chr: Atm pos-coord conf file name         
+  char *cvname;               // Chr: Atm vel-coord conf file name         
+  char *forcename;            // Chr: Atm force-coord conf file name           
+  char *cpparname;            // Chr: Atm partial pos-coord conf file name 
+  char *atm_crd_dir_out;      // Chr: Dir for atm output coord files
+  char *atm_crd_dir_in;       // Chr: Dir for atm input coord files
+
   char *dnamec;               // Chr: PW coef dump file name         
-  char *cpname;               // Chr: Atm pos conf file name         
   char *ksname;               // Chr: KS eigs file name              
   char *elfname;              // Chr: ELF file name                  
-  char *cvname;               // Chr: Atm vel conf file name         
   char *ccname;               // Chr: PW coef conf file name         
-  char *cpparname;            // Chr: Atm partial pos conf file name 
   char *centname;             // Chr: Centroid conf file name        
-  char *forcename;            // Chr: Force conf file name           
 
  //----------------
  //con-destruct:
@@ -97,6 +101,8 @@ class GENFILENAMES {
        pup1d_char(p,&cpparname,MAXWORD);
        pup1d_char(p,&centname,MAXWORD);
        pup1d_char(p,&forcename,MAXWORD);
+       pup1d_char(p,&atm_crd_dir_in,MAXWORD);
+       pup1d_char(p,&atm_crd_dir_out,MAXWORD);
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())
      state_class_out ();

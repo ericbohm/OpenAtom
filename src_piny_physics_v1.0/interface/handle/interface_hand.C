@@ -746,3 +746,23 @@ void parse_on_off(char *keyarg,int *int_val,int *ierr){
   if(strcasecmp(keyarg,"on")==0) {int_val[0]=1; ierr[0]=0;}
 }
 /*==========================================================================*/
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void check_for_slash(char *keyarg,char *keyword, int *ierr_out){
+  int len,i,ierr,islash;
+  islash = (int )'/';
+  len    = (int )(strnlen(keyarg,(size_t)MAXWORD));
+  ierr   = 0;
+  for(i =0;i<len;i++){
+    if(islash==(int ) keyarg[i]){ierr++;}
+  }/*end for*/
+  if(ierr>0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("No directories permitted in \\%s{%s} : %d detected\n",keyword,keyarg,ierr);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+  }/*endif*/
+  ierr_out[0] = ierr;
+}
+/*==========================================================================*/

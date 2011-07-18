@@ -27,9 +27,10 @@
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads, 
+void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads_in, 
                                   int myid, Atom *atoms, AtomNHC *atomsNHC,
-                                  int *iwrite_atm_ret,int output_on)
+                                  int *iwrite_atm_ret,int output_on,
+                                  int itemper, int ibead)
 //==========================================================================
   {//begin routine
 //=======================================================================
@@ -41,10 +42,22 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
   int iwrite_confp     = genfilenames->iwrite_confp;
   int iwrite_par_confp = genfilenames->iwrite_par_confp;
   int iwrite_dump      = genfilenames->iwrite_dump;
+
+  char *dump_dir       = genfilenames->atm_crd_dir_out;
   char *cpname         = genfilenames->cpname;
   char *cpparname      = genfilenames->cpparname;
   char *dname          = genfilenames->dname;
   int ntime            = gentimeinfo->ntime; //correct number of time steps
+  int pi_beads         = 1;
+
+  char temp_ext[1000];
+
+  if(pi_beads_in!=1){
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("   Input value of pi_ beads be unity %d\n",pi_beads_in);
+    PRINTF("   @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
 //==========================================================================
 // Write the file now.
@@ -56,21 +69,24 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
       iwrite_atm++;
       if(myid==0){
         int low = 0; int high = natm;
-        write_atom_output_conf(low,high,pi_beads,atoms,cpname);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,itemper,cpname);
+        write_atom_output_conf(low,high,pi_beads,atoms,temp_ext);
       }//endif
     }//endif
 
     if( (itime % iwrite_par_confp)==0 && low_lim_par<high_lim_par){
       iwrite_atm++;
       if(myid==0){
-        write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,cpparname);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,itemper,cpparname);
+        write_atom_output_conf(low_lim_par,high_lim_par,pi_beads,atoms,temp_ext);
       }//endif
     }//endif
 
     if( (itime % iwrite_dump)==0 || itime==ntime){
       iwrite_atm++;
       if(myid==0){
-        write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC);
+        sprintf (temp_ext,"%s/Bead.%d_Temper.0/%s",dump_dir,ibead,dname);
+        write_atom_output_dump(natm,len_nhc,pi_beads,itime,atoms,atomsNHC,temp_ext);
       }//endif
     }//endif
 
@@ -87,7 +103,8 @@ void ATOMOUTPUT::ctrl_piny_output(int itime,int natm,int len_nhc,int pi_beads,
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
-                                    int itime,Atom *atoms,AtomNHC *atomsNHC)
+					int itime,Atom *atoms,AtomNHC *atomsNHC,
+                                        char *dname)
 //==========================================================================
   {//begin routine
 //=======================================================================
@@ -101,7 +118,6 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
 #include "../class_defs/allclass_strip_mdintegrate.h"
 
   int n,i,ip,i1,j;
-  char *dname       = genfilenames->dname;
   int num_nhc       = mdtherm_info->num_nhc;
   int iextended_on  = mdtherm_info->iextended_on;
   double *hmat      = gencell->hmat;
@@ -116,10 +132,13 @@ void ATOMOUTPUT::write_atom_output_dump(int natm, int len_nhc,int pi_beads,
   NAME *res_typ     = mdatom_maps->res_typ;
   NAME *mol_typ     = mdatom_maps->mol_typ;
 
-  FILE *fp = cfopen(dname,"o");
+//==========================================================================
+
+   FILE *fp = cfopen(dname,"o");
 
 //==========================================================================
 // I)Atm positions                                                      
+
 
    fprintf(fp,"natm_tot restart_typ itime pi_beads\n");
    fprintf(fp,"%d restart_all %d %d\n",natm,itime,pi_beads);
