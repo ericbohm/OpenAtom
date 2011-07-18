@@ -109,11 +109,17 @@ def config_reader(filename):
 			os.chdir('test-output/regression')
 			os.system('ln -s ../../../' + configfile[testcounter]['inputDir'] + '* .')
 			os.system('ln -s ../../data/DATABASE ..')
+			for sd in os.listdir('STATES'):
+				sdpath=os.path.join('STATES_OUT',sd)
+				os.system('rm -r '+ sdpath)
+				os.system('mkdir '+ sdpath)
+			for ad in os.listdir('ATOM_COORDS_IN'):
+				adpath=os.path.join('ATOM_COORDS_OUT',ad)
+				os.system('rm -r '+ adpath)
+				os.system('mkdir '+ adpath)
 			os.system(value)
 			#print value
 			os.system('./tidy water')
-			os.system('rm -r STATES_OUT')
-			os.system('mkdir STATES_OUT')
 			os.chdir('..')
 			os.chdir('..')
 			os.chdir('..')
