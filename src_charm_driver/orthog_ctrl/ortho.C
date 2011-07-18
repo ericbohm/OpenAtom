@@ -47,6 +47,7 @@
 #include "timeKeeper.decl.h"
 
 #include "charm++.h"
+#include "utility/matrix2file.h"
 #include "utility/util.h"
 //#include "main/groups.h"
 

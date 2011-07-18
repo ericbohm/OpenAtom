@@ -17,6 +17,8 @@
 #include "main/groups.h"
 #include "main/eesCache.h"
 #include "main/cpaimd.h"
+#include "utility/matrix2file.h"
+
 #include "ckmulticast.h"
 #include "charm++.h"
 #include "../../src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"
