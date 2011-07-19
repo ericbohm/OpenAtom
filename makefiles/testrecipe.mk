@@ -43,5 +43,5 @@ op-%-p1.log: setup $(binary)
 setup:
 	@$(LN) $(wildcard $(w3210)/*) .
 	@$(LN) $(realpath $(molDbase)) ..
-	@./setup
+	@../../../utils/setup
 	@touch $@
