@@ -1552,6 +1552,28 @@ void  CP_State_GSpacePlane::sendLambda() {
     CmiMemcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
   }//endif
 
+  #ifdef CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS
+  /* The lambda matrix is the reduced result of the forward path GEMMs in the
+   * asymmetric paircalcs that arrives at Ortho::aceptSectionLambda.  There is
+   * an LMAT dump macro over there. Here, we manually compute the product of
+   * psi and the forces to obtain the contribution of this chare to the
+   * diagonal element of the L matrix.  To verify that the forward path is
+   * producing correct results, we can compare these hand-computed diagonal
+   * elements with the lambda matrix dumped in Ortho.
+   *
+   * Running the code with just one plane (reduce gExpandFact to get just one
+   * plane) should ensure that there is just one GSpace chare for each state
+   * and that the diagonal elements are computed in this chare itself.
+   * Otherwise, the diagonal elements have to be computed by summing the
+   * corresponding values dumped by all the GSpace chares in a state (ie across
+   * all planes).
+   */
+    complex mylambda_diag = 0;
+    for(int i=0; i<gs.numPoints; i++)
+        mylambda_diag += psi[i] * force[i];
+    CkPrintf("lambda[%d, %d] += %.12g %.12g at plane %d\n",thisIndex.x, thisIndex.x, mylambda_diag.re, mylambda_diag.im, thisIndex.y);
+  #endif
+
 #ifndef PAIRCALC_TEST_DUMP
 #ifndef _CP_DEBUG_ORTHO_OFF_
   if(gs.ihave_kx0==1 && cp_min_opt==0){
