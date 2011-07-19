@@ -854,7 +854,11 @@ void PairCalculator::multiplyForward(bool flag_dp)
     }
 
     // Configure the inputs to the GEMM describing the matrix dimensions and operations
-    char transformT = 'T';           // Transpose matrix A
+    #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+        char transformT = 'C';           // Transpose and conjugate of matrix A
+    #else
+        char transformT = 'T';           // Transpose matrix A
+    #endif
     char transform  = 'N';           // Retain matrix B as it is
     int m_in        = numExpectedY;  // Rows of op(A)    = Rows of C
     int k_in        = numPoints;     // Columns of op(A) = Rows of op(B)
