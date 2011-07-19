@@ -1,8 +1,16 @@
-mkdir STATES_OUT
+#!/bin/sh
+
+if [ ! -d STATES_OUT ] ; then
+   mkdir STATES_OUT
+fi
+
 cd STATES_OUT
 (cd ../STATES; find -type d ! -name .) | xargs mkdir
-
 cd ..
-mkdir ATOM_COORDS_OUT
-cd ATOM_COORDS_OUT
-(cd ../ATOM_COORDS_IN; find -type d ! -name .) | xargs mkdir
+
+if [ ! -d ATOM_COORDS_OUT ] ; then
+   mkdir ATOM_COORDS_OUT
+   cd ATOM_COORDS_OUT
+   (cd ../ATOM_COORDS_IN; find -type d ! -name .) | xargs mkdir
+   cd ..
+fi
