@@ -1546,25 +1546,31 @@ void CP_State_GSpacePlane::launchAtoms() {
 void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 // Reset set lambda (not done) and force counters (not done for NEXT step):
+
    acceptedLambda        = false;
    doneDoingIFFT         = false;
    doneNewIter           = false;
 
 //==============================================================================
-// Scale the variables and launch lambda
+// Get nice local variables and if dynamics make a copy
 
   complex *psi   = gs.packedPlaneData;
   complex *force = gs.packedForceData;
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
 
-  if(cp_min_opt==0){
+  if(cp_min_opt==0){ // dynamics in on : minimization is off
     int ncoef           = gs.numPoints;
     complex *psi_g      = gs.packedPlaneData;
     complex *psi_g_tmp  = gs.packedPlaneDataTemp;
     CmiMemcpy(psi_g_tmp,psi_g,sizeof(complex)*ncoef);
   }//endif
 
-  #ifdef CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS
+//==============================================================================
+// Debug output schmoo : contrib to diagonal element of lambda from this chare
+//                     : Most effective for 1 gspace chare when you
+//                     : get the diangonal elemens of lambda (see below)
+
+#ifdef _CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS_
   /* The lambda matrix is the reduced result of the forward path GEMMs in the
    * asymmetric paircalcs that arrives at Ortho::aceptSectionLambda.  There is
    * an LMAT dump macro over there. Here, we manually compute the product of
@@ -1581,10 +1587,41 @@ void  CP_State_GSpacePlane::sendLambda() {
    * all planes).
    */
     complex mylambda_diag = 0;
-    for(int i=0; i<gs.numPoints; i++)
-        mylambda_diag += psi[i] * force[i];
-    CkPrintf("lambda[%d, %d] += %.12g %.12g at plane %d\n",thisIndex.x, thisIndex.x, mylambda_diag.re, mylambda_diag.im, thisIndex.y);
-  #endif
+    for(int i=0; i<gs.numPoints; i++){
+        mylambda_diag += force[i] * psi[i].conj();
+    }/*endfor*/
+    if(config.doublePack==0){
+      CkPrintf("lambda[%d, %d] = %.12g %.12g at plane %d\n",
+          thisIndex.x, thisIndex.x, mylambda_diag.re, mylambda_diag.im, thisIndex.y);
+    }else{
+      CkPrintf("lambda[%d, %d] = %.12g %.12g at plane %d\n",
+          thisIndex.x, thisIndex.x, mylambda_diag.re,0.0, thisIndex.y);
+    }/*endif*/
+#endif
+
+//==============================================================================
+// Debug output schmoo : output forces before lambda-ization!
+//                     : 
+
+#ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_
+    eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+    int *ka           = eesData->GspData[iplane_ind]->ka;
+    int *kb           = eesData->GspData[iplane_ind]->kb;
+    int *kc           = eesData->GspData[iplane_ind]->kc;
+
+    char fname[1024];
+    sprintf(fname,"psi_forces_before_lambda_state%d_plane%d.out",thisIndex.x,thisIndex.y);
+    FILE *fp = cfopen(fname,"w");
+    for(int i=0; i<gs.numPoints; i++){
+      fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re,force[i].im);
+    }/*endfor*/
+    fclose(fp);
+#endif
+
+//==============================================================================
+// Scale the variables for dynamics and double packing : Single pack
+// will require modification of factors of 2 in PC or scaling all the
+// variables which stinks
 
 #ifndef PAIRCALC_TEST_DUMP
 #ifndef _CP_DEBUG_ORTHO_OFF_
@@ -1596,6 +1633,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   }//endif
 #endif
 #endif
+
+//==============================================================================
+// Enormous debug schmoo
 
 #ifdef _PAIRCALC_DEBUG_PARANOID_FW_
   for(int i=0;i<config.numChunksAsym;i++)
@@ -1634,6 +1674,9 @@ void  CP_State_GSpacePlane::sendLambda() {
   }//endfor
 #endif
 
+//==============================================================================
+// Send to lambda : Finally
+
   int numPoints   = gs.numPoints;
 #ifndef _CP_DEBUG_ORTHO_OFF_
   asymmPCmgr.sendLeftData(numPoints,psi,false);
@@ -1643,10 +1686,13 @@ void  CP_State_GSpacePlane::sendLambda() {
   acceptedLambda=true;
   bzero(force,sizeof(complex)*numPoints);
 #endif
-
 #ifdef _CP_DEBUG_STATEG_VERBOSE_ 
   if(thisIndex.x==0){CkPrintf("Sent Lambda %d %d\n",thisIndex.y,cleanExitCalled);}
 #endif
+
+//==============================================================================
+// Eric's micro-timing 
+
 #ifdef _CP_SUBSTEP_TIMING_
   if(backwardTimeKeep>0){
       double gend=CmiWallTimer();
@@ -1929,7 +1975,7 @@ void CP_State_GSpacePlane::doLambda() {
   bzero(countLambdaO,config.numChunksAsym*sizeof(int));
 
 //==============================================================================
-// Debug
+// Debug Schmoo
 
 #ifdef _CP_GS_DUMP_LAMBDA_
     dumpMatrix("lambdaAf",(double *)force, 1, gs.numPoints*2,
@@ -1952,6 +1998,24 @@ void CP_State_GSpacePlane::doLambda() {
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0)
    CkPrintf("doLambda %d %d\n",thisIndex.y,cleanExitCalled);
+#endif
+
+//==============================================================================
+// Debug : Write out forces after Lambda-ization
+
+#ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_
+    eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
+    int *ka           = eesData->GspData[iplane_ind]->ka;
+    int *kb           = eesData->GspData[iplane_ind]->kb;
+    int *kc           = eesData->GspData[iplane_ind]->kc;
+
+    char fname[1024];
+    sprintf(fname,"psi_forces_after_lambda_state%d_plane%d.out",thisIndex.x,thisIndex.y);
+    FILE *fp = cfopen(fname,"w");
+    for(int i=0; i<gs.numPoints; i++){
+      fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re,force[i].im);
+    }/*endfor*/
+    fclose(fp);
 #endif
 
 //==============================================================================
