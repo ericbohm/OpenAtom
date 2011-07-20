@@ -105,9 +105,8 @@ void Config::readConfig(char* input_name,int nstates_in, int nkf1, int nkf2, int
   if(ntemper>1){
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
     PRINTF("    Danger, Danger, ntemper > 1 = %d\n",ntemper);
-    PRINTF("    This is not yet supported in any way, shape or form\n");
+    PRINTF("    Put on your debugging shoes and get ready to boogy\n");
     PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n");
-    EXIT(1);
   }//endif
 
 //===================================================================================
