@@ -17,9 +17,9 @@ if [ -f $sysCoords ] ; then
     fi   
     echo "converting states to new structure"
     if [ ! -d STATES/Spin.0_Kpt.0_Bead.0_Temper.0 ] ; then
-	mkdir STATES/Spin.0_Kpt.0_Bead.0_Temper.0
+	mkdir -p STATES/Spin.0_Kpt.0_Bead.0_Temper.0
 	mv STATES/state*.out* STATES/Spin.0_Kpt.0_Bead.0_Temper.0/
-	mkdir STATES_OUT/Spin.0_Kpt.0_Bead.0_Temper.0
+	mkdir -p STATES_OUT/Spin.0_Kpt.0_Bead.0_Temper.0
     fi
 else
     echo "cannot find initial coordinates file $sysCoords, please pass as argument"
