@@ -58,7 +58,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
                    int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, UberCollection _thisInstance) : thisInstance(_thisInstance) {
 //==============================================================================
 // parameters, options and energies
-
+  
     natm            = n;
     natm_nl         = n_nl;
     len_nhc         = len_nhc_;
@@ -77,6 +77,16 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     acceptCountX    = 0;
     acceptCountu    = 0;
     atomsCMrecv=atomsPIMDXrecv=false;
+    if(config.UberKmax>1 || config.UberImax>1 )
+    {
+      // we will do the file output
+      temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
+    }
+  else
+    {
+      temperScreenFile = stdout;
+    }
+
 //==============================================================================
 // Initial positions, forces, velocities 
     numPIMDBeads    = config.UberImax;
@@ -158,9 +168,6 @@ AtomsGrp::~AtomsGrp(){
      fftw_free(PIMD_CM_Atoms.x);
      fftw_free(PIMD_CM_Atoms.y);
      fftw_free(PIMD_CM_Atoms.z);
-
-
-
      fftw_free(ftot);
 }
 //==============================================================================
@@ -178,6 +185,8 @@ void AtomsGrp::init()
   const int offset=thisInstance.getPO();
   amBeadRoot      = (CkMyPe()==GSImaptable[offset].get(0,0));
   amZerothBead    = (thisInstance.idxU.x==0);
+  
+
   if(numPIMDBeads>1)
     {
             
@@ -550,19 +559,19 @@ void AtomsGrp::outputAtmEnergy() {
 
   if(myid==0){
      if(iperd!=0){
-       CkPrintf("{%d} EWALD_REAL  = %5.8lf\n",thisInstance.proxyOffset, pot_ewd_rs_now);
-       CkPrintf("{%d} EWALD_SELF  = %5.8lf\n",thisInstance.proxyOffset,vself);
-       CkPrintf("{%d} EWALD_BGR   = %5.8lf\n",thisInstance.proxyOffset,vbgr);
+       fprintf(temperScreenFile,"Iter [%d] EWALD_REAL  = %5.8lf\n", iteration, pot_ewd_rs_now);
+       fprintf(temperScreenFile,"Iter [%d] EWALD_SELF  = %5.8lf\n",iteration, vself);
+       fprintf(temperScreenFile,"Iter [%d] EWALD_BGR   = %5.8lf\n",iteration, vbgr);
        if(iperd!=3){
-         CkPrintf("{%d} EWALD_Perd  = %5.8lf\n",thisInstance.proxyOffset,potPerdCorr);
+         fprintf(temperScreenFile,"Iter [%d] EWALD_Perd  = %5.8lf\n",iteration, potPerdCorr);
        }//endif
      }else{
-       CkPrintf("{%d} ATM_COUL    = %5.8lf\n",thisInstance.proxyOffset,pot_ewd_rs_now);
+       fprintf(temperScreenFile,"Iter [%d] ATM_COUL    = %5.8lf\n",iteration, pot_ewd_rs_now);
      }//endif
      if(cp_min_opt==0){
-        CkPrintf("{%d} atm eKin    = %5.8lf\n",thisInstance.proxyOffset,eKinetic);
-        CkPrintf("{%d} atm Temp    = %5.8lf\n",thisInstance.proxyOffset,(2.0*eKinetic*BOLTZ/free_atm));
-        CkPrintf("{%d} atm fmag    = %5.8lf\n",thisInstance.proxyOffset,fmag);
+       fprintf(temperScreenFile,"Iter [%d] atm eKin    = %5.8lf\n",iteration, eKinetic);
+       fprintf(temperScreenFile,"Iter [%d] atm Temp    = %5.8lf\n",iteration, (2.0*eKinetic*BOLTZ/free_atm));
+       fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
         if(iextended_on==1){
           double free_Nhc;
           if(isokin_opt==0){
@@ -570,12 +579,12 @@ void AtomsGrp::outputAtmEnergy() {
           }else{
             free_Nhc    = free_atm*((double)(len_nhc-1));
 	  }//endif
-          CkPrintf("{%d} atm eKinNhc = %5.8lf\n",thisInstance.proxyOffset,eKineticNhc);
-          CkPrintf("{%d} atm TempNHC = %5.8lf\n",thisInstance.proxyOffset,(2.0*eKineticNhc*BOLTZ/free_Nhc));
-          CkPrintf("{%d} atm potNHC  = %5.8lf\n",thisInstance.proxyOffset,potNhc);
+          fprintf(temperScreenFile,"Iter [%d] atm eKinNhc = %5.8lf\n",iteration, eKineticNhc);
+          fprintf(temperScreenFile,"Iter [%d] atm TempNHC = %5.8lf\n",iteration, (2.0*eKineticNhc*BOLTZ/free_Nhc));
+          fprintf(temperScreenFile,"Iter [%d] atm potNHC  = %5.8lf\n",iteration, potNhc);
 	}//endif
      }else{
-        CkPrintf("{%d} atm fmag    = %5.8lf\n",thisInstance.proxyOffset,fmag);
+       fprintf(temperScreenFile,"Iter [%d] atm fmag    = %5.8lf\n",iteration, fmag);
      }//endif
   }//endif
 
@@ -766,9 +775,9 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
        ATOMOUTPUT::ctrl_piny_output(iteration,natm,len_nhc,pi_beads,myid,atoms,atomsNHC,
                                     &iwrite_atm,output_on,TemperIndex,PIBeadIndex);
        if(myid==0 && iwrite_atm>0){
-         CkPrintf("-----------------------------------\n");
-         CkPrintf("Writing atoms to disk at time %d\n",iteration);
-         CkPrintf("-----------------------------------\n");
+         fprintf(temperScreenFile,"-----------------------------------\n");
+         fprintf(temperScreenFile, "Writing atoms to disk at time %d\n",iteration);
+         fprintf(temperScreenFile,"-----------------------------------\n");
        }//endif
      }//endif
 

@@ -163,9 +163,11 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void sendRedPsiV();
         void acceptRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
+        void screenPrintWallTimes();
         const UberCollection thisInstance;        
     private:
-
+	FILE *temperScreenFile;
+        double *wallTimeArr;//only used on [0,0]
         int gotHandles;
         int forwardTimeKeep;
         int backwardTimeKeep;

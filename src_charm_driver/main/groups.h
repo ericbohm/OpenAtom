@@ -70,6 +70,7 @@ class AtomsGrp: public Group {
   int acceptCountu;
   int PIBeadIndex;
   int TemperIndex;
+  FILE *temperScreenFile;
   int numPIMDBeads;
   AtomsGrp(CkMigrateMessage *m) {}
   AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);

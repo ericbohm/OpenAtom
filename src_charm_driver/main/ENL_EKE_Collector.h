@@ -36,18 +36,10 @@ class ENL_EKE_Collector : public CBase_ENL_EKE_Collector
 	void acceptEKE(double _eke);
 	~ENL_EKE_Collector(){}
  private:
-	void printENL()
-	  {   
-	    CkPrintf("{%d} ENL         = %5.8lf\n", thisIndex, ENL);   // tell the world
-	    ENL=0;
-	    countENL=0;
-	  }
-	void printEKE()
-	  {
-	    CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, EKE);
-	    countEKE=0;
-	    EKE=0;
-	  }
+	int enlIteration, ekeIteration;
+	FILE *temperScreenFile;
+	void printENL();
+	void printEKE();
 	int energyExpected;
 	int countEKE;
 	int countENL;

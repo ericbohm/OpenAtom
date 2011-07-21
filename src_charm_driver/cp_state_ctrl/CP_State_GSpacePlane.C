@@ -154,18 +154,20 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("{%d} MagForPsi   =  %5.8lf | %5.8lf per entity\n", thisInstance.proxyOffset,d1,d1/rnatm);
-    CkPrintf("{%d} Memory      =  %ld\n",thisInstance.proxyOffset,CmiMemoryUsage());
+      int iprintout   = iteration-1;
+
+    fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
+    fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
   if(cp_min_opt==0 && fmagPsi_total>rnatm*tol_cp_dyn){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mag psi force %.10g > %.10g too large for CP dynamics. Ciao! \n",
+      fprintf(temperScreenFile,"@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      fprintf(temperScreenFile, "Mag psi force %.10g > %.10g too large for CP dynamics. Ciao! \n",
 	       fmagPsi_total/rnatm,tol_cp_dyn);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      fprintf(temperScreenFile,"@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
   }//endif
 
@@ -193,10 +195,10 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      double cpuTimeOld = cpuTimeNow;
      cpuTimeNow        = CkWallTimer();
      if(iteration>1){
-       CkPrintf("{%d} CpuTime(GSP)= %g\n",thisInstance.proxyOffset,cpuTimeNow-cpuTimeOld);
+       fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
        if(cp_min_opt==0){
          int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
-         CkPrintf("{%d} Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",thisInstance.proxyOffset,
+         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
                    iteration,iterRotation,iteration-iterRotation,nrotation,heavyside);
        }//endif
      }//endif
@@ -252,6 +254,14 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
+  wallTimeArr=NULL;
+  if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
+    wallTimeArr = new double[config.maxIter+2];
+  }else{
+    wallTimeArr = new double[30];
+  }//endif
+  wallTimeArr[0]=0.0;
+  wallTimeArr[1]=0.0;
 
   myBeadIndex    = thisInstance.idxU.x;
   myKptIndex     = thisInstance.idxU.y;
@@ -776,8 +786,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     CkPrintf("GSpace[%d,%d] initGSpace %d\n",thisIndex.x,thisIndex.y,size);
 #endif
 
-
-
+    FILE *temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   registrationFlag  = 1;
@@ -1068,14 +1077,35 @@ void CP_State_GSpacePlane::startNewIter ()  {
   }//endif
 
   doneNewIter = true;
-
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  if(thisIndex.x==0 && thisIndex.y==0 ){
+    if(!(sim->cp_min_opt==1)){
+      fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  int iii = iteration;
+        if(!sim->gen_wave){iii+=1;}
+	fprintf(temperScreenFile,"Iteration %d done\n",iii);
+	fprintf(temperScreenFile,"===============================================================================\n");
+	fprintf(temperScreenFile,"===============================================================================\n");
+      }else{
+	if(iteration>0){
+	  fprintf(temperScreenFile,"===============================================================================\n");
+	  fprintf(temperScreenFile,"===============================================================================\n");
+	}//endif
+        if(iteration<config.maxIter){
+  	  fprintf(temperScreenFile,"Beginning Iteration %d \n", iteration);
+	}else{
+  	  fprintf(temperScreenFile,"Completing Iteration %d \n", iteration-1);
+	}//endif
+	fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+    }//endif
+  }//endif
 //============================================================================
 // Reset all the counters that need to be reset (not more not less)
 // otherwise race conditions can leak in.  Rely on the constructor
 // for initialization.  Reset set your flags as soon as you are done
 // with the tests that require them.
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+
   int cp_min_opt = sim->cp_min_opt;
 
   // Finished integrate and red psi are safe.
@@ -1132,10 +1162,40 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #endif // TIMING
 
 //---------------------------------------------------------------------------
-}//end routine
+    }//end routine
 
-
-
+void CP_State_GSpacePlane::screenPrintWallTimes()
+{
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  // do new iteration output once globally from the 0th instance
+  if(thisIndex.x==0 && thisIndex.y==0 
+     && thisInstance.idxU.x==0 && thisInstance.idxU.y==0 
+     && thisInstance.idxU.z==0 && thisInstance.idxU.s==0 )
+    {
+      int iprintout   = config.maxIter;
+      if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
+      int itime       = iteration;
+      if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
+      wallTimeArr[itime] = CkWallTimer();
+      if (iteration == iprintout && config.maxIter<30) {
+	CkPrintf("-------------------------------------------------------------------------------\n");
+	CkPrintf("Wall Times from within GSP\n\n");
+	for (int t = 1; t < iprintout; t++){
+	  CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
+	}//endfor
+	if(itime>0)
+	  {
+	    CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
+	    CkPrintf("-------------------------------------------------------------------------------\n");
+	  }
+      }else{
+	if(iteration>0){
+	  CkPrintf("Iteration time (GSP) : %g\n", 
+		   wallTimeArr[itime] - wallTimeArr[itime-1]);
+	}//endif
+      }//endif
+    }//endif
+}
 
 //============================================================================
 /**
@@ -1513,6 +1573,7 @@ void CP_State_GSpacePlane::combineForcesGetEke()
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
+
 #ifdef _CP_DEBUG_PSI_OFF_
   iteration++;
   if(iteration==config.maxIter+1){
@@ -1523,6 +1584,7 @@ void CP_State_GSpacePlane::launchAtoms() {
 #endif	
 #endif
     cleanExitCalled = 1;
+
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
   }else{
@@ -3555,35 +3617,36 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
   if(iteration<=ntime){
+    int iprintout   = iteration-1;
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
-	  PRINT_LINE_DASH;
-	  CkPrintf("{%d} Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   thisInstance.proxyOffset,
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		  iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
             double vre=vpsi[i].re;
             double vim=vpsi[i].im;
- 	    CkPrintf("{%d} VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		     thisInstance.proxyOffset,
+ 	    fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		     iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  PRINT_LINE_DASH;
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
 	}//endif
 	if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
           double vre=vpsi[i].re;
           double vim=vpsi[i].im;
-	  PRINT_LINE_DASH;
-	  CkPrintf("{%d} Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   thisInstance.proxyOffset,
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		   iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
- 	    CkPrintf("{%d} VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		     thisInstance.proxyOffset,
+ 	    fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		     iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  PRINT_LINE_DASH;
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
 	}//endif
       }//endfor
     }//endif
