@@ -11,3 +11,4 @@
   GENMINOPTS     *genminopts     = &(general_data->genminopts);
   GENENSOPTS     *genensopts     = &(general_data->genensopts);
   GENFILENAMES   *genfilenames   = &(general_data->genfilenames);
+  GENTEMPERING_CTRL *gentempering_ctrl = &(general_data->gentempering_ctrl);

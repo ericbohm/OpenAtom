@@ -44,5 +44,5 @@ void readtoendofline(FILE *);
 
 void check_for_slash(char *,char *, int *);
 
-
+void readtoendofline_check(FILE *,char *,int , int );
 

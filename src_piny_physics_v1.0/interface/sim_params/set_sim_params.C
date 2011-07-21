@@ -26,7 +26,159 @@
 #include "../proto_defs/proto_handle_entry.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 
-#define DEBUG
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
+                           GENSIMOPTS *gensimopts,DICT_WORD *dict,char *fun_key,
+                           char *input_name)
+/*==========================================================================*/
+  {/* begin routine */
+/*==========================================================================*/
+
+  int ifound,index,i;
+  int int_key_arg,iopt;
+  int npara_temps;
+  double real_key_arg;
+  double *t_ext,*p_ext,*s_ext;
+  FILE *fp;
+  char *state_name;
+
+/*==========================================================================*/
+/* Read in the 1st key argument and malloc filename space if necessary      */
+/*--------------------------------------------------------------------------*/
+/*  1)\num{#} */
+  index=1;
+  sscanf(dict[index].keyarg,"%d",&int_key_arg);
+  tempering_ctrl->npara_temps = int_key_arg;
+  gensimopts->ntemper         = int_key_arg;
+  npara_temps                 = int_key_arg;
+  if(int_key_arg <= 0){keyarg_barf(dict,input_name,fun_key,index);}
+
+  if(npara_temps>1){
+    tempering_ctrl->history_name     = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->wgt_name         = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->troyer_name      = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->output_directory = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+  }/*endif*/
+
+/*==========================================================================*/
+/* Read in the rest of the key arguments */
+/*-----------------------------------------------------------------------*/
+/*  2)\ens_opt{#} */
+  index=2;
+  ifound = 0;
+  iopt = 0;
+  tempering_ctrl->nvt = 0;
+  tempering_ctrl->npt = 0;
+  tempering_ctrl->nst = 0;
+  if(strcasecmp(dict[index].keyarg,"nvt")==0){tempering_ctrl->nvt = 1; iopt=1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"npt")==0){tempering_ctrl->npt = 1; iopt=2; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"nst")==0){tempering_ctrl->nst = 1; iopt=3; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
+  if(iopt!=1){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Only simple NVT tempering supported\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     FFLUSH(stdout);
+     EXIT(1);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  5)\rsmpl_opt{} */
+  index=5;
+  ifound = 0;
+  tempering_ctrl->rsmpl_opt = 0;
+  if(strcasecmp(dict[index].keyarg,"yes")==0){
+    tempering_ctrl->rsmpl_opt = 1;  ifound++;}
+  if(strcasecmp(dict[index].keyarg,"no")==0){
+    tempering_ctrl->rsmpl_opt = 0;  ifound++;}
+  if(ifound!=1){
+    keyarg_barf(dict,input_name,fun_key,index);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  6)\switch_steps{#} */
+  index=6;
+  sscanf(dict[index].keyarg,"%d",&tempering_ctrl->switch_steps);
+  if(tempering_ctrl->switch_steps<1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  7)\history_fname{#} */
+  if(npara_temps>1){
+    index=7;
+    strcpy(tempering_ctrl->history_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  8)\history_frq{#} */
+  index=8;
+  sscanf(dict[index].keyarg,"%d",&tempering_ctrl->history_frq);
+  if(tempering_ctrl->history_frq<1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  9)\wgt_fname{#} */
+  if(npara_temps>1){
+    index=9;
+    strcpy(tempering_ctrl->wgt_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  10)\troyer_fname{#} */
+  if(npara_temps>1){
+    index=10;
+    strcpy(tempering_ctrl->troyer_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  11)\restart_par_temp{} */
+  index=11;
+  ifound = 0;
+  if(strcasecmp(dict[index].keyarg,"yes")==0){tempering_ctrl->ipt_restart = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"no")==0){tempering_ctrl->ipt_restart = 0; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  12)\output_directory{} */
+  if(npara_temps>1){
+    index=12;
+    strcpy(tempering_ctrl->output_directory,dict[index].keyarg);
+  }/*endif*/
+/*==========================================================================*/
+/*  If we have more than one temperer:  read in the state point info :      */
+/*                                      malloc some memory                  */
+  if(npara_temps>1){
+    tempering_ctrl->t_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->p_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->s_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    state_name            = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+
+    strcpy(state_name,dict[3].keyarg);
+    t_ext   = tempering_ctrl->t_ext;
+    p_ext   = tempering_ctrl->p_ext;
+    s_ext   = tempering_ctrl->s_ext;
+
+    PRINTF("     Reading tempering data from file: %s\n",state_name);
+    PRINTF("      Tempering state points are:\n");
+
+    fp = cfopen((const char *)state_name,"r");
+    for(i=1;i<=npara_temps;i++){
+      switch(iopt){
+      case 1: fscanf(fp,"%lg",&t_ext[i]);
+	PRINTF("       %g\n",t_ext[i]);
+	break;
+      case 2: fscanf(fp,"%lg %lg",&t_ext[i],&p_ext[i]);
+	p_ext[i] *= PCONV;
+	break;
+      case 3: fscanf(fp,"%lg %lg %lg",&t_ext[i],&p_ext[i],&s_ext[i]);
+	p_ext[i] *= PCONV;  s_ext[i] *= STENS_CONV;
+	break;
+      }/*endif*/
+      readtoendofline_check(fp,state_name,i,npara_temps);
+    }/*endfor*/
+    fclose(fp);
+    PRINTF("     Done reading from file: %s\n",state_name);
+    fflush(stdout);
+
+    cfree(state_name,"set_sim_params_ctrl_temper");
+  }/*endif*/
+
+/*==========================================================================*/
+  }/* end routine */
+/*==========================================================================*/
+
 
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
@@ -1104,15 +1256,6 @@ void set_sim_params_gen(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     gensimopts->ann_target_temp = real_key_arg;
     index=25;
     if(gensimopts->ann_start_temp < 0.0){
-       keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
-
-  /*-----------------------------------------------------------------------*/
-  /*  26)\num_parallel_temperers{#} */
-
-    sscanf(dict[26].keyarg,"%d",&int_key_arg);
-    gensimopts->ntemper = int_key_arg;
-    index=26;
-    if(gensimopts->ntemper < 1){
        keyarg_barf(dict,filename_parse->input_name,fun_key,index);}
 
 /*========================================================================*/

@@ -1644,6 +1644,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //                     : Most effective for 1 gspace chare when you
 //                     : get the diangonal elemens of lambda (see below)
 
+
+#define _CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS_OFF_
+
 #ifdef _CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS_
   /* The lambda matrix is the reduced result of the forward path GEMMs in the
    * asymmetric paircalcs that arrives at Ortho::aceptSectionLambda.  There is
@@ -1660,6 +1663,7 @@ void  CP_State_GSpacePlane::sendLambda() {
    * corresponding values dumped by all the GSpace chares in a state (ie across
    * all planes).
    */
+
     complex mylambda_diag = 0;
     for(int i=0; i<gs.numPoints; i++){
         mylambda_diag += force[i] * psi[i].conj();
@@ -1676,6 +1680,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 // Debug output schmoo : output forces before lambda-ization!
 //                     : 
+
+
+#define _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_OFF_
 
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -2077,6 +2084,9 @@ void CP_State_GSpacePlane::doLambda() {
 //==============================================================================
 // Debug : Write out forces after Lambda-ization
 
+
+#define _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_OFF_
+
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
     int *ka           = eesData->GspData[iplane_ind]->ka;
@@ -2459,7 +2469,7 @@ void CP_State_GSpacePlane::integrateModForce() {
       double StartTime=CmiWallTimer();
 #endif
 
-//#define _GLENN_CHECK_DYNAMICS_
+#define _GLENN_CHECK_DYNAMICS_OFF_
 #ifdef _GLENN_CHECK_DYNAMICS_
   if(iteration==1){bzero(vpsi_g,ncoef*sizeof(complex));}
   if(thisIndex.x==0&&thisIndex.y==0){CkPrintf("Before Integrate : iteration %d\n",iteration);}
