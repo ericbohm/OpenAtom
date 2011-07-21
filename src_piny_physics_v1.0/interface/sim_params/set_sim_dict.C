@@ -40,7 +40,7 @@ void set_sim_dict_fun(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 23;
+  *num_dict = 24;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_fun")-1;
 
 /*========================================================================*/
@@ -174,6 +174,11 @@ void set_sim_dict_fun(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[23].keyarg,"");  
         strcpy((*dict)[23].error_mes,"");
   /*--------------------------------------------------------------------*/ 
+  /*  24) ~par_temper_def[] */
+        strcpy((*dict)[24].keyword,"par_temper_def");
+        strcpy((*dict)[24].keyarg,"");
+        strcpy((*dict)[24].error_mes,"");
+  /*--------------------------------------------------------------------*/
 
 /*========================================================================*/
 /*------------------------------------------------------------------------*/
@@ -181,6 +186,113 @@ void set_sim_dict_fun(int *num_dict,DICT_WORD *dict[])
 /*                   End Subprogram:                                      */
 }/*end routine*/ 
 /*========================================================================*/
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+
+void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
+
+/*==========================================================================*/
+{ /*begin routine*/
+  /*=======================================================================*/
+  /*             Local variable declarations
+   */
+  int i;
+  /*========================================================================*/
+  /*  0) Malloc the dictionary
+   */
+
+  *num_dict = 12;
+  *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_temper")-1;
+
+  /*========================================================================*/
+  /*  I) Initialize the user set option(did the user set the key word)
+   */
+
+  for(i=1;i<=*num_dict;i++){(*dict)[i].iuset = 0;}
+  for(i=1;i<=*num_dict;i++){(*dict)[i].iflag = 0;}
+  for(i=1;i<=*num_dict;i++){(*dict)[i].key_type = 1;}
+
+  /*========================================================================*/
+  /*II) Set up the dictionary
+   */
+  /*-----------------------------------------------------------------------*/
+  /*  1)\num{#} */
+  i = 1;
+  strcpy((*dict)[i].error_mes,"a number > 0 ");
+  strcpy((*dict)[i].keyword,"num");
+  strcpy((*dict)[i].keyarg,"1");
+  /*-----------------------------------------------------------------------*/
+  /*  2)\ens_opt{#} */
+  i = 2;
+  strcpy((*dict)[i].error_mes,"nvt,npt,nst");
+  strcpy((*dict)[i].keyword,"ens_opt");
+  strcpy((*dict)[i].keyarg,"nvt");
+  /*-----------------------------------------------------------------------*/
+  /*  3)\statept_infile{#} */
+  i = 3;
+  strcpy((*dict)[i].error_mes,"a file that must exist for num>1 ");
+  strcpy((*dict)[i].keyword,"statept_infile");
+  strcpy((*dict)[i].keyarg,"statepoint.list");
+  /*-----------------------------------------------------------------------*/
+  /*  4)\screen_name{#} */
+  i = 4;
+  strcpy((*dict)[i].error_mes,"output file set created for num>1 ");
+  strcpy((*dict)[i].keyword,"screen_name");
+  strcpy((*dict)[i].keyarg,"screen.out");
+  /*-----------------------------------------------------------------------*/
+  /*  5)\rsmpl_opt{#} */
+  i = 5;
+  strcpy((*dict)[i].error_mes,"yes/no");
+  strcpy((*dict)[i].keyword,"rsmpl_opt");
+  strcpy((*dict)[i].keyarg,"yes");
+  /*-----------------------------------------------------------------------*/
+  /*  6)\switch_steps{#} */
+  i = 6;
+  strcpy((*dict)[i].error_mes,"number of steps between swtiches");
+  strcpy((*dict)[i].keyword,"switch_steps");
+  strcpy((*dict)[i].keyarg,"1000");
+  /*-----------------------------------------------------------------------*/
+  /*  7)\history_fname{#} */
+  i = 7;
+  strcpy((*dict)[i].error_mes,"a file name");
+  strcpy((*dict)[i].keyword,"history_fname");
+  strcpy((*dict)[i].keyarg,"pt_hist.o");
+  /*-----------------------------------------------------------------------*/
+  /*  8)\history_frq{#} */
+  i = 8;
+  strcpy((*dict)[i].error_mes,"number > 0");
+  strcpy((*dict)[i].keyword,"history_frq");
+  strcpy((*dict)[i].keyarg,"10");
+  /*-----------------------------------------------------------------------*/
+  /*  9)\wgt_fname{#} */
+  i = 9;
+  strcpy((*dict)[i].error_mes,"a file name");
+  strcpy((*dict)[i].keyword,"wgt_fname");
+  strcpy((*dict)[i].keyarg,"wgt_frenkel.o");
+  /*-----------------------------------------------------------------------*/
+  /*  10)\troyer_fname{#} */
+  i = 10;
+  strcpy((*dict)[i].error_mes,"a file name");
+  strcpy((*dict)[i].keyword,"troyer_fname");
+  strcpy((*dict)[i].keyarg,"troyer_fT.o");
+  /*-----------------------------------------------------------------------*/
+  /*  11)\restart_par_temp{#} */
+  i = 11;
+  strcpy((*dict)[i].error_mes,"yes: dump files came from a PT run; no: they didn't");
+  strcpy((*dict)[i].keyword,"restart_par_temp");
+  strcpy((*dict)[i].keyarg,"no");
+  /*-----------------------------------------------------------------------*/
+  /*  12)\output_directory{#} */
+  i = 12;
+  strcpy((*dict)[i].error_mes,"a directory name");
+  strcpy((*dict)[i].keyword,"output_directory");
+  strcpy((*dict)[i].keyarg,"TEMPERING_OUTPUT");
+/*-----------------------------------------------------------------------*/
+  }/*end routine
+/*==========================================================================*/
 
 
 /*==========================================================================*/
@@ -557,7 +669,7 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
 /*========================================================================*/
 /*  0) Malloc the dictionary                                              */ 
 
-  *num_dict = 26;
+  *num_dict = 25;
   *dict = (DICT_WORD *)cmalloc(*num_dict*sizeof(DICT_WORD),"set_sim_dict_gen")-1;
 
 /*========================================================================*/
@@ -704,15 +816,9 @@ void set_sim_dict_gen(int *num_dict,DICT_WORD *dict[])
         strcpy((*dict)[25].keyword,"annealing_target_temperature");
         strcpy((*dict)[25].keyarg,"300");
 
-  /*-----------------------------------------------------------------------*/ 
-  /*  26)\num_parallel_temperers{#} */
-        strcpy((*dict)[26].error_mes,"a number > 0");
-        strcpy((*dict)[26].keyword,"num_parallel_temperers");
-        strcpy((*dict)[26].keyarg,"1");
-
 /*========================================================================*/
 /*                   End Subprogram:                                      */
-}/*end routine*/ 
+  }/*end routine*/ 
 /*========================================================================*/
 
 /*==========================================================================*/

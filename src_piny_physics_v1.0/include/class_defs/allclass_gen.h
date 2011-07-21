@@ -25,6 +25,7 @@
 #include "../class_defs/GEN/class_genminopts.h"
 #include "../class_defs/GEN/class_genensopts.h"
 #include "../class_defs/GEN/class_genfilenames.h"
+#include "../class_defs/GEN/class_gentempering_ctrl.h"
 
 //==========================================================================
 
@@ -53,6 +54,7 @@ class GENERAL_DATA {
    GENMINOPTS    genminopts;
    GENENSOPTS    genensopts;
    GENFILENAMES  genfilenames;
+   GENTEMPERING_CTRL gentempering_ctrl;
 
 //--------------------------------------------------------------------------
 
@@ -82,6 +84,7 @@ class GENERAL_DATA {
    genminopts.state_class_out();
    genensopts.state_class_out();
    genfilenames.state_class_out();
+   gentempering_ctrl.state_class_out();
    PRINT_LINE_STAR;
    PRINTF("\n");
   }// end routine
@@ -103,6 +106,7 @@ class GENERAL_DATA {
    genminopts.pup(p);
    genensopts.pup(p);
    genfilenames.pup(p);
+   gentempering_ctrl.pup(p);
    num_pup++;
    if(num_pup==2){
      PUP_PRINTF("\n");

@@ -2387,7 +2387,7 @@ void Config::guesstimateParmsConfig(int sizez,DICT_WORD *dict_gen,DICT_WORD *dic
     if((sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)){
       if(igo==1){
         PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-        PRINTF("    (sGrainSize%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
+        PRINTF("    (sGrainSize%%lambdaGrainSize !=0)|| (sGrainSize==lambdaGrainSize)");
         //PRINTF("   lambdaGrainSize=orthoGrainSize = %d\n",orthoGrainSize);
         PRINTF("  $$$$$$$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
       }//endif

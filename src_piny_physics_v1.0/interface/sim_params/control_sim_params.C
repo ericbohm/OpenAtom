@@ -46,17 +46,18 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 /*=======================================================================*/
 /*          Local variable declarations                                  */
 
-  int iii;
+  int iii,i;
   int num_dict_fun,num_dict_list,num_dict_cp,num_dict_gen,num_dict_vpot; 
   int num_dict_run,num_dict_nhc,num_dict_vol,num_dict_write,num_dict_pimd;  
   int num_dict_velo,num_dict_msqd,num_dict_iikt_iso,num_dict_ickt_iso;
-  int num_dict_rdf; 
+  int num_dict_rdf, num_dict_temper; 
                              /* Num: Number of words in the 
                                      dictionary of simulation
                                      key words                   */    
   DICT_WORD *dict_fun,*dict_list,*dict_cp,*dict_gen,*dict_vpot,*dict_run; 
   DICT_WORD *dict_nhc,*dict_vol,*dict_write,*dict_pimd; 
   DICT_WORD *dict_velo,*dict_msqd,*dict_iikt_iso,*dict_ickt_iso,*dict_rdf;
+  DICT_WORD *dict_temper;
   DICT_WORD word;            
                              /* Str: Dictionary of key words
                                      key arguments, etc;
@@ -99,6 +100,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   set_sim_dict_iikt_iso(&num_dict_iikt_iso,&dict_iikt_iso);
   set_sim_dict_ickt_iso(&num_dict_ickt_iso,&dict_ickt_iso);
   set_sim_dict_rdf(&num_dict_rdf,&dict_rdf);
+  set_sim_dict_temper(&num_dict_temper,&dict_temper);
 
   fun_key     = (char *)cmalloc(MAXWORD*sizeof(char),"control_sim_params");
 
@@ -157,12 +159,38 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
           now_memory,general_data->tot_memory);
 
 /*=======================================================================*/
-/* IV) Open the data file and read in the information                    */
+/* IV) Read the tempering information first                              */
 
   fp = cfopen((const char *)input_name,"r");
 
   nline = 1;
   nfun_key=0;
+  while(get_fun_key(fp,fun_key,&nline,&nfun_key,input_name)){
+    get_fun_key_index(fun_key,num_dict_fun,dict_fun,nline,nfun_key,
+		      input_name,&ind_key);
+    nkey  = 0;
+    while(get_word(fp,&word,&nline,&nkey,nfun_key,input_name)){
+      if(ind_key==24){
+	put_word_dict(&word,dict_temper,num_dict_temper,fun_key,nline,
+		      nkey,nfun_key,input_name);
+      }/* end if */
+    }/*end while*/
+  }/*end while*/
+  fclose(fp);
+
+  set_sim_params_temper(&(general_data->gentempering_ctrl),
+			&(general_data->gensimopts),dict_temper,
+                        dict_fun[24].keyword,input_name);
+
+/*=======================================================================*/
+/* IV) Open the data file and read in the information                    */
+
+  fp = cfopen((const char *)input_name,"r");
+
+  /* Reinitialize!*/
+  nline = 1;
+  nfun_key=0;
+  for(i=1;i<=num_dict_fun;i++){dict_fun[i].iuset=0;}
   while(get_fun_key(fp,fun_key,&nline,&nfun_key,input_name)){
     get_fun_key_index(fun_key,num_dict_fun,dict_fun,nline,nfun_key,
                       input_name,&ind_key);
@@ -198,6 +226,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
                                 fun_key,nline,nkey,nfun_key,input_name);break;
         case 14 : put_word_dict(&word,dict_rdf,num_dict_rdf,
                                 fun_key,nline,nkey,nfun_key,input_name);break;
+        case 24 : break;
       }/*end switch*/
     }/* end while */
   }/*end while*/
@@ -236,7 +265,6 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
                       bonded,cp,class_parse,cp_parse,filename_parse,
                       dict_pimd,dict_fun[9].keyword);
 
-
   set_sim_params_finale(mdintegrate,mdatoms,mdinter,general_data,
                         bonded,cp,class_parse,cp_parse,filename_parse);
 
@@ -245,6 +273,7 @@ void control_sim_params(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 
   fp = cfopen((const char *) filename_parse->simname,"w");
 
+   write_simfile(fp,dict_temper,num_dict_temper,dict_fun[24].keyword);
    write_simfile(fp,dict_list,num_dict_list,dict_fun[1].keyword);
    write_simfile(fp,dict_cp,num_dict_cp,dict_fun[2].keyword);
    write_simfile(fp,dict_gen,num_dict_gen,dict_fun[3].keyword);

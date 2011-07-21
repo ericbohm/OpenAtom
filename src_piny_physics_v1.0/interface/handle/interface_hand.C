@@ -766,3 +766,50 @@ void check_for_slash(char *keyarg,char *keyword, int *ierr_out){
   ierr_out[0] = ierr;
 }
 /*==========================================================================*/
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/* readtoendofline_check: Function to read to end of line in input files    */
+/* also checks for error, and kicks you out!                                */
+/*==========================================================================*/
+void readtoendofline_check(FILE *fp,char *f_name,int found, int target){
+/*==========================================================================*/
+
+  int ierr,eol,ch;
+  eol = (int )'\n';
+  ch = eol+1;
+
+/*==========================================================================*/
+
+  while(ch!=eol&&ch!=EOF){ch=fgetc(fp);}
+  if(ch==EOF){
+    ierr = 1;
+  }else{
+    ierr = 0;
+  }/*endif*/
+
+/*==========================================================================*/
+
+  if(ierr!=0){
+    printf("\n@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    printf("something is at odds with this file: %s.\n",f_name);
+    if(found<target){
+      printf("you said there\'d be %d lines, file ended on line %d.\n",
+             target,found);
+      printf("Lying will do you no good!!!.\n");
+    }/*endif*/
+    else{
+      printf("methinks you lack or surplus a carriage return\n");
+      printf("at the end of line %d\n",found);
+    }/*endif*/
+    printf("See ya.\n");
+    printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n\n");
+    fflush(stdout);
+    exit(1);
+  }/*endif*/
+
+/*--------------------------------------------------------------------------*/
+ }/* end routine */
+/*==========================================================================*/
