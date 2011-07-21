@@ -60,7 +60,9 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
   itimeRed = m->getUserFlag();
   delete m;
   //output and save the data
-  CkPrintf("{%d} ENL(EES)    = %5.8lf\n", thisInstance.proxyOffset,d);
+  FILE *temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration;
+  fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration,d);
   UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  
 }
 //============================================================================

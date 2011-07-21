@@ -202,6 +202,7 @@ void create_gx_decomp(int , int , int *, int *,int ,int *);
 void processState(int , int, complex *, const char *,int ,int *,int *, int *, int *, 
   	          int *, int *,int *,int *,int *, int ,int ,int,int);
 
+FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

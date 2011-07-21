@@ -190,6 +190,7 @@ void GSpaceDriver::doneMovingAtoms(const int AtomsGrpIter)
 
   ///
   isAtomIntegrationDone = true;
+  myGSpaceObj->screenPrintWallTimes();
   /// If GSpace has already called for an exit, check if we can exit again
   if (myGSpaceObj->cleanExitCalled==1)
     readyToExit();

@@ -135,10 +135,11 @@ void InstanceController::printEnergyHart(CkReductionMsg *msg){
   double ehart = ((double *)data)[0];
   double eext = ((double *)data)[1];
   double ewd  = ((double *)data)[2];
-  
-  CkPrintf("{%d} EHART       = %5.8lf\n", thisIndex, ehart);
-  CkPrintf("{%d} EExt        = %5.8lf\n", thisIndex, eext);
-  CkPrintf("{%d} EWALD_recip = %5.8lf\n", thisIndex, ewd);
+  FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+  fprintf(temperScreenFile,"Iter [%d] EHART       = %5.8lf\n", iteration, ehart);
+  fprintf(temperScreenFile,"Iter [%d] EExt        = %5.8lf\n", iteration, eext);
+  fprintf(temperScreenFile, "Iter [%d] EWALD_recip = %5.8lf\n", iteration, ewd);
 
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EHART, ehart);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXT, eext);
@@ -153,10 +154,12 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   void *data=msg->getData();
   eexc += ((double *)data)[0];
   egga += ((double *)data)[1];
+  FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
   
-  CkPrintf("{%d} EEXC        = %5.8lf\n", thisIndex, eexc);
-  CkPrintf("{%d} EGGA        = %5.8lf\n", thisIndex, egga);
-  CkPrintf("{%d} EEXC+EGGA   = %5.8lf\n", thisIndex, eexc+egga);
+  fprintf(temperScreenFile,"Iter [%d] EEXC        = %5.8lf\n", iteration, eexc);
+  fprintf(temperScreenFile,"Iter [%d] EGGA        = %5.8lf\n", iteration, egga);
+  fprintf(temperScreenFile,"Iter [%d] EEXC+EGGA   = %5.8lf\n", iteration, eexc+egga);
       
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EEXC, eexc);
   UgSpacePlaneProxy[thisIndex](0, 0).computeEnergies(ENERGY_EGGA, egga);
@@ -179,11 +182,14 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   double d = ((double *)m->getData())[0];
   delete m;
 #ifdef _CP_DEBUG_SFNL_OFF_
-  CkPrintf("ENL         = OFF FOR DEBUGGING\n");
+  CkPrintf("EKE         = OFF FOR DEBUGGING\n");
 #endif
   UberCollection thisInstance(thisIndex);
-  ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
-  //  CkPrintf("{%d} EKE         = %5.8lf\n", thisIndex, d);
+  if(config.UberKmax>1) // report to temper master
+    ENLEKECollectorProxy[thisInstance.idxU.z].acceptEKE(d);
+  FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+  fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", iteration, d);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
 
 }
@@ -205,12 +211,15 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   delete m;
 
   if(scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt==0){
-    CkPrintf("{%d} Fict Temp   =  %.10g K\n", thisIndex, d0); // per g-chare temp
-    CkPrintf("{%d} Fict Eke    =  %.10g K\n", thisIndex, d2); // total kinetic energy
-    CkPrintf("{%d} Fict TempNHC=  %.10g K\n", thisIndex, d1); // per g-chare tempNHC
-    CkPrintf("{%d} Fict EkeNHC =  %.10g K\n", thisIndex, d3); // total NHC kinetic energy
-    CkPrintf("{%d} Fict PotNHC =  %.10g K\n", thisIndex, d4); // total potNHC
-    CkPrintf("{%d} Fict EConv  =  %.10g K\n", thisIndex, d2+d3+d4);
+    FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+    int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+
+    fprintf(temperScreenFile,"Iter [%d] Fict Temp   =  %.10g K\n", iteration, d0); // per g-chare temp
+    fprintf(temperScreenFile,"Iter [%d] Fict Eke    =  %.10g K\n", iteration, d2); // total kinetic energy
+    fprintf(temperScreenFile,"Iter [%d] Fict TempNHC=  %.10g K\n", iteration, d1); // per g-chare tempNHC
+    fprintf(temperScreenFile,"Iter [%d] Fict EkeNHC =  %.10g K\n", iteration, d3); // total NHC kinetic energy
+    fprintf(temperScreenFile,"Iter [%d] Fict PotNHC =  %.10g K\n", iteration, d4); // total potNHC
+    fprintf(temperScreenFile,"Iter [%d] Fict EConv  =  %.10g K\n", iteration, d2+d3+d4);
   }//endif
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_FICTEKE, d0);  
 
@@ -254,7 +263,10 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
     }
   else
     {
-      CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
+      FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+      int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+
+      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
     }
 
@@ -262,7 +274,10 @@ void InstanceController::allDoneCPForces(CkReductionMsg *m){
 
 void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
   UberCollection thisInstance(thisIndex);
-      CkPrintf("{%d} allDoneCPForces bead %d\n",thisInstance.proxyOffset,thisInstance.idxU.x);  
+  FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+
+      fprintf(temperScreenFile,"Iter [%d] allDoneCPForces bead %d\n",iteration,thisInstance.idxU.x);  
       UatomsGrpProxy[thisIndex].startRealSpaceForces();
 
 
@@ -274,7 +289,9 @@ void InstanceController::allDoneCPForcesAllKPoint(CkReductionMsg *m){
 // this gets called by each instance
 void InstanceController::cleanExit(CkReductionMsg *m)
 {
-  CkPrintf("{%d} called cleanExit\n",thisIndex);
+  FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
+  fprintf(temperScreenFile,"Iter [%d] called cleanExit\n",iteration);
   delete m;
   int exited=1;
   contribute(sizeof(int), &exited, CkReduction::sum_int, 
