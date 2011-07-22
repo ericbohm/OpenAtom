@@ -133,6 +133,7 @@ CProxy_CPcharmParaInfoGrp         scProxy;
 Config                            config;
 CProxy_TimeKeeper                 TimeKeeperProxy;
 CProxy_InstanceController         instControllerProxy;
+CProxy_TemperController         temperControllerProxy;
 CProxy_ENL_EKE_Collector          ENLEKECollectorProxy;
 
 //============================================================================
@@ -585,6 +586,10 @@ main::main(CkArgMsg *msg) {
     instControllerProxy= CProxy_InstanceController::ckNew(config.numInstances);
     instControllerProxy.doneInserting();
 
+    // make one controller temper
+    temperControllerProxy= CProxy_TemperController::ckNew(1);
+    temperControllerProxy.doneInserting();
+
     // make one collector per uberKmax
     CkArrayOptions enlopts(config.UberKmax);
     ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, enlopts);
@@ -721,7 +726,7 @@ main::main(CkArgMsg *msg) {
     CkPrintf("Pelist initialized in %g\n", newtime-Timer);
     // availGlobG->dump();
     Timer = newtime;
-
+    
     // TODO timekeeper registerees will need to distinguish by instance
     // timekeeper itself doesn't care.
     TimeKeeperProxy = CProxy_TimeKeeper::ckNew();
@@ -738,7 +743,7 @@ Per Instance startup BEGIN
 
     // maps will have a transform function to compute the placement
     // for instances after the first.
-    
+    CkPrintf("NumInstances %d: Beads %d  * Kpoints %d * Tempers %d * Spin %d\n",config.numInstances, config.UberImax, config.UberJmax, config.UberKmax,config.UberMmax);
     for(int integral=0; integral< config.UberImax; integral++)
       {
       for(int kpoint=0; kpoint< config.UberJmax; kpoint++)

@@ -39,6 +39,7 @@ module groups
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
 			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
 		entry void init();
+                entry void acceptNewTemperature(double temp);
                 entry void startRealSpaceForces();  	
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
@@ -56,6 +57,9 @@ module groups
 		entry EnergyGroup(UberCollection);
 		entry void updateEnergiesFromGS(EnergyStruct es, UberCollection);
 		entry void energyDone(CkReductionMsg *);
+		entry void resumeFromTemper();
+		entry void sendToTemper(CkReductionMsg *m);
+
 	};
 };
 
@@ -107,6 +111,8 @@ module instanceController
 
 	array [1D] InstanceController {
         entry InstanceController();
+	entry void acceptNewTemperature(double t);
+	entry void useNewTemperature(double t);
         entry void printEnergyEexc(CkReductionMsg *msg);
         entry void printEnergyHart(CkReductionMsg *msg);
         entry void printFictEke(CkReductionMsg *msg);
@@ -117,10 +123,18 @@ module instanceController
         entry void doneInit(CkReductionMsg *msg);
         entry void cleanExit(CkReductionMsg *m);
         entry void cleanExitAll(CkReductionMsg *m);
-
+	entry void gspDoneNewTemp(CkReductionMsg *m);
+	entry void atomsDoneNewTemp(CkReductionMsg *m);
     };
 };
 
+module temperController
+{
+	array [1D] TemperController {
+	      entry void TemperController();
+	      entry void acceptData(int temper, EnergyStruct);
+	};
+};
 
 
 
@@ -156,6 +170,7 @@ mainmodule cpaimd {
 	extern module startupMessages;
 	extern module ENL_EKE_Collector;
 	extern module instanceController;
+	extern module temperController;
 
 
 	readonly CkVec < CkVec <int> > UplaneUsedByNLZ;
@@ -188,6 +203,9 @@ mainmodule cpaimd {
 
 	readonly CProxy_CPcharmParaInfoGrp scProxy;
 	readonly CProxy_InstanceController instControllerProxy;
+
+	readonly CProxy_TemperController temperControllerProxy;
+
 	readonly CProxy_ENL_EKE_Collector ENLEKECollectorProxy;
 
 	readonly CkVec <CProxy_PIBeadAtoms> UPIBeadAtomsProxy;

@@ -786,7 +786,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     CkPrintf("GSpace[%d,%d] initGSpace %d\n",thisIndex.x,thisIndex.y,size);
 #endif
 
-    FILE *temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
+    temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   registrationFlag  = 1;
@@ -1014,6 +1014,18 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 }// end routine
 //============================================================================
 
+void CP_State_GSpacePlane::acceptNewTemperature(double temp)
+{
+  // Hey GLENN do something with your new temperature here
+
+
+  // when you're done
+  int i=1;
+  contribute(sizeof(int), &i, CkReduction::sum_int, 
+	     	       CkCallback(CkIndex_InstanceController::gspDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+}
+
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1147,8 +1159,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
 //============================================================================
 // Output psi at start of minimization for debugging
-
-  if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
+    
+    if(iteration==1 && cp_min_opt==1){screenOutputPsi(0);}
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0){
       double gstart=CmiWallTimer();
@@ -3049,7 +3061,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (B) Generate some screen output of orthogonal psi
 
-  if(iteration>0){screenOutputPsi();}
+  if(iteration>0){screenOutputPsi(iteration);}
 
 //=============================================================================
 // (D) Go back to the top or exit
@@ -3591,7 +3603,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::screenOutputPsi(){
+void CP_State_GSpacePlane::screenOutputPsi(int iprintout){
 //==============================================================================
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0){CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);}
@@ -3617,7 +3629,6 @@ void CP_State_GSpacePlane::screenOutputPsi(){
 
 #ifdef _CP_DEBUG_COEF_SCREEN_
   if(iteration<=ntime){
-    int iprintout   = iteration-1;
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){

@@ -36,9 +36,9 @@ op-%-p1.log: setup $(binary)
 	@printf "Running regression test $*: $($*-p1-desc) ..."
 	@./tidy water >/dev/null 2>&1 || true
 	@$(binary) $($*-p1-args) 2>&1 > $@
-	@sed -ne "/Iteration 1 done/,/Iteration 2 done/p" $@ | grep "\WPsi" | sort > snip-$@
-	@cat $(regrInpDir)/ref-$*-p1.log | grep "\WPsi" | sort > ref-$@
-	@$(w3210)/sigcmp.pl 9 ref-$@ snip-$@ && echo "\t\t Passed" || echo "\t\t\t TEST FAILED!"
+	@grep "Iter .1." $@ | cut -d' ' -f3-10| grep "Psi\[" | sort  > snip-$@
+	@cat $(regrInpDir)/ref-$*-p1.log | grep "Psi\[" | sort > ref-$@
+	@$(w3210)/sigcmp.pl 9 ref-$@ snip-$@ 5 && echo "\t\t Passed" || echo "\t\t\t TEST FAILED!"
 
 setup:
 	@$(LN) $(wildcard $(w3210)/*) .

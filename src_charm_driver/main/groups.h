@@ -70,6 +70,7 @@ class AtomsGrp: public Group {
   int acceptCountu;
   int PIBeadIndex;
   int TemperIndex;
+  int ktemps;
   FILE *temperScreenFile;
   int numPIMDBeads;
   AtomsGrp(CkMigrateMessage *m) {}
@@ -82,8 +83,9 @@ class AtomsGrp: public Group {
   void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
   void accept_PIMD_CM(AtomXYZMsg *m);
   void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
-
+  void acceptNewTemperature(double temp);
   void recvContribute(CkReductionMsg *);
+
   void atomsDone(CkReductionMsg *);
   void send_PIMD_u();
   void send_PIMD_Fx();
@@ -93,6 +95,7 @@ class AtomsGrp: public Group {
   void acceptAtoms(AtomMsg *);
   void startRealSpaceForces();
   void outputAtmEnergy();
+  void releaseGSP();
   void zeroforces() {
     double *fx = fastAtoms.fx;
     double *fy = fastAtoms.fy;
@@ -161,7 +164,12 @@ class EnergyGroup : public Group {
     void updateEnergiesFromGS(EnergyStruct &, UberCollection);
     void energyDone(CkReductionMsg *);
     void energyDone();
+    void sendToTemper(CkReductionMsg *);
+    void resumeFromTemper();
+
     inline EnergyStruct getEnergyStruct(){return estruct;}
+ private:
+    int ktemps;
 };
 /*EnergyStruct GetEnergyStruct();*/
 //============================================================================

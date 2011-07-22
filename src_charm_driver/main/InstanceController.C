@@ -299,6 +299,72 @@ void InstanceController::cleanExit(CkReductionMsg *m)
 }
 //============================================================================
 
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::acceptNewTemperature(double temperature){
+  // you are the instance controller for [temper,0,0.0] tell the rest of your
+  // minions about this new temperature
+  // NOTE: this should be done using a section
+  //  CkPrintf("[%d] acceptNewTemperature\n",thisIndex);
+  UberCollection anIndex(thisIndex);
+    for(int integral=0; integral< config.UberImax; integral++)
+      {
+	anIndex.idxU.x=integral;
+      for(int kpoint=0; kpoint< config.UberJmax; kpoint++)
+	{
+	  anIndex.idxU.y=kpoint;
+	    for(int spin=0; spin< config.UberMmax; spin++) {
+	      anIndex.idxU.s=spin;
+	      anIndex.setPO();
+	      thisProxy[anIndex.proxyOffset].useNewTemperature(temperature);
+	    }
+	}
+      }
+    
+}
+//============================================================================
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::useNewTemperature(double temperature){
+  // broadcast the temp to your atoms and GSPs
+  //  CkPrintf("[%d] useNewTemperature\n",thisIndex);
+  atomsTempDone=false;
+  gspTempDone=false;
+  UatomsGrpProxy[thisIndex].acceptNewTemperature(temperature);
+  UgSpacePlaneProxy[thisIndex].acceptNewTemperature(temperature);
+
+}
+//============================================================================
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::atomsDoneNewTemp(CkReductionMsg *m)
+{
+  atomsTempDone=true;
+  if(gspTempDone)
+    UegroupProxy[thisIndex].resumeFromTemper();
+  delete m;
+}
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+void InstanceController::gspDoneNewTemp(CkReductionMsg *m)
+{
+  gspTempDone=true;
+  if(atomsTempDone)
+    UegroupProxy[thisIndex].resumeFromTemper();
+  delete m;
+}
+
+
+
 // When the simulation is done, make a clean exit  
 // this gets called on the 0th element when everyone calls cleanExit
 void InstanceController::cleanExitAll(CkReductionMsg *m)
