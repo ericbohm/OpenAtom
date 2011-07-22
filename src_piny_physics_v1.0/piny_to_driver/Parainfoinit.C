@@ -56,6 +56,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int cp_grad_corr_on = cpopts->cp_gga;
 
   int cp_lsda         = cpopts->cp_lsda;
+  int cp_lda          = cpopts->cp_lda;
 
   int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
@@ -108,8 +109,7 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
    sim->pi_beads       = pi_beads;
    sim->nstates        = nstates;
    sim->nkpoint        = 1;       // fixed in nkpoint version
-   sim->nspin          = 1;  
-   if(cp_lsda==1)sim->nspin=2;
+   sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
 
    sim->natm_typ       = natm_typ;
    sim->natm_tot       = natm_tot;

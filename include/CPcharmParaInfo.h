@@ -543,7 +543,7 @@ class CPcharmParaInfo {
       p|vol;        p|dt;         p|tol_norb;   p|tol_cp_min; p|tol_cp_dyn;
       p|ntemper;    p|pi_beads; p|nkpoint;  p|nspin;
       p|iperd;      p|doublepack;
-      p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal;
+      p|fftopt;     p|kx_max;  p|ky_max;  p|kz_max; p|cp_norb_rot_kescal; 
       p|ndump_frq;  p|istart_typ_cp; p|cp_grad_corr_on;
       p|cp_opt;     p|cp_std;     p|cp_wave;
       p|cp_min_opt; p|cp_min_update; p|cp_min_std; p|cp_min_cg; p|rhoRsubplanes;

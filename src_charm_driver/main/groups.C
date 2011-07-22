@@ -1,7 +1,10 @@
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
 /** \file groups.C
- *           Processor group class Functions : Atoms and parainfo
- */
-
+ *          Processor group class Functions : Atoms and parainfo
+ **/
+//==============================================================================
 
 #include "groups.h"
 #include "eesCache.h"
@@ -57,7 +60,10 @@ void IntegrationComplete(void *, void *);
  */
 //==============================================================================
 AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, UberCollection _thisInstance) : thisInstance(_thisInstance) {
+                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, 
+                   UberCollection _thisInstance) : thisInstance(_thisInstance) 
+//==============================================================================
+  {// begin routine
 //==============================================================================
 // parameters, options and energies
   
@@ -125,15 +131,14 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     }//endif
     
 //==============================================================================
-// A copy of the atoms for fast routines
-
+// A copy of the atoms for fast routines : only need to copy charge once
 
     copySlowToFast();
     double *qq = fastAtoms.q;
     for(int i=0;i<natm;i++){qq[i]=atoms[i].q;}
 
 //==============================================================================
-// Number of messages to be received when atoms are moved
+// Number of messages to be received when atoms are moved : simple parallel
 
     int nproc = CkNumPes();
     int div   = (natm / nproc);
@@ -154,10 +159,10 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/* Destructor
+/** Destructor
  *
  *
- */
+ **/
 //==============================================================================
 AtomsGrp::~AtomsGrp(){
      delete [] atoms;
@@ -176,10 +181,14 @@ AtomsGrp::~AtomsGrp(){
 //==============================================================================
 
 
-
+//==========================================================================
+// you are bead root if you are the processor at the base of the
+// GSP = GSP(0,0) for your Instance, which we don't know until GSP is mapped
+// hence the 2nd phase init since atomsgrp is made before GSP
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+
 void AtomsGrp::init()
 {
   // you are bead root if you are the processor at the base of the
@@ -192,14 +201,11 @@ void AtomsGrp::init()
 
   if(numPIMDBeads>1)
     {
-            
       // make lists of group IDs and their Commander PE
-      
       CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
-      int **elems=new int*[numPIMDBeads];
-      int *naelems=new int[numPIMDBeads];
-      for(int i=0;i<numPIMDBeads;i++)
-	{
+      int **elems  = new int*[numPIMDBeads];
+      int *naelems = new int[numPIMDBeads];
+      for(int i=0;i<numPIMDBeads;i++){
 	  elems[i]= new int[1];
 	  UberCollection instance=thisInstance;
 	  naelems[i]=1;
@@ -207,47 +213,54 @@ void AtomsGrp::init()
 	  int offset=instance.calcPO();
 	  elems[i][0]=GSImaptable[offset].get(0,0);
 	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
-	  //	  CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n", thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
-
-	}
+	  //CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
+      }//endfor
       proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
       delete [] naelems;
-      for(int i=0;i<numPIMDBeads;i++)
-	delete [] elems[i];
-    }
-  else
-    {
-      // do nothing, there is only 1 bead
-    }
+      for(int i=0;i<numPIMDBeads;i++){delete [] elems[i];}
+  }//endif
 
-
-}
+//==============================================================================
+  }//end routine
 //==============================================================================
 
-
-
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
 /** trigger force computation
  * based on real forces available in each processor's chare then contribute to
  * global group reduction of all atom forces (within this bead) -> recvContribute
- */
+ **/
+//==============================================================================
 void AtomsGrp::startRealSpaceForces(){
 //==========================================================================
-// Get the real space atom forces
-//  CkPrintf("{%d}[%d] AtomsGrp::startRealSpaceForces\n ", thisInstance.proxyOffset, CkMyPe());     
+#ifdef _CP_DEBUG_ATMS_
+   CkPrintf("{%d}[%d] AtomsGrp::startRealSpaceForces\n ", thisInstance.proxyOffset, CkMyPe());     
+#endif
+//==========================================================================
+// Atom parallelization : bad for temperer>1 and/or bead>1 but not wrong
+
    int myid   = CkMyPe();
    int nproc  = CkNumPes();
-   pot_ewd_rs = 0.0;
-   vself      = 0.0;
-   vbgr       = 0.0;
-   potPerdCorr= 0.0;
 
-#ifndef  _CP_DEBUG_PSI_OFF_
+//==========================================================================
+// Get the real space atom forces
+
+   pot_ewd_rs  = 0.0;
+   vself       = 0.0;
+   vbgr        = 0.0;
+   potPerdCorr = 0.0;
+
+#ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
    if(myid<natm-1){
      CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
    }//endif
 #endif
 #endif
+
+//==========================================================================
+// Everybody contributes to the reduction (see contribute forces comment)
 
 #ifdef _CP_DEBUG_ATMS_
    CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
@@ -261,6 +274,13 @@ void AtomsGrp::startRealSpaceForces(){
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** Contributeforces
+ * Every proc assigned an electronic structure chare of the bead=i temper=j 
+ * (i,j) uber instance that generates an atom force MUST be in (i,j) atom group 
+ * and so contribute to the reduction below. Otherwise, all the pieces of the 
+ * atom forces of (i,j) will not be collected and the user will be very sad!
+ **/ 
 //==========================================================================
 void AtomsGrp::contributeforces(){
 //==========================================================================
@@ -283,7 +303,6 @@ void AtomsGrp::contributeforces(){
   CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), UatomsGrpProxy[thisInstance.proxyOffset]);
   contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
 
-
 //==========================================================================
   }//end routine
 //==========================================================================
@@ -291,31 +310,24 @@ void AtomsGrp::contributeforces(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-/**
- * Apply forces to each processor's copy of the atoms.  This is parallelized so
- * that a subset of the atoms are computed on each processor and their results
- * broadcast to AtmGroup->acceptAtoms().  Move the atoms each processor is
- * responsible for.  Set various energyGroup members.  contribute to group
- * reduction ->atomsDone
+/** recvContribute
+ * Every group member has all the forces at present.
  */
+//==========================================================================
 void AtomsGrp::recvContribute(CkReductionMsg *msg) {
+//============================================================
+//  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
 //==========================================================================
 // Local pointers
-//  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
+
   int i,j;
-  double *ftot      = (double *) msg->getData();
-
-  EnergyGroup *eg   = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-
-  int nproc         = CkNumPes();
-  int myid          = CkMyPe();
-  int output_on     = config.atmOutput;
+  int myid        = CkMyPe();
+  double *ftot    = (double *) msg->getData();
+  EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
 
 //============================================================
-// Copy out the reduction of energy and forces
+// Copy out the reduction of energy and forces and nuke msg
 
-//#ifdef _CP_DEBUG_ATMS_
-  //#endif
   double pot_ewd_rs_loc = ftot[3*natm];
   double potPerdCorrLoc = ftot[3*natm+1];
   double fmag = 0.0;
@@ -338,18 +350,15 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #endif
 
 //=================================================================
-// Model forces 
+// Model forces  : This is fine for path integral checking too
 
 #ifdef  _CP_DEBUG_PSI_OFF_
   double omega    = (0.0241888/15.0); // 15 fs^{-1}
   double omega2   = omega*omega;
-  double pot_harm = 0.0;
   int npts        = 200;
-  double sigma    = 1.0/sqrt(315777.0*atoms[0].m*omega2/300.0);
-  double dx       = 6.0*sigma/(double)npts;
 
   if(iteration==0){
-    px =  new double *[natm];
+    px = new double *[natm];
     for(i =0;i<natm;i++){
       px[i] = new double[npts];
       for(j=0;j<npts;j++){px[i][j]=0.0;}
@@ -365,11 +374,7 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
     atoms[i].fx = -omega2*atoms[i].x*atoms[i].m;
     atoms[i].fy = -omega2*atoms[i].y*atoms[i].m;;
     atoms[i].fz = -omega2*atoms[i].z*atoms[i].m;;
-    pot_harm   += (atoms[i].m*omega2*(atoms[i].x*atoms[i].x+
-                                      atoms[i].y*atoms[i].y+
-                                      atoms[i].z*atoms[i].z));
   }//endfor
-  pot_harm *= 0.5;
 #endif
 
 //=================================================================
@@ -387,48 +392,49 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 //============================================================
 // Tuck things that can be tucked.
 
-
   eg->estruct.eewald_real     = pot_ewd_rs_loc;  
   eg->estruct.fmag_atm        = fmag;
 
+//==========================================================================
+// if classical go on to integration, otherwise Fx -> Fu
 
-   if(numPIMDBeads>1)
-     {  
-       // we have all the forces within this bead
-       // we have moved our portion of this bead's atoms
-       send_PIMD_Fx();
-       // atom integration must wait on Fx->Fu
-     }
-   else
-    {
-      integrateAtoms();
-    }
-}
+  if(numPIMDBeads>1){  
+    send_PIMD_Fx();   // atom integration must wait on Fx->Fu transformation
+  }else{
+    integrateAtoms(); // Fx is all you need so go forth and integrate
+  }//endif
 
 //==========================================================================
-// Integrate Atoms
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+/**
+ * Integrate atoms.  This is parallelized so that a subset of the atoms are 
+ * computed on each processor and their results sent to AtmGroup->acceptAtoms(). 
+ * It is badly parallelized for nbead>1 and/or ntemperer>1 and large nproc
+ */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::integrateAtoms()
-{
-
+void AtomsGrp::integrateAtoms(){
 //============================================================
-// Integrate the atoms
-
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",CkMyPe(),natm);
 #endif
-  EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  CPcharmParaInfo *sim  = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+//============================================================
+// Local pointers
 
-   double eKinetic_loc   = 0.0;
-   double eKineticNhc_loc= 0.0;
-   double potNhc_loc     = 0.0;
-   int iwrite_atm        = 0;
-   int myoutput_on       = 0;
-   int nproc = CkNumPes();
-   int myid          = CkMyPe();
+   int  mybead = thisInstance.idxU.x+1;
+   int nproc   = CkNumPes();
+   int myid    = CkMyPe();
+
+   EnergyGroup *eg     = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+
+//=================================================================
+// Atom parallelization : Inefficient if nbead>1 and/or ntemperer>1
+
    int div     = (natm / nproc);
    int rem     = (natm % nproc);
    int natmStr = div*myid;
@@ -438,44 +444,30 @@ void AtomsGrp::integrateAtoms()
    if(myid< rem){natmNow++;}
    int natmEnd = natmNow+natmStr;
 
-#ifdef  _CP_DEBUG_SCALC_ONLY_ 
-  for(i=0;i<natm;i++){
-    fastAtoms.x[i] = atoms[i].x;
-    fastAtoms.y[i] = atoms[i].y;
-    fastAtoms.z[i] = atoms[i].z;
-    atoms[i].fx    = 0.0;
-    atoms[i].fy    = 0.0;
-    atoms[i].fz    = 0.0;
-  }/*endfor*/
-#endif
+//============================================================
+// Zero some local copies energies and flags
 
-   ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
-                    cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
-                    &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
-                    myoutput_on,natmNow,natmStr,natmEnd);
-
-#ifdef _CP_DEBUG_SCALC_ONLY_ 
-  for(i=0;i<natm;i++){
-    atoms[i].x = fastAtoms.x[i];
-    atoms[i].y = fastAtoms.y[i];
-    atoms[i].z = fastAtoms.z[i];
-  }/*endfor*/
-#endif
+   double eKinetic_loc   = 0.0;
+   double eKineticNhc_loc= 0.0;
+   double potNhc_loc     = 0.0;
+   int iwrite_atm        = 0;
+   int myoutput_on       = 0;
 
 //============================================================
-  // Debug output
+// DEBUGGING : Compute the distribution function for model
 
 #ifdef  _CP_DEBUG_PSI_OFF_
-   double etot_atm;
-   if(isokin_opt==0){
-     etot_atm = eKinetic_loc+eKineticNhc_loc+potNhc_loc+pot_harm;
-     CkPrintf("iteration %d : tot energy %.12g on %d\n",iteration,etot_atm,myid);
+   double omega    = (0.0241888/15.0); // 15 fs^{-1}
+   double omega2   = omega*omega;
+   int npts        = 200;
+   if(numPIMDBeads==1){
+     double sigma    = 1.0/sqrt(315777.0*atoms[0].m*omega2/300.0);
    }else{
-     etot_atm = eKineticNhc_loc+potNhc_loc;
-     CkPrintf("iteration %d : tot energy %.12g %.12g on %d\n",iteration,etot_atm,
-                                                    (eKinetic_loc+pot_harm),myid);
+     double sigma    = 1.0/sqrt(2.0*atoms[0].m*omega);
    }//endif
-   for(i=natmStr;i<natmEnd;i++){
+
+   double dx       = 6.0*sigma/(double)npts;
+   for(int i=natmStr;i<natmEnd;i++){
      int i1 = (atoms[i].x+3.0*sigma)/dx;
      int i2 = (atoms[i].y+3.0*sigma)/dx;
      int i3 = (atoms[i].z+3.0*sigma)/dx;
@@ -489,13 +481,14 @@ void AtomsGrp::integrateAtoms()
      px[i][i2] += 1.0;
      px[i][i3] += 1.0;
    }//endif
+
    if(((iteration+1) % 1000)==0){
-     for(i=natmStr;i<natmEnd;i++){
+     for(int i=natmStr;i<natmEnd;i++){
        char fname[100];
        sprintf(fname,"atmtest.dat.%d",i);
        double anorm = sqrt(2.0/(sigma*sigma*acos(-1.0)));
        FILE *fp = fopen(fname,"w");
-       for(j =1;j<npts-1;j++){
+       for(int j =1;j<npts-1;j++){
          double x   = ((double)(2*j+1))*0.5*dx - 3.0*sigma;
          double ans = anorm*exp(-0.5*x*x/(sigma*sigma));
          double cnt = 3.0*((double)(iteration+1));
@@ -504,9 +497,55 @@ void AtomsGrp::integrateAtoms()
        fclose(fp);
      }//endfor
    }//endif
-#endif
-   
 
+  double pot_harm = 0.0;
+  for(int i=0;i<natm;i++){
+    pot_harm   += (atoms[i].m*omega2*(atoms[i].x*atoms[i].x+
+                                      atoms[i].y*atoms[i].y+
+                                      atoms[i].z*atoms[i].z));
+  }//endfor
+  pot_harm *= 0.5;
+#endif
+
+//============================================================
+// Integrate the atoms : Let path integrals overwrite variables to
+//                       keep the integrator clean. 
+
+   if(numPIMDBeads>1 && cp_min_opt==0 && cp_wave_opt==0){
+      for(int i=natmStr;i<natmEnd;i++){
+        atoms[i].fx   = atoms[i].fxu; 
+        atoms[i].fy   = atoms[i].fyu; 
+        atoms[i].fz   = atoms[i].fzu; 
+        atoms[i].xold = atoms[i].x; 
+        atoms[i].yold = atoms[i].y; 
+        atoms[i].zold = atoms[i].z; 
+        atoms[i].x    = atoms[i].xu; 
+        atoms[i].y    = atoms[i].yu; 
+        atoms[i].z    = atoms[i].zu; 
+      }//endfor
+   }//endif
+
+#ifndef  _CP_DEBUG_SCALC_ONLY_ 
+   ATOMINTEGRATE::ctrl_atom_integrate(iteration,natm,len_nhc,cp_min_opt,
+                     cp_wave_opt,iextended_on,atoms,atomsNHC,myid,
+                     &eKinetic_loc,&eKineticNhc_loc,&potNhc_loc,&iwrite_atm,
+ 	             myoutput_on,natmNow,natmStr,natmEnd,mybead);
+#endif
+
+//============================================================
+// Debug output :  Not correct for PIMD which needs chain PE
+
+#ifdef  _CP_DEBUG_PSI_OFF_
+   double etot_atm;
+   if(isokin_opt==0){
+     etot_atm = eKinetic_loc+eKineticNhc_loc+potNhc_loc+pot_harm;
+     CkPrintf("iteration %d : tot class energy %.12g on %d\n",iteration,etot_atm,myid);
+   }else{
+     etot_atm = eKineticNhc_loc+potNhc_loc;
+     CkPrintf("iteration %d : tot class energy %.12g %.12g on %d\n",iteration,etot_atm,
+                                                    (eKinetic_loc+pot_harm),myid);
+   }//endif
+#endif
 
 //============================================================
 // Get ready for the next iteration : 
@@ -530,7 +569,6 @@ void AtomsGrp::integrateAtoms()
     outputAtmEnergy();
 
     int i=0;
-    //    CkPrintf("{%d}[%d] AtomsGrp::integrateAtoms contributing to atomsDone\n ", thisInstance.proxyOffset, CkMyPe());     
     CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif

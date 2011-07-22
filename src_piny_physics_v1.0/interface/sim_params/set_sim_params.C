@@ -42,7 +42,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
   double real_key_arg;
   double *t_ext,*p_ext,*s_ext;
   FILE *fp;
-  char *state_name;
+  char *fname,*directory;
 
 /*==========================================================================*/
 /* Read in the 1st key argument and malloc filename space if necessary      */
@@ -69,9 +69,7 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
   index=2;
   ifound = 0;
   iopt = 0;
-  tempering_ctrl->nvt = 0;
-  tempering_ctrl->npt = 0;
-  tempering_ctrl->nst = 0;
+  tempering_ctrl->nvt = 0;  tempering_ctrl->npt = 0; tempering_ctrl->nst = 0;
   if(strcasecmp(dict[index].keyarg,"nvt")==0){tempering_ctrl->nvt = 1; iopt=1; ifound++;}
   if(strcasecmp(dict[index].keyarg,"npt")==0){tempering_ctrl->npt = 1; iopt=2; ifound++;}
   if(strcasecmp(dict[index].keyarg,"nst")==0){tempering_ctrl->nst = 1; iopt=3; ifound++;}
@@ -88,13 +86,9 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
   index=5;
   ifound = 0;
   tempering_ctrl->rsmpl_opt = 0;
-  if(strcasecmp(dict[index].keyarg,"yes")==0){
-    tempering_ctrl->rsmpl_opt = 1;  ifound++;}
-  if(strcasecmp(dict[index].keyarg,"no")==0){
-    tempering_ctrl->rsmpl_opt = 0;  ifound++;}
-  if(ifound!=1){
-    keyarg_barf(dict,input_name,fun_key,index);
-  }/*endif*/
+  if(strcasecmp(dict[index].keyarg,"yes")==0){tempering_ctrl->rsmpl_opt = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"no")==0) {tempering_ctrl->rsmpl_opt = 0; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
 /*-----------------------------------------------------------------------*/
 /*  6)\switch_steps{#} */
   index=6;
@@ -103,7 +97,9 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
 /*-----------------------------------------------------------------------*/
 /*  7)\history_fname{#} */
   if(npara_temps>1){
-    index=7;
+    index=7; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
     strcpy(tempering_ctrl->history_name,dict[index].keyarg);
   }/*endif*/
 /*-----------------------------------------------------------------------*/
@@ -114,13 +110,17 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
 /*-----------------------------------------------------------------------*/
 /*  9)\wgt_fname{#} */
   if(npara_temps>1){
-    index=9;
+    index=9; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
     strcpy(tempering_ctrl->wgt_name,dict[index].keyarg);
   }/*endif*/
 /*-----------------------------------------------------------------------*/
 /*  10)\troyer_fname{#} */
   if(npara_temps>1){
-    index=10;
+    index=10; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
     strcpy(tempering_ctrl->troyer_name,dict[index].keyarg);
   }/*endif*/
 /*-----------------------------------------------------------------------*/
@@ -139,41 +139,60 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
 /*==========================================================================*/
 /*  If we have more than one temperer:  read in the state point info :      */
 /*                                      malloc some memory                  */
+/*                                      check the directory structure       */
+
   if(npara_temps>1){
     tempering_ctrl->t_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->p_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
     tempering_ctrl->s_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
-    state_name            = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    fname                 = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
 
-    strcpy(state_name,dict[3].keyarg);
-    t_ext   = tempering_ctrl->t_ext;
-    p_ext   = tempering_ctrl->p_ext;
-    s_ext   = tempering_ctrl->s_ext;
+    strcpy(fname,dict[3].keyarg);
+    t_ext     = tempering_ctrl->t_ext;
+    p_ext     = tempering_ctrl->p_ext;
+    s_ext     = tempering_ctrl->s_ext;
+    directory = tempering_ctrl->output_directory;
 
-    PRINTF("     Reading tempering data from file: %s\n",state_name);
+    PRINTF("     Reading tempering state points from : %s\n",fname);
     PRINTF("      Tempering state points are:\n");
 
-    fp = cfopen((const char *)state_name,"r");
+    fp = cfopen((const char *)fname,"r");
     for(i=1;i<=npara_temps;i++){
       switch(iopt){
-      case 1: fscanf(fp,"%lg",&t_ext[i]);
-	PRINTF("       %g\n",t_ext[i]);
-	break;
-      case 2: fscanf(fp,"%lg %lg",&t_ext[i],&p_ext[i]);
-	p_ext[i] *= PCONV;
-	break;
-      case 3: fscanf(fp,"%lg %lg %lg",&t_ext[i],&p_ext[i],&s_ext[i]);
-	p_ext[i] *= PCONV;  s_ext[i] *= STENS_CONV;
-	break;
-      }/*endif*/
-      readtoendofline_check(fp,state_name,i,npara_temps);
+        case 1: fscanf(fp,"%lg",&t_ext[i]);
+ 	  PRINTF("       %g\n",t_ext[i]);
+        break;
+        case 2: fscanf(fp,"%lg %lg",&t_ext[i],&p_ext[i]);
+  	  PRINTF("       %g %g\n",t_ext[i],p_ext[i]);
+	  p_ext[i] *= PCONV;
+        break;
+        case 3: fscanf(fp,"%lg %lg %lg",&t_ext[i],&p_ext[i],&s_ext[i]);
+	  PRINTF("       %g %g %g\n",t_ext[i],p_ext[i],s_ext[i]);
+	  p_ext[i] *= PCONV;  s_ext[i] *= STENS_CONV;
+        break;
+      }/*end switch*/
+      readtoendofline_check(fp,fname,i,npara_temps);
     }/*endfor*/
     fclose(fp);
-    PRINTF("     Done reading from file: %s\n",state_name);
+    PRINTF("     Done reading from file: %s\n",fname);
     fflush(stdout);
 
-    cfree(state_name,"set_sim_params_ctrl_temper");
-  }/*endif*/
+    for(i=1;i<=npara_temps;i++){
+      sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i);
+      FILE *fpck = fopen(fname,"w");
+      if(fpck==NULL){
+        sprintf (fname, "%s/Temper.%d",directory,i);
+        PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("    Output directory, %s , is not present\n",fname);
+        PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
+      fclose(fp);
+    }/*endfor*/
+
+    cfree(fname,"set_sim_params_ctrl_temper"); /* file not needed again */
+
+  }/*endif : We have tempering*/
 
 /*==========================================================================*/
   }/* end routine */

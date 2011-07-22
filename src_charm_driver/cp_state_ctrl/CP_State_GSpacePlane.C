@@ -1792,8 +1792,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
-
-  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  int cp_min_opt    = sim->cp_min_opt;
+  int cp_lsda       = sim->nspin - 1;  // 1 for lsda and 0 for lda
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind]->ka;
 
@@ -1840,15 +1841,17 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #endif
 
   //---------------------------------------------------
-  // B) Double Pack
+  // B) Double Pack 
   if(config.doublePack==1){
    if(cp_min_opt==1){
+     double overlap = (cp_lsda==0 ? 2.0 : 1.0);
+     double ws = 1.0/overlap; double wd = 2.0/overlap;
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
 #ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
-       double wght  = (k_x[idest]==0 ? 0.5 : 1);
+       double wght  = (k_x[idest]==0 ? ws : wd);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
@@ -1870,16 +1873,32 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   }//endif : double pack
 
   //---------------------------------------------------
-  // C) Double Pack
+  // C) Double Pack is off
   if(config.doublePack==0){
+   if(cp_min_opt==1){
+     double overlap = (cp_lsda==0 ? 2.0 : 1.0);
+     double ws = 1.0/overlap;
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
-       force[idest].re -= 0.5*data[i].re;
-       force[idest].im -= 0.5*data[i].im;
+       force[idest].re -= ws*data[i].re;
+       force[idest].im -= ws*data[i].im;
     }//endfor
-  }//endif
+   }else{
+     if(countLambdaO[offset]<1){
+#ifdef CMK_BLUEGENEL
+#pragma unroll(10)
+#endif
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
+     }else{
+#ifdef CMK_BLUEGENEL
+#pragma unroll(10)
+#endif
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+     }// endif : 1st guy
+   }//endif : minimization
+  }//endif : singlePack = kpts
 
   //---------------------------------------------------
   // D) Cleanup
@@ -2023,8 +2042,7 @@ void CP_State_GSpacePlane::doLambda() {
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   complex *force = gs.packedForceData;
 #ifdef _NAN_CHECK_
-  for(int i=0;i<gs.numPoints ;i++)
-    {
+  for(int i=0;i<gs.numPoints ;i++){
       CkAssert(finite(force[i].re));
       CkAssert(finite(force[i].im));
     }

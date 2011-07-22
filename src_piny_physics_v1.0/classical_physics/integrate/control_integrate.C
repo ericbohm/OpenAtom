@@ -8,13 +8,14 @@
 #include "../class_defs/ATOM_OPERATIONS/class_atomintegrate.h"
 #include "../class_defs/ATOM_OPERATIONS/class_atomoutput.h"
 #include "../class_defs/allclass_mdintegrate.h"
+#include "../class_defs/allclass_gen.h"
 
 //============================================================================
 
 
 
 //============================================================================
-//  Atom Integration controller : also invokes output
+//  Atom Integration controller :
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
@@ -23,19 +24,21 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
                         Atom *atoms,AtomNHC *atomsNHC,int myid,
                         double *eKinetic,double *eKineticNhc,double *potNhc,
                         int *iwrite_atm,int output_on,
-                        int natmNow,int natmStr,int natmEnd)
+			int natmNow,int natmStr,int natmEnd,int mybead)
 //============================================================================
    {//begin routine 
 //============================================================================
 // Local Variables and Pointers : Verbose output
 
+   GENERAL_DATA *general_data = GENERAL_DATA::get();
+#include "../class_defs/allclass_strip_gen.h"
+    int pi_beads        = gensimopts->pi_beads;
+
 #ifdef GJM_DBG_ATMS
    PRINTF("GJM_DBG : Inside integrate %d\n",myid);  
 #endif
-   int pi_beads = 1;
-
 //============================================================================
-// (I) Evolve to the last 1/2 step of previous step
+// (I) Evolve to the last 1/2 step of previous step : only changes velocities
  
    if(cp_min_opt==0 && cp_wave_opt==0){
      integrate_2nd_half_step(itime,natm,len_nhc,iextended_on,atoms,atomsNHC,
@@ -43,14 +46,22 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
    }//endif
  
 //============================================================================
-// (II) Invoke atom output to dump and config files
+// (II) Save the end step velocities and positions
 
    if(cp_min_opt==0 && cp_wave_opt==0){
+     if(pi_beads==1){
       for(int i=natmStr;i<natmEnd;i++){
         atoms[i].xold = atoms[i].x;  atoms[i].vxold = atoms[i].vx;
         atoms[i].yold = atoms[i].y;  atoms[i].vyold = atoms[i].vy;
         atoms[i].zold = atoms[i].z;  atoms[i].vzold = atoms[i].vz;
       }//endif
+     }else{
+      for(int i=natmStr;i<natmEnd;i++){
+        atoms[i].vxold = atoms[i].vx;
+        atoms[i].vyold = atoms[i].vy;
+        atoms[i].vzold = atoms[i].vz;
+      }//endif
+     }//endfor
    }//endfor
 
 //============================================================================
@@ -101,7 +112,7 @@ void ATOMINTEGRATE::integrate_2nd_half_step(int itime,int natm,int len_nhc,
    (*potNhc)      = 0.0;
    switch(iextended_on){
      case 0 : integrate_nve_2nd_half(itime,natm,atoms,
-                                       eKinetic,natmNow,natmStr,natmEnd);
+                                     eKinetic,natmNow,natmStr,natmEnd);
               break;
      case 1 : if(isokin_opt==0){
                 integrate_nvt_2nd_half(itime,natm,len_nhc,atoms,atomsNHC,
