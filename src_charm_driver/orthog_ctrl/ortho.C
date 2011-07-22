@@ -213,9 +213,18 @@ void Ortho::start_calc(CkReductionMsg *msg){
       CkAssert(fabs(S[i]-savedsmat[i])<0.0001);
     }
 #endif
-  for(int i = 0; i < m * n; i++){
-    B[i] = S[i] / 2.0;
-  }
+  if(config.UberMmax ==1) // if we ignore spin we divide by 2
+    {
+      for(int i = 0; i < m * n; i++){
+	B[i] = S[i] / 2.0;
+      }
+    }
+  else
+    {
+      for(int i = 0; i < m * n; i++){
+	B[i] = S[i];
+      }
+    }
   memset(A, 0, sizeof(internalType) * m * n);
   step = 0;
   iterations = 0;
