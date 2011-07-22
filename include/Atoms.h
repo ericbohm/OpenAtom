@@ -25,53 +25,44 @@ class Atom {
      x = x_;   y = y_;   z = z_;  q = q_; m = m_; 
      xu =  yu = zu=0.0;
     vx = 0.0; vy = 0.0; vz = 0.0;
-    vxu = 0.0; vyu = 0.0; vzu = 0.0;
     fx = 0.0; fy = 0.0; fz = 0.0;
     fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
-    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
   Atom(double x_, double y_, double z_,double q_, double m_,
        double vx_, double vy_, double vz_) {
      x =  x_;  y =  y_;  z =  z_;  q = q_; m = m_; 
      xu =  yu = zu=0.0;
     vx = vx_; vy = vy_; vz = vz_; 
-    vxu = vx_; vyu = vy_; vzu = vz_; 
     fx = 0.0; fy = 0.0; fz = 0.0;
     fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
-    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
   void Init(double x_, double y_, double z_, double q_, double m_) {
     x = x_; y = y_; z = z_; q = q_; m = m_; 
-     xu =  yu = zu=0.0;
+    xu =  yu = zu=0.0;
+    xcm =  ycm = zcm=0.0;
     vx = 0.0; vy = 0.0; vz = 0.0;
-    vxu = 0.0; vyu = 0.0; vzu = 0.0;
     fx = 0.0; fy = 0.0; fz = 0.0;
     fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
-    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end Init
   void Init(double x_, double y_, double z_, double q_, double m_,
             double vx_, double vy_, double vz_) {
      x =  x_;  y =  y_;  z =  z_;  q = q_; m = m_; 
      xu =  yu = zu=0.0;
     vx = vx_; vy = vy_; vz = vz_; 
-    vxu = vx_; vyu = vy_; vzu = vz_; 
     fx = 0.0; fy = 0.0; fz = 0.0;
     fxu = 0.0; fyu = 0.0; fzu = 0.0;
     mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
-    mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end Init
   Atom(Atom *a) { 
      x = a->x;   y = a->y;   z = a->z;  q = a->q; m = a->m; 
      xu = a->xu;   yu = a->yu;   zu = a->zu;  mu = a->mu; 
      vx = a->vx; vy = a->vy; vz = a->vz;
-     vxu = a->vxu; vyu = a->vyu; vzu = a->vzu;
      fx = a->fx; fy = a->fy; fz = a->fz;
      fxu = a->fxu; fyu = a->fyu; fzu = a->fzu;
      mvx2 = 0.0; mvy2 = 0.0; mvz2 = 0.0;
-     mvxu2 = 0.0; mvyu2 = 0.0; mvzu2 = 0.0;
   }//end constructor
 
 
@@ -80,13 +71,10 @@ class Atom {
   double vxold,vyold,vzold;
   double xold,yold,zold;
   double vx,vy,vz,mvx2,mvy2,mvz2;
-  double xcm, ycm, zcm;
 
   double xu, yu, zu, mu;
+  double xcm, ycm, zcm;
   double fxu,fyu,fzu;
-  double vxuold,vyuold,vzuold;
-  double xuold,yuold,zuold;
-  double vxu,vyu,vzu,mvxu2,mvyu2,mvzu2;
 
   void pup(PUP::er &p) {
      p|x;  p|y;  p|z;  p|q; p|m; 
@@ -95,8 +83,6 @@ class Atom {
      p|mvx2; p|mvy2; p|mvz2;
      p|xu;  p|yu;  p|zu; p|mu; 
      p|fxu; p|fyu; p|fzu; 
-     p|vxu; p|vyu; p|vzu;
-     p|mvxu2; p|mvyu2; p|mvzu2;
   }//pup routine
 
 };//end Atom

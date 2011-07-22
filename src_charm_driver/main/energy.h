@@ -38,6 +38,7 @@ struct EnergyStruct {
     double eKineticNhc_atm; // NHC kinetic energy
     double potNhc_atm;      // NHC pot energy
     double fmag_atm;        // magnitude of atm forces
+    double potPIMDChain;
 };
 PUPbytes(EnergyStruct);
 //============================================================================

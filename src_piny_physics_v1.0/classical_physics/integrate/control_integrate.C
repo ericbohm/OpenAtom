@@ -46,7 +46,7 @@ void ATOMINTEGRATE::ctrl_atom_integrate(int itime,int natm,int len_nhc,
    }//endif
  
 //============================================================================
-// (II) Save the end step velocities and positions
+// (II) Save the end step velocities and positions : pos already saved for PIMD
 
    if(cp_min_opt==0 && cp_wave_opt==0){
      if(pi_beads==1){

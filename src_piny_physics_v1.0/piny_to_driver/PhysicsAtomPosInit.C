@@ -35,10 +35,12 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
- MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+  MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
+
+  double beta,tau,omega2PIMD; 
 
 //============================================================================
 // Copy out some useful variables and error check
@@ -58,6 +60,10 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   isokin_opt    = mdtherm_info->isokin_opt;
   ibead         = ibead_in;
   itemper       = itemper_in;
+
+  beta          = 1.0/kT;
+  tau           = beta/((double)pi_beads_true);
+  omega2PIMD    = 1.0/(tau*beta);
 
   if( (ibead>=pi_beads_true) || (ibead < 0) || (itemper >=ntemper) || (itemper < 0) ){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
@@ -113,11 +119,18 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     mass_nhc            = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
-    double **mass_nhc_in= mdtherm_info->mass_nhc;
-    for(int j=1;j<=len_nhc;j++){
-    for(int i=1;i<=num_nhc;i++){
-      mass_nhc[j][i] = mass_nhc_in[j][i];
-    }}
+    if(pi_beads_true==1){
+      double **mass_nhc_in= mdtherm_info->mass_nhc;
+      for(int j=1;j<=len_nhc;j++){
+      for(int i=1;i<=num_nhc;i++){
+        mass_nhc[j][i] = mass_nhc_in[j][i];
+      }}
+    }else{
+      for(int j=1;j<=len_nhc;j++){
+      for(int i=1;i<=num_nhc;i++){
+        mass_nhc[j][i] = (kT/omega2PIMD); // 1 temperature 1 frequency
+      }}
+    }//endif
   }// endif
 
 //============================================================================
@@ -127,13 +140,25 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
              mdclatoms_pos,&therm_class,therm_bead,ibead,itemper);
 
   if(istart_typ<3){
+    double mass_scal = 1.0;
+    if(ibead>1){mass_scal = ((double)(ibead))/((double)(ibead-1));}
     for(int ip=1;ip<=pi_beads;ip++){
       double *vx   = mdclatoms_pos[ip].vx;
       double *vy   = mdclatoms_pos[ip].vy;
       double *vz   = mdclatoms_pos[ip].vz;
       double *mass = mdclatoms_info->mass;
+      if(pi_beads_true>1){
+        for(int i =1;i<=natm_tot;i++){
+          mass[i] *= mass_scal;
+	}//endfor
+      }//endif
       VX_SMPL::ctrlSamplAtomVel(natm_tot,&vx[1],&vy[1],&vz[1],&mass[1]);
-    }//endif
+      if(pi_beads_true>1){
+        for(int i =1;i<=natm_tot;i++){
+          mass[i] /= mass_scal;
+	}//endfor
+      }//endif
+    }//endfor
   }//endif
 
 //----------------------------------------------------------------------------
