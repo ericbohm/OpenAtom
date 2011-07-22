@@ -2730,7 +2730,7 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       mdclatoms_pimd->gamma_adb = (real_key_arg);
       index=2;
       if((mdclatoms_pimd->gamma_adb<0.0))
-    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
       if(mdclatoms_pimd->gamma_adb<1.0){
       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
       PRINTF("You have requested a path integral          \n");
@@ -2746,7 +2746,24 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       if(strcasecmp(dict[3].keyarg,"centroid")==0){
       gensimopts->pi_md_typ = 2;ifound++;}
       index=3;
-   if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      if(gensimopts->pi_md_typ!=1){
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+        PRINTF("You have requested the centroid PIMD method      \n");
+        PRINTF("We are not ready for that yet but if you         \n");
+        PRINTF("implement it, please check it to the OpenSource  \n");
+        PRINTF("repostitory (once it works, of course)           \n");
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        EXIT(1);
+      }/*endif*/
+      if(mdclatoms_pimd->gamma_adb>1.0 && gensimopts->pi_md_typ!=2){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("You have requested the staging PIMD method       \n");
+        PRINTF("with an adiabaticity parameter greater than one. \n");
+        PRINTF("Staging is for sampling\n");
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
   /*-----------------------------------------------------------------------*/
   /* 4)\pi_beads_level_full{#} */
       sscanf(dict[4].keyarg,"%lg",&real_key_arg);
@@ -2796,6 +2813,7 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       PRINTF("This will just be ingnored for now\n");
       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
     }//endif
+    gentimeinfo->nres_pimd = 1;
   /*-----------------------------------------------------------------------*/ 
   /* 9)\initial_spread_size{} */
     sscanf(dict[9].keyarg,"%lg",&real_key_arg);
