@@ -74,7 +74,7 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
   }//endif
 
   if(iextended_on==1){
-    if(num_nhc != 3*natm_tot){
+    if(num_nhc != 3*natm_tot){  // tests to make sure you really are massive
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("Presently only massive thermstatting is supported.\n");
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
@@ -119,11 +119,11 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     mass_nhc            = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
-    if(pi_beads_true==1){
+    if(pi_beads_true==1 || ibead==1){
       double **mass_nhc_in= mdtherm_info->mass_nhc;
       for(int j=1;j<=len_nhc;j++){
       for(int i=1;i<=num_nhc;i++){
-        mass_nhc[j][i] = mass_nhc_in[j][i];
+        mass_nhc[j][i] = mass_nhc_in[j][i];  // has correct freq for 1st bead
       }}
     }else{
       for(int j=1;j<=len_nhc;j++){
@@ -141,7 +141,8 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
 
   if(istart_typ<3){
     double mass_scal = 1.0;
-    if(ibead>1){mass_scal = ((double)(ibead))/((double)(ibead-1));}
+    int ibeadp1  = ibead+1; // ibead starts at 0
+    if(ibeadp1>1){mass_scal = ((double)(ibeadp1))/((double)(ibeadp1-1));}
     for(int ip=1;ip<=pi_beads;ip++){
       double *vx   = mdclatoms_pos[ip].vx;
       double *vy   = mdclatoms_pos[ip].vy;
@@ -221,7 +222,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 
   for(int i=0;i<natm_tot;i++){
     atomsNHC[i].len_nhc = len_nhc;
-    atomsNHC[i].kT      = kT;
+    atomsNHC[i].kT      = kT;    // hard wriing massive
     atomsNHC[i].posKT   = 0.0;
     for(int j=0;j<len_nhc;j++){
       atomsNHC[i].m[j] =1.0;
@@ -238,7 +239,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
     for(int i=0;i<natm_tot;i++){
       int iii = 3*i+1;
       for(int j=0,j1=1;j<len_nhc;j++,j1++){
-        atomsNHC[i].m[j]  = mass_nhc[j1][iii];
+        atomsNHC[i].m[j]  = mass_nhc[j1][iii];  // piny interface ensures massive
       }//endfor
     }//endfor
     if(istart>=4){
@@ -258,7 +259,6 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
   }//endif
 
  
-
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================

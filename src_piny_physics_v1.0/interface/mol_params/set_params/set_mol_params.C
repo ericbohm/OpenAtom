@@ -101,6 +101,13 @@ void set_mol_params(FILENAME_PARSE*filename_parse,char fun_key[],
     keyarg_barf(mol_dict,filename_parse->molsetname,fun_key,index);
   }
 
+  if(class_parse->imol_nhc_opt[mol_ind]!=6){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
+    PRINTF("The present code only does massive thermos\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");        
+    EXIT(1);
+  }//endif
+
 /*-----------------------------------------------------------------------*/ 
 /*  5)\mol_tau_nhc{} */
 
