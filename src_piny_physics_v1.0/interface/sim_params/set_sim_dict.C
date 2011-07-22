@@ -1632,7 +1632,7 @@ void set_sim_dict_pimd(int *num_dict,DICT_WORD *dict[])
   /*  3)\path_int_md_typ{staging,centroid} */
         strcpy((*dict)[3].error_mes,"staging,centroid");
         strcpy((*dict)[3].keyword,"path_int_md_typ");
-        strcpy((*dict)[3].keyarg,"centroid");
+        strcpy((*dict)[3].keyarg,"staging");
   /*-----------------------------------------------------------------------*/
   /*  4)\pi_beads_level_full{#} */
         strcpy((*dict)[4].error_mes,"a number >= 0");
