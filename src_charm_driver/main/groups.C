@@ -35,6 +35,8 @@ extern CkVec <CProxy_AtomsGrp>             UatomsGrpProxy;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
+extern CProxy_TemperController temperControllerProxy;
+extern CProxy_InstanceController instControllerProxy;
 extern CProxy_CPcharmParaInfoGrp   scProxy;
 
 //----------------------------------------------------------------------------
@@ -68,6 +70,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
     isokin_opt      = isokin_opt_;
     iteration       = 0;
     kT              = kT_;
+    ktemps          = 0;
     pot_ewd_rs      = 0.0;
     eKinetic        = 0.0;
     eKineticNhc     = 0.0;
@@ -861,9 +864,16 @@ void AtomsGrp::atomsDone() {
  }//endfor
  fclose(fp);
 #endif
+ releaseGSP();
+     
+}
 
+void AtomsGrp::releaseGSP() {
+ int myid = CkMyPe();
+ // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
 //==========================================================================
 // Use the cool new data caching system to say we're done.
+
    for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
 							 //k-point
 							 //needs to be
@@ -1007,7 +1017,16 @@ void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI)
     }
 }
 
+void AtomsGrp::acceptNewTemperature(double temp)
+{
+  // Hey GLENN do something with your new temperature here
 
+
+  // when you're done
+  int i=1;
+  contribute(sizeof(int), &i, CkReduction::sum_int, 
+	     	       CkCallback(CkIndex_InstanceController::atomsDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+}
 
 //==========================================================================
 //Energy group that can retrieve the energies from
@@ -1126,11 +1145,39 @@ void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) 
    if(++kpointEnergyDoneCount==config.UberJmax)
      {
        kpointEnergyDoneCount=0;
-       energyDone();
+       if(config.UberKmax>1 && config.temperCycle >0 && iteration_atm % config.temperCycle == 0) // its temper time, 
+	 { 
+	   ktemps=0;
+	   // resumeFromTemper will reactivate us later
+	   int i=1;
+	   CkCallback cb(CkIndex_EnergyGroup::sendToTemper(NULL),0,  UegroupProxy[thisInstance.proxyOffset]);
+	   contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+	 }
+       else
+	 {
+	   energyDone();
+	 }
      }
 }
 //==========================================================================
 
+
+void EnergyGroup::sendToTemper(CkReductionMsg *m)
+{
+  delete m;
+  temperControllerProxy[0].acceptData(thisInstance.idxU.x, estruct);
+}
+
+void EnergyGroup::resumeFromTemper()
+{
+ // you will receive 1 per kpoint, only release when all are ready
+ ktemps++;
+ if(ktemps==config.UberJmax)
+   {
+     energyDone();
+     ktemps=0;
+   }
+}
 
 //==========================================================================
 // Needs to have each proc invoke directly the doneComputingEnergy method of the

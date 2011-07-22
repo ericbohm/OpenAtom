@@ -112,6 +112,7 @@ module gStatePlane
 
 		entry void computeEnergies(int p, double d);
 		entry void psiCgOvlap(CkReductionMsg *);
+		entry void acceptNewTemperature(double temp);
 		entry void readFile();
 	};
 };
