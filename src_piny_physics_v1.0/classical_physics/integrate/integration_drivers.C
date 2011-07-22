@@ -45,7 +45,7 @@ void ATOMINTEGRATE::integrate_nve_2nd_half(int itime,int natm,Atom *atoms,
 
 
 //============================================================================
-//        NVE Integration : 2nd half
+//        NVE Integration : 1st half
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================

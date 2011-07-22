@@ -289,7 +289,7 @@ void set_sim_dict_temper(int *num_dict,DICT_WORD *dict[])
   i = 12;
   strcpy((*dict)[i].error_mes,"a directory name");
   strcpy((*dict)[i].keyword,"output_directory");
-  strcpy((*dict)[i].keyarg,"TEMPERING_OUTPUT");
+  strcpy((*dict)[i].keyarg,"TEMPERING_SCREEN_OUT");
 /*-----------------------------------------------------------------------*/
   }/*end routine
 /*==========================================================================*/
