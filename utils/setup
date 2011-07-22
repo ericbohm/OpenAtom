@@ -14,3 +14,8 @@ if [ ! -d ATOM_COORDS_OUT ] ; then
    (cd ../ATOM_COORDS_IN; find -type d ! -name .) | xargs mkdir
    cd ..
 fi
+
+if [ ! -d TEMPER_OUT ] ; then
+    mkdir TEMPER_OUT
+    mkdir TEMPER_OUT/Temper.0
+fi
