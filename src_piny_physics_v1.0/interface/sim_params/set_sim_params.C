@@ -2789,9 +2789,13 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     index=8;
     if(gentimeinfo->nres_pimd<0)
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
-    if(gentimeinfo->nres_pimd==0){
-    gentimeinfo->nres_pimd=1;
-    }
+    if(gentimeinfo->nres_pimd==0){gentimeinfo->nres_pimd=1;}
+    if(gentimeinfo->nres_pimd>1){
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+      PRINTF("You have requested nres_pimd=%d>1 \n",gentimeinfo->nres_pimd);
+      PRINTF("This will just be ingnored for now\n");
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    }//endif
   /*-----------------------------------------------------------------------*/ 
   /* 9)\initial_spread_size{} */
     sscanf(dict[9].keyarg,"%lg",&real_key_arg);
