@@ -178,10 +178,10 @@ void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
     fflush(stdout);
 
     for(i=1;i<=npara_temps;i++){
-      sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i);
+      sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i-1);
       FILE *fpck = fopen(fname,"w");
       if(fpck==NULL){
-        sprintf (fname, "%s/Temper.%d",directory,i);
+        sprintf (fname, "%s/Temper.%d",directory,i-1);
         PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("    Output directory, %s , is not present\n",fname);
         PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
