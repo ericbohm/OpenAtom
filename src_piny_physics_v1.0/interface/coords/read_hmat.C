@@ -55,12 +55,14 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
   double vol,vol_cp,area;
  
+  char *fname;
   char *restart_type_now,*atm_typ_now,*res_typ_now,*mol_typ_now;
   char *restart_type_spec;
   char *line;
 
 /*  Local pointers */
   char *dnamei           = filename_parse->dnamei;
+  char *atm_crd_dir_in   = general_data->genfilenames.atm_crd_dir_in;
   int natm_tot           = mdatoms->mdclatoms_info.natm_tot;
   int pi_beads           = mdatoms->mdclatoms_info.pi_beads; 
   int initial_spread_opt = general_data->gensimopts.initial_spread_opt;
@@ -92,20 +94,22 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 /*========================================================================*/
 /*  I)Open particle dump file and malloc temps:                           */
 
-  fp_dnamei = cfopen((const char *) dnamei,"r");
- 
   line              = (char *)cmalloc(MAXLINE*sizeof(char),"read_hmat");
   restart_type_now  = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
   atm_typ_now       = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
   res_typ_now       = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
   mol_typ_now       = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
   restart_type_spec = (char *)cmalloc(MAXWORD*sizeof(char),"read_hmat");
+  fname             = (char *)cmalloc(10*MAXWORD*sizeof(char),"read_hmat");
 
+  sprintf (fname,"%s/Bead.0_Temper.0/%s",atm_crd_dir_in,dnamei);
+  fp_dnamei = cfopen((const char *) fname,"r");
+ 
 /*========================================================================*/
 /*  II)Write to screen:                                                   */
 
   PRINT_LINE_STAR;
-  PRINTF("Reading user specified atm coordinate file %s\n",dnamei);
+  PRINTF("Reading user specified atm coordinate file %s\n",fname);
   if(istart==1){PRINTF("using the `initial' restart option\n");}
   if(istart==2){PRINTF("using the `restart_pos' restart option\n");}
   if(istart==3){PRINTF("using the `restart_posvel' restart option\n");}
@@ -120,7 +124,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
    if(fscanf(fp_dnamei,"%d %d %d",&natm_tot_now,&istart_now,&pi_beads_now)!=3){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("Error reading start type and number of atoms \n");
-       PRINTF("in file %s\n",dnamei);
+       PRINTF("in file %s\n",fname);
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        FFLUSH(stdout);
        EXIT(1);
@@ -133,7 +137,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("EOF reading start type and number of atoms \n");
-      PRINTF("in file %s\n",dnamei);
+      PRINTF("in file %s\n",fname);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
       EXIT(1);
@@ -143,7 +147,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                                 &itime_dump,&pi_beads_now)!=4){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("Error reading start type and number of atoms \n");
-       PRINTF("in file %s\n",dnamei);
+       PRINTF("in file %s\n",fname);
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }/*endif*/
     readtoendofline(fp_dnamei);
@@ -162,7 +166,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     if(istart_now==0){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Start up %s option in ",restart_type_now);
-      PRINTF("user specified coordinate file %s\n",dnamei);
+      PRINTF("user specified coordinate file %s\n",fname);
       PRINTF("not supported. Supported general_data are: \n");
       PRINTF("initial, restart_pos, restart_posvel, restart_all. \n");     
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -174,7 +178,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   if(istart_now < istart) {
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       PRINTF("Start up option, %s, in ",restart_type_now);
-      PRINTF("user specified coordinate file %s\n",dnamei);
+      PRINTF("user specified coordinate file %s\n",fname);
       PRINTF("Incompatible with class setup,%s\n",restart_type_spec);
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
       FFLUSH(stdout);
@@ -184,7 +188,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   if(natm_tot_now != natm_tot) {
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Number of particles in\n");
-    PRINTF("user specified coordinate file %s \n",dnamei);
+    PRINTF("user specified coordinate file %s \n",fname);
     PRINTF("incompatible with class setup\n");
     PRINTF("%d vs %d\n",natm_tot_now,natm_tot);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -195,7 +199,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   if(pi_beads_now != pi_beads) {
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Number of path integral beads in\n");
-    PRINTF("user specified coordinate file %s \n",dnamei);
+    PRINTF("user specified coordinate file %s \n",fname);
     PRINTF("incompatible with class setup\n");
     PRINTF("%d vs %d\n",pi_beads_now,pi_beads);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -217,7 +221,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
       if(fscanf(fp_dnamei,"%lf %lf %lf",&x,&y,&z) != 3) {
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Error while reading in the %d atom coordinate\n",i);
-        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("in file \"%s\"\n",fname);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         FFLUSH(stdout);
         EXIT(1);
@@ -238,7 +242,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat_cp[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d cp  cell vector \n",i+1);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -252,7 +256,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(cp_box_center[(3)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the center of the cp cell vector \n");
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -265,7 +269,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d cp  cell vector \n",i+1);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -282,7 +286,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the %d cell vector \n",i+1);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -313,7 +317,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("EOF before particle coordinates \n");
-       PRINTF("in file \"%s\"\n",dnamei);
+       PRINTF("in file \"%s\"\n",fname);
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        FFLUSH(stdout);
        EXIT(1);
@@ -326,7 +330,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
          atm_typ_now,res_typ_now,mol_typ_now,&imol_num_now) != 7) {
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Error while reading in the %d atom coordinate\n",i);
-        PRINTF("in file \"%s\"\n",dnamei);
+        PRINTF("in file \"%s\"\n",fname);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         FFLUSH(stdout);
         EXIT(1);
@@ -336,7 +340,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Atom type mismatch for particle %d\n",i);
         PRINTF("in user specified coordinate file %s \n",
-                                             dnamei);
+                                             fname);
         PRINTF("File says %s program expects %s \n",atm_typ_now,
                                                   atm_typ[iatm_atm_typ[i]]);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -347,7 +351,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Residue type mismatch for particle %d\n",i);
         PRINTF("in user specified coordinate file %s \n",
-                                             dnamei);
+                                             fname);
         PRINTF("File says %s program expects %s \n",res_typ_now,
                                                    res_typ[iatm_res_typ[i]]);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -358,7 +362,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Molecule type mismatch for particle %d\n",i);
         PRINTF("in user specified coordinate file %s \n",
-                                             dnamei);
+                                             fname);
         PRINTF("File says %s program expects %s \n",mol_typ_now,
                                                    mol_typ[iatm_mol_typ[i]]);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -369,7 +373,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
         PRINTF("Molecule number mismatch for particle %d\n",i);
         PRINTF("in user specified coordinate file %s \n",
-                                             dnamei);
+                                             fname);
         PRINTF("File says %d program expects %d \n",imol_num_now,
                                                   iatm_mol_num[i]);
         PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -386,7 +390,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     if(fgets(line,MAXLINE,fp_dnamei)==NULL){
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("EOF before cell vectors \n");
-       PRINTF("in file \"%s\"\n",dnamei);
+       PRINTF("in file \"%s\"\n",fname);
        PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
        FFLUSH(stdout);
        EXIT(1);
@@ -401,7 +405,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat_cp[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cp cell vector %d\n",i);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -416,7 +420,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(cp_box_center[(3)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error while reading in the center of the cp cell vector \n");
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -432,7 +436,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cell vector %d\n",i);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -449,7 +453,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
                   &(hmat[(7+i)])) != 3){
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           PRINTF("Error reading in cell vector %d\n",i);
-          PRINTF("in file \"%s\"\n",dnamei);
+          PRINTF("in file \"%s\"\n",fname);
           PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
           FFLUSH(stdout);
           EXIT(1);
@@ -509,7 +513,7 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 /*========================================================================*/
 /*  VIII) Check cell                                                      */
 
-  check_cell(&(general_data->gencell),cp_dual_grid_opt_on,*dbox_rat,dnamei);
+  check_cell(&(general_data->gencell),cp_dual_grid_opt_on,*dbox_rat,fname);
 
 /*========================================================================*/
 /* convert cp_box_center from xtal coordinates to cartesian coordinates   */
@@ -541,13 +545,14 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   cfree(res_typ_now,"read_hmat");
   cfree(mol_typ_now,"read_hmat");
   cfree(restart_type_spec,"read_hmat");
+  cfree(fname,"read_hmat");
 
 /*========================================================================*/
 /* XI) Done */
 
   PRINTF("\n");
   PRINT_LINE_DASH;
-  PRINTF("Done reading user specified atm coordinate file %s\n",dnamei);
+  PRINTF("Done reading user specified atm coordinate file %s\n",fname);
   PRINT_LINE_STAR;PRINTF("\n");
 
 /*========================================================================*/

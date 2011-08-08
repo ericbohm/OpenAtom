@@ -29,6 +29,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 #include "../class_defs/allclass_strip_cp.h"
 
   int ndump_frq       = genfilenames->iwrite_dump;
+
+  int ntemper         = gensimopts->ntemper;
+  int pi_beads        = gensimopts->pi_beads;
   int istart_typ_cp   = gensimopts->istart_cp;
   int cp_opt          = (gensimopts->cp+gensimopts->cp_wave);
   int cp_min_opt      = (gensimopts->cp_wave_min+gensimopts->cp_min);
@@ -51,6 +54,9 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_nl         = (cppseudo->nonlocal.natm);
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
+
+  int cp_lsda         = cpopts->cp_lsda;
+  int cp_lda          = cpopts->cp_lda;
 
   int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
@@ -98,7 +104,13 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
 
 //========================================================================
 
+   sim->doublepack     = 1;         //Dange for kpoints
+   sim->ntemper        = ntemper;
+   sim->pi_beads       = pi_beads;
    sim->nstates        = nstates;
+   sim->nkpoint        = 1;       // fixed in nkpoint version
+   sim->nspin          = (cp_lsda==1 ? 2 : 1); // up/dn independent or up/dn constrained
+
    sim->natm_typ       = natm_typ;
    sim->natm_tot       = natm_tot;
    sim->natm_nl        = natm_nl;
@@ -181,10 +193,10 @@ void PhysicsParamTransfer::control_mapping_function(CPcharmParaInfo *sim,
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("The present load balance function is not this one\n");
-     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     EXIT(1);
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  PRINTF("The present load balance function is not this one\n");
+  PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  EXIT(1);
 
   double *hmati = gencell->hmati;
   double ecut   = cpcoeffs_info->ecut;

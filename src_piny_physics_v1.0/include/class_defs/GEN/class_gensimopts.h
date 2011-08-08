@@ -27,6 +27,7 @@ class GENSIMOPTS {
   int debug_pimd;             // Opt: Internal use-backdoor chks for pimd  
   int debug_cp;               // Opt: Internal use-backdoor chks for CP    
   int debug_cp_pimd;          // Opt: Internal use-backdoor chks for CP    
+  int ntemper;                 // Num: # of parallel temperers
   int pi_beads;               // Num: # of path integral descritizations   
   int pi_md_typ;              // Opt: Staging or normal modes              
   int initial_spread_opt;     // Opt: Spread coordinates for pimd          
@@ -61,6 +62,7 @@ class GENSIMOPTS {
      debug_cp         = 0;
      debug_cp_pimd    = 0;
      pi_beads         = 0;
+     ntemper          = 1;
      pi_md_typ        = 0;
      initial_spread_opt= 0;
      fftopt           = 0;
@@ -96,6 +98,7 @@ class GENSIMOPTS {
         p | debug_cp;
         p | debug_cp_pimd;
         p | pi_beads;
+        p | ntemper;
         p | pi_md_typ;
         p | initial_spread_opt;
         p | anneal_opt;

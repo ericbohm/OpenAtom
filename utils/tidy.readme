@@ -1,0 +1,8 @@
+The "tidy" script removes all output files created by a
+run of OpenAtom.
+
+Use this script in the run directory of OpenAtom to clean
+up all output files and prepare for another run.
+
+If you want to save the output, be sure to copy or move it
+to another directory before running this script!

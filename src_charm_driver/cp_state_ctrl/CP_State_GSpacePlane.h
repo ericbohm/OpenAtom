@@ -101,6 +101,11 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         int finishedCpIntegrate;
         int numRecvRedPsi;
         int iterRotation;
+	int myBeadIndex;
+	int myKptIndex;
+	int myTemperIndex;
+	int mySpinIndex;
+
         double ake_old;
         
         bool acceptedVPsi;
@@ -120,7 +125,7 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void startNewIter ();
         void sendPsi();
         void sendPsiV();
-        void screenOutputPsi();
+        void screenOutputPsi(int);
         void sendLambda();
         void makePCproxies();
         void doneRedPsiIntegrate();
@@ -158,9 +163,12 @@ class CP_State_GSpacePlane: public CBase_CP_State_GSpacePlane
         void sendRedPsiV();
         void acceptRedPsiV(GSRedPsiMsg *msg);
         void doneRedPsiVIntegrate();
+        void screenPrintWallTimes();
+	void acceptNewTemperature(double temp);
         const UberCollection thisInstance;        
     private:
-
+	FILE *temperScreenFile;
+        double *wallTimeArr;//only used on [0,0]
         int gotHandles;
         int forwardTimeKeep;
         int backwardTimeKeep;

@@ -154,18 +154,20 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Output the mag force, send to the energy group, set the exit flag 
 
   if(thisIndex.x==0 && thisIndex.y==0){
-    CkPrintf("{%d} MagForPsi   =  %5.8lf | %5.8lf per entity\n", thisInstance.proxyOffset,d1,d1/rnatm);
-    CkPrintf("{%d} Memory      =  %ld\n",thisInstance.proxyOffset,CmiMemoryUsage());
+      int iprintout   = iteration-1;
+
+    fprintf(temperScreenFile, "Iter [%d] MagForPsi   =  %5.8lf | %5.8lf per entity\n", iprintout,d1,d1/rnatm);
+    fprintf(temperScreenFile,"Iter [%d] Memory      =  %ld\n",iprintout,CmiMemoryUsage());
     computeEnergies(ENERGY_FMAG, d1);
   }//endif
 
   if(cp_min_opt==0 && fmagPsi_total>rnatm*tol_cp_dyn){
     exitFlag=1;
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-      CkPrintf("Mag psi force %.10g > %.10g too large for CP dynamics. Ciao! \n",
+      fprintf(temperScreenFile,"@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      fprintf(temperScreenFile, "Mag psi force %.10g > %.10g too large for CP dynamics. Ciao! \n",
 	       fmagPsi_total/rnatm,tol_cp_dyn);
-      CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      fprintf(temperScreenFile,"@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
     }//endif
   }//endif
 
@@ -193,10 +195,10 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
      double cpuTimeOld = cpuTimeNow;
      cpuTimeNow        = CkWallTimer();
      if(iteration>1){
-       CkPrintf("{%d} CpuTime(GSP)= %g\n",thisInstance.proxyOffset,cpuTimeNow-cpuTimeOld);
+       fprintf(temperScreenFile, "Iter [%d] CpuTime(GSP)= %g\n",iteration-1,cpuTimeNow-cpuTimeOld);
        if(cp_min_opt==0){
          int heavyside = 1-(iteration-iterRotation >= 1 ? 1 : 0);
-         CkPrintf("{%d} Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",thisInstance.proxyOffset,
+         fprintf(temperScreenFile, "Iter [%d] Step = %d : Step Last Rot = %d : Interval Rot = %d : Num Rot = %d : %d\n",iteration,
                    iteration,iterRotation,iteration-iterRotation,nrotation,heavyside);
        }//endif
      }//endif
@@ -252,6 +254,20 @@ CP_State_GSpacePlane::CP_State_GSpacePlane(int    sizeX,
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   int cp_min_opt  = sim->cp_min_opt;
   int gen_wave    = sim->gen_wave;
+  wallTimeArr=NULL;
+  if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
+    wallTimeArr = new double[config.maxIter+2];
+  }else{
+    wallTimeArr = new double[30];
+  }//endif
+  wallTimeArr[0]=0.0;
+  wallTimeArr[1]=0.0;
+
+  myBeadIndex    = thisInstance.idxU.x;
+  myKptIndex     = thisInstance.idxU.y;
+  myTemperIndex  = thisInstance.idxU.z;
+  mySpinIndex    = thisInstance.idxU.s;
+
 //============================================================================
 
   istate_ind           = thisIndex.x;
@@ -530,6 +546,10 @@ void CP_State_GSpacePlane::pup(PUP::er &p) {
   p|acceptedLambda;
   p|itemp; // 2 temporary variables for debugging in scope
   p|jtemp;
+  p|myBeadIndex;
+  p|myKptIndex;
+  p|myTemperIndex;
+  p|mySpinIndex;
 
   p|ehart_total;
   p|enl_total;
@@ -639,13 +659,15 @@ void CP_State_GSpacePlane::readFile() {
   int nlines_tot,nplane;
 
   if(istart_typ_cp>=3){
-    sprintf(fname, "%s/vState%d.out", config.dataPath, ind_state + 1);
+    sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+            config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,vcomplexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
             kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,1);
   }//endif
 
   if(gen_wave==0){
-    sprintf(fname, "%s/state%d.out", config.dataPath, ind_state + 1);
+    sprintf(fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+            config.dataPath,mySpinIndex,myKptIndex,myBeadIndex,myTemperIndex,ind_state+1);
     readState(numData,complexPoints,fname,ibinary_opt,&nlines_tot,&nplane, 
               kx,ky,kz,&nx,&ny,&nz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,0,0);
   }else{
@@ -764,8 +786,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     CkPrintf("GSpace[%d,%d] initGSpace %d\n",thisIndex.x,thisIndex.y,size);
 #endif
 
-
-
+    temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   registrationFlag  = 1;
@@ -993,6 +1014,18 @@ void CP_State_GSpacePlane::initGSpace(int            size,
 }// end routine
 //============================================================================
 
+void CP_State_GSpacePlane::acceptNewTemperature(double temp)
+{
+  // Hey GLENN do something with your new temperature here
+
+
+  // when you're done
+  int i=1;
+  contribute(sizeof(int), &i, CkReduction::sum_int, 
+	     	       CkCallback(CkIndex_InstanceController::gspDoneNewTemp(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy), thisInstance.proxyOffset);
+}
+
+
 
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1056,14 +1089,35 @@ void CP_State_GSpacePlane::startNewIter ()  {
   }//endif
 
   doneNewIter = true;
-
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  if(thisIndex.x==0 && thisIndex.y==0 ){
+    if(!(sim->cp_min_opt==1)){
+      fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  int iii = iteration;
+        if(!sim->gen_wave){iii+=1;}
+	fprintf(temperScreenFile,"Iteration %d done\n",iii);
+	fprintf(temperScreenFile,"===============================================================================\n");
+	fprintf(temperScreenFile,"===============================================================================\n");
+      }else{
+	if(iteration>0){
+	  fprintf(temperScreenFile,"===============================================================================\n");
+	  fprintf(temperScreenFile,"===============================================================================\n");
+	}//endif
+        if(iteration<config.maxIter){
+  	  fprintf(temperScreenFile,"Beginning Iteration %d \n", iteration);
+	}else{
+  	  fprintf(temperScreenFile,"Completing Iteration %d \n", iteration-1);
+	}//endif
+	fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+    }//endif
+  }//endif
 //============================================================================
 // Reset all the counters that need to be reset (not more not less)
 // otherwise race conditions can leak in.  Rely on the constructor
 // for initialization.  Reset set your flags as soon as you are done
 // with the tests that require them.
 
-  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+
   int cp_min_opt = sim->cp_min_opt;
 
   // Finished integrate and red psi are safe.
@@ -1105,8 +1159,8 @@ void CP_State_GSpacePlane::startNewIter ()  {
 
 //============================================================================
 // Output psi at start of minimization for debugging
-
-  if(iteration==1 && cp_min_opt==1){screenOutputPsi();}
+    
+    if(iteration==1 && cp_min_opt==1){screenOutputPsi(0);}
 #ifdef _CP_SUBSTEP_TIMING_
   if(forwardTimeKeep>0){
       double gstart=CmiWallTimer();
@@ -1120,10 +1174,40 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #endif // TIMING
 
 //---------------------------------------------------------------------------
-}//end routine
+    }//end routine
 
-
-
+void CP_State_GSpacePlane::screenPrintWallTimes()
+{
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo;
+  // do new iteration output once globally from the 0th instance
+  if(thisIndex.x==0 && thisIndex.y==0 
+     && thisInstance.idxU.x==0 && thisInstance.idxU.y==0 
+     && thisInstance.idxU.z==0 && thisInstance.idxU.s==0 )
+    {
+      int iprintout   = config.maxIter;
+      if(!(sim->cp_min_opt==1) && !sim->gen_wave){iprintout-=1;}
+      int itime       = iteration;
+      if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
+      wallTimeArr[itime] = CkWallTimer();
+      if (iteration == iprintout && config.maxIter<30) {
+	CkPrintf("-------------------------------------------------------------------------------\n");
+	CkPrintf("Wall Times from within GSP\n\n");
+	for (int t = 1; t < iprintout; t++){
+	  CkPrintf("%g\n",wallTimeArr[t] - wallTimeArr[t-1]);
+	}//endfor
+	if(itime>0)
+	  {
+	    CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
+	    CkPrintf("-------------------------------------------------------------------------------\n");
+	  }
+      }else{
+	if(iteration>0){
+	  CkPrintf("Iteration time (GSP) : %g\n", 
+		   wallTimeArr[itime] - wallTimeArr[itime-1]);
+	}//endif
+      }//endif
+    }//endif
+}
 
 //============================================================================
 /**
@@ -1501,6 +1585,7 @@ void CP_State_GSpacePlane::combineForcesGetEke()
 //==============================================================================
 void CP_State_GSpacePlane::launchAtoms() {
   //  CkPrintf("{%d} GSP [%d,%d] launchAtoms\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
+
 #ifdef _CP_DEBUG_PSI_OFF_
   iteration++;
   if(iteration==config.maxIter+1){
@@ -1511,6 +1596,7 @@ void CP_State_GSpacePlane::launchAtoms() {
 #endif	
 #endif
     cleanExitCalled = 1;
+
     contribute(sizeof(int),&cleanExitCalled,CkReduction::sum_int,  CkCallback(CkIndex_InstanceController::cleanExit(NULL),CkArrayIndex1D(thisInstance.proxyOffset),instControllerProxy));
 
   }else{
@@ -1558,6 +1644,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //                     : Most effective for 1 gspace chare when you
 //                     : get the diangonal elemens of lambda (see below)
 
+
+#define _CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS_OFF_
+
 #ifdef _CP_GSPACE_DUMP_LMAT_DIAGONAL_VALS_
   /* The lambda matrix is the reduced result of the forward path GEMMs in the
    * asymmetric paircalcs that arrives at Ortho::aceptSectionLambda.  There is
@@ -1574,6 +1663,7 @@ void  CP_State_GSpacePlane::sendLambda() {
    * corresponding values dumped by all the GSpace chares in a state (ie across
    * all planes).
    */
+
     complex mylambda_diag = 0;
     for(int i=0; i<gs.numPoints; i++){
         mylambda_diag += force[i] * psi[i].conj();
@@ -1590,6 +1680,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 // Debug output schmoo : output forces before lambda-ization!
 //                     : 
+
+
+#define _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_OFF_
 
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_BEFORE_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -1699,8 +1792,9 @@ void  CP_State_GSpacePlane::sendLambda() {
 //==============================================================================
 void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 //==============================================================================
-
-  int cp_min_opt    = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
+  CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
+  int cp_min_opt    = sim->cp_min_opt;
+  int cp_lsda       = sim->nspin - 1;  // 1 for lsda and 0 for lda
   eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
   int *k_x          = eesData->GspData[iplane_ind]->ka;
 
@@ -1747,15 +1841,17 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
 #endif
 
   //---------------------------------------------------
-  // B) Double Pack
+  // B) Double Pack 
   if(config.doublePack==1){
    if(cp_min_opt==1){
+     double overlap = (cp_lsda==0 ? 2.0 : 1.0);
+     double ws = 1.0/overlap; double wd = 2.0/overlap;
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
 #ifndef PAIRCALC_TEST_DUMP
      for(int i=0,idest=chunkoffset; i<N; i++,idest++){
-       double wght  = (k_x[idest]==0 ? 0.5 : 1);
+       double wght  = (k_x[idest]==0 ? ws : wd);
        force[idest].re -= wght*data[i].re;
        force[idest].im -= wght*data[i].im;
      }//endfor
@@ -1777,16 +1873,32 @@ void CP_State_GSpacePlane::acceptLambda(CkReductionMsg *msg) {
   }//endif : double pack
 
   //---------------------------------------------------
-  // C) Double Pack
+  // C) Double Pack is off
   if(config.doublePack==0){
+   if(cp_min_opt==1){
+     double overlap = (cp_lsda==0 ? 2.0 : 1.0);
+     double ws = 1.0/overlap;
 #ifdef CMK_BLUEGENEL
 #pragma unroll(10)
 #endif
     for(int i=0,idest=chunkoffset; i<N; i++,idest++){
-       force[idest].re -= 0.5*data[i].re;
-       force[idest].im -= 0.5*data[i].im;
+       force[idest].re -= ws*data[i].re;
+       force[idest].im -= ws*data[i].im;
     }//endfor
-  }//endif
+   }else{
+     if(countLambdaO[offset]<1){
+#ifdef CMK_BLUEGENEL
+#pragma unroll(10)
+#endif
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  = data[i]*(-1.0);}
+     }else{
+#ifdef CMK_BLUEGENEL
+#pragma unroll(10)
+#endif
+       for(int i=0,idest=chunkoffset; i<N; i++,idest++){force[idest]  += data[i]*(-1.0);}
+     }// endif : 1st guy
+   }//endif : minimization
+  }//endif : singlePack = kpts
 
   //---------------------------------------------------
   // D) Cleanup
@@ -1930,8 +2042,7 @@ void CP_State_GSpacePlane::doLambda() {
   int cp_min_opt = scProxy.ckLocalBranch()->cpcharmParaInfo->cp_min_opt;
   complex *force = gs.packedForceData;
 #ifdef _NAN_CHECK_
-  for(int i=0;i<gs.numPoints ;i++)
-    {
+  for(int i=0;i<gs.numPoints ;i++){
       CkAssert(finite(force[i].re));
       CkAssert(finite(force[i].im));
     }
@@ -1990,6 +2101,9 @@ void CP_State_GSpacePlane::doLambda() {
 
 //==============================================================================
 // Debug : Write out forces after Lambda-ization
+
+
+#define _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_OFF_
 
 #ifdef  _CP_GSPACE_PSI_FORCE_OUTPUT_AFTER_LAMBDA_
     eesCache *eesData = UeesCacheProxy[thisInstance.proxyOffset].ckLocalBranch ();
@@ -2220,12 +2334,20 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
   if(countFileOut==nchareG){
      countFileOut = 0;
      int ind_state = thisIndex.x+1;
-     char psiName[200]; char vpsiName[200];
-     sprintf(psiName, "%s/state%d.out", config.dataPathOut,ind_state);
-     sprintf(vpsiName,"%s/vState%d.out",config.dataPathOut,ind_state);
+     int ibead     = myBeadIndex;
+     int ikpt      = myKptIndex;
+     int itemper   = myTemperIndex;
+     int ispin     = mySpinIndex;
+
+     char psiName[400]; char vpsiName[400];
+
+     sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
+                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
+     sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
+                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
      writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
                     sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                    myiteration,ind_state);
+                    myiteration,ind_state,ispin,ikpt,itemper,ibead);
      fftw_free(tpsi); tpsi  = NULL;
      fftw_free(tvpsi);tvpsi = NULL;
      fftw_free(tk_x); tk_x  = NULL;
@@ -2365,7 +2487,7 @@ void CP_State_GSpacePlane::integrateModForce() {
       double StartTime=CmiWallTimer();
 #endif
 
-//#define _GLENN_CHECK_DYNAMICS_
+#define _GLENN_CHECK_DYNAMICS_OFF_
 #ifdef _GLENN_CHECK_DYNAMICS_
   if(iteration==1){bzero(vpsi_g,ncoef*sizeof(complex));}
   if(thisIndex.x==0&&thisIndex.y==0){CkPrintf("Before Integrate : iteration %d\n",iteration);}
@@ -2967,7 +3089,7 @@ void CP_State_GSpacePlane::doNewPsi(){
 //=============================================================================
 // (B) Generate some screen output of orthogonal psi
 
-  if(iteration>0){screenOutputPsi();}
+  if(iteration>0){screenOutputPsi(iteration);}
 
 //=============================================================================
 // (D) Go back to the top or exit
@@ -3509,7 +3631,7 @@ void CP_State_GSpacePlane::doNewPsiV(){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void CP_State_GSpacePlane::screenOutputPsi(){
+void CP_State_GSpacePlane::screenOutputPsi(int iprintout){
 //==============================================================================
 #ifdef _CP_DEBUG_STATEG_VERBOSE_
   if(thisIndex.x==0){CkPrintf("output %d %d\n",thisIndex.y,cleanExitCalled);}
@@ -3538,32 +3660,32 @@ void CP_State_GSpacePlane::screenOutputPsi(){
     if(gs.istate_ind==0 || gs.istate_ind==nstates-1){
       for(int i = 0; i < gs.numPoints; i++){
 	if(k_x[i]==0 && k_y[i]==1 && k_z[i]==4 ){
-	  PRINT_LINE_DASH;
-	  CkPrintf("{%d} Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   thisInstance.proxyOffset,
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		  iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
             double vre=vpsi[i].re;
             double vim=vpsi[i].im;
- 	    CkPrintf("{%d} VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		     thisInstance.proxyOffset,
+ 	    fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		     iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  PRINT_LINE_DASH;
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
 	}//endif
 	if(k_x[i]==2 && k_y[i]==1 && k_z[i]==3){
           double vre=vpsi[i].re;
           double vim=vpsi[i].im;
-	  PRINT_LINE_DASH;
-	  CkPrintf("{%d} Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		   thisInstance.proxyOffset,
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
+	  fprintf(temperScreenFile,"Iter [%d] Psi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		   iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],psi[i].re,psi[i].im);
           if(cp_min_opt==0){
- 	    CkPrintf("{%d} VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
-		     thisInstance.proxyOffset,
+ 	    fprintf(temperScreenFile,"Iter [%d] VPsi[is=%d ka=%d kb=%d kc=%d] : %.15g %.15g\n",
+		     iprintout,
 		   gs.istate_ind+1,k_x[i],k_y[i],k_z[i],vre,vim);
 	  }//endif
-	  PRINT_LINE_DASH;
+	  fprintf(temperScreenFile,"-------------------------------------------------------------------------------\n");
 	}//endif
       }//endfor
     }//endif

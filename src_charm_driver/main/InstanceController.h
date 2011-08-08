@@ -27,9 +27,15 @@ class InstanceController: public CBase_InstanceController {
   void printEnergyEke(CkReductionMsg *m);
   void cleanExit(CkReductionMsg *m);
   void cleanExitAll(CkReductionMsg *m);
+  void acceptNewTemperature(double temp);
+  void useNewTemperature(double temp);
+  void atomsDoneNewTemp(CkReductionMsg *m);
+  void gspDoneNewTemp(CkReductionMsg *m);
  private:
   int done_init;
   int numKpointforces;
+  bool atomsTempDone;
+  bool gspTempDone;
   CkSectionInfo allKPcookie;
 };
 

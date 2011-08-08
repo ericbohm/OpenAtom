@@ -11,8 +11,7 @@ module ortho
 
 	message orthoMtrigger;
 	message initCookieMsg;
-    class CkDataMsg; // Just a forward declaration
-
+        class CkDataMsg; // Just a forward declaration
 	array [2D] Ortho{
 		entry void Ortho(int m, int n, CLA_Matrix_interface matA1,
 		 CLA_Matrix_interface matB1, CLA_Matrix_interface matC1,

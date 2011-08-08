@@ -24,7 +24,7 @@
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-PhysicsAtomPosInit::PhysicsAtomPosInit (){
+PhysicsAtomPosInit::PhysicsAtomPosInit (int ibead_in , int itemper_in){
 //============================================================================
 // Get the readonly structures ready to go
 
@@ -35,15 +35,19 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
   GENERAL_DATA *general_data = GENERAL_DATA::get();
   CP           *cp           = CP::get();
 
- MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
+  MDTHERM_INFO *mdtherm_info = &(mdintegrate->mdtherm_info);
 #include "../class_defs/allclass_strip_gen.h"
 #include "../class_defs/allclass_strip_cp.h"
 #include "../class_defs/allclass_strip_mdatoms.h"
 
+  double beta,tau,omega2PIMD; 
+
 //============================================================================
 // Copy out some useful variables and error check
 
-  pi_beads      = (mdclatoms_info->pi_beads);
+  pi_beads_true = (mdclatoms_info->pi_beads); //input controled by directory
+  pi_beads      = 1;
+  ntemper       = gensimopts->ntemper;
   natm_tot      = (mdclatoms_info->natm_tot);
   natm_nl       = (cppseudo->nonlocal.natm);
   iextended_on  = (mdtherm_info->iextended_on);
@@ -54,9 +58,23 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
   len_nhc       = (mdtherm_info->len_nhc);
   cp_wave_opt   = (gensimopts->cp_wave);
   isokin_opt    = mdtherm_info->isokin_opt;
+  ibead         = ibead_in;
+  itemper       = itemper_in;
+
+  beta          = 1.0/kT;
+  tau           = beta/((double)pi_beads_true);
+  omega2PIMD    = 1.0/(tau*beta);
+
+  if( (ibead>=pi_beads_true) || (ibead < 0) || (itemper >=ntemper) || (itemper < 0) ){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Bad bead or temperer index to DriverAtomInit : %d %d : %d %d\n",
+            ibead,pi_beads_true,itemper,ntemper);
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+     EXIT(1);
+  }//endif
 
   if(iextended_on==1){
-    if(num_nhc != 3*natm_tot){
+    if(num_nhc != 3*natm_tot){  // tests to make sure you really are massive
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
        PRINTF("Presently only massive thermstatting is supported.\n");
        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
@@ -101,27 +119,47 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
     therm_class.x_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     therm_class.v_nhc   = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
     mass_nhc            = cmall_mat(1,len_nhc,1,num_nhc,"PhysicsAtomPosInit.C");
-    double **mass_nhc_in= mdtherm_info->mass_nhc;
-    for(int j=1;j<=len_nhc;j++){
-    for(int i=1;i<=num_nhc;i++){
-      mass_nhc[j][i] = mass_nhc_in[j][i];
-    }}
+    if(pi_beads_true==1 || ibead==1){
+      double **mass_nhc_in= mdtherm_info->mass_nhc;
+      for(int j=1;j<=len_nhc;j++){
+      for(int i=1;i<=num_nhc;i++){
+        mass_nhc[j][i] = mass_nhc_in[j][i];  // has correct freq for 1st bead
+      }}
+    }else{
+      for(int j=1;j<=len_nhc;j++){
+      for(int i=1;i<=num_nhc;i++){
+        mass_nhc[j][i] = (kT/omega2PIMD); // 1 temperature 1 frequency
+      }}
+    }//endif
   }// endif
 
 //============================================================================
 //  Fill the Piny Data Structures : Resampl atom velocities if necessary
 
   read_coord(mdintegrate,mdatoms,mdinter,mdintra,general_data,cp,
-             mdclatoms_pos,&therm_class,therm_bead);
+             mdclatoms_pos,&therm_class,therm_bead,ibead,itemper);
 
   if(istart_typ<3){
+    double mass_scal = 1.0;
+    int ibeadp1  = ibead+1; // ibead starts at 0
+    if(ibeadp1>1){mass_scal = ((double)(ibeadp1))/((double)(ibeadp1-1));}
     for(int ip=1;ip<=pi_beads;ip++){
       double *vx   = mdclatoms_pos[ip].vx;
       double *vy   = mdclatoms_pos[ip].vy;
       double *vz   = mdclatoms_pos[ip].vz;
       double *mass = mdclatoms_info->mass;
+      if(pi_beads_true>1){
+        for(int i =1;i<=natm_tot;i++){
+          mass[i] *= mass_scal;
+	}//endfor
+      }//endif
       VX_SMPL::ctrlSamplAtomVel(natm_tot,&vx[1],&vy[1],&vz[1],&mass[1]);
-    }//endif
+      if(pi_beads_true>1){
+        for(int i =1;i<=natm_tot;i++){
+          mass[i] /= mass_scal;
+	}//endfor
+      }//endif
+    }//endfor
   }//endif
 
 //----------------------------------------------------------------------------
@@ -132,7 +170,8 @@ PhysicsAtomPosInit::PhysicsAtomPosInit (){
 //============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //============================================================================
-void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNHC){
+void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNHC,
+                                        int ibead_in, int itemper_in){
 //============================================================================
 // Local pointers and Error checking
 
@@ -144,9 +183,10 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 #include "../include/class_defs/allclass_strip_mdatoms.h"
   int istart = gensimopts->istart;
 
-  if(natm_in != natm_tot){
+  if(natm_tot != natm_in || ibead != ibead_in || itemper != itemper_in){
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-     PRINTF("Bad atom number to DriverAtomInit\n");
+     PRINTF("Bad input to DriverAtomInit %d %d : %d %d : %d %d\n",
+  	     natm_tot,natm_in,ibead,ibead_in,itemper,itemper_in);
      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
      EXIT(1);
   }//endif
@@ -182,7 +222,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
 
   for(int i=0;i<natm_tot;i++){
     atomsNHC[i].len_nhc = len_nhc;
-    atomsNHC[i].kT      = kT;
+    atomsNHC[i].kT      = kT;    // hard wriing massive
     atomsNHC[i].posKT   = 0.0;
     for(int j=0;j<len_nhc;j++){
       atomsNHC[i].m[j] =1.0;
@@ -199,7 +239,7 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
     for(int i=0;i<natm_tot;i++){
       int iii = 3*i+1;
       for(int j=0,j1=1;j<len_nhc;j++,j1++){
-        atomsNHC[i].m[j]  = mass_nhc[j1][iii];
+        atomsNHC[i].m[j]  = mass_nhc[j1][iii];  // piny interface ensures massive
       }//endfor
     }//endfor
     if(istart>=4){
@@ -219,7 +259,6 @@ void PhysicsAtomPosInit::DriverAtomInit(int natm_in,Atom *atoms,AtomNHC *atomsNH
   }//endif
 
  
-
 //----------------------------------------------------------------------------
   }//end routine
 //============================================================================

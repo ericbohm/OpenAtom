@@ -63,10 +63,10 @@
 #include "src_piny_physics_v1.0/include/class_defs/piny_constants.h"
 #define PRINTF CkPrintf
 //============================================================================
-
 extern Config config;
 extern CProxy_TimeKeeper              TimeKeeperProxy;
 extern ComlibInstanceHandle orthoInstance;
+
 //============================================================================
 
 
@@ -80,7 +80,6 @@ Ortho::~Ortho()
     {
         delete [] ortho;
         delete [] orthoT;
-        delete [] wallTimeArr;
     }
 }
 
@@ -146,29 +145,6 @@ void Ortho::start_calc(CkReductionMsg *msg){
       contribute(sizeof(double),&ostart,CkReduction::min_double, cb , timeKeep);
     }
 #endif
-
-  if(thisIndex.x==0 && thisIndex.y==0)
-    {
-      if(!cfg.isDynamics){
-	PRINT_LINE_DASH;
-        int iii = numGlobalIter;
-        if(!cfg.isGenWave){iii+=1;}
-	CkPrintf("{%d} Iteration %d done\n",cfg.instanceIndex,iii);
-	PRINT_LINE_STAR; CkPrintf("\n");
-	PRINT_LINE_STAR;
-      }else{
-	if(numGlobalIter>0){
-	  PRINT_LINE_STAR; CkPrintf("\n");
-	  PRINT_LINE_STAR;
-	}//endif
-        if(numGlobalIter<config.maxIter){
-  	  CkPrintf("{%d} Beginning Iteration %d \n",cfg.instanceIndex, numGlobalIter);
-	}else{
-  	  CkPrintf("{%d} Completing Iteration %d \n", cfg.instanceIndex,numGlobalIter-1);
-	}//endif
-	PRINT_LINE_DASH;
-      }//endif
-    }
   got_start = true;
   internalType *S = (internalType*) msg->getData();
 #ifdef _NAN_CHECK_
@@ -237,9 +213,18 @@ void Ortho::start_calc(CkReductionMsg *msg){
       CkAssert(fabs(S[i]-savedsmat[i])<0.0001);
     }
 #endif
-  for(int i = 0; i < m * n; i++){
-    B[i] = S[i] / 2.0;
-  }
+  if(config.UberMmax ==1) // if we ignore spin we divide by 2
+    {
+      for(int i = 0; i < m * n; i++){
+	B[i] = S[i] / 2.0;
+      }
+    }
+  else
+    {
+      for(int i = 0; i < m * n; i++){
+	B[i] = S[i];
+      }
+    }
   memset(A, 0, sizeof(internalType) * m * n);
   step = 0;
   iterations = 0;
@@ -252,7 +237,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
   // do tolerance check on smat, do_iteration will be called by reduction root
   if(cfg.isDynamics && (numGlobalIter % config.toleranceInterval)==0 && numGlobalIter>1){
     if(thisIndex.x==0 && thisIndex.y==0){
-      CkPrintf("{%d} doing tolerance check on SMAT \n",cfg.instanceIndex);
+      CkPrintf("Doing tolerance check on SMAT \n");
     }//endif
     double max =array_diag_max(m,n,S);
     contribute(sizeof(double),&max, CkReduction::max_double, 
@@ -274,36 +259,7 @@ void Ortho::start_calc(CkReductionMsg *msg){
 //============================================================================
 void Ortho::collect_results(void){
 //============================================================================
-// Output Timings and debug information then increment iteration counter
-
-    int iprintout   = config.maxIter;
-    if(!cfg.isDynamics && !cfg.isGenWave){iprintout-=1;}
-
-    int itime       = numGlobalIter;
-    if(config.maxIter>=30){itime=1; wallTimeArr[0]=wallTimeArr[1];}
-
-    if(thisIndex.x==0 && thisIndex.y==0){
-  	wallTimeArr[itime] = CkWallTimer();
-	if (numGlobalIter == iprintout && config.maxIter<30) {
-	      PRINT_LINE_DASH;
-	      CkPrintf("Wall Times from within Ortho\n\n");
-	      for (int t = 1; t < iprintout; t++){
-		ckout << wallTimeArr[t] - wallTimeArr[t-1] << endl;
-	      }//endfor
-	  if(itime>0)
-	    {
-	      CkPrintf("%g\n", wallTimeArr[itime] - wallTimeArr[itime-1]);
-	      PRINT_LINE_DASH; CkPrintf("\n");
-	    }
-        }else{
-	  if(numGlobalIter>0){
-	    CkPrintf("{%d}Iteration time (ORTHO) : %g\n", 
-		     cfg.instanceIndex,
-               wallTimeArr[itime] - wallTimeArr[itime-1]);
-	    CkPrintf("{%d} Ortho S->T iterations: %d\n",cfg.instanceIndex,iterations);
-	  }//endif
-        }//endif
-    }//endif
+// Output debug information then increment iteration counter
 
 #ifdef _CP_DEBUG_TMAT_
     print_results();
@@ -441,7 +397,7 @@ void Ortho::maxCheck(CkReductionMsg *msg){
   double tolMax=fabs(((double *) msg->getData())[0]);
   delete msg;
 
-  CkPrintf("{%d} SMAT tol    = %g\n", cfg.instanceIndex,tolMax);
+  //  CkPrintf("SMAT tol    = %g\n", tolMax);
   if(tolMax < cfg.maxTolerance){
       toleranceCheckOrthoT=false;
       thisProxy.do_iteration();
@@ -688,7 +644,7 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
  CLA_Matrix_interface _matB3, CLA_Matrix_interface _matC3,
  orthoConfig &_cfg,
  CkArrayID _step2Helper,
- int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID) : 
+	     int timekeep, CkGroupID _oMCastGID, CkGroupID _oRedGID):
     cfg(_cfg),
     oMCastGID(_oMCastGID), oRedGID(_oRedGID),
     step2Helper(_step2Helper)
@@ -732,14 +688,6 @@ Ortho::Ortho(int _m, int _n, CLA_Matrix_interface _matA1,
   toleranceCheckOrthoT=false;
   ortho=NULL;
   orthoT=NULL;
-  wallTimeArr=NULL;
-  if(thisIndex.x==0 && thisIndex.y==0 && config.maxIter<30){
-    wallTimeArr = new double[config.maxIter+2];
-  }else{
-    wallTimeArr = new double[30];
-  }//endif
-  wallTimeArr[0]=0.0;
-  wallTimeArr[1]=0.0;
 
   numGlobalIter = 0;
 #ifdef _CP_ORTHO_DEBUG_COMPARE_GMAT_
@@ -909,13 +857,11 @@ void Ortho::pup(PUP::er &p){
       { 
 	ortho = new internalType[cfg.numStates * cfg.numStates];
 	orthoT = new internalType[cfg.numStates * cfg.numStates];
-	wallTimeArr = new double[config.maxIter];
       }
     if(thisIndex.x==0 && thisIndex.y==0)
       {
 	PUParray(p,ortho,cfg.numStates*cfg.numStates);
 	PUParray(p,orthoT,cfg.numStates*cfg.numStates);
-	p(wallTimeArr,config.maxIter);
       }
     if(p.isUnpacking()){
       A = new internalType[m * n];

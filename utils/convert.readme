@@ -1,0 +1,8 @@
+The "convert" script converts a dataset to the new directory
+structure format.
+
+Run "convert" in the folder where your dataset is stored.
+
+Convert defaults to assuming that your initial coordinates are in
+water.coords_initial, if that is not the case you should pass your
+coordinates file as an argument on the command line.

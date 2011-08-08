@@ -26,7 +26,178 @@
 #include "../proto_defs/proto_handle_entry.h"
 #include "../proto_defs/proto_friend_lib_entry.h"
 
-#define DEBUG
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void set_sim_params_temper(GENTEMPERING_CTRL *tempering_ctrl,
+                           GENSIMOPTS *gensimopts,DICT_WORD *dict,char *fun_key,
+                           char *input_name)
+/*==========================================================================*/
+  {/* begin routine */
+/*==========================================================================*/
+
+  int ifound,index,i;
+  int int_key_arg,iopt;
+  int npara_temps;
+  double real_key_arg;
+  double *t_ext,*p_ext,*s_ext;
+  FILE *fp;
+  char *fname,*directory;
+
+/*==========================================================================*/
+/* Read in the 1st key argument and malloc filename space if necessary      */
+/*--------------------------------------------------------------------------*/
+/*  1)\num{#} */
+  index=1;
+  sscanf(dict[index].keyarg,"%d",&int_key_arg);
+  tempering_ctrl->npara_temps = int_key_arg;
+  gensimopts->ntemper         = int_key_arg;
+  npara_temps                 = int_key_arg;
+  if(int_key_arg <= 0){keyarg_barf(dict,input_name,fun_key,index);}
+
+  if(npara_temps>1){
+    tempering_ctrl->history_name     = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->wgt_name         = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->troyer_name      = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+    tempering_ctrl->output_directory = (char *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+  }/*endif*/
+
+/*==========================================================================*/
+/* Read in the rest of the key arguments */
+/*-----------------------------------------------------------------------*/
+/*  2)\ens_opt{#} */
+  index=2;
+  ifound = 0;
+  iopt = 0;
+  tempering_ctrl->nvt = 0;  tempering_ctrl->npt = 0; tempering_ctrl->nst = 0;
+  if(strcasecmp(dict[index].keyarg,"nvt")==0){tempering_ctrl->nvt = 1; iopt=1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"npt")==0){tempering_ctrl->npt = 1; iopt=2; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"nst")==0){tempering_ctrl->nst = 1; iopt=3; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
+  if(iopt!=1){
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     PRINTF("Only simple NVT tempering supported\n");
+     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+     FFLUSH(stdout);
+     EXIT(1);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  5)\rsmpl_opt{} */
+  index=5;
+  ifound = 0;
+  tempering_ctrl->rsmpl_opt = 0;
+  if(strcasecmp(dict[index].keyarg,"yes")==0){tempering_ctrl->rsmpl_opt = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"no")==0) {tempering_ctrl->rsmpl_opt = 0; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  6)\switch_steps{#} */
+  index=6;
+  sscanf(dict[index].keyarg,"%d",&tempering_ctrl->switch_steps);
+  if(tempering_ctrl->switch_steps<1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  7)\history_fname{#} */
+  if(npara_temps>1){
+    index=7; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
+    strcpy(tempering_ctrl->history_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  8)\history_frq{#} */
+  index=8;
+  sscanf(dict[index].keyarg,"%d",&tempering_ctrl->history_frq);
+  if(tempering_ctrl->history_frq<1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  9)\wgt_fname{#} */
+  if(npara_temps>1){
+    index=9; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
+    strcpy(tempering_ctrl->wgt_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  10)\troyer_fname{#} */
+  if(npara_temps>1){
+    index=10; ifound = 0;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){keyarg_barf(dict,input_name,fun_key,index);}
+    strcpy(tempering_ctrl->troyer_name,dict[index].keyarg);
+  }/*endif*/
+/*-----------------------------------------------------------------------*/
+/*  11)\restart_par_temp{} */
+  index=11;
+  ifound = 0;
+  if(strcasecmp(dict[index].keyarg,"yes")==0){tempering_ctrl->ipt_restart = 1; ifound++;}
+  if(strcasecmp(dict[index].keyarg,"no")==0){tempering_ctrl->ipt_restart = 0; ifound++;}
+  if(ifound!=1){keyarg_barf(dict,input_name,fun_key,index);}
+/*-----------------------------------------------------------------------*/
+/*  12)\output_directory{} */
+  if(npara_temps>1){
+    index=12;
+    strcpy(tempering_ctrl->output_directory,dict[index].keyarg);
+  }/*endif*/
+/*==========================================================================*/
+/*  If we have more than one temperer:  read in the state point info :      */
+/*                                      malloc some memory                  */
+/*                                      check the directory structure       */
+
+  if(npara_temps>1){
+    tempering_ctrl->t_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->p_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    tempering_ctrl->s_ext = (double *)cmalloc(npara_temps*sizeof(double),"set_sim_prms_tmpr")-1;
+    fname                 = (char   *)cmalloc(MAXWORD*sizeof(char),"set_sim_prms_tmpr");
+
+    strcpy(fname,dict[3].keyarg);
+    t_ext     = tempering_ctrl->t_ext;
+    p_ext     = tempering_ctrl->p_ext;
+    s_ext     = tempering_ctrl->s_ext;
+    directory = tempering_ctrl->output_directory;
+
+    PRINTF("     Reading tempering state points from : %s\n",fname);
+    PRINTF("      Tempering state points are:\n");
+
+    fp = cfopen((const char *)fname,"r");
+    for(i=1;i<=npara_temps;i++){
+      switch(iopt){
+        case 1: fscanf(fp,"%lg",&t_ext[i]);
+ 	  PRINTF("       %g\n",t_ext[i]);
+        break;
+        case 2: fscanf(fp,"%lg %lg",&t_ext[i],&p_ext[i]);
+  	  PRINTF("       %g %g\n",t_ext[i],p_ext[i]);
+	  p_ext[i] *= PCONV;
+        break;
+        case 3: fscanf(fp,"%lg %lg %lg",&t_ext[i],&p_ext[i],&s_ext[i]);
+	  PRINTF("       %g %g %g\n",t_ext[i],p_ext[i],s_ext[i]);
+	  p_ext[i] *= PCONV;  s_ext[i] *= STENS_CONV;
+        break;
+      }/*end switch*/
+      readtoendofline_check(fp,fname,i,npara_temps);
+    }/*endfor*/
+    fclose(fp);
+    PRINTF("     Done reading from file: %s\n",fname);
+    fflush(stdout);
+
+    for(i=1;i<=npara_temps;i++){
+      sprintf (fname, "%s/Temper.%d/ChkDirExistOAtom",directory,i-1);
+      FILE *fpck = fopen(fname,"w");
+      if(fpck==NULL){
+        sprintf (fname, "%s/Temper.%d",directory,i-1);
+        PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("    Output directory, %s , is not present\n",fname);
+        PRINTF("    @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
+      fclose(fp);
+    }/*endfor*/
+
+    cfree(fname,"set_sim_params_ctrl_temper"); /* file not needed again */
+
+  }/*endif : We have tempering*/
+
+/*==========================================================================*/
+  }/* end routine */
+/*==========================================================================*/
+
 
 /*==========================================================================*/
 /*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
@@ -2442,9 +2613,19 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     sscanf(dict[18].keyarg,"%s",filename_parse->simname);
   /*-----------------------------------------------------------------------*/ 
   /* 19)\out_restart_file */
-    sscanf(dict[19].keyarg,"%s",genfilenames->dname);
+    index = 19;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
+    sscanf(dict[index].keyarg,"%s",genfilenames->dname);
   /*-----------------------------------------------------------------------*/ 
   /* 20)\in_restart_file */
+    index = 20;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[20].keyarg,"%s",filename_parse->dnamei);
     sscanf(dict[20].keyarg,"%s",genfilenames->dnamei);
   /*-----------------------------------------------------------------------*/ 
@@ -2452,12 +2633,27 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     sscanf(dict[21].keyarg,"%s",genfilenames->iname);
   /*-----------------------------------------------------------------------*/ 
   /* 22)\atm_pos_file */
+    index = 22;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[22].keyarg,"%s",genfilenames->cpname);
   /*-----------------------------------------------------------------------*/ 
   /* 23)\atm_vel_file */
+    index = 23;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
     sscanf(dict[23].keyarg,"%s",genfilenames->cvname);
   /*-----------------------------------------------------------------------*/ 
   /* 24)\conf_partial_file */
+    index = 24;
+    check_for_slash(dict[index].keyarg,dict[index].keyword,&ifound);
+    if(ifound!=0){
+      keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+    }/*endif*/
      sscanf(dict[24].keyarg,"%s",genfilenames->cpparname);
   /*-----------------------------------------------------------------------*/ 
   /* 25)\mol_set_file */
@@ -2474,14 +2670,19 @@ void set_sim_params_write(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
   /*-----------------------------------------------------------------------*/ 
   /* 29)\cp_elf_file */
      sscanf(dict[29].keyarg,"%s",genfilenames->elfname);
-
+  /*-----------------------------------------------------------------------*/ 
+  /*  30)\atm_coord_dir_in */
+     sscanf(dict[30].keyarg,"%s",genfilenames->atm_crd_dir_in);
+  /*-----------------------------------------------------------------------*/ 
+  /*  31)\atm_coord_dir_out */
+     sscanf(dict[31].keyarg,"%s",genfilenames->atm_crd_dir_out);
 /*========================================================================*/
 
   cfree(strip,"set_sim_params_write");
   cfree(strip2,"set_sim_params_write");
 
 /*========================================================================*/
-    }/*end routine*/ 
+  }/*end routine*/ 
 /*========================================================================*/
 
 
@@ -2529,7 +2730,7 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       mdclatoms_pimd->gamma_adb = (real_key_arg);
       index=2;
       if((mdclatoms_pimd->gamma_adb<0.0))
-    keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+        keyarg_barf(dict,filename_parse->input_name,fun_key,index);
       if(mdclatoms_pimd->gamma_adb<1.0){
       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
       PRINTF("You have requested a path integral          \n");
@@ -2545,7 +2746,24 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
       if(strcasecmp(dict[3].keyarg,"centroid")==0){
       gensimopts->pi_md_typ = 2;ifound++;}
       index=3;
-   if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      if(ifound != 1) keyarg_barf(dict,filename_parse->input_name,fun_key,index);
+      if(gensimopts->pi_md_typ!=1){
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+        PRINTF("You have requested the centroid PIMD method      \n");
+        PRINTF("We are not ready for that yet but if you         \n");
+        PRINTF("implement it, please check it to the OpenSource  \n");
+        PRINTF("repostitory (once it works, of course)           \n");
+        PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+        EXIT(1);
+      }/*endif*/
+      if(mdclatoms_pimd->gamma_adb>1.0 && gensimopts->pi_md_typ!=2){
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        PRINTF("You have requested the staging PIMD method       \n");
+        PRINTF("with an adiabaticity parameter greater than one. \n");
+        PRINTF("Staging is for sampling\n");
+        PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+        EXIT(1);
+      }//endif
   /*-----------------------------------------------------------------------*/
   /* 4)\pi_beads_level_full{#} */
       sscanf(dict[4].keyarg,"%lg",&real_key_arg);
@@ -2588,9 +2806,14 @@ void set_sim_params_pimd(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
     index=8;
     if(gentimeinfo->nres_pimd<0)
     keyarg_barf(dict,filename_parse->input_name,fun_key,index);
-    if(gentimeinfo->nres_pimd==0){
-    gentimeinfo->nres_pimd=1;
-    }
+    if(gentimeinfo->nres_pimd==0){gentimeinfo->nres_pimd=1;}
+    if(gentimeinfo->nres_pimd>1){
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+      PRINTF("You have requested nres_pimd=%d>1 \n",gentimeinfo->nres_pimd);
+      PRINTF("This will just be ingnored for now\n");
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");
+    }//endif
+    gentimeinfo->nres_pimd = 1;
   /*-----------------------------------------------------------------------*/ 
   /* 9)\initial_spread_size{} */
     sscanf(dict[9].keyarg,"%lg",&real_key_arg);

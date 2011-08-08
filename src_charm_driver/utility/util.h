@@ -188,7 +188,8 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim);
 void sort_kxky(int ,int *,int *,int *,int *,int);
 
 void writeStateFile(int ,complex *,complex *,
-                    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int);
+                    int *,int *,int *,int ,int,int,int,char *,char *,int,int,int,
+                    int , int , int , int );
 
 void sort_psi_output(int ,int *,int *,int *,int *,int *,int *);
 
@@ -201,6 +202,7 @@ void create_gx_decomp(int , int , int *, int *,int ,int *);
 void processState(int , int, complex *, const char *,int ,int *,int *, int *, int *, 
   	          int *, int *,int *,int *,int *, int ,int ,int,int);
 
+FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile);
 //===================================================================================
 
 #endif //__PFFTUTIL_H__

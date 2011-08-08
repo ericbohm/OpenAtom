@@ -40,10 +40,12 @@ void set_sim_params_fun(MDINTEGRATE *, MDATOMS *, MDINTER *,
 void set_sim_params_finale(MDINTEGRATE *, MDATOMS *, MDINTER *,
                            GENERAL_DATA *,MDINTRA *,CP *,CLASS_PARSE *,
                            CP_PARSE *,FILENAME_PARSE *);
+void set_sim_params_temper(GENTEMPERING_CTRL *,GENSIMOPTS *,DICT_WORD *dict,char *,char *);
 
 /*----------------------------------------------------------------------*/
 /* set_sim_dict.c */
 
+void set_sim_dict_temper(int *,DICT_WORD *[]);
 void set_sim_dict_list(int *,DICT_WORD *[]);
 void set_sim_dict_cp(int *,DICT_WORD *[]);
 void set_sim_dict_gen(int *,DICT_WORD *[]);

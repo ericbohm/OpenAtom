@@ -208,7 +208,6 @@ class Ortho : public CBase_Ortho
         int timeKeep;
         internalType *orthoT; // only used on [0,0]
         internalType *ortho; //only used on [0,0]
-        double *wallTimeArr;//only used on [0,0]
         int numGlobalIter; // global leanCP iterations
         // used in each element
         int iterations; //local inv_sq iterations

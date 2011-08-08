@@ -42,7 +42,7 @@ void parse_hydrog_mass(char *,char *,int *,double *, int *);
 
 void readtoendofline(FILE *);
 
+void check_for_slash(char *,char *, int *);
 
-
-
+void readtoendofline_check(FILE *,char *,int , int );
 

@@ -1636,7 +1636,9 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 //============================================================================
 // Set the file name and data points
 
-    char fname[1000]; sprintf(fname,"%s/state%d.out",config.dataPath,1);
+    char fname[1000]; 
+    sprintf (fname, "%s/Spin.0_Kpt.0_Bead.0_Temper.0/state1.out",config.dataPath);
+
     int numData        = config.numData;
     int ibinary_opt    = sim->ibinary_opt;
     int sizeY          = sim->sizeY;
@@ -1928,7 +1930,8 @@ void create_line_decomp_descriptor(CPcharmParaInfo *sim)
 void writeStateFile(int ncoef,complex *psi,complex *vpsi,
                     int *k_x,int *k_y,int *k_z,int cp_min_opt,
                     int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName,
-                    int ibinary_write_opt,int iteration, int istate)
+                    int ibinary_write_opt,int iteration, int istate,
+                    int ispin, int ikpt, int itemper, int ibead)
 //=============================================================================
   { //begin rotunie
 //=============================================================================
@@ -1941,7 +1944,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
   if(istate==1){
     char fname[1000];
-    sprintf(fname,"%s/TimeStamp",config.dataPathOut);
+    sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/TimeStamp",config.dataPathOut,ispin,ikpt,itemper,ibead);
     FILE *fp = fopen(fname,"w");
      fprintf(fp,"time step = %d\n",iteration);
     fclose(fp);
@@ -2447,4 +2450,32 @@ void create_gx_decomp(int nktot, int nline, int *kx_line, int *mapl,
 
 //============================================================================
   }//end routine
+//============================================================================
+
+
+
+//============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//============================================================================
+FILE *openScreenfWrite(const char *dirnameBase, const char *fname, int temper, int bead, bool beadfile)
+{
+  char dirPath[1024];
+  char subdir[1024];
+  char lfname[1024];
+  char beadname[1024];
+  snprintf(subdir,1023,"/Temper.%d/",temper);
+  strncpy(dirPath, dirnameBase, 1023);
+  strncpy(lfname, fname, 1023);
+  strncat(dirPath,subdir,1023);
+  if(beadfile){
+    snprintf(beadname,1023,".Bead.%d",bead);
+    strncat(lfname,beadname,1023);
+  }
+  strncat(dirPath,lfname,1023);
+  FILE *file=fopen(dirPath,"a");
+  //  CkPrintf("opened temper file %s for screen output \n",dirPath);
+  assert(file!=NULL);
+  return file;
+//============================================================================
+}//end routine
 //============================================================================

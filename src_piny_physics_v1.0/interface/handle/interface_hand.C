@@ -746,3 +746,70 @@ void parse_on_off(char *keyarg,int *int_val,int *ierr){
   if(strcasecmp(keyarg,"on")==0) {int_val[0]=1; ierr[0]=0;}
 }
 /*==========================================================================*/
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+void check_for_slash(char *keyarg,char *keyword, int *ierr_out){
+  int len,i,ierr,islash;
+  islash = (int )'/';
+  len    = (int )(strnlen(keyarg,(size_t)MAXWORD));
+  ierr   = 0;
+  for(i =0;i<len;i++){
+    if(islash==(int ) keyarg[i]){ierr++;}
+  }/*end for*/
+  if(ierr>0){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("No directories permitted in \\%s{%s} : %d detected\n",keyword,keyarg,ierr);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+  }/*endif*/
+  ierr_out[0] = ierr;
+}
+/*==========================================================================*/
+
+
+/*==========================================================================*/
+/*cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc*/
+/*==========================================================================*/
+/* readtoendofline_check: Function to read to end of line in input files    */
+/* also checks for error, and kicks you out!                                */
+/*==========================================================================*/
+void readtoendofline_check(FILE *fp,char *f_name,int found, int target){
+/*==========================================================================*/
+
+  int ierr,eol,ch;
+  eol = (int )'\n';
+  ch = eol+1;
+
+/*==========================================================================*/
+
+  while(ch!=eol&&ch!=EOF){ch=fgetc(fp);}
+  if(ch==EOF){
+    ierr = 1;
+  }else{
+    ierr = 0;
+  }/*endif*/
+
+/*==========================================================================*/
+
+  if(ierr!=0){
+    printf("\n@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    printf("something is at odds with this file: %s.\n",f_name);
+    if(found<target){
+      printf("you said there\'d be %d lines, file ended on line %d.\n",
+             target,found);
+      printf("Lying will do you no good!!!.\n");
+    }/*endif*/
+    else{
+      printf("methinks you lack or surplus a carriage return\n");
+      printf("at the end of line %d\n",found);
+    }/*endif*/
+    printf("See ya.\n");
+    printf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n\n");
+    fflush(stdout);
+    exit(1);
+  }/*endif*/
+
+/*--------------------------------------------------------------------------*/
+ }/* end routine */
+/*==========================================================================*/

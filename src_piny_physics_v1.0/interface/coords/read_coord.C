@@ -32,7 +32,6 @@
 
 #define PATH_INTEGRALS_NOT_IMPLEMENTED
 
-
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
@@ -40,7 +39,7 @@
 void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
                  MDINTRA *mdintra,GENERAL_DATA *general_data, CP *cp,
                  MDCLATOMS_POS *clatoms_pos,MDTHERM_POS *therm_class,
-                 MDTHERM_POS *therm_bead)
+                 MDTHERM_POS *therm_bead, int ibead, int itemper)
 
 //======================================================================
   {   //begin routine 
@@ -79,8 +78,6 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   double **v_nhc,**x_nhc;
 
   int cp_dual_grid_opt= cpopts->cp_dual_grid_opt;
-
-  char *dnamei        = genfilenames->dnamei;
 
   int natm_tot        = mdclatoms_info->natm_tot;
   int pi_beads        = mdclatoms_info->pi_beads; 
@@ -135,11 +132,14 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
                         + gensimopts->cp_wave_min_pimd  
                         + gensimopts->debug_pimd 
                         + gensimopts->debug_cp_pimd);
-
+  char dnamei[1000];
+  char *dnamei_file   = genfilenames->dnamei;
+  char *dnamei_dir    = genfilenames->atm_crd_dir_in;
 
 //========================================================================
 // I)Write to screen:                                                   
 
+  sprintf (dnamei,"%s/Bead.%d_Temper.%d/%s",dnamei_dir,ibead,itemper,dnamei_file);
 
   PRINT_LINE_STAR;
   PRINTF("Reading user specified atm coordinate file %s\n",dnamei);
@@ -162,10 +162,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
 //========================================================================
 // II) Open the file and malloc:                                          
 
-
-
   fp_dnamei = cfopen((const char *)dnamei,"r");
-
 
   line      = (char *)cmalloc(MAXLINE*sizeof(char),"read_coord");
   x_tmp     = (double *)cmalloc(natm_tot*sizeof(double),"read_coord")-1;
