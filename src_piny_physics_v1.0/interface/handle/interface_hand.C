@@ -205,7 +205,7 @@ void keyarg_barf(DICT_WORD word[],char *file_name, char fun_key[],
   PRINTF("Allowed arguments: %s\n",word[index].error_mes);
   PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
   FFLUSH(stdout);
-  EXIT(1);
+  CkAbort("Bad argument to keyword in input files.");
 /* end routine */}
 /*==========================================================================*/
 
