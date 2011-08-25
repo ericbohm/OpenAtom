@@ -327,10 +327,14 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
     if(config.torusMap)
       {
 	int x, y, z, t, destpe;
+	CkPrintf("{%d} using offsets X=%d Y=%d Z=%d\n",numInst, offsetX, offsetY, offsetZ);
 	for(int state=0; state<nstates; state++)
 	  for(int plane=0; plane<nchareG; plane++) {
 	    topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
-	    destpe =  topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
+	    int newx=(x+offsetX)%topoMgr->getDimNX();
+	    int newy=(y+offsetY)%topoMgr->getDimNY();
+	    int newz=(z+offsetZ)%topoMgr->getDimNZ();
+	    destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
 	    maptable->set(state, plane, destpe);
 	  }
       }

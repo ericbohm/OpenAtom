@@ -421,9 +421,13 @@ main::main(CkArgMsg *msg) {
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
                       sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
     fakeTorus        = config.fakeTorus>0;
-    CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
+
     if(fakeTorus)
-      numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
+      {
+	numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
+	CkPrintf("numpes set to %d by faketorus\n",numPes);
+      }
+    CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
     nchareG          = config.nchareG;
@@ -601,6 +605,25 @@ main::main(CkArgMsg *msg) {
 // Create the parainfo group from sim
 // Initialize chare arrays for real and g-space of states 
 
+    CkPrintf("Initializing TopoManager\n");
+    if(config.fakeTorus) {
+      CkPrintf("Initializing TopoManager with fakeTorus\n");
+      topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
+				config.torusDimNZ, config.torusDimNT);
+    }
+    else {
+      topoMgr = new TopoManager();
+    }
+    CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
+             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
+             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
+             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
+    if(config.torusMap==1) {
+      PRINT_LINE_STAR; CkPrintf("\n");
+      CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+      CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
+      PRINT_LINE_STAR; CkPrintf("\n");
+    }
 
     int l=config.Gstates_per_pe;
     int m, pl, pm;
@@ -626,24 +649,6 @@ main::main(CkArgMsg *msg) {
     //    }//endfor
 
     // multiple instance mapping breaks if there isn't a topomanager
-    CkPrintf("Initializing TopoManager\n");
-    if(config.fakeTorus) {
-      topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
-				config.torusDimNZ, config.torusDimNT);
-    }
-    else {
-      topoMgr = new TopoManager();
-    }
-    CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
-             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
-             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
-             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
-    if(config.torusMap==1) {
-      PRINT_LINE_STAR; CkPrintf("\n");
-      CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-      CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
-      PRINT_LINE_STAR; CkPrintf("\n");
-    }
     CkPrintf("Initializing PeList\n");
     
     PeList *gfoo=NULL;
