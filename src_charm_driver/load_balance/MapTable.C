@@ -12,19 +12,9 @@
 #include "charm++.h"
 #include "PeList.h"
 #include "utility/MapFile.h"
-
-#define USE_INT_MAP
-#ifdef USE_INT_MAP
+#define USE_INT_MAP 1
 #include "IntMap.h"
-//#define USE_INT_2on1
-#ifdef USE_INT_2on1
-typedef IntMap2on1 MapType2;
-#else
-//class MapType2;
-#endif
-typedef IntMap4 MapType4;
-typedef IntMap3 MapType3;
-#endif
+
 #include "MapTable.h"
 extern TopoManager *topoMgr;
 extern Config config;
@@ -106,6 +96,84 @@ int MapType3::getCentroid(int torusMap) {
   }
   return(bestPe);
 }
+
+void IntMap2on2::translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus ) 
+{
+  keyXmax=fromMap->keyXmax;
+  keyYmax=fromMap->keyYmax;
+  Map= new int*[keyXmax];
+  int *mapbuf=new int[keyXmax*keyYmax];
+  for(int x=0;x<keyXmax;x++)
+    {
+      Map[x]  =  mapbuf +  keyYmax * x;
+      memset(Map[x],-1,keyYmax*sizeof(int));
+    }
+	
+  if(torus)
+      {
+	int x, y, z, t, destpe;
+	for(int xind=0; xind<keyXmax; xind++)
+	  for(int yind=0; yind<keyYmax; yind++) {
+	    topoMgr->rankToCoordinates(fromMap->get(xind, yind), x, y, z, t);
+	    int newx=(x+offsetX)%topoMgr->getDimNX();
+	    int newy=(y+offsetY)%topoMgr->getDimNY();
+	    int newz=(z+offsetZ)%topoMgr->getDimNZ();
+	    destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
+	    set(xind, yind, destpe);
+	  }
+      }
+    else
+      {
+	for(int xind=0; xind<keyXmax; xind++)
+	  for(int yind=0; yind<keyYmax; yind++) {
+	    set(xind, yind,fromMap->get(xind, yind)+offsetX);
+	  }
+      }
+};
+
+void IntMap3::translate(IntMap3 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus )
+{
+  keyXmax=fromMap->keyXmax;
+  keyYmax=fromMap->keyYmax;
+  keyZmax=fromMap->keyZmax;
+  Map=new int**[keyXmax];
+  int **mappointbuf = new int*[keyXmax*keyYmax];
+  int *mapbuf= new int[keyXmax*keyYmax*keyZmax];
+  for(int x=0;x<keyXmax;x++)
+    {
+      Map[x]= mappointbuf + (x*keyYmax);
+      for(int y=0;y<keyYmax;y++)
+	{
+	  Map[x][y]= mapbuf + (x*keyYmax+y)*keyZmax;
+	  memset(Map[x][y],-1,keyZmax*sizeof(int));
+	}
+    }
+  if(torus)
+    {
+	int x, y, z, t, destpe;
+	for(int xind=0; xind<keyXmax; xind++)
+	  for(int yind=0; yind<keyYmax; yind++) {
+	    for(int zind=0; zind<keyZmax; zind++) {
+	    topoMgr->rankToCoordinates(fromMap->get(xind, yind,zind), x, y, z, t);
+	    int newx=(x+offsetX)%topoMgr->getDimNX();
+	    int newy=(y+offsetY)%topoMgr->getDimNY();
+	    int newz=(z+offsetZ)%topoMgr->getDimNZ();
+	    destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
+	    set(xind, yind, zind, destpe);
+	    }
+	  }
+    }
+    else
+      {
+	for(int xind=0; xind<keyXmax; xind++)
+	  for(int yind=0; yind<keyYmax; yind++) {
+	    for(int zind=0; zind<keyZmax; zind++) {
+	      set(xind, yind, zind, fromMap->get(xind, yind,zind)+offsetX);
+	    }
+	  }
+      }
+};
+
 
 GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs, 
     int _nchareG, int _nstates, int _Gstates_per_pe, bool useCuboidMap, int numInst,
@@ -327,7 +395,7 @@ GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs
     if(config.torusMap)
       {
 	int x, y, z, t, destpe;
-	CkPrintf("{%d} using offsets X=%d Y=%d Z=%d\n",numInst, offsetX, offsetY, offsetZ);
+	CkPrintf("{%d} GS using offsets X=%d Y=%d Z=%d\n",numInst, offsetX, offsetY, offsetZ);
 	for(int state=0; state<nstates; state++)
 	  for(int plane=0; plane<nchareG; plane++) {
 	    topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
@@ -994,10 +1062,14 @@ RSMapTable::RSMapTable(MapType2  *_frommap, MapType2 *_tomap, PeList *_availproc
     if(config.torusMap==1)
       {
 	int x, y, z, t, destpe;
+	CkPrintf("{%d} RS using offsets X=%d Y=%d Z=%d\n",numInst, offsetX, offsetY, offsetZ);
 	for(int state=0; state<nstates; state++)
 	  for(int plane=0; plane<sizeZ; plane++) {
 	    topoMgr->rankToCoordinates(_frommap->get(state, plane), x, y, z, t);
-	    destpe = topoMgr->coordinatesToRank(x + offsetX, y + offsetY, z + offsetZ, t);
+	    int newx=(x+offsetX)%topoMgr->getDimNX();
+	    int newy=(y+offsetY)%topoMgr->getDimNY();
+	    int newz=(z+offsetZ)%topoMgr->getDimNZ();
+	    destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
 	    maptable->set(state, plane, destpe);
 	  }
       }
@@ -2198,6 +2270,7 @@ PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapTyp
       thisState->reset();
       return(thisState);
 }
+
 
 
 void RhoRSMapTable::sortByCentroid(PeList *avail, int plane, int nstates, MapType2 *rsmap)

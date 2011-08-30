@@ -2,13 +2,13 @@
 #include "pcConfig.h"
 #include "pcInstanceIDs.h"
 #include "load_balance/PeList.h"
+#include "load_balance/IntMap.h"
 
 #include "charm++.h"
 
 #ifndef PC_BUILDER_H
 #define PC_BUILDER_H
 
-class MapType2;
 
 namespace cp {
     namespace paircalc {

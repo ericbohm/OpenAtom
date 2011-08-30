@@ -231,6 +231,9 @@ class IntMap4 {
 		CkPrintf("%d %d %d %d %d \n",w,x,y,z, get(w,x*keyStep,y*keyStep,z));
       }
     IntMap4(){keyWmax=0;keyXmax=0; keyYmax=0, keyZmax=0; keyStep=1; Map=NULL; stepTable=0; }
+    IntMap4(IntMap4 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
+
+
 };
 
 class IntMap3 {
@@ -359,6 +362,7 @@ class IntMap3 {
 		CkPrintf("%d %d %d %d \n",x,y,z, get(x,y,z));
       }
     IntMap3(){keyXmax=0; keyYmax=0, keyZmax=0;  Map=NULL;}
+    void translate(IntMap3 *fromMap,int offsetX, int offsetY, int offsetZ, bool torus );
 };
 
 class IntMap2on2 {
@@ -481,6 +485,7 @@ class IntMap2on2 {
 	    for(int y=0;y<keyYmax;y++)
 		CkPrintf("%d %d %d \n",x,y, get(x,y));
       }
+    void translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
 };
 
 
@@ -550,16 +555,18 @@ class IntMap2on1 {
 	    for(int y=0;y<keyYmax;y++)
 		CkPrintf("%d %d %d \n",x,y, get(x,y));
       }
+    void translate(IntMap2on1 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
 };
 
 
 
-class MapType2 : public IntMap2on2 {
+/*class MapType2 : public IntMap2on2 {
  public:
   int getCentroid (int);
   void pup(PUP::er &p) { IntMap2on2::pup(p); }
 };
-
+*/
+typedef IntMap2on2 MapType2;
 typedef IntMap4 MapType4;
 typedef IntMap3 MapType3;
 
