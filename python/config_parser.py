@@ -162,7 +162,7 @@ def config_reader(filename):
 			if test_result == True:
 				summary_True.append(outputlist[counter])
 			if test_result == False:
-				summary_False,append(outputlist[counter])
+				summary_False.append(outputlist[counter])
 			counter = counter + 1
 		testcounter=testcounter + 1
 # clear the {output file, corresponding reference file} pair dictionary, prepare for the next test iteration

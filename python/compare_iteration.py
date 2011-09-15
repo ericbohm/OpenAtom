@@ -3,120 +3,106 @@ def compare_iteration(testoutput, reffile, magnum):
 	import stripNumbers
 	testfile = open(testoutput)
 	ref_file = open(reffile)
-	counter = 0
-	testcontent = []
-	refcontent = []
-	#read file contents into a list
-	while 2 > 1:
-		line = testfile.readline()
-		if line == '':
-			break
-		testcontent.append(line)
+	test_content = testfile.readlines()
+	ref_content = ref_file.readlines()
 	testfile.close()
-	if len(testcontent) == 0:
-		print 'Error, empty test output file.'
-		return False
-	counter = 0
-	while 2 > 1:
-		line = ref_file.readline()
-		if line == '':
-			break
-		refcontent.append(line)
 	ref_file.close()
-	if len(refcontent) == 0:
-		print 'Error, empty ref file.'
+	key_words = []
+	option_key_words = []
+	option_key_words.append('ENL')
+	key_words.append('EHART')
+	key_words.append('EExt')
+	key_words.append('EWALD_recip')
+	key_words.append('EEXC        ')
+	key_words.append('EGGA        ')
+	key_words.append('EEXC+EGGA')
+	key_words.append('EKE')
+	key_words.append('EWALD_REAL')
+	key_words.append('atm fmag')
+	key_words.append('MagForPsi')
+	ref_dict = {}
+	test_dict = {}
+	ref_Psi_key_list = []
+	test_Psi_key_list = []
+	for ref_line in ref_content:
+		if ref_line.find('Psi[is') != -1:
+			ref_number_list = []
+			ref_number_list = stripNumbers.stripNumbers(ref_line, 0)
+			dict_key = str(ref_number_list[0])+' '+str(ref_number_list[1])+' '+str(ref_number_list[2])+' '+str(ref_number_list[3])
+			new_list = []
+			new_list.append(ref_number_list[4])
+			new_list.append(ref_number_list[5])
+			ref_Psi_key_list.append(dict_key)
+			ref_dict[dict_key] = new_list
+	for test_line in test_content:
+		if test_line.find('Psi[is') != -1:
+			test_number_list = []
+			test_number_list = stripNumbers.stripNumbers(test_line, 0)
+			dict_key = str(test_number_list[0])+' '+str(test_number_list[1])+' '+str(test_number_list[2])+' '+str(test_number_list[3])
+			new_list = []
+			new_list.append(test_number_list[4])
+			new_list.append(test_number_list[5])
+			test_Psi_key_list.append(dict_key)
+			test_dict[dict_key] = new_list
+	if len(ref_Psi_key_list) != len(test_Psi_key_list):
+		print 'test output file is incomplete'
 		return False
-	#start compare
-	while 2 > 1:
-		testlen = len(testcontent)
-		reflen = len(refcontent)
-		if testlen == 0 or reflen == 0:
-			return True
-		if testcontent[0].find('Psi[',0,len(testcontent[0])-1) < 0:
-			#find the keyword
-			keyword = ''
-			counter = 4
-			while 2 > 1:
-				if testcontent[0][counter] == ' ':
-					break
-				keyword = keyword + testcontent[0][counter]
-				counter = counter + 1
-			#find the same keyword in the ref file and compare the number with ref file
-			counter = 0
-			while 2 > 1:
-				if counter == reflen:
-					del testcontent[0]
-					break
-				# if found the result
-				if refcontent[counter].find(keyword,0,len(refcontent[counter])-1) >= 0:
-					testlist = stripNumbers.stripNumbers(testcontent[0], 0)
-					reflist = stripNumbers.stripNumbers(refcontent[counter], 0)
-					#return false if the output is different from the ref file
-					if compare_number.compare_number(testlist[1], reflist[0], magnum) == False:
-						return False
-					#if the result if the same then delete the compared part
-					del refcontent[counter]
-					del testcontent[0]
-					break
-				if refcontent[counter].find(keyword,0,len(refcontent[counter])-1) < 0:
-					counter = counter + 1
-			continue
-		if testcontent[0].find('Psi[',0,len(testcontent[0])-1) >= 0:
-			counter = 4
-			keyword = ''
-			# find the key word
-			while 2 > 1:
-				if testcontent[0][counter] == ']':
-					break
-				if testcontent[0][counter] != ' ':
-					keyword = keyword + testcontent[0][counter]
-				counter = counter + 1
-			#locate the result in the ref file
-			counter = 0
-			while 2 > 1:
-				if counter == reflen:
-					del testcontent[0]
-					break
-				if refcontent[counter].find('Psi[',0,len(refcontent[counter])-1) >= 0:
-					linelen = len(refcontent[counter])
-					newline = ''
-					counter2 = 0
-					while 2 > 1:
-						if counter2 == linelen:
-							break
-						if refcontent[counter][counter2] != ' ':
-							newline = newline + refcontent[counter][counter2]
-						counter2 = counter2 + 1
-					if newline.find(keyword,0,len(newline))>= 0:
+	for value in ref_Psi_key_list:
+		if len(ref_dict[value]) != len(test_dict[value]):
+			print 'test output file is incomplete'
+			return False
+		counter = 0
+		while counter < len(ref_dict[value]):
+			if compare_number.compare_number(ref_dict[value][counter], test_dict[value][counter], magnum) == False:
+				return False
+			counter = counter + 1
+	for ref_line in ref_content:
+		for keys in option_key_words:
+			ref_number_list = []
+			test_number_list = []
+			found_op_key = 0
+			if ref_line.find(keys) != -1:
+				ref_number_list = stripNumbers.stripNumbers(ref_line, 0)
+				for test_line in test_content:
+					if test_line.find(keys) != -1:
+						found_op_key = 1
+						test_number_list = stripNumbers.stripNumbers(test_line, 0)
 						break
-					counter = counter + 1
-					continue
-				if refcontent[counter].find('Psi[',0,len(refcontent[counter])-1) < 0:
-					counter = counter + 1
-			testlist = stripNumbers.stripNumbers(testcontent[0], 0)
-			del testlist[0]
-			reflist = stripNumbers.stripNumbers(refcontent[counter], 0)
-			tempcounter = counter
-			counter = 4
-			testlistlen = len(testlist)
-			reflistlen = len(reflist)
-			while 2 > 1:
-				if counter == reflistlen or counter == testlistlen:
-					del refcontent[tempcounter]
-					del testcontent[0]
-					break
-				if compare_number.compare_number(testlist[counter], reflist[counter], magnum) == False:
+			if found_op_key == 0:
+				continue
+			if len(ref_number_list) != len(test_number_list):
+				return False
+			counter = 0
+			while counter < len(ref_number_list):
+				if compare_number.compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
 					return False
 				counter = counter + 1
-
-
-				
-					
-
-				
-						
-						
-
-								
+		for keys in key_words:
+			ref_number_list = []
+			test_number_list = []
+			if ref_line.find(keys) != -1:
+				found_key = 0
+				ref_number_list = stripNumbers.stripNumbers(ref_line, 0)
+				for test_line in test_content:
+					if test_line.find(keys) != -1:
+						found_key = 1
+						test_number_list = stripNumbers.stripNumbers(test_line, 0)
+						break
+				if found_key == 0:
+					print 'output file is incomplete \n'
+					return False
+				if keys != 'MagForPsi':
+					if len(ref_number_list) != len(test_number_list):
+						return False
+					counter = 0
+					while counter < len(ref_number_list):
+						if compare_number.compare_number(test_number_list[counter], ref_number_list[counter], magnum) == False:
+							return False
+						counter = counter + 1
+				if keys == 'MagForPsi':
+					if compare_number.compare_number(test_number_list[0], ref_number_list[0], magnum) == False:
+						return False			
+	return True
 			
-
+			
+		

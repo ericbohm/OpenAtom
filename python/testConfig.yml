@@ -9,7 +9,7 @@
   inputPar: cpaimd_config.p1
   inputPhy: water.input.min.$K
   outRef: ref-$K-p1.log
-  keys: [ees-nl0l0, ees-nl0l1, ees-nl1l0, ees-nl1l1]
+  keys: [ees-nl0l0, ees-nl0l1]
   numpe: [1]
 
 
