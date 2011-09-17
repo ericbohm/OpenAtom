@@ -1,4 +1,4 @@
-def config_reader(filename):
+def config_reader(filename, set_name):
 	import yaml
 	import os
 	import checkresult
@@ -61,7 +61,7 @@ def config_reader(filename):
 					for Phy_value in inputPhylist:
 						if (Phy_value.find('$T', 0, len(Phy_value)) >= 0):
 							mykey = '$T'
-						command = '../../charmrun +p$P ++local ../../OpenAtom regression/'+Par_value+' '+'regression/'+Phy_value+' > '+'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
+						command = '../charmrun +p$P ++local ../OpenAtom regression/'+Par_value+' '+'regression/'+Phy_value+' > '+'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
 # THE output files name
 						outputval = 'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
 						outputlist.append(outputval)
@@ -98,7 +98,7 @@ def config_reader(filename):
 					for Phy_value in inputPhylist:
 						if (Phy_value.find('$T', 0, len(Phy_value)) >= 0):
 							mykey = '$T'
-						command = '../../charmrun +p$P ++local ../../OpenAtom regression/'+Par_value+' '+'regression/'+Phy_value+' > '+'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
+						command = command = '../charmrun +p$P ++local ../OpenAtom regression/'+Par_value+' '+'regression/'+Phy_value+' > '+'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
 						outputval = 'temp.'+configfile[testcounter]['name']+'.'+mykey+'.$P.result'
 						outputlist.append(outputval)
 						commandlist.append(command)
@@ -128,22 +128,18 @@ def config_reader(filename):
 		outputlist = list(set(finaloutputlist))
 		outputlist.sort()
 		for value in commandlist:
+			print value
 # prepare to execute the command, change the working directory to the openatom working directory and prepare output directory
 			os.chdir('..')
 			os.chdir('build-O3')
-			a=os.popen('mkdir test-output')
-			a=os.popen('mkdir test-output/regression')
-			a=os.popen('mkdir test-output/regression/STATES_OUT')
-			os.chdir('test-output/regression')
-			os.popen('ln -s ../../../' + configfile[testcounter]['inputDir'] + '* .')
-			os.popen('ln -s ../../data/DATABASE ..')
+			os.popen('mkdir test-output')
+			os.chdir('test-output')
+			os.popen('ln -s ../../' + configfile[testcounter]['inputDir'] + '* .')
+			os.popen('ln -s ../data/DATABASE ..')
+			os.popen('sh ../../utils/setup')
+			os.popen('sh ./tidy '+set_name)
 			os.popen(value)
-# clean the working directory
-			os.popen('./tidy water')
-			os.popen('rm -r STATES_OUT')
-			os.popen('mkdir STATES_OUT')
 # change the working directory back to python directory, prepare next iteration
-			os.chdir('..')
 			os.chdir('..')
 			os.chdir('..')
 			os.chdir('python')
@@ -152,9 +148,9 @@ def config_reader(filename):
 		counter = 0
 		while counter < lengh:
 # output files' path
-			testoutput = '../build-O3/test-output/regression/' + outputlist[counter]
+			testoutput = '../build-O3/test-output/' + outputlist[counter]
 # reference files' path
-			reffile = '../build-O3/test-output/regression/regression/' + refdict[outputlist[counter]]
+			reffile = '../build-O3/test-output/regression/' + refdict[outputlist[counter]]
 			print 'comparing file :' + outputlist[counter]
 # check the results
 			test_result = checkresult.checkresult(testoutput, reffile, configfile[0]['iternum'], configfile[0]['numSigDigits'])
@@ -180,7 +176,8 @@ def config_reader(filename):
 	print '################################################################'
 import sys
 configfilename = sys.argv[1]
-config_reader(configfilename)
+set_name = sys.argv[2]
+config_reader(configfilename, set_name)
 				
 
 
