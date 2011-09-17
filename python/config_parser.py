@@ -163,6 +163,8 @@ def config_reader(filename, set_name):
 		testcounter=testcounter + 1
 # clear the {output file, corresponding reference file} pair dictionary, prepare for the next test iteration
 		refdict.clear()
+		os.popen('rm -rf ../build-O3/test-output/regression')
+		os.popen('rm ../build-O3/DATABASE')
 	print '\n'
 	print '################################################################'
 	print '				SUMMARY:'
