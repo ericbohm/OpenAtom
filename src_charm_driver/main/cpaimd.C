@@ -598,7 +598,7 @@ main::main(CkArgMsg *msg) {
 
     // make one collector per uberKmax
     CkArrayOptions enlopts(config.UberKmax);
-    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, enlopts);
+    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);
     ENLEKECollectorProxy.doneInserting();
 
 
