@@ -64,7 +64,8 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   char *dnamei           = filename_parse->dnamei;
   char *atm_crd_dir_in   = general_data->genfilenames.atm_crd_dir_in;
   int natm_tot           = mdatoms->mdclatoms_info.natm_tot;
-  int pi_beads           = mdatoms->mdclatoms_info.pi_beads; 
+  int pi_beads_true      = mdatoms->mdclatoms_info.pi_beads; 
+  int pi_beads           = 1;
   int initial_spread_opt = general_data->gensimopts.initial_spread_opt;
   double *hmat           = general_data->gencell.hmat;
   double *hmati          = general_data->gencell.hmati;
@@ -196,15 +197,14 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
     EXIT(1);
   } /* endif */
 
-  if(pi_beads_now != pi_beads) {
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+  if(pi_beads_now != pi_beads_true) {
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
     PRINTF("Number of path integral beads in\n");
     PRINTF("user specified coordinate file %s \n",fname);
     PRINTF("incompatible with class setup\n");
-    PRINTF("%d vs %d\n",pi_beads_now,pi_beads);
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("%d vs %d\n",pi_beads_now,pi_beads_true);
+    PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
     FFLUSH(stdout);
-    EXIT(1);
   } /* endif */
 
 
@@ -545,15 +545,20 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   cfree(res_typ_now,"read_hmat");
   cfree(mol_typ_now,"read_hmat");
   cfree(restart_type_spec,"read_hmat");
-  cfree(fname,"read_hmat");
 
 /*========================================================================*/
 /* XI) Done */
+
+  for(i=0;i<3;i++){
+    PRINTF("%g %g %g\n",hmat[(1+i)],hmat[(4+i)],hmat[(7+i)]);
+  }
 
   PRINTF("\n");
   PRINT_LINE_DASH;
   PRINTF("Done reading user specified atm coordinate file %s\n",fname);
   PRINT_LINE_STAR;PRINTF("\n");
+
+  cfree(fname,"read_hmat");
 
 /*========================================================================*/
    }/* end routine */

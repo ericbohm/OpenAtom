@@ -302,10 +302,11 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 //  printf("Before atm_NHC \n");  DEBUG_READ_INT
 
   if(iextended_on==1){
+      int pimd_on_now = 0; // pimd thermo setup is no longer done here
       set_atm_NHC(genensopts,genstatepoint,gensimopts,mdclatoms_info,
                   mdclatoms_pimd,mdghost_atoms,mdatom_maps,
                   mdconstrnt,mdtherm_info_bead,mdtherm_info,
-                  mdbaro,mdpar_rahman,&class_parse,tot_memory,pimd_on,
+                  mdbaro,mdpar_rahman,&class_parse,tot_memory,pimd_on_now,
                   hmat_cons_typ);
   }//endif
 
@@ -324,14 +325,13 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
 
 //========================================================================
 //   XIV) Initialize path integral transformations:
+//        This is done in constructor of PIBeadATom chare array
 
 //  printf("Before path ini \n");  DEBUG_READ_INT
-
-  if(pi_beads>1||pimd_on==1){
-    path_integral_init(mdclatoms_info,mdclatoms_pimd,mdghost_atoms, 
-                       gensimopts,mdatom_maps,mdconstrnt);
-  }//endif
-
+//  if(pi_beads>1||pimd_on==1){
+//    path_integral_init(mdclatoms_info,mdclatoms_pimd,mdghost_atoms, 
+//                       gensimopts,mdatom_maps,mdconstrnt);
+//  }//endif
 
 //========================================================================
 //   XV) malloc neigbor list memory                                     

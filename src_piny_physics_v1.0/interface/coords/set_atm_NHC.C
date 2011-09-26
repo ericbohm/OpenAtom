@@ -108,7 +108,8 @@ void set_atm_NHC(GENENSOPTS *genensopts,
   int bead_len_nhc         = mdtherm_info_bead->len_nhc;
 
   int nfree                = mdclatoms_info->nfree;
-  int pi_beads             = mdclatoms_info->pi_beads; 
+  int pi_beads_true        = mdclatoms_info->pi_beads; 
+  int pi_beads             = 1; 
   int natm_tot             = mdclatoms_info->natm_tot;
   int nghost_tot           = mdghost_atoms->nghost_tot;
   double gamma_adb         = mdclatoms_pimd->gamma_adb;

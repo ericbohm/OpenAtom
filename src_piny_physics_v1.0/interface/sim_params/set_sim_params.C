@@ -2911,16 +2911,16 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 
   iextended_on = genensopts->nvt+genensopts->npt_i
          + genensopts->npt_f;
-  cp_min_on    = gensimopts->cp_min 
-         + gensimopts->cp_wave_min 
-         + gensimopts->cp_wave_min_pimd;
+  cp_min_on = gensimopts->cp_min 
+            + gensimopts->cp_wave_min 
+            + gensimopts->cp_wave_min_pimd;
   cp_on     = gensimopts->cp
          + gensimopts->cp_wave
          + gensimopts->cp_pimd 
          + gensimopts->cp_wave_pimd
          + gensimopts->debug_cp
          + gensimopts->debug_cp_pimd;
-  pimd_on      = gensimopts->pimd + gensimopts->cp_pimd 
+  pimd_on  = gensimopts->pimd + gensimopts->cp_pimd 
          + gensimopts->cp_wave_pimd 
          + gensimopts->debug_pimd 
          + gensimopts->debug_cp_pimd
@@ -3421,6 +3421,14 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
 /*========================================================================*/
 /* VI) Path integral consistency checks */
 
+   if((pimd_on==1)&&(gensimopts->initial_spread_opt==1)){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Initial spread option to be performed off line now\n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
+  }/*endif*/
+
   if((pimd_on==1)&&(gensimopts->pi_beads<=1)){
       PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
       PRINTF("You have chosen the Path Integral option with  \n");
@@ -3592,6 +3600,18 @@ void set_sim_params_finale(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms,
    }/*endif*/
 
  }/*endif:iperd > 0*/
+
+/*========================================================================*/
+/* Reset flags because charmness of being is easier that way     */
+
+  if(pimd_on==1){
+    gensimopts->cp_wave_min   = gensimopts->cp_wave_min_pimd; 
+    gensimopts->cp            = gensimopts->cp_pimd;
+    gensimopts->cp_wave       = gensimopts->cp_wave_pimd;
+    gensimopts->cp_wave_min_pimd = 0; 
+    gensimopts->cp_pimd          = 0;
+    gensimopts->cp_wave_pimd     = 0;
+  }/*endif*/
 
 /*========================================================================*/
     }/*end routine*/ 

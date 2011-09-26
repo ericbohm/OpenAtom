@@ -30,7 +30,6 @@
 #include "../proto_defs/proto_coords_local.h"
 #include "../proto_defs/proto_handle_entry.h"
 
-#define PATH_INTEGRALS_NOT_IMPLEMENTED
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -80,7 +79,8 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   int cp_dual_grid_opt= cpopts->cp_dual_grid_opt;
 
   int natm_tot        = mdclatoms_info->natm_tot;
-  int pi_beads        = mdclatoms_info->pi_beads; 
+  int pi_beads_true   = mdclatoms_info->pi_beads; 
+  int pi_beads        = 1;
 
   long iseed          = mdvel_samp->iseed;
   long iseed2         = mdvel_samp->iseed2;
@@ -122,7 +122,7 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   int iperd           = gencell->iperd;
   double *hmat        = gencell->hmat;
 
-  int ip_start        = 1;       // hard coded because PIMD not ready
+  int ip_start        = 1; 
   int ip_end          = pi_beads;
 
   int istart          = gensimopts->istart;
@@ -148,16 +148,6 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
    if(istart==3){printf("using the `restart_posvel' restart option\n");}
    if(istart==4){printf("using the `restart_all' restart option\n");}
   PRINT_LINE_DASH;printf("\n");
-
-#ifndef PATH_INTEGRALS_IMPLEMENTED
-  if( (pimd_on==1) || (pi_beads > 1) ){
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    PRINTF("Path integrals not yet implemented in read_coord\n");
-    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-    FFLUSH(stdout);
-    EXIT(1);
-  }//endif
-#endif
 
 //========================================================================
 // II) Open the file and malloc:                                          
@@ -260,15 +250,14 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       FFLUSH(stdout);
       EXIT(1);
     } // endif 
-    if(pi_beads_now != pi_beads) {
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+    if(pi_beads_now != pi_beads_true) {
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
       PRINTF("Number of path integral beads in\n");
       PRINTF("user specified coordinate file %s \n",dnamei);
       PRINTF("incompatible with class setup\n");
       PRINTF("%d vs %d\n",pi_beads_now,pi_beads);
-      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("$$$$$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$$\n");    
       FFLUSH(stdout);
-      EXIT(1);
     } // endif 
     if(istart>2 && pi_beads > 1 && initial_spread_opt == 1){
       PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
@@ -321,12 +310,17 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       }//endif
     }//endfor : beads
 
-#ifdef PATH_INTEGRALS_IMPLEMENTED
-    if(initial_spread_opt == 1 && pi_beads>1){
-      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
-                   &iseed,&iseed2,&qseed,mdatommaps);
+    if(initial_spread_opt == 1 && pi_beads_true>1){
+//      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
+//                   &iseed,&iseed2,&qseed,mdatommaps);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Initial spread option to be performed off line now\n");
+      PRINTF("Error while reading in the %d atom coordinate\n",i);
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
-#endif
  
 //------------------------------------------------------------------
 //skip over the box

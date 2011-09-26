@@ -84,15 +84,6 @@ class MDCLATOMS_PIMD{
     p | rcut_spread;
 
     // PUP the arrays (For now, but later needs the path integral on option)
-    if(pimd_on == 1){
-
-      pup1d_int(p,&ip_lab,pi_beads);
-
-      pup1d_dbl(p,&rat1_stag,pi_beads);
-      pup1d_dbl(p,&rat2_stag,pi_beads); 
-      pup1d_dbl(p,&path_eig,pi_beads);
-      pup1d_dbl(p,&prekf,natm_tot);
-    }// endif 
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())
      state_class_out ();
@@ -130,18 +121,6 @@ class MDCLATOMS_PIMD{
                       pi_beads_res_tra_wght);
      fprintf(fp,"mdclatom_pimd: rcut_spread %lg \n",rcut_spread);
 
-     if(pimd_on == 1){
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_pimd:  ip_lab[%d] %d\n",i,ip_lab[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_pimd:  rat1_stag[%d] %.12g\n",i,rat1_stag[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_pimd:  rat2_stag[%d] %.12g\n",i,rat2_stag[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_pimd:   path_eig[%d] %.12g\n",i,path_eig[i]);}
-       for(int i=1;i<=natm_tot; i++){
-           fprintf(fp,"mdclatom_pimd:      prekf[%d] %.12g\n",i,prekf[i]);}
-     } // endif
      fclose(fp);
 
   }// end member function 

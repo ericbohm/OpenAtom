@@ -208,11 +208,8 @@ void close_intra_params(MDCLATOMS_INFO *clatoms_info,
                               natm_mall*sizeof(int),"close_intra_params")-1;
   atommaps->iatm_res_num  = (int *)crealloc(&(atommaps->iatm_res_num)[1],
                               natm_mall*sizeof(int),"close_intra_params")-1;
-  pimd_on = simopts->pimd + simopts->cp_pimd 
-          + simopts->cp_wave_pimd + simopts->cp_wave_min_pimd 
-          + simopts->debug_pimd + simopts->debug_cp_pimd;
 
-  if(clatoms_info->pi_beads>1||pimd_on==1){
+  if(clatoms_info->pi_beads>1){
    clatoms_pimd->prekf = (double *)
              cmalloc(natm_mall*sizeof(double),"close_intra_params")-1;
   }

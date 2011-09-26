@@ -40,15 +40,6 @@ class MDCLATOMS_TRAN{
     p | pi_beads;
     p | natm_tot;
     // PUP the arrays (For now, but later needs the path integral on option)
-    if(pimd_on == 1){
-      pup1d_dbl(p,&rat1_stag,pi_beads);
-      pup1d_dbl(p,&rat2_stag,pi_beads); 
-      pup1d_dbl(p,&path_eig,pi_beads);
-      pup1d_dbl(p,&x_trans,pi_beads);
-      pup1d_dbl(p,&y_trans,pi_beads);
-      pup1d_dbl(p,&z_trans,pi_beads);
-      pup1d_dbl(p,&prekf,natm_tot);
-    }// endif 
 #ifdef _PARALLEL_DEBUG_        
     if (p.isUnpacking())
      state_class_out ();
@@ -67,24 +58,6 @@ class MDCLATOMS_TRAN{
      fprintf(fp,"mdclatom_tran:  pimd_on %d\n",pimd_on);
      fprintf(fp,"mdclatom_tran:  pi_beads %d\n",pi_beads);
      fprintf(fp,"mdclatom_tran:  natm_tot %d\n",natm_tot);
-
-     if(pimd_on == 1){
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:  rat1_stag[%d] %.12g\n",i,rat1_stag[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:  rat2_stag[%d] %.12g\n",i,rat2_stag[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:   path_eig[%d] %.12g\n",i,path_eig[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:    x_trans[%d] %.12g\n",i,x_trans[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:    y_trans[%d] %.12g\n",i,y_trans[i]);}
-       for(int i=1;i<=pi_beads; i++){
-           fprintf(fp,"mdclatom_tran:    z_trans[%d] %.12g\n",i,z_trans[i]);}
-       for(int i=1;i<=natm_tot; i++){
-           fprintf(fp,"mdclatom_tran:      prekf[%d] %.12g\n",i,prekf[i]);}
-     } // endif
-     fclose(fp);
 
   }// end member function 
 //---------------------------------------------------------------------------
