@@ -25,8 +25,10 @@ PeList::PeList(int boxX, int boxY, int boxZ, int order, int maxX, int maxY, int 
 {
   if(config.torusMap==1)
   {
-      if(topoMgr==NULL)
-	  topoMgr= new TopoManager();
+    CkAssert(topoMgr!=NULL);
+    CkAssert(boxX>0);
+    CkAssert(boxY>0);
+    CkAssert(boxZ>0);
       current=0;
       sorted=false;
       size=config.numPesPerInstance;

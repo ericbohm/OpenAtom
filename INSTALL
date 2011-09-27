@@ -14,11 +14,9 @@ INSTALLATION
    config.mk.
 
    Linux Workstations	config.mk
-   Abe (NCSA)		config.abe.mk
    Blue Gene/L		config.bgl.mk
    Blue Gene/P		config.bgp.mk
    Ranger (TACC)	config.ranger.mk
-   Turing (UIUC CSE)	config.turing.mk
    XT4/XT5		config.xt5.mk
   
 3. To install Charm++, download a copy from http://charm.cs.illinois.edu

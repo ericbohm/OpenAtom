@@ -104,7 +104,6 @@ class MapTable2
     {
       maptable->dump();
     }
-
  protected:
    CkVec <intdual> *reverseMap;
    
@@ -146,7 +145,6 @@ class MapTable3
     {
       maptable->dump();
     }
-
  protected:
    CkVec <inttriple> *reverseMap;
    

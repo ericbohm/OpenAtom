@@ -89,7 +89,7 @@ extern CP           readonly_cp;
 //============================================================================
 
 bool firstInstance = true;  
-
+int numInst=0;
 // INT_MAPs are the ones actually used so
 // these are being changed to CkVec's for beads
 CkVec <int> PIBImaptable;
@@ -175,7 +175,7 @@ CkVec <CProxy_CP_VanderWaalsR>      UVdWRealProxy;
 CkVec <CProxy_CP_VanderWaalsG>      UVdWGProxy;
 
 CkVec <UberCollection>			  UberAlles;
-
+CkVec < PeList * >                        UavailProcs;
 //============================================================================
 
 
@@ -198,13 +198,14 @@ int planes_per_pe;
 CkVec < CkVec <int> > UpeUsedBySF;
 CkVec < CkVec <int> > UpeUsedByNLZ;
 CkVec < CkVec <int> > UplaneUsedByNLZ;
-PeList *availGlobR=NULL;
+
 PeList *availGlobG=NULL;
+PeList *availGlobR=NULL;
 PeList *excludePes=NULL;
 PeListFactory peList4PCmapping;
 int boxSize;
 TopoManager *topoMgr=NULL;
-
+inttriple *mapOffsets=NULL;
 //============================================================================
 
 
@@ -421,9 +422,14 @@ main::main(CkArgMsg *msg) {
                       ees_eext_opt,sim->gen_wave,sim->ncoef, sim->cp_min_opt, sim->ngrid_eext_c,
                       sim->doublepack,sim->pi_beads,sim->nkpoint,sim->ntemper,sim->nspin);
     fakeTorus        = config.fakeTorus>0;
-    CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
+
     if(fakeTorus)
-      numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
+      {
+	numPes=config.torusDimNX * config.torusDimNY * config.torusDimNZ * config.torusDimNT;
+	CkPrintf("numpes set to %d by faketorus\n",numPes);
+      }
+    CkPrintf("for numInstances %d numPes %d numPesPerInstance is %d \n",config.numInstances, config.numPes, config.numPesPerInstance);
+    mapOffsets=new inttriple[config.numInstances];
     int numSfGrps    = config.numSfGrps;  // local copies are nice
     int doublePack   = config.doublePack;
     nchareG          = config.nchareG;
@@ -578,7 +584,7 @@ main::main(CkArgMsg *msg) {
     UplaneUsedByNLZ.reserve(config.numInstances);
     UlsRhoRealProxy.reserve(config.numInstances);
     UlsRhoGProxy.reserve(config.numInstances);
-    
+    UavailProcs.reserve(config.numInstances);
     mCastGrpId = CProxy_CkMulticastMgr::ckNew(config.numMulticastMsgs);
     excludePes=NULL;
     mainProxy=thishandle;
@@ -592,7 +598,7 @@ main::main(CkArgMsg *msg) {
 
     // make one collector per uberKmax
     CkArrayOptions enlopts(config.UberKmax);
-    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, enlopts);
+    ENLEKECollectorProxy= CProxy_ENL_EKE_Collector::ckNew(config.UberImax*config.UberJmax*config.UberMmax, config.UberKmax, enlopts);
     ENLEKECollectorProxy.doneInserting();
 
 
@@ -601,6 +607,25 @@ main::main(CkArgMsg *msg) {
 // Create the parainfo group from sim
 // Initialize chare arrays for real and g-space of states 
 
+    CkPrintf("Initializing TopoManager\n");
+    if(config.fakeTorus) {
+      CkPrintf("Initializing TopoManager with fakeTorus\n");
+      topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
+				config.torusDimNZ, config.torusDimNT);
+    }
+    else {
+      topoMgr = new TopoManager();
+    }
+    CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
+             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
+             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
+             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
+    if(config.torusMap==1) {
+      PRINT_LINE_STAR; CkPrintf("\n");
+      CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
+      CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
+      PRINT_LINE_STAR; CkPrintf("\n");
+    }
 
     int l=config.Gstates_per_pe;
     int m, pl, pm;
@@ -626,24 +651,6 @@ main::main(CkArgMsg *msg) {
     //    }//endfor
 
     // multiple instance mapping breaks if there isn't a topomanager
-    CkPrintf("Initializing TopoManager\n");
-    if(config.fakeTorus) {
-      topoMgr = new TopoManager(config.torusDimNX, config.torusDimNY, 
-				config.torusDimNZ, config.torusDimNT);
-    }
-    else {
-      topoMgr = new TopoManager();
-    }
-    CkPrintf("         Torus %d x %d x %d nodes %d x %d x %d VN %d DimNT %d .........\n", 
-             topoMgr->getDimX(), topoMgr->getDimY(), topoMgr->getDimZ(),
-             topoMgr->getDimNX(), topoMgr->getDimNY(), topoMgr->getDimNZ(),
-             topoMgr->hasMultipleProcsPerNode(), topoMgr->getDimNT());
-    if(config.torusMap==1) {
-      PRINT_LINE_STAR; CkPrintf("\n");
-      CkPrintf("         Topology Sensitive Mapping being done for RSMap, GSMap, ....\n");
-      CkPrintf("            ......., PairCalc, RhoR, RhoG and RhoGHart .........\n\n");
-      PRINT_LINE_STAR; CkPrintf("\n");
-    }
     CkPrintf("Initializing PeList\n");
     
     PeList *gfoo=NULL;
@@ -701,7 +708,7 @@ main::main(CkArgMsg *msg) {
 	  {
 	    CkPrintf("Using %d, %d, %d dimensions for box %d mapping order %d\n", bx, by, bz, boxSize, order);
 	    gfoo = new PeList(bx, by, bz, order, x1, y1, z1, dimNT);	// heap it
-        peList4PCmapping = PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
+	    peList4PCmapping = PeListFactory(bx,by,bz,order,x1,y1,z1,dimNT);
 	  }
 	  else
 	  {
@@ -719,11 +726,11 @@ main::main(CkArgMsg *msg) {
       rfoo = new PeList(*gfoo);
     else
       rfoo = new PeList;				// heap it
-    
+    /* these really don't need to be different */
     availGlobG = rfoo;
     availGlobR = gfoo;
     newtime = CmiWallTimer();
-    CkPrintf("Pelist initialized in %g\n", newtime-Timer);
+    CkPrintf("Pelist initialized in %g with %d elements\n", newtime-Timer, availGlobG->count());
     // availGlobG->dump();
     Timer = newtime;
     
@@ -759,6 +766,7 @@ Per Instance startup BEGIN
 	      UberIndex thisInstanceIndex(integral, kpoint, temper, spin);
 	      thisInstance=UberCollection(thisInstanceIndex);
 	      UberAlles.push_back(thisInstance);
+
 	      //============================================================================    
 	      // Transfer parameters from physics to driver
 	      //    read in atoms : create atoms group 
@@ -847,6 +855,8 @@ Per Instance startup BEGIN
 	      if(sim->ees_nloc_on)
 		init_eesNL_chares( natm_nl, natm_nl_grp_max, doublePack, excludePes, sim, thisInstance);
 	      CmiNetworkProgressAfter(1);
+	      firstInstance=false;
+	      numInst++;
 	    }
 	  } 
 	}
@@ -1537,8 +1547,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   availGlobG->reset();
   double newtime=CmiWallTimer();
 
-  int numInst = thisInstance.getPO();
-    int x, y, z, x1, y1, z1;
+  int x, y, z, x1, y1, z1;
 
   // correction to accomodate multiple instances
   if(config.torusMap == 1) {
@@ -1569,10 +1578,19 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 	z1 = dimNZ / config.numInstances;
 	break;
     }
+   
   }
+  else
+    {
+      // just split by numInstances
+      x=numInst*config.numPesPerInstance;
+      y=0;
+      z=0;
+    }
+  mapOffsets[numInst]=inttriple(x,y,z);
 
-  GSImaptable[numInst].buildMap(nstates, nchareG);
   if (firstInstance) {
+    GSImaptable[numInst].buildMap(nstates, nchareG);
     int success = 0;
     if(config.loadMapFiles) {
       int size[2];
@@ -1598,8 +1616,7 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
     CkPrintf("GSMap created in %g\n", newtime-Timer);
   } else {
-      GSMapTable gsTable = GSMapTable(&GSImaptable[0], &GSImaptable[numInst], availGlobG, 
-		nchareG, nstates, Gstates_per_pe, config.useCuboidMap, numInst, x, y, z);
+    GSImaptable[numInst].translate(&GSImaptable[0], x,y,z, config.torusMap==1);
   }
   
   // there is only one IntMap per chare type, but each instance has
@@ -1674,9 +1691,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // state r-space
 
   // correction to accomodate multiple instances
-  RSImaptable[numInst].buildMap(nstates, nchareR);
+
 
   if(firstInstance) {
+    RSImaptable[numInst].buildMap(nstates, nchareR);
     Timer=CmiWallTimer();
     availGlobR->reset();
 
@@ -1707,9 +1725,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkPrintf("RSMap created in %g\n", newtime-Timer);
     Timer=newtime;
   } else {
-    RSMapTable RStable= RSMapTable(&RSImaptable[0], &RSImaptable[numInst], availGlobR, 
-			    nstates, nchareR, Rstates_per_pe, config.useCuboidMapRS, 
-			    &GSImaptable[0], config.nchareG, numInst, x, y, z);
+    int x=mapOffsets[numInst].getx();
+    int y=mapOffsets[numInst].gety();
+    int z=mapOffsets[numInst].getz();
+    RSImaptable[numInst].translate(&RSImaptable[0], x,y,z, config.torusMap==1);
     CkPrintf("RSMap instance %d created in %g\n", numInst, newtime-Timer);
   }
 
@@ -1890,9 +1909,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
   printf("\n");
   
-  // set firstInstance to false now
-  firstInstance = false;
-
   PRINT_LINE_DASH;
   PRINTF("Completed G-space/R-space state chare array build\n");
   PRINT_LINE_STAR;printf("\n");
@@ -1946,33 +1962,42 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
 #ifdef USE_INT_MAP
   RPPImaptable[thisInstance.getPO()].buildMap(nstates, nchareRPP);
 #endif
-
-  int success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nstates; size[1] = nchareRPP;
-    MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+  if(firstInstance)
+    {
+      int success = 0;
+      if(config.loadMapFiles) {
+	int size[2];
+	size[0] = nstates; size[1] = nchareRPP;
+	MapFile *mf = new MapFile("RPPMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
 #ifdef USE_INT_MAP
-    success = mf->loadMap("RPPMap", &RPPImaptable[thisInstance.getPO()]);
+	success = mf->loadMap("RPPMap", &RPPImaptable[thisInstance.getPO()]);
 #else
-    success = mf->loadMap("RPPMap", &RPPmaptable);
+	success = mf->loadMap("RPPMap", &RPPmaptable);
 #endif
-    delete mf;
-  }
+	delete mf;
+      }
 
-  if(success == 0) {
+      if(success == 0) {
 #ifdef USE_INT_MAP
-    RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
-				    nstates,  nchareRPP, Rstates_per_pe,
-				    boxSize, config.useCuboidMap, 
-				    config.nchareG, &GSImaptable[thisInstance.getPO()]);
+	RPPMapTable RPPtable= RPPMapTable(&RPPImaptable[thisInstance.getPO()], availGlobG, nlexcludePes, 
+					  nstates,  nchareRPP, Rstates_per_pe,
+					  boxSize, config.useCuboidMap, 
+					  config.nchareG, &GSImaptable[thisInstance.getPO()]);
 #else
-    RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
-				    nstates,  nchareRPP, Rstates_per_pe,
-				    boxSize, config.useCuboidMap, 
-				    config.nchareG, &GSmaptable);
+	RPPMapTable RPPtable= RPPMapTable(&RPPmaptable, availGlobG, nlexcludePes, 
+					  nstates,  nchareRPP, Rstates_per_pe,
+					  boxSize, config.useCuboidMap, 
+					  config.nchareG, &GSmaptable);
 #endif
-  }
+      }
+    }
+  else
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RPPImaptable[numInst].translate(&RPPImaptable[0], x,y,z, config.torusMap==1);
+    }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
   newtime=CmiWallTimer();
   CmiNetworkProgressAfter(0);
@@ -2108,6 +2133,7 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   if(!config.loadMapFiles)
   {
       availGlobR->reset();
+      // make RhoAvail based on the pes used by RS
       RhoAvail=new PeList(*availGlobR);
   }
   //------------------------------------------------------------------------
@@ -2150,30 +2176,28 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
 
   //---------------------------------------------------------------------------
   // rho RS 
-#ifdef USE_INT_MAP
-  RhoRSImaptable[thisInstance.getPO()].buildMap(nchareRhoR, config.rhoRsubplanes);
-#endif
-
-  int success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
-    MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("RhoRSMap", &RhoRSImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("RhoRSMap", &RhoRSmaptable);
-#endif
-    delete mf;
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    RhoRSMapTable RhoRStable(&RhoRSImaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable[thisInstance.getPO()], excludePes);
-#else
-    RhoRSMapTable RhoRStable(&RhoRSmaptable, RhoAvail, nchareRhoR,  config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSmaptable, excludePes);
-#endif
-  }
+  if(firstInstance)
+    {
+      RhoRSImaptable[thisInstance.getPO()].buildMap(nchareRhoR, config.rhoRsubplanes);
+      int success = 0;
+      if(config.loadMapFiles) {
+	int size[2];
+	size[0] = nchareRhoR; size[1] = config.rhoRsubplanes;
+	MapFile *mf = new MapFile("RhoRSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+	success = mf->loadMap("RhoRSMap", &RhoRSImaptable[thisInstance.getPO()]);
+	delete mf;
+      }
+      if(success == 0) {
+	RhoRSMapTable RhoRStable(&RhoRSImaptable[thisInstance.getPO()], RhoAvail, nchareRhoR, config.rhoRsubplanes, config.nstates, config.useCentroidMapRho, &RSImaptable[thisInstance.getPO()], excludePes);
+      }
+    }
+  else
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RhoRSImaptable[numInst].translate(&RhoRSImaptable[0], x,y,z, config.torusMap==1);
+    }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
   CkArrayOptions rhorsOpts(nchareRhoR, config.rhoRsubplanes);
@@ -2212,30 +2236,30 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       CkPrintf("refreshing avail list count %d less than rhog %d\n",RhoAvail->count(), nchareRhoG);
       RhoAvail->reset();
     }
-#ifdef USE_INT_MAP
-  RhoGSImaptable[thisInstance.getPO()].buildMap(nchareRhoG, 1);
-#endif
+  if(firstInstance)
+    {
+      RhoGSImaptable[thisInstance.getPO()].buildMap(nchareRhoG, 1);
+      int success = 0;
+      if(config.loadMapFiles) {
+	int size[2];
+	size[0] = nchareRhoG; size[1] = 1;
+	MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+	success = mf->loadMap("RhoGSMap", &RhoGSImaptable[thisInstance.getPO()]);
+	delete mf;
+      }
+      if(success == 0) {
+	RhoGSMapTable RhoGStable(&RhoGSImaptable[thisInstance.getPO()], RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSImaptable[thisInstance.getPO()], excludePes);
+	
+      }
+    }
+    else
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RhoGSImaptable[numInst].translate(&RhoGSImaptable[0], x,y,z, config.torusMap==1);
+    }
 
-  success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoG; size[1] = 1;
-    MapFile *mf = new MapFile("RhoGSMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("RhoGSMap", &RhoGSImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("RhoGSMap", &RhoGSmaptable);
-#endif
-    delete mf;
-  }
-
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    RhoGSMapTable RhoGStable(&RhoGSImaptable[thisInstance.getPO()], RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSImaptable[thisInstance.getPO()], excludePes);
-#else
-    RhoGSMapTable RhoGStable(&RhoGSmaptable, RhoAvail,nchareRhoG, config.useCentroidMapRho, &RhoRSmaptable, excludePes);
-#endif
-  }
 
   CProxy_RhoGSMap rhogsMap = CProxy_RhoGSMap::ckNew(thisInstance);
   CkArrayOptions rhogsOpts(nchareRhoG,1);
@@ -2275,34 +2299,32 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   //CkArrayOptions rhorhartOpts;
     
   if(ees_eext_on) {
-#ifdef USE_INT_MAP
-    RhoRHartImaptable[thisInstance.getPO()].buildMap(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
-#endif
-
-    success = 0;
-    if(config.loadMapFiles) {
-      int size[3];
-      size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
-      size[2] = nchareHartAtmT;
-      MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-      success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable[thisInstance.getPO()]);
-#else
-      success = mf->loadMap("RhoRHartMap", &RhoRHartmaptable);
-#endif
-      delete mf;
-    }
-    if(success == 0) {
-#ifdef USE_INT_MAP
+    if(firstInstance)
+      {
+	RhoRHartImaptable[thisInstance.getPO()].buildMap(nchareRhoRHart, config.rhoRsubplanes, nchareHartAtmT);
+	int success = 0;
+	if(config.loadMapFiles) {
+	  int size[3];
+	  size[0] = nchareRhoRHart; size[1] = config.rhoRsubplanes;
+	  size[2] = nchareHartAtmT;
+	  MapFile *mf = new MapFile("RhoRHartMap", 3, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+	  success = mf->loadMap("RhoRHartMap", &RhoRHartImaptable[thisInstance.getPO()]);
+	  delete mf;
+	}
+	if(success == 0) {
       RhoRHartMapTable RhoRHarttable(&RhoRHartImaptable[thisInstance.getPO()], RhoAvail, 
 				     nchareRhoRHart, config.rhoRsubplanes, 
 				     config.nchareHartAtmT, excludePes);
-#else
-      RhoRHartMapTable RhoRHarttable(&RhoRHartmaptable, RhoAvail,
-				     nchareRhoRHart, config.rhoRsubplanes, 
-				     config.nchareHartAtmT, excludePes);
-#endif
+	}
+      }
+  else
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RhoRHartImaptable[numInst].translate(&RhoRHartImaptable[0], x,y,z, config.torusMap==1);
     }
+
 
     CProxy_RhoRHartMap rhorHartMap = CProxy_RhoRHartMap::ckNew(thisInstance);
     rhorhartOpts.setMap(rhorHartMap);
@@ -2338,38 +2360,37 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
   // if there aren't enough free procs refresh the avail list;
   if(!config.loadMapFiles && nchareRhoGHart>RhoAvail->count())
     RhoAvail->reset();
-#ifdef USE_INT_MAP
-  RhoGHartImaptable[thisInstance.getPO()].buildMap(nchareRhoGHart, nchareHartAtmT);
-#endif
+  if(firstInstance)
+    {
+      RhoGHartImaptable[thisInstance.getPO()].buildMap(nchareRhoGHart, nchareHartAtmT);
+      int success = 0;
+      if(config.loadMapFiles) {
+	int size[2];
+	size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
+	MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
+	success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable[thisInstance.getPO()]);
+	delete mf;
+      }
+      if(success == 0) {
 
-  success = 0;
-  if(config.loadMapFiles) {
-    int size[2];
-    size[0] = nchareRhoGHart; size[1] = nchareHartAtmT;
-    MapFile *mf = new MapFile("RhoGHartMap", 2, size, config.numPes, "TXYZ", 2, 1, 1, 1);
-#ifdef USE_INT_MAP
-    success = mf->loadMap("RhoGHartMap", &RhoGHartImaptable[thisInstance.getPO()]);
-#else
-    success = mf->loadMap("RhoGHartMap", &RhoGHartmaptable);
-#endif
-    delete mf;
-  }
+	MapType3 *RhoRHartImaptablep=NULL;
+	if(ees_eext_on)
+	  RhoRHartImaptablep=&RhoRHartImaptable[thisInstance.getPO()];
+	RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable[thisInstance.getPO()], RhoAvail, 
+				       nchareRhoGHart, config.nchareHartAtmT,
+				       config.useCentroidMapRho, 
+				       RhoRHartImaptablep, excludePes);
+	
+      }
+    }
+  else
+    {
+      int x=mapOffsets[numInst].getx();
+      int y=mapOffsets[numInst].gety();
+      int z=mapOffsets[numInst].getz();
+      RhoGHartImaptable[numInst].translate(&RhoGHartImaptable[0], x,y,z, config.torusMap==1);
+    }
 
-  if(success == 0) {
-#ifdef USE_INT_MAP
-    MapType3 *RhoRHartImaptablep=NULL;
-    if(ees_eext_on)
-      RhoRHartImaptablep=&RhoRHartImaptable[thisInstance.getPO()];
-    RhoGHartMapTable RhoGHarttable(&RhoGHartImaptable[thisInstance.getPO()], RhoAvail, 
-				   nchareRhoGHart, config.nchareHartAtmT,
-				   config.useCentroidMapRho, 
-				   RhoRHartImaptablep, excludePes);
-#else
-    RhoGHartMapTable RhoGHarttable(&RhoGHartmaptable, RhoAvail, nchareRhoGHart,
-				   config.useCentroidMapRho, &RhoRHartmaptable,
-				   excludePes);
-#endif
-  }
 
   CProxy_RhoGHartMap rhogHartMap = CProxy_RhoGHartMap::ckNew(thisInstance);
   CkArrayOptions rhoghartOpts(nchareRhoGHart, nchareHartAtmT);

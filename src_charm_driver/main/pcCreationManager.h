@@ -3,11 +3,9 @@
 #include "paircalc/pcConfig.h"
 #include "orthog_ctrl/orthoConfig.h"
 #include "load_balance/PeList.h"
-
+#include "load_balance/IntMap.h"
 #ifndef PC_CREATION_MANAGER_H
 #define PC_CREATION_MANAGER_H
-
-class MapType2;
 
 namespace cp {
     namespace startup {

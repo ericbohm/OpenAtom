@@ -4,7 +4,7 @@
 
 2\ Run the program
 	2.1 Make sure that '*.py' and '*.yml' are in the same folder
-	2.2 at the terminal, type 'python config_parser.py'. Program will read from the config file, lanuch the testing and compare the output files with ref files.
+	2.2 at the terminal, type 'python config_parser.py > summary'. Program will read from the config file, lanuch the testing and compare the output files with ref files and store the results into the summary file.
 
 3\ Rules for config file
  	3.1 Every entry should start with '- '.
@@ -14,3 +14,16 @@
 	3.5 There are at least two entries in each config file. The first one should contain general config infomation, the following keys are required in the first entry: numSigDigits (significant digit), iternum (iteration number). Testing entried should start from entry 2, the following keys are required for testing entry: machine names(use '[]' if there is no machine name.); inputDir; inputPar; inputPhy; outRef; keys; numpe (number of CPU).
 	3.6 Using '%K' to represent the values in key list; '%T' to represent the values in test name; '%P' to represent the values in numpe.
 	3.7 Please check 'testConfig.yml' for the sample of config files.
+
+4\ python files' function description:
+	4.1 stripnumber.py : stripNumbers(inputstr, method), this function read a string and strip the numbers inside that string, stores them into an array and return the array. if method == 0 then the numbers in the array are float numbers; if method == 1 then the numbers in the array are integer numbers, if method == 2 then the numbers in the array are strings.
+
+	4.2 snippet.py : snippet(num, inputfile, outputfile), this function snips the specified iteration result from the inputfile and stores it into outputfile
+	4.3 compare_number.py : compare_number(num1, num2, numsigdig), this function compares two numbers to see if they equal to each other. num1 = the first number, num2 = the second number, numsigdig = significant digit.
+
+	4.4 compare_iteration.py : compare_iteration(testoutput, reffile, magnum): this function compares a snipped testoutput file with reference file. magnum = magnificent number. This function depends on compare_number.py and stripNumbers.py
+
+	4.5 checkresult.py : checkresult(testoutput, reffile, iternum, magnum): this function snips the speicfied iteration, store it into a temp file and compares it with the reference file. This function depends on compare_iteration.py and snippet.py
+
+	4.6 config_parser.py : config_reader(filename) : this function reads the config file and launchs the specified tests, compares the results and prints out the summary
+

@@ -8,6 +8,7 @@ if [ -f $sysCoords ] ; then
     if [ ! -d ATOM_COORDS_IN ] ; then
 	mkdir -p ATOM_COORDS_IN/Bead.0_Temper.0
 	mkdir -p ATOM_COORDS_OUT/Bead.0_Temper.0
+	mkdir -p TEMPER_OUT/Temper.0
 	if [ -h $sysCoords ] ; then
 	    echo "making new symlink"
 	    ln -s ../../`readlink $sysCoords` ATOM_COORDS_IN/Bead.0_Temper.0/$sysCoords
