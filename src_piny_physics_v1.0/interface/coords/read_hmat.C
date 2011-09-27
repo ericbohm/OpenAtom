@@ -545,7 +545,6 @@ void read_hmat(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   cfree(res_typ_now,"read_hmat");
   cfree(mol_typ_now,"read_hmat");
   cfree(restart_type_spec,"read_hmat");
-  cfree(fname,"read_hmat");
 
 /*========================================================================*/
 /* XI) Done */
