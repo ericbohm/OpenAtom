@@ -1931,7 +1931,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
                     int *k_x,int *k_y,int *k_z,int cp_min_opt,
                     int sizeX,int sizeY,int sizeZ,char *psiName,char *vpsiName,
                     int ibinary_write_opt,int iteration, int istate,
-                    int ispin, int ikpt, int itemper, int ibead)
+                    int ispin, int ikpt, int ibead, int itemper)
 //=============================================================================
   { //begin rotunie
 //=============================================================================
@@ -1944,7 +1944,7 @@ void writeStateFile(int ncoef,complex *psi,complex *vpsi,
 
   if(istate==1){
     char fname[1000];
-    sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/TimeStamp",config.dataPathOut,ispin,ikpt,itemper,ibead);
+    sprintf (fname, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/TimeStamp",config.dataPathOut,ispin,ikpt,ibead,itemper);
     FILE *fp = fopen(fname,"w");
      fprintf(fp,"time step = %d\n",iteration);
     fclose(fp);

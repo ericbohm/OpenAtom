@@ -2342,12 +2342,12 @@ void CP_State_GSpacePlane::collectFileOutput(GStateOutMsg *msg){
      char psiName[400]; char vpsiName[400];
 
      sprintf(psiName,  "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/state%d.out",
-                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
+                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
      sprintf(vpsiName, "%s/Spin.%d_Kpt.%d_Bead.%d_Temper.%d/vState%d.out",
-                       config.dataPathOut,ispin,ikpt,itemper,ibead,ind_state);
+                       config.dataPathOut,ispin,ikpt,ibead,itemper,ind_state);
      writeStateFile(npts_tot,tpsi,tvpsi,tk_x,tk_y,tk_z,cp_min_opt,
                     sizeX,sizeY,sizeZ,psiName,vpsiName,ibinary_write_opt,
-                    myiteration,ind_state,ispin,ikpt,itemper,ibead);
+                    myiteration,ind_state,ispin,ikpt,ibead,itemper);
      fftw_free(tpsi); tpsi  = NULL;
      fftw_free(tvpsi);tvpsi = NULL;
      fftw_free(tk_x); tk_x  = NULL;
