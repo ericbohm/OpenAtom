@@ -1,5 +1,5 @@
 =======================================================
-Instructions:
+Instructions: doublePack states to singlePack states
 -------------------------------------------------------
    1) ./compile.sh
    2) ./convert.x input_file

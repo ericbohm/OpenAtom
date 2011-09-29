@@ -58,7 +58,7 @@ int main (int argc, char *argv[]){
     fscanf(fp,"%d %d",&nstate,&ibinary); readtoendofline(fp);
     fscanf(fp,"%s ",directory); readtoendofline(fp);
   fclose(fp);
-  PRINTF("Finished reading input parameters from spread.input\n\n");
+  PRINTF("Finished reading input parameters from %s\n\n",argv[1]);
 
   PRINTF("I am converting %d doublePacked states to singlePack form\n",nstate);
   PRINTF("I am assuming doublePacked states are stored in the directory %s\n",directory);

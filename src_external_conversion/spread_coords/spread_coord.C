@@ -104,7 +104,7 @@ int main (int argc, char *argv[]){
     fscanf(fp,"%lf %lf",&rcut,&T_ext); readtoendofline(fp);
     fscanf(fp,"%s %s %s",fnameIn,dnameOut,fnameOut);
   fclose(fp);
-  PRINTF("Finished reading input parameters from spread.input\n\n");
+  PRINTF("Finished reading input parameters from %s\n\n",argv[1]);
 
   PRINTF("Spreading out to %d beads at T=%gK ",pi_beads,T_ext);
   PRINTF("keeping the ring polymer diameters < %gA\n\n",rcut);
