@@ -17,8 +17,11 @@ typedef struct complex{
 #define PRINTF printf
 #define EXIT(N) {exit(N);}
 
-int main();
+//--------------------------------------------------------------------------
+
+int main (int , char *[]);
 void flip_data_set(int , int *, int *, int *,complex *);
+void readtoendofline(FILE *);
 
 //==========================================================================
 
@@ -26,7 +29,7 @@ void flip_data_set(int , int *, int *, int *,complex *);
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-int main(){
+int main (int argc, char *argv[]){
 //==========================================================================
 
   int nktot,nktot2,n1,n2,n3;
@@ -36,18 +39,38 @@ int main(){
   char directory[1024];
   FILE *fp;
 
-//==========================================================================
+//=========================================================================
+//             Check for input file                                 
 
-  int nstate = 128;
-  int ibinary=0;
-  sprintf(directory,"Spin.0_Kpt.0_Bead.0_Temper.0");
+  if(argc < 2) {
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("No input file specified\n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }/*endif*/
+
+//==========================================================================
+// Read the input file
+
+  int nstate,ibinary;
+  PRINTF("\nReading input parameters from %s\n",argv[1]);
+  fp = fopen(argv[1],"r");
+    fscanf(fp,"%d %d",&nstate,&ibinary); readtoendofline(fp);
+    fscanf(fp,"%s ",directory); readtoendofline(fp);
+  fclose(fp);
+  PRINTF("Finished reading input parameters from spread.input\n\n");
 
   PRINTF("I am converting %d doublePacked states to singlePack form\n",nstate);
   PRINTF("I am assuming doublePacked states are stored in the directory %s\n",directory);
   PRINTF("I will write the singlePacked states in the directory %s_flipped\n",directory);
   PRINTF("I am using the binary option %d : (0/1) = (ascii/binary)\n",ibinary);
-  PRINTF("The user can change the defaults on lines 41-43 of the source\n");
-  PRINTF("The motivated user can write a nice input file and check in\n");
+
+  if(nstate<0 || ibinary<0 || ibinary>1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Bad input data \n");
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
 
 //==========================================================================
 // Read in the header information and malloc some memory
@@ -302,4 +325,24 @@ void flip_data_set(int nktot, int *kx, int *ky, int *kz,complex *data)
 
 //==========================================================================
     }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+// readtoendofline: Function to read to end of line in read_coord files     
+//==========================================================================
+void readtoendofline(FILE *fp){
+  int eol,ch;
+  eol = (int )'\n';
+  ch = eol+1;
+  while(ch!=eol){ch=fgetc(fp);}
+  if(ch==EOF){
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("ERROR: Unexpected end of file reached          \n");
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
+      EXIT(1);
+  }//endif
+}// end routine 
 //==========================================================================
