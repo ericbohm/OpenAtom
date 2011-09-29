@@ -1,0 +1,2 @@
+128 0                            :   number of states  binary option (0/1) = (ascii/binary)
+Spin.0_Kpt.0_Bead.0_Temper.0     :   directory where states to be flipped are stored

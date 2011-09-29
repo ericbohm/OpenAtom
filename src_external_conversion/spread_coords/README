@@ -1,0 +1,10 @@
+=======================================================
+Instructions:
+-------------------------------------------------------
+   1) ./compile.sh
+   2) ./make_directory.sh ATOMS_IN  7
+     (./make_directory.sh top_level_dir  numbeads-1)
+   3) ./spread.x input_file
+   4) example input_file=spread.input
+   5) example coordinate file = coords.in
+=======================================================
