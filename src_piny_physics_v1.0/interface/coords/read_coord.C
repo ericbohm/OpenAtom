@@ -427,12 +427,17 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
       }//endif
     }//endfor:pi_beads
 
-#ifdef PATH_INTEGRALS_IMPLEMENTED
     if(initial_spread_opt == 1&&pi_beads>1){
-      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
-                   &iseed,&iseed2,&qseed,mdatommaps);
+//      spread_coord(mdclatoms_info,clatoms_pos,x_tmp,y_tmp,z_tmp,
+//                   &iseed,&iseed2,&qseed,mdatommaps);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      PRINTF("Initial spread option to be performed off line now\n");
+      PRINTF("Error while reading in the %d atom coordinate\n",i);
+      PRINTF("in file \"%s\"\n",dnamei);
+      PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
+      FFLUSH(stdout);
+      EXIT(1);
     }//endif
-#endif
 
 //------------------------------------------------------------------
 // Skip over the box
@@ -873,16 +878,14 @@ void  read_coord(MDINTEGRATE *mdintegrate,MDATOMS *mdatoms,MDINTER *mdinter,
   }//endif
 
 //========================================================================
-//  IX) Calculate the spread                                          
+//  IX) Calculate the spread : done elsewhere
 
-#ifdef PATH_INTEGRALS_IMPLEMENTED
-  mdinteract->spread     = 0.0;
-  mdinteract->spread_now = 0.0;
-  if( (pi_beads>1) || (pimd_on==1) ){
-    get_pimd_spread(mdclatoms_info,clatoms_pos,&(mdinteract->spread_now));
-    mdinteract->spread = mdinteract->spread_now;
-  }//endif
-#endif
+//  mdinteract->spread     = 0.0;
+//  mdinteract->spread_now = 0.0;
+//  if( (pi_beads>1) || (pimd_on==1) ){
+//    get_pimd_spread(mdclatoms_info,clatoms_pos,&(mdinteract->spread_now));
+//    mdinteract->spread = mdinteract->spread_now;
+//  }//endif
 
 //========================================================================
 //  X) Close file, free arrays                                             
