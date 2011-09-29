@@ -190,6 +190,7 @@ void InstanceController::printEnergyEexc(CkReductionMsg *msg)
   FILE *temperScreenFile = UatomsGrpProxy[thisIndex].ckLocalBranch()->temperScreenFile;
   int iteration= UatomsGrpProxy[thisIndex].ckLocalBranch()->iteration;
   fprintf(temperScreenFile,"Iter [%d] EKE         = %5.8lf\n", iteration, d);
+  fflush(temperScreenFile);
   UgSpacePlaneProxy[thisIndex](0,0).computeEnergies(ENERGY_EKE, d);
 
 }
