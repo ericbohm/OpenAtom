@@ -9,5 +9,6 @@
   inputPar: cpaimd_config.sgrain-032.p1
   inputPhy: water.input.min.ees-nl1l1
   outRef: ref-ees-nl1l1-p1.log
-  numpe: [2]
+  numpe: [1, 2]
+  set_name = water
 

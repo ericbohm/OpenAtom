@@ -9,8 +9,9 @@ def summary_generator(filename):
 	summary_True = []
 	summary_False = []
 	for folder_name in keylist:
-		outputfile = '../build-O3/'+config_dict[folder_name][13]+'/'+folder_name+'/'+config_dict[folder_name][7]
-		reffile = '../build-O3/'+config_dict[folder_name][13]+'/'+folder_name+'/'+config_dict[folder_name][10]+'/'+config_dict[folder_name][6]
+		info_dict = config_dict[folder_name]
+		outputfile = info_dict['executable_path']+'/'+info_dict['output_folder']+'/'+folder_name+'/'+info_dict['test_output']
+		reffile = info_dict['executable_path']+'/'+info_dict['output_folder']+'/'+folder_name+'/regression/'+info_dict['outRef']
 		print 'comparing test :' + folder_name
 		iternum = config_dict['general_info']['iternum']
 		numSigDigits = config_dict['general_info']['numSigDigits']

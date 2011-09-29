@@ -1,4 +1,4 @@
-def config_reader(filename, set_name):
+def config_reader(filename, executable_path):
 	import yaml
 	stream = file(filename)
 	configfile = yaml.load(stream)
@@ -8,7 +8,7 @@ def config_reader(filename, set_name):
 	testnum = len(configfile)
 	testcounter = 1
 	prefix_to_execute = '../../'
-	prefix_to_data = 'regression/'
+	data_path = 'regression/'
 	prefix_to_top = '../'
 	output_folder_name = 'test-output'
 	prefix_to_output_folder = '../build-O3/'+output_folder_name+'/'
@@ -19,29 +19,28 @@ def config_reader(filename, set_name):
 		numpelist = configfile[testcounter]['numpe']
 		if configfile[testcounter].has_key('keys'):
 			keylist = configfile[testcounter]['keys']
+		if configfile[testcounter].has_key('keys') == False:
+			keylist.append('default_key')
 		for key in keylist:
 			for numpe in numpelist:
-				info_list = []
+				info_dict = {}
 				test_name = configfile[testcounter]['name'];
 				folder_name = test_name + '_' + key + '_' + str(numpe)
-				info_list.append(key);
-				info_list.append(test_name);
-				info_list.append(configfile[testcounter]['machine names'])
-				info_list.append(configfile[testcounter]['inputDir'])
-				info_list.append(configfile[testcounter]['inputPar'].replace('$K', key).replace('$P', str(numpe)))
-				info_list.append(configfile[testcounter]['inputPhy'].replace('$K', key).replace('$P', str(numpe)))
-				info_list.append(configfile[testcounter]['outRef'].replace('$K', key).replace('$P', str(numpe)))
+				info_dict['key'] = key
+				info_dict['test_name'] = test_name
+				info_dict['machine_name'] = configfile[testcounter]['machine names'];
+				info_dict['inputDir'] = configfile[testcounter]['inputDir']
+				info_dict['inputPar'] = configfile[testcounter]['inputPar'].replace('$K', key).replace('$P', str(numpe))
+				info_dict['inputPhy'] = configfile[testcounter]['inputPhy'].replace('$K', key).replace('$P', str(numpe))
+				info_dict['outRef'] = configfile[testcounter]['outRef'].replace('$K', key).replace('$P', str(numpe))
 				testoutput = folder_name + '.result'
-				info_list.append(testoutput)
-				info_list.append(str(numpe))
-				info_list.append(prefix_to_execute)
-				info_list.append(prefix_to_data)
-				info_list.append(prefix_to_top)
-				info_list.append(set_name)
-				info_list.append(output_folder_name)
-				info_list.append(prefix_to_output_folder)				
-				config_dict[folder_name] = info_list;
-				info_list = []
+				info_dict['test_output'] = testoutput
+				info_dict['numpe'] = str(numpe)
+				info_dict['executable_path'] = executable_path
+				info_dict['set_name'] = configfile[testcounter]['set_name']
+				info_dict['output_folder'] = output_folder_name
+				info_dict['data_path'] = data_path		
+				config_dict[folder_name] = info_dict
 		testcounter = testcounter + 1
 	return config_dict					
 

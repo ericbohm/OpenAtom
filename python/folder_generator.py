@@ -1,27 +1,45 @@
 def folder_generator(config_dict):
 	import os
+	testscript = open('testscript', 'a')
 	folder_list = config_dict.keys()
 	folder_list.remove('general_info')
+	executable_path = config_dict[folder_list[0]]['executable_path']
+	os.chdir(executable_path)
+	
+	output_folder = config_dict[folder_list[0]]['output_folder']
+	command = 'mkdir ' + output_folder
+	os.popen(command)
+	testscript.write(command + '\n')
+
+	os.chdir(output_folder)
+	testscript.write('cd ' + output_folder + '\n')
 # [0] = key, [1] = testname, [2] = machinename, [3] = inputDir, [4] = inputPar, [5] = inputPhy, [6] = outRef, [7] = testoutput, [8] = numpe, [9] = prefix_to execute, [10] = prefix_to_data, [11] = prefix_to_top, [12] = set_name, [13] = output_folder_name, [14] = prefix_to_output_folder, [15] = command, 
 	for folder_name in folder_list:
-		to_execute = config_dict[folder_name][9]
-		os.chdir('../build-O3')
-		command = 'mkdir ' + config_dict[folder_name][13]
-		os.popen(command)
-		os.chdir(config_dict[folder_name][13])
+		info_dict = config_dict[folder_name]
+
 		command = 'mkdir ' + folder_name
-		print command
 		os.popen(command)
+		testscript.write(command + '\n')
+
 		os.chdir(folder_name)
-		command = 'ln -s ../../../' + config_dict[folder_name][3] + '* .'
+		testscript.write('cd ' + folder_name + '\n')
+
+		command = 'ln -s ../../../' + info_dict['inputDir'] + '* .'
 		os.popen(command)
+		testscript.write(command + '\n')
+
 		command = 'ln -s ../../data/DATABASE ..'
 		os.popen(command)
+		testscript.write(command + '\n')
+
 		command = 'sh ../../../utils/setup'
 		os.popen(command)
-		command = 'sh ./tidy '+config_dict[folder_name][12]
+		testscript.write(command + '\n')
+
+		command = 'sh ./tidy '+info_dict['set_name']
 		os.popen(command)
+		testscript.write(command + '\n')
+
 		os.chdir('..')
-		os.chdir('..')
-		os.chdir('..')
-		os.chdir('python')
+		testscript.write('cd ..\n')
+	testscript.close()
