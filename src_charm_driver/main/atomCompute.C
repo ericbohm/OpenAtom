@@ -6,7 +6,7 @@
  **/
 //==============================================================================
 
-#include "groups.h"
+#include "atomCompute.h"
 #include "eesCache.h"
 #include "cp_state_ctrl/CP_State_GSpacePlane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
@@ -57,23 +57,14 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  *
  */
 //==============================================================================
-AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
+AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
                    int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, 
-                   UberCollection _thisInstance) : thisInstance(_thisInstance) 
+			   UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), isokin_opt(isokin_opt_), kT(kT_), thisInstance(_thisInstance) 
 //==============================================================================
   {// begin routine
 //==============================================================================
 // parameters, options and energies
-  
-    natm            = n;
-    natm_nl         = n_nl;
-    len_nhc         = len_nhc_;
-    iextended_on    = iextended_on_;
-    cp_min_opt      = cp_min_opt_;
-    cp_wave_opt     = cp_wave_opt_;
-    isokin_opt      = isokin_opt_;
-    iteration       = 0;
-    kT              = kT_;
+    handleForcesCount=0;
     ktemps          = 0;
     pot_ewd_rs      = 0.0;
     eKinetic        = 0.0;
@@ -165,7 +156,7 @@ AtomsGrp::AtomsGrp(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_o
  *
  **/
 //==============================================================================
-AtomsGrp::~AtomsGrp(){
+AtomsCompute::~AtomsCompute(){
      delete [] atoms;
      delete [] atomsNHC;
      fftw_free(fastAtoms.x);
@@ -183,27 +174,27 @@ AtomsGrp::~AtomsGrp(){
 
 
 //==========================================================================
-// you are bead root if you are the processor at the base of the
-// GSP = GSP(0,0) for your Instance, which we don't know until GSP is mapped
-// hence the 2nd phase init since atomsgrp is made before GSP
+// Bead root is the 0th element.  The AtomsCompute map will lookup the
+// GSP map to ensure that the 0th AtomCompute is co-mapped with GSP(0,0) in
+// each bead instance.  
+
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 
-void AtomsGrp::init()
+void AtomsCompute::init()
 {
-  // you are bead root if you are the processor at the base of the
-  // GSP for your Instance, which we don't know until GSP is mapped
-  // hence the 2nd phase init since atomsgrp is made before GSP
+// Bead root should be the 0th element.  The AtomsCompute map will use
+// the GSP map to ensure that the 0th AtomCompute is co-mapped
+// with GSP(0,0) in each bead instance.
   const int offset=thisInstance.getPO();
   amBeadRoot      = (CkMyPe()==GSImaptable[offset].get(0,0));
   amZerothBead    = (thisInstance.idxU.x==0);
   
-
   if(numPIMDBeads>1)
     {
-      // make lists of group IDs and their Commander PE
-      CkGroupID *atomsgrpids= new CkGroupID[numPIMDBeads];
+      // make lists of Array IDs and their Commander PE
+      CkArrayID *atomsArrayids= new CkArrayID[numPIMDBeads];
       int **elems  = new int*[numPIMDBeads];
       int *naelems = new int[numPIMDBeads];
       for(int i=0;i<numPIMDBeads;i++){
@@ -213,10 +204,10 @@ void AtomsGrp::init()
 	  instance.idxU.x=0;
 	  int offset=instance.calcPO();
 	  elems[i][0]=GSImaptable[offset].get(0,0);
-	  atomsgrpids[i]=UatomsGrpProxy[offset].ckGetGroupID();
+	  atomsArrayids[i]=UatomsGrpProxy[offset].ckGetArrayID();
 	  //CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
       }//endfor
-      proxyHeadBeads=CProxySection_AtomsGrp(numPIMDBeads, atomsgrpids, elems, naelems);
+      proxyHeadBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elems, naelems);
       delete [] naelems;
       for(int i=0;i<numPIMDBeads;i++){delete [] elems[i];}
   }//endif
@@ -225,108 +216,26 @@ void AtomsGrp::init()
   }//end routine
 //==============================================================================
 
-//==============================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==============================================================================
-/** trigger force computation
- * based on real forces available in each processor's chare then contribute to
- * global group reduction of all atom forces (within this bead) -> recvContribute
- **/
-//==============================================================================
-void AtomsGrp::startRealSpaceForces(){
-//==========================================================================
-#ifdef _CP_DEBUG_ATMS_
-   CkPrintf("{%d}[%d] AtomsGrp::startRealSpaceForces\n ", thisInstance.proxyOffset, CkMyPe());     
-#endif
-//==========================================================================
-// Atom parallelization : bad for temperer>1 and/or bead>1 but not wrong
-
-   int myid   = CkMyPe();
-   int nproc  = CkNumPes();
-
-//==========================================================================
-// Get the real space atom forces
-
-   pot_ewd_rs  = 0.0;
-   vself       = 0.0;
-   vbgr        = 0.0;
-   potPerdCorr = 0.0;
-
-#ifndef _CP_DEBUG_PSI_OFF_
-#ifndef _CP_DEBUG_SCALC_ONLY_ 
-   if(myid<natm-1){
-     CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
-   }//endif
-#endif
-#endif
-
-//==========================================================================
-// Everybody contributes to the reduction (see contribute forces comment)
-
-#ifdef _CP_DEBUG_ATMS_
-   CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
-#endif
-   contributeforces();
-   
-//==========================================================================
-  }//end routine
-//==========================================================================
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/** Contributeforces
- * Every proc assigned an electronic structure chare of the bead=i temper=j 
- * (i,j) uber instance that generates an atom force MUST be in (i,j) atom group 
- * and so contribute to the reduction below. Otherwise, all the pieces of the 
- * atom forces of (i,j) will not be collected and the user will be very sad!
- **/ 
-//==========================================================================
-void AtomsGrp::contributeforces(){
-//==========================================================================
-
-  int i,j;
-  int myid     = CkMyPe();
-
-  copyFastToSlow();
-  for(i=0,j=0; i<natm; i++,j+=3){
-    ftot[j]   = atoms[i].fx;
-    ftot[j+1] = atoms[i].fy;
-    ftot[j+2] = atoms[i].fz;
-  }//endfor
-  ftot[3*natm]  =pot_ewd_rs;
-  ftot[3*natm+1]=potPerdCorr;
-
-#ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
-#endif
-  CkCallback cb(CkIndex_AtomsGrp::recvContribute(NULL), UatomsGrpProxy[thisInstance.proxyOffset]);
-  contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
-
-//==========================================================================
-  }//end routine
-//==========================================================================
-
 
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 /** recvContribute
- * Every group member has all the forces at present.
+ * Every Array member has all the forces at present.
  */
 //==========================================================================
-void AtomsGrp::recvContribute(CkReductionMsg *msg) {
+void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 //============================================================
-//  CkPrintf("{%d}[%d] AtomsGrp::recvContribute\n ", thisInstance.proxyOffset, CkMyPe());     
+//  CkPrintf("{%d}[%d] AtomsCompute::recvContribute\n ", thisInstance.proxyOffset, thisIndex);     
 //==========================================================================
 // Local pointers
 
   int i,j;
-  int myid        = CkMyPe();
+  int myid        = thisIndex;
   double *ftot    = (double *) msg->getData();
   EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-
+  if(++handleForcesCount<2) // our rs forces we got here first
+    copyFastToSlow();
 //============================================================
 // Copy out the reduction of energy and forces and nuke msg
 
@@ -350,15 +259,67 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
 #ifdef _CP_DEBUG_ATMS_EXIT_
   if(myid==0){CkExit();}
 #endif
+  if(handleForcesCount==2)
+    handleForces();
+}
 
-//=================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** recvContributeForces
+ * Every Array member has all the forces at present.
+ */
+//==========================================================================
+void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
+//============================================================
+//  CkPrintf("{%d}[%d] AtomsCompute::recvContributeForces\n ", thisInstance.proxyOffset, CkMyPe());     
+//==========================================================================
+// Local pointers
+
+  int i,j;
+  int myid        = thisIndex;
+  double *ftot    = (double *) msg->getData();
+  EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+
+  if(++handleForcesCount<2) // our non-rs forces we got here first
+    copyFastToSlow();
+//============================================================
+// Copy out the reduction of energy and forces and nuke msg
+
+  double fmag = 0.0;
+  for(i=0,j=0;i<natm;i++,j+=3){
+    atoms[i].fx = ftot[j];    atoms[i].fy = ftot[j+1];
+    atoms[i].fz = ftot[j+2];
+    fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
+#ifdef _CP_DEBUG_ATMS_
+    if(myid==0){
+      CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
+    }//endif
+#endif
+  }//endfor
+  fmag /= (double)(3*natm);
+  fmag  = sqrt(fmag);
+  delete msg;
+
+#ifdef _CP_DEBUG_ATMS_EXIT_
+  if(myid==0){CkExit();}
+#endif
+
+  if(handleForcesCount==2)
+    handleForces();
+}
+
+
+void atomCompute::handleForces()
+  {//=================================================================
 // Model forces  : This is fine for path integral checking too
-
+    handleForcesCount=0;
 #ifdef  _CP_DEBUG_PSI_OFF_
   double omega    = (0.0241888/15.0); // 15 fs^{-1}
   double omega2   = omega*omega;
   int npts        = 200;
-
   if(iteration==0){
     px = new double *[natm];
     for(i =0;i<natm;i++){
@@ -410,35 +371,35 @@ void AtomsGrp::recvContribute(CkReductionMsg *msg) {
   }//end routine
 //==========================================================================
 
-
 //==========================================================================
 /**
  * Integrate atoms.  This is parallelized so that a subset of the atoms are 
- * computed on each processor and their results sent to AtmGroup->acceptAtoms(). 
- * It is badly parallelized for nbead>1 and/or ntemperer>1 and large nproc
+ * computed on each processor and their results sent to AtomCompute->acceptAtoms(). 
  */
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::integrateAtoms(){
+void AtomsCompute::integrateAtoms(){
 //============================================================
 #ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",CkMyPe(),natm);
+  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",thisIndex,natm);
 #endif
 //============================================================
 // Local pointers
 
    int  mybead = thisInstance.idxU.x+1;
-   int nproc   = CkNumPes();
-   int myid    = CkMyPe();
+   int myid    = thisIndex;
 
    EnergyGroup *eg     = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
 
 //=================================================================
-// Atom parallelization : Inefficient if nbead>1 and/or ntemperer>1
+// Atom parallelization: This decompostion is done dynamically because
+// its a pretty trivial choice and it allows us to support atom
+// migration into and out of the QM region as long that atom migration
+// mechanism updates natm and the atom array accordingly.
 
-   int div     = (natm / nproc);
-   int rem     = (natm % nproc);
+   int div     = (natm / nChareAtoms);
+   int rem     = (natm % nChareAtoms);
    int natmStr = div*myid;
    int natmNow = div;
    if(myid>=rem){natmStr += rem;}
@@ -460,7 +421,7 @@ void AtomsGrp::integrateAtoms(){
 // DEBUGGING : Compute the distribution function for model
 
 #ifdef  _CP_DEBUG_PSI_OFF_
-   if(nproc>1 && numPIMDBeads>1){
+   if(nChareAtoms>1 && numPIMDBeads>1){
      CkPrintf("Harmonic oscillator debug test currently broken for PIMD\n");
      CkPrintf("Need a reduction over beads of the chain energy\n");
      CkExit();
@@ -568,7 +529,7 @@ void AtomsGrp::integrateAtoms(){
       sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,potPIMDChain_loc,natmNow,natmStr,natmEnd);
     }//endif
   }else{
-    // in the minimization case the atoms don't move so we don't update the coordinates.
+    // in the minimization case the atoms don't move so we don't update the coordinate
     eKinetic                    = 0.0;
     eKineticNhc                 = 0.0;
     potNhc                      = 0.0;
@@ -590,6 +551,85 @@ void AtomsGrp::integrateAtoms(){
    }//end routine
 //==========================================================================
 
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/** trigger force computation
+ * based on real forces available in each processor's chare then contribute to
+ * global group reduction of all atom forces (within this bead) -> recvContribute
+ **/
+//==============================================================================
+void AtomsCompute::startRealSpaceForces(){
+//==========================================================================
+#ifdef _CP_DEBUG_ATMS_
+   CkPrintf("{%d}[%d] AtomsCompute::startRealSpaceForces\n ", thisInstance.proxyOffset, thisIndex);     
+#endif
+//==========================================================================
+// Atom parallelization : same as for integrate
+
+   int myid   = thisIndex;
+   int nproc  = nChareAtoms;
+
+//==========================================================================
+// Get the real space atom forces plus these 4 quantities
+
+   pot_ewd_rs  = 0.0;
+   vself       = 0.0;
+   vbgr        = 0.0;
+   potPerdCorr = 0.0;
+
+#ifndef _CP_DEBUG_PSI_OFF_
+#ifndef _CP_DEBUG_SCALC_ONLY_ 
+   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
+#endif
+#endif
+
+//==========================================================================
+// Everybody contributes to the reduction (see contribute forces comment)
+
+#ifdef _CP_DEBUG_ATMS_
+   CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
+#endif
+   contributeforces();
+   
+//==========================================================================
+  }//end routine
+//==========================================================================
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** Contributeforces
+ * Every proc assigned an electronic structure chare of the bead=i temper=j 
+ * (i,j) uber instance that generates an atom force MUST be in (i,j) atom group 
+ * and so contribute to the reduction below. Otherwise, all the pieces of the 
+ * atom forces of (i,j) will not be collected and the user will be very sad!
+ **/ 
+//==========================================================================
+void AtomsCompute::contributeforces(){
+//==========================================================================
+
+  int i,j;
+  int myid     = CkMyPe();
+
+  for(i=0,j=0; i<natm; i++,j+=3){
+    ftot[j]   = atoms[i].fx;
+    ftot[j+1] = atoms[i].fy;
+    ftot[j+2] = atoms[i].fz;
+  }//endfor
+  ftot[3*natm]  =pot_ewd_rs;
+  ftot[3*natm+1]=potPerdCorr;
+
+#ifdef _CP_DEBUG_ATMS_
+  CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
+#endif
+  CkCallback cb(CkIndex_AtomsCompute::recvContribute(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
+  contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
+
+//==========================================================================
+  }//end routine
+//==========================================================================
+
 
 
 //==========================================================================
@@ -597,7 +637,7 @@ void AtomsGrp::integrateAtoms(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::outputAtmEnergy() {
+void AtomsCompute::outputAtmEnergy() {
 //==========================================================================
 
   EnergyGroup *eg       = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
@@ -676,6 +716,18 @@ void AtomsGrp::send_PIMD_Fx(){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+/** 
+ * This thing is sending its updated atoms to all elements.
+ * Effectively an all-to-all implementation of what is basically an
+ * all-gather.  Cost of this isn't too bad for the array version if we
+ * use a section proxy for the multicast it constrains the number of
+ * destinations fairly managably. Formerly, this degraded to nAtoms
+ * global broadcasts in the old group implementation.  If you've ever
+ * wondered why network fabrics quake in fear at the approach of an
+ * openatom run, this sort of thing should give you an inkling of the
+ * abuse we dish out.  The only saving grace is that the number of
+ * atoms is relatively small.
+ */
 void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNhc_loc,
                          double potPIMDChain_loc,int natmNow,int natmStr,int natmEnd){
 //==========================================================================
@@ -718,7 +770,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // Send the message to everyone in the group
 
-  UatomsGrpProxy[thisInstance.proxyOffset].acceptAtoms(msg);
+  UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
 //-------------------------------------------------------------------------
   }//end routine
@@ -734,11 +786,9 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
  * when we have all of them.  Do file output of atoms if desired.
  */
 //==========================================================================
-  void AtomsGrp::acceptAtoms(AtomMsg *msg) {
+  void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
 //    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
-
-  AtomsGrp *ag    = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
   double *atmData = msg->data;
   int    nsize    = msg->nsize;
   int    natmStr  = msg->natmStr;
@@ -833,7 +883,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
    // Transform PIMD U to X
 
      if(numPIMDBeads>1){
-       // CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms. numPIMDBeads >1 transform PIMD U to X iteration %d\n ", 
+       // CkPrintf("{%d}[%d] AtomComputep::acceptAtoms. numPIMDBeads >1 transform PIMD U to X iteration %d\n ", 
        //           thisInstance.proxyOffset, CkMyPe(), iteration);
        if(amBeadRoot){send_PIMD_u();}
        if(amBeadRoot && amZerothBead){//For staging, this is the 1st bead not the CM but that's fine
@@ -848,7 +898,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
      }else{
       //everybody has to have received all the atoms before continuing : not just me
       int i=0;
-      CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+      CkCallback cb(CkIndex_AtomCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
      }//endif : 
 
@@ -858,100 +908,20 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
   }//end routine
 //==========================================================================
 
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/**
- * Increment the iteration counters in atoms and eesData call
- * gSpaceDriver->doneMovingAtoms() That is done via localbranch to all
- * co-located gSpacePlanes in the localBarrier scheme.  Used to be via
- * messages.  This permits the new step to advance with the new Psi.
- */
-  void AtomsGrp::atomsDone(CkReductionMsg *msg) {
-    //    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
-//==========================================================================
+void AtomsCompute::atomsDone(CkReductionMsg *msg)
+{
+  // this means that all the atomCompute chares are done integrating.
+  // update the atomCaches.
   delete msg;
-  atomsDone();
+  UatomCacheProxy[thisInstance.proxyOffset].acceptAtoms();
+  
 }
-//==========================================================================
-
-
-//==========================================================================
-// Needs to have each proc invoke directly doneMovingAtoms method of the
-// GSpaceDrivers which are mapped to it. Without migration, we have that map
-// at startup. With migration, one must write an enroll/dropout routine.
-// All 
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-void AtomsGrp::atomsDone() {
-//==========================================================================
-// Increment iteration counters
-//  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
- int myid = CkMyPe();
-
- EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
- iteration++;
- eg->estruct.iteration_atm   = iteration;
- eg->iteration_atm           = iteration;
- // CkPrintf("{%d}[%d] atomsDone now at eg->iteration_atm %d \n",thisInstance.proxyOffset,myid,eg->iteration_atm);
-
-#ifdef _DEBUG_CHECK_ATOM_COMM_
- char fname[100];
- sprintf(fname,"atoms.out.%d.%d",iteration,myid);
- FILE *fp = fopen(fname,"w");
- for(int i=0;i<natm;i++){
-   fprintf(fp,"%.10g %.10g %.10g\n",atoms[i].x,atoms[i].y,atoms[i].z);
- }//endfor
- fclose(fp);
-#endif
- releaseGSP();
-     
-}
-
-void AtomsGrp::releaseGSP() {
- int myid = CkMyPe();
- // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
-//==========================================================================
-// Use the cool new data caching system to say we're done.
-
-
-   //each k-point needs to be handled
-   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ 
-     
-     UberCollection thisPoint=thisInstance;
-     thisPoint.idxU.y=kpoint; // not at the gamma point
-     thisPoint.setPO();
-     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-     int *indState     = eesData->gspStateInd;
-     int *indPlane     = eesData->gspPlaneInd;
-     int ngo           = eesData->nchareGSPProcT;
-     
-     for(int i=0; i<ngo; i++){
-       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-       if(iadd!=1){
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkPrintf("atom : Bad registration cache flag on proc %d %d %d %d\n",
-		  myid,iadd,indState[i],indPlane[i]);
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkExit();
-       }//endif
-       //       CkPrintf("{%d}[%d] AtomsGrp::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
-       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
-     }//endfor
-   }//endfor
-
-//==============================================================================
-  }//end routine
-//==============================================================================
 
 
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void AtomsGrp::accept_PIMD_CM(AtomXYZMsg *msg){
+void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
 //==============================================================================
 
   for(int atomnum=0; atomnum<natm; atomnum++){
@@ -983,7 +953,7 @@ void AtomsGrp::accept_PIMD_CM(AtomXYZMsg *msg){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void AtomsGrp::send_PIMD_u(){
+void AtomsCompute::send_PIMD_u(){
 //==============================================================================
 //  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
 
@@ -1000,7 +970,7 @@ void AtomsGrp::send_PIMD_u(){
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
 // is broadcast to us
-void AtomsGrp::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI){
+void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI){
 //==============================================================================
 
   atoms[atomI].fxu    =_fxu; // FastAtoms not used for integration or output
@@ -1025,9 +995,9 @@ void AtomsGrp::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI){
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI){
+void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
 //==============================================================================
-//  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+//  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x iteration %d\n ", thisInstance.proxyOffset, thisIndex, iteration);     
 //==============================================================================
 
   atoms[atomI].x=_x;
@@ -1066,7 +1036,7 @@ void AtomsGrp::accept_PIMD_x(double _x, double _y, double _z, int atomI){
 //==============================================================================
 // done during initialization in 1st iteration
 //==============================================================================
-void AtomsGrp::send_PIMD_x(){
+void AtomsCompute::send_PIMD_x(){
 //==============================================================================
 
   for(int atomnum=0;atomnum<natm;atomnum++){
@@ -1078,7 +1048,7 @@ void AtomsGrp::send_PIMD_x(){
   }//endroutine
 //==============================================================================
 
-void AtomsGrp::acceptNewTemperature(double temp)
+void AtomsCompute::acceptNewTemperature(double temp)
 {
   // Hey GLENN do something with your new temperature here
   // when you're done
@@ -1094,7 +1064,7 @@ void AtomsGrp::acceptNewTemperature(double temp)
 //==============================================================================
 // done during initialization in 1st iteration
 //==============================================================================
-void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
+void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
 //==============================================================================
 // CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
 
@@ -1109,207 +1079,5 @@ void AtomsGrp::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
   }//endif
 }
 
-//==========================================================================
-//Energy group that can retrieve the energies from
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-EnergyGroup::EnergyGroup (UberCollection _thisInstance) : thisInstance(_thisInstance) {
-    iteration_gsp = 0;
-    iteration_atm = 0;
-    kpointEnergyDoneCount=0;
-    //non local
-    estruct.enl = 0;
-
-    //local external energy
-    estruct.eext = 0;
-    estruct.eke = 0;
-
-    //hartree energy
-    estruct.ehart = 0;
-    
-    //ion-ion
-    estruct.eewald_recip = 0;
-    estruct.eewald_real = 0;
-    
-    //exchange correlation
-    estruct.egga = 0;
-    estruct.eexc = 0;
-    estruct.fmagPsi = 0;
-
-    //CP Fict KE
-    estruct.fictEke = 0;
-
-    // total electronic part
-    estruct.totalElecEnergy = 0; // needs ewald_real to be physical
-    estruct.iteration_gsp = 0;
-
-    // atm stuff
-    estruct.eKinetic_atm    = 0;    // classical kinetic energy
-    estruct.eKineticNhc_atm = 0;    // NHC kinetic energy
-    estruct.potNhc_atm      = 0;    // NHC pot energy
-    estruct.fmag_atm        = 0;    // magnitude of atm forces
-    estruct.iteration_atm   = 0;
-    estruct.potPIMDChain    = 0;
-
-//-------------------------------------------------------------------------
-  } //end routine
-//==========================================================================
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/**
- * CP_StateGspacePlane(0,0) calls this to replicate the energies everywhere for
- * consistency and tolerance checking.
- */
-void EnergyGroup::updateEnergiesFromGS(EnergyStruct &es, UberCollection sender) {
-//==========================================================================
-
-  if(config.UberJmax>1 || config.UberMmax >1)
-    {// need to sum enl and eke across kpoints and spin
-      estruct.enl          += es.enl;
-      estruct.eke          += es.eke;
-      estruct.fictEke      += es.fictEke;
-      estruct.fmagPsi      += es.fmagPsi;
-    }
-  else
-    {
-      estruct.enl          = es.enl;
-      estruct.eke          = es.eke;
-      estruct.fictEke      = es.fictEke;
-      estruct.fmagPsi      = es.fmagPsi;
-    }
-  // these other stuff comes from rho and we only have one of them for
-  // all kpoints
-      estruct.eext         = es.eext;
-      estruct.ehart        = es.ehart;
-      estruct.eewald_recip = es.eewald_recip;
-      estruct.egga         = es.egga;
-      estruct.eexc         = es.eexc;
-      // these are gspace things that I don't know what to do with in
-      // the kpoint>1 case
-   
-      // we can construct this after all k-points have reported
-      if(config.UberJmax>1)
-	CkPrintf("GLENN!! you need to fix estruct.totalElecEnergy for k-points\n");
-      estruct.totalElecEnergy  = es.totalElecEnergy;
-      estruct.iteration_gsp= es.iteration_gsp;
-      iteration_gsp        = es.iteration_gsp;
-#ifdef _DEBUG_ESTRUCT_
-       CkPrintf("Energies received %lf, %lf, %lf, %lf, %lf\n", 
-                 estruct.enl,estruct.eke,estruct.eext,estruct.ehart, 
-                 estruct.eewald_recipt,estruct.egga,estruct.eexc,
-                 estruct.fictEke,estruct.totalEnergy);
-#endif
-    int i=0;
-    CkCallback cb(CkIndex_EnergyGroup::energyDone(NULL),UegroupProxy[thisInstance.proxyOffset]);
-    contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-
-//-------------------------------------------------------------------------
-  }//end routine
-//==========================================================================
-
-
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/**
- * call GSpaceDriver->doneComputingEnergy() on all co-located gspace chares
- * which allows the new step to advance with new psi
- */
-  void EnergyGroup::energyDone(CkReductionMsg *msg) {
-//==========================================================================
-   delete msg;
-   // need to receive one of these for each k-point
-   if(++kpointEnergyDoneCount==config.UberJmax)
-     {
-       kpointEnergyDoneCount=0;
-       if(config.UberKmax>1 && config.temperCycle >0 && iteration_atm % config.temperCycle == 0) // its temper time, 
-	 { 
-	   ktemps=0;
-	   // resumeFromTemper will reactivate us later
-	   int i=1;
-	   CkCallback cb(CkIndex_EnergyGroup::sendToTemper(NULL),0,  UegroupProxy[thisInstance.proxyOffset]);
-	   contribute(sizeof(int),&i,CkReduction::sum_int,cb);
-	 }
-       else
-	 {
-	   energyDone();
-	 }
-     }
-}
-//==========================================================================
-
-
-void EnergyGroup::sendToTemper(CkReductionMsg *m)
-{
-  delete m;
-  temperControllerProxy[0].acceptData(thisInstance.idxU.x, estruct);
-}
-
-void EnergyGroup::resumeFromTemper()
-{
- // you will receive 1 per kpoint, only release when all are ready
- ktemps++;
- if(ktemps==config.UberJmax)
-   {
-     energyDone();
-     ktemps=0;
-   }
-}
-
-//==========================================================================
-// Needs to have each proc invoke directly the doneComputingEnergy method of the
-// GSpaceDrivers which are mapped to it. Without migration, we have that map
-// at startup. With migration, one must write an enroll/dropout routine.
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-void EnergyGroup::energyDone(){
-//==========================================================================
-// Use the cool new data caching system
-
- int myid          = CkMyPe();
-   for(int kpoint=0; kpoint< config.UberJmax; kpoint++){ //each
-							 //k-point
-							 //needs to be
-							 //handled
-     //     CkPrintf("{%d}[%d] EnergyGroup::energyDone.\n ", thisInstance.proxyOffset, CkMyPe());     
-     UberCollection thisPoint=thisInstance;
-     thisPoint.idxU.y=kpoint; // not at the gamma point
-     thisPoint.setPO();
-     
-     eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
-     int *indState     = eesData->gspStateInd;
-     int *indPlane     = eesData->gspPlaneInd;
-     int ngo           = eesData->nchareGSPProcT;
-     for(int i=0; i<ngo; i++){
-       int iadd = UgSpacePlaneProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).ckLocal()->registrationFlag;
-       if(iadd!=1){
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkPrintf("Energy : Bad registration cache flag on proc %d %d %d %d\n",
-		  myid,iadd,indState[i],indPlane[i]);
-	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-	 CkExit();
-       }//endif
-       UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneComputingEnergy(iteration_atm); 
-     }//endfor
-   }//endfor
-}//end routine
-
-
-
-
-/*//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-EnergyStruct GetEnergyStruct() {
-    return UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->getEnergyStruct();
-}
-//==========================================================================
-*/
-
-#include "groups.def.h"
+#include "AtomCompute.def.h"
 

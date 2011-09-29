@@ -39,7 +39,6 @@
 
 //============================================================================
 extern CProxy_TimeKeeper                      TimeKeeperProxy;
-extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;

@@ -34,13 +34,21 @@ module groups
 		double z[];
 	};
 
-	group AtomsGrp {
-		entry AtomsGrp(int natm, int natm_nl, int len_nhc, int iextended_on,
+	group AtomsCache {
+		entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
+      		                 UberCollection);
+		entry void init();
+                entry void startRealSpaceForces();  	
+                entry void acceptAtoms(AtomMsg *);
+
+	};
+
+	array [1D] AtomsCompute {
+		entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
 			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
 		entry void init();
                 entry void acceptNewTemperature(double temp);
-                entry void startRealSpaceForces();  	
                 entry void recvContribute(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
                 entry void acceptAtoms(AtomMsg *);
@@ -50,6 +58,7 @@ module groups
 		entry void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
 
 	};
+
 
     include "main/energy.h";
 	// The global energies are stored here.
