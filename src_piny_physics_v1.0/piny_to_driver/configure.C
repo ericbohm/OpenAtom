@@ -2933,6 +2933,7 @@ void Config::readStateInfo(int &nPacked,int &minx, int &maxx, int &nx, int &ny, 
 // Set a few parameters before you go home
 
   if(doublePack){nPacked=nktot+nplane0-1;}
+  else {nPacked = nktot;}
 
 //----------------------------------------------------------------------------------
    }//end routine

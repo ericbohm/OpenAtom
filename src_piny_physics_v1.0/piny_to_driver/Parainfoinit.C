@@ -58,10 +58,10 @@ void PhysicsParamTransfer::ParaInfoInit(CPcharmParaInfo *sim)
   int natm_typ        = cppseudo->natm_typ;
   int cp_grad_corr_on = cpopts->cp_gga;
 
-  int ncoef           = (cpewald->nktot_sm)+1;
   int fftopt          = gensimopts->fftopt;
   int iperd           = gencell->iperd;
   int doublepack      = cpewald->doublepack;
+  int ncoef           = ( (doublepack==1) ? (cpewald->nktot_sm+1) : (cpewald->nktot_sm)); 
   int nkpoint         = cpcoeffs_info->nkpoint;
   
   double vol          = gencell->vol;
@@ -624,7 +624,14 @@ void PhysicsParamTransfer::fetch_state_kvecs(int *ka, int *kb, int *kc,
     PRINTF("@@@@@@@@@@@@@@@@@@@@_warning_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
   }//endif
 
-  if(nktot+1!=ncoef){
+  if(nktot+1!=ncoef && doublePack==1){
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    PRINTF("Internal error in parainfoinit(fetch_state_kvec) %d vs %d\n",nktot+1,ncoef);
+    PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    EXIT(1);
+  }//endif
+
+  if(nktot!=ncoef && doublePack==0){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Internal error in parainfoinit(fetch_state_kvec) %d vs %d\n",nktot+1,ncoef);
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");

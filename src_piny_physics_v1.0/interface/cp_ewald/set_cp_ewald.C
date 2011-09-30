@@ -1069,7 +1069,7 @@ void countkvec3d_sm_kpt(int *nktot, double ecut, int *kmax_cp, double *hmatik ,
   }//endfor
 
   nktot[0]=icount;
-  PRINTF("Small kvector counts : %d versus %d\n",nktot[0],icount);
+  PRINTF("Small kvector counts : %d versus %d (does not exclude k=0)\n",nktot[0],icount);
 
 /*--------------------------------------------------------------------------*/
   } /* countkvec3d_sm_kpt */

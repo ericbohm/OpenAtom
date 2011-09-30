@@ -201,7 +201,8 @@ void control_set_cp_ewald(GENSIMOPTS *simopts,GENCELL *cell,
      countkvec3d_sm_kpt(&nktot_sm,ecut_sm,kmax_cp,hmati_ewd_cp,
                       &(cpewald->gw_gmin),&(cpewald->gw_gmax));
    }//endif
-   ncoef                  = nktot_sm+1;
+   if(doublepack==1){ncoef                  = nktot_sm+1;} //excludes 0,0,0 for history
+   if(doublepack==0){ncoef                  = nktot_sm;}   //the new guys like 0,0,0
    cpewald->nktot_sm      = nktot_sm;
    cpcoeffs_info->ncoef   = ncoef;
 
