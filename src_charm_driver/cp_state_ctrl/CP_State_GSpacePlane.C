@@ -1797,7 +1797,13 @@ void  CP_State_GSpacePlane::sendLambda() {
     sprintf(fname,"psi_forces_before_lambda_state%d_plane%d.out",thisIndex.x,thisIndex.y);
     FILE *fp = cfopen(fname,"w");
     for(int i=0; i<gs.numPoints; i++){
-      fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re,force[i].im);
+        int igo = 0; double wght = 0.5;
+        if (ka[i] > 0) igo=1;
+        if (ka[i] == 0 && kb[i]>0){ igo=1; wght=1.0; }
+        if (ka[i] == 0 && kb[i]==0 && kc[i]>=0){ igo=1; wght=1.0; }
+        if(config.doublePack==0) wght=1.0;
+        if(igo==1)
+          fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re*wght,force[i].im*wght);
     }/*endfor*/
     fclose(fp);
 #endif
@@ -2227,7 +2233,13 @@ void CP_State_GSpacePlane::doLambda() {
     sprintf(fname,"psi_forces_after_lambda_state%d_plane%d.out",thisIndex.x,thisIndex.y);
     FILE *fp = cfopen(fname,"w");
     for(int i=0; i<gs.numPoints; i++){
-      fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re,force[i].im);
+        int igo = 0; double wght = 0.5;
+        if (ka[i] > 0) igo=1;
+        if (ka[i] == 0 && kb[i]>0){ igo=1; wght=1.0; }
+        if (ka[i] == 0 && kb[i]==0 && kc[i]>=0){ igo=1; wght=1.0; }
+        if(config.doublePack==0) wght=1.0;
+        if(igo==1)
+          fprintf(fp,"%d %d %d : %.10g %.10g\n",ka[i],kb[i],kc[i],force[i].re*wght,force[i].im*wght);
     }/*endfor*/
     fclose(fp);
 #endif
