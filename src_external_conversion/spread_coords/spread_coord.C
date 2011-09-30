@@ -1,18 +1,22 @@
 //==========================================================================
-// To run this program : executable inputfile
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+//
+//  This program takes classical input and make the PIMD ring polymers
+//  To run this program : executable inputfile
+//
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-//  This program takes classical input and make the PIMD ring polymers
-//==========================================================================
-// Standard include
+// Standard include files
+
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
 
 //==========================================================================
-// PINY constants and inline functions 
+// PINY constants, inline functions and typedefs
 
 #define BOLTZ 315777.0
 #define BOHR  0.529177
@@ -157,7 +161,10 @@ int main (int argc, char *argv[]){
 //==========================================================================
 // Set up the masses
 
-   PRINTF("The atom masses are hard coded for water on lines 159-163\n\n");
+   PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n");    
+   PRINTF("The atom masses are hard coded for water on lines 159-163\n");
+   PRINTF("The program needs an upgrade for general use\n");
+   PRINTF("$$$$$$$$$$$$$$$$$$$$_warning_$$$$$$$$$$$$$$$$$$$$\n\n");    
    for(i=1;i<=natm_tot;i+=3){
      mass[(i  )] = 1822.0*16.0; // oxygen
      mass[(i+1)] = 1836.0;      // hydrogen
@@ -220,7 +227,7 @@ int main (int argc, char *argv[]){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-// Manage the sampling of the free particle propagator
+// Manage the sampling of the free particle propagator in 3D
 //==========================================================================
 void spread_coord(int pi_beads,double *x,double *y,double *z,double mass, double T_ext,
                   double rcut, double *pos, double *gauss, long *seed)
@@ -270,7 +277,7 @@ void spread_coord(int pi_beads,double *x,double *y,double *z,double mass, double
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-//   Directly sample the free particle propagator
+//   Directly sample the free particle propagator (1D)
 //==========================================================================
 void stage_1_part(double *x,double *gaussx,double mass,double T_ext,
                   double rcut,int pi_beads,long *seed,int *ierr_ret)
@@ -701,7 +708,7 @@ void read_coord(int istart, int natm_tot, double *x, double *y, double *z,
 //=================================================================
 //ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //=================================================================
-//  Uniform Random Numbers
+//  Generate Uniform Random Numbers
 //=================================================================
 #define MODULUS_R    2147483647 // DON'T CHANGE THIS VALUE       
 #define MULTIPLIER_R 48271      // DON'T CHANGE THIS VALUE       
@@ -728,7 +735,7 @@ double altRandom(long *seed){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-// Gaussian Random numbers 
+// Generate Gaussian Random numbers 
 //===============================================================
    void gaussran(int nran, long *seed, double *gauss)
 //========================================================================

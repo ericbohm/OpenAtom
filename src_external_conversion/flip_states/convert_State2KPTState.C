@@ -1,6 +1,17 @@
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
+//
+//  This program converts doublePack states (Gamma Pt) and singlePack states.
+//  That means the code restores the bottom half of gpsace to allow
+//  use of Gamma pt KS states to initialize Kpt computations
+//
+//  To run this program : executable inputfile
+//
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+// Standard include files
 
 #include <cstring>
 #include <cstdlib>
@@ -8,7 +19,8 @@
 #include <cmath>
 #include <ctime>
 
-//--------------------------------------------------------------------------
+//==========================================================================
+// In-line functions, typedefs and structures
 
 typedef struct complex{
     double  re;
@@ -17,7 +29,8 @@ typedef struct complex{
 #define PRINTF printf
 #define EXIT(N) {exit(N);}
 
-//--------------------------------------------------------------------------
+//==========================================================================
+// Function prototypes
 
 int main (int , char *[]);
 void flip_data_set(int , int *, int *, int *,complex *);
@@ -60,10 +73,10 @@ int main (int argc, char *argv[]){
   fclose(fp);
   PRINTF("Finished reading input parameters from %s\n\n",argv[1]);
 
-  PRINTF("I am converting %d doublePacked states to singlePack form\n",nstate);
-  PRINTF("I am assuming doublePacked states are stored in the directory %s\n",directory);
-  PRINTF("I will write the singlePacked states in the directory %s_flipped\n",directory);
-  PRINTF("I am using the binary option %d : (0/1) = (ascii/binary)\n",ibinary);
+  PRINTF("I am converting %d doublePack states to singlePack form\n",nstate);
+  PRINTF("I am assuming the doublePack states are stored in the directory %s\n",directory);
+  PRINTF("I will write the singlePack states in the directory %s_flipped\n",directory);
+  PRINTF("I am using the binary option %d : (0/1) = (ascii/binary)\n\n",ibinary);
 
   if(nstate<0 || ibinary<0 || ibinary>1){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
@@ -84,7 +97,7 @@ int main (int argc, char *argv[]){
     int n=1;
     fread(&(nktot),sizeof(int),n,fp);
   }//endif
-  printf("nktot = %d\n",nktot);
+  PRINTF("nktot = %d\n",nktot);
   fclose(fp);
 
   nktot2 = 2*nktot-1;
@@ -102,7 +115,7 @@ int main (int argc, char *argv[]){
     sprintf(fname,"%s/state%d.out",directory,is + 1);
     if(ibinary==0){
       fp = fopen(fname,"r");
-      printf("Reading file: %s\n",fname);
+      PRINTF("Reading file: %s\n",fname);
       fscanf(fp,"%d %d %d %d",&nktot,&n1,&n2,&n3);
       for(int i =0;i<nktot;i++){
         fscanf(fp,"%lf %lf %d %d %d",&data[i].re,&data[i].im,&kx[i],&ky[i],&kz[i]);    
@@ -138,7 +151,7 @@ int main (int argc, char *argv[]){
 // Write the flipped state out
     if(ibinary==0){
       fp = fopen(fname,"w");
-      printf("Writing file: %s\n",fname);
+      PRINTF("Writing file: %s\n",fname);
       fprintf(fp,"%d %d %d %d\n",nktot2,n1,n2,n3);
       for(int i =0;i<nktot2;i++){
         fprintf(fp,"%lf %lf %d %d %d\n",data[i].re,data[i].im,kx[i],ky[i],kz[i]);    
@@ -165,7 +178,7 @@ int main (int argc, char *argv[]){
         fwrite(&(y),sizeof(int),n,fp);
         fwrite(&(z),sizeof(int),n,fp);
       }//endfor 
-      //printf("%.10g \n",sum);
+      //PRINTF("%.10g \n",sum);
     }//endif
     fclose(fp);
   }//endfor; is=states
@@ -183,7 +196,7 @@ int main (int argc, char *argv[]){
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-// Take the funny piny output and reorder it to full complex beast
+// Take the output and reorder it to full complex beast
 //  kx,ky,kz had better be malloced nktot*2 - 1 but contain nktot data
 //  at input
 //==========================================================================

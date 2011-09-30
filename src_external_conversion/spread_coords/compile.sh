@@ -1,1 +1,1 @@
-g++ -Wall -o spread.x spread_coord.C -lm
+g++ -g -Wall -o spread.x spread_coord.C -lm
