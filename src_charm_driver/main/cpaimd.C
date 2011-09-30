@@ -2834,19 +2834,21 @@ void control_physics_to_driver(UberCollection thisInstance){
         PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
 	UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
 	// FIXME, this needs a real computation
+	// also we need a real map
 	int nChareAtoms=1;
 	CkArrayOptions atomsOpts(nChareAtoms);
+	UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
+							     atoms,thisInstance));
 	UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
 								 len_nhc,
 								 iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
 								 kT,atoms,
 								 atomsNHC,
+								 nChareAtoms,
 								 thisInstance,
 								 atomsOpts
 								 ));
-	UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
-							     atoms,thisInstance));
         delete [] atoms;
         delete [] atomsNHC;
         delete PhysicsAtom;

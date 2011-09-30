@@ -76,10 +76,9 @@ class AtomsCompute: public CBase_AtomsCompute {
   FILE *temperScreenFile;
 
   AtomsCompute(CkMigrateMessage *m) {}
-  AtomsCompute(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);
+  AtomsCompute(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, int nChareAtoms, UberCollection thisInstance);
   void init();
   ~AtomsCompute();
-  void contributeforces();
   void integrateAtoms();
   void accept_PIMD_x(double _x, double _y, double _z, int atomI);
   void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);

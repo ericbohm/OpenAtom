@@ -66,6 +66,15 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
     fastAtoms.fxu   = new double[natm];
     fastAtoms.fyu   = new double[natm];
     fastAtoms.fzu   = new double[natm];
+    if(config.UberKmax>1 || config.UberImax>1 )
+    {
+      // we will do the file output
+      temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
+    }
+  else
+    {
+      temperScreenFile = stdout;
+    }
 
   }
 
@@ -84,7 +93,7 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
 //==========================================================================
 void AtomsCache::contributeforces(){
 //==========================================================================
-
+  
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
   double *ftot           = new double[(3*natm+2)];
@@ -93,6 +102,7 @@ void AtomsCache::contributeforces(){
     ftot[j+1] = fastAtoms.fy[i];
     ftot[j+2] = fastAtoms.fz[i];
   }//endfor
+#define _CP_DEBUG_ATMS_
 #ifdef _CP_DEBUG_ATMS_
   int myid     = CkMyPe();
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);

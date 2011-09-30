@@ -38,6 +38,7 @@ module Atoms
 		entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
       		                 UberCollection);
                 entry void acceptAtoms(AtomMsg *);
+		entry void contributeforces();
                 entry void atomsDone();
                 entry void atomsDone(CkReductionMsg *);
 
@@ -46,7 +47,7 @@ module Atoms
 	array [1D] AtomsCompute {
 		entry AtomsCompute(int natm, int natm_nl, int len_nhc, int iextended_on,
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
-			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
+			       Atom atoms[natm],AtomNHC atomsNHC[natm], int nChareAtoms, UberCollection);
 		entry void init();
                 entry void acceptAtoms(AtomMsg *);
                 entry void startRealSpaceForces();  	

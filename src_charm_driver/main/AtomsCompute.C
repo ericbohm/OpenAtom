@@ -61,8 +61,8 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  */
 //==============================================================================
 AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int cp_min_opt_,
-                   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, 
-			   UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), isokin_opt(isokin_opt_), kT(kT_), thisInstance(_thisInstance) 
+			   int cp_wave_opt_, int isokin_opt_,double kT_, Atom* a, AtomNHC *aNHC, int nChareAtoms_,
+			   UberCollection _thisInstance) : natm(n), natm_nl(n_nl), len_nhc(len_nhc_), iextended_on(iextended_on_), cp_min_opt(cp_min_opt_), cp_wave_opt(cp_wave_opt_), isokin_opt(isokin_opt_), kT(kT_), nChareAtoms(nChareAtoms_), thisInstance(_thisInstance) 
 //==============================================================================
   {// begin routine
 //==============================================================================
@@ -79,15 +79,7 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
     acceptCountX    = 0;
     acceptCountu    = 0;
     atomsCMrecv=atomsPIMDXrecv=false;
-    if(config.UberKmax>1 || config.UberImax>1 )
-    {
-      // we will do the file output
-      temperScreenFile = openScreenfWrite("TEMPER_OUT", "screen", thisInstance.idxU.z,thisInstance.idxU.x, true);
-    }
-  else
-    {
-      temperScreenFile = stdout;
-    }
+    temperScreenFile = (UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch())->temperScreenFile;
 
 //==============================================================================
 // Initial positions, forces, velocities 
@@ -209,12 +201,12 @@ void AtomsCompute::init()
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 /** recvContribute
- * Every Array member has all the forces at present.
+ * Every Array member is sent all the forces at present.
  */
 //==========================================================================
 void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 //============================================================
-//  CkPrintf("{%d}[%d] AtomsCompute::recvContribute\n ", thisInstance.proxyOffset, thisIndex);     
+  CkPrintf("{%d}[%d] AtomsCompute::recvContribute count %d\n ", thisInstance.proxyOffset, thisIndex, handleForcesCount);     
 //==========================================================================
 // Local pointers
 
@@ -268,7 +260,7 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 //==========================================================================
 void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
 //============================================================
-//  CkPrintf("{%d}[%d] AtomsCompute::recvContributeForces\n ", thisInstance.proxyOffset, CkMyPe());     
+  CkPrintf("{%d}[%d] AtomsCompute::recvContributeForces count %d\n ", thisInstance.proxyOffset, thisIndex, handleForcesCount);     
 //==========================================================================
 // Local pointers
 
@@ -308,6 +300,7 @@ void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
 
 void AtomsCompute::handleForces()
   {//=================================================================
+  CkPrintf("{%d}[%d] AtomsCompute::handleForces \n ", thisInstance.proxyOffset, thisIndex);     
 // Model forces  : This is fine for path integral checking too
     handleForcesCount=0;
 #ifdef  _CP_DEBUG_PSI_OFF_
@@ -370,6 +363,7 @@ void AtomsCompute::handleForces()
 //==========================================================================
 void AtomsCompute::integrateAtoms(){
 //============================================================
+  CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",thisIndex,natm);
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("GJM_DBG: Before atom integrate %d : %d\n",thisIndex,natm);
 #endif
@@ -551,6 +545,7 @@ void AtomsCompute::integrateAtoms(){
 //==============================================================================
 void AtomsCompute::startRealSpaceForces(){
 //==========================================================================
+#define _CP_DEBUG_ATMS_
 #ifdef _CP_DEBUG_ATMS_
    CkPrintf("{%d}[%d] AtomsCompute::startRealSpaceForces\n ", thisInstance.proxyOffset, thisIndex);     
 #endif
@@ -576,50 +571,28 @@ void AtomsCompute::startRealSpaceForces(){
 
 //==========================================================================
 // Everybody contributes to the reduction (see contribute forces comment)
-
+#define _CP_DEBUG_ATMS_
 #ifdef _CP_DEBUG_ATMS_
    CkPrintf("GJM_DBG: calling contribute atm forces %d\n",myid);
 #endif
-   contributeforces();
-   
-//==========================================================================
-  }//end routine
-//==========================================================================
+   // get the atomCache working to collect the other force contribution for us
+   if(thisIndex==0)
+     UatomsCacheProxy[thisInstance.proxyOffset].contributeforces();
 
-//==========================================================================
-//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-//==========================================================================
-/** Contributeforces
- * Every proc assigned an electronic structure chare of the bead=i temper=j 
- * (i,j) uber instance that generates an atom force MUST be in (i,j) atom group 
- * and so contribute to the reduction below. Otherwise, all the pieces of the 
- * atom forces of (i,j) will not be collected and the user will be very sad!
- **/ 
-//==========================================================================
-void AtomsCompute::contributeforces(){
-//==========================================================================
-
-  int i,j;
-  int myid     = CkMyPe();
-
-  for(i=0,j=0; i<natm; i++,j+=3){
-    ftot[j]   = atoms[i].fx;
-    ftot[j+1] = atoms[i].fy;
-    ftot[j+2] = atoms[i].fz;
-  }//endfor
+   double *ftot           = new double[(3*natm+2)];
+   for(int i=0,j=0; i<natm; i++,j+=3){
+     ftot[j]   = fastAtoms->fx[i];
+     ftot[j+1] = fastAtoms->fy[i];
+     ftot[j+2] = fastAtoms->fz[i];
+   }//endfor
   ftot[3*natm]  =pot_ewd_rs;
   ftot[3*natm+1]=potPerdCorr;
-
-#ifdef _CP_DEBUG_ATMS_
-  CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
-#endif
-  CkCallback cb(CkIndex_AtomsCompute::recvContribute(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
+   CkCallback cb(CkIndex_AtomsCompute::recvContribute(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
   contribute((3*natm+2)*sizeof(double),ftot,CkReduction::sum_double,cb);
-
+  delete ftot;
 //==========================================================================
   }//end routine
 //==========================================================================
-
 
 
 //==========================================================================
