@@ -1371,7 +1371,7 @@ void processState(int nPacked, int nktot, complex *arrCP, const char *fromFile,i
       if(kx[i]!=kx[(i-1)] || ky[i]!=ky[(i-1)]){nline_tot++;}
       if(kx[i]<kx[(i-1)]){
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
-         CkPrintf("Bad x-flip in readState() %s\n",fromFile); 
+         CkPrintf("Bad x-flip in processState() %s\n",fromFile); 
          CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
          CkExit();
       }//endif
