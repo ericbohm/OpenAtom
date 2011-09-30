@@ -13,7 +13,8 @@ class AtomMsg: public CMessage_AtomMsg
 };
 
 
-class AtomXYZMsg: public CMessage_AtomXYZMsg 
+//class AtomXYZMsg: public CkMcastBaseMsg, public CMessage_AtomXYZMsg
+class AtomXYZMsg: public CMessage_AtomXYZMsg
 {
     public:
         double *x;  

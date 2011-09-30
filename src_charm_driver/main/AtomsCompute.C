@@ -176,20 +176,28 @@ void AtomsCompute::init()
       // make lists of Array IDs and their Commander PE
       CkArrayID *atomsArrayids= new CkArrayID[numPIMDBeads];
       CkArrayIndex **elems  = new CkArrayIndex*[numPIMDBeads];
+      CkArrayIndex **elemsAll  = new CkArrayIndex*[numPIMDBeads];
       int *naelems = new int[numPIMDBeads];
+      int *naelemsAll = new int[numPIMDBeads];
       for(int i=0;i<numPIMDBeads;i++){
 	elems[i]= new CkArrayIndex1D[0];
 	  UberCollection instance=thisInstance;
 	  naelems[i]=1;
+	  naelemsAll[i]=nChareAtoms;
 	  instance.idxU.x=0;
 	  int offset=instance.calcPO();
 	  elems[i][0]=CkArrayIndex1D(0);
+	  for(int j=0;j<nChareAtoms;j++)
+	    elemsAll[i][j]=CkArrayIndex1D(j);
 	  atomsArrayids[i]=UatomsComputeProxy[offset].ckGetArrayID();
 	  //CkPrintf("{%d}[%d] AtomsCompute::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
       }//endfor
       proxyHeadBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elems, naelems);
+      proxyAllBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elemsAll, naelemsAll);
       delete [] naelems;
-      for(int i=0;i<numPIMDBeads;i++){delete [] elems[i];}
+      delete [] naelemsAll;
+      for(int i=0;i<numPIMDBeads;i++){delete [] elems[i]; delete [] elemsAll[i];}
+
   }//endif
 
 //==============================================================================
@@ -909,7 +917,8 @@ void AtomsCompute::bcastAtomsToAtomCache()
 	    msg->y[atomI]=atoms[atomI].yu;
 	    msg->z[atomI]=atoms[atomI].zu;
 	  }//endfor
-	  proxyHeadBeads.accept_PIMD_CM(msg);
+	  //	  proxyHeadBeads.accept_PIMD_CM(msg);
+	  proxyAllBeads.accept_PIMD_CM(msg);
        }//endif : I am King of the Beads
      }else{
       //everybody has to have received all the atoms before continuing : not just me

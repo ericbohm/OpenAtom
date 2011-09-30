@@ -66,6 +66,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   FastAtoms *fastAtoms;
   PIMD_CM PIMD_CM_Atoms;
   CProxySection_AtomsCompute proxyHeadBeads;
+  CProxySection_AtomsCompute proxyAllBeads;
   bool atomsCMrecv,atomsPIMDXrecv;
   bool amBeadRoot, amZerothBead;
   int acceptCountfu;
