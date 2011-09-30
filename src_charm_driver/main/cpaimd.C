@@ -18,8 +18,10 @@
 #include "InstanceController.h"
 #include "ENL_EKE_Collector.h"
 #include "pcCreationManager.h"
-#include "groups.h"
 #include "eesCache.h"
+#include "AtomsCache.h"
+#include "AtomsCompute.h"
+#include "energyGroup.h"
 
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "cp_state_ctrl/CP_State_ParticlePlane.h"
@@ -93,6 +95,7 @@ int numInst=0;
 // INT_MAPs are the ones actually used so
 // these are being changed to CkVec's for beads
 CkVec <int> PIBImaptable;
+CkVec <MapType1> AtomImaptable;
 CkVec <MapType2> GSImaptable;
 CkVec <MapType2> RSImaptable;
 CkVec <MapType2> RPPImaptable;
@@ -163,7 +166,8 @@ CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
+CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
@@ -551,6 +555,7 @@ main::main(CkArgMsg *msg) {
     scProxy  = CProxy_CPcharmParaInfoGrp::ckNew(*sim);
 
     // bump all the INT_MAPs to the right size
+    AtomImaptable.resize(config.numInstances);
     PIBImaptable.resize(config.numInstances);
     GSImaptable.resize(config.numInstances);
     RSImaptable.resize(config.numInstances);
@@ -575,7 +580,8 @@ main::main(CkArgMsg *msg) {
     UVdWGProxy.reserve(config.numInstances);
     UrhoRHartExtProxy.reserve(config.numInstances);
     UrhoGHartExtProxy.reserve(config.numInstances);
-    UatomsGrpProxy.reserve(config.numInstances);
+    UatomsComputeProxy.reserve(config.numInstances);
+    UatomsCacheProxy.reserve(config.numInstances);
     UegroupProxy.reserve(config.numInstances);
     UfftCacheProxy.reserve(config.numInstances);
     UsfCacheProxy.reserve(config.numInstances);
@@ -655,7 +661,7 @@ main::main(CkArgMsg *msg) {
     
     PeList *gfoo=NULL;
     PeList *rfoo=NULL;
-
+    int x, y, z;
     if(!config.loadMapFiles && config.useCuboidMap)
       {
 	if( config.numPesPerInstance % config.nchareG != 0)
@@ -677,7 +683,7 @@ main::main(CkArgMsg *msg) {
 	  dimNY = topoMgr->getDimNY();
 	  dimNZ = topoMgr->getDimNZ();
 	  dimNT = topoMgr->getDimNT();
-	  int x, y, z, x1 = dimNX, y1 = dimNY, z1 = dimNZ;
+	  int  x1 = dimNX, y1 = dimNY, z1 = dimNZ;
 
 	  maxD = dimNX;
 	  longDim = 1;
@@ -718,7 +724,13 @@ main::main(CkArgMsg *msg) {
 	  }
 	}
 	else
-	  gfoo = new PeList;				// heap it
+	  {
+	    // just split by numInstances
+	    x=numInst*config.numPesPerInstance;
+	    y=0;
+	    z=0;
+	    gfoo = new PeList;				// heap it
+	  }
       }
     else
       gfoo = new PeList;				// heap it
@@ -726,6 +738,8 @@ main::main(CkArgMsg *msg) {
       rfoo = new PeList(*gfoo);
     else
       rfoo = new PeList;				// heap it
+
+    computeMapOffsets();
     /* these really don't need to be different */
     availGlobG = rfoo;
     availGlobR = gfoo;
@@ -861,7 +875,7 @@ Per Instance startup BEGIN
 	  } 
 	}
       // now safe to init atom bead commanders
-      UatomsGrpProxy[thisInstance.getPO()].init();
+      UatomsComputeProxy[thisInstance.getPO()].init();
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
@@ -1546,48 +1560,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   PRINT_LINE_DASH;printf("\n");
   availGlobG->reset();
   double newtime=CmiWallTimer();
+  int x=mapOffsets[numInst].getx();
+  int y=mapOffsets[numInst].gety();
+  int z=mapOffsets[numInst].getz();
 
-  int x, y, z, x1, y1, z1;
-
-  // correction to accomodate multiple instances
-  if(config.torusMap == 1) {
-    int dimNX, dimNY, dimNZ;
-    int longDim = -1, maxD;
-
-    x1 = dimNX = topoMgr->getDimNX();
-    y1 = dimNY = topoMgr->getDimNY();
-    z1 = dimNZ = topoMgr->getDimNZ();
-
-    maxD = dimNX;
-    longDim = 1;
-
-    if (dimNY > maxD) { maxD = dimNY; longDim = 2; }
-    if (dimNZ > maxD) { maxD = dimNZ; longDim = 3; }
-
-    switch(longDim) {
-      case 1:
-	x = numInst*(maxD/config.numInstances); y = 0; z = 0;
-	x1 = dimNX / config.numInstances;
-	break;
-      case 2:
-	x = 0; y = numInst*(maxD/config.numInstances); z = 0;
-	y1 = dimNY / config.numInstances;
-	break;
-      case 3:
-	x = 0; y = 0; z = numInst*(maxD/config.numInstances);
-	z1 = dimNZ / config.numInstances;
-	break;
-    }
-   
-  }
-  else
-    {
-      // just split by numInstances
-      x=numInst*config.numPesPerInstance;
-      y=0;
-      z=0;
-    }
-  mapOffsets[numInst]=inttriple(x,y,z);
 
   if (firstInstance) {
     GSImaptable[numInst].buildMap(nstates, nchareG);
@@ -1605,13 +1581,8 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     }
     
     if(success == 0) {
-#ifdef USE_INT_MAP
       GSMapTable gsTable = GSMapTable(&GSImaptable[0], &GSImaptable[numInst], availGlobG, 
 		nchareG, nstates, Gstates_per_pe, config.useCuboidMap, numInst, x, y, z);
-#else
-      GSMapTable gsTable = GSMapTable(&GSmaptable, availGlobG, nchareG,
-				      nstates, Gstates_per_pe, config.useCuboidMap);
-#endif
     }
 
     CkPrintf("GSMap created in %g\n", newtime-Timer);
@@ -1622,8 +1593,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
   // there is only one IntMap per chare type, but each instance has
   // its own map group
   CProxy_GSMap gsMap = CProxy_GSMap::ckNew(thisInstance);
-
-
   //  CkArrayOptions gSpaceOpts(nstates,nchareG);
   CkArrayOptions gSpaceOpts(nstates,nchareG);
   std::string forwardname("GSpaceForward");
@@ -1710,7 +1679,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 #endif
       delete mf;
     }
-    
     if(success == 0) {
 #ifdef USE_INT_MAP
       RSMapTable RStable= RSMapTable(&RSImaptable[0], &RSImaptable[numInst], availGlobR, 
@@ -1725,9 +1693,6 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkPrintf("RSMap created in %g\n", newtime-Timer);
     Timer=newtime;
   } else {
-    int x=mapOffsets[numInst].getx();
-    int y=mapOffsets[numInst].gety();
-    int z=mapOffsets[numInst].getz();
     RSImaptable[numInst].translate(&RSImaptable[0], x,y,z, config.torusMap==1);
     CkPrintf("RSMap instance %d created in %g\n", numInst, newtime-Timer);
   }
@@ -2806,7 +2771,8 @@ void control_physics_to_driver(UberCollection thisInstance){
 	zeroKpointInstance.idxU.y=0;
 	zeroKpointInstance.idxU.s=0;
 	int proxyOffset=zeroKpointInstance.setPO();
-	UatomsGrpProxy.push_back(UatomsGrpProxy[proxyOffset]);      
+	UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);      
+	UatomsCacheProxy.push_back(UatomsCacheProxy[proxyOffset]);      
 	UegroupProxy.push_back(UegroupProxy[proxyOffset]);
       }
     else
@@ -2828,9 +2794,39 @@ void control_physics_to_driver(UberCollection thisInstance){
  
         PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
 	UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
-	UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
+	// FIXME, this needs a real computation
+	// also we need a real map
+	int nChareAtoms=(config.numPesPerInstance<natm) ? config.numPesPerInstance : natm;
+
+	if (firstInstance) {
+	  // build the base atom map
+	  AtomImaptable[numInst].buildMap(nChareAtoms);
+	  availGlobG->reset();
+	  AtomMapTable aTable = AtomMapTable(&AtomImaptable[numInst], availGlobG, 
+					     numInst,nChareAtoms);
+
+	  
+	} else {
+	  int x=mapOffsets[numInst].getx();
+	  int y=mapOffsets[numInst].gety();
+	  int z=mapOffsets[numInst].getz();
+	  AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
+	}
+	CProxy_AtomComputeMap aMap = CProxy_AtomComputeMap::ckNew(thisInstance);
+	CkArrayOptions atomOpts(nChareAtoms);
+	atomOpts.setMap(aMap);
+	UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
+							     atoms,thisInstance));
+	UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
+								 len_nhc,
+								 iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
-                                           kT,atoms,atomsNHC,thisInstance));
+								 kT,atoms,
+								 atomsNHC,
+								 nChareAtoms,
+								 thisInstance,
+								 atomOpts
+								 ));
         delete [] atoms;
         delete [] atomsNHC;
         delete PhysicsAtom;
@@ -2938,11 +2934,7 @@ int atmGrpMap(int istart, int nsend, int listsize, int *listpe, int AtmGrp,
 //============================================================================
 int gsprocNum(CPcharmParaInfo *sim, int state, int plane, int numInst) {
   int proc;
-#ifdef USE_INT_MAP
   proc = GSImaptable[numInst].get(state, plane);
-#else
-  proc = GSmaptable.get(intdual(state, plane));
-#endif
   if(config.fakeTorus)
     proc=proc%CkNumPes();
   return(proc);
@@ -3477,6 +3469,52 @@ void setTraceUserEvents()
      Ortho_UE_step3 = traceRegisterUserEvent("Ortho step 3");
      Ortho_UE_error = traceRegisterUserEvent("Ortho error");
 
+}
+
+void computeMapOffsets()
+{
+  int x, y, z, x1, y1, z1;
+  // correction to accomodate multiple instances
+  for(int thisInst=1; thisInst<config.numInstances; thisInst++)
+    {
+      if(config.torusMap == 1) {
+	int dimNX, dimNY, dimNZ;
+	int longDim = -1, maxD;
+
+	x1 = dimNX = topoMgr->getDimNX();
+	y1 = dimNY = topoMgr->getDimNY();
+	z1 = dimNZ = topoMgr->getDimNZ();
+
+	maxD = dimNX;
+	longDim = 1;
+
+	if (dimNY > maxD) { maxD = dimNY; longDim = 2; }
+	if (dimNZ > maxD) { maxD = dimNZ; longDim = 3; }
+
+	switch(longDim) {
+	case 1:
+	  x = thisInst*(maxD/config.numInstances); y = 0; z = 0;
+	  x1 = dimNX / config.numInstances;
+	  break;
+	case 2:
+	  x = 0; y = thisInst*(maxD/config.numInstances); z = 0;
+	  y1 = dimNY / config.numInstances;
+	  break;
+	case 3:
+	  x = 0; y = 0; z = thisInst*(maxD/config.numInstances);
+	  z1 = dimNZ / config.numInstances;
+	  break;
+	}
+      }
+      else
+	{
+	  // just split by numInstances
+	  x=thisInst*config.numPesPerInstance;
+	  y=0;
+	  z=0;
+	}
+      mapOffsets[thisInst]=inttriple(x,y,z);
+    }
 }
 //============================================================================
 #include "CPcharmParaInfo.def.h"

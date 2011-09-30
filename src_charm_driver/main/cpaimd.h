@@ -68,6 +68,7 @@ typedef IntMap2 IntMap4;
 
 extern bool fakeTorus;
 extern CkVec <int> PIBImaptable;
+extern CkVec <MapType1> AtomImaptable;
 extern CkVec <MapType2> GSImaptable;
 extern CkVec <MapType2> RSImaptable;
 extern CkVec <MapType2> RPPImaptable;
@@ -119,12 +120,44 @@ class main : public Chare {
  *
  */
 //============================================================================
+
+
+
  
 //============================================================================
 /** \brief Base Class used for maptable based proc maps
  *
  *
  */
+class CkArrayMapTable1 : public CkArrayMap
+{
+// trivial 1d here for usage consistency
+ public:
+  MapType1 *maptable;
+  UberCollection thisInstance;
+
+  CkArrayMapTable1() {}
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+    int proc;
+    proc=maptable->get(index[0]);
+    CkAssert(proc>=0);
+    if(numPes!=CkNumPes())
+      return(proc%CkNumPes());
+    else
+      return(proc);
+    
+  }
+  void pup(PUP::er &p)
+    {
+      CkArrayMap::pup(p);
+      p|thisInstance;
+    }
+  ~CkArrayMapTable1(){}
+  
+};
+
+
 class CkArrayMapTable2 : public CkArrayMap
 {
  public:
@@ -233,6 +266,35 @@ class CkArrayMapTable4 : public CkArrayMap
 //============================================================================
 
 
+class AtomComputeMap : public CkArrayMapTable1 {
+  public:
+  AtomComputeMap(UberCollection _instance)
+  {
+    thisInstance=_instance;
+    maptable= &AtomImaptable[thisInstance.getPO()];
+  }
+  
+  ~AtomComputeMap()
+  {
+  }
+  
+  void pup(PUP::er &p)
+      {
+	CkArrayMap::pup(p);
+	maptable= &AtomImaptable[thisInstance.getPO()];
+      }
+  inline int procNum(int, const CkArrayIndex &iIndex){
+    int *index=(int *) iIndex.data();
+    int proc;
+    proc=maptable->get(index[0]);
+    CkAssert(proc>=0);
+    if(numPes!=CkNumPes())
+      return(proc%CkNumPes());
+    else
+      return(proc);
+  }
+
+};
  
 class GSMap: public CkArrayMapTable2 {
 
@@ -752,6 +814,7 @@ int gsprocNum(CPcharmParaInfo *sim,int state, int plane, int numInst);
 bool findCuboid(int &x, int &y, int &z, int &order, int maxX, int maxY, int maxZ, int maxT, int volume, int vn);
 void create_Rho_fft_numbers(int ,int ,int , int, int, int, int *,int *,int *,int *, int *);
 void setTraceUserEvents();
+void computeMapOffsets();
 //============================================================================
 
 

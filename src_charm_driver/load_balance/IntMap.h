@@ -558,6 +558,60 @@ class IntMap2on1 {
     void translate(IntMap2on1 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
 };
 
+class IntMap1 {
+ private:
+  int *Map;
+  int keyXmax;
+ public:
+    ~IntMap1(){
+      if(keyXmax>0 && Map!=NULL)
+	{
+	  delete [] Map;
+	  Map=NULL;
+	}
+    }
+    IntMap1(){keyXmax=0; Map=NULL;}
+    IntMap1(int keyX): keyXmax(keyX)
+      {
+	CkAssert(keyXmax>0);
+	Map= new int[keyXmax];
+      }
+    void buildMap(int keyX=1, int keyY=1)
+      {
+	CkAssert(keyX>0);
+	keyXmax=keyX;
+	Map= new int[keyXmax];
+      }
+    void pup(PUP::er &p)
+      {
+	  p|keyXmax;
+	  if(p.isUnpacking())
+	    Map=new int[keyXmax];
+	  PUParray(p,Map,keyXmax);
+
+      }
+    inline int getXmax(){return(keyXmax);}
+    inline int getmax(){return(keyXmax);}
+    inline int get(int X)  {
+      /*
+      CkAssert(X<keyXmax);
+      */
+      return(Map[X]);
+    }
+    //    inline &int put(int X, int Y){&(Map[X][Y]);}
+    inline void set(int X, int value){
+      CkAssert(numPes>value);
+      CkAssert(X<keyXmax);
+      Map[X]=value;
+    }
+    int getCentroid(int torusMap);
+    void dump()
+      {
+	  for(int x=0;x<keyXmax;x++)
+	    CkPrintf("%d %d \n",x,get(x));
+      }
+    void translate(IntMap1 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus );
+};
 
 
 /*class MapType2 : public IntMap2on2 {
@@ -566,6 +620,7 @@ class IntMap2on1 {
   void pup(PUP::er &p) { IntMap2on2::pup(p); }
 };
 */
+typedef IntMap1 MapType1;
 typedef IntMap2on2 MapType2;
 typedef IntMap4 MapType4;
 typedef IntMap3 MapType3;

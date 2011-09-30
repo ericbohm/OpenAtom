@@ -18,7 +18,6 @@
 #include "debug_flags.h"
 #include "utility/util.h"
 #include "main/cpaimd.h"
-#include "main/groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
 
@@ -32,7 +31,7 @@ extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 extern CkVec <CProxy_CP_VanderWaalsR> UVdWRealProxy;
 extern CProxy_CPcharmParaInfoGrp            scProxy;
-extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>              UatomsCacheProxy;
 extern CkVec <CProxy_GSpaceDriver>          UgSpaceDriverProxy;
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 

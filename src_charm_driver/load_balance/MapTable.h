@@ -89,6 +89,50 @@ class intdual {
    
 };
 
+/**
+ * Abstract base class.
+ *  
+ */
+class MapTable1
+{
+ public:
+  MapType1 *maptable;
+  PeList *availprocs;
+  void dump()
+    {
+      maptable->dump();
+    }
+ protected:
+   CkVec <int> *reverseMap;
+   
+  MapTable1()
+    {
+      availprocs=NULL;
+      maptable=NULL;
+      reverseMap=NULL;
+    }
+  ~MapTable1()
+    {
+      if(reverseMap!=NULL)
+	delete [] reverseMap;
+    }
+  void makeReverseMap();
+  
+  /**
+   * return ckvec containing the  reverse map of  all elements on
+   *  given proc 
+   */
+  inline CkVec <int>  ProcByArrIndex(int proc) 
+    { 
+      if(reverseMap==NULL)
+	makeReverseMap();
+      return(reverseMap[proc]); 
+    }
+  
+  //! return processor at topological center of this list
+  int getCentroid(int torusMap);
+  
+};
 
 
 /**
@@ -226,6 +270,18 @@ PeList *subListPlane(int plane, int nstates, MapType2 *smap);
 PeList *subListState(int state, int nplanes, MapType2 *smap);
 PeList *subListState2(int state1, int state2, int nplanes, int numChunks, MapType4 *smap);
 
+class AtomMapTable : public MapTable1
+{
+ public:
+  int nchareAtoms;
+  AtomMapTable( MapType1 *_tomap, PeList *_availprocs,
+	       int numInst,
+	       int _nchareAtoms);
+  AtomMapTable()
+  {
+  }
+    
+};
 
 class GSMapTable : public MapTable2
 {

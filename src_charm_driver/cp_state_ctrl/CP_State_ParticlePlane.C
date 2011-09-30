@@ -39,7 +39,7 @@
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "structure_factor/StructFactorCache.h"
 #include "main/cpaimd.h"
-#include "main/groups.h"
+#include "main/AtomsCache.h"
 #include "main/eesCache.h"
 #include "utility/util.h"
 
@@ -53,7 +53,7 @@ extern CProxy_main                               mainProxy;
 extern CProxy_InstanceController                 instControllerProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>               UgSpaceDriverProxy;
-extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CProxy_CPcharmParaInfoGrp                 scProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
@@ -616,7 +616,7 @@ void CP_State_ParticlePlane::reduceZ(int size, int atmIndex, complex *zmatrix_,
 
    //-----------------------------------------------------------------------
    // energy and atom forces
-    AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
+    AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
     int mydoublePack = config.doublePack;
     double myenl     = 0.0;

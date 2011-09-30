@@ -5,8 +5,8 @@
 //==============================================================================
  
 #include "utility/util.h"
-#include "main/groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
+
 #include "StructFactorCache.h"
 #include "gParticlePlane.decl.h"
 #include "src_piny_physics_v1.0/include/class_defs/CP_OPERATIONS/class_cpnonlocal.h"

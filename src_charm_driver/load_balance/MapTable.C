@@ -20,6 +20,41 @@ extern TopoManager *topoMgr;
 extern Config config;
 
 //============================================================================
+int MapType1::getCentroid(int torusMap) {
+  int points, bestPe;
+  if(torusMap==1) {
+    int sumX=0;
+    int sumY=0;
+    int sumZ=0;
+    int X=0,Y=0,Z=0,T=0;
+    points=0;
+    for(int i=0;i<getXmax();i++)
+      {
+	CkAssert(get(i)>=0);
+	topoMgr->rankToCoordinates(get(i), X, Y, Z, T);
+	sumX+=X;
+	sumY+=Y;
+	sumZ+=Z;
+	points++;
+      }
+    int avgX=sumX/points;
+    int avgY=sumY/points;
+    int avgZ=sumZ/points;
+    bestPe=topoMgr->coordinatesToRank(avgX, avgY, avgZ, 0);
+  }
+  else {
+    int sum=0;
+    points=0;
+    for(int i=0;i<getXmax();i++)
+      {
+	CkAssert(get(i)>=0);
+	sum+=get(i);
+	points++;
+    }
+    bestPe=sum/points;
+  }
+  return(bestPe);
+}
 
 int MapType2::getCentroid(int torusMap) {
   int points, bestPe;
@@ -97,6 +132,31 @@ int MapType3::getCentroid(int torusMap) {
   return(bestPe);
 }
 
+void IntMap1::translate(IntMap1 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus ) 
+{
+  keyXmax=fromMap->keyXmax;
+  Map= new int[keyXmax];
+  if(torus)
+      {
+	int x, y, z, t, destpe;
+	for(int xind=0; xind<keyXmax; xind++)
+	  {
+	    topoMgr->rankToCoordinates(fromMap->get(xind), x, y, z, t);
+	    int newx=(x+offsetX)%topoMgr->getDimNX();
+	    int newy=(y+offsetY)%topoMgr->getDimNY();
+	    int newz=(z+offsetZ)%topoMgr->getDimNZ();
+	    destpe =  topoMgr->coordinatesToRank(newx, newy, newz, t);
+	    set(xind, destpe);
+	  }
+      }
+    else
+      {
+	for(int xind=0; xind<keyXmax; xind++)
+	    set(xind,fromMap->get(xind)+offsetX);
+      }
+};
+
+
 void IntMap2on2::translate(IntMap2on2 *fromMap, int offsetX, int offsetY, int offsetZ, bool torus ) 
 {
   keyXmax=fromMap->keyXmax;
@@ -173,6 +233,26 @@ void IntMap3::translate(IntMap3 *fromMap, int offsetX, int offsetY, int offsetZ,
 	  }
       }
 };
+
+
+AtomMapTable::AtomMapTable(MapType1 *_tomap, PeList *availprocs, int numInst,
+			    int _nchareAtoms): nchareAtoms(_nchareAtoms)
+{
+  maptable = _tomap;
+  if(numInst == 0) // first instance does the hard stuff
+    {  
+      for(int element=0; element<nchareAtoms; element++)
+	{
+	  if(availprocs->count()==0)
+	    availprocs->reset();
+	  maptable->set(element,availprocs->findNext());
+	}
+    }
+  else
+    { //
+      CkAbort("this should only called on the first instance");
+    }
+}
 
 
 GSMapTable::GSMapTable(MapType2 *_frommap, MapType2 *_tomap, PeList *_availprocs, 

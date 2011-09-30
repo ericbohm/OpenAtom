@@ -26,7 +26,6 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_Plane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
-#include "main/groups.h"
 #include "main/cpaimd.h"
 #include "utility/util.h"
 #include "charm++.h"
@@ -39,7 +38,6 @@
 
 //============================================================================
 extern CProxy_TimeKeeper                      TimeKeeperProxy;
-extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_Rho_RealSpacePlane>   UrhoRealProxy;

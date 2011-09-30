@@ -4,7 +4,8 @@
 //============================================================================== 
 
 #include "utility/util.h"
-#include "main/groups.h"
+#include "main/AtomsCache.h"
+#include "main/energyGroup.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "StructureFactor.h"
 #include "StructFactorCache.h"
@@ -15,7 +16,7 @@
 
 extern CkVec <CProxy_StructureFactor> UsfCompProxy;
 extern CkVec <CProxy_StructFactCache> UsfCacheProxy;
-extern CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache> UatomsCacheProxy;
 extern CkVec <CProxy_EnergyGroup> UegroupProxy;
 extern CProxy_CPcharmParaInfoGrp      scProxy;
 StructureFactor::StructureFactor(CkMigrateMessage *m){ }
@@ -40,9 +41,9 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
    // of the energy dude and the atoms because it flipped its iteration counter
    // at the top of the loop.
    if(numdest){
-     if(UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != 
+     if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != 
         UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp || 
-        UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != (iteration_src-1)){
+        UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != (iteration_src-1)){
        CkPrintf("Flow of Control Warning  in computeSF : atoms slow\n");
        SFDummyMsg *newMsg = new(8*sizeof(int)) SFDummyMsg;
        CkSetQueueing(newMsg, CK_QUEUEING_IFIFO);
@@ -69,7 +70,7 @@ void StructureFactor::computeSF(SFDummyMsg *msg)
 	structFactor_fy    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
 	structFactor_fz    = (complex *)fftw_malloc(natm_nl_grp_max*gsSize*sizeof(complex));
       }//endif
-      AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
+      AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
       FastAtoms *fastAtoms = &(ag->fastAtoms);
       CPNONLOCAL::CP_calc_Struct_Fact(gsSize,k_x, k_y,k_z, 
 				      structFactor,structFactor_fx,structFactor_fy,
