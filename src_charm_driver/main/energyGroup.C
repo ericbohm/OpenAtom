@@ -6,8 +6,11 @@
 #include "CPcharmParaInfoGrp.h"
 #include "load_balance/IntMap.h"
 #include "charm++.h"
-
-
+extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
+extern CProxy_TemperController temperControllerProxy;
+extern CkVec <CProxy_eesCache>             UeesCacheProxy;
+extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
+extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
 //==========================================================================
 //Energy group that can retrieve the energies from
 //==========================================================================
@@ -209,3 +212,4 @@ EnergyStruct GetEnergyStruct() {
 }
 //==========================================================================
 */
+#include "EnergyGroup.def.h"

@@ -50,7 +50,8 @@
 
 #include "main/startupMessages.h"
 #include "utility/util.h"
-#include "main/groups.h"
+#include "main/AtomsCache.h"
+#include "main/energyGroup.h"
 #include "main/eesCache.h"
 #include "main/TimeKeeper.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
@@ -93,7 +94,7 @@ extern CkVec <CProxy_CP_State_RealSpacePlane> UrealSpacePlaneProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>    UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>            UgSpaceDriverProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>  UparticlePlaneProxy;
-extern CkVec <CProxy_AtomsGrp>                UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>              UatomsCacheProxy;
 extern CkVec <CProxy_StructureFactor>         UsfCompProxy;
 extern CkVec <CProxy_EnergyGroup>             UegroupProxy;
 extern CkVec <CProxy_FFTcache>                UfftCacheProxy;
@@ -127,7 +128,7 @@ void CP_State_GSpacePlane::psiCgOvlap(CkReductionMsg *msg){
 // Unpack
 //  CkPrintf("{%d} GSP [%d,%d] psiCgOvlap\n",thisInstance.proxyOffset, thisIndex.x,thisIndex.y);
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
-  AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
+  AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
 
   int cp_min_opt    = sim->cp_min_opt;
   double tol_cp_min = sim->tol_cp_min;
@@ -677,9 +678,9 @@ void CP_State_GSpacePlane::readFile() {
     processState(numData,ncoef,complexPoints,fname,ibinary_opt,&nlines_tot,
                  &nplane,kx,ky,kz,istrt_lgrp,iend_lgrp,npts_lgrp,nline_lgrp,
                  0,0,0,ny); 
-    double *xfull =UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.x-1;
-    double *yfull =UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.y-1;
-    double *zfull =UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.z-1;
+    double *xfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.x-1;
+    double *yfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.y-1;
+    double *zfull =UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->fastAtoms.z-1;
     cpgen_wave->create_coefs(kx,ky,kz,numData,ind_state,complexPoints,
                              xfull,yfull,zfull);
   }//*endif
@@ -786,7 +787,7 @@ void CP_State_GSpacePlane::initGSpace(int            size,
     CkPrintf("GSpace[%d,%d] initGSpace %d\n",thisIndex.x,thisIndex.y,size);
 #endif
 
-    temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
+    temperScreenFile = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
 
   CPcharmParaInfo *sim = (scProxy.ckLocalBranch ())->cpcharmParaInfo; 
   registrationFlag  = 1;
@@ -1068,14 +1069,14 @@ void CP_State_GSpacePlane::startNewIter ()  {
 #endif 
   if(iteration>0){
    if(UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp != iteration || 
-     UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
+     UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration  != iteration){
       CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);
       CkPrintf("{%d} Flow of Control Error : Starting new iter before\n",thisInstance.proxyOffset);
       CkPrintf("{%d} finishing atom integrate or iteration mismatch.\n",thisInstance.proxyOffset);
       CkPrintf("{%d} iter_gsp %d iter_energy %d iter_atm %d and %d and %d\n",
 	       thisInstance.proxyOffset,
  	        iteration,UegroupProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration_gsp,
-                UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,
+                UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,
 	       config.maxIter,cleanExitCalled);
       CkPrintf("{%d} chare %d %d\n",thisInstance.proxyOffset,thisIndex.x,thisIndex.y);
       CkPrintf("{%d} @@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n",thisInstance.proxyOffset);

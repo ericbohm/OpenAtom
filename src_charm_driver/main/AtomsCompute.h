@@ -1,11 +1,13 @@
-/** \file atomCompute.h
+/** \file AtomsCompute.h
  */
-#ifndef ATOMCOMPUTE_H
-#define ATOMCOMPUTE_H
+#ifndef ATOMSCOMPUTE_H
+#define ATOMSCOMPUTE_H
 #include "Atoms.h"
-#include "atomMessages.h"
+
 struct EnergyStruct;
-#include "atomCompute.decl.h"
+
+#include "Atoms.decl.h"
+#include "atomMessages.h"
 #include "CPcharmParaInfo.decl.h"
 
 
@@ -61,9 +63,9 @@ class AtomsCompute: public CBase_AtomsCompute {
 
   Atom *atoms;
   AtomNHC *atomsNHC;
-  FastAtoms fastAtoms;
+  FastAtoms *fastAtoms;
   PIMD_CM PIMD_CM_Atoms;
-  CProxySection_AtomsGrp proxyHeadBeads;
+  CProxySection_AtomsCompute proxyHeadBeads;
   bool atomsCMrecv,atomsPIMDXrecv;
   bool amBeadRoot, amZerothBead;
   int acceptCountfu;
@@ -73,10 +75,10 @@ class AtomsCompute: public CBase_AtomsCompute {
   int ktemps;
   FILE *temperScreenFile;
 
-  AtomsGrp(CkMigrateMessage *m) {}
-  AtomsGrp(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);
+  AtomsCompute(CkMigrateMessage *m) {}
+  AtomsCompute(int,int,int,int, int ,int ,int,double ,Atom *,AtomNHC *, UberCollection thisInstance);
   void init();
-  ~AtomsGrp();
+  ~AtomsCompute();
   void contributeforces();
   void integrateAtoms();
   void accept_PIMD_x(double _x, double _y, double _z, int atomI);
@@ -85,6 +87,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
   void acceptNewTemperature(double temp);
   void recvContribute(CkReductionMsg *);
+  void recvContributeForces(CkReductionMsg *);
   void atomsDone(CkReductionMsg *);
   void send_PIMD_u();
   void send_PIMD_Fx();
@@ -92,11 +95,14 @@ class AtomsCompute: public CBase_AtomsCompute {
   void sendAtoms(double,double ,double,double,int,int,int);
   void acceptAtoms(AtomMsg *);
   void outputAtmEnergy();
+  void bcastAtomsToAtomCache();
+  void startRealSpaceForces();
   void releaseGSP();
+  void handleForces();
   void zeroforces() {
-    double *fx = fastAtoms.fx;
-    double *fy = fastAtoms.fy;
-    double *fz = fastAtoms.fz;
+    double *fx = fastAtoms->fx;
+    double *fy = fastAtoms->fy;
+    double *fz = fastAtoms->fz;
     for(int i=0; i<natm; i++){
       atoms[i].fx = 0;
       atoms[i].fy = 0;
@@ -108,12 +114,12 @@ class AtomsCompute: public CBase_AtomsCompute {
   }//end routine
   void zeronhc(){for(int i=0;i<natm;i++){atomsNHC[i].posKT = 0;}}
   void copySlowToFast(){
-    double *x  = fastAtoms.x;
-    double *y  = fastAtoms.y;
-    double *z  = fastAtoms.z;
-    double *fx = fastAtoms.fx;
-    double *fy = fastAtoms.fy;
-    double *fz = fastAtoms.fz;
+    double *x  = fastAtoms->x;
+    double *y  = fastAtoms->y;
+    double *z  = fastAtoms->z;
+    double *fx = fastAtoms->fx;
+    double *fy = fastAtoms->fy;
+    double *fz = fastAtoms->fz;
     for(int i=0;i<natm;i++){
       x[i]  = atoms[i].x;
       y[i]  = atoms[i].y;
@@ -124,12 +130,12 @@ class AtomsCompute: public CBase_AtomsCompute {
     }//endfor
   }//end routine
   void copyFastToSlow(){
-    double *x  = fastAtoms.x;
-    double *y  = fastAtoms.y;
-    double *z  = fastAtoms.z;
-    double *fx = fastAtoms.fx;
-    double *fy = fastAtoms.fy;
-    double *fz = fastAtoms.fz;
+    double *x  = fastAtoms->x;
+    double *y  = fastAtoms->y;
+    double *z  = fastAtoms->z;
+    double *fx = fastAtoms->fx;
+    double *fy = fastAtoms->fy;
+    double *fz = fastAtoms->fz;
     for(int i=0;i<natm;i++){
       atoms[i].x  = x[i];
       atoms[i].y  = y[i];
@@ -188,4 +194,4 @@ class AtomsCompute: public CBase_AtomsCompute {
 };
 
 
-#endif // ATOMCOMPUTE_H
+#endif // ATOMSCOMPUTE_H

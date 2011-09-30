@@ -1,6 +1,7 @@
 # The relevant source files for this module
 libdriver_src = \
-                cpaimd.C TemperController.C InstanceController.C pcCreationManager.C groups.C eesCache.C CLA_Matrix.C \
+                cpaimd.C TemperController.C InstanceController.C pcCreationManager.C eesCache.C CLA_Matrix.C \
+		AtomsCompute.C AtomsCache.C energyGroup.C \
                 CP_State_GSpacePlane.C CP_State_RealSpacePlane.C GSpaceDriver.C pcCommManager.C \
                 CP_LargeSP_RhoGSpacePlane.C  CP_LargeSP_RhoRealSpacePlane.C \
                 CP_State_ParticlePlane.C CP_State_RealParticlePlane.C \

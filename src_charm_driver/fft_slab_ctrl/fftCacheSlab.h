@@ -8,6 +8,7 @@
  */
 //==============================================================================
 #include "utility/util.h"
+#include "uber/Uber.h"
 
 #ifndef _fftcacheslab_h_
 #define _fftcacheslab_h_

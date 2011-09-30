@@ -1,7 +1,7 @@
 #include "charm++.h"
 #include "utility/util.h"
 #include "cpaimd.h"
-#include "groups.h"
+#include "energyGroup.h"
 #include "InstanceController.h"
 #include "TemperController.h"
 

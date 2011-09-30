@@ -10,10 +10,10 @@
 */
 
 
-#include "groups.h" 
+#include "AtomsCompute.h" 
 #include "PIBeadAtoms.h"
 
-extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCompute>                   UatomsComputeProxy;
 
 // NOTE: thisIndex == atomIndex
 
@@ -95,7 +95,7 @@ void PIBeadAtoms::accept_PIMD_Fx(AtomXYZMsg *msg)
 	  //	  UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_fu(fxu[bead],
 	  //	  fyu[bead], fzu[bead], thisIndex);
 	  // this atom index has to send the Fu to everyone
-	  UatomsGrpProxy[proxyOffset].accept_PIMD_Fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
+	  UatomsComputeProxy[proxyOffset].accept_PIMD_Fu(fxu[bead], fyu[bead], fzu[bead], thisIndex);
       }//endfor
     }//endif
 //============================================================================
@@ -125,7 +125,7 @@ void PIBeadAtoms::accept_PIMD_u(double _xu, double _yu, double _zu, int PIBeadIn
 	    int proxyOffset=instance.setPO();
 	    int atomdest=0;
 	    //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_x(x[bead],y[bead], z[bead], thisIndex);
-	    UatomsGrpProxy[proxyOffset].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
+	    UatomsComputeProxy[proxyOffset].accept_PIMD_x(x[bead], y[bead], z[bead], thisIndex);
 	}//endfor
     }//endif
 
@@ -157,7 +157,7 @@ void PIBeadAtoms::accept_PIMD_x(double _x, double _y, double _z, int PIBeadIndex
 	    int proxyOffset=instance.setPO();
 	    int atomdest=0;
 	    //	    UatomsGrpProxy[proxyOffset][atomdest].accept_PIMD_u(xu[bead],yu[bead],zu[bead],  thisIndex);
-	    UatomsGrpProxy[proxyOffset].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
+	    UatomsComputeProxy[proxyOffset].accept_PIMD_u(xu[bead],yu[bead],zu[bead], thisIndex);
 	}//endfor
     }//endif
 

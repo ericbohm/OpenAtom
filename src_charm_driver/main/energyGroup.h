@@ -2,12 +2,12 @@
  */
 #ifndef ENERGYGROUP_H
 #define ENERGYGROUP_H
-
+#include "uber/Uber.h"
 #include "energy.h"
 #include "EnergyGroup.decl.h"
 #include "CPcharmParaInfo.decl.h"
 
-#include "uber/Uber.h"
+
 
 /** EnergyGroup class.
  */

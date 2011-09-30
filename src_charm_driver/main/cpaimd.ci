@@ -14,7 +14,7 @@ module CPcharmParaInfo
 };
 
 
-module groups
+module Atoms
 {
 	// Forward declarations
 	class Atom;
@@ -37,9 +37,9 @@ module groups
 	group AtomsCache {
 		entry AtomsCache(int natm, int natm_nl, Atom atoms[natm], 
       		                 UberCollection);
-		entry void init();
-                entry void startRealSpaceForces();  	
                 entry void acceptAtoms(AtomMsg *);
+                entry void atomsDone();
+                entry void atomsDone(CkReductionMsg *);
 
 	};
 
@@ -48,10 +48,12 @@ module groups
 			       int cp_min_opt, int cp_wave_opt, int isokin_opt, double kT,
 			       Atom atoms[natm],AtomNHC atomsNHC[natm], UberCollection);
 		entry void init();
+                entry void acceptAtoms(AtomMsg *);
+                entry void startRealSpaceForces();  	
                 entry void acceptNewTemperature(double temp);
                 entry void recvContribute(CkReductionMsg *);
+                entry void recvContributeForces(CkReductionMsg *);
                 entry void atomsDone(CkReductionMsg *);
-                entry void acceptAtoms(AtomMsg *);
 		entry void accept_PIMD_x(double _x, double _y, double _z, int atomI);
 		entry void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
 		entry void accept_PIMD_CM(AtomXYZMsg *msg);
@@ -59,7 +61,10 @@ module groups
 
 	};
 
+};
 
+module EnergyGroup
+{
     include "main/energy.h";
 	// The global energies are stored here.
 	group EnergyGroup {
@@ -173,7 +178,8 @@ mainmodule cpaimd {
 	extern module ortho;
 	extern module structureFactor;
 	extern module structureFactorCache;
-	extern module groups;
+	extern module Atoms;
+	extern module EnergyGroup;
 	extern module PIBeadAtoms;		
 	extern module timeKeeper;
 	extern module startupMessages;
@@ -228,7 +234,8 @@ mainmodule cpaimd {
 	readonly CkVec <CProxy_CP_Rho_GSpacePlane> UrhoGProxy;
 	readonly CkVec <CProxy_CP_Rho_GHartExt> UrhoGHartExtProxy;
 	readonly CkVec <CProxy_CP_Rho_RHartExt> UrhoRHartExtProxy;
-	readonly CkVec <CProxy_AtomsGrp> UatomsGrpProxy;
+	readonly CkVec <CProxy_AtomsCache> UatomsCacheProxy;
+	readonly CkVec <CProxy_AtomsCompute> UatomsComputeProxy;
 	readonly CkVec <CProxy_EnergyGroup> UegroupProxy;
 	readonly CkVec <CProxy_FFTcache> UfftCacheProxy;
 	readonly CkVec <CProxy_StructFactCache> UsfCacheProxy;

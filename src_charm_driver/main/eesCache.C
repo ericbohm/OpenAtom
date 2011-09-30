@@ -14,8 +14,8 @@
 #include "charm++.h"
 #include "utility/util.h"
 #include "cpaimd.h"
-#include "groups.h"
 #include "eesCache.h"
+#include "AtomsCache.h"
 #include <cmath>
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
@@ -31,7 +31,7 @@ extern CkVec <CProxy_CP_State_RealParticlePlane> UrealParticlePlaneProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
-extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CkVec <CProxy_eesCache>                   UeesCacheProxy;
 
 #define _EESCACHE_VERBOSE_OFF_
@@ -404,7 +404,7 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
     CkPrintf("HI, I am rPP %d in query : %d\n",index,iter);
 #endif
 
-    AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
+    AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
 
 #if CMK_TRACE_ENABLED
@@ -450,7 +450,7 @@ void eesCache::queryCacheRHart(int index,int itime,int iter){
     CkPrintf("Computing eesAtmBspline\n");
 #endif
 
-    AtomsGrp *ag = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
+    AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
     FastAtoms *fastAtoms = &(ag->fastAtoms);
 #if CMK_TRACE_ENABLED
     double  StartTime=CmiWallTimer();

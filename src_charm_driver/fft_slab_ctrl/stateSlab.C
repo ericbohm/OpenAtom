@@ -12,7 +12,6 @@
 #include "debug_flags.h"
 #include <cmath>
 #include "main/cpaimd.h"
-#include "main/groups.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "main/eesCache.h"
@@ -21,7 +20,6 @@
 
 extern CkVec <CProxy_FFTcache>           UfftCacheProxy;
 extern Config                    config;
-extern CkVec <CProxy_AtomsGrp>           UatomsGrpProxy;
 extern CProxy_CPcharmParaInfoGrp scProxy;
 extern CkVec <CProxy_eesCache>           UeesCacheProxy;
 extern int nstates;

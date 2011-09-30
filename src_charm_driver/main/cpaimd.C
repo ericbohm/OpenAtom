@@ -18,8 +18,10 @@
 #include "InstanceController.h"
 #include "ENL_EKE_Collector.h"
 #include "pcCreationManager.h"
-#include "groups.h"
 #include "eesCache.h"
+#include "AtomsCache.h"
+#include "AtomsCompute.h"
+#include "energyGroup.h"
 
 #include "cp_state_ctrl/CP_State_Plane.h"
 #include "cp_state_ctrl/CP_State_ParticlePlane.h"
@@ -163,7 +165,8 @@ CkVec <CProxy_CP_Rho_RealSpacePlane>      UrhoRealProxy;
 CkVec <CProxy_CP_Rho_GSpacePlane>         UrhoGProxy;
 CkVec <CProxy_CP_Rho_RHartExt>            UrhoRHartExtProxy;
 CkVec <CProxy_CP_Rho_GHartExt>            UrhoGHartExtProxy;
-CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+CkVec <CProxy_AtomsCompute>               UatomsComputeProxy;
+CkVec <CProxy_AtomsCache>                 UatomsCacheProxy;
 CkVec <CProxy_EnergyGroup>                UegroupProxy;
 CkVec <CProxy_FFTcache>                   UfftCacheProxy;
 CkVec <CProxy_StructFactCache>            UsfCacheProxy;
@@ -575,7 +578,8 @@ main::main(CkArgMsg *msg) {
     UVdWGProxy.reserve(config.numInstances);
     UrhoRHartExtProxy.reserve(config.numInstances);
     UrhoGHartExtProxy.reserve(config.numInstances);
-    UatomsGrpProxy.reserve(config.numInstances);
+    UatomsComputeProxy.reserve(config.numInstances);
+    UatomsCacheProxy.reserve(config.numInstances);
     UegroupProxy.reserve(config.numInstances);
     UfftCacheProxy.reserve(config.numInstances);
     UsfCacheProxy.reserve(config.numInstances);
@@ -861,7 +865,7 @@ Per Instance startup BEGIN
 	  } 
 	}
       // now safe to init atom bead commanders
-      UatomsGrpProxy[thisInstance.getPO()].init();
+      UatomsComputeProxy[thisInstance.getPO()].init();
       } // end of per instance init
     //============================================================================ 
     // Initialize commlib strategies for later association and delegation
@@ -2806,7 +2810,8 @@ void control_physics_to_driver(UberCollection thisInstance){
 	zeroKpointInstance.idxU.y=0;
 	zeroKpointInstance.idxU.s=0;
 	int proxyOffset=zeroKpointInstance.setPO();
-	UatomsGrpProxy.push_back(UatomsGrpProxy[proxyOffset]);      
+	UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);      
+	UatomsCacheProxy.push_back(UatomsCacheProxy[proxyOffset]);      
 	UegroupProxy.push_back(UegroupProxy[proxyOffset]);
       }
     else
@@ -2828,9 +2833,20 @@ void control_physics_to_driver(UberCollection thisInstance){
  
         PhysicsAtom->DriverAtomInit(natm,atoms,atomsNHC,ibead,itemper);
 	UegroupProxy.push_back(CProxy_EnergyGroup::ckNew(thisInstance)); 
-	UatomsGrpProxy.push_back( CProxy_AtomsGrp::ckNew(natm,natm_nl,len_nhc,iextended_on,
+	// FIXME, this needs a real computation
+	int nChareAtoms=1;
+	CkArrayOptions atomsOpts(nChareAtoms);
+	UatomsComputeProxy.push_back( CProxy_AtomsCompute::ckNew(natm,natm_nl,
+								 len_nhc,
+								 iextended_on,
                                            cp_min_opt,cp_wave_opt,isokin_opt,
-                                           kT,atoms,atomsNHC,thisInstance));
+								 kT,atoms,
+								 atomsNHC,
+								 thisInstance,
+								 atomsOpts
+								 ));
+	UatomsCacheProxy.push_back( CProxy_AtomsCache::ckNew(natm,natm_nl,
+							     atoms,thisInstance));
         delete [] atoms;
         delete [] atomsNHC;
         delete PhysicsAtom;

@@ -26,7 +26,6 @@
 #include "CP_State_GSpacePlane.h"
 #include "CP_State_Plane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
-#include "main/groups.h"
 #include "main/cpaimd.h"
 #include "utility/util.h"
 #include "charm++.h"

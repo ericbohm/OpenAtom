@@ -1,11 +1,14 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \file atomCache.C
+/** \file AtomsCache.C
  *          Atom coordinate, forces, and iteration
  **/
 //==============================================================================
-#include "atomCache.h"
+
+#include "AtomsCache.h"
+#include "energyGroup.h"
+#include "eesCache.h"
 #include "cp_state_ctrl/CP_State_GSpacePlane.h"
 #include "utility/util.h"
 #include "CPcharmParaInfoGrp.h"
@@ -27,6 +30,7 @@ extern CkVec <IntMap2on2> GSImaptable;
 extern Config                      config;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
+extern CkVec <CProxy_AtomsCache>             UatomsCacheProxy;
 extern CkVec <CProxy_AtomsCompute>             UatomsComputeProxy;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
@@ -44,22 +48,24 @@ extern CProxy_CPcharmParaInfoGrp   scProxy;
  *
  */
 //==============================================================================
-AtomsCache::AtomsCache( int _natm, int n_nl, int Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
+AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstance) : natm(_natm), natm_nl(n_nl), thisInstance(_thisInstance)
 //==============================================================================
   {// begin routine
 //==============================================================================
 
     fastAtoms.natm = natm;
-    fastAtoms.q    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.x    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.y    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.z    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fxu   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fyu   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fzu   = (double *)fftw_malloc(natm*sizeof(double));
+    iteration=0;
+    temperScreenFile = NULL;
+    fastAtoms.q    = new double[natm];
+    fastAtoms.x    = new double[natm];
+    fastAtoms.y    = new double[natm];
+    fastAtoms.z    = new double[natm];
+    fastAtoms.fx   = new double[natm];
+    fastAtoms.fy   = new double[natm];
+    fastAtoms.fz   = new double[natm];
+    fastAtoms.fxu   = new double[natm];
+    fastAtoms.fyu   = new double[natm];
+    fastAtoms.fzu   = new double[natm];
 
   }
 
@@ -76,15 +82,16 @@ AtomsCache::AtomsCache( int _natm, int n_nl, int Atom *a, UberCollection _thisIn
  * atom forces of (i,j) will not be collected and the user will be very sad!
  **/ 
 //==========================================================================
-void AtomsGrp::contributeforces(){
+void AtomsCache::contributeforces(){
 //==========================================================================
 
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
+  double *ftot           = new double[(3*natm+2)];
   for(i=0,j=0; i<natm; i++,j+=3){
-    ftot[j]   = fastAtoms[i].fx;
-    ftot[j+1] = fastAtoms[i].fy;
-    ftot[j+2] = fastAtoms[i].fz;
+    ftot[j]   = fastAtoms.fx[i];
+    ftot[j+1] = fastAtoms.fy[i];
+    ftot[j+2] = fastAtoms.fz[i];
   }//endfor
 #ifdef _CP_DEBUG_ATMS_
   int myid     = CkMyPe();
@@ -92,7 +99,7 @@ void AtomsGrp::contributeforces(){
 #endif
   CkCallback cb(CkIndex_AtomsCompute::recvContributeForces(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
   contribute((3*natm)*sizeof(double),ftot,CkReduction::sum_double,cb);
-
+  delete [] ftot;
 //==========================================================================
   }//end routine
 //==========================================================================
@@ -108,13 +115,13 @@ void AtomsGrp::contributeforces(){
 //==========================================================================
 void AtomsCache::acceptAtoms(AtomMsg *msg)
 {
-  for(int atomI=0;atomI<natm;atomI++){
-    fastAtoms[atomsI].x=msg->x[atomI];
-    fastAtoms[atomsI].y=msg->y[atomI];
-    fastAtoms[atomsI].z=msg->z[atomI];
+  for(int atomI=0, j=0;atomI<natm;atomI++,j+=9){
+    fastAtoms.x[atomI]=msg->data[j];
+    fastAtoms.y[atomI]=msg->data[j+1];
+    fastAtoms.z[atomI]=msg->data[j+2];
   } 
   int i=0;
-  CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsCacheProxy[thisInstance.proxyOffset]);
+  CkCallback cb(CkIndex_AtomsCache::atomsDone(NULL),UatomsCacheProxy[thisInstance.proxyOffset]);
   contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 }
 
@@ -123,16 +130,15 @@ void AtomsCache::acceptAtoms(AtomMsg *msg)
 //==========================================================================
 /** AtomsDone
  *
- * everyone has the new coordinates
+ * everyone has the new coordinates in dynamics
  */
 //==========================================================================
-void AtomsCache::AtomsDone(CkReductionMsg *msg)
+void AtomsCache::atomsDone(CkReductionMsg *msg)
 {
-    //    CkPrintf("{%d}[%d] AtomsGrp::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
+    //    CkPrintf("{%d}[%d] AtomsCache::atomsDone(msg)\n ", thisInstance.proxyOffset, CkMyPe());     
 //==========================================================================
   delete msg;
   atomsDone();
-
 }
 
 
@@ -147,7 +153,7 @@ void AtomsCache::AtomsDone(CkReductionMsg *msg)
 void AtomsCache::atomsDone() {
 //==========================================================================
 // Increment iteration counters
-//  CkPrintf("{%d}[%d] AtomsGrp::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
+//  CkPrintf("{%d}[%d] AtomsCache::atomsDone()\n ", thisInstance.proxyOffset, CkMyPe());     
   int myid = CkMyPe();
 
  EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
@@ -175,7 +181,7 @@ void AtomsCache::atomsDone() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::releaseGSP() {
+void AtomsCache::releaseGSP() {
  int myid = CkMyPe();
  // CkPrintf("{%d}[%d] running release GSP\n",thisInstance.proxyOffset, myid);
 //==========================================================================
@@ -202,7 +208,7 @@ void AtomsGrp::releaseGSP() {
 	 CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
 	 CkExit();
        }//endif
-       //       CkPrintf("{%d}[%d] AtomsGrp::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
+       //       CkPrintf("{%d}[%d] AtomsCache::atomsDone() calling doneMovingAtoms\n ", thisInstance.proxyOffset, CkMyPe());     
        UgSpaceDriverProxy[thisPoint.proxyOffset](indState[i],indPlane[i]).doneMovingAtoms(iteration); 
      }//endfor
    }//endfor
@@ -211,3 +217,24 @@ void AtomsGrp::releaseGSP() {
   }//end routine
 //==============================================================================
 
+//==============================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==============================================================================
+/** Destructor
+ *
+ *
+ **/
+//==============================================================================
+AtomsCache::~AtomsCache(){ 
+  delete [] fastAtoms.q;
+  delete [] fastAtoms.x;
+  delete [] fastAtoms.y;
+  delete [] fastAtoms.z;
+  delete [] fastAtoms.fx;
+  delete [] fastAtoms.fy;
+  delete [] fastAtoms.fz;
+  delete [] fastAtoms.fxu;
+  delete [] fastAtoms.fyu;
+  delete [] fastAtoms.fzu;
+}
+//=========================================

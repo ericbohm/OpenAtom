@@ -14,7 +14,7 @@
 #include "CP_State_Plane.h"
 #include "structure_factor/StructFactorCache.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
-#include "main/groups.h"
+#include "main/AtomsCache.h"
 #include "main/eesCache.h"
 #include "main/cpaimd.h"
 #include "utility/matrix2file.h"
@@ -28,7 +28,7 @@
 extern CProxy_InstanceController      instControllerProxy;
 extern CProxy_main                       mainProxy;
 extern CkVec <CProxy_CP_State_GSpacePlane>       UgSpacePlaneProxy;
-extern CkVec <CProxy_AtomsGrp>                   UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>                   UatomsCacheProxy;
 extern CProxy_CPcharmParaInfoGrp         scProxy;
 extern CkVec <CProxy_CP_State_ParticlePlane>     UparticlePlaneProxy;
 extern CkVec <CProxy_StructFactCache>            UsfCacheProxy;
@@ -60,8 +60,8 @@ void CP_State_RealParticlePlane::printEnlR(CkReductionMsg *m){
   itimeRed = m->getUserFlag();
   delete m;
   //output and save the data
-  FILE *temperScreenFile = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
-  int iteration= UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration;
+  FILE *temperScreenFile = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->temperScreenFile;
+  int iteration= UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration;
   fprintf(temperScreenFile,"Iter [%d] ENL(EES)    = %5.8lf\n", iteration,d);
   UgSpacePlaneProxy[thisInstance.proxyOffset](0,0).computeEnergies(ENERGY_ENL, d);  
 }
@@ -837,7 +837,7 @@ void CP_State_RealParticlePlane::computeAtmForcEes(CompAtmForcMsg *msg)
    double *projPsiRScr = fftcache->tmpDataR;
    fftcache->getCacheMem("CP_State_RealParticlePlane::computeAtmForcEes");
 
-   AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch();
+   AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
    FastAtoms *fastAtoms = &(ag->fastAtoms);
 
 #ifdef _CP_DEBUG_STATE_RPP_VERBOSE_

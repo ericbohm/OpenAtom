@@ -1,11 +1,11 @@
-/** \file atomCache.h
+/** \file atomsCache.h
  */
-#ifndef ATOMCACHE_H
-#define ATOMCACHE_H
+#ifndef ATOMSCACHE_H
+#define ATOMSCACHE_H
 #include "Atoms.h"
 struct EnergyStruct;
+#include "Atoms.decl.h"
 #include "atomMessages.h"
-#include "atomCache.decl.h"
 #include "CPcharmParaInfo.decl.h"
 
 
@@ -59,7 +59,7 @@ struct EnergyStruct;
   there is no segmentation and no window of opportunity for clever
   just in time delivery.  
 
-  Nodegroup?  AtomCache is an excellent candidate for Nodegroup.  All
+  Nodegroup?  AtomsCache is an excellent candidate for Nodegroup.  All
   force updates are a purely additive operation, each computation will
   use the coordinates and its own chare local data to produce its
   force contribution.  Force updates are handled via by reference
@@ -75,8 +75,8 @@ struct EnergyStruct;
   think this gives us grief just replace nodegroup with Group and
   recompile, the nodegroup advantages are all implicit.
 
-  However, atomCache directly uses the registration in the eesCache to
-  execute releaseGSP.  So, atomCache's nodegroupness needs to be 1:1
+  However, AtomsCache directly uses the registration in the eesCache to
+  execute releaseGSP.  So, AtomsCache's nodegroupness needs to be 1:1
   with eesCache's nodegroupness, or an alternate launch scheme put
   in place for releaseGSP to break that dependency.
 
@@ -91,14 +91,14 @@ class AtomsCache: public Group {
   FastAtoms fastAtoms;
   FILE *temperScreenFile;
 
-  AtomsCache(CkMigrateMessage *m) {}
+
   AtomsCache(int,int,Atom *,UberCollection thisInstance);
-  void init();  // entry method
+  AtomsCache(CkMigrateMessage *m) {}
   ~AtomsCache();
   void contributeforces();
   void atomsDone();
+  void atomsDone(CkReductionMsg *);
   void acceptAtoms(AtomMsg *);  // entry method
-  void startRealSpaceForces(); // entry method
   void releaseGSP();
   void zeroforces() {
     double *fx = fastAtoms.fx;
@@ -113,4 +113,4 @@ class AtomsCache: public Group {
 };
 
 
-#endif // GROUPS_H
+#endif // ATOMSCACHE_H

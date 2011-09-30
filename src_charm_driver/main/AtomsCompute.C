@@ -1,12 +1,13 @@
 //==============================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==============================================================================
-/** \file groups.C
- *          Processor group class Functions : Atoms and parainfo
- **/
+/** \file AtomsCompute.C
+ *          Processor group class Functions : Atoms
+ */
 //==============================================================================
-
-#include "atomCompute.h"
+#include "AtomsCache.h"
+#include "AtomsCompute.h"
+#include "energyGroup.h"
 #include "eesCache.h"
 #include "cp_state_ctrl/CP_State_GSpacePlane.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
@@ -14,6 +15,7 @@
 #include "CPcharmParaInfoGrp.h"
 #include "load_balance/IntMap.h"
 #include "charm++.h"
+
 
 #include <cmath>
 
@@ -34,7 +36,8 @@ extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern Config                      config;
 extern CkVec <CProxy_CP_State_GSpacePlane> UgSpacePlaneProxy;
 extern CkVec <CProxy_GSpaceDriver>         UgSpaceDriverProxy;
-extern CkVec <CProxy_AtomsGrp>             UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>             UatomsCacheProxy;
+extern CkVec <CProxy_AtomsCompute>             UatomsComputeProxy;
 extern CkVec <CProxy_EnergyGroup>          UegroupProxy;
 extern CkVec <CProxy_StructFactCache>      UsfCacheProxy;
 extern CkVec <CProxy_eesCache>             UeesCacheProxy;
@@ -93,21 +96,12 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
     TemperIndex     = thisInstance.idxU.z;
     atoms           = new Atom[natm];
     atomsNHC        = new AtomNHC[natm];
+    AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+    // we just use the atomsCache fastAtoms
+    fastAtoms = &(ag->fastAtoms);
+
     CmiMemcpy(atoms, a, natm * sizeof(Atom));           // atoms has no vectors
     for(int i=0;i<natm;i++){atomsNHC[i].Init(&aNHC[i]);}
-
-    fastAtoms.natm = natm;
-    fastAtoms.q    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.x    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.y    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.z    = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fx   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fy   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fz   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fxu   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fyu   = (double *)fftw_malloc(natm*sizeof(double));
-    fastAtoms.fzu   = (double *)fftw_malloc(natm*sizeof(double));
-
     ftot           = (double *)fftw_malloc((3*natm+2)*sizeof(double));
 
     zeroforces();
@@ -119,13 +113,13 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 // A copy of the atoms for fast routines : only need to copy charge once
 
     copySlowToFast();
-    double *qq = fastAtoms.q;
+    double *qq = fastAtoms->q;
     for(int i=0;i<natm;i++){qq[i]=atoms[i].q;}
 
 //==============================================================================
 // Number of messages to be received when atoms are moved : simple parallel
 
-    int nproc = CkNumPes();
+    int nproc = nChareAtoms;
     int div   = (natm / nproc);
     int rem   = (natm % nproc);
 
@@ -159,12 +153,6 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
 AtomsCompute::~AtomsCompute(){
      delete [] atoms;
      delete [] atomsNHC;
-     fftw_free(fastAtoms.x);
-     fftw_free(fastAtoms.y);
-     fftw_free(fastAtoms.z);
-     fftw_free(fastAtoms.fx);
-     fftw_free(fastAtoms.fy);
-     fftw_free(fastAtoms.fz);
      fftw_free(PIMD_CM_Atoms.x);
      fftw_free(PIMD_CM_Atoms.y);
      fftw_free(PIMD_CM_Atoms.z);
@@ -195,17 +183,17 @@ void AtomsCompute::init()
     {
       // make lists of Array IDs and their Commander PE
       CkArrayID *atomsArrayids= new CkArrayID[numPIMDBeads];
-      int **elems  = new int*[numPIMDBeads];
+      CkArrayIndex **elems  = new CkArrayIndex*[numPIMDBeads];
       int *naelems = new int[numPIMDBeads];
       for(int i=0;i<numPIMDBeads;i++){
-	  elems[i]= new int[1];
+	elems[i]= new CkArrayIndex1D[0];
 	  UberCollection instance=thisInstance;
 	  naelems[i]=1;
 	  instance.idxU.x=0;
 	  int offset=instance.calcPO();
-	  elems[i][0]=GSImaptable[offset].get(0,0);
-	  atomsArrayids[i]=UatomsGrpProxy[offset].ckGetArrayID();
-	  //CkPrintf("{%d}[%d] AtomsGrp::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
+	  elems[i][0]=CkArrayIndex1D(0);
+	  atomsArrayids[i]=UatomsComputeProxy[offset].ckGetArrayID();
+	  //CkPrintf("{%d}[%d] AtomsCompute::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
       }//endfor
       proxyHeadBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elems, naelems);
       delete [] naelems;
@@ -241,6 +229,7 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 
   double pot_ewd_rs_loc = ftot[3*natm];
   double potPerdCorrLoc = ftot[3*natm+1];
+
   double fmag = 0.0;
   for(i=0,j=0;i<natm;i++,j+=3){
     atoms[i].fx = ftot[j];    atoms[i].fy = ftot[j+1];
@@ -255,6 +244,11 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
   fmag /= (double)(3*natm);
   fmag  = sqrt(fmag);
   delete msg;
+//============================================================
+// Tuck things that can be tucked.
+
+  eg->estruct.eewald_real = pot_ewd_rs_loc;  
+  eg->estruct.fmag_atm    = fmag;
 
 #ifdef _CP_DEBUG_ATMS_EXIT_
   if(myid==0){CkExit();}
@@ -312,7 +306,7 @@ void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
 }
 
 
-void atomCompute::handleForces()
+void AtomsCompute::handleForces()
   {//=================================================================
 // Model forces  : This is fine for path integral checking too
     handleForcesCount=0;
@@ -352,11 +346,6 @@ void atomCompute::handleForces()
    CkExit();
 #endif
 
-//============================================================
-// Tuck things that can be tucked.
-
-  eg->estruct.eewald_real = pot_ewd_rs_loc;  
-  eg->estruct.fmag_atm    = fmag;
 
 //==========================================================================
 // if classical go on to integration, otherwise Fx -> Fu
@@ -529,7 +518,8 @@ void AtomsCompute::integrateAtoms(){
       sendAtoms(eKinetic_loc,eKineticNhc_loc,potNhc_loc,potPIMDChain_loc,natmNow,natmStr,natmEnd);
     }//endif
   }else{
-    // in the minimization case the atoms don't move so we don't update the coordinate
+    // in the minimization case the atoms don't move so we don't
+    // update the coordinates
     eKinetic                    = 0.0;
     eKineticNhc                 = 0.0;
     potNhc                      = 0.0;
@@ -543,7 +533,7 @@ void AtomsCompute::integrateAtoms(){
     outputAtmEnergy();
 
     int i=0;
-    CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+    CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
     contribute(sizeof(int),&i,CkReduction::sum_int,cb);
   }//endif
 
@@ -580,7 +570,7 @@ void AtomsCompute::startRealSpaceForces(){
 
 #ifndef _CP_DEBUG_PSI_OFF_
 #ifndef _CP_DEBUG_SCALC_ONLY_ 
-   CPRSPACEION::CP_getionforce(natm,&fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
+   CPRSPACEION::CP_getionforce(natm,fastAtoms,myid,nproc,&pot_ewd_rs,&vself,&vbgr,&potPerdCorr);
 #endif
 #endif
 
@@ -690,9 +680,9 @@ void AtomsCompute::outputAtmEnergy() {
 //==========================================================================
 //cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
-void AtomsGrp::send_PIMD_Fx(){ 
+void AtomsCompute::send_PIMD_Fx(){ 
 //==========================================================================
-//  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+//  CkPrintf("{%d}[%d] AtomsCompute::send_PIMD_fx iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
 // every BOC has all Fx might as well just bcast from beadroot
 
   if(amBeadRoot){
@@ -728,11 +718,11 @@ void AtomsGrp::send_PIMD_Fx(){
  * abuse we dish out.  The only saving grace is that the number of
  * atoms is relatively small.
  */
-void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNhc_loc,
+void AtomsCompute::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNhc_loc,
                          double potPIMDChain_loc,int natmNow,int natmStr,int natmEnd){
 //==========================================================================
 // Malloc the message
-//  CkPrintf("{%d}[%d] AtomsGrp::sendAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
+//  CkPrintf("{%d}[%d] AtomsCompute::sendAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
 
   int nsize    = 9*natmNow+4;
   AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
@@ -770,6 +760,59 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
 // Send the message to everyone in the group
 
+// FIX THIS: should use delegated section to minimize stupid anytime
+// migration overhead.  Also, this is really an all-gather.
+
+  UatomsComputeProxy[thisInstance.proxyOffset].acceptAtoms(msg);
+
+//-------------------------------------------------------------------------
+  }//end routine
+//==========================================================================
+
+
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
+/** 
+ * For dynamics we have to update all the caches with the new coordinates
+ */
+void AtomsCompute::bcastAtomsToAtomCache()
+{
+//==========================================================================
+// Malloc the message
+//  CkPrintf("{%d}[%d] AtomsCompute::bcastAtomsToAtomCache.\n ", thisInstance.proxyOffset, thisIndex);     
+
+  int nsize    = 9*natm;
+  AtomMsg *msg = new (nsize,8*sizeof(int)) AtomMsg;
+  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+  *(int*)CkPriorityPtr(msg) = config.sfpriority-10;
+
+  double *atmData = msg->data;
+  msg->nsize      = nsize;
+  msg->natmStr    = 0;
+  msg->natmEnd    = natm;
+
+//==========================================================================
+// pack atom positions : new for use : old for output
+
+  for(int i=0,j=0;i<natm;i++,j+=9){
+    atmData[(j)  ]=atoms[i].x;  // for PIMD these are the XU
+    atmData[(j+1)]=atoms[i].y;
+    atmData[(j+2)]=atoms[i].z;
+    atmData[(j+3)]=atoms[i].xold; // for PIMD these are the X
+    atmData[(j+4)]=atoms[i].yold;
+    atmData[(j+5)]=atoms[i].zold;
+    atmData[(j+6)]=atoms[i].vxold; // for PIMD these are the Vxu
+    atmData[(j+7)]=atoms[i].vyold;
+    atmData[(j+8)]=atoms[i].vzold;
+  }//endfor
+
+//==========================================================================
+// Send the message to everyone in the group
+
+// FIX THIS: should use delegated section to minimize stupid anytime
+// migration overhead.  
+
   UatomsCacheProxy[thisInstance.proxyOffset].acceptAtoms(msg);
 
 //-------------------------------------------------------------------------
@@ -788,7 +831,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 //==========================================================================
   void AtomsCompute::acceptAtoms(AtomMsg *msg) {
 //==========================================================================
-//    CkPrintf("{%d}[%d] AtomsGrp::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
+//    CkPrintf("{%d}[%d] AtomsCompute::acceptAtoms.\n ", thisInstance.proxyOffset, CkMyPe());     
   double *atmData = msg->data;
   int    nsize    = msg->nsize;
   int    natmStr  = msg->natmStr;
@@ -898,7 +941,7 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
      }else{
       //everybody has to have received all the atoms before continuing : not just me
       int i=0;
-      CkCallback cb(CkIndex_AtomCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomComputeProxy[thisInstance.proxyOffset]);
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
      }//endif : 
 
@@ -910,11 +953,13 @@ void AtomsGrp::sendAtoms(double eKinetic_loc,double eKineticNhc_loc,double potNh
 
 void AtomsCompute::atomsDone(CkReductionMsg *msg)
 {
-  // this means that all the atomCompute chares are done integrating.
-  // update the atomCaches.
+  // This means that all the atomCompute chares are done integrating
+  // in minimization.  Tell the atomCaches they can go ahead now.
   delete msg;
-  UatomCacheProxy[thisInstance.proxyOffset].acceptAtoms();
-  
+  if(cp_wave_opt==0 && cp_min_opt==0)
+    bcastAtomsToAtomCache();
+  else
+    UatomsCacheProxy[thisInstance.proxyOffset].atomsDone();
 }
 
 
@@ -934,14 +979,14 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
   atomsCMrecv=true;
 
   if(atomsPIMDXrecv){
-      //CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ",
+      //CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_CM contributing to atomsDone atomsPIMDXrecv is %d iteration %d\n ",
       //         thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
       int i=0;
-      CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+      CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);
       contribute(sizeof(int),&i,CkReduction::sum_int,cb);
       atomsCMrecv=atomsPIMDXrecv=false;
   }else{
-    //CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_CM warning! atomsPIMDXrecv is %d iteration %d\n ",
+    //CkPrintf("{%d}[%d] AtomsCache::accept_PIMD_CM warning! atomsPIMDXrecv is %d iteration %d\n ",
     //         thisInstance.proxyOffset, CkMyPe(), atomsPIMDXrecv, iteration);     
   }//endif
 
@@ -955,7 +1000,7 @@ void AtomsCompute::accept_PIMD_CM(AtomXYZMsg *msg){
 //==============================================================================
 void AtomsCompute::send_PIMD_u(){
 //==============================================================================
-//  CkPrintf("{%d}[%d] AtomsGrp::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
+//  CkPrintf("{%d}[%d] AtomsCompute::send_PIMD_u iteration %d\n ", thisInstance.proxyOffset, CkMyPe(), iteration);     
 
   for(int atomnum=0;atomnum<natm;atomnum++){
       UPIBeadAtomsProxy[thisInstance.proxyOffset][atomnum].accept_PIMD_u(
@@ -978,10 +1023,10 @@ void AtomsCompute::accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int ato
   atoms[atomI].fzu    =_fzu;
 
   acceptCountfu++;
-  //CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu (%d of %d) iteration %d\n", 
+  //CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu (%d of %d) iteration %d\n", 
   //          thisInstance.proxyOffset, CkMyPe(),acceptCountfu, natm, iteration);     
   if(acceptCountfu==natm){
-    //  CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_fu done calling integrator iteration %d\n ", 
+    //  CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_fu done calling integrator iteration %d\n ", 
     //              thisInstance.proxyOffset, CkMyPe(), iteration);     
     integrateAtoms();
     acceptCountfu=0;
@@ -1004,9 +1049,9 @@ void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
   atoms[atomI].y=_y;
   atoms[atomI].z=_z;
 
-  fastAtoms.x[atomI]=_x;
-  fastAtoms.y[atomI]=_y;
-  fastAtoms.z[atomI]=_z;
+  fastAtoms->x[atomI]=_x;
+  fastAtoms->y[atomI]=_y;
+  fastAtoms->z[atomI]=_z;
 
   acceptCountX++;
 
@@ -1015,13 +1060,15 @@ void AtomsCompute::accept_PIMD_x(double _x, double _y, double _z, int atomI){
       atomsPIMDXrecv=true;
       if(atomsCMrecv){
          int i=0;
-	 //CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", 
-	 //         thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
-	 CkCallback cb(CkIndex_AtomsGrp::atomsDone(NULL),UatomsGrpProxy[thisInstance.proxyOffset]);
+	 //CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x contributing to atomsDone atomsCMrecv is %d iteration %d\n ", 
+	 //         thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);
+
+	 CkCallback cb(CkIndex_AtomsCompute::atomsDone(NULL), CkArrayIndex1D(0), UatomsComputeProxy[thisInstance.proxyOffset]);     
+
 	 contribute(sizeof(int),&i,CkReduction::sum_int,cb);
 	 atomsCMrecv=atomsPIMDXrecv=false;
       }else{
-      //CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_x warning! atomsCMrecv is %d iteration %d\n", 
+      //CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_x warning! atomsCMrecv is %d iteration %d\n", 
       //          thisInstance.proxyOffset, CkMyPe(), atomsCMrecv, iteration);     
       }//endif
   }//endif : all data has arrived
@@ -1066,7 +1113,7 @@ void AtomsCompute::acceptNewTemperature(double temp)
 //==============================================================================
 void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
 //==============================================================================
-// CkPrintf("{%d}[%d] AtomsGrp::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
+// CkPrintf("{%d}[%d] AtomsCompute::accept_PIMD_u iteration %d\n", thisInstance.proxyOffset, CkMyPe(), iteration);     
 
   atoms[atomI].xu =_xu;
   atoms[atomI].yu =_yu;
@@ -1079,5 +1126,5 @@ void AtomsCompute::accept_PIMD_u(double _xu, double _yu, double _zu, int atomI){
   }//endif
 }
 
-#include "AtomCompute.def.h"
+#include "Atoms.def.h"
 

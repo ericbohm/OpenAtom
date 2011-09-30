@@ -28,7 +28,7 @@
 #include "debug_flags.h"
 #include "utility/util.h"
 #include "main/cpaimd.h"
-#include "main/groups.h"
+#include "main/AtomsCache.h"
 #include "fft_slab_ctrl/fftCacheSlab.h"
 #include "main/eesCache.h"
 #include "cp_state_ctrl/CP_State_Plane.h"
@@ -48,7 +48,7 @@ extern Config config;
 
 extern CkVec <CProxy_CP_Rho_RealSpacePlane> UrhoRealProxy;
 extern CProxy_CPcharmParaInfoGrp    scProxy;
-extern CkVec <CProxy_AtomsGrp>              UatomsGrpProxy;
+extern CkVec <CProxy_AtomsCache>              UatomsCacheProxy;
 extern CkVec <CProxy_CP_Rho_GHartExt>       UrhoGHartExtProxy;
 extern CkVec <CProxy_CP_Rho_RHartExt>       UrhoRHartExtProxy;
 extern CkVec <CProxy_eesCache>              UeesCacheProxy;
@@ -367,10 +367,10 @@ void CP_Rho_GHartExt::acceptData(RhoGHartMsg *msg){
 
  // the atoms haven't moved yet
   if(cp_min_opt==0){
-     if(UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
+     if(UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration != iteration-1){
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkPrintf("Flow of Control Error in GHartExtVks : atoms slow %d %d\n",
-              UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,iteration);
+              UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch()->iteration,iteration);
         CkPrintf("@@@@@@@@@@@@@@@@@@@@_error_@@@@@@@@@@@@@@@@@@@@\n");
         CkExit();
      }//endif
@@ -419,7 +419,7 @@ void CP_Rho_GHartExt::HartExtVksG() {
   CkPrintf("Ghart %d Here in hartextvskg at %d on %d\n",thisIndex.x,CkMyPe());
 #endif
 
-   AtomsGrp *ag         = UatomsGrpProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
+   AtomsCache *ag         = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch(); // find me the local copy
    int natm             = ag->natm;
    FastAtoms *fastAtoms = &(ag->fastAtoms);
 
