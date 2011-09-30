@@ -203,6 +203,7 @@ mainmodule cpaimd {
 	readonly CkHashtableT<intdual, int> OrthoHelpermaptable;
 	readonly CkHashtableT<intdual, int> AsymScalcmaptable;
 	readonly CkHashtableT<intdual, int> SymScalcmaptable;
+	readonly CkVec <MapType1> AtomImaptable;
 	readonly CkVec <int> PIBImaptable;
 	readonly CkVec <MapType2> GSImaptable;
 	readonly CkVec <MapType2> RSImaptable;
@@ -440,7 +441,9 @@ mainmodule cpaimd {
 		entry [nokeep] void init();
 	};
 
-
+	group AtomComputeMap : CkArrayMap {
+		entry AtomComputeMap(UberCollection);
+	};
 
 	group RhoGSMap : CkArrayMap {
 		entry RhoGSMap(UberCollection);
