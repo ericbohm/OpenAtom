@@ -136,6 +136,12 @@ void parse(MDINTEGRATE *mdintegrate, MDATOMS *mdatoms, MDINTER *mdinter,
   pi_beads            = mdclatoms_info->pi_beads;
   pme_on              = mdpart_mesh->pme_on;
 
+  PRINTF("$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$\n");
+  PRINTF("HARD CODED doublepack in parse.C on line 139\n");
+  PRINTF("$$$$$$$$$$$$$$$$_WARNING_$$$$$$$$$$$$$$$$$$$\n");
+  cp->cpcoeffs_info.doublepack = 0;
+  cp->cpewald.doublepack = 0;
+
 //========================================================================
 //  IV) Molecule connectivity data: Done before setting     
 //                                  therms;                
