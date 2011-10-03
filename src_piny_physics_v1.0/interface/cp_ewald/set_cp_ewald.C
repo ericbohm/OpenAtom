@@ -1007,7 +1007,8 @@ void setkvec3d_sm_kpt(int nktot,double ecut,int *kmax_cp,double *hmatik,
     }//endfor
   }//endfor
 
-  if (icount != nktot+1){
+  // we don't exclude k=0 anymore so these are the same
+  if (icount != nktot){
     PRINTF("@@@@@@@@@@@@@@@@@@@@_ERROR_@@@@@@@@@@@@@@@@@@@@\n");
     PRINTF("Incorrect number of small kvectors\n");
     PRINTF("%d vs %d\n",icount,nktot);
