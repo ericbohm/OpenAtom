@@ -1858,7 +1858,12 @@ void PairCalculator::bwMultiplyHelper(int size, internalType *matrix1, internalT
     // GEMM configuration
     double alpha(1.0);
     char transform='N';
-    char transformT='T';
+    // Configure the inputs to the GEMM describing the matrix dimensions and operations
+    #ifdef CP_PAIRCALC_USES_COMPLEX_MATH
+        char transformT = 'C';           // Transpose and conjugate of amatrix
+    #else
+        char transformT = 'T';           // Transpose amatrix
+    #endif
 
     #ifdef _PAIRCALC_DEBUG_PARANOID_BW_
         int chunksize=blkSize/cfg.numChunks;
