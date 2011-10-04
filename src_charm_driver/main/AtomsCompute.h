@@ -38,7 +38,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   int iextended_on;
   int cp_min_opt;
   int cp_wave_opt;
-  int iteration;
+  int *iteration;
   int isokin_opt;
   int countAtm;
   int nAtomsPerChare;
@@ -58,12 +58,13 @@ class AtomsCompute: public CBase_AtomsCompute {
   double potNhc;          // NHC potential energy
   double **px;
   double *ftot; 
+  double fmag;
   double tau,beta,omega2PIMD;
   double *massPIMDScal;  // veig of PINY : length numPIMDBeads
 
   Atom *atoms;
   AtomNHC *atomsNHC;
-  FastAtoms *fastAtoms;
+  FastAtoms fastAtoms;
   PIMD_CM PIMD_CM_Atoms;
   CProxySection_AtomsCompute proxyHeadBeads;
   CProxySection_AtomsCompute proxyAllBeads;
@@ -100,9 +101,9 @@ class AtomsCompute: public CBase_AtomsCompute {
   void releaseGSP();
   void handleForces();
   void zeroforces() {
-    double *fx = fastAtoms->fx;
-    double *fy = fastAtoms->fy;
-    double *fz = fastAtoms->fz;
+    double *fx = fastAtoms.fx;
+    double *fy = fastAtoms.fy;
+    double *fz = fastAtoms.fz;
     for(int i=0; i<natm; i++){
       atoms[i].fx = 0;
       atoms[i].fy = 0;
@@ -114,12 +115,12 @@ class AtomsCompute: public CBase_AtomsCompute {
   }//end routine
   void zeronhc(){for(int i=0;i<natm;i++){atomsNHC[i].posKT = 0;}}
   void copySlowToFast(){
-    double *x  = fastAtoms->x;
-    double *y  = fastAtoms->y;
-    double *z  = fastAtoms->z;
-    double *fx = fastAtoms->fx;
-    double *fy = fastAtoms->fy;
-    double *fz = fastAtoms->fz;
+    double *x  = fastAtoms.x;
+    double *y  = fastAtoms.y;
+    double *z  = fastAtoms.z;
+    double *fx = fastAtoms.fx;
+    double *fy = fastAtoms.fy;
+    double *fz = fastAtoms.fz;
     for(int i=0;i<natm;i++){
       x[i]  = atoms[i].x;
       y[i]  = atoms[i].y;
@@ -130,12 +131,12 @@ class AtomsCompute: public CBase_AtomsCompute {
     }//endfor
   }//end routine
   void copyFastToSlow(){
-    double *x  = fastAtoms->x;
-    double *y  = fastAtoms->y;
-    double *z  = fastAtoms->z;
-    double *fx = fastAtoms->fx;
-    double *fy = fastAtoms->fy;
-    double *fz = fastAtoms->fz;
+    double *x  = fastAtoms.x;
+    double *y  = fastAtoms.y;
+    double *z  = fastAtoms.z;
+    double *fx = fastAtoms.fx;
+    double *fy = fastAtoms.fy;
+    double *fz = fastAtoms.fz;
     for(int i=0;i<natm;i++){
       atoms[i].x  = x[i];
       atoms[i].y  = y[i];

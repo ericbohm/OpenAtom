@@ -782,14 +782,11 @@ Per Instance startup BEGIN
 	      UberAlles.push_back(thisInstance);
 
 	      //============================================================================    
+	      // We will need a different one of these per instance
 	      // Transfer parameters from physics to driver
 	      //    read in atoms : create atoms group 
-	    
-	      // we will need a different one of these per instance
 	      control_physics_to_driver(thisInstance);
 
-	    
-	    
 	      //============================================================================ 
 	      // handle Path Integrals
 	      if(config.UberImax>1)
@@ -799,10 +796,18 @@ Per Instance startup BEGIN
 	      // the Uber Index.
 	      init_state_chares(natm_nl,natm_nl_grp_max,numSfGrps,doublePack,sim, thisInstance);
 
+	      // Remove this when someone puts an axe through the last
+	      // BG/L. Until then look upon this as your introduction
+	      // to why communication offload and DMA engines
+	      // shouldn't be considered optional.
 	      CmiNetworkProgressAfter(1);
 
 	      //============================================================================
 	      // Create a paircalc/ortho bubble (symm and asymm pcs, ortho and related frills)
+
+	      // To Ram: please sweep this ortho/PC setup stuff up
+	      // under the rug of a helper method. This is unnecessary
+	      // ugliness.  
 
 	      // Create an ortho config object from available info
 	      cp::ortho::orthoConfig orthoCfg;
@@ -1587,7 +1592,11 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
 
     CkPrintf("GSMap created in %g\n", newtime-Timer);
   } else {
-    GSImaptable[numInst].translate(&GSImaptable[0], x,y,z, config.torusMap==1);
+    if((CkNumPes()==1) && (config.fakeTorus!=1))
+      GSImaptable[numInst]=GSImaptable[0];
+    else
+      GSImaptable[numInst].translate(&GSImaptable[0], x,y,z, config.torusMap==1);
+    
   }
   
   // there is only one IntMap per chare type, but each instance has
@@ -1693,7 +1702,10 @@ void init_state_chares(int natm_nl,int natm_nl_grp_max,int numSfGrps,
     CkPrintf("RSMap created in %g\n", newtime-Timer);
     Timer=newtime;
   } else {
-    RSImaptable[numInst].translate(&RSImaptable[0], x,y,z, config.torusMap==1);
+    if((CkNumPes()==1) && (config.fakeTorus!=1))
+      RSImaptable[numInst]=RSImaptable[0];
+    else
+      RSImaptable[numInst].translate(&RSImaptable[0], x,y,z, config.torusMap==1);
     CkPrintf("RSMap instance %d created in %g\n", numInst, newtime-Timer);
   }
 
@@ -1961,6 +1973,9 @@ void init_eesNL_chares(int natm_nl,int natm_nl_grp_max,
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
+    if((CkNumPes()==1) && (config.fakeTorus!=1))
+      RPPImaptable[numInst]=RPPImaptable[0];
+    else
       RPPImaptable[numInst].translate(&RPPImaptable[0], x,y,z, config.torusMap==1);
     }
   CProxy_RPPMap rspMap= CProxy_RPPMap::ckNew(thisInstance);
@@ -2161,7 +2176,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
-      RhoRSImaptable[numInst].translate(&RhoRSImaptable[0], x,y,z, config.torusMap==1);
+      if((CkNumPes()==1) && (config.fakeTorus!=1))
+	RhoRSImaptable[numInst]=RhoRSImaptable[0];
+      else
+	RhoRSImaptable[numInst].translate(&RhoRSImaptable[0], x,y,z, config.torusMap==1);
     }
 
   CProxy_RhoRSMap rhorsMap = CProxy_RhoRSMap::ckNew(thisInstance);
@@ -2222,7 +2240,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
-      RhoGSImaptable[numInst].translate(&RhoGSImaptable[0], x,y,z, config.torusMap==1);
+      if((CkNumPes()==1) && (config.fakeTorus!=1))
+	RhoGSImaptable[numInst]=RhoGSImaptable[0];
+      else
+	RhoGSImaptable[numInst].translate(&RhoGSImaptable[0], x,y,z, config.torusMap==1);
     }
 
 
@@ -2287,7 +2308,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
-      RhoRHartImaptable[numInst].translate(&RhoRHartImaptable[0], x,y,z, config.torusMap==1);
+      if((CkNumPes()==1) && (config.fakeTorus!=1))
+	RhoRHartImaptable[numInst]=RhoRHartImaptable[0];
+      else
+	RhoRHartImaptable[numInst].translate(&RhoRHartImaptable[0], x,y,z, config.torusMap==1);
     }
 
 
@@ -2353,7 +2377,10 @@ int init_rho_chares(CPcharmParaInfo *sim, UberCollection thisInstance)
       int x=mapOffsets[numInst].getx();
       int y=mapOffsets[numInst].gety();
       int z=mapOffsets[numInst].getz();
-      RhoGHartImaptable[numInst].translate(&RhoGHartImaptable[0], x,y,z, config.torusMap==1);
+      if((CkNumPes()==1) && (config.fakeTorus!=1))
+	RhoGHartImaptable[numInst]=RhoGHartImaptable[0];
+      else
+	RhoGHartImaptable[numInst].translate(&RhoGHartImaptable[0], x,y,z, config.torusMap==1);
     }
 
 
@@ -2771,8 +2798,8 @@ void control_physics_to_driver(UberCollection thisInstance){
 	zeroKpointInstance.idxU.y=0;
 	zeroKpointInstance.idxU.s=0;
 	int proxyOffset=zeroKpointInstance.setPO();
-	UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);      
 	UatomsCacheProxy.push_back(UatomsCacheProxy[proxyOffset]);      
+	UatomsComputeProxy.push_back(UatomsComputeProxy[proxyOffset]);      
 	UegroupProxy.push_back(UegroupProxy[proxyOffset]);
       }
     else
@@ -2810,7 +2837,10 @@ void control_physics_to_driver(UberCollection thisInstance){
 	  int x=mapOffsets[numInst].getx();
 	  int y=mapOffsets[numInst].gety();
 	  int z=mapOffsets[numInst].getz();
-	  AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
+	  if((CkNumPes()==1) && (config.fakeTorus!=1))
+	    AtomImaptable[numInst]=AtomImaptable[0];
+	  else
+	    AtomImaptable[numInst].translate(&AtomImaptable[0], x,y,z, config.torusMap==1);
 	}
 	CProxy_AtomComputeMap aMap = CProxy_AtomComputeMap::ckNew(thisInstance);
 	CkArrayOptions atomOpts(nChareAtoms);

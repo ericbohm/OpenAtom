@@ -102,7 +102,7 @@ class FastAtoms {
   double *fxu,*fyu,*fzu;
   double *x,*y,*z;  // no masses or velocities cause these are working vectors
   double *fx,*fy,*fz;
-  FastAtoms(){}
+  FastAtoms(){natm=0;xu=yu=zu=q=fzu=fyu=x=y=z=fx=fy=fz=NULL;}
  ~FastAtoms(){}
   
 };//end FastAtom

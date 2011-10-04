@@ -405,8 +405,10 @@ void eesCache::queryCacheRPP  (int index,int itime,int iter){
 #endif
 
     AtomsCache *ag = UatomsCacheProxy[thisInstance.proxyOffset].ckLocalBranch();
+    CkAssert(ag!=NULL);
     FastAtoms *fastAtoms = &(ag->fastAtoms);
-
+    CkAssert(fastAtoms!=NULL);
+    CkAssert(fastAtoms->x!=NULL);
 #if CMK_TRACE_ENABLED
    double  StartTime=CmiWallTimer();
 #endif    

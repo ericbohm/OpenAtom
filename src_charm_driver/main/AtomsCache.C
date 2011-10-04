@@ -66,6 +66,15 @@ AtomsCache::AtomsCache( int _natm, int n_nl, Atom *a, UberCollection _thisInstan
     fastAtoms.fxu   = new double[natm];
     fastAtoms.fyu   = new double[natm];
     fastAtoms.fzu   = new double[natm];
+    for(int i=0;i<natm;i++){
+      fastAtoms.q[i]  = a[i].q;
+      fastAtoms.x[i]  = a[i].x;
+      fastAtoms.y[i]  = a[i].y;
+      fastAtoms.z[i]  = a[i].z;
+      fastAtoms.fx[i] = a[i].fx;
+      fastAtoms.fy[i] = a[i].fy;
+      fastAtoms.fz[i] = a[i].fz;
+    }//endfor
     if(config.UberKmax>1 || config.UberImax>1 )
     {
       // we will do the file output
@@ -96,13 +105,12 @@ void AtomsCache::contributeforces(){
   
   int i,j;
   // collate all the forces that RS RHO NL deposited on the atoms
-  double *ftot           = new double[(3*natm+2)];
+  double *ftot           = new double[(3*natm)];
   for(i=0,j=0; i<natm; i++,j+=3){
     ftot[j]   = fastAtoms.fx[i];
     ftot[j+1] = fastAtoms.fy[i];
     ftot[j+2] = fastAtoms.fz[i];
   }//endfor
-#define _CP_DEBUG_ATMS_
 #ifdef _CP_DEBUG_ATMS_
   int myid     = CkMyPe();
   CkPrintf("GJM_DBG: inside contribute forces %d : %d\n",myid,natm);
@@ -125,14 +133,28 @@ void AtomsCache::contributeforces(){
 //==========================================================================
 void AtomsCache::acceptAtoms(AtomMsg *msg)
 {
-  for(int atomI=0, j=0;atomI<natm;atomI++,j+=9){
+  for(int atomI = msg->natmStr, j=0; atomI < msg->natmEnd ; atomI++ ,j+=9){
+#ifdef _CP_DEBUG_ATMS_
+    if(CkMyPe()==0)
+      {
+	CkPrintf("{%d} AtomPos[%d] updated to %.5g,%.5g,%.5g from %.5g,%.5g,%.5g\n",thisInstance.proxyOffset, atomI, msg->data[j],  msg->data[j+1],  msg->data[j+2], fastAtoms.x[atomI],  fastAtoms.y[atomI],  fastAtoms.z[atomI]);
+      }
+#endif
     fastAtoms.x[atomI]=msg->data[j];
     fastAtoms.y[atomI]=msg->data[j+1];
     fastAtoms.z[atomI]=msg->data[j+2];
   } 
+  zeroforces();
   int i=0;
   CkCallback cb(CkIndex_AtomsCache::atomsDone(NULL),UatomsCacheProxy[thisInstance.proxyOffset]);
   contribute(sizeof(int),&i,CkReduction::sum_int,cb);
+  EnergyGroup *eg             = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
+  eg->estruct.potPIMDChain    = msg->data[(msg->nsize-4)];
+  eg->estruct.eKinetic_atm    = msg->data[(msg->nsize-2)];
+  eg->estruct.eKineticNhc_atm = msg->data[(msg->nsize-2)];
+  eg->estruct.potNhc_atm      = msg->data[(msg->nsize-2)];
+
+  delete msg;
 }
 
 //==========================================================================
@@ -205,6 +227,7 @@ void AtomsCache::releaseGSP() {
      thisPoint.idxU.y=kpoint; // not at the gamma point
      thisPoint.setPO();
      eesCache *eesData = UeesCacheProxy[thisPoint.proxyOffset].ckLocalBranch ();
+     CkAssert(eesData!=NULL);
      int *indState     = eesData->gspStateInd;
      int *indPlane     = eesData->gspPlaneInd;
      int ngo           = eesData->nchareGSPProcT;
