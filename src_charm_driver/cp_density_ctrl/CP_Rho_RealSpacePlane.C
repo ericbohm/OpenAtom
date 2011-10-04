@@ -2388,15 +2388,9 @@ void CP_Rho_RealSpacePlane::doMulticast(){
       if(config.useCommlibMulticast){ComlibBegin(realSpaceSectionCProxy);}
 #endif
        */
-       ProductMsg *loopm=msg;
        for(int kp=0;kp<config.UberJmax;kp++)
 	 {
-	   if(config.useCommlibMulticast){
-	     realSpaceSectionCProxyA[kp].acceptProduct(loopm);
-	   }else{
-	     realSpaceSectionProxyA[kp].acceptProduct(loopm);
-
-	   }//enddif
+       ProductMsg *loopm;
 	   if(kp+1<config.UberJmax)
 	     {
 	       
@@ -2408,6 +2402,14 @@ void CP_Rho_RealSpacePlane::doMulticast(){
 	       loopm->subplane   = thisIndex.y;
 	       memcpy(loopm->data, msg->data, msg->datalen* sizeof(double));
 	     }
+       else
+        loopm=msg;
+	   if(config.useCommlibMulticast){
+	     realSpaceSectionCProxyA[kp].acceptProduct(loopm);
+	   }else{
+	     realSpaceSectionProxyA[kp].acceptProduct(loopm);
+
+	   }//enddif
 	 } //endfor kp
       /*
 #ifdef OLD_COMMLIB
