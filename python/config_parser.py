@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 def test(filename, executable_path):
 	import config_reader
 	import command_generator
