@@ -229,8 +229,9 @@ void AtomsCompute::init()
       delete [] naelemsAll;
       for(int i=0;i<numPIMDBeads;i++){delete [] elems[i]; delete [] elemsAll[i];}
       delete [] elemsAll;
+      delete [] atomsArrayids;
 
-  }//endif
+    }//endif
 
 //==============================================================================
   }//end routine
