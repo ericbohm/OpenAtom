@@ -67,7 +67,6 @@ AtomsCompute::AtomsCompute(int n, int n_nl, int len_nhc_, int iextended_on_,int 
   {// begin routine
 //==============================================================================
 // parameters, options and energies
-    fmag            = 0.0;
     handleForcesCount=0;
     ktemps          = 0;
     pot_ewd_rs      = 0.0;
@@ -223,7 +222,7 @@ void AtomsCompute::init()
 	  atomsArrayids[i]=UatomsComputeProxy[offset].ckGetArrayID();
 	  //CkPrintf("{%d}[%d] AtomsCompute::init elems[%d][0]=%d, atomsgrpids[%d]=%d amBeadRoot=%d\n",thisInstance.proxyOffset, CkMyPe(), i, elems[i][0], i, atomsgrpids[i], amBeadRoot);     
       }//endfor
-      proxyHeadBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elems, naelems);
+      //      proxyHeadBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elems, naelems);
       proxyAllBeads=CProxySection_AtomsCompute(numPIMDBeads, atomsArrayids, elemsAll, naelemsAll);
       delete [] naelems;
       delete [] naelemsAll;
@@ -255,37 +254,16 @@ void AtomsCompute::recvContribute(CkReductionMsg *msg) {
 
   int i,j;
   int myid        = thisIndex;
-  double *ftot    = (double *) msg->getData();
+  contribMsg[handleForcesCount++]=msg;
   EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-  if(++handleForcesCount<2) // our rs forces we got here first
-    {
-      copyFastToSlow();
-      zeroforces(); // we're now getting everyone's forces
-    }
+
 //============================================================
 // Copy out the reduction of energy and forces and nuke msg
+  double *ftot    = (double *) msg->getData();
 
   double pot_ewd_rs_loc = ftot[3*natm];
   double potPerdCorrLoc = ftot[3*natm+1];
 
-
-  for(i=0,j=0;i<natm;i++,j+=3){
-#ifdef _CP_DEBUG_ATMS_
-    if(CkMyPe()==0)
-      {
-	CkPrintf("AtomCompute recvContribute forces %d %.5g,%.5g,%.5g\n",i, ftot[j], ftot[j+1], ftot[j+2]);
-      }
-#endif
-    atoms[i].fx += ftot[j];    atoms[i].fy += ftot[j+1];
-    atoms[i].fz += ftot[j+2];
-    fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
-#ifdef _CP_DEBUG_ATMS_
-    if(myid==0){
-      CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
-    }//endif
-#endif
-  }//endfor
-  delete msg;
 //============================================================
 // Tuck things that can be tucked.
 
@@ -315,30 +293,8 @@ void AtomsCompute::recvContributeForces(CkReductionMsg *msg) {
 #endif
 //==========================================================================
 // Local pointers
-
-  int i,j;
   int myid        = thisIndex;
-  double *ftot    = (double *) msg->getData();
-  EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
-
-  if(++handleForcesCount<2) // our non-rs forces we got here first
-    {
-      copyFastToSlow();
-      zeroforces(); // we're now getting everyone's forces
-    }
-//============================================================
-// Copy out the reduction of energy and forces and nuke msg
-  for(i=0,j=0;i<natm;i++,j+=3){
-    atoms[i].fx += ftot[j];    atoms[i].fy += ftot[j+1];
-    atoms[i].fz += ftot[j+2];
-    fmag += (ftot[j]*ftot[j]+ftot[j+1]*ftot[j+1]+ftot[j+2]*ftot[j+2]);
-#ifdef _CP_DEBUG_ATMS_
-    if(myid==0){
-      CkPrintf("%d : %g %g %g\n",i,atoms[i].fx,atoms[i].fy,atoms[i].fz);
-    }//endif
-#endif
-  }//endfor
-  delete msg;
+  contribMsg[handleForcesCount++]=msg;
 
 #ifdef _CP_DEBUG_ATMS_EXIT_
   if(myid==0){CkExit();}
@@ -354,12 +310,37 @@ void AtomsCompute::handleForces()
 #ifdef _CP_DEBUG_ATMS_
   CkPrintf("{%d}[%d] AtomsCompute::handleForces \n ", thisInstance.proxyOffset, thisIndex);     
 #endif
+  copyFastToSlow();
+  zeroforces(); // we're now getting everyone's forces
+  double fmag=0.0;
+  handleForcesCount=0;
   EnergyGroup *eg = UegroupProxy[thisInstance.proxyOffset].ckLocalBranch();
 // Model forces  : This is fine for path integral checking too
-    handleForcesCount=0;
+
+  // sum the contributions
+  double *ftot0    = (double *) contribMsg[0]->getData();
+  double *ftot1    = (double *) contribMsg[1]->getData();
+  // no loop carried dependencies here, so a compiler worth its salt
+  // should easily vectorize these ops.
+  for(int i=0,j=0;i<natm;i++,j+=3){  
+    atoms[i].fx = ftot0[j] + ftot1[j]; 
+    atoms[i].fy = ftot0[j+1] + ftot1[j+1];
+    atoms[i].fz = ftot0[j+2] + ftot1[j+2];
+#ifdef _CP_DEBUG_ATMS_
+    if(CkMyPe()==0)
+      {
+	CkPrintf("AtomCompute handleForces forces %d %.5g,%.5g,%.5g\n",i, atoms[i].fx, atoms[i].fy, atoms[i].fz);
+      }
+#endif
+    fmag += atoms[i].fx * atoms[i].fx + atoms[i].fy * atoms[i].fy + atoms[i].fz * atoms[i].fz;
+  }// endfor
+
   fmag /= (double)(3*natm);
   fmag  = sqrt(fmag);
   eg->estruct.fmag_atm    = fmag;
+  delete contribMsg[0];
+  delete contribMsg[1];
+
 #ifdef  _CP_DEBUG_PSI_OFF_
   double omega    = (0.0241888/15.0); // 15 fs^{-1}
   double omega2   = omega*omega;

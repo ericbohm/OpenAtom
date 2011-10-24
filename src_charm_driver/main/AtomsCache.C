@@ -118,6 +118,7 @@ void AtomsCache::contributeforces(){
   CkCallback cb(CkIndex_AtomsCompute::recvContributeForces(NULL), UatomsComputeProxy[thisInstance.proxyOffset]);
   contribute((3*natm)*sizeof(double),ftot,CkReduction::sum_double,cb);
   delete [] ftot;
+  zeroforces();
 //==========================================================================
   }//end routine
 //==========================================================================

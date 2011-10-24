@@ -58,10 +58,9 @@ class AtomsCompute: public CBase_AtomsCompute {
   double potNhc;          // NHC potential energy
   double **px;
   double *ftot; 
-  double fmag;
   double tau,beta,omega2PIMD;
   double *massPIMDScal;  // veig of PINY : length numPIMDBeads
-
+  CkReductionMsg *contribMsg[2];
   Atom *atoms;
   AtomNHC *atomsNHC;
   FastAtoms fastAtoms;
