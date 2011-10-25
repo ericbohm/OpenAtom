@@ -1106,6 +1106,7 @@ void GEN_WAVE::get_ylm(double xk,double yk,double zk,double g,
 
 
 //==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 //==========================================================================
 void GEN_WAVE::read_occupation_numbers(double *occ_up,double *occ_dn,
                                        int nstate_up, int nstate_dn,int cp_lda_tmp,

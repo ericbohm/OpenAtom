@@ -1395,10 +1395,10 @@ void init_PIBeads(CPcharmParaInfo *sim, UberCollection thisInstance)
     }
   else
     {
+      int natm = sim->natm_tot;
       CkPrintf("Constructing PIMD Bead array\n");
-      CkArrayOptions opts(sim->natm_tot);
-      UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax, opts));
-
+      CkArrayOptions opts(natm);
+      UPIBeadAtomsProxy.push_back( CProxy_PIBeadAtoms::ckNew(thisInstance,config.UberImax,natm,opts));
     }
 
  //TODO: we should have a map for this array, the default scheme would

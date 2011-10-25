@@ -1,5 +1,9 @@
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 /** \file AtomsCompute.h
  */
+//==========================================================================
 #ifndef ATOMSCOMPUTE_H
 #define ATOMSCOMPUTE_H
 #include "Atoms.h"
@@ -14,6 +18,9 @@ struct EnergyStruct;
 #include "uber/Uber.h"
 
 
+//==========================================================================
+//cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+//==========================================================================
 /** AtomsCompute class.
  *
  * Accepts reduction of forces from AtomsCache
@@ -27,8 +34,9 @@ struct EnergyStruct;
  * updated coordinates.
 
  */
-
+//==========================================================================
 class AtomsCompute: public CBase_AtomsCompute {
+//==========================================================================
  public:
   const UberCollection thisInstance;
   /* inherited all the vars from the old AtomsGrp */
@@ -83,6 +91,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   void integrateAtoms();
   void accept_PIMD_x(double _x, double _y, double _z, int atomI);
   void accept_PIMD_Fu(double _fxu, double _fyu, double _fzu, int atomI);
+  void accept_PIMD_Fu_and_u(double _fxu, double _fyu, double _fzu, double _xu, double _yu, double _zu, int atomI);
   void accept_PIMD_CM(AtomXYZMsg *m);
   void accept_PIMD_u(double _ux, double _uy, double _uz, int atomI);
   void acceptNewTemperature(double temp);
@@ -91,6 +100,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   void atomsDone(CkReductionMsg *);
   void send_PIMD_u();
   void send_PIMD_Fx();
+  void send_PIMD_Fx_and_x();
   void send_PIMD_x();
   void sendAtoms(double,double ,double,double,int,int,int);
   void acceptAtoms(AtomMsg *);
@@ -99,6 +109,7 @@ class AtomsCompute: public CBase_AtomsCompute {
   void startRealSpaceForces();
   void releaseGSP();
   void handleForces();
+//==========================================================================
   void zeroforces() {
     double *fx = fastAtoms.fx;
     double *fy = fastAtoms.fy;
@@ -112,7 +123,9 @@ class AtomsCompute: public CBase_AtomsCompute {
       fz[i]       = 0;
     }//endfor
   }//end routine
+//==========================================================================
   void zeronhc(){for(int i=0;i<natm;i++){atomsNHC[i].posKT = 0;}}
+//==========================================================================
   void copySlowToFast(){
     double *x  = fastAtoms.x;
     double *y  = fastAtoms.y;
@@ -129,6 +142,7 @@ class AtomsCompute: public CBase_AtomsCompute {
       fz[i] = atoms[i].fz;
     }//endfor
   }//end routine
+//==========================================================================
   void copyFastToSlow(){
     double *x  = fastAtoms.x;
     double *y  = fastAtoms.y;
@@ -145,6 +159,7 @@ class AtomsCompute: public CBase_AtomsCompute {
       atoms[i].fz = fz[i];
     }//endfor
   }//end routine
+//==========================================================================
   void initPIMD(){
     beta            = 1.0/kT;
     tau             = beta/((double)numPIMDBeads);
@@ -154,8 +169,19 @@ class AtomsCompute: public CBase_AtomsCompute {
       massPIMDScal[(ip-1)] = ((double)(ip))/((double)(ip-1));
     }//endfor
   }//end routine
+//==========================================================================
   void switchPIMDBeadForceMass(int mybead, int natmStr, int natmEnd, double *pot){
+#define _CHECK_PIMD_TRANSFORMS_OFF_
+#ifdef _CHECK_PIMD_TRANSFORMS_
+    CkPrintf("switchPIMDBeadForceMass: I am bead %d strt dumping stuff\n",mybead);
+#endif
     for(int i=natmStr;i<natmEnd;i++){
+#ifdef _CHECK_PIMD_TRANSFORMS_
+      CkPrintf("b=%d atm=%d : %g %g %g : %g %g %g : %g %g %g : %g %g %g\n",
+	       mybead,i,
+               atoms[i].x,atoms[i].y,atoms[i].z,atoms[i].xu,atoms[i].yu,atoms[i].zu,
+               atoms[i].fx,atoms[i].fy,atoms[i].fz,atoms[i].fxu,atoms[i].fyu,atoms[i].fzu);
+#endif
       atoms[i].fx   = atoms[i].fxu; 
       atoms[i].fy   = atoms[i].fyu; 
       atoms[i].fz   = atoms[i].fzu; 
@@ -166,6 +192,9 @@ class AtomsCompute: public CBase_AtomsCompute {
       atoms[i].y    = atoms[i].yu; 
       atoms[i].z    = atoms[i].zu; 
     }//endfor
+#ifdef _CHECK_PIMD_TRANSFORMS_
+    CkPrintf("switchPIMDBeadForceMass: I am bead %d end dumping stuff\n",mybead);
+#endif
     if(mybead>1){ // mybead goes from 1 to numPIMDBead
       int mybead1 = mybead-1;
       pot[0] = 0.0;
@@ -182,6 +211,7 @@ class AtomsCompute: public CBase_AtomsCompute {
       pot[0] *= 0.5;
     }//endif
   }//end routine
+//==========================================================================
   void unswitchPIMDMass(int mybead, int natmStr, int natmEnd){
      int mybead1 = mybead-1;
      for(int i=natmStr;i<natmEnd;i++){
@@ -191,7 +221,10 @@ class AtomsCompute: public CBase_AtomsCompute {
        atoms[i].zu   = atoms[i].z; 
      }//endfor
   }//end routine
-};
+//==========================================================================
 
+//==========================================================================
+ }; //end class
+//==========================================================================
 
 #endif // ATOMSCOMPUTE_H
